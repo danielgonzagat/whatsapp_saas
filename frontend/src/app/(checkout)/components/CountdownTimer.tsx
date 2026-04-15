@@ -107,7 +107,7 @@ export default function CountdownTimer({
         padding: '10px 16px',
         borderRadius: '10px',
         background: expired ? '#441111' : `${accentColor}12`,
-        border: `1px solid ${expired ? '#662222' : accentColor + '30'}`,
+        border: `1px solid ${expired ? '#662222' : `${accentColor}30`}`,
         ...positionStyles,
       }}
     >

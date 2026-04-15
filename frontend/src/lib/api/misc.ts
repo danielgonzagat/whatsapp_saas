@@ -131,7 +131,7 @@ export async function registerNotificationDevice(token: string, platform: string
 
 export async function getMetrics(token?: string): Promise<string> {
   const headers: Record<string, string> = {};
-  if (token) headers['authorization'] = `Bearer ${token}`;
+  if (token) headers.authorization = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}/metrics`, { headers });
   if (!res.ok) throw new Error('Failed to fetch metrics');
   return res.text();
@@ -354,7 +354,7 @@ export async function listScheduledFollowUps(
 }
 
 export async function cancelFollowUp(
-  workspaceId: string,
+  _workspaceId: string,
   followUpId: string,
   _token?: string,
 ): Promise<{ success: boolean }> {
@@ -366,7 +366,7 @@ export async function cancelFollowUp(
 }
 
 export async function uploadDocument(
-  workspaceId: string,
+  _workspaceId: string,
   file: File,
   type: 'catalog' | 'contract' | 'other' = 'other',
   token?: string,
@@ -376,7 +376,7 @@ export async function uploadDocument(
   formData.append('type', type);
 
   const headers: HeadersInit = {};
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}/media/documents/upload`, {
     method: 'POST',
@@ -393,7 +393,7 @@ export async function uploadDocument(
 }
 
 export async function listDocuments(
-  workspaceId: string,
+  _workspaceId: string,
   _token?: string,
 ): Promise<DocumentUpload[]> {
   const res = await apiFetch<any>(`/media/documents`);
@@ -646,7 +646,7 @@ export async function importProducts(data: {
 
 export const affiliateApi = {
   marketplace: (params?: Record<string, string>) => {
-    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    const qs = params ? `?${new URLSearchParams(params).toString()}` : '';
     return apiFetch<any>(`/affiliate/marketplace${qs}`);
   },
   marketplaceStats: () => apiFetch<any>('/affiliate/marketplace/stats'),
@@ -775,7 +775,7 @@ export async function uploadKnowledgeBase(file: File, kbId?: string): Promise<an
   if (kbId) formData.append('kbId', kbId);
 
   const headers: HeadersInit = {};
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}/ai/kb/upload`, {
     method: 'POST',

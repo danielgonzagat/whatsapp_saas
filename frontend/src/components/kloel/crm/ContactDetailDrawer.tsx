@@ -178,7 +178,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
     setNeuroError(null);
     setNeuroResult(null);
     try {
-      const [analysisRes, nbaRes] = await Promise.all([
+      const [_analysisRes, nbaRes] = await Promise.all([
         neuroCrmApi.analyze(contactId),
         neuroCrmApi.nextBestAction(contactId),
       ]);
@@ -263,6 +263,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
             <span style={{ fontSize: 12, color: C.muted, fontFamily: C.mono }}>{phone}</span>
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -322,6 +323,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                       <Tag size={10} style={{ color: C.accent }} />
                       {tag}
                       <button
+                        type="button"
                         onClick={() => handleRemoveTag(tag)}
                         style={{
                           background: 'none',
@@ -359,6 +361,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                     }}
                   />
                   <button
+                    type="button"
                     onClick={handleAddTag}
                     style={{
                       background: C.accent,
@@ -433,6 +436,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
               {/* ── Neuro CRM ── */}
               <Section title="Neuro IA">
                 <button
+                  type="button"
                   onClick={handleNeuroAnalyze}
                   disabled={neuroLoading || !(contact as any)?.id}
                   style={{

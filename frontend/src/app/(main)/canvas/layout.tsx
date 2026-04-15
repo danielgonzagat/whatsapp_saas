@@ -56,6 +56,7 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
       >
         {TABS.map((t) => (
           <button
+            type="button"
             key={t.id}
             onClick={() => router.push(t.path)}
             style={{
@@ -78,6 +79,7 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
         ))}
         <div style={{ flex: 1 }} />
         <button
+          type="button"
           onClick={() => setShowCreate(true)}
           style={{
             display: 'flex',

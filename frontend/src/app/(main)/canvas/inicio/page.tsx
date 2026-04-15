@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
-const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
+const _M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 function RecentSkeletonGrid() {
   return (
@@ -127,6 +127,7 @@ export default function CanvasInicio() {
           />
           {ai && (
             <button
+              type="button"
               onClick={handleAiSubmit}
               style={{
                 padding: '5px 12px',
@@ -185,6 +186,7 @@ export default function CanvasInicio() {
               Nenhum design criado ainda
             </p>
             <button
+              type="button"
               onClick={() => setShowCreate(true)}
               style={{
                 padding: '8px 20px',
@@ -259,6 +261,7 @@ function DesignCard({
       {/* Delete button — shows on hover */}
       {h && (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();

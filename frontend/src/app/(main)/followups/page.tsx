@@ -74,7 +74,7 @@ export default function FollowupsPage() {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       const accessToken = tokenStorage.getToken();
       if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+        headers.Authorization = `Bearer ${accessToken}`;
       }
 
       const res = await fetch(apiUrl('/kloel/followups'), {
@@ -88,7 +88,7 @@ export default function FollowupsPage() {
       const data: FollowupsResponse = await res.json();
       setFollowups(data.followups || []);
       setTotal(data.total || 0);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erro ao carregar follow-ups:', err);
       setError('Não foi possível carregar os follow-ups. Tente novamente.');
     } finally {
@@ -204,6 +204,7 @@ export default function FollowupsPage() {
             <p className="text-[#6E6E73] mt-1">Acompanhe todos os follow-ups agendados pela IA</p>
           </div>
           <button
+            type="button"
             onClick={loadFollowups}
             disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 bg-[#E85D30] hover:bg-[#D04E25] disabled:bg-[#E85D30]/50 text-[#0A0A0C] font-medium rounded-lg transition-colors"
@@ -230,6 +231,7 @@ export default function FollowupsPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
+                  type="button"
                   onClick={() =>
                     router.push(
                       buildRecoveryDashboardHref({
@@ -243,6 +245,7 @@ export default function FollowupsPage() {
                   Pedir plano para IA
                 </button>
                 <button
+                  type="button"
                   onClick={() =>
                     router.push(
                       `/inbox${requestedPhone ? `?source=followups&phone=${encodeURIComponent(requestedPhone)}` : ''}`,
@@ -253,6 +256,7 @@ export default function FollowupsPage() {
                   Abrir Inbox
                 </button>
                 <button
+                  type="button"
                   onClick={() =>
                     router.push(
                       `/flow?source=followups${requestedPhone ? `&phone=${encodeURIComponent(requestedPhone)}` : ''}&purpose=recovery&tab=editor`,
@@ -263,6 +267,7 @@ export default function FollowupsPage() {
                   Automatizar no Flow
                 </button>
                 <button
+                  type="button"
                   onClick={() => router.push('/analytics?tab=abandonos')}
                   className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                 >
@@ -294,18 +299,21 @@ export default function FollowupsPage() {
             <option value="cancelled">Cancelados</option>
           </select>
           <button
+            type="button"
             onClick={() => router.push('/flow')}
             className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
           >
             Abrir Flow
           </button>
           <button
+            type="button"
             onClick={() => router.push('/inbox')}
             className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
           >
             Abrir Inbox
           </button>
           <button
+            type="button"
             onClick={() => router.push('/analytics?tab=abandonos')}
             className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
           >
@@ -379,12 +387,14 @@ export default function FollowupsPage() {
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
               <button
+                type="button"
                 onClick={() => router.push('/leads')}
                 className="px-4 py-2 bg-[#111113] border border-[#222226] rounded-lg text-sm font-medium text-[#E0DDD8]"
               >
                 Revisar leads
               </button>
               <button
+                type="button"
                 onClick={() => router.push('/marketing/whatsapp?mode=broadcast')}
                 className="px-4 py-2 bg-[#111113] border border-[#222226] rounded-lg text-sm font-medium text-[#E0DDD8]"
               >
@@ -404,6 +414,7 @@ export default function FollowupsPage() {
               Ajuste o status ou limpe a busca para voltar a ver todos os follow-ups.
             </p>
             <button
+              type="button"
               onClick={() => {
                 setSearch('');
                 setStatusFilter('all');
@@ -426,6 +437,7 @@ export default function FollowupsPage() {
               </div>
               {(search || statusFilter !== 'all') && (
                 <button
+                  type="button"
                   onClick={() => {
                     setSearch('');
                     setStatusFilter('all');
@@ -506,6 +518,7 @@ export default function FollowupsPage() {
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap items-center gap-2">
                           <button
+                            type="button"
                             onClick={() =>
                               router.push(
                                 buildRecoveryDashboardHref({
@@ -520,6 +533,7 @@ export default function FollowupsPage() {
                             IA
                           </button>
                           <button
+                            type="button"
                             onClick={() =>
                               router.push(
                                 `/inbox?source=followups&phone=${encodeURIComponent(followup.phone)}&draft=${encodeURIComponent(followup.message || '')}`,
@@ -530,6 +544,7 @@ export default function FollowupsPage() {
                             Inbox
                           </button>
                           <button
+                            type="button"
                             onClick={() =>
                               router.push(
                                 `/flow?source=followups&phone=${encodeURIComponent(followup.phone)}&leadId=${encodeURIComponent(followup.contactId)}&purpose=recovery&tab=editor`,
@@ -540,6 +555,7 @@ export default function FollowupsPage() {
                             Flow
                           </button>
                           <button
+                            type="button"
                             onClick={() =>
                               router.push(
                                 `/leads?source=followups&phone=${encodeURIComponent(followup.phone)}&leadId=${encodeURIComponent(followup.contactId)}`,

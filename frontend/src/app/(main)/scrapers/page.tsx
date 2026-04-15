@@ -94,6 +94,7 @@ function JobRow({
       </div>
       {canImport && (
         <button
+          type="button"
           onClick={() => onImport(job.id)}
           disabled={importing}
           style={{
@@ -327,6 +328,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button
+            type="button"
             onClick={onClose}
             style={{
               padding: '9px 18px',
@@ -343,6 +345,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             Cancelar
           </button>
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={loading || !form.query.trim()}
             style={{
@@ -454,6 +457,7 @@ export default function ScrapersPage() {
           <option value="FAILED">Falhos</option>
         </select>
         <button
+          type="button"
           onClick={() => router.push('/leads')}
           style={{
             padding: '10px 14px',
@@ -470,6 +474,7 @@ export default function ScrapersPage() {
           Abrir Leads
         </button>
         <button
+          type="button"
           onClick={() => router.push('/flow')}
           style={{
             padding: '10px 14px',
@@ -531,6 +536,7 @@ export default function ScrapersPage() {
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
+          type="button"
           onClick={() => setShowModal(true)}
           style={{
             display: 'flex',
@@ -574,6 +580,7 @@ export default function ScrapersPage() {
             <span>{importResult.imported} leads importados com sucesso.</span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <button
+                type="button"
                 onClick={() => router.push('/leads?source=scrapers')}
                 style={{
                   padding: '6px 12px',
@@ -590,6 +597,7 @@ export default function ScrapersPage() {
                 Ver leads
               </button>
               <button
+                type="button"
                 onClick={() => router.push('/followups?source=scrapers')}
                 style={{
                   padding: '6px 12px',
@@ -606,6 +614,7 @@ export default function ScrapersPage() {
                 Abrir follow-ups
               </button>
               <button
+                type="button"
                 onClick={() => router.push('/flow?source=scrapers&purpose=acquisition&tab=editor')}
                 style={{
                   padding: '6px 12px',
@@ -653,6 +662,7 @@ export default function ScrapersPage() {
           />
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
             <button
+              type="button"
               onClick={() => router.push('/leads')}
               style={{
                 padding: '8px 14px',
@@ -669,6 +679,7 @@ export default function ScrapersPage() {
               Revisar Leads
             </button>
             <button
+              type="button"
               onClick={() => router.push('/flow?source=scrapers&purpose=acquisition&tab=templates')}
               style={{
                 padding: '8px 14px',

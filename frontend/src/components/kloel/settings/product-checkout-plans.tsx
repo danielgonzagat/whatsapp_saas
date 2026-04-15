@@ -98,6 +98,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
               <div className="flex items-center gap-1">
                 {!plan.isDefault && (
                   <button
+                    type="button"
                     onClick={() => handleSetDefault(plan.id)}
                     className="rounded-md p-2 text-[#6E6E73] hover:bg-[#19191C] hover:text-[#7FE2BC]"
                     title="Definir como padrão"
@@ -106,6 +107,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => handleRemovePlan(plan.id)}
                   className="rounded-md p-2 text-[#6E6E73] hover:bg-[#19191C] hover:text-[#E05252]"
                 >

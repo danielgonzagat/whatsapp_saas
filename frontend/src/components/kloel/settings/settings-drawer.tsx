@@ -76,6 +76,7 @@ export function SettingsDrawer({
 
     return (
       <button
+        type="button"
         onClick={onOpen}
         className="fixed left-0 top-1/2 z-40 -translate-y-1/2 rounded-r-md border border-l-0 border-[var(--app-border-primary)] bg-[var(--app-bg-card)] px-3 py-2 transition-all hover:pl-5"
       >
@@ -115,6 +116,7 @@ export function SettingsDrawer({
               Configuracoes
             </h2>
             <button
+              type="button"
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--app-text-secondary)] transition-colors hover:bg-[var(--app-bg-hover)] hover:text-[var(--app-text-primary)]"
             >
@@ -133,6 +135,7 @@ export function SettingsDrawer({
                 const isActive = activeTab === tab.key;
                 return (
                   <button
+                    type="button"
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition-all ${

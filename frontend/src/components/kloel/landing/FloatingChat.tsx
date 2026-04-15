@@ -416,6 +416,7 @@ export function FloatingChat({
             }}
           >
             <button
+              type="button"
               onClick={() => toggle(false)}
               style={{
                 background: 'none',
@@ -625,6 +626,7 @@ export function FloatingChat({
                 }}
               />
               <button
+                type="button"
                 onClick={handleSubmit}
                 disabled={!input.trim() || isStreaming}
                 style={{
@@ -663,6 +665,7 @@ export function FloatingChat({
 
       {/* Floating button — chat bubble SVG */}
       <button
+        type="button"
         onClick={() => toggle(!isOpen)}
         style={{
           position: 'fixed',

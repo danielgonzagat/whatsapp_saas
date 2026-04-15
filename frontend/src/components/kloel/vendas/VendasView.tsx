@@ -23,7 +23,7 @@ import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
 import { smartPaymentApi } from '@/lib/api/misc';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
@@ -427,6 +427,7 @@ function SmartPaymentModal({
             Nova cobranca
           </span>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -493,6 +494,7 @@ function SmartPaymentModal({
                         }}
                       />
                       <button
+                        type="button"
                         onClick={() => copyToClipboard(result.paymentLink!)}
                         style={{
                           padding: '8px 12px',
@@ -542,6 +544,7 @@ function SmartPaymentModal({
                         }}
                       />
                       <button
+                        type="button"
                         onClick={() => copyToClipboard(result.pixCode!)}
                         style={{
                           padding: '8px 12px',
@@ -593,6 +596,7 @@ function SmartPaymentModal({
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
+                  type="button"
                   onClick={() => {
                     setResult(null);
                     setForm({
@@ -620,6 +624,7 @@ function SmartPaymentModal({
                   Nova cobranca
                 </button>
                 <button
+                  type="button"
                   onClick={onClose}
                   style={{
                     flex: 1,
@@ -760,6 +765,7 @@ function SmartPaymentModal({
               )}
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <button
+                  type="button"
                   onClick={onClose}
                   style={{
                     flex: 1,
@@ -776,6 +782,7 @@ function SmartPaymentModal({
                   Cancelar
                 </button>
                 <button
+                  type="button"
                   onClick={handleCreate}
                   disabled={loading || !form.amount || !form.customerName || !form.customerPhone}
                   style={{
@@ -906,6 +913,7 @@ function DetailModal({
                 : 'Detalhes da venda'}
           </span>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -1012,6 +1020,7 @@ function DetailModal({
           <div style={{ display: 'flex', gap: 8 }}>
             {detailType === 'sale' && item.status === 'paid' && (
               <button
+                type="button"
                 onClick={() => onRefund(item.id)}
                 disabled={actionLoading}
                 style={{
@@ -1037,6 +1046,7 @@ function DetailModal({
             {detailType === 'sub' && item.status === 'ACTIVE' && (
               <>
                 <button
+                  type="button"
                   onClick={() => onPauseSub(item.id)}
                   disabled={actionLoading}
                   style={{
@@ -1058,6 +1068,7 @@ function DetailModal({
                   {IC.pause(12)} Pausar
                 </button>
                 <button
+                  type="button"
                   onClick={() => onChangePlan(item.id)}
                   disabled={actionLoading}
                   style={{
@@ -1080,6 +1091,7 @@ function DetailModal({
                   Mudar plano
                 </button>
                 <button
+                  type="button"
                   onClick={() => onCancelSub(item.id)}
                   disabled={actionLoading}
                   style={{
@@ -1104,6 +1116,7 @@ function DetailModal({
             )}
             {detailType === 'sub' && item.status === 'PAUSED' && (
               <button
+                type="button"
                 onClick={() => onResumeSub(item.id)}
                 disabled={actionLoading}
                 style={{
@@ -1128,6 +1141,7 @@ function DetailModal({
             )}
             {detailType === 'order' && item.status === 'PROCESSING' && (
               <button
+                type="button"
                 onClick={() => {
                   onOpenShipModal(item.id);
                   onClose();
@@ -1155,6 +1169,7 @@ function DetailModal({
             {detailType === 'order' &&
               (item.status === 'SHIPPED' || item.status === 'DELIVERED') && (
                 <button
+                  type="button"
                   onClick={() => onReturnOrder(item.id)}
                   disabled={actionLoading}
                   style={{
@@ -1179,6 +1194,7 @@ function DetailModal({
               )}
             {detailType === 'order' && item.trackingCode && (
               <button
+                type="button"
                 onClick={() =>
                   window.open(`https://www.linkcorreios.com.br/?id=${item.trackingCode}`, '_blank')
                 }
@@ -1292,6 +1308,7 @@ function ShipModal({
         />
         <div style={{ display: 'flex', gap: 8 }}>
           <button
+            type="button"
             onClick={onClose}
             style={{
               flex: 1,
@@ -1308,6 +1325,7 @@ function ShipModal({
             Cancelar
           </button>
           <button
+            type="button"
             onClick={() => onShipOrder(showShipModal)}
             disabled={!shipTrackingCode.trim() || actionLoading}
             style={{
@@ -1467,6 +1485,7 @@ function GestaoVendas({
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {['todos', 'paid', 'pending', 'refunded'].map((f) => (
             <button
+              type="button"
               key={f}
               onClick={() => onFilterStatusChange(f)}
               style={{
@@ -1541,6 +1560,7 @@ function GestaoVendas({
           sales.map((s: any, i: number) =>
             isMobile ? (
               <button
+                type="button"
                 key={s.id}
                 onClick={() => onOpenDetail(s.id, 'sale')}
                 style={{
@@ -2272,7 +2292,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     setShowShipModal(null);
     setShipTrackingCode('');
   };
-  const handleDeliverOrder = async (id: string) => {
+  const _handleDeliverOrder = async (id: string) => {
     setActionLoading(true);
     await apiFetch(`/sales/orders/${id}/deliver`, { method: 'PUT' });
     await mutateOrders();
@@ -2434,6 +2454,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               {card.metric}
             </div>
             <button
+              type="button"
               onClick={card.action}
               style={{
                 marginTop: 14,
@@ -2516,6 +2537,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
           <div />
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button
+              type="button"
               onClick={() => setShowSmartPayment(true)}
               style={{
                 padding: '8px 16px',
@@ -2535,6 +2557,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               {IC.dollar(14)} Cobrar
             </button>
             <button
+              type="button"
               onClick={() => {
                 const now = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
                 const escape = (v: unknown) => {
@@ -2649,6 +2672,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               {alertCounts?.chargebacks > 0 && ` ${alertCounts.chargebacks} chargeback`}
             </span>
             <button
+              type="button"
               onClick={() => generateAlerts()}
               style={{
                 background: 'none',
@@ -2680,6 +2704,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                 {alert.message}
               </span>
               <button
+                type="button"
                 onClick={() => resolveAlert(alert.id)}
                 style={{
                   background: 'none',
@@ -2702,6 +2727,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       <div style={SUBINTERFACE_PILL_ROW_STYLE}>
         {TABS.map((t) => (
           <button
+            type="button"
             key={t.key}
             onClick={() => handleTabChange(t.key)}
             style={getSubinterfacePillStyle(tab === t.key, isMobile)}

@@ -4,16 +4,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import {
-  type CheckoutConfig,
-  type CheckoutOrderBump,
-  type CheckoutPixel,
-  type CheckoutTestimonial,
-  type CheckoutTrustBadge,
-  type CheckoutUpsell,
-  DEFAULT_CONFIG,
-  useCheckoutEditor,
-} from '@/hooks/useCheckoutEditor';
+import { type CheckoutConfig, useCheckoutEditor } from '@/hooks/useCheckoutEditor';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 import {
@@ -567,6 +558,7 @@ export default function CheckoutEditorPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
+            type="button"
             onClick={() => {
               if (productReturnHref) {
                 router.push(productReturnHref);
@@ -640,6 +632,7 @@ export default function CheckoutEditorPage() {
               const active = device === d.id;
               return (
                 <button
+                  type="button"
                   key={d.id}
                   onClick={() => setDevice(d.id)}
                   title={d.id}
@@ -667,6 +660,7 @@ export default function CheckoutEditorPage() {
 
           {/* Copy link */}
           <button
+            type="button"
             onClick={() =>
               router.push(
                 buildDashboardHref({
@@ -692,6 +686,7 @@ export default function CheckoutEditorPage() {
 
           {/* Copy link */}
           <button
+            type="button"
             onClick={copyLink}
             disabled={isLoading}
             style={{
@@ -708,6 +703,7 @@ export default function CheckoutEditorPage() {
             {copied ? 'Copiado!' : 'Copiar link'}
           </button>
           <button
+            type="button"
             onClick={copyEmbedCode}
             disabled={isLoading}
             style={{
@@ -807,12 +803,17 @@ export default function CheckoutEditorPage() {
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {productReturnHref && (
-                      <button onClick={() => router.push(productReturnHref)} style={smallBtnStyle}>
+                      <button
+                        type="button"
+                        onClick={() => router.push(productReturnHref)}
+                        style={smallBtnStyle}
+                      >
                         <ArrowLeft style={{ width: 14, height: 14 }} />
                         Produto
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() =>
                         iframeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
                       }
@@ -1133,6 +1134,7 @@ export default function CheckoutEditorPage() {
                       Depoimento {i + 1}
                     </span>
                     <button
+                      type="button"
                       onClick={() => {
                         const next = [...config.testimonials];
                         next.splice(i, 1);
@@ -1169,6 +1171,7 @@ export default function CheckoutEditorPage() {
                     <div style={{ display: 'flex', gap: 4 }}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <button
+                          type="button"
                           key={s}
                           onClick={() => {
                             const next = [...config.testimonials];
@@ -1197,6 +1200,7 @@ export default function CheckoutEditorPage() {
                 </div>
               ))}
               <button
+                type="button"
                 onClick={() =>
                   patch({
                     testimonials: [...config.testimonials, { name: '', text: '', stars: 5 }],
@@ -1275,6 +1279,7 @@ export default function CheckoutEditorPage() {
                         style={{ ...inputStyle, flex: 1 }}
                       />
                       <button
+                        type="button"
                         onClick={() => {
                           const next = [...config.trustBadges];
                           next.splice(i, 1);
@@ -1287,6 +1292,7 @@ export default function CheckoutEditorPage() {
                     </div>
                   ))}
                   <button
+                    type="button"
                     onClick={() =>
                       patch({
                         trustBadges: [...config.trustBadges, { label: '' }],
@@ -1329,6 +1335,7 @@ export default function CheckoutEditorPage() {
                       Bump {i + 1}
                     </span>
                     <button
+                      type="button"
                       onClick={() => {
                         const next = [...config.orderBumps];
                         next.splice(i, 1);
@@ -1383,6 +1390,7 @@ export default function CheckoutEditorPage() {
                 </div>
               ))}
               <button
+                type="button"
                 onClick={() =>
                   patch({
                     orderBumps: [
@@ -1426,6 +1434,7 @@ export default function CheckoutEditorPage() {
                       Upsell {i + 1}
                     </span>
                     <button
+                      type="button"
                       onClick={() => {
                         const next = [...config.upsells];
                         next.splice(i, 1);
@@ -1480,6 +1489,7 @@ export default function CheckoutEditorPage() {
                 </div>
               ))}
               <button
+                type="button"
                 onClick={() =>
                   patch({
                     upsells: [
@@ -1626,11 +1636,11 @@ export default function CheckoutEditorPage() {
                 }}
               />
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button onClick={copyEmbedCode} style={smallBtnStyle}>
+                <button type="button" onClick={copyEmbedCode} style={smallBtnStyle}>
                   <Copy style={{ width: 14, height: 14 }} />
                   {embedCopied ? 'Widget copiado!' : 'Copiar código do widget'}
                 </button>
-                <button onClick={copyLink} style={smallBtnStyle}>
+                <button type="button" onClick={copyLink} style={smallBtnStyle}>
                   <Copy style={{ width: 14, height: 14 }} />
                   {copied ? 'Link copiado!' : 'Copiar link público'}
                 </button>
@@ -1665,6 +1675,7 @@ export default function CheckoutEditorPage() {
                       Pixel {i + 1}
                     </span>
                     <button
+                      type="button"
                       onClick={() => {
                         const next = [...config.pixels];
                         next.splice(i, 1);
@@ -1716,6 +1727,7 @@ export default function CheckoutEditorPage() {
                 </div>
               ))}
               <button
+                type="button"
                 onClick={() =>
                   patch({
                     pixels: [...config.pixels, { type: 'facebook', pixelId: '' }],

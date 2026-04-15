@@ -34,7 +34,7 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function easeInOutQuart(t: number) {
-  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+  return t < 0.5 ? 8 * t * t * t * t : 1 - (-2 * t + 2) ** 4 / 2;
 }
 
 function readProofCoordinates(proofs: WhatsAppProofEntry[]): AgentCursorTarget | null {

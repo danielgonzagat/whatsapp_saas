@@ -13,7 +13,7 @@ const SORA = "'Sora',sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
 // ── DNA Colors ──
-const BG = KLOEL_THEME.bgPrimary;
+const _BG = KLOEL_THEME.bgPrimary;
 const BG_CARD = KLOEL_THEME.bgCard;
 const BG_ELEVATED = KLOEL_THEME.bgSecondary;
 const BORDER = KLOEL_THEME.borderPrimary;
@@ -167,7 +167,7 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
 };
 
 // ── Helpers ──
-const Fmt = (n: number) => (n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString());
+const Fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}K` : n.toString());
 
 // ══════════════════════════════════════════
 // ATOMS
@@ -231,6 +231,7 @@ function Btn({
   };
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       style={{
@@ -442,6 +443,7 @@ function Toggle({
 }) {
   return (
     <button
+      type="button"
       onClick={() => onChange(!checked)}
       style={{
         display: 'flex',
@@ -924,6 +926,7 @@ function Dominios() {
               >
                 {r.value}
                 <button
+                  type="button"
                   onClick={() => navigator.clipboard.writeText(r.value)}
                   style={{
                     background: 'none',
@@ -1111,7 +1114,7 @@ function CriarSite({ mode }: { mode?: string }) {
       .map((p: any) => ({ name: p.name || p.title || 'Produto', price: p.price ?? 0 }));
   }, [rawProducts]);
 
-  const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  const FmtMoney = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -1311,6 +1314,7 @@ function CriarSite({ mode }: { mode?: string }) {
                 'Troque CTA por campanha ativa',
               ].map((hint) => (
                 <button
+                  type="button"
                   key={hint}
                   onClick={() => setPrompt((prev) => `${prev.trim()} ${hint}.`.trim())}
                   style={{
@@ -1336,6 +1340,7 @@ function CriarSite({ mode }: { mode?: string }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {productList.map((p, i) => (
                 <button
+                  type="button"
                   key={i}
                   onClick={() => setPrompt((prev) => prev + (prev ? ', ' : '') + p.name)}
                   style={{
@@ -1437,6 +1442,7 @@ function CriarSite({ mode }: { mode?: string }) {
                     {site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}
                   </span>
                   <button
+                    type="button"
                     onClick={() => handleDelete(site.id)}
                     style={{
                       fontFamily: MONO,
@@ -2294,6 +2300,7 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
       >
         {TABS.map((t) => (
           <button
+            type="button"
             key={t.id}
             onClick={() => switchTab(t.id)}
             style={{

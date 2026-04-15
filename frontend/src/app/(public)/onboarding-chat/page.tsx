@@ -91,7 +91,7 @@ function OnboardingChatContent() {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       const accessToken = tokenStorage.getToken();
       if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+        headers.Authorization = `Bearer ${accessToken}`;
       }
 
       // Usa endpoint correto com workspaceId
@@ -136,7 +136,7 @@ function OnboardingChatContent() {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       const accessToken = tokenStorage.getToken();
       if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+        headers.Authorization = `Bearer ${accessToken}`;
       }
 
       // Usa endpoint SSE para streaming
@@ -185,7 +185,7 @@ function OnboardingChatContent() {
       // Verificar se o onboarding foi concluído
       const statusHeaders: HeadersInit = {};
       if (accessToken) {
-        statusHeaders['Authorization'] = `Bearer ${accessToken}`;
+        statusHeaders.Authorization = `Bearer ${accessToken}`;
       }
       const statusRes = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/status`), {
         headers: statusHeaders,
@@ -250,6 +250,7 @@ function OnboardingChatContent() {
             )}
             {!isAuthenticated && (
               <button
+                type="button"
                 onClick={goToLogin}
                 className="flex items-center gap-2 text-base text-gray-400 hover:text-white transition px-3 py-1.5 rounded-lg border border-white/20 hover:border-white/40"
               >
@@ -342,6 +343,7 @@ function OnboardingChatContent() {
                 Sua conta está pronta. Agora você pode conectar seu WhatsApp e começar a vender!
               </p>
               <button
+                type="button"
                 onClick={goToDashboard}
                 className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 mx-auto hover:opacity-90 transition"
               >
@@ -371,6 +373,7 @@ function OnboardingChatContent() {
                 className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
               />
               <button
+                type="button"
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
                 className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50"

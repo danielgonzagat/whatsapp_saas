@@ -98,6 +98,7 @@ export default function OnboardingPage() {
               const isSelected = selected === role.id;
               return (
                 <button
+                  type="button"
                   key={role.id}
                   onClick={() => setSelected(role.id)}
                   style={{
@@ -160,6 +161,7 @@ export default function OnboardingPage() {
 
           {/* Continue Button */}
           <button
+            type="button"
             onClick={handleContinue}
             disabled={!selected || loading}
             style={{

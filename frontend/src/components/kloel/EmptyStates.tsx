@@ -15,7 +15,7 @@
  * ============================================
  */
 
-import { colors, radius } from '@/lib/design-tokens';
+import { colors } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import {
   BarChart3,
@@ -25,19 +25,15 @@ import {
   FileText,
   Inbox,
   type LucideIcon,
-  Mail,
   MessageSquare,
   Package,
   Phone,
   Search,
-  Send,
-  Settings,
   Target,
   TrendingUp,
   Users,
   Zap,
 } from 'lucide-react';
-import { ReactNode } from 'react';
 
 // ============================================
 // TYPES

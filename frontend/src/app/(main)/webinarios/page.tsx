@@ -85,7 +85,7 @@ function toEmbedUrl(url: string): string | null {
 }
 
 export default function WebinariosPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();
   const workspaceId = workspace?.id;
 
@@ -228,6 +228,7 @@ export default function WebinariosPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <button
+            type="button"
             onClick={() => setViewing(null)}
             style={{
               background: 'rgba(232, 93, 48, 0.1)',
@@ -357,6 +358,7 @@ export default function WebinariosPage() {
             Faca login para acessar seus webinarios.
           </p>
           <button
+            type="button"
             onClick={() => openAuthModal()}
             style={{
               background: '#E85D30',
@@ -404,6 +406,7 @@ export default function WebinariosPage() {
           </h1>
         </div>
         <button
+          type="button"
           onClick={() => setShowModal(true)}
           style={{
             background: '#E85D30',
@@ -541,6 +544,7 @@ export default function WebinariosPage() {
                     {statusLabel(w.status)}
                   </span>
                   <button
+                    type="button"
                     onClick={(e) => openEdit(w, e)}
                     title="Editar"
                     style={{
@@ -557,6 +561,7 @@ export default function WebinariosPage() {
                     <Pencil size={12} />
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setConfirmDeleteId(w.id);
@@ -594,7 +599,7 @@ export default function WebinariosPage() {
                 <p
                   style={{ color: '#888', fontSize: 12, margin: 0, lineHeight: 1.5, marginTop: 4 }}
                 >
-                  {w.description.length > 100 ? w.description.slice(0, 100) + '...' : w.description}
+                  {w.description.length > 100 ? `${w.description.slice(0, 100)}...` : w.description}
                 </p>
               )}
               <div
@@ -658,6 +663,7 @@ export default function WebinariosPage() {
                 Novo Webinario
               </h2>
               <button
+                type="button"
                 aria-label="Fechar modal"
                 onClick={() => setShowModal(false)}
                 style={{
@@ -774,6 +780,7 @@ export default function WebinariosPage() {
               </div>
 
               <button
+                type="button"
                 onClick={handleCreate}
                 disabled={saving || !formTitle.trim() || !formUrl.trim() || !formDate}
                 style={{
@@ -849,6 +856,7 @@ export default function WebinariosPage() {
                 Editar Webinario
               </h2>
               <button
+                type="button"
                 aria-label="Fechar modal de edicao"
                 onClick={() => setEditingWebinar(null)}
                 style={{
@@ -962,6 +970,7 @@ export default function WebinariosPage() {
               </div>
 
               <button
+                type="button"
                 onClick={handleEdit}
                 disabled={editSaving || !editTitle.trim() || !editUrl.trim() || !editDate}
                 style={{
@@ -1033,6 +1042,7 @@ export default function WebinariosPage() {
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button
+                type="button"
                 onClick={() => setConfirmDeleteId(null)}
                 style={{
                   background: 'rgba(255,255,255,0.06)',
@@ -1048,6 +1058,7 @@ export default function WebinariosPage() {
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={() => handleDelete(confirmDeleteId)}
                 disabled={deletingId === confirmDeleteId}
                 style={{

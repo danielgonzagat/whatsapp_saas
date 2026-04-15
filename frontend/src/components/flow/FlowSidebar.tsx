@@ -167,6 +167,7 @@ export function FlowSidebar() {
           return (
             <div key={categoryKey} className="mb-2">
               <button
+                type="button"
                 onClick={() => toggleCategory(categoryKey)}
                 className="w-full flex items-center justify-between px-2 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md"
               >

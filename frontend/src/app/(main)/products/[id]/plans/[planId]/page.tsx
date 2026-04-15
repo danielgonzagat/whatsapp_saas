@@ -9,7 +9,6 @@ import { PlanPaymentTab } from '@/components/plans/PlanPaymentTab';
 import { PlanShippingTab } from '@/components/plans/PlanShippingTab';
 import { PlanStoreTab } from '@/components/plans/PlanStoreTab';
 import { PlanThankYouTab } from '@/components/plans/PlanThankYouTab';
-import { colors } from '@/lib/design-tokens';
 import {
   ArrowLeft,
   Brain,
@@ -60,6 +59,7 @@ export default function PlanDetailPage() {
         {/* Back */}
         <div style={{ marginBottom: 16 }}>
           <button
+            type="button"
             onClick={() => router.push(`/products/${productId}`)}
             style={{
               display: 'flex',
@@ -106,6 +106,7 @@ export default function PlanDetailPage() {
               const isActive = activeTab === tab.id;
               return (
                 <button
+                  type="button"
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   style={{
@@ -226,6 +227,7 @@ export default function PlanDetailPage() {
           }}
         >
           <button
+            type="button"
             onClick={() => router.push(`/products/${productId}`)}
             style={{
               fontSize: 14,

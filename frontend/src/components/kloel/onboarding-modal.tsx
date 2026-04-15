@@ -75,6 +75,7 @@ export function OnboardingModal({
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="relative w-full max-w-md rounded-md bg-white p-8">
         <button
+          type="button"
           onClick={onClose}
           className="absolute left-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700"
           aria-label="Fechar"

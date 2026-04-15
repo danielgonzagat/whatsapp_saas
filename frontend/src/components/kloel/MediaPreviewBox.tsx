@@ -154,6 +154,7 @@ export function MediaPreviewBox({
 
             {showRemoveButton && onClear && !uploading ? (
               <button
+                type="button"
                 aria-label={removeButtonAriaLabel}
                 onClick={(event) => {
                   event.stopPropagation();

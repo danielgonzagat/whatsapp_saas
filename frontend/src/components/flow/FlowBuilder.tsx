@@ -1,6 +1,6 @@
 'use client';
 
-import { type DragEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type DragEvent, useCallback, useEffect, useRef, useState } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -294,6 +294,7 @@ export default function FlowBuilder({
             <div className="w-px h-6 bg-gray-200" />
 
             <button
+              type="button"
               onClick={handleUndo}
               disabled={historyIndex <= 0 || readOnly}
               className="p-1.5 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
@@ -302,6 +303,7 @@ export default function FlowBuilder({
               <Undo className="w-4 h-4 text-gray-600" />
             </button>
             <button
+              type="button"
               onClick={handleRedo}
               disabled={historyIndex >= history.length - 1 || readOnly}
               className="p-1.5 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
@@ -313,6 +315,7 @@ export default function FlowBuilder({
             <div className="w-px h-6 bg-gray-200" />
 
             <button
+              type="button"
               onClick={() => reactFlowInstance?.zoomIn()}
               className="p-1.5 hover:bg-gray-100 rounded-md"
               title="Zoom in"
@@ -320,6 +323,7 @@ export default function FlowBuilder({
               <ZoomIn className="w-4 h-4 text-gray-600" />
             </button>
             <button
+              type="button"
               onClick={() => reactFlowInstance?.zoomOut()}
               className="p-1.5 hover:bg-gray-100 rounded-md"
               title="Zoom out"
@@ -327,6 +331,7 @@ export default function FlowBuilder({
               <ZoomOut className="w-4 h-4 text-gray-600" />
             </button>
             <button
+              type="button"
               onClick={handleFitView}
               className="p-1.5 hover:bg-gray-100 rounded-md"
               title="Ajustar visualização"
@@ -337,6 +342,7 @@ export default function FlowBuilder({
             <div className="w-px h-6 bg-gray-200" />
 
             <button
+              type="button"
               onClick={handleDeleteSelected}
               disabled={!selectedNode || readOnly}
               className="p-1.5 hover:bg-red-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
@@ -350,6 +356,7 @@ export default function FlowBuilder({
             {!readOnly && (
               <>
                 <button
+                  type="button"
                   onClick={handleSave}
                   disabled={isSaving}
                   className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 disabled:opacity-50"

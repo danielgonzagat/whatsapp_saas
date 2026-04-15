@@ -1,6 +1,6 @@
 'use client';
 import { apiFetch } from '@/lib/api';
-import { colors, shadows, typography } from '@/lib/design-tokens';
+import { colors, typography } from '@/lib/design-tokens';
 import {
   AlertTriangle,
   BookOpen,
@@ -12,7 +12,6 @@ import {
   MessageSquare,
   MinusCircle,
   Save,
-  Shield,
   Sparkles,
   Zap,
 } from 'lucide-react';
@@ -666,7 +665,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
     borderRadius: '6px',
   };
   const selectClass = 'w-full rounded-lg px-3 py-2 text-sm focus:outline-none';
-  const inputClass = selectClass;
+  const _inputClass = selectClass;
 
   // Completeness indicators for summary
   const s1Complete = genders.length > 0 && ages.length > 0 && problem !== '';
@@ -688,7 +687,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
 
   const completenessColor = (complete: boolean, partial: boolean) =>
     complete ? colors.state.success : partial ? colors.brand.amber : colors.text.void;
-  const completenessLabel = (complete: boolean, partial: boolean) =>
+  const _completenessLabel = (complete: boolean, partial: boolean) =>
     complete ? 'Completo' : partial ? 'Parcial' : 'Não configurado';
 
   const activeObjections = Object.values(objectionStates).filter((o) => o.enabled).length;
@@ -1580,6 +1579,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       {/* Save Button */}
       <div className="flex justify-end">
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving}
           className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"

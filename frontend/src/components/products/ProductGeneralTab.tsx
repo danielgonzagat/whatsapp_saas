@@ -156,6 +156,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           {/* Available toggle */}
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => update('active', !data.active)}
               className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
               style={{ backgroundColor: data.active ? colors.ember.primary : colors.border.space }}
@@ -338,6 +339,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           </div>
           <div className="mt-4 flex items-center gap-3">
             <button
+              type="button"
               onClick={() => update('isSample', !data.isSample)}
               className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
               style={{
@@ -358,6 +360,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
       {/* Save */}
       <div className="flex justify-end">
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving}
           className="flex items-center gap-2 rounded-md px-6 py-2.5 text-sm font-semibold"

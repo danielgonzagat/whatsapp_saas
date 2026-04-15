@@ -243,8 +243,8 @@ const EMAIL_TEMPLATE_PRESETS = [
 ];
 
 // ── Helpers ──
-const Fmt = (n: number) => (n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString());
-const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+const Fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}K` : n.toString());
+const FmtMoney = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
 // ══════════════════════════════════════════
 // SUB-COMPONENTS
@@ -491,6 +491,7 @@ function ConnectFlow({
           { label: 'Abrir Email', href: '/marketing/email' },
         ].map((item) => (
           <button
+            type="button"
             key={item.href}
             onClick={() => router.push(item.href)}
             style={{
@@ -770,6 +771,7 @@ function EmailTab({
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {connection?.connected ? (
               <button
+                type="button"
                 onClick={onDisconnect}
                 disabled={connecting}
                 style={{
@@ -788,6 +790,7 @@ function EmailTab({
               </button>
             ) : (
               <button
+                type="button"
                 onClick={onConnect}
                 disabled={connecting || !connection?.providerAvailable}
                 style={{
@@ -808,6 +811,7 @@ function EmailTab({
               </button>
             )}
             <button
+              type="button"
               onClick={onSendTest}
               disabled={testSending || !connection?.providerAvailable}
               style={{
@@ -987,6 +991,7 @@ function EmailTab({
             </div>
 
             <button
+              type="button"
               onClick={handleSend}
               disabled={
                 emailSending ||
@@ -1070,6 +1075,7 @@ function EmailTab({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {EMAIL_TEMPLATE_PRESETS.map((template) => (
               <button
+                type="button"
                 key={template.id}
                 onClick={() => {
                   setEmailSubject(template.subject);
@@ -1159,6 +1165,7 @@ function InstagramTab({
           <ConnBadge connected={true} />
         </div>
         <button
+          type="button"
           onClick={() => onConnect('instagram')}
           disabled={connecting}
           style={{
@@ -1409,6 +1416,7 @@ function FacebookTab({
           <ConnBadge connected={true} />
         </div>
         <button
+          type="button"
           onClick={() => onConnect('facebook')}
           disabled={connecting}
           style={{
@@ -1574,6 +1582,7 @@ function MetaConnectPrompt({
         autorizacao oficial da Meta e retorna para este canal.
       </div>
       <button
+        type="button"
         onClick={() => onConnect(channelKey as 'instagram' | 'facebook' | 'whatsapp')}
         disabled={connecting}
         style={{
@@ -2527,6 +2536,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
       >
         {TABS.map((t) => (
           <button
+            type="button"
             key={t.id}
             onClick={() => switchTab(t.id)}
             style={{

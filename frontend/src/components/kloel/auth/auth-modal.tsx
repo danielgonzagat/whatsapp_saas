@@ -224,6 +224,7 @@ export function AuthModal({
         <div className="rounded-3xl bg-white p-8 shadow-2xl">
           {/* Close Button */}
           <button
+            type="button"
             onClick={onClose}
             className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700"
           >
@@ -301,6 +302,7 @@ export function AuthModal({
                   <>
                     Ja tem conta?{' '}
                     <button
+                      type="button"
                       onClick={() => switchMode('login')}
                       className="font-medium text-gray-900 hover:underline"
                     >
@@ -311,6 +313,7 @@ export function AuthModal({
                   <>
                     Ainda nao tem conta?{' '}
                     <button
+                      type="button"
                       onClick={() => switchMode('signup')}
                       className="font-medium text-gray-900 hover:underline"
                     >
@@ -324,6 +327,7 @@ export function AuthModal({
             <>
               {/* Back Button */}
               <button
+                type="button"
                 onClick={handleBack}
                 className="mb-5 flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
               >
@@ -462,6 +466,7 @@ export function AuthModal({
                   <p className="text-center text-sm text-gray-500">
                     Ja tem conta?{' '}
                     <button
+                      type="button"
                       onClick={() => switchMode('login')}
                       className="font-medium text-gray-900 hover:underline"
                     >
@@ -525,6 +530,7 @@ export function AuthModal({
                   <p className="text-center text-sm text-gray-500">
                     Criar nova conta?{' '}
                     <button
+                      type="button"
                       onClick={() => switchMode('signup')}
                       className="font-medium text-gray-900 hover:underline"
                     >

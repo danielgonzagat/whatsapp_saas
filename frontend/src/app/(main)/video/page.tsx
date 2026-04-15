@@ -136,6 +136,7 @@ function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string
         </div>
         {(status === 'PROCESSING' || status === 'PENDING') && (
           <button
+            type="button"
             onClick={() => onRefresh(job.id)}
             style={{ ...btnSecondary, padding: '4px 10px', fontSize: 11 }}
           >
@@ -331,6 +332,7 @@ export default function VideoPage() {
       <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #222226', marginBottom: 20 }}>
         {tabs.map((t) => (
           <button
+            type="button"
             key={t.id}
             onClick={() => setActiveTab(t.id)}
             style={{
@@ -472,6 +474,7 @@ export default function VideoPage() {
               </div>
             )}
             <button
+              type="button"
               onClick={handleCreate}
               disabled={creating || (!createUrl.trim() && !createPrompt.trim())}
               style={{
@@ -531,6 +534,7 @@ export default function VideoPage() {
                 </select>
                 {voiceError && <div style={{ color: '#EF4444', fontSize: 12 }}>{voiceError}</div>}
                 <button
+                  type="button"
                   onClick={handleCreateVoice}
                   disabled={creatingVoice || !newVoiceName.trim()}
                   style={{
@@ -599,6 +603,7 @@ export default function VideoPage() {
                         </div>
                       </div>
                       <button
+                        type="button"
                         onClick={() => setGenProfileId(p.id)}
                         style={{
                           ...btnSecondary,
@@ -667,6 +672,7 @@ export default function VideoPage() {
                   </div>
                 )}
                 <button
+                  type="button"
                   onClick={handleGenerate}
                   disabled={generating || !genText.trim()}
                   style={{ ...btnPrimary, opacity: generating || !genText.trim() ? 0.5 : 1 }}
@@ -796,6 +802,7 @@ export default function VideoPage() {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={handleCheckMediaJob}
                   style={{ ...btnSecondary, padding: '4px 10px', fontSize: 11 }}
                 >
@@ -804,6 +811,7 @@ export default function VideoPage() {
               </div>
             )}
             <button
+              type="button"
               onClick={handleProcessMedia}
               disabled={processingMedia}
               style={{ ...btnPrimary, opacity: processingMedia ? 0.5 : 1 }}

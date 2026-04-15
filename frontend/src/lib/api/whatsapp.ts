@@ -470,9 +470,9 @@ export interface WhatsappTemplate {
   [key: string]: any;
 }
 
-export async function connectWhatsapp(workspaceId: string): Promise<any> {
+export async function connectWhatsapp(_workspaceId: string): Promise<unknown> {
   // Uses existing session/status endpoint via proxy
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/status`);
+  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/status`);
   if (res.error) throw new Error('Failed to connect WhatsApp');
   return res.data;
 }
@@ -512,7 +512,7 @@ export async function sendWhatsappTemplate(params: {
   return res.data;
 }
 
-export async function listWhatsappTemplates(workspaceId: string): Promise<WhatsappTemplate[]> {
+export async function listWhatsappTemplates(_workspaceId: string): Promise<WhatsappTemplate[]> {
   // Templates are a WhatsApp Business API feature — not available with web provider
   // Returns empty array with graceful degradation
   return [];

@@ -12,6 +12,7 @@ export default function TermsPage() {
       <div className="max-w-3xl mx-auto px-6 py-12">
         {/* Back button */}
         <button
+          type="button"
           onClick={() => router.back()}
           className="flex items-center gap-2 text-white/60 hover:text-white transition-colors mb-8"
         >

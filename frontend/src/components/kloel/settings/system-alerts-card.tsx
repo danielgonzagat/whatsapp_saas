@@ -96,6 +96,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
                   </div>
                   {alert.type !== 'success' && hasDetail && (
                     <button
+                      type="button"
                       onClick={() => handleShowResolve(alert)}
                       className={`flex items-center gap-1 text-xs font-medium ${styles.text} hover:underline`}
                     >
@@ -115,6 +116,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-[#E0DDD8]">Como resolver</h3>
             <button
+              type="button"
               onClick={() => setShowResolveModal(false)}
               className="flex h-8 w-8 items-center justify-center rounded-full text-[#6E6E73] hover:bg-[#19191C]"
             >

@@ -558,6 +558,7 @@ export function AppShell({ children }: AppShellProps) {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() =>
                   startTransition(() => {
                     router.push('/settings');

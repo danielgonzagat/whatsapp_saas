@@ -162,7 +162,7 @@ function ensureTikTok(pixelId: string): void {
     const s = document.createElement('script');
     s.type = 'text/javascript';
     s.async = true;
-    s.src = 'https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=' + id + '&lib=ttq';
+    s.src = `https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${id}&lib=ttq`;
     document.head.appendChild(s);
   };
   ttq._i = ttq._i || {};

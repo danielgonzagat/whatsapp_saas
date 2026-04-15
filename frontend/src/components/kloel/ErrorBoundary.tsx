@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Component, type ReactNode, type ErrorInfo } from 'react';
+import { Component, type ReactNode, type ErrorInfo } from 'react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -108,6 +108,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </p>
 
             <button
+              type="button"
               onClick={this.handleReset}
               style={{
                 fontFamily: "'Sora', sans-serif",

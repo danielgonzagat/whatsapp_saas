@@ -2,7 +2,7 @@
 
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bt, Fd, PanelLoadingState, Tg, V, cs, is } from './product-nerve-center.shared';
 
@@ -20,7 +20,7 @@ export function ProductNerveCenterIATab() {
 
   const [aiCfg, setAiCfg] = useState<any>(null);
   const [aiLoading, setAiLoading] = useState(true);
-  const [aiSaving, setAiSaving] = useState(false);
+  const [_aiSaving, setAiSaving] = useState(false);
   const [aiSaved, setAiSaved] = useState(false);
   useEffect(() => {
     apiFetch(`/products/${productId}/ai-config`)

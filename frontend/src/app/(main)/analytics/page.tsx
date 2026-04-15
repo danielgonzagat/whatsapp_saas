@@ -55,7 +55,7 @@ const V = {
   pk: '#EC4899',
 };
 const R$ = (n: number) =>
-  'R$ ' + (n / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  `R$ ${(n / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const Fmt = (n: number) => n.toLocaleString('pt-BR');
 
 // ═══════════════════════════════════════════════════════════
@@ -76,7 +76,7 @@ function buildUrl(ep: string, f: RF = {}) {
     if (v !== undefined && v !== null && v !== '') p.set(k, String(v));
   });
   const qs = p.toString();
-  return `/reports/${ep}${qs ? '?' + qs : ''}`;
+  return `/reports/${ep}${qs ? `?${qs}` : ''}`;
 }
 const swrOpts = { keepPreviousData: true, revalidateOnFocus: false };
 function useReport<T = any>(ep: string, f: RF = {}) {
@@ -508,6 +508,7 @@ function Bt({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       style={{
         display: 'flex',
@@ -661,6 +662,7 @@ function Pagination({
       <div style={{ display: 'flex', gap: 2 }}>
         {Array.from({ length: Math.min(pages, 5) }, (_, i) => i + 1).map((p) => (
           <button
+            type="button"
             key={p}
             onClick={() => setPage(p)}
             style={{
@@ -708,7 +710,7 @@ function CTooltip({ active, payload, label }: any) {
           {typeof p.value === 'number' && p.value > 999
             ? R$(p.value)
             : typeof p.value === 'number' && p.value < 100
-              ? p.value.toFixed(2) + '%'
+              ? `${p.value.toFixed(2)}%`
               : Fmt(p.value)}
         </div>
       ))}
@@ -805,6 +807,7 @@ function FilterDrawer({
         >
           <span style={{ fontSize: 16, fontWeight: 700, color: V.t }}>Filtro avançado</span>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -1059,7 +1062,7 @@ export default function KloelRelatorio() {
                 .join(','),
             ),
           ].join('\n');
-          const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+          const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
           const csvUrl = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = csvUrl;
@@ -2328,7 +2331,7 @@ export default function KloelRelatorio() {
                   data={rows.map((d: any) => ({
                     name:
                       (d.source || '').length > 16
-                        ? (d.source || '').slice(0, 14) + '...'
+                        ? `${(d.source || '').slice(0, 14)}...`
                         : d.source,
                     vendas: d.vendas,
                   }))}
@@ -3223,6 +3226,7 @@ export default function KloelRelatorio() {
       <div style={SUBINTERFACE_PILL_ROW_STYLE}>
         {TABS.map((t) => (
           <button
+            type="button"
             key={t.k}
             onClick={() => {
               setActive(t.k);

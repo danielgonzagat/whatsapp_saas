@@ -532,6 +532,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-800">Propriedades</h2>
         <button
+          type="button"
           onClick={onClose}
           className="p-1 hover:bg-gray-100 rounded-md transition-colors"
           aria-label="Fechar painel de propriedades"

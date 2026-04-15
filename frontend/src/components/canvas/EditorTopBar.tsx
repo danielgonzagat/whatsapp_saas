@@ -136,6 +136,7 @@ export function EditorTopBar({
     >
       {/* Home */}
       <button
+        type="button"
         onClick={onBack}
         style={{
           background: 'none',
@@ -153,6 +154,7 @@ export function EditorTopBar({
       {/* ── Arquivo dropdown ── */}
       <div style={{ position: 'relative' }} data-dropdown>
         <button
+          type="button"
           onClick={() => toggleDropdown('file')}
           style={{
             background: dropdown === 'file' ? '#1C1C1F' : 'none',
@@ -170,6 +172,7 @@ export function EditorTopBar({
         {dropdown === 'file' && (
           <div style={ddMenu}>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -182,6 +185,7 @@ export function EditorTopBar({
               Novo design
             </button>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -192,6 +196,7 @@ export function EditorTopBar({
             </button>
             <div style={ddSep} />
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -200,6 +205,7 @@ export function EditorTopBar({
               <span>Download PNG</span>
             </button>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -208,6 +214,7 @@ export function EditorTopBar({
               <span>Download JPG</span>
             </button>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -216,6 +223,7 @@ export function EditorTopBar({
               <span>Download SVG</span>
             </button>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -230,6 +238,7 @@ export function EditorTopBar({
       {/* ── Redimensionar dropdown ── */}
       <div style={{ position: 'relative' }} data-dropdown>
         <button
+          type="button"
           onClick={() => toggleDropdown('resize')}
           style={{
             background: dropdown === 'resize' ? '#1C1C1F' : 'none',
@@ -251,6 +260,7 @@ export function EditorTopBar({
           <div style={{ ...ddMenu, minWidth: 260 }}>
             {RESIZE_PRESETS.map((p) => (
               <button
+                type="button"
                 key={p.l}
                 style={ddItem}
                 onMouseEnter={handleItemHover}
@@ -305,6 +315,7 @@ export function EditorTopBar({
                 onClick={(e) => e.stopPropagation()}
               />
               <button
+                type="button"
                 onClick={() => {
                   const w = Number.parseInt(customW);
                   const h = Number.parseInt(customH);
@@ -332,6 +343,7 @@ export function EditorTopBar({
       {/* ── Edicao dropdown ── */}
       <div style={{ position: 'relative' }} data-dropdown>
         <button
+          type="button"
           onClick={() => toggleDropdown('edit')}
           style={{
             background: dropdown === 'edit' ? '#1C1C1F' : 'none',
@@ -352,6 +364,7 @@ export function EditorTopBar({
         {dropdown === 'edit' && (
           <div style={ddMenu}>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -361,6 +374,7 @@ export function EditorTopBar({
               <span style={ddShortcut}>⌘Z</span>
             </button>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -371,6 +385,7 @@ export function EditorTopBar({
             </button>
             <div style={ddSep} />
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -380,6 +395,7 @@ export function EditorTopBar({
               <span style={ddShortcut}>⌘C</span>
             </button>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -389,6 +405,7 @@ export function EditorTopBar({
               <span style={ddShortcut}>⌘V</span>
             </button>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -398,6 +415,7 @@ export function EditorTopBar({
               <span style={ddShortcut}>⌘D</span>
             </button>
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -408,6 +426,7 @@ export function EditorTopBar({
             </button>
             <div style={ddSep} />
             <button
+              type="button"
               style={ddItem}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
@@ -474,6 +493,7 @@ export function EditorTopBar({
 
       {/* ── Undo / Redo ── */}
       <button
+        type="button"
         onClick={onUndo}
         style={{
           background: 'none',
@@ -487,6 +507,7 @@ export function EditorTopBar({
         {IC.undo(14)}
       </button>
       <button
+        type="button"
         onClick={onRedo}
         style={{
           background: 'none',
@@ -518,6 +539,7 @@ export function EditorTopBar({
 
       {/* ── Share/Export ── */}
       <button
+        type="button"
         onClick={() => onExport?.('png')}
         style={{
           background: '#E85D30',

@@ -100,7 +100,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
         }
         const data = await res.json();
         setPayment(data);
-      } catch (err) {
+      } catch (_err) {
         setError('Não foi possível conectar ao servidor');
       } finally {
         setLoading(false);
@@ -220,6 +220,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                         {payment.pixKey}
                       </code>
                       <button
+                        type="button"
                         onClick={copyPixKey}
                         className="p-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors"
                       >

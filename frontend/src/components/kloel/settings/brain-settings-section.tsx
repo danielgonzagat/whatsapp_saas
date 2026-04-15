@@ -70,6 +70,7 @@ function AccordionSection({
   return (
     <div className="rounded-md border border-[#222226] bg-[#111113] shadow-sm">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label={`${isOpen ? 'Fechar' : 'Abrir'} ${title}`}
         aria-expanded={isOpen}
@@ -719,7 +720,7 @@ export function BrainSettingsSection() {
   const hasCheckout = products.some((p) => p.activePlansCount > 0);
   const hasVoiceTone = voiceTone.style !== '';
   const hasFaq = faqs.length > 0;
-  const hasRules = rules.length > 0;
+  const _hasRules = rules.length > 0;
   const checkoutLinksCount = useMemo(
     () => products.reduce((total, product) => total + product.activePlansCount, 0),
     [products],
@@ -922,6 +923,7 @@ export function BrainSettingsSection() {
                     </div>
                     <div className="flex gap-1">
                       <button
+                        type="button"
                         onClick={() =>
                           setEditingProductId(editingProductId === product.id ? null : product.id)
                         }
@@ -930,6 +932,7 @@ export function BrainSettingsSection() {
                         <Sparkles className="h-4 w-4" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => void handleDeleteProduct(product.id)}
                         className="rounded-lg p-2 text-red-500 hover:bg-red-50"
                       >
@@ -1053,7 +1056,10 @@ export function BrainSettingsSection() {
                   className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
                 >
                   {persona}
-                  <button onClick={() => setPersonas(personas.filter((_, idx) => idx !== i))}>
+                  <button
+                    type="button"
+                    onClick={() => setPersonas(personas.filter((_, idx) => idx !== i))}
+                  >
                     <X className="h-3 w-3 text-gray-500 hover:text-gray-700" />
                   </button>
                 </span>
@@ -1165,7 +1171,10 @@ export function BrainSettingsSection() {
                     {i + 1}
                   </span>
                   <span className="flex-1 text-sm text-gray-700">{rule}</span>
-                  <button onClick={() => setRules(rules.filter((_, idx) => idx !== i))}>
+                  <button
+                    type="button"
+                    onClick={() => setRules(rules.filter((_, idx) => idx !== i))}
+                  >
                     <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
                   </button>
                 </div>
@@ -1203,7 +1212,10 @@ export function BrainSettingsSection() {
                 <div key={faq.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                   <div className="mb-2 flex items-start justify-between">
                     <p className="font-medium text-gray-900">{faq.question}</p>
-                    <button onClick={() => setFaqs(faqs.filter((f) => f.id !== faq.id))}>
+                    <button
+                      type="button"
+                      onClick={() => setFaqs(faqs.filter((f) => f.id !== faq.id))}
+                    >
                       <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
                     </button>
                   </div>

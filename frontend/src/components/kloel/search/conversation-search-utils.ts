@@ -1,3 +1,5 @@
+const S_RE = /\s+/;
+const S_DE_S_RE = /\s+de\s+/i;
 export interface ConversationSearchResult {
   id: string;
   title: string;
@@ -35,7 +37,7 @@ export function highlightPlainText(value: string, query: string): string {
   const text = String(value || '').trim();
   const tokens = String(query || '')
     .trim()
-    .split(/\s+/)
+    .split(S_RE)
     .map((token) => token.trim())
     .filter(Boolean)
     .sort((left, right) => right.length - left.length);
@@ -76,7 +78,7 @@ export function formatConversationSearchDateLabel(value?: string | Date, now = n
     month: 'short',
   })
     .format(date)
-    .replace(/\s+de\s+/i, ' ')
+    .replace(S_DE_S_RE, ' ')
     .replace('.', '');
 }
 

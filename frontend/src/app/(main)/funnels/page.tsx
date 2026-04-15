@@ -88,6 +88,7 @@ export default function FunnelsPage() {
           <p className="mt-2 text-sm text-[#6E6E73]">Faça login para operar Inbox + Flows.</p>
           <div className="mt-6 flex items-center gap-3">
             <button
+              type="button"
               onClick={() => openAuthModal('login')}
               className="rounded-xl bg-[#E85D30] px-4 py-2 text-sm font-semibold text-[#0A0A0C]"
             >
@@ -144,6 +145,7 @@ export default function FunnelsPage() {
             Editor de Flow
           </Link>
           <button
+            type="button"
             onClick={refresh}
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-xl border border-[#222226] bg-[#111113] px-4 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
@@ -228,6 +230,7 @@ export default function FunnelsPage() {
 
                     return (
                       <button
+                        type="button"
                         key={c.id}
                         onClick={() =>
                           router.push(`/inbox?conversationId=${encodeURIComponent(c.id)}`)
@@ -310,6 +313,7 @@ export default function FunnelsPage() {
 
                     return (
                       <button
+                        type="button"
                         key={exec.id}
                         onClick={() =>
                           router.push(flowId ? `/flow?id=${encodeURIComponent(flowId)}` : '/flow')

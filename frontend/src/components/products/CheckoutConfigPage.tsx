@@ -400,6 +400,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
               />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
+                  type="button"
                   onClick={() => handleUpdate(px.id)}
                   disabled={saving}
                   style={{
@@ -418,6 +419,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                   {saving ? 'Salvando...' : 'Salvar'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setEditId(null)}
                   style={{
                     flex: 1,
@@ -465,6 +467,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                 )}
               </div>
               <button
+                type="button"
                 onClick={() => {
                   setEditId(px.id);
                   setEditForm({
@@ -487,6 +490,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                 Editar
               </button>
               <button
+                type="button"
                 onClick={() => handleDelete(px.id)}
                 style={{
                   background: 'none',
@@ -569,6 +573,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
             )}
             <div style={{ display: 'flex', gap: 8 }}>
               <button
+                type="button"
                 onClick={handleCreate}
                 disabled={saving}
                 style={{
@@ -587,6 +592,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                 {saving ? 'Adicionando...' : 'Adicionar pixel'}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setShowAdd(false);
                   setError('');
@@ -610,6 +616,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
         </div>
       ) : (
         <button
+          type="button"
           onClick={() => setShowAdd(true)}
           style={{
             padding: '8px 16px',
@@ -955,6 +962,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
 
           {/* ── Save Button ── */}
           <button
+            type="button"
             onClick={() => onSave(state)}
             style={{
               width: '100%',

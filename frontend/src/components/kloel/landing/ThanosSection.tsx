@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { THANOS_ICONS } from './thanos-icons';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
@@ -554,7 +554,7 @@ export default function ThanosSection() {
             particle.vx += particle.dvx * 0.008 * particle.ramp * frameScale;
             particle.vy += particle.dvy * 0.008 * particle.ramp * frameScale;
             particle.vy += 0.035 * particle.ramp * frameScale;
-            const damping = Math.pow(0.993, frameScale);
+            const damping = 0.993 ** frameScale;
             particle.vx *= damping;
             particle.vy *= damping;
             particle.x += particle.vx * frameScale;
@@ -564,7 +564,7 @@ export default function ThanosSection() {
             particle.r += (particle.tr - particle.r) * 0.03 * ca * frameScale;
             particle.g += (particle.tg - particle.g) * 0.03 * ca * frameScale;
             particle.b += (particle.tb - particle.b) * 0.03 * ca * frameScale;
-            particle.size *= Math.pow(particle.shrink, frameScale);
+            particle.size *= particle.shrink ** frameScale;
             particle.life -= particle.decay * frameScale;
 
             if (

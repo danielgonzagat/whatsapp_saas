@@ -239,6 +239,7 @@ export function KloelChatBubble({
 
         {/* Chat bubble button */}
         <button
+          type="button"
           onClick={() => setOpen(true)}
           style={{
             width: 56,
@@ -316,6 +317,7 @@ export function KloelChatBubble({
           </Link>
         </div>
         <button
+          type="button"
           aria-label="Fechar chat"
           onClick={() => setOpen(false)}
           style={{
@@ -424,6 +426,7 @@ export function KloelChatBubble({
           }}
         />
         <button
+          type="button"
           onClick={sendMessage}
           disabled={loading || !input.trim()}
           style={{

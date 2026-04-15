@@ -49,7 +49,7 @@ export class FontManager {
   }
 
   /** Load a single font (kept for backward compat) */
-  loadFont(fontName: string): void {
+  loadFont(_fontName: string): void {
     this.loadAllFonts();
   }
 

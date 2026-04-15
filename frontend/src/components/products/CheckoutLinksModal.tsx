@@ -162,6 +162,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
             Links publicos deste plano
           </h2>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -241,6 +242,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
                   {link.url}
                 </div>
                 <button
+                  type="button"
                   onClick={() => handleCopy(link.url, index)}
                   style={{
                     display: 'flex',

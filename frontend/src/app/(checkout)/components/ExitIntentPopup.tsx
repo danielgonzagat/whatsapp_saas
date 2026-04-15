@@ -133,6 +133,7 @@ export default function ExitIntentPopup({
           {couponCode}
         </div>
         <button
+          type="button"
           onClick={() => {
             onApplyCoupon?.(couponCode!);
             setVisible(false);
@@ -153,6 +154,7 @@ export default function ExitIntentPopup({
           Aplicar cupom
         </button>
         <button
+          type="button"
           onClick={() => setVisible(false)}
           style={{
             background: 'none',

@@ -693,6 +693,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   }}
                 />
                 <button
+                  type="button"
                   onClick={handleHomeSubmit}
                   style={{
                     width: 30,
@@ -806,6 +807,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                     }}
                   >
                     <button
+                      type="button"
                       onClick={() => handleCopyMessage(msg.id, msg.content)}
                       style={{
                         background: 'transparent',
@@ -859,6 +861,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                       {isUserCopied ? 'Copiado' : 'Copiar'}
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleEditMessage(msg.content)}
                       style={{
                         background: 'transparent',
@@ -1002,6 +1005,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                       }}
                     >
                       <button
+                        type="button"
                         onClick={() => handleCopyMessage(msg.id, msg.content)}
                         style={{
                           background: 'transparent',
@@ -1147,6 +1151,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             {/* Stop or Send button */}
             {isWaitingForResponse ? (
               <button
+                type="button"
                 onClick={handleStopResponse}
                 style={{
                   width: 28,
@@ -1170,6 +1175,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               </button>
             ) : (
               <button
+                type="button"
                 onClick={handleChatSubmit}
                 disabled={!chatInput.trim()}
                 style={{

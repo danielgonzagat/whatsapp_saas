@@ -8,7 +8,7 @@ import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
 import { PRODUCT_CATEGORIES } from '@/lib/categories';
-import { colors, shadows, typography } from '@/lib/design-tokens';
+import { colors, typography } from '@/lib/design-tokens';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 import {
   ArrowLeft,
@@ -18,7 +18,6 @@ import {
   ClipboardList,
   CreditCard,
   Layers,
-  Loader2,
   Monitor,
   Package,
   Pencil,
@@ -27,7 +26,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { mutate } from 'swr';
 
 // ============================================
@@ -206,7 +205,7 @@ function MonitorStepper({
         {filtered.map((step, idx) => {
           const isActive = step.id === currentStep;
           const isCompleted = step.id < currentStep;
-          const isFuture = step.id > currentStep;
+          const _isFuture = step.id > currentStep;
 
           return (
             <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
@@ -700,6 +699,7 @@ export default function NewProductPage() {
                     >
                       {tag}
                       <button
+                        type="button"
                         onClick={() => handleTagRemove(tag)}
                         style={{
                           background: 'none',
@@ -726,6 +726,7 @@ export default function NewProductPage() {
                   const Icon = opt.icon;
                   return (
                     <button
+                      type="button"
                       key={opt.value}
                       onClick={() => updateForm({ format: opt.value })}
                       style={{
@@ -869,6 +870,7 @@ export default function NewProductPage() {
                   const selected = form.paymentType === opt.value;
                   return (
                     <button
+                      type="button"
                       key={opt.value}
                       onClick={() => updateForm({ paymentType: opt.value })}
                       style={{
@@ -962,6 +964,7 @@ export default function NewProductPage() {
                   const selected = form.checkoutType === opt.value;
                   return (
                     <button
+                      type="button"
                       key={opt.value}
                       onClick={() => updateForm({ checkoutType: opt.value })}
                       style={{
@@ -1201,6 +1204,7 @@ export default function NewProductPage() {
                   const selected = form.shippingResponsible === opt.value;
                   return (
                     <button
+                      type="button"
                       key={opt.value}
                       onClick={() => updateForm({ shippingResponsible: opt.value })}
                       style={{
@@ -1324,6 +1328,7 @@ export default function NewProductPage() {
             {/* Toggle */}
             <MonitorInputField label="Habilitar afiliados">
               <button
+                type="button"
                 onClick={() => updateForm({ affiliatesEnabled: !form.affiliatesEnabled })}
                 style={{
                   display: 'flex',
@@ -1416,6 +1421,7 @@ export default function NewProductPage() {
                       const selected = form.affiliateApprovalMode === opt.value;
                       return (
                         <button
+                          type="button"
                           key={opt.value}
                           onClick={() => updateForm({ affiliateApprovalMode: opt.value })}
                           style={{
@@ -1489,6 +1495,7 @@ export default function NewProductPage() {
                   const selected = form.billingType === opt.value;
                   return (
                     <button
+                      type="button"
                       key={opt.value}
                       onClick={() => updateForm({ billingType: opt.value })}
                       style={{
@@ -1764,6 +1771,7 @@ export default function NewProductPage() {
           }}
         >
           <button
+            type="button"
             onClick={goPrev}
             style={{
               display: 'flex',
@@ -1794,6 +1802,7 @@ export default function NewProductPage() {
 
           {!isLastStep ? (
             <button
+              type="button"
               onClick={goNext}
               style={{
                 display: 'flex',
@@ -1823,6 +1832,7 @@ export default function NewProductPage() {
             </button>
           ) : (
             <button
+              type="button"
               onClick={handleSave}
               disabled={saving || !form.name}
               style={{
@@ -1919,6 +1929,7 @@ function ReviewSection({
           {title}
         </h3>
         <button
+          type="button"
           onClick={onEdit}
           style={{
             display: 'flex',

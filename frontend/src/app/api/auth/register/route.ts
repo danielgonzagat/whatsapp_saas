@@ -37,9 +37,8 @@ export async function POST(request: NextRequest) {
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };
 
-    const finalName = (name && name.trim()) || deriveName(email);
-    const finalWorkspaceName =
-      (workspaceName && workspaceName.trim()) || `${finalName}'s Workspace`;
+    const finalName = name?.trim() || deriveName(email);
+    const finalWorkspaceName = workspaceName?.trim() || `${finalName}'s Workspace`;
 
     if (password.length < 8) {
       return NextResponse.json(

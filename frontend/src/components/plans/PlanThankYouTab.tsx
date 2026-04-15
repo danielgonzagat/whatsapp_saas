@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
 /* ── Design Tokens ── */
-const BG_VOID = '#0A0A0C';
+const _BG_VOID = '#0A0A0C';
 const BG_SURFACE = '#111113';
 const BG_ELEVATED = '#19191C';
 const BORDER = '#222226';
@@ -15,7 +15,7 @@ const TEXT_DIM = '#3A3A3F';
 const EMBER = '#E85D30';
 const GREEN = '#10B981';
 const FONT_BODY = "'Sora', sans-serif";
-const FONT_MONO = "'JetBrains Mono', monospace";
+const _FONT_MONO = "'JetBrains Mono', monospace";
 
 /* ── Inline SVG Icons ── */
 const LinkIcon = () => (
@@ -103,7 +103,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 export function PlanThankYouTab({ planId, productId }: { planId: string; productId: string }) {
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [urlCard, setUrlCard] = useState('');
   const [urlBoleto, setUrlBoleto] = useState('');
   const [urlPix, setUrlPix] = useState('');
@@ -294,6 +294,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
       <div style={{ display: 'flex', gap: '12px' }}>
         {/* Ember: Open Editor */}
         <button
+          type="button"
           onClick={() => {
             window.location.href = `/checkout/${planId}`;
           }}
@@ -327,6 +328,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
 
         {/* Secondary: Preview */}
         <button
+          type="button"
           onClick={() => {
             window.open(`/preview/${planId}`, '_blank');
           }}
@@ -375,6 +377,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
       {/* Save Button */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '4px' }}>
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving}
           style={{

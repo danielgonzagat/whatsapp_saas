@@ -121,9 +121,7 @@ async function fetchBackendConsent(
 
       const data = await response.json().catch(() => ({}));
       return { response, data };
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   return null;

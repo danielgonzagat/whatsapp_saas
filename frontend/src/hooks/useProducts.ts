@@ -2,7 +2,7 @@
 
 import { apiFetch } from '@/lib/api';
 import { swrFetcher } from '@/lib/fetcher';
-import { unwrapArray, unwrapPaginated } from '@/lib/normalizer';
+import { unwrapArray } from '@/lib/normalizer';
 import useSWR, { useSWRConfig } from 'swr';
 
 /* ── Response types ── */
@@ -20,10 +20,9 @@ interface ProductResponse {
 /* ── List products with optional filters ── */
 export function useProducts(params?: { category?: string; active?: string; search?: string }) {
   const qs = params
-    ? '?' +
-      new URLSearchParams(
+    ? `?${new URLSearchParams(
         Object.entries(params).filter(([, v]) => v) as [string, string][],
-      ).toString()
+      ).toString()}`
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/products${qs}`, swrFetcher);
   const d = data as ProductsResponse | undefined;

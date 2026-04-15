@@ -1,7 +1,7 @@
 'use client';
 
 import { buildCheckoutLinksForPlan } from '@/lib/checkout-links';
-import { Bt, M, Modal, V, cs } from './product-nerve-center.shared';
+import { Bt, M, Modal, V } from './product-nerve-center.shared';
 import type { ProductEditorPlanView } from './product-nerve-center.view-models';
 
 interface ProductNerveCenterLinksModalProps {

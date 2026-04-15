@@ -92,6 +92,7 @@ export default function CanvasModelos() {
             }}
           />
           <button
+            type="button"
             onClick={handleGenerate}
             disabled={generating || !aiPrompt.trim()}
             style={{
@@ -112,6 +113,7 @@ export default function CanvasModelos() {
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
           <button
+            type="button"
             onClick={() => setActiveTag(null)}
             style={{
               padding: '4px 10px',
@@ -129,6 +131,7 @@ export default function CanvasModelos() {
           </button>
           {TEMPLATE_TAGS.map((t) => (
             <button
+              type="button"
               key={t}
               onClick={() => setActiveTag(activeTag === t ? null : t)}
               style={{
@@ -228,12 +231,13 @@ function TemplateCard({
 
   return (
     <button
+      type="button"
       onClick={() => onClick(tpl)}
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
         background: h ? '#151517' : '#111113',
-        border: `1px solid ${h ? c1 + '35' : '#1C1C1F'}`,
+        border: `1px solid ${h ? `${c1}35` : '#1C1C1F'}`,
         borderRadius: 6,
         padding: 0,
         cursor: 'pointer',

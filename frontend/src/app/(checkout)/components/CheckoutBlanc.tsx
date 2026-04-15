@@ -1,7 +1,6 @@
 'use client';
 
 import type {
-  PublicCheckoutMerchantInfo,
   PublicCheckoutTestimonial,
   PublicCheckoutThemeProps,
 } from '@/lib/public-checkout-contract';
@@ -15,7 +14,6 @@ import {
   ChUp,
   type CheckoutThemeInputTokens,
   type CheckoutThemeStepTokens,
-  Chk,
   Mn,
   PAYMENT_BADGES,
   Pl,
@@ -405,6 +403,7 @@ export default function CheckoutBlanc({
           }}
         >
           <button
+            type="button"
             onClick={() => setSummaryOpen((value) => !value)}
             style={{
               width: '100%',
@@ -465,6 +464,7 @@ export default function CheckoutBlanc({
                   }}
                 >
                   <button
+                    type="button"
                     onClick={() => setQty((value) => clampQty(value - 1))}
                     style={{
                       padding: '10px 22px',
@@ -487,6 +487,7 @@ export default function CheckoutBlanc({
                     {qty}
                   </span>
                   <button
+                    type="button"
                     onClick={() => setQty((value) => clampQty(value + 1))}
                     style={{
                       padding: '10px 22px',
@@ -540,6 +541,7 @@ export default function CheckoutBlanc({
                       />
                     </div>
                     <button
+                      type="button"
                       onClick={() => void applyCoupon()}
                       style={{
                         background: 'none',
@@ -695,6 +697,7 @@ export default function CheckoutBlanc({
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
                 <button
+                  type="button"
                   onClick={() => setStep(1)}
                   style={{
                     marginLeft: 'auto',
@@ -821,6 +824,7 @@ export default function CheckoutBlanc({
                 <div style={{ marginTop: 14, fontSize: 13, color: '#d14343' }}>{submitError}</div>
               ) : null}
               <button
+                type="button"
                 onClick={() => goStep(2)}
                 style={{
                   width: '100%',
@@ -888,6 +892,7 @@ export default function CheckoutBlanc({
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                   <button
+                    type="button"
                     onClick={() => setStep(2)}
                     style={{
                       marginLeft: 'auto',
@@ -1092,6 +1097,7 @@ export default function CheckoutBlanc({
                   <div style={{ marginTop: 14, fontSize: 13, color: '#d14343' }}>{submitError}</div>
                 ) : null}
                 <button
+                  type="button"
                   onClick={() => goStep(3)}
                   style={{
                     width: '100%',
@@ -1507,6 +1513,7 @@ export default function CheckoutBlanc({
               ) : null}
 
               <button
+                type="button"
                 onClick={() => void finalizeOrder()}
                 disabled={isSubmitting}
                 style={{
@@ -1607,6 +1614,7 @@ export default function CheckoutBlanc({
                     />
                   </div>
                   <button
+                    type="button"
                     onClick={() => void applyCoupon()}
                     style={{
                       background: 'none',
@@ -1739,6 +1747,7 @@ export default function CheckoutBlanc({
                   }}
                 >
                   <button
+                    type="button"
                     onClick={() => setQty((value) => clampQty(value - 1))}
                     style={{
                       padding: '8px 18px',
@@ -1757,6 +1766,7 @@ export default function CheckoutBlanc({
                     {qty}
                   </span>
                   <button
+                    type="button"
                     onClick={() => setQty((value) => clampQty(value + 1))}
                     style={{
                       padding: '8px 18px',
@@ -1986,6 +1996,7 @@ export default function CheckoutBlanc({
             ) : null}
             <div style={{ display: 'flex', gap: 10 }}>
               <button
+                type="button"
                 onClick={() => {
                   setShowCouponPopup(false);
                   setCouponPopupHandled(true);
@@ -2004,6 +2015,7 @@ export default function CheckoutBlanc({
                 {config?.couponPopupDismiss || 'Agora não'}
               </button>
               <button
+                type="button"
                 onClick={() => void applyCoupon(popupCouponCode)}
                 style={{
                   flex: 1.25,

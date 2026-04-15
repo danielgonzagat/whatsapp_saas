@@ -2,7 +2,7 @@
 
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import {
   Bg,

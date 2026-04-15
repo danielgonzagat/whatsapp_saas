@@ -14,7 +14,6 @@ import {
 } from '@/hooks/usePartnerships';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { affiliateApi, partnershipsApi } from '@/lib/api/misc';
-import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { buildPayUrl } from '@/lib/subdomains';
 import { usePathname, useRouter } from 'next/navigation';
@@ -547,6 +546,7 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
             const isActive = tab === t.key;
             return (
               <button
+                type="button"
                 key={t.key}
                 onClick={() => handleTabChange(t.key)}
                 style={{
@@ -677,6 +677,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         }}
       >
         <button
+          type="button"
           onClick={onClose}
           style={{
             position: 'absolute',
@@ -755,6 +756,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
           {inviteRoles.map((r) => (
             <button
+              type="button"
               key={r.value}
               onClick={() => setRole(r.value)}
               style={{
@@ -783,6 +785,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         {/* Actions */}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button
+            type="button"
             onClick={onClose}
             style={{
               padding: '9px 18px',
@@ -799,6 +802,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             Cancelar
           </button>
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={sending || !email.trim()}
             style={{
@@ -923,6 +927,7 @@ function AffiliateDetailModal({
         }}
       >
         <button
+          type="button"
           onClick={onClose}
           style={{
             position: 'absolute',
@@ -1240,6 +1245,7 @@ function AffiliateDetailModal({
               },
             ].map((item) => (
               <button
+                type="button"
                 key={item.label}
                 onClick={item.action}
                 style={{
@@ -1269,6 +1275,7 @@ function AffiliateDetailModal({
         {/* Actions */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button
+            type="button"
             onClick={onChat}
             style={{
               flex: 1,
@@ -1291,6 +1298,7 @@ function AffiliateDetailModal({
             Abrir chat
           </button>
           <button
+            type="button"
             onClick={handleCopyLink}
             style={{
               display: 'flex',
@@ -1312,6 +1320,7 @@ function AffiliateDetailModal({
             Copiar link
           </button>
           <button
+            type="button"
             onClick={onRevoke}
             style={{
               display: 'flex',
@@ -1553,6 +1562,7 @@ function TabColaboradores({
           />
         </div>
         <button
+          type="button"
           onClick={() => setShowInviteModal(true)}
           style={{
             display: 'flex',
@@ -1888,7 +1898,7 @@ function TabAfiliados({
     return true;
   });
 
-  const maxRevenue = Math.max(...filtered.map((a: any) => a.revenue || 0), 1);
+  const _maxRevenue = Math.max(...filtered.map((a) => a.revenue || 0), 1);
 
   const FILTER_OPTIONS = [
     { value: 'todos', label: 'Todos' },
@@ -1976,6 +1986,7 @@ function TabAfiliados({
               {card.desc}
             </div>
             <button
+              type="button"
               onClick={card.action}
               style={{
                 marginTop: 12,
@@ -2146,6 +2157,7 @@ function TabAfiliados({
         <div style={{ display: 'flex', gap: 6 }}>
           {FILTER_OPTIONS.map((opt) => (
             <button
+              type="button"
               key={opt.value}
               onClick={() => setFilterType(opt.value)}
               style={{
@@ -2319,7 +2331,7 @@ function TabAfiliados({
               transition: 'border-color 150ms ease',
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = C.ember + '40';
+              (e.currentTarget as HTMLElement).style.borderColor = `${C.ember}40`;
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLElement).style.borderColor = C.border;
@@ -2581,7 +2593,7 @@ function MyAffiliateLinks() {
   };
 
   const fmtMoney = (n: number) =>
-    'R$ ' + Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    `R$ ${Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
   return (
     <div style={{ marginTop: 32, borderTop: `1px solid ${C.divider}`, paddingTop: 28 }}>
@@ -2704,6 +2716,7 @@ function MyAffiliateLinks() {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() =>
                   navigator.clipboard
                     .writeText(buildPayUrl(`/${link.code || link.id}`, window.location.host))
@@ -2778,6 +2791,7 @@ function MyAffiliateLinks() {
             Sugestoes por IA
           </div>
           <button
+            type="button"
             onClick={handleSuggest}
             disabled={suggestLoading}
             style={{
@@ -2827,6 +2841,7 @@ function MyAffiliateLinks() {
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleSave(p.id)}
                     disabled={saving[p.id]}
                     style={{
@@ -2899,6 +2914,7 @@ function MyAffiliateLinks() {
               }}
             />
             <button
+              type="button"
               onClick={handleSearch}
               disabled={!searchQuery.trim() || searchLoading}
               style={{
@@ -2948,6 +2964,7 @@ function MyAffiliateLinks() {
                       </div>
                     </div>
                     <button
+                      type="button"
                       onClick={() => handleSave(p.id)}
                       disabled={saving[p.id]}
                       style={{
@@ -3509,6 +3526,7 @@ function TabChat({
                 }}
               />
               <button
+                type="button"
                 onClick={handleSend}
                 disabled={!chatInput.trim()}
                 style={{

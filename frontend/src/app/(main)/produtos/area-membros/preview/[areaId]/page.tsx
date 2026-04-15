@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
-const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
+const _MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 function toEmbed(url: string): string {
   return toYouTubeEmbedUrl(url) || url;
@@ -215,6 +215,7 @@ export default function MemberAreaPreviewPage() {
             modules.map((mod) => (
               <div key={mod.id} style={{ marginTop: 8 }}>
                 <button
+                  type="button"
                   onClick={() => {
                     setActiveModuleId(mod.id);
                     if (mod.lessons?.[0]) setActiveLessonId(mod.lessons[0].id);
@@ -237,6 +238,7 @@ export default function MemberAreaPreviewPage() {
                 {activeModuleId === mod.id &&
                   mod.lessons?.map((les) => (
                     <button
+                      type="button"
                       key={les.id}
                       onClick={() => setActiveLessonId(les.id)}
                       style={{

@@ -2,7 +2,7 @@
 
 import { API_BASE } from '@/lib/http';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { acceptUpsell, declineUpsell } from '../../../hooks/useCheckout';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -268,6 +268,7 @@ export default function UpsellPage() {
 
         {/* Accept button */}
         <button
+          type="button"
           onClick={handleAccept}
           disabled={submitting}
           style={{
@@ -292,6 +293,7 @@ export default function UpsellPage() {
 
         {/* Decline link */}
         <button
+          type="button"
           onClick={handleDecline}
           disabled={submitting}
           style={{

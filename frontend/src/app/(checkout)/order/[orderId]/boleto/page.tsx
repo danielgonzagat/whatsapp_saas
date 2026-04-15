@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
 
 export default function BoletoPaymentPage() {
@@ -120,6 +120,7 @@ export default function BoletoPaymentPage() {
         {/* Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <button
+            type="button"
             onClick={handleCopy}
             disabled={!barcode}
             style={{

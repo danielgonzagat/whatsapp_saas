@@ -346,6 +346,7 @@ export function ProductIATab({ productId }: { productId: string }) {
             </div>
           ))}
           <button
+            type="button"
             onClick={() => update('objections', [...objections, { q: '', a: '' }])}
             style={{
               width: '100%',
@@ -501,6 +502,7 @@ export function ProductIATab({ productId }: { productId: string }) {
       </div>
 
       <button
+        type="button"
         onClick={save}
         disabled={saving}
         aria-label="Salvar configurações da IA"

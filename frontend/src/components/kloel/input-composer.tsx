@@ -79,6 +79,7 @@ export function InputComposer({ value, onChange, onSend }: InputComposerProps) {
         />
 
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={!value.trim()}
           style={{

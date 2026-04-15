@@ -23,7 +23,7 @@ function buildUrl(endpoint: string, filters: ReportFilters = {}) {
     if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
   });
   const qs = params.toString();
-  return `/reports/${endpoint}${qs ? '?' + qs : ''}`;
+  return `/reports/${endpoint}${qs ? `?${qs}` : ''}`;
 }
 
 const opts = { keepPreviousData: true, revalidateOnFocus: false };
@@ -138,7 +138,7 @@ function buildAdSpendUrl(f: AdSpendFilters = {}) {
   if (f.startDate) params.set('startDate', f.startDate);
   if (f.endDate) params.set('endDate', f.endDate);
   const qs = params.toString();
-  return `/reports/ad-spend${qs ? '?' + qs : ''}`;
+  return `/reports/ad-spend${qs ? `?${qs}` : ''}`;
 }
 
 export function useAdSpends(f: AdSpendFilters = {}) {

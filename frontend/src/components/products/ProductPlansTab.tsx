@@ -104,6 +104,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
           Planos cadastrados
         </h3>
         <button
+          type="button"
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
@@ -205,6 +206,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
             render: (_, row) => (
               <div className="flex gap-1.5">
                 <button
+                  type="button"
                   onClick={() => router.push(`/products/${productId}?tab=planos`)}
                   title="Editar no Nerve Center"
                   className="rounded-full p-1.5"
@@ -213,6 +215,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
                 <button
+                  type="button"
                   onClick={async () => {
                     try {
                       await apiFetch(`/products/${productId}/plans`, {
@@ -236,6 +239,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   <Eye className="h-3.5 w-3.5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => setLinkModalPlan(row)}
                   title="Links de checkout"
                   className="rounded-full p-1.5"
@@ -274,7 +278,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
               <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
                 Acessos operacionais — {linkModalPlan.name}
               </h3>
-              <button onClick={() => setLinkModalPlan(null)}>
+              <button type="button" onClick={() => setLinkModalPlan(null)}>
                 <X className="h-5 w-5" style={{ color: colors.text.dust }} />
               </button>
             </div>
@@ -326,6 +330,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                     {link.url}
                   </span>
                   <button
+                    type="button"
                     onClick={() => copyUrl(link.url, link.label)}
                     style={{
                       padding: '5px 12px',
@@ -366,7 +371,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
               <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
                 Novo plano
               </h3>
-              <button onClick={() => setShowModal(false)}>
+              <button type="button" onClick={() => setShowModal(false)}>
                 <X className="h-5 w-5" style={{ color: colors.text.dim }} />
               </button>
             </div>
@@ -439,6 +444,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={() => setShowModal(false)}
                 className="rounded-md px-4 py-2 text-sm font-medium"
                 style={{
@@ -450,6 +456,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 Fechar
               </button>
               <button
+                type="button"
                 onClick={handleCreate}
                 disabled={creating || !newPlan.name}
                 className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"

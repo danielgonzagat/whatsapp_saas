@@ -34,7 +34,6 @@ import {
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import {
   appendAssistantTraceFromEvent,
-  createAssistantSystemTraceEntry,
   getAssistantProcessingTrace,
   getAssistantResponseVersions,
   summarizeAssistantProcessingTrace,
@@ -46,7 +45,6 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   type DragEvent as ReactDragEvent,
-  type RefObject,
   useCallback,
   useEffect,
   useMemo,

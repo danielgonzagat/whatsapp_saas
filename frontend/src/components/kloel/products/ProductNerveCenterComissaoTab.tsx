@@ -425,6 +425,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
         <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
           {['B', 'I', 'U'].map((t) => (
             <button
+              type="button"
               key={t}
               onClick={() =>
                 document.execCommand(t === 'B' ? 'bold' : t === 'I' ? 'italic' : 'underline')
@@ -447,6 +448,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
             </button>
           ))}
           <button
+            type="button"
             onClick={() => {
               const url = prompt('URL do link:');
               if (url) document.execCommand('createLink', false, url);
@@ -541,6 +543,7 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
         <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
           {['B', 'I', 'U'].map((t) => (
             <button
+              type="button"
               key={t}
               onClick={() =>
                 document.execCommand(t === 'B' ? 'bold' : t === 'I' ? 'italic' : 'underline')
@@ -563,6 +566,7 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
             </button>
           ))}
           <button
+            type="button"
             onClick={() => {
               const url = prompt('URL do link:');
               if (url) document.execCommand('createLink', false, url);
@@ -942,6 +946,7 @@ function CoprodSubTab({
               <div style={{ fontSize: 9, color: V.t3 }}>comissão</div>
             </div>
             <button
+              type="button"
               onClick={() => handleDelete(c.id)}
               style={{
                 background: 'transparent',

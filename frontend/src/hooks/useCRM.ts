@@ -34,10 +34,9 @@ export function useContacts(params?: {
   tag?: string;
 }) {
   const qs = params
-    ? '?' +
-      new URLSearchParams(
+    ? `?${new URLSearchParams(
         Object.entries(params).filter(([, v]) => v) as [string, string][],
-      ).toString()
+      ).toString()}`
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/crm/contacts${qs}`, swrFetcher);
   const result: NormalizedList<unknown> = unwrapPaginated(data, 'contacts');
@@ -69,10 +68,9 @@ export function usePipelines() {
 /* ── Deals ── */
 export function useDeals(params?: { pipeline?: string; stage?: string; search?: string }) {
   const qs = params
-    ? '?' +
-      new URLSearchParams(
+    ? `?${new URLSearchParams(
         Object.entries(params).filter(([, v]) => v) as [string, string][],
-      ).toString()
+      ).toString()}`
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/crm/deals${qs}`, swrFetcher);
   const items = unwrapArray(data, 'deals');

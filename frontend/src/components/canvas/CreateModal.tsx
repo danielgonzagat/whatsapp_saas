@@ -119,6 +119,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             />
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -147,6 +148,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
           >
             {CATEGORIES.map((c) => (
               <button
+                type="button"
                 key={c.id}
                 onClick={() => {
                   setCat(c.id);
@@ -330,6 +332,7 @@ function CustomSizePanel({
           </select>
         </div>
         <button
+          type="button"
           onClick={() =>
             openEditor({
               l: 'Personalizado',
@@ -364,6 +367,7 @@ function CustomSizePanel({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {RECENT_DIMENSIONS.map((d, i) => (
           <button
+            type="button"
             key={i}
             onClick={() =>
               openEditor({
@@ -518,6 +522,7 @@ function FormatGrid({
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
           {SOCIAL_PLATFORMS.map((s) => (
             <button
+              type="button"
               key={s}
               onClick={() => setSf(s)}
               style={{
@@ -556,6 +561,7 @@ function FormatGrid({
           <div style={{ display: 'flex', gap: 10 }}>
             {QUICK_ACTIONS.map((a) => (
               <button
+                type="button"
                 key={a.l}
                 onClick={() =>
                   openEditor({
@@ -567,7 +573,7 @@ function FormatGrid({
                     s: '1080x1080',
                   } as FormatItem)
                 }
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = a.c[0] + '40')}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = `${a.c[0]}40`)}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#1C1C1F')}
                 style={{
                   display: 'flex',

@@ -145,13 +145,15 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
             return (
               <React.Fragment key={item.key}>
                 <button
+                  type="button"
                   onClick={async () => {
                     if (item.key === 'logout') {
                       setOpen(false);
                       await signOut();
                       window.location.assign(buildMarketingUrl('/', window.location.host));
                       return;
-                    } else if (item.key === 'settings') {
+                    }
+                    if (item.key === 'settings') {
                       router.push('/settings');
                     } else if (item.key === 'language') {
                       router.push('/settings?section=idiomas');
@@ -221,6 +223,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
 
       {/* User trigger button */}
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         onMouseEnter={() => setAvatarHovered(true)}
         onMouseLeave={() => setAvatarHovered(false)}

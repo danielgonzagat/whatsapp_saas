@@ -276,6 +276,7 @@ export function PlanAffiliateTab({
             <div style={{ display: 'flex', gap: 12 }}>
               {(['auto', 'manual'] as const).map((mode) => (
                 <button
+                  type="button"
                   key={mode}
                   onClick={() => setApprovalMode(mode)}
                   style={{
@@ -301,6 +302,7 @@ export function PlanAffiliateTab({
 
       {/* Save */}
       <button
+        type="button"
         onClick={handleSave}
         disabled={saving}
         style={{

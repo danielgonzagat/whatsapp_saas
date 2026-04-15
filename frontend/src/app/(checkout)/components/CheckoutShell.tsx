@@ -5,7 +5,7 @@ import { API_BASE } from '@/lib/http';
 import { preloadMercadoPagoDeviceSession, preloadMercadoPagoSdk } from '@/lib/mercado-pago';
 import { normalizePublicCheckoutResponse } from '@/lib/public-checkout';
 import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import CheckoutBlancSocial from './CheckoutBlancSocial';
 import CheckoutNoirSocial from './CheckoutNoirSocial';
 import PixelTracker from './PixelTracker';

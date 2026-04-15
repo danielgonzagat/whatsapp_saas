@@ -280,6 +280,7 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
       </div>
 
       <button
+        type="button"
         onClick={save}
         disabled={saving}
         style={{

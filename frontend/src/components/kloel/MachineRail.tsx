@@ -80,6 +80,7 @@ export function MachineRail({
       >
         {rail.links.map((link) => (
           <button
+            type="button"
             key={link.href}
             onClick={() => router.push(link.href)}
             style={{
@@ -130,6 +131,7 @@ export function MachineRail({
             const href = getCapabilityHref(capability!);
             return (
               <button
+                type="button"
                 key={capability!.title}
                 onClick={() => {
                   if (href) router.push(href);

@@ -241,6 +241,7 @@ function ProjectCard({
       </div>
       {h && (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();

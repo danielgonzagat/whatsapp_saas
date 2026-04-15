@@ -154,6 +154,7 @@ export function ConversationsView() {
           </div>
 
           <button
+            type="button"
             onClick={() => {
               setActiveConversation(null);
               router.push(KLOEL_CHAT_ROUTE);
@@ -224,6 +225,7 @@ export function ConversationsView() {
           </div>
 
           <button
+            type="button"
             onClick={() => {
               if (selectionMode) {
                 resetSelection();
@@ -315,6 +317,7 @@ export function ConversationsView() {
                   }}
                 >
                   <button
+                    type="button"
                     onClick={() =>
                       selectionMode
                         ? toggleSelection(conversation.id)
@@ -419,6 +422,7 @@ export function ConversationsView() {
                       }}
                     >
                       <button
+                        type="button"
                         onClick={() => openConversation(conversation.id)}
                         title="Abrir conversa"
                         style={{
@@ -437,6 +441,7 @@ export function ConversationsView() {
                         <ArrowUpRight size={15} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => deleteOne(conversation.id)}
                         title="Excluir conversa"
                         style={{
@@ -545,6 +550,7 @@ export function ConversationsView() {
               {selectedIds.length} selecionada{selectedIds.length > 1 ? 's' : ''}
             </span>
             <button
+              type="button"
               onClick={deleteSelected}
               style={{
                 height: 34,
@@ -566,6 +572,7 @@ export function ConversationsView() {
               Excluir
             </button>
             <button
+              type="button"
               onClick={resetSelection}
               title="Cancelar seleção"
               style={{

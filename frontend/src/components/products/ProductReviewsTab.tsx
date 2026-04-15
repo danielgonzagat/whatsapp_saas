@@ -128,6 +128,7 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
                 )}
               </div>
               <button
+                type="button"
                 onClick={() => handleDelete(review.id)}
                 className="rounded-full p-1.5"
                 style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}

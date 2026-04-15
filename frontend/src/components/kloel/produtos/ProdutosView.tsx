@@ -23,14 +23,14 @@ const SORA = "'Sora',sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
 // ── DNA Colors ──
-const BG = KLOEL_THEME.bgPrimary;
+const _BG = KLOEL_THEME.bgPrimary;
 const BG_CARD = KLOEL_THEME.bgCard;
 const BG_ELEVATED = KLOEL_THEME.bgSecondary;
 const BORDER = KLOEL_THEME.borderPrimary;
 const EMBER = KLOEL_THEME.accent;
-const TEXT = KLOEL_THEME.textPrimary;
-const TEXT_DIM = KLOEL_THEME.textSecondary;
-const TEXT_MUTED = KLOEL_THEME.textTertiary;
+const _TEXT = KLOEL_THEME.textPrimary;
+const _TEXT_DIM = KLOEL_THEME.textSecondary;
+const _TEXT_MUTED = KLOEL_THEME.textTertiary;
 const PURPLE = '#8B5CF6';
 const GREEN = EMBER;
 
@@ -364,6 +364,211 @@ const timeAgo = (value?: string | null) => {
   return `${Math.floor(diffMinutes / 1440)}d`;
 };
 
+// ── Local view models ──
+// The raw shape returned by `useProducts` / `useMemberAreas` is `unknown[]`,
+// but after normalisation (see ProdutosView main component) we shape it into
+// these concrete records. All downstream components consume these shapes.
+
+interface DisplayProduct {
+  id: string;
+  name: string;
+  price: number;
+  sales: number;
+  revenue: number;
+  students: number;
+  category: string;
+  status: 'active' | 'pending' | 'draft';
+  color: string;
+  format: string;
+  active: boolean;
+  imageUrl: string;
+  plansCount: number;
+  activePlansCount: number;
+  minPlanPriceInCents: number | null;
+  maxPlanPriceInCents: number | null;
+  hasPlanPricing: boolean;
+  priceLabel: string;
+  memberAreasCount: number;
+  affiliateCount: number;
+  createdAt: string;
+  updatedAt: string;
+  // Optional fields only present on some normalisation paths
+  totalSales?: number;
+}
+
+interface DisplayLesson {
+  id: string;
+  name: string;
+  description?: string;
+  videoUrl?: string;
+}
+
+interface DisplayModule {
+  id: string;
+  name: string;
+  lessons?: DisplayLesson[];
+}
+
+interface DisplayArea {
+  id: string;
+  name: string;
+  type: string;
+  description: string;
+  students: number;
+  modules: number;
+  modulesCount: number;
+  lessonsCount: number;
+  completion: number;
+  status: string;
+  active: boolean;
+  productId: string;
+  productName: string;
+  slug: string;
+  template: string;
+  primaryColor: string;
+  logoUrl: string;
+  coverUrl: string;
+  certificates: boolean;
+  quizzes: boolean;
+  community: boolean;
+  gamification: boolean;
+  progressTrack: boolean;
+  downloads: boolean;
+  comments: boolean;
+  createdAt: string;
+  updatedAt: string;
+  modules_list: DisplayModule[];
+  // Legacy alias sometimes present on the source payload
+  modulesList?: DisplayModule[];
+}
+
+interface MemberAreaStudent {
+  id: string;
+  studentName?: string;
+  studentEmail?: string;
+  studentPhone?: string | null;
+  status?: string;
+  progress?: number | string;
+}
+
+interface MarketplaceItem {
+  id: string;
+  name?: string;
+  description?: string;
+  category?: string;
+  producer?: string;
+  price?: number;
+  commission?: number;
+  sales?: number;
+  rating?: number;
+  temperature?: number;
+  thumbnailUrl?: string;
+  imageUrl?: string;
+  isSaved?: boolean;
+  materials?: string[];
+  affiliateLink?: string;
+  requestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
+  cookieDays?: number;
+  totalAffiliates?: number;
+  totalReviews?: number;
+}
+
+interface MarketplaceStats {
+  totalProducts?: number;
+  topEarners?: number;
+  avgCommission?: number;
+  [key: string]: unknown;
+}
+
+interface AffiliateProductSummary {
+  id?: string;
+  name?: string;
+  affiliateLink?: string;
+  isSaved?: boolean;
+}
+
+interface AffiliateLink {
+  id: string;
+  url?: string;
+  clicks?: number;
+  sales?: number;
+  active?: boolean;
+  createdAt?: string;
+  affiliateProduct?: AffiliateProductSummary;
+}
+
+interface AffiliateProductItem {
+  id: string;
+  status?: string;
+  affiliateProductId?: string;
+  affiliateProduct?: AffiliateProductSummary;
+}
+
+// Raw payload shapes coming from backend (pre-normalisation). We only
+// declare the fields the normaliser actually reads.
+interface RawProductPayload {
+  id: string;
+  name: string;
+  price?: number;
+  totalSales?: number;
+  sales?: number;
+  totalRevenue?: number;
+  revenue?: number;
+  studentsCount?: number;
+  students?: number;
+  category?: string;
+  status?: string;
+  active?: boolean;
+  format?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  plansCount?: number;
+  activePlansCount?: number;
+  minPlanPriceInCents?: number | null;
+  maxPlanPriceInCents?: number | null;
+  memberAreasCount?: number;
+  affiliateCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface RawAreaPayload {
+  id: string;
+  name: string;
+  type?: string;
+  description?: string;
+  studentsCount?: number;
+  totalStudents?: number;
+  students?: number;
+  modulesCount?: number;
+  totalModules?: number;
+  modules?: number;
+  lessonsCount?: number;
+  totalLessons?: number;
+  avgCompletion?: number;
+  completion?: number;
+  status?: string;
+  active?: boolean;
+  productId?: string;
+  slug?: string;
+  template?: string;
+  primaryColor?: string;
+  logoUrl?: string;
+  coverUrl?: string;
+  certificates?: boolean;
+  quizzes?: boolean;
+  community?: boolean;
+  gamification?: boolean;
+  progressTrack?: boolean;
+  downloads?: boolean;
+  comments?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  modules_list?: DisplayModule[];
+  modulesList?: DisplayModule[];
+  Modules?: DisplayModule[];
+}
+
 function getProductPlanPriceSummary(product: {
   minPlanPriceInCents?: unknown;
   maxPlanPriceInCents?: unknown;
@@ -458,7 +663,7 @@ function MeusProdutos({
   onCreateProduct,
   requestedFeature,
 }: {
-  displayProducts: any[];
+  displayProducts: DisplayProduct[];
   totalRevenue: number;
   totalSales: number;
   activeProducts: number;
@@ -484,9 +689,9 @@ function MeusProdutos({
   );
   const productEvents =
     displayProducts.length > 0
-      ? displayProducts.slice(0, 4).map((product: any) => ({
+      ? displayProducts.slice(0, 4).map((product) => ({
           text:
-            product.totalSales > 0
+            (product.totalSales ?? 0) > 0
               ? `${product.name} somou ${product.totalSales} vendas aprovadas.`
               : `${product.name} está pronto para receber tráfego e checkout.`,
           time: timeAgo(product.updatedAt || product.createdAt),
@@ -503,7 +708,7 @@ function MeusProdutos({
   }, [totalRevenue]);
 
   // Revenue per product bar chart
-  const maxRevenue = Math.max(...displayProducts.map((p: any) => p.revenue || 0), 1);
+  const maxRevenue = Math.max(...displayProducts.map((p) => p.revenue || 0), 1);
 
   return (
     <div style={{ opacity: 1 }}>
@@ -542,6 +747,7 @@ function MeusProdutos({
         >
           {!isMobile && (
             <button
+              type="button"
               onClick={onCreateProduct}
               style={{
                 position: 'absolute',
@@ -615,6 +821,7 @@ function MeusProdutos({
           </div>
           {isMobile && (
             <button
+              type="button"
               onClick={onCreateProduct}
               style={{
                 width: '100%',
@@ -645,7 +852,7 @@ function MeusProdutos({
       <Ticker
         items={
           displayProducts.length > 0
-            ? displayProducts.map((p: any) =>
+            ? displayProducts.map((p) =>
                 p.hasPlanPricing
                   ? `${p.name} · ${p.priceLabel}`
                   : `${p.name} · sem planos configurados`,
@@ -693,6 +900,7 @@ function MeusProdutos({
                 : 'Crie seu primeiro produto para comecar a vender.'}
             </div>
             <button
+              type="button"
               onClick={onCreateProduct}
               style={{
                 display: 'inline-flex',
@@ -714,7 +922,7 @@ function MeusProdutos({
             </button>
           </div>
         )}
-        {displayProducts.map((p: any) => {
+        {displayProducts.map((p) => {
           const statusColor =
             p.status === 'active'
               ? EMBER
@@ -1045,7 +1253,7 @@ function MeusProdutos({
           >
             Receita por Produto
           </div>
-          {displayProducts.map((p: any) => (
+          {displayProducts.map((p) => (
             <div key={p.id} style={{ marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span
@@ -1279,10 +1487,10 @@ function AreaMembros({
   productOptions,
 }: {
   totalStudents: number;
-  displayAreas: any[];
+  displayAreas: DisplayArea[];
   avgCompletion: number;
   mutateAreas: () => void;
-  productOptions: any[];
+  productOptions: DisplayProduct[];
 }) {
   const {
     createArea,
@@ -1335,7 +1543,7 @@ function AreaMembros({
   // ── Student Enrollment State ──
   const [studentAreaId, setStudentAreaId] = useState<string | null>(null);
   const [studentAreaName, setStudentAreaName] = useState('');
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<MemberAreaStudent[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newStudent, setNewStudent] = useState({ name: '', email: '', phone: '' });
@@ -1406,7 +1614,7 @@ function AreaMembros({
     }
     setSaving(false);
   };
-  const handleStartEditStudent = (student: any) => {
+  const handleStartEditStudent = (student: MemberAreaStudent) => {
     setEditingStudentId(student.id);
     setEditStudentData({
       name: student.studentName || '',
@@ -1439,7 +1647,7 @@ function AreaMembros({
     }
     setSaving(false);
   };
-  const handleToggleStudentStatus = async (student: any) => {
+  const handleToggleStudentStatus = async (student: MemberAreaStudent) => {
     if (!studentAreaId) return;
     setSaving(true);
     try {
@@ -1638,22 +1846,20 @@ function AreaMembros({
     }
   };
 
-  const activeAreas = displayAreas.filter((area: any) => area.active !== false).length;
+  const activeAreas = displayAreas.filter((area) => area.active !== false).length;
   const totalModules = displayAreas.reduce(
-    (sum: number, area: any) => sum + Number(area.modulesCount || area.modules || 0),
+    (sum: number, area) => sum + Number(area.modulesCount || area.modules || 0),
     0,
   );
   const totalLessons = displayAreas.reduce(
-    (sum: number, area: any) => sum + Number(area.lessonsCount || 0),
+    (sum: number, area) => sum + Number(area.lessonsCount || 0),
     0,
   );
-  const certificatesEnabled = displayAreas.filter(
-    (area: any) => area.certificates !== false,
-  ).length;
-  const communityEnabled = displayAreas.filter((area: any) => area.community === true).length;
+  const certificatesEnabled = displayAreas.filter((area) => area.certificates !== false).length;
+  const communityEnabled = displayAreas.filter((area) => area.community === true).length;
   const memberEvents =
     displayAreas.length > 0
-      ? displayAreas.slice(0, 4).map((area: any) => ({
+      ? displayAreas.slice(0, 4).map((area) => ({
           text:
             Number(area.students || 0) > 0
               ? `${area.name} tem ${area.students} aluno${Number(area.students || 0) === 1 ? '' : 's'} ativo${Number(area.students || 0) === 1 ? '' : 's'}.`
@@ -1749,7 +1955,7 @@ function AreaMembros({
       <Ticker
         items={
           displayAreas.length > 0
-            ? displayAreas.map((a: any) => `${a.name}: ${a.students} alunos`)
+            ? displayAreas.map((a) => `${a.name}: ${a.students} alunos`)
             : ['Aguardando alunos...']
         }
         color={PURPLE}
@@ -1841,8 +2047,8 @@ function AreaMembros({
           Progresso por Area
         </div>
         {displayAreas
-          .filter((a: any) => a.completion > 0)
-          .map((a: any) => (
+          .filter((a) => a.completion > 0)
+          .map((a) => (
             <div key={a.id} style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)' }}>
@@ -1946,6 +2152,7 @@ function AreaMembros({
             Gerenciar Areas
           </div>
           <button
+            type="button"
             onClick={() => setShowCreateArea(!showCreateArea)}
             style={{
               ...btnPrimary(PURPLE),
@@ -2044,7 +2251,7 @@ function AreaMembros({
                   style={selectStyle}
                 >
                   <option value="">Sem vinculo</option>
-                  {productOptions.map((product: any) => (
+                  {productOptions.map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name}
                     </option>
@@ -2229,6 +2436,7 @@ function AreaMembros({
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12 }}>
               <button
+                type="button"
                 onClick={handleCreateArea}
                 disabled={saving}
                 style={{ ...btnPrimary(PURPLE), opacity: saving ? 0.6 : 1 }}
@@ -2236,6 +2444,7 @@ function AreaMembros({
                 {saving ? 'Salvando...' : 'Criar'}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setShowCreateArea(false);
                   setNewArea(emptyAreaForm);
@@ -2280,10 +2489,10 @@ function AreaMembros({
             </div>
           </div>
         )}
-        {displayAreas.map((a: any) => {
+        {displayAreas.map((a) => {
           const isExpanded = expandedAreas[a.id];
           const isEditing = editingArea === a.id;
-          const modules: any[] = a.modules_list || a.modulesList || [];
+          const modules: DisplayModule[] = a.modules_list || a.modulesList || [];
           const areaAccent = a.primaryColor || PURPLE;
           const previewHref = buildMemberAreaPreviewPath(a.id);
 
@@ -2320,6 +2529,7 @@ function AreaMembros({
 
                 {/* Expand toggle */}
                 <button
+                  type="button"
                   onClick={() => toggleArea(a.id)}
                   style={{
                     ...iconBtn,
@@ -2360,7 +2570,7 @@ function AreaMembros({
                         style={selectStyle}
                       >
                         <option value="">Sem vinculo</option>
-                        {productOptions.map((product: any) => (
+                        {productOptions.map((product) => (
                           <option key={product.id} value={product.id}>
                             {product.name}
                           </option>
@@ -2503,6 +2713,7 @@ function AreaMembros({
                     </div>
                     <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                       <button
+                        type="button"
                         onClick={() => handleUpdateArea(a.id)}
                         disabled={saving}
                         style={{ ...btnPrimary(PURPLE), fontSize: 11, padding: '6px 12px' }}
@@ -2510,6 +2721,7 @@ function AreaMembros({
                         Salvar
                       </button>
                       <button
+                        type="button"
                         onClick={() => setEditingArea(null)}
                         style={{ ...btnGhost, fontSize: 11, padding: '6px 12px' }}
                       >
@@ -2612,6 +2824,7 @@ function AreaMembros({
                       )}
                     </div>
                     <button
+                      type="button"
                       onClick={() => openStudentDrawer(a.id, a.name)}
                       style={{ ...iconBtn, color: '#E85D30' }}
                       title="Gerenciar alunos"
@@ -2661,6 +2874,7 @@ function AreaMembros({
                       </svg>
                     </a>
                     <button
+                      type="button"
                       onClick={() => {
                         setEditingArea(a.id);
                         setEditAreaData({
@@ -2689,6 +2903,7 @@ function AreaMembros({
                       {IC.edit(16)}
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleDeleteArea(a.id)}
                       style={{ ...iconBtn, color: '#EF4444' }}
                       title="Excluir area"
@@ -2840,6 +3055,7 @@ function AreaMembros({
                       </div>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <button
+                          type="button"
                           onClick={() => handleGenerateStructure(a.id)}
                           disabled={
                             generatingAreaId === a.id ||
@@ -2923,8 +3139,8 @@ function AreaMembros({
                   </div>
                   {/* Modules list */}
                   {modules.length > 0 ? (
-                    modules.map((mod: any) => {
-                      const lessons: any[] = mod.lessons || [];
+                    modules.map((mod) => {
+                      const lessons: DisplayLesson[] = mod.lessons || [];
                       const isEditingMod = editingModule === mod.id;
 
                       return (
@@ -2960,6 +3176,7 @@ function AreaMembros({
                                   autoFocus
                                 />
                                 <button
+                                  type="button"
                                   onClick={() => handleUpdateModule(a.id, mod.id)}
                                   disabled={saving}
                                   style={{
@@ -2971,6 +3188,7 @@ function AreaMembros({
                                   Salvar
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => setEditingModule(null)}
                                   style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                                 >
@@ -3000,6 +3218,7 @@ function AreaMembros({
                                   {lessons.length} aulas
                                 </span>
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     setEditingModule(mod.id);
                                     setEditModuleData({ name: mod.name });
@@ -3010,6 +3229,7 @@ function AreaMembros({
                                   {IC.edit(14)}
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => handleDeleteModule(a.id, mod.id)}
                                   style={{ ...iconBtn, color: '#EF4444' }}
                                   title="Excluir modulo"
@@ -3021,7 +3241,7 @@ function AreaMembros({
                           </div>
 
                           {/* Lessons */}
-                          {lessons.map((lesson: any) => {
+                          {lessons.map((lesson) => {
                             const isEditingLes = editingLesson === lesson.id;
                             const embedUrl = toEmbed(lesson.videoUrl || '');
 
@@ -3093,6 +3313,7 @@ function AreaMembros({
                                     )}
                                     <div style={{ display: 'flex', gap: 6 }}>
                                       <button
+                                        type="button"
                                         onClick={() => handleUpdateLesson(a.id, lesson.id)}
                                         disabled={saving}
                                         style={{
@@ -3104,6 +3325,7 @@ function AreaMembros({
                                         Salvar
                                       </button>
                                       <button
+                                        type="button"
                                         onClick={() => setEditingLesson(null)}
                                         style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                                       >
@@ -3162,6 +3384,7 @@ function AreaMembros({
                                       )}
                                     </div>
                                     <button
+                                      type="button"
                                       onClick={() => {
                                         setEditingLesson(lesson.id);
                                         setEditLessonData({
@@ -3176,6 +3399,7 @@ function AreaMembros({
                                       {IC.edit(14)}
                                     </button>
                                     <button
+                                      type="button"
                                       onClick={() => handleDeleteLesson(a.id, lesson.id)}
                                       style={{ ...iconBtn, color: '#EF4444' }}
                                       title="Excluir aula"
@@ -3259,6 +3483,7 @@ function AreaMembros({
                                 )}
                                 <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
                                   <button
+                                    type="button"
                                     onClick={() => handleCreateLesson(a.id, mod.id)}
                                     disabled={saving}
                                     style={{
@@ -3270,6 +3495,7 @@ function AreaMembros({
                                     {saving ? 'Salvando...' : 'Adicionar'}
                                   </button>
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       setCreatingLesson(null);
                                       setNewLesson({ name: '', description: '', videoUrl: '' });
@@ -3283,6 +3509,7 @@ function AreaMembros({
                             </div>
                           ) : (
                             <button
+                              type="button"
                               onClick={() => {
                                 setCreatingLesson(mod.id);
                                 setNewLesson({ name: '', description: '', videoUrl: '' });
@@ -3349,6 +3576,7 @@ function AreaMembros({
                           autoFocus
                         />
                         <button
+                          type="button"
                           onClick={() => handleCreateModule(a.id)}
                           disabled={saving}
                           style={{ ...btnPrimary(PURPLE), fontSize: 10, padding: '5px 10px' }}
@@ -3356,6 +3584,7 @@ function AreaMembros({
                           {saving ? 'Salvando...' : 'Criar'}
                         </button>
                         <button
+                          type="button"
                           onClick={() => {
                             setCreatingModule(null);
                             setNewModule({ name: '' });
@@ -3368,6 +3597,7 @@ function AreaMembros({
                     </div>
                   ) : (
                     <button
+                      type="button"
                       onClick={() => {
                         setCreatingModule(a.id);
                         setNewModule({ name: '' });
@@ -3462,6 +3692,7 @@ function AreaMembros({
                 </div>
               </div>
               <button
+                type="button"
                 aria-label="Fechar painel de alunos"
                 onClick={() => {
                   setStudentAreaId(null);
@@ -3504,6 +3735,7 @@ function AreaMembros({
                 style={{ ...inputStyle, flex: 1 }}
               />
               <button
+                type="button"
                 onClick={() => setShowAddStudent(!showAddStudent)}
                 style={{
                   ...btnPrimary(PURPLE),
@@ -3547,6 +3779,7 @@ function AreaMembros({
                   style={inputStyle}
                 />
                 <button
+                  type="button"
                   onClick={handleAddStudent}
                   disabled={saving || !newStudent.name || !newStudent.email}
                   style={{
@@ -3642,7 +3875,7 @@ function AreaMembros({
                   </div>
                 </div>
               ) : (
-                students.map((s: any) => (
+                students.map((s) => (
                   <div
                     key={s.id}
                     style={{
@@ -3711,6 +3944,7 @@ function AreaMembros({
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button
+                            type="button"
                             onClick={handleUpdateStudent}
                             disabled={saving}
                             style={{
@@ -3722,6 +3956,7 @@ function AreaMembros({
                             Salvar aluno
                           </button>
                           <button
+                            type="button"
                             onClick={() => setEditingStudentId(null)}
                             style={{ ...btnGhost, padding: '8px 12px' }}
                           >
@@ -3809,6 +4044,7 @@ function AreaMembros({
                           </span>
                         </div>
                         <button
+                          type="button"
                           aria-label="Editar aluno"
                           onClick={() => handleStartEditStudent(s)}
                           disabled={saving}
@@ -3818,6 +4054,7 @@ function AreaMembros({
                           {IC.edit(14)}
                         </button>
                         <button
+                          type="button"
                           aria-label={s.status === 'active' ? 'Suspender aluno' : 'Reativar aluno'}
                           onClick={() => handleToggleStudentStatus(s)}
                           disabled={saving}
@@ -3830,6 +4067,7 @@ function AreaMembros({
                           {s.status === 'active' ? IC.chevDown(14) : IC.trend(14)}
                         </button>
                         <button
+                          type="button"
                           aria-label="Remover aluno"
                           onClick={() => handleRemoveStudent(s.id)}
                           disabled={saving}
@@ -3872,19 +4110,19 @@ function AfiliarSe({
   affiliateProducts,
   onRefresh,
 }: {
-  marketplace: any[];
+  marketplace: MarketplaceItem[];
   earnings: number;
-  marketplaceStats?: any;
-  affiliateLinks: any[];
-  affiliateProducts: any[];
+  marketplaceStats?: MarketplaceStats;
+  affiliateLinks: AffiliateLink[];
+  affiliateProducts: AffiliateProductItem[];
   onRefresh: () => void;
 }) {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState<string | null>(null);
-  const [selectedMarketItem, setSelectedMarketItem] = useState<any>(null);
+  const [selectedMarketItem, setSelectedMarketItem] = useState<MarketplaceItem | null>(null);
   const [copiedAffiliate, setCopiedAffiliate] = useState(false);
   const [requestingId, setRequestingId] = useState<string | null>(null);
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const [_savingId, setSavingId] = useState<string | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -3894,7 +4132,13 @@ function AfiliarSe({
     [],
   );
 
-  const categories = [...new Set(marketplace.map((m) => m.category).filter(Boolean))];
+  const categories: string[] = [
+    ...new Set(
+      marketplace
+        .map((m) => m.category)
+        .filter((cat): cat is string => typeof cat === 'string' && cat.length > 0),
+    ),
+  ];
   const filteredMarket = marketplace.filter((m) => {
     const matchSearch =
       !search ||
@@ -3903,9 +4147,9 @@ function AfiliarSe({
     const matchCat = !catFilter || m.category === catFilter;
     return matchSearch && matchCat;
   });
-  const approvedLinks = affiliateLinks.filter((link: any) => link.active !== false);
+  const approvedLinks = affiliateLinks.filter((link) => link.active !== false);
   const savedProducts = affiliateProducts.filter(
-    (item: any) => item.status === 'SAVED' || item.affiliateProduct?.isSaved,
+    (item) => item.status === 'SAVED' || item.affiliateProduct?.isSaved,
   );
 
   const handleRequestAffiliation = async (productId: string) => {
@@ -3948,6 +4192,7 @@ function AfiliarSe({
         {/* Breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
           <button
+            type="button"
             onClick={() => setSelectedMarketItem(null)}
             style={{
               display: 'flex',
@@ -4318,8 +4563,9 @@ function AfiliarSe({
                 {item.affiliateLink}
               </div>
               <button
+                type="button"
                 onClick={() =>
-                  navigator.clipboard.writeText(item.affiliateLink).then(() => {
+                  navigator.clipboard.writeText(item.affiliateLink || '').then(() => {
                     setCopiedAffiliate(true);
                     if (copiedTimer.current) clearTimeout(copiedTimer.current);
                     copiedTimer.current = setTimeout(() => setCopiedAffiliate(false), 2000);
@@ -4387,8 +4633,9 @@ function AfiliarSe({
         <div style={{ textAlign: 'center', padding: '24px 0' }}>
           {item.affiliateLink ? (
             <button
+              type="button"
               onClick={() =>
-                navigator.clipboard.writeText(item.affiliateLink).then(() => {
+                navigator.clipboard.writeText(item.affiliateLink || '').then(() => {
                   setCopiedAffiliate(true);
                   if (copiedTimer.current) clearTimeout(copiedTimer.current);
                   copiedTimer.current = setTimeout(() => setCopiedAffiliate(false), 2000);
@@ -4411,6 +4658,7 @@ function AfiliarSe({
             </button>
           ) : (
             <button
+              type="button"
               onClick={() => handleRequestAffiliation(item.id)}
               disabled={requestingId === item.id || item.requestStatus === 'PENDING'}
               style={{
@@ -4598,6 +4846,7 @@ function AfiliarSe({
       {/* Category Chips */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         <button
+          type="button"
           onClick={() => setCatFilter(null)}
           style={{
             padding: '6px 14px',
@@ -4615,6 +4864,7 @@ function AfiliarSe({
         </button>
         {categories.map((cat) => (
           <button
+            type="button"
             key={cat}
             onClick={() => setCatFilter(catFilter === cat ? null : cat)}
             style={{
@@ -4720,7 +4970,7 @@ function AfiliarSe({
             >
               Meus links ativos
             </div>
-            {approvedLinks.slice(0, 3).map((link: any) => (
+            {approvedLinks.slice(0, 3).map((link) => (
               <div
                 key={link.id}
                 style={{
@@ -4742,6 +4992,7 @@ function AfiliarSe({
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() =>
                     navigator.clipboard
                       .writeText(link.url || link.affiliateProduct?.affiliateLink || '')
@@ -4774,7 +5025,7 @@ function AfiliarSe({
               Produtos salvos
             </div>
             {savedProducts.length > 0 ? (
-              savedProducts.slice(0, 3).map((item: any) => (
+              savedProducts.slice(0, 3).map((item) => (
                 <div
                   key={item.id}
                   style={{
@@ -4798,6 +5049,7 @@ function AfiliarSe({
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleToggleSave(item.affiliateProductId || item.id, true)}
                     style={{ ...btnGhost, padding: '6px 10px' }}
                   >
@@ -4952,6 +5204,7 @@ function AfiliarSe({
               </span>
             </div>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 handleToggleSave(m.id, !!m.isSaved);
@@ -4990,7 +5243,7 @@ function AfiliarSe({
           color={GREEN}
           events={
             approvedLinks.length > 0
-              ? approvedLinks.slice(0, 4).map((link: any) => ({
+              ? approvedLinks.slice(0, 4).map((link) => ({
                   text: `${link.affiliateProduct?.name || 'Produto'} com ${link.clicks || 0} cliques e ${link.sales || 0} vendas.`,
                   time: timeAgo(link.createdAt),
                 }))
@@ -5019,16 +5272,21 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   const { deleteProduct } = useProductMutations();
 
   // ── Affiliate data ──
-  const [marketplace, setMarketplace] = useState<any[]>([]);
-  const [marketplaceStats, setMarketplaceStats] = useState<any>({});
-  const [affiliateLinks, setAffiliateLinks] = useState<any[]>([]);
-  const [affiliateTotals, setAffiliateTotals] = useState<any>({
+  const [marketplace, setMarketplace] = useState<MarketplaceItem[]>([]);
+  const [marketplaceStats, setMarketplaceStats] = useState<MarketplaceStats>({});
+  const [affiliateLinks, setAffiliateLinks] = useState<AffiliateLink[]>([]);
+  const [affiliateTotals, setAffiliateTotals] = useState<{
+    clicks: number;
+    sales: number;
+    revenue: number;
+    commission: number;
+  }>({
     clicks: 0,
     sales: 0,
     revenue: 0,
     commission: 0,
   });
-  const [affiliateProducts, setAffiliateProducts] = useState<any[]>([]);
+  const [affiliateProducts, setAffiliateProducts] = useState<AffiliateProductItem[]>([]);
 
   const hydrateAffiliate = useCallback(async () => {
     try {
@@ -5080,8 +5338,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   }, [hydrateAffiliate]);
 
   // ── Normalize products ──
-  const displayProducts = Array.isArray(rawProducts)
-    ? (rawProducts as any[]).map((p: any) => {
+  const displayProducts: DisplayProduct[] = Array.isArray(rawProducts)
+    ? (rawProducts as RawProductPayload[]).map((p) => {
         const priceSummary = getProductPlanPriceSummary(p);
         const backendStatus = String(p.status || '').toUpperCase();
         const status =
@@ -5119,8 +5377,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
     : [];
 
   // ── Normalize areas ──
-  const displayAreas = Array.isArray(rawAreas)
-    ? (rawAreas as any[]).map((a: any) => ({
+  const displayAreas: DisplayArea[] = Array.isArray(rawAreas)
+    ? (rawAreas as RawAreaPayload[]).map((a) => ({
         id: a.id,
         name: a.name,
         type: a.type || 'COURSE',
@@ -5133,7 +5391,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         status: a.status || 'active',
         active: a.active !== false,
         productId: a.productId || '',
-        productName: displayProducts.find((product: any) => product.id === a.productId)?.name || '',
+        productName: displayProducts.find((product) => product.id === a.productId)?.name || '',
         slug: a.slug || '',
         template: a.template || 'academy',
         primaryColor: a.primaryColor || PURPLE,
@@ -5154,18 +5412,17 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
 
   // ── Derived stats ──
   const totalRevenue = displayProducts.reduce(
-    (s: number, p: any) => s + (p.revenue || p.price * (p.sales || 0)),
+    (s, p) => s + (p.revenue || p.price * (p.sales || 0)),
     0,
   );
-  const totalSales = displayProducts.reduce((s: number, p: any) => s + (p.sales || 0), 0);
-  const activeProducts = displayProducts.filter((p: any) => p.status === 'active').length;
-  const totalStudents = displayAreas.reduce((s: number, a: any) => s + (a.students || 0), 0);
-  const areasWithCompletion = displayAreas.filter((a: any) => a.completion > 0);
+  const totalSales = displayProducts.reduce((s, p) => s + (p.sales || 0), 0);
+  const activeProducts = displayProducts.filter((p) => p.status === 'active').length;
+  const totalStudents = displayAreas.reduce((s, a) => s + (a.students || 0), 0);
+  const areasWithCompletion = displayAreas.filter((a) => a.completion > 0);
   const avgCompletion =
     areasWithCompletion.length > 0
       ? Math.round(
-          areasWithCompletion.reduce((s: number, a: any) => s + a.completion, 0) /
-            areasWithCompletion.length,
+          areasWithCompletion.reduce((s, a) => s + a.completion, 0) / areasWithCompletion.length,
         )
       : 0;
   const earnings = Number(affiliateTotals.commission || 0);
@@ -5251,6 +5508,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
             const isActive = activeTab === tab.key;
             return (
               <button
+                type="button"
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
                 style={getSubinterfacePillStyle(isActive, isMobile)}

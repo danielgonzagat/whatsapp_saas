@@ -18,8 +18,6 @@ import {
   FileText,
   LayoutTemplate,
   Loader2,
-  Play,
-  Plus,
   RefreshCw,
   RotateCcw,
   Sparkles,
@@ -124,7 +122,7 @@ function FlowPageContent() {
       try {
         await retryFlowExecution(executionId);
         await fetchExecutions();
-      } catch (err) {
+      } catch (_err) {
         setExecError('Falha ao reprocessar execução');
       }
     },
@@ -136,7 +134,7 @@ function FlowPageContent() {
     try {
       await downloadFlowTemplate(template.id);
       setDownloadedIds((prev) => new Set([...prev, template.id]));
-    } catch (err: any) {
+    } catch (_err) {
       // non-fatal: template was still shown, just increment failed
     } finally {
       setDownloading((prev) => ({ ...prev, [template.id]: false }));
@@ -208,6 +206,7 @@ function FlowPageContent() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
+                type="button"
                 onClick={() => setActiveTab('templates')}
                 className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
@@ -245,6 +244,7 @@ function FlowPageContent() {
       >
         <div className="flex gap-4">
           <button
+            type="button"
             onClick={() => setActiveTab('editor')}
             className={`py-3 px-4 flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === 'editor'
@@ -256,6 +256,7 @@ function FlowPageContent() {
             Editor
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('templates')}
             className={`py-3 px-4 flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === 'templates'
@@ -267,6 +268,7 @@ function FlowPageContent() {
             Templates
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('executions')}
             className={`py-3 px-4 flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === 'executions'
@@ -287,6 +289,7 @@ function FlowPageContent() {
             )}
             {optimizeError && <span className="text-xs text-[#EF4444] mr-3">{optimizeError}</span>}
             <button
+              type="button"
               onClick={handleOptimize}
               disabled={optimizing || !searchParams.get('id')}
               title={!searchParams.get('id') ? 'Salve o fluxo primeiro' : 'Otimizar com IA'}
@@ -324,6 +327,7 @@ function FlowPageContent() {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={fetchTemplates}
                 disabled={templatesLoading}
                 className="p-2 rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C] disabled:opacity-50"
@@ -403,6 +407,7 @@ function FlowPageContent() {
                         </div>
 
                         <button
+                          type="button"
                           onClick={() => handleDownloadTemplate(tmpl)}
                           disabled={isDownloading}
                           className="mt-auto w-full py-2 rounded-md text-sm font-semibold transition-colors disabled:opacity-50"
@@ -442,6 +447,7 @@ function FlowPageContent() {
               <div className="flex items-center gap-3">
                 {execError && <span className="text-sm text-[#EF4444]">{execError}</span>}
                 <button
+                  type="button"
                   onClick={fetchExecutions}
                   disabled={execLoading}
                   className="p-2 rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C] disabled:opacity-50"
@@ -494,6 +500,7 @@ function FlowPageContent() {
                     <div className="flex items-center gap-2">
                       {exec.status === 'FAILED' && (
                         <button
+                          type="button"
                           onClick={() => handleRetry(exec.id)}
                           className="px-3 py-2 text-sm rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C]"
                         >

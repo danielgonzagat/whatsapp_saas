@@ -252,8 +252,8 @@ const TRANSACTIONS: {
   time: string;
   fee: number;
 }[] = [];
-const WITHDRAWALS: any[] = [];
-const ANTICIPATIONS: any[] = [];
+const _WITHDRAWALS: Array<{ id: string; amount: number; status: string; date: string }> = [];
+const _ANTICIPATIONS: Array<{ id: string; amount: number; status: string; date: string }> = [];
 
 const MONTH_DAYS: { day: number; income: number; expense: number }[] = [];
 
@@ -463,6 +463,7 @@ function MercadoPagoConnectionCard({
         ) : (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
+              type="button"
               onClick={onConnect}
               disabled={busy}
               style={{
@@ -481,6 +482,7 @@ function MercadoPagoConnectionCard({
             </button>
             {connected && (
               <button
+                type="button"
                 onClick={onDisconnect}
                 disabled={busy}
                 style={{
@@ -717,6 +719,7 @@ function WithdrawModal({
             Solicitar saque
           </span>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -910,6 +913,7 @@ function WithdrawModal({
             </span>
           </div>
           <button
+            type="button"
             onClick={handleWithdraw}
             disabled={withdrawLoading}
             style={{
@@ -994,6 +998,7 @@ function AntecipateModal({
             Antecipar recebiveis
           </span>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -1159,6 +1164,7 @@ function TabSaldo({
           <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)' }}>Pronto para saque</span>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <button
+              type="button"
               onClick={onOpenWithdraw}
               style={{
                 flex: 1,
@@ -1180,6 +1186,7 @@ function TabSaldo({
               {IC.upload(12)} Sacar
             </button>
             <button
+              type="button"
               onClick={onOpenAntecipate}
               style={{
                 flex: 1,
@@ -1541,6 +1548,7 @@ function TabSaldo({
             })
           )}
           <button
+            type="button"
             onClick={onNavigateExtrato}
             style={{
               width: '100%',
@@ -1626,6 +1634,7 @@ function TabExtrato({
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {['todos', 'sale', 'commission', 'withdrawal', 'refund', 'anticipation'].map((f) => (
             <button
+              type="button"
               key={f}
               onClick={() => onFilterTypeChange(f)}
               style={{
@@ -1645,6 +1654,7 @@ function TabExtrato({
           ))}
         </div>
         <button
+          type="button"
           onClick={() => {
             if (!filtered.length) return;
             const escape = (v: unknown) => {
@@ -2115,6 +2125,7 @@ function TabSaques({
           </span>
         </div>
         <button
+          type="button"
           onClick={onOpenWithdraw}
           style={{
             padding: '10px 24px',
@@ -2157,6 +2168,7 @@ function TabSaques({
             Contas cadastradas
           </span>
           <button
+            type="button"
             onClick={() => setShowAddAccount(!showAddAccount)}
             style={{
               padding: '6px 14px',
@@ -2333,6 +2345,7 @@ function TabSaques({
               </div>
             )}
             <button
+              type="button"
               onClick={handleAddAccount}
               disabled={addLoading}
               style={{
@@ -2412,6 +2425,7 @@ function TabSaques({
                   </span>
                 )}
                 <button
+                  type="button"
                   onClick={() => removeBankAccount(a.id)}
                   style={{
                     background: 'none',
@@ -2668,6 +2682,7 @@ function TabAntecipacoes({
           }}
         >
           <button
+            type="button"
             onClick={onOpenAntecipate}
             style={{
               padding: '10px 24px',
@@ -2852,13 +2867,13 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showAntecipateModal, setShowAntecipateModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [mercadoPagoBusy, setMercadoPagoBusy] = useState(false);
-  const [mercadoPagoError, setMercadoPagoError] = useState('');
+  const [_mercadoPagoBusy, setMercadoPagoBusy] = useState(false);
+  const [_mercadoPagoError, setMercadoPagoError] = useState('');
   useEffect(() => {
     setTab(resolvedDefaultTab);
   }, [resolvedDefaultTab]);
 
-  const mercadoPagoNotice = (() => {
+  const _mercadoPagoNotice = (() => {
     const state = searchParams?.get('mercadoPago');
     if (state === 'connected') {
       return {
@@ -3011,6 +3026,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
       <div style={SUBINTERFACE_PILL_ROW_STYLE}>
         {TABS.map((t) => (
           <button
+            type="button"
             key={t.key}
             onClick={() => handleTabChange(t.key)}
             style={getSubinterfacePillStyle(tab === t.key, isMobile)}

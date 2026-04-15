@@ -176,6 +176,7 @@ function EmBreveContent() {
             >
               {roadmapActions.map((action) => (
                 <button
+                  type="button"
                   key={`${tool}-${action.href}`}
                   onClick={() => router.push(action.href)}
                   style={{
@@ -237,6 +238,7 @@ function EmBreveContent() {
             >
               {alternatives.map((item) => (
                 <button
+                  type="button"
                   key={item.title}
                   onClick={() => {
                     const href = getCapabilityHref(item);
@@ -282,6 +284,7 @@ function EmBreveContent() {
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button
+            type="button"
             onClick={() => router.push('/ferramentas/ver-todas')}
             style={{
               fontFamily: "'Sora', sans-serif",
@@ -298,6 +301,7 @@ function EmBreveContent() {
             Ver catalogo completo
           </button>
           <button
+            type="button"
             onClick={() => router.back()}
             style={{
               fontFamily: "'Sora', sans-serif",

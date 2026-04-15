@@ -5,10 +5,8 @@ export const dynamic = 'force-dynamic';
 import { Card } from '@/components/kloel/Card';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { launchApi } from '@/lib/api/misc';
-import { swrFetcher } from '@/lib/fetcher';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import useSWR from 'swr';
 
 const SORA = "'Sora', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
@@ -89,6 +87,7 @@ function LauncherRow({
         {new Date(launcher.createdAt).toLocaleDateString('pt-BR')}
       </div>
       <button
+        type="button"
         onClick={() => onAddGroup(launcher.id)}
         style={{
           padding: '6px 14px',
@@ -104,7 +103,7 @@ function LauncherRow({
           transition: 'border-color 150ms ease',
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.borderColor = EMBER + '66';
+          (e.currentTarget as HTMLElement).style.borderColor = `${EMBER}66`;
         }}
         onMouseLeave={(e) => {
           (e.currentTarget as HTMLElement).style.borderColor = '#222226';
@@ -278,6 +277,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button
+            type="button"
             onClick={onClose}
             style={{
               padding: '9px 18px',
@@ -294,6 +294,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             Cancelar
           </button>
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={loading || !name.trim()}
             style={{
@@ -450,6 +451,7 @@ function AddGroupModal({
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button
+            type="button"
             onClick={onClose}
             style={{
               padding: '9px 18px',
@@ -466,6 +468,7 @@ function AddGroupModal({
             Cancelar
           </button>
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={loading || !groupLink.trim()}
             style={{
@@ -491,7 +494,7 @@ function AddGroupModal({
 
 export default function LaunchpadPage() {
   const router = useRouter();
-  const [launchers, setLaunchers] = useState<Launcher[]>([]);
+  const [launchers, _setLaunchers] = useState<Launcher[]>([]);
   const isLoading = false;
   const error = null;
   const mutate = () => {
@@ -510,6 +513,7 @@ export default function LaunchpadPage() {
     >
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
+          type="button"
           onClick={() => setShowNewModal(true)}
           style={{
             display: 'flex',

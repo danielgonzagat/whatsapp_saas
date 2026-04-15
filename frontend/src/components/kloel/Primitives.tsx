@@ -1,6 +1,6 @@
 'use client';
 
-import { colors, motion, radius } from '@/lib/design-tokens';
+import { colors, motion } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import NextImage from 'next/image';

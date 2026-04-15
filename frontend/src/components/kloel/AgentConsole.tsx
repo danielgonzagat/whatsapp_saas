@@ -16,19 +16,16 @@
  * ============================================
  */
 
-import { colors, motion, radius, shadows } from '@/lib/design-tokens';
+import { colors } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import {
   Activity,
   AlertCircle,
-  ArrowRight,
   Bot,
   Brain,
   CheckCircle,
   ChevronLeft,
-  ChevronRight,
   Clock,
-  Filter,
   Loader2,
   MessageSquare,
   Send,
@@ -200,7 +197,7 @@ interface ActivityItemProps {
 function ActivityItem({ activity }: ActivityItemProps) {
   const config = ACTIVITY_CONFIG[activity.type];
   const Icon = config.icon;
-  const StatusIcon = STATUS_ICONS[activity.status];
+  const _StatusIcon = STATUS_ICONS[activity.status];
 
   return (
     <div
@@ -324,6 +321,7 @@ export function AgentConsole({
       {/* Collapsed Toggle Button */}
       {!isOpen && (
         <button
+          type="button"
           onClick={onToggle}
           className="fixed right-0 top-1/2 -translate-y-1/2 p-2 rounded-l-md transition-all hover:pr-4"
           style={{
@@ -411,6 +409,7 @@ export function AgentConsole({
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg transition-colors hover:bg-white/5"
             style={{ color: colors.text.muted }}
@@ -501,6 +500,7 @@ export function AgentConsole({
           style={{ borderBottom: `1px solid ${colors.stroke}` }}
         >
           <button
+            type="button"
             onClick={() => setFilter('all')}
             className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
             style={{
@@ -511,6 +511,7 @@ export function AgentConsole({
             Todos
           </button>
           <button
+            type="button"
             onClick={() => setFilter('message_received')}
             className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
             style={{
@@ -522,6 +523,7 @@ export function AgentConsole({
             Recebidas
           </button>
           <button
+            type="button"
             onClick={() => setFilter('message_sent')}
             className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
             style={{
@@ -533,6 +535,7 @@ export function AgentConsole({
             Enviadas
           </button>
           <button
+            type="button"
             onClick={() => setFilter('action_executed')}
             className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
             style={{

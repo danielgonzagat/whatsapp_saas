@@ -86,6 +86,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
           Recentes
         </span>
         <button
+          type="button"
           onClick={handleExport}
           title="Exportar todas as conversas"
           style={{
@@ -125,6 +126,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
         const isActive = activeConversationId === conv.id;
         return (
           <button
+            type="button"
             key={conv.id}
             onClick={() => {
               setActiveConversation(conv.id);

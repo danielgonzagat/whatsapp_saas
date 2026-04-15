@@ -1,6 +1,6 @@
 'use client';
 
-import { colors, motion, radius, shadows } from '@/lib/design-tokens';
+import { colors, motion } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import { ArrowRight, type LucideIcon, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { ReactNode } from 'react';

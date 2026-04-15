@@ -155,6 +155,7 @@ function VerifyEmailContent() {
               instantes.
             </p>
             <button
+              type="button"
               onClick={() => router.push('/login')}
               style={{
                 height: 44,
@@ -200,6 +201,7 @@ function VerifyEmailContent() {
               {errorMessage}
             </p>
             <button
+              type="button"
               onClick={() => router.push('/login')}
               style={{
                 height: 44,

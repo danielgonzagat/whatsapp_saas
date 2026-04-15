@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { Button, CenterStage, Section, StageHeadline } from '@/components/kloel';
+import { CenterStage, Section, StageHeadline } from '@/components/kloel';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { createCheckoutSession, tokenStorage } from '@/lib/api';
@@ -116,7 +116,7 @@ export default function PricingPage() {
   const workspaceId = useWorkspaceId();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
 
   const buildPlanDashboardHref = (plan: Plan) =>
     buildDashboardHref({
@@ -192,6 +192,7 @@ export default function PricingPage() {
           {/* Billing toggle */}
           <div className="mt-8 flex items-center justify-center gap-4">
             <button
+              type="button"
               onClick={() => setBillingCycle('monthly')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 billingCycle === 'monthly'
@@ -202,6 +203,7 @@ export default function PricingPage() {
               Mensal
             </button>
             <button
+              type="button"
               onClick={() => setBillingCycle('yearly')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                 billingCycle === 'yearly'
@@ -293,6 +295,7 @@ export default function PricingPage() {
 
                   {/* CTA */}
                   <button
+                    type="button"
                     onClick={() => handleSelectPlan(plan)}
                     disabled={isLoading === plan.id}
                     className={`w-full py-3 rounded-md font-medium transition-all ${
@@ -307,6 +310,7 @@ export default function PricingPage() {
                     {isLoading === plan.id ? 'Carregando...' : plan.cta}
                   </button>
                   <button
+                    type="button"
                     onClick={() => router.push(buildPlanDashboardHref(plan))}
                     className="mt-3 w-full rounded-md border px-4 py-3 text-sm font-medium transition-colors hover:bg-[#19191C]"
                     style={{

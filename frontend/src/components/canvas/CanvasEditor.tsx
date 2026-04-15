@@ -100,7 +100,7 @@ export default function CanvasEditor() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTabId>('templates');
   const [selectedObj, setSelectedObj] = useState<any>(null);
   const [uploadDrag, setUploadDrag] = useState(false);
-  const [layerList, setLayerList] = useState<any[]>([]);
+  const [_layerList, setLayerList] = useState<unknown[]>([]);
 
   const [canvasDragOver, setCanvasDragOver] = useState(false);
 
@@ -309,7 +309,7 @@ export default function CanvasEditor() {
       e.preventDefault();
       setUploadDrag(false);
       const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('image/')) handleUpload(file);
+      if (file?.type.startsWith('image/')) handleUpload(file);
     },
     [handleUpload],
   );
@@ -369,6 +369,7 @@ export default function CanvasEditor() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {PRODUCT_TEMPLATES.map((tpl) => (
                 <button
+                  type="button"
                   key={tpl.id}
                   onClick={() => handleApplyTemplate(tpl)}
                   style={{
@@ -480,6 +481,7 @@ export default function CanvasEditor() {
                 ] as const
               ).map((shape) => (
                 <button
+                  type="button"
                   key={shape.id}
                   onClick={() => handleAddShape(shape.id)}
                   style={{
@@ -532,10 +534,11 @@ export default function CanvasEditor() {
           <div>
             <p style={panelHeading}>Texto</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button onClick={() => handleAddText('heading')} style={accentBtn}>
+              <button type="button" onClick={() => handleAddText('heading')} style={accentBtn}>
                 {IC.plus(14)} Adicionar titulo
               </button>
               <button
+                type="button"
                 onClick={() => handleAddText('subheading')}
                 style={{
                   ...accentBtn,
@@ -547,6 +550,7 @@ export default function CanvasEditor() {
                 {IC.plus(14)} Adicionar subtitulo
               </button>
               <button
+                type="button"
                 onClick={() => handleAddText('body')}
                 style={{
                   ...accentBtn,
@@ -564,6 +568,7 @@ export default function CanvasEditor() {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button
+                  type="button"
                   onClick={() => handleAddText('heading')}
                   style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start' }}
                 >
@@ -575,6 +580,7 @@ export default function CanvasEditor() {
                   </span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleAddText('subheading')}
                   style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start' }}
                 >
@@ -586,6 +592,7 @@ export default function CanvasEditor() {
                   </span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleAddText('body')}
                   style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start' }}
                 >
@@ -686,6 +693,7 @@ export default function CanvasEditor() {
                 '#1877F2',
               ].map((c) => (
                 <button
+                  type="button"
                   key={c}
                   onClick={() => handleSetBackground(c)}
                   style={{
@@ -712,6 +720,7 @@ export default function CanvasEditor() {
                 ['#0A0A0C', '#2A2A2E'],
               ].map(([a, b], i) => (
                 <button
+                  type="button"
                   key={i}
                   onClick={() => handleSetBackground(a)}
                   style={{
@@ -732,6 +741,7 @@ export default function CanvasEditor() {
                 Imagem de fundo
               </p>
               <button
+                type="button"
                 onClick={() => {
                   const input = document.createElement('input');
                   input.type = 'file';
@@ -756,6 +766,7 @@ export default function CanvasEditor() {
                 </span>
               </button>
               <button
+                type="button"
                 onClick={() => editorRef.current?.background.removeBackground()}
                 style={{
                   ...cardBtn,
@@ -787,6 +798,7 @@ export default function CanvasEditor() {
                   const isActive = editorRef.current?.canvas.getActiveObject() === obj;
                   return (
                     <button
+                      type="button"
                       key={i}
                       onClick={() => {
                         if (!editorRef.current) return;
@@ -812,6 +824,7 @@ export default function CanvasEditor() {
                       </div>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (obj.visible === false) editorRef.current?.layers.showObject(obj);
@@ -832,6 +845,7 @@ export default function CanvasEditor() {
                           {obj.visible === false ? '◇' : '◆'}
                         </button>
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (obj.selectable === false)
@@ -882,6 +896,7 @@ export default function CanvasEditor() {
                 })}
                 <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                   <button
+                    type="button"
                     onClick={() => editorRef.current?.clipboard.duplicate()}
                     style={{
                       ...cardBtn,
@@ -895,6 +910,7 @@ export default function CanvasEditor() {
                     <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Duplicar</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       editorRef.current?.selection.deleteSelected();
                       setLayerList([...editorRef.current!.layers.getObjects()]);
@@ -932,6 +948,7 @@ export default function CanvasEditor() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {/* Drawing mode toggle */}
               <button
+                type="button"
                 onClick={() => {
                   const canvas = editorRef.current?.canvas;
                   if (!canvas) return;
@@ -1031,6 +1048,7 @@ export default function CanvasEditor() {
                     }}
                   />
                   <button
+                    type="button"
                     onClick={() => {
                       const nw = Number.parseInt(
                         (document.getElementById('tool-resize-w') as HTMLInputElement)?.value,
@@ -1059,6 +1077,7 @@ export default function CanvasEditor() {
 
               {/* Export */}
               <button
+                type="button"
                 onClick={() => handleExportFmt('png')}
                 style={{
                   ...cardBtn,
@@ -1158,6 +1177,7 @@ export default function CanvasEditor() {
               const active = sidebarTab === tab.id;
               return (
                 <button
+                  type="button"
                   key={tab.id}
                   onClick={() => toggleTab(tab.id)}
                   title={tab.label}
@@ -1235,7 +1255,7 @@ export default function CanvasEditor() {
             e.stopPropagation();
             setCanvasDragOver(false);
             const file = e.dataTransfer?.files?.[0];
-            if (file && file.type.startsWith('image/')) handleUpload(file);
+            if (file?.type.startsWith('image/')) handleUpload(file);
           }}
         >
           {/* ── Floating Property Bar ── */}
@@ -1309,6 +1329,7 @@ export default function CanvasEditor() {
                   <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
                   {/* Bold */}
                   <button
+                    type="button"
                     onClick={() =>
                       updateProp(
                         'fontWeight',
@@ -1331,6 +1352,7 @@ export default function CanvasEditor() {
                   </button>
                   {/* Italic */}
                   <button
+                    type="button"
                     onClick={() =>
                       updateProp(
                         'fontStyle',
@@ -1353,6 +1375,7 @@ export default function CanvasEditor() {
                   </button>
                   {/* Underline */}
                   <button
+                    type="button"
                     onClick={() => updateProp('underline', !selectedObj.underline)}
                     style={{
                       background: selectedObj.underline ? '#1C1C1F' : 'none',
@@ -1372,6 +1395,7 @@ export default function CanvasEditor() {
                   {/* Text align */}
                   {(['left', 'center', 'right', 'justify'] as const).map((align) => (
                     <button
+                      type="button"
                       key={align}
                       onClick={() => updateProp('textAlign', align)}
                       style={{
@@ -1534,6 +1558,7 @@ export default function CanvasEditor() {
                     />
                   </label>
                   <button
+                    type="button"
                     onClick={() => editorRef.current?.filters.grayscale()}
                     style={{
                       background: 'none',
@@ -1549,6 +1574,7 @@ export default function CanvasEditor() {
                     P&amp;B
                   </button>
                   <button
+                    type="button"
                     onClick={() => editorRef.current?.filters.removeFilters()}
                     style={{
                       background: 'none',
@@ -1651,6 +1677,7 @@ export default function CanvasEditor() {
         {/* Right: zoom controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button
+            type="button"
             onClick={handleZoomOut}
             style={{
               background: 'none',
@@ -1674,6 +1701,7 @@ export default function CanvasEditor() {
             </svg>
           </button>
           <button
+            type="button"
             onClick={handleZoomFit}
             style={{
               background: 'none',
@@ -1687,6 +1715,7 @@ export default function CanvasEditor() {
             <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: M }}>{zoom}%</span>
           </button>
           <button
+            type="button"
             onClick={handleZoomIn}
             style={{
               background: 'none',
@@ -1735,6 +1764,7 @@ export default function CanvasEditor() {
               <div key={i} style={{ height: 1, background: '#1C1C1F', margin: '4px 0' }} />
             ) : (
               <button
+                type="button"
                 key={i}
                 onClick={() => {
                   if (!item.disabled) {

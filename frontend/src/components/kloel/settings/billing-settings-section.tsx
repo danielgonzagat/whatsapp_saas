@@ -64,7 +64,7 @@ export function BillingSettingsSection({
   const workspaceId = tokenStorage.getWorkspaceId();
   const [showConfirmTrialModal, setShowConfirmTrialModal] = useState(false);
   const [showManageModal, setShowManageModal] = useState(false);
-  const [billingLoading, setBillingLoading] = useState(false);
+  const [_billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState('');
   const [billingSuccess, setBillingSuccess] = useState('');
   const [cards, setCards] = useState<
@@ -478,6 +478,7 @@ export function BillingSettingsSection({
           </h3>
           <div className="space-y-3">
             <button
+              type="button"
               className="flex w-full items-center justify-between rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] p-4 text-left transition-colors hover:border-[var(--app-border-primary)] hover:bg-[var(--app-bg-secondary)]"
               onClick={() => {
                 setShowManageModal(false);

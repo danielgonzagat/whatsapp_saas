@@ -41,11 +41,8 @@ import {
   ArrowUpRight,
   BarChart3,
   Bot,
-  Cable,
   Calendar,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   Clock,
   Database,
   DollarSign,
@@ -55,7 +52,6 @@ import {
   MessageSquare,
   Pause,
   Play,
-  Power,
   RefreshCw,
   Save,
   Send,
@@ -618,7 +614,7 @@ export default function AutopilotPage() {
         systemHealthResult.status === 'rejected';
 
       // Se billingSuspended, alguns endpoints podem responder 403/erro — isso não deve bloquear a tela.
-      if (statusData && statusData.billingSuspended) {
+      if (statusData?.billingSuspended) {
         setError(null);
       } else if (!statusData) {
         setError('Erro ao carregar dados do Autopilot');
@@ -867,6 +863,7 @@ export default function AutopilotPage() {
             {/* Toggle Button */}
             <div className="flex flex-col items-center gap-2">
               <button
+                type="button"
                 onClick={handleToggle}
                 disabled={isToggling || status?.billingSuspended}
                 className={`
@@ -931,6 +928,7 @@ export default function AutopilotPage() {
               <AlertCircle size={20} style={{ color: '#EF4444' }} />
               <span style={{ color: '#EF4444' }}>{error}</span>
               <button
+                type="button"
                 onClick={() => setError(null)}
                 className="ml-auto text-sm underline"
                 style={{ color: colors.text.muted }}
@@ -1003,6 +1001,7 @@ export default function AutopilotPage() {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={fetchAutopilotData}
                   disabled={isLoading}
                   className="p-2 rounded-lg transition-colors hover:bg-white/5"
@@ -1283,7 +1282,7 @@ export default function AutopilotPage() {
             <StatCard
               icon={CheckCircle2}
               label="Sucesso"
-              value={stats?.actionsByType?.REPLY || stats?.actionsByType?.['SEND_MESSAGE'] || 0}
+              value={stats?.actionsByType?.REPLY || stats?.actionsByType?.SEND_MESSAGE || 0}
               color={colors.brand.green}
             />
             <StatCard
@@ -1587,6 +1586,7 @@ export default function AutopilotPage() {
                 <option value="scheduled">Agendados</option>
               </select>
               <button
+                type="button"
                 onClick={fetchAutopilotData}
                 disabled={isLoading}
                 className="p-2 rounded-lg transition-colors hover:bg-white/5"
@@ -2241,6 +2241,7 @@ export default function AutopilotPage() {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     if (isEditingConfig) {
                       setConfigDraft(config || {});

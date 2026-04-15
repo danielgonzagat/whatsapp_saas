@@ -110,6 +110,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
           Comissionamento
         </h3>
         <button
+          type="button"
           onClick={openCreateModal}
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
@@ -151,6 +152,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
             render: (_, row) => (
               <div className="flex gap-1.5">
                 <button
+                  type="button"
                   onClick={() => openEditModal(row as Commission)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
@@ -158,6 +160,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleDelete(row.id)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
@@ -188,6 +191,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 {editingId ? 'Editar comissao' : 'Nova comissao'}
               </h3>
               <button
+                type="button"
                 onClick={() => {
                   setShowModal(false);
                   setEditingId(null);
@@ -260,6 +264,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={() => {
                   setShowModal(false);
                   setEditingId(null);
@@ -274,6 +279,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 Fechar
               </button>
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={creating}
                 className="rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"

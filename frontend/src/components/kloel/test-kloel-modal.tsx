@@ -43,6 +43,7 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">Enviar mensagem de teste</h2>
           <button
+            type="button"
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
           >

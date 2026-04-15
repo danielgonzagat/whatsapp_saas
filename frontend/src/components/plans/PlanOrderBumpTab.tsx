@@ -72,7 +72,7 @@ const PlusIcon = () => (
 );
 
 /* ── Design Tokens ── */
-const BG_VOID = '#0A0A0C';
+const _BG_VOID = '#0A0A0C';
 const BG_SURFACE = '#111113';
 const BG_ELEVATED = '#19191C';
 const BORDER = '#222226';
@@ -215,6 +215,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
           Order Bumps
         </h3>
         <button
+          type="button"
           onClick={() => {
             setForm(defaultForm);
             setEditingId(null);
@@ -261,7 +262,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
         <div
           style={{
             ...cardStyle,
-            borderColor: EMBER + '40',
+            borderColor: `${EMBER}40`,
           }}
         >
           <h4
@@ -356,6 +357,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
           {/* Form Actions */}
           <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
             <button
+              type="button"
               onClick={handleSave}
               disabled={saving}
               style={{
@@ -375,6 +377,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
               {saving ? 'Salvando...' : 'Salvar'}
             </button>
             <button
+              type="button"
               onClick={handleCancel}
               style={{
                 background: 'transparent',
@@ -470,7 +473,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                       fontFamily: FONT_BODY,
                       letterSpacing: '0.05em',
                       textTransform: 'uppercase' as const,
-                      background: bump.active !== false ? GREEN + '15' : TEXT_DIM + '20',
+                      background: bump.active !== false ? `${GREEN}15` : `${TEXT_DIM}20`,
                       color: bump.active !== false ? GREEN : TEXT_MUTED,
                     }}
                   >
@@ -518,6 +521,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
               {/* Actions */}
               <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                 <button
+                  type="button"
                   onClick={() => handleEdit(bump)}
                   style={{
                     background: 'transparent',
@@ -541,6 +545,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                   <EditIcon />
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleDelete(bump.id)}
                   style={{
                     background: 'transparent',

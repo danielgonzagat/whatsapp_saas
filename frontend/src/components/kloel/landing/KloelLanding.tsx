@@ -4,7 +4,7 @@
 'use client';
 import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import ThanosSection from './ThanosSection';
 
@@ -205,7 +205,7 @@ function HeroLoop() {
           if (!m.current) return;
           const p = i / 14;
           const mixed = L2.split('')
-            .map((c2, ci) => (c2 === ' ' ? ' ' : Math.random() < p ? c2 : rc()))
+            .map((c2, _ci) => (c2 === ' ' ? ' ' : Math.random() < p ? c2 : rc()))
             .join('');
           setGx({
             on: true,
@@ -579,7 +579,7 @@ function MultiChannel() {
               <div
                 style={{
                   background: msg.f === 'ai' ? '#19191C' : `${colors[ch]}12`,
-                  border: `1px solid ${msg.f === 'ai' ? '#222226' : colors[ch] + '25'}`,
+                  border: `1px solid ${msg.f === 'ai' ? '#222226' : `${colors[ch]}25`}`,
                   borderRadius: 4,
                   padding: '4px 7px',
                   fontSize: 10.5,
@@ -1545,6 +1545,7 @@ export default function KloelLanding() {
                   }}
                 />
                 <button
+                  type="button"
                   className="landing-final-cta-button"
                   onClick={() => {
                     if (typeof window === 'undefined') return;
@@ -1621,6 +1622,7 @@ export default function KloelLanding() {
             <Reveal key={i} delay={30 * i}>
               <div style={{ borderBottom: '1px solid #19191C' }}>
                 <button
+                  type="button"
                   onClick={() => setFaq(faq === i ? null : i)}
                   style={{
                     width: '100%',

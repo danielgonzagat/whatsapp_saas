@@ -263,6 +263,7 @@ export function UniversalComposer({
             const Icon = chip.icon;
             return (
               <button
+                type="button"
                 key={chip.id}
                 onClick={() => handleChipClick(chip)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-base font-medium transition-all hover:scale-[1.02]"

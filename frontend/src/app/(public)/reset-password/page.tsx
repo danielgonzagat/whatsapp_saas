@@ -156,6 +156,7 @@ function ResetPasswordContent() {
             O link de recuperacao de senha esta invalido ou expirado. Solicite um novo link.
           </p>
           <button
+            type="button"
             onClick={() => router.push('/login')}
             style={{
               height: 44,
@@ -192,6 +193,7 @@ function ResetPasswordContent() {
       <div style={{ width: '100%', maxWidth: 400 }}>
         {/* Back to login */}
         <button
+          type="button"
           onClick={() => router.push('/login')}
           style={{
             display: 'flex',
@@ -240,6 +242,7 @@ function ResetPasswordContent() {
               instantes.
             </p>
             <button
+              type="button"
               onClick={() => router.push('/login')}
               style={{
                 width: '100%',

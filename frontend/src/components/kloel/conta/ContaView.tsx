@@ -7,7 +7,6 @@ import { AnalyticsSettingsSection } from '@/components/kloel/settings/analytics-
 import { BillingSettingsSection } from '@/components/kloel/settings/billing-settings-section';
 import { BrainSettingsSection } from '@/components/kloel/settings/brain-settings-section';
 import { CrmSettingsSection } from '@/components/kloel/settings/crm-settings-section';
-import { WORKSPACE_SETTINGS_SECTIONS } from '@/components/kloel/settings/settings-registry';
 import { SystemAlertsCard } from '@/components/kloel/settings/system-alerts-card';
 import { BRAZILIAN_BANKS, POPULAR_BANK_CODES, formatBankCode } from '@/data/brazilian-banks';
 import {
@@ -29,7 +28,7 @@ import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { billingApi } from '@/lib/api';
 import { apiFetch, tokenStorage } from '@/lib/api/core';
-import { inviteTeamMember, listTeam, removeTeamMember, revokeTeamInvite } from '@/lib/api/team';
+import { inviteTeamMember, removeTeamMember, revokeTeamInvite } from '@/lib/api/team';
 import { swrFetcher } from '@/lib/fetcher';
 import { readFileAsDataUrl } from '@/lib/media-upload';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -39,16 +38,164 @@ import useSWR from 'swr';
 
 const HTTPS_RE = /^https?:\/\//;
 
+// ═══ DOMAIN TYPES ═══
+// Shape of KYC data returned by the backend. Fields are optional because the
+// backend returns partial records while onboarding is in progress.
+
+type FiscalType = 'PF' | 'PJ';
+
+interface KycProfile {
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  birthDate?: string | null;
+  avatarUrl?: string | null;
+  documentNumber?: string | null;
+  publicName?: string | null;
+  bio?: string | null;
+  website?: string | null;
+  instagram?: string | null;
+}
+
+interface KycFiscal {
+  type?: FiscalType | null;
+  cpf?: string | null;
+  fullName?: string | null;
+  cnpj?: string | null;
+  razaoSocial?: string | null;
+  nomeFantasia?: string | null;
+  inscricaoEstadual?: string | null;
+  inscricaoMunicipal?: string | null;
+  responsavelCpf?: string | null;
+  responsavelNome?: string | null;
+  cep?: string | null;
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+}
+
+type KycDocumentStatus = 'pending' | 'approved' | 'rejected' | 'review';
+
+interface KycDocument {
+  id: string;
+  type: string;
+  fileName?: string | null;
+  originalName?: string | null;
+  status?: KycDocumentStatus | string | null;
+  createdAt?: string | null;
+}
+
+interface KycBankAccount {
+  bankName?: string | null;
+  bankCode?: string | null;
+  agency?: string | null;
+  account?: string | null;
+  accountType?: string | null;
+  pixKey?: string | null;
+  pixKeyType?: string | null;
+  holderName?: string | null;
+  holderDocument?: string | null;
+}
+
+interface KycCompletionSection {
+  name: string;
+  complete?: boolean;
+}
+
+interface KycCompletion {
+  percentage: number;
+  sections?: KycCompletionSection[];
+}
+
+// Meta Platform (Instagram / Messenger / Ads) OAuth status.
+interface MetaAuthStatus {
+  connected: boolean;
+  pageName?: string | null;
+  instagramUsername?: string | null;
+  adAccountId?: string | null;
+  tokenExpired?: boolean;
+}
+
+interface MetaAuthUrlResponse {
+  url?: string;
+  data?: { url?: string };
+}
+
+// Team API shapes.
+type TeamMemberStatus = 'active' | 'pending';
+
+interface TeamMember {
+  id: string;
+  name?: string | null;
+  email: string;
+  role: string;
+  status?: TeamMemberStatus | string;
+}
+
+type TeamInviteStatus = 'pending' | 'accepted' | 'expired' | 'revoked';
+
+interface TeamInvite {
+  id: string;
+  email: string;
+  role: string;
+  status: TeamInviteStatus | string;
+}
+
+interface TeamApiResponse {
+  members?: TeamMember[];
+  invites?: TeamInvite[];
+}
+
+// BrasilAPI CNPJ response subset used for auto-fill.
+interface BrasilApiCnpjResponse {
+  razao_social?: string;
+  nome_fantasia?: string;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  municipio?: string;
+  uf?: string;
+  qsa?: Array<{ nome_socio?: string; cnpj_cpf_do_socio?: string }>;
+}
+
+// ViaCEP response subset used for address auto-fill.
+interface ViaCepResponse {
+  logradouro?: string;
+  complemento?: string;
+  bairro?: string;
+  localidade?: string;
+  uf?: string;
+  erro?: boolean;
+}
+
 // ═══ HELPERS ═══
+
+/** Extract a user-facing error message from an unknown thrown value.
+ *  Required because TS (strict) types catch variables as `unknown`. */
+function getErrorMessage(err: unknown): string | undefined {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object' && 'message' in err) {
+    const msg = (err as { message: unknown }).message;
+    return typeof msg === 'string' ? msg : undefined;
+  }
+  return undefined;
+}
 
 /** Strip empty-string values from payload before sending to backend.
  *  class-validator's @IsOptional() only skips undefined/null, not "". */
-function cleanPayload<T extends Record<string, any>>(obj: T): Partial<T> {
-  const result: Record<string, any> = {};
-  for (const [k, v] of Object.entries(obj)) {
+function cleanPayload<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const result: Partial<T> = {};
+  for (const [k, v] of Object.entries(obj) as Array<[keyof T, T[keyof T]]>) {
     if (v !== '' && v !== undefined && v !== null) result[k] = v;
   }
-  return result as Partial<T>;
+  return result;
 }
 
 // ═══ CONSTANTS ═══
@@ -586,6 +733,7 @@ function SaveButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={saving}
       style={{
@@ -658,7 +806,13 @@ function SectionCard({
 
 // ═══ SECTION 1: DADOS PESSOAIS ═══
 
-function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () => void }) {
+function DadosPessoaisSection({
+  profile,
+  mutate,
+}: {
+  profile: KycProfile | null;
+  mutate: () => void;
+}) {
   const { updateProfile, uploadAvatar } = useProfileMutations();
   const fileRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -713,8 +867,8 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao salvar. Tente novamente.');
+    } catch (e) {
+      setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
@@ -730,8 +884,8 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
       setAvatarPreviewUrl(dataUrl);
       await uploadAvatar(file);
       mutate();
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao salvar. Tente novamente.');
+    } catch (err) {
+      setError(getErrorMessage(err) || 'Erro ao salvar. Tente novamente.');
     }
   };
 
@@ -765,7 +919,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
         >
           {avatarPreviewUrl || profile?.avatarUrl ? (
             <img
-              src={avatarPreviewUrl || profile?.avatarUrl}
+              src={avatarPreviewUrl || profile?.avatarUrl || undefined}
               alt=""
               style={{
                 objectFit: 'contain',
@@ -915,7 +1069,7 @@ function Spinner({ size = 14 }: { size?: number }) {
   );
 }
 
-function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => void }) {
+function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mutate: () => void }) {
   const { updateFiscal } = useFiscalMutations();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -984,7 +1138,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
     try {
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
       if (!res.ok) return;
-      const data = await res.json();
+      const data: BrasilApiCnpjResponse = await res.json();
       setForm((prev) => ({
         ...prev,
         razaoSocial: data.razao_social || prev.razaoSocial,
@@ -1014,7 +1168,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
     try {
       const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
       if (!res.ok) return;
-      const data = await res.json();
+      const data: ViaCepResponse = await res.json();
       if (data.erro) return;
       setForm((prev) => ({
         ...prev,
@@ -1060,8 +1214,8 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao salvar. Tente novamente.');
+    } catch (e) {
+      setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
@@ -1087,10 +1241,10 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
     <SectionCard title="Dados fiscais" subtitle="Informacoes para emissao de notas e compliance">
       {/* Type selector */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-        <button onClick={() => setTipo('PF')} style={btnStyle(tipo === 'PF')}>
+        <button type="button" onClick={() => setTipo('PF')} style={btnStyle(tipo === 'PF')}>
           Pessoa Fisica (CPF)
         </button>
-        <button onClick={() => setTipo('PJ')} style={btnStyle(tipo === 'PJ')}>
+        <button type="button" onClick={() => setTipo('PJ')} style={btnStyle(tipo === 'PJ')}>
           Pessoa Juridica (CNPJ)
         </button>
       </div>
@@ -1340,8 +1494,8 @@ function DocumentosSection({
   fiscal,
   mutate,
 }: {
-  documents: any[];
-  fiscal: any;
+  documents: KycDocument[];
+  fiscal: KycFiscal | null;
   mutate: () => void;
 }) {
   const { uploadDocument, deleteDocument } = useDocumentMutations();
@@ -1351,12 +1505,12 @@ function DocumentosSection({
   const [error, setError] = useState('');
 
   const isPJ = fiscal?.type === 'PJ' || !!fiscal?.cnpj;
-  const docs = Array.isArray(documents) ? documents : [];
+  const docs: KycDocument[] = Array.isArray(documents) ? documents : [];
 
-  const idDoc = docs.find((d: any) => d.type === 'DOCUMENT_FRONT');
+  const idDoc = docs.find((d) => d.type === 'DOCUMENT_FRONT');
   const secondDoc = isPJ
-    ? docs.find((d: any) => d.type === 'COMPANY_DOCUMENT')
-    : docs.find((d: any) => d.type === 'PROOF_OF_ADDRESS');
+    ? docs.find((d) => d.type === 'COMPANY_DOCUMENT')
+    : docs.find((d) => d.type === 'PROOF_OF_ADDRESS');
 
   const handleUpload = async (type: string, file: File) => {
     setError('');
@@ -1364,8 +1518,8 @@ function DocumentosSection({
     try {
       await uploadDocument(type, file);
       mutate();
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao salvar. Tente novamente.');
+    } catch (e) {
+      setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
     }
     setUploading(null);
   };
@@ -1375,8 +1529,8 @@ function DocumentosSection({
     try {
       await deleteDocument(docId);
       mutate();
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao salvar. Tente novamente.');
+    } catch (e) {
+      setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
     }
   };
 
@@ -1390,7 +1544,7 @@ function DocumentosSection({
     label: string;
     sublabel: string;
     type: string;
-    doc: any;
+    doc: KycDocument | undefined;
     inputRef: React.RefObject<HTMLInputElement | null>;
   }) => {
     const [hover, setHover] = useState(false);
@@ -1430,6 +1584,7 @@ function DocumentosSection({
           <StatusBadge status={doc.status || 'pending'} />
           {(doc.status === 'pending' || !doc.status) && (
             <button
+              type="button"
               onClick={() => handleDelete(doc.id)}
               style={{
                 background: 'none',
@@ -1578,9 +1733,9 @@ function DadosBancariosSection({
   profile,
   mutate,
 }: {
-  bankAccount: any;
-  fiscal: any;
-  profile: any;
+  bankAccount: KycBankAccount | null;
+  fiscal: KycFiscal | null;
+  profile: KycProfile | null;
   mutate: () => void;
 }) {
   const { updateBank } = useBankMutations();
@@ -1700,8 +1855,8 @@ function DadosBancariosSection({
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao salvar. Tente novamente.');
+    } catch (e) {
+      setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
@@ -1735,6 +1890,7 @@ function DadosBancariosSection({
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {acctTypes.map((t) => (
           <button
+            type="button"
             key={t.key}
             onClick={() => set('accountType', t.key)}
             style={acctBtnStyle(form.accountType === t.key)}
@@ -1906,6 +2062,7 @@ function DadosBancariosSection({
                       const isSelected = form.bankCode === code3;
                       return (
                         <button
+                          type="button"
                           key={`${bank.code}-${bank.ispb}`}
                           onClick={() => selectBank(bank)}
                           style={{
@@ -1973,6 +2130,7 @@ function DadosBancariosSection({
                   )}
                   {!searchTerm && !showAllBanks && (
                     <button
+                      type="button"
                       onClick={() => setShowAllBanks(true)}
                       style={{
                         width: '100%',
@@ -2260,8 +2418,8 @@ function SegurancaSection() {
       setPwForm({ current: '', newPw: '', confirm: '' });
       setPwSuccess(true);
       setTimeout(() => setPwSuccess(false), 3000);
-    } catch (e: any) {
-      setPwError(e?.message || 'Erro ao alterar senha. Verifique a senha atual.');
+    } catch (e) {
+      setPwError(getErrorMessage(e) || 'Erro ao alterar senha. Verifique a senha atual.');
     }
     setSaving(false);
   };
@@ -2446,7 +2604,13 @@ function NotificacoesSection() {
 
 // ═══ SECTION 7: PERFIL PUBLICO ═══
 
-function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () => void }) {
+function PerfilPublicoSection({
+  profile,
+  mutate,
+}: {
+  profile: KycProfile | null;
+  mutate: () => void;
+}) {
   const { updateProfile } = useProfileMutations();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -2499,8 +2663,8 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
-    } catch (err: any) {
-      setError(err?.message || 'Erro ao salvar. Tente novamente.');
+    } catch (err) {
+      setError(getErrorMessage(err) || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
@@ -2621,7 +2785,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
           >
             {avatarPreviewUrl || profile?.avatarUrl ? (
               <img
-                src={avatarPreviewUrl || profile?.avatarUrl}
+                src={avatarPreviewUrl || profile?.avatarUrl || undefined}
                 alt=""
                 style={{
                   objectFit: 'contain',
@@ -2736,6 +2900,7 @@ function IdiomasSection() {
           const isActive = language === lang.key;
           return (
             <button
+              type="button"
               key={lang.key}
               onClick={() => {
                 if (!lang.disabled) handleChange(lang.key);
@@ -3015,6 +3180,7 @@ function AjudaSection() {
                 }}
               >
                 <button
+                  type="button"
                   onClick={() => toggle(idx)}
                   style={{
                     width: '100%',
@@ -3103,14 +3269,14 @@ function AjudaSection() {
 // ═══ META PLATFORM CONNECT ═══
 
 function MetaConnectSection() {
-  const [status, setStatus] = useState<any>(null);
+  const [status, setStatus] = useState<MetaAuthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
 
   useEffect(() => {
-    apiFetch('/meta/auth/status')
-      .then((data: any) => {
-        setStatus(data);
+    apiFetch<MetaAuthStatus>('/meta/auth/status')
+      .then((res) => {
+        setStatus(res.data ?? null);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -3118,8 +3284,8 @@ function MetaConnectSection() {
 
   const handleConnect = async () => {
     try {
-      const res = await apiFetch('/meta/auth/url');
-      const url = (res as any)?.url || (res as any)?.data?.url;
+      const res = await apiFetch<MetaAuthUrlResponse>('/meta/auth/url');
+      const url = res.data?.url || res.data?.data?.url;
       if (url) {
         window.open(url, 'meta-auth', 'width=600,height=700');
       }
@@ -3202,6 +3368,7 @@ function MetaConnectSection() {
               Token expirado. Reconecte para renovar.
             </span>
             <button
+              type="button"
               onClick={handleConnect}
               style={{
                 padding: '6px 14px',
@@ -3221,6 +3388,7 @@ function MetaConnectSection() {
         )}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button
+            type="button"
             onClick={handleDisconnect}
             disabled={disconnecting}
             style={{
@@ -3274,6 +3442,7 @@ function MetaConnectSection() {
           KLOEL.
         </div>
         <button
+          type="button"
           onClick={handleConnect}
           style={{
             padding: '11px 28px',
@@ -3305,16 +3474,16 @@ function MetaConnectSection() {
 
 function TeamSection() {
   const wsId = useWorkspaceId();
-  const { data, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useSWR<TeamApiResponse>(
     wsId ? `${wsId}:/team` : null,
-    () => swrFetcher('/team'),
+    () => swrFetcher<TeamApiResponse>('/team'),
     {
       keepPreviousData: true,
       revalidateOnFocus: false,
     },
   );
-  const members: any[] = (data as any)?.members || [];
-  const invites: any[] = (data as any)?.invites || [];
+  const members: TeamMember[] = data?.members ?? [];
+  const invites: TeamInvite[] = data?.invites ?? [];
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
@@ -3334,8 +3503,8 @@ function TeamSection() {
       setInviteEmail('');
       setInviteSuccess(`Convite enviado para ${inviteEmail.trim()}`);
       await mutate();
-    } catch (e: any) {
-      setInviteError(e?.message || 'Erro ao enviar convite');
+    } catch (e) {
+      setInviteError(getErrorMessage(e) || 'Erro ao enviar convite');
     } finally {
       setInviting(false);
     }
@@ -3460,6 +3629,7 @@ function TeamSection() {
             </select>
           </div>
           <button
+            type="button"
             onClick={handleInvite}
             disabled={inviting || !inviteEmail.trim()}
             style={{
@@ -3514,7 +3684,7 @@ function TeamSection() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
-            {members.map((m: any) => (
+            {members.map((m) => (
               <div
                 key={m.id}
                 style={{
@@ -3572,6 +3742,7 @@ function TeamSection() {
                   {m.status === 'active' ? 'Ativo' : 'Pendente'}
                 </span>
                 <button
+                  type="button"
                   onClick={() => handleRemove(m.id)}
                   disabled={removingId === m.id}
                   style={{
@@ -3595,12 +3766,12 @@ function TeamSection() {
       </SectionCard>
 
       {/* Pending invites */}
-      {invites.filter((inv: any) => inv.status === 'pending').length > 0 && (
+      {invites.filter((inv) => inv.status === 'pending').length > 0 && (
         <SectionCard title="Convites pendentes">
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
             {invites
-              .filter((inv: any) => inv.status === 'pending')
-              .map((inv: any) => (
+              .filter((inv) => inv.status === 'pending')
+              .map((inv) => (
                 <div
                   key={inv.id}
                   style={{
@@ -3643,6 +3814,7 @@ function TeamSection() {
                     Pendente
                   </span>
                   <button
+                    type="button"
                     onClick={() => handleRevoke(inv.id)}
                     disabled={revokingId === inv.id}
                     style={{
@@ -3704,6 +3876,7 @@ function SairSection() {
           fazer login novamente a qualquer momento.
         </p>
         <button
+          type="button"
           onClick={handleLogout}
           style={{
             padding: '12px 32px',
@@ -3750,9 +3923,9 @@ export default function ContaView() {
   const [creditsBalance, setCreditsBalance] = useState(0);
   const [hasCard, setHasCard] = useState(false);
 
-  const completionData = completion || { percentage: 0, sections: [] };
+  const completionData: KycCompletion = completion || { percentage: 0, sections: [] };
   const sectionStatus = (name: string) => {
-    const s = completionData.sections?.find((sec: any) => sec.name === name);
+    const s = completionData.sections?.find((sec) => sec.name === name);
     return s?.complete ? 'approved' : 'pending';
   };
 
@@ -3824,7 +3997,7 @@ export default function ContaView() {
     section === 'analytics' ||
     section === 'activity';
 
-  const workspaceIcons: Record<string, (s: number) => React.ReactNode> = {
+  const _workspaceIcons: Record<string, (s: number) => React.ReactNode> = {
     user: Icons.user,
     bank: Icons.bank,
     shield: Icons.shield,
@@ -4002,6 +4175,7 @@ export default function ContaView() {
               const done = sec.statusKey ? sectionStatus(sec.statusKey) === 'approved' : false;
               return (
                 <button
+                  type="button"
                   key={sec.key}
                   onClick={() => handleSelectSection(sec.key)}
                   style={{
@@ -4051,6 +4225,7 @@ export default function ContaView() {
               }}
             >
               <button
+                type="button"
                 onClick={() => {
                   if (
                     confirm(
@@ -4240,6 +4415,7 @@ export default function ContaView() {
                         </div>
                       </div>
                       <button
+                        type="button"
                         onClick={app.action}
                         style={{
                           padding: '8px 14px',
@@ -4341,6 +4517,7 @@ export default function ContaView() {
                       }}
                     />
                     <button
+                      type="button"
                       onClick={() => {
                         navigator.clipboard.writeText(
                           `${process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'}/ref/seu-codigo`,
@@ -4444,14 +4621,15 @@ export default function ContaView() {
               </span>
             )}
             <button
+              type="button"
               onClick={async () => {
                 setSubmitError('');
                 try {
                   await submitKyc();
                   mutateCompletion();
                   mutateStatus();
-                } catch (e: any) {
-                  setSubmitError(e?.message || 'Erro ao enviar. Tente novamente.');
+                } catch (e) {
+                  setSubmitError(getErrorMessage(e) || 'Erro ao enviar. Tente novamente.');
                 }
               }}
               style={{

@@ -2,7 +2,7 @@
 import { CurrencyInput } from '@/components/kloel/FormExtras';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
-import { colors, shadows, typography } from '@/lib/design-tokens';
+import { colors, typography } from '@/lib/design-tokens';
 import { AlertTriangle, Check, CreditCard, FileText, QrCode } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
@@ -427,6 +427,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
       {/* Save Button */}
       <div className="flex items-center gap-3 pt-2">
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"

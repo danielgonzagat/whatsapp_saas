@@ -45,6 +45,7 @@ function SBtn({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -199,6 +200,7 @@ export function KloelSidebar({
           </Link>
         ) : (
           <button
+            type="button"
             onClick={onToggle}
             title="Abrir sidebar"
             style={{
@@ -232,6 +234,7 @@ export function KloelSidebar({
 
         {expanded && (
           <button
+            type="button"
             onClick={onToggle}
             className="kloel-sidebar-collapse-button"
             title="Recolher sidebar"

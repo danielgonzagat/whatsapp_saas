@@ -2,7 +2,7 @@
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
-import { Loader2, Plus, Tag, Trash2, X } from 'lucide-react';
+import { Loader2, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
@@ -92,6 +92,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
           Cupons de desconto
         </h3>
         <button
+          type="button"
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
@@ -174,6 +175,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
             width: '10%',
             render: (_, row) => (
               <button
+                type="button"
                 onClick={() => handleDelete(row.id)}
                 className="rounded-full p-1.5"
                 style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
@@ -202,7 +204,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
               <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
                 Novo cupom
               </h3>
-              <button onClick={() => setShowModal(false)}>
+              <button type="button" onClick={() => setShowModal(false)}>
                 <X className="h-5 w-5" style={{ color: colors.text.dim }} />
               </button>
             </div>
@@ -289,6 +291,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={() => setShowModal(false)}
                 className="rounded-md px-4 py-2 text-sm"
                 style={{
@@ -300,6 +303,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                 Fechar
               </button>
               <button
+                type="button"
                 onClick={handleCreate}
                 disabled={creating || !form.code}
                 className="rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"

@@ -3,7 +3,7 @@
 import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
-import { Check, ChevronDown, Copy, X } from 'lucide-react';
+import { Check, Copy, X } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 // ============================================
@@ -60,6 +60,7 @@ export function ChipInput({
             >
               {tag}
               <button
+                type="button"
                 onClick={() => onChange(value.filter((t) => t !== tag))}
                 className="ml-0.5 hover:text-teal-900"
               >
@@ -256,6 +257,7 @@ export function CodeSnippet({ code, label }: { code: string; label?: string }) {
           {code}
         </pre>
         <button
+          type="button"
           onClick={handleCopy}
           className="absolute right-2 top-2 rounded-md bg-white border border-gray-200 p-1.5 text-gray-500 hover:text-gray-700"
         >

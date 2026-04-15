@@ -6,7 +6,6 @@ import {
   BarChart3,
   Bot,
   CreditCard,
-  MapPin,
   MessageSquare,
   Package,
   Settings,

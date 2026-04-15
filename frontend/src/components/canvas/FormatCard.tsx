@@ -18,12 +18,13 @@ export function FormatCard({ item, onClick }: FormatCardProps) {
 
   return (
     <button
+      type="button"
       onClick={() => onClick?.(item)}
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
         background: h ? '#151517' : '#111113',
-        border: `1px solid ${h ? c[0] + '35' : '#1C1C1F'}`,
+        border: `1px solid ${h ? `${c[0]}35` : '#1C1C1F'}`,
         borderRadius: 6,
         padding: 0,
         cursor: 'pointer',

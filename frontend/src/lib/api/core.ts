@@ -599,7 +599,7 @@ export async function apiFetch<T = any>(
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
     if (isProxyEndpoint) {
       headers['x-kloel-access-token'] = token;
     }
@@ -647,7 +647,7 @@ export async function apiFetch<T = any>(
       const refreshed = await refreshAccessToken();
       if (refreshed) {
         // Retry original request with new token
-        headers['Authorization'] = `Bearer ${tokenStorage.getToken()}`;
+        headers.Authorization = `Bearer ${tokenStorage.getToken()}`;
         const retryRes = await fetch(url, {
           ...options,
           credentials: 'include', // Send httpOnly cookies

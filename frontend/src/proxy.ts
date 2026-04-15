@@ -10,7 +10,6 @@ import {
   isStaticOrApiPath,
   isValidCheckoutCode,
   isValidCheckoutEntrySegment,
-  normalizeAppPath,
   sanitizeNextPath,
 } from '@/lib/subdomains';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -52,7 +51,7 @@ function isMercadoPagoNotificationRootRequest(request: NextRequest) {
   return (hasTopic && hasResourceId) || hasWebhookSignature;
 }
 
-function redirectToLogin(request: NextRequest, host: string, nextPath?: string) {
+function redirectToLogin(_request: NextRequest, host: string, nextPath?: string) {
   const loginUrl = new URL(buildAuthUrl('/login', host));
   loginUrl.searchParams.set(FORCE_AUTH_QUERY_KEY, '1');
 

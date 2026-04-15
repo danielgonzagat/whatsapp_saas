@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
 import { SectionPage } from '@/components/kloel/SectionPage';
-import { colors, motion, typography } from '@/lib/design-tokens';
+import { colors, typography } from '@/lib/design-tokens';
 import { FRONTEND_CAPABILITIES, getCategoryCounts } from '@/lib/frontend-capabilities';
 import { useRouter } from 'next/navigation';
 

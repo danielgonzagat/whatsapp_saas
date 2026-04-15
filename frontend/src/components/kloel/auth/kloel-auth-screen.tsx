@@ -616,9 +616,9 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     try {
       // Apple Sign-In via REST (for web, uses Apple JS SDK redirect flow)
       // The identityToken is obtained from Apple's authorization response
-      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.app')}&redirect_uri=${encodeURIComponent(window.location.origin + '/api/auth/apple/callback')}&response_type=code id_token&scope=name email&response_mode=form_post`;
+      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.app')}&redirect_uri=${encodeURIComponent(`${window.location.origin}/api/auth/apple/callback`)}&response_type=code id_token&scope=name email&response_mode=form_post`;
       window.location.href = appleAuthUrl;
-    } catch (e: any) {
+    } catch (e) {
       console.error('Apple Sign-In error:', e);
       setIsLoading(false);
     }
@@ -796,6 +796,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               </div>
 
               <button
+                type="button"
                 onClick={handleApple}
                 disabled={isLoading}
                 style={{
@@ -1040,6 +1041,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                 <>
                   Nao tem conta?{' '}
                   <button
+                    type="button"
                     onClick={() => switchMode('register')}
                     style={{
                       fontFamily: sora,
@@ -1060,6 +1062,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                 <>
                   Ja tem conta?{' '}
                   <button
+                    type="button"
                     onClick={() => switchMode('login')}
                     style={{
                       fontFamily: sora,

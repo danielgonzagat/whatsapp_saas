@@ -24,6 +24,7 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
     >
       {HOME_PILLS.map((p) => (
         <button
+          type="button"
           key={p.id}
           onMouseEnter={() => setHp(p.id)}
           onMouseLeave={() => setHp(null)}
@@ -48,7 +49,7 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
               height: 38,
               borderRadius: 6,
               background: hp === p.id ? `linear-gradient(135deg,${p.c[0]},${p.c[1]})` : '#111113',
-              border: `1px solid ${hp === p.id ? p.c[0] + '50' : '#1C1C1F'}`,
+              border: `1px solid ${hp === p.id ? `${p.c[0]}50` : '#1C1C1F'}`,
               transition: 'all 0.3s',
               display: 'flex',
               alignItems: 'center',

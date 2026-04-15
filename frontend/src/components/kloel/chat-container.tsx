@@ -21,7 +21,6 @@ import {
 } from '@/lib/kloel-conversations';
 import {
   appendAssistantTraceFromEvent,
-  createAssistantSystemTraceEntry,
   getAssistantResponseVersions,
 } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -287,6 +286,7 @@ function ReasoningTraceBar({
           </p>
         </div>
         <button
+          type="button"
           onClick={onToggle}
           style={{
             flexShrink: 0,
@@ -515,13 +515,13 @@ export function ChatContainer({
   const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false);
   const [showAgentDesktop, setShowAgentDesktop] = useState(false);
   const [agentActivities, setAgentActivities] = useState<AgentActivity[]>([]);
-  const [agentStats, setAgentStats] = useState<AgentStats>(EMPTY_AGENT_STATS);
-  const [agentThoughts, setAgentThoughts] = useState<string[]>([]);
+  const [_agentStats, setAgentStats] = useState<AgentStats>(EMPTY_AGENT_STATS);
+  const [_agentThoughts, setAgentThoughts] = useState<string[]>([]);
   const [currentThought, setCurrentThought] = useState('');
   const [agentTraceEntries, setAgentTraceEntries] = useState<AgentTraceEntry[]>([]);
   const [thoughtTraceExpanded, setThoughtTraceExpanded] = useState(false);
   const [isAgentThinking, setIsAgentThinking] = useState(false);
-  const [isAgentStreamConnected, setIsAgentStreamConnected] = useState(false);
+  const [_isAgentStreamConnected, setIsAgentStreamConnected] = useState(false);
   const [agentStreamEnabled, setAgentStreamEnabled] = useState(false);
   const [cursorTarget, setCursorTarget] = useState<AgentCursorTarget | null>(null);
   const [pendingAgentAction, setPendingAgentAction] = useState<string | null>(null);
@@ -667,7 +667,7 @@ export function ChatContainer({
   }, [isAuthenticated]);
 
   const [showPaywallModal, setShowPaywallModal] = useState(false);
-  const [paywallVariant, setPaywallVariant] = useState<'activate' | 'renew'>('activate');
+  const [paywallVariant, _setPaywallVariant] = useState<'activate' | 'renew'>('activate');
 
   const [settingsInitialTab, setSettingsInitialTab] = useState<
     'account' | 'billing' | 'brain' | 'activity'

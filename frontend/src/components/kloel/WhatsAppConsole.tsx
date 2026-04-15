@@ -6,17 +6,8 @@
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { useWhatsAppSession } from '@/hooks/useWhatsAppSession';
 import { type Message as InboxMessage, whatsappApi } from '@/lib/api';
-import { colors } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
-import {
-  ChevronLeft,
-  MessageCircleMore,
-  Power,
-  RefreshCcw,
-  Smartphone,
-  WifiOff,
-  X,
-} from 'lucide-react';
+import { ChevronLeft, MessageCircleMore, Power, RefreshCcw, Smartphone, X } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentActivity } from './AgentConsole';
 import { KloelMushroomVisual } from './KloelBrand';
@@ -540,6 +531,7 @@ function WhatsAppConsoleInner({
     <>
       {!isOpen && (
         <button
+          type="button"
           onClick={onToggle}
           className="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-2xl border border-r-0 border-[#222226] bg-[#111113] px-3 py-2 shadow-lg transition-all hover:pr-5"
         >
@@ -582,6 +574,7 @@ function WhatsAppConsoleInner({
 
           <div className="flex items-center gap-1">
             <button
+              type="button"
               onClick={disconnect}
               className="rounded-md p-2 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600"
               title="Desconectar WhatsApp"
@@ -590,6 +583,7 @@ function WhatsAppConsoleInner({
               <Power className="h-4 w-4" />
             </button>
             <button
+              type="button"
               onClick={onClose}
               className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               title="Fechar"
@@ -662,6 +656,7 @@ function WhatsAppConsoleInner({
 
                 <div className="mt-4 flex gap-2">
                   <button
+                    type="button"
                     onClick={connect}
                     disabled={loading}
                     className="flex-1 rounded-md bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
@@ -669,6 +664,7 @@ function WhatsAppConsoleInner({
                     {connecting ? 'Aguardando leitura' : 'Conectar WhatsApp'}
                   </button>
                   <button
+                    type="button"
                     onClick={reset}
                     disabled={loading}
                     className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
@@ -753,6 +749,7 @@ function WhatsAppConsoleInner({
                 <div className="space-y-2">
                   {chats.slice(0, 4).map((chat) => (
                     <button
+                      type="button"
                       key={chat.id}
                       onClick={() => setSelectedChatId(chat.id)}
                       className={cn(

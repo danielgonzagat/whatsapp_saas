@@ -1,6 +1,4 @@
 'use client';
-
-import React from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bg, Bt, M, PanelLoadingState, V, cs } from './product-nerve-center.shared';
 

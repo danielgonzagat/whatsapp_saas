@@ -166,6 +166,7 @@ export default function LeadsPage() {
           <p className="mt-2 text-sm text-[#6E6E73]">Faça login para visualizar seus leads.</p>
           <div className="mt-6 flex items-center gap-3">
             <button
+              type="button"
               onClick={() => openAuthModal('login')}
               className="rounded-xl bg-[#E85D30] px-4 py-2 text-sm font-semibold text-[#0A0A0C]"
             >
@@ -222,6 +223,7 @@ export default function LeadsPage() {
             Voltar ao chat
           </Link>
           <button
+            type="button"
             onClick={() => refreshLeads({ keepSelection: true })}
             disabled={loadingLeads}
             className="rounded-xl border border-[#222226] bg-[#111113] px-4 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
@@ -346,6 +348,7 @@ export default function LeadsPage() {
                     const statusLabel = STATUS_LABEL[lead.status] || lead.status || '—';
                     return (
                       <button
+                        type="button"
                         key={lead.id}
                         onClick={() => setSelectedLeadId(lead.id)}
                         className={`w-full px-5 py-4 text-left transition-colors ${isActive ? 'bg-[#19191C]' : 'hover:bg-[#19191C]'}`}
@@ -408,6 +411,7 @@ export default function LeadsPage() {
                       Abrir com IA
                     </Link>
                     <button
+                      type="button"
                       onClick={async () => {
                         if (!selectedLead.phone) return;
                         try {

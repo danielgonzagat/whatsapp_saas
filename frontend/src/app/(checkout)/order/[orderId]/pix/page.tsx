@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
@@ -171,6 +171,7 @@ export default function PixPaymentPage() {
             {data?.payment?.pixCopyPaste || 'Carregando...'}
           </div>
           <button
+            type="button"
             onClick={handleCopy}
             disabled={!data?.payment?.pixCopyPaste}
             style={{

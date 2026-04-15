@@ -36,6 +36,7 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
         {/* Back button */}
         {back && (
           <button
+            type="button"
             onClick={back}
             style={{
               background: 'none',
@@ -159,6 +160,7 @@ function TagButton({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

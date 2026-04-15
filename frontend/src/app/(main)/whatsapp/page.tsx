@@ -140,6 +140,7 @@ export default function WhatsAppPage() {
 
             <div className="flex flex-wrap gap-3">
               <button
+                type="button"
                 onClick={() => void load()}
                 className="rounded-full border border-[#35353B] px-5 py-2 text-sm font-medium text-[#F2F2F5]"
               >
@@ -147,6 +148,7 @@ export default function WhatsAppPage() {
               </button>
               {metaStatus?.connected ? (
                 <button
+                  type="button"
                   onClick={() => void handleDisconnect()}
                   className="rounded-full bg-[#2D1616] px-5 py-2 text-sm font-medium text-[#FFB0B0]"
                 >
@@ -154,6 +156,7 @@ export default function WhatsAppPage() {
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={() => void handleConnect()}
                   className="rounded-full bg-[#E0DDD8] px-5 py-2 text-sm font-semibold text-[#111113]"
                 >

@@ -45,6 +45,7 @@ export function Pagination({
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
         <button
+          type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           style={{
@@ -80,6 +81,7 @@ export function Pagination({
 
           return (
             <button
+              type="button"
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
               style={{
@@ -102,6 +104,7 @@ export function Pagination({
         })}
 
         <button
+          type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           style={{

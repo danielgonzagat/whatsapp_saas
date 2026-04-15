@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
 
 /* ─── Checkmark icon ───────────────────────────────────────────────────────── */

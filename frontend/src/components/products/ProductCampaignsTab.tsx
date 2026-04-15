@@ -194,6 +194,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
           Campanhas Registradas
         </h2>
         <button
+          type="button"
           onClick={() => setShowNew(true)}
           style={{
             display: 'flex',
@@ -243,6 +244,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
         >
           <span style={{ fontSize: 12, color: V.r, fontFamily: SORA }}>{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
             style={{
               background: 'none',
@@ -343,6 +345,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                 <div style={{ display: 'flex', gap: 4 }}>
                   {c.status === 'ACTIVE' ? (
                     <button
+                      type="button"
                       onClick={() => handlePause(c.id)}
                       style={{
                         padding: '4px 8px',
@@ -358,6 +361,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                     </button>
                   ) : (
                     <button
+                      type="button"
                       onClick={() => handleLaunch(c.id)}
                       style={{
                         padding: '4px 8px',
@@ -373,6 +377,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                     </button>
                   )}
                   <button
+                    type="button"
                     onClick={() => setLinkModal(c)}
                     style={{
                       padding: '4px 6px',
@@ -387,6 +392,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                     Links
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDelete(c.id)}
                     disabled={deleting === c.id}
                     style={{
@@ -476,6 +482,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                     {linkModal.pixelId}
                   </code>
                   <button
+                    type="button"
                     onClick={() => cp(linkModal.pixelId || '', `pixel-${linkModal.id}`)}
                     style={{
                       padding: '6px 10px',
@@ -522,6 +529,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                   {linkModal.id}
                 </code>
                 <button
+                  type="button"
                   onClick={() => cp(linkModal.id, `id-${linkModal.id}`)}
                   style={{
                     padding: '6px 10px',
@@ -540,6 +548,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
               <button
+                type="button"
                 onClick={() => setLinkModal(null)}
                 style={{
                   padding: '8px 16px',
@@ -663,6 +672,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button
+                type="button"
                 onClick={() => setShowNew(false)}
                 style={{
                   padding: '8px 16px',
@@ -678,6 +688,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={handleCreate}
                 disabled={creating || !newName.trim()}
                 style={{

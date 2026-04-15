@@ -170,12 +170,12 @@ const TOP_KEYWORDS: { keyword: string; conv: number; cpc: number }[] = [];
 // ── Helpers ──
 function Fmt(v: number): string {
   return v >= 1000000
-    ? (v / 1000000).toFixed(1) + 'M'
+    ? `${(v / 1000000).toFixed(1)}M`
     : v >= 1000
-      ? (v / 1000).toFixed(1) + 'K'
+      ? `${(v / 1000).toFixed(1)}K`
       : v.toString();
 }
-const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+const FmtMoney = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 const roasColor = (r: number) => (r > 4 ? G : r > 2 ? '#E0DDD8' : r > 1.5 ? '#F59E0B' : R);
 const fiberColor = (r: number) => (r > 10 ? G : r > 3 ? '#E0DDD8' : r > 1.5 ? '#F59E0B' : R);
 
@@ -260,7 +260,7 @@ function Ticker({ value, prefix = '' }: { value: number; prefix?: string }) {
     let step = 0;
     const iv = setInterval(() => {
       step++;
-      const ease = 1 - Math.pow(1 - step / steps, 3);
+      const ease = 1 - (1 - step / steps) ** 3;
       const next = current + diff * ease;
       setDisplay(next);
       if (step >= steps) {
@@ -475,7 +475,7 @@ function WarRoom({
         {[
           {
             label: 'ROAS',
-            value: hasData ? totalRoas.toFixed(2) + 'x' : '\u2014',
+            value: hasData ? `${totalRoas.toFixed(2)}x` : '\u2014',
             color: hasData ? roasColor(totalRoas) : '#3A3A3F',
           },
           {
@@ -678,6 +678,7 @@ function WarRoom({
                     </div>
                     <NP color={'#3A3A3F'} intensity={0} width={200} height={28} />
                     <button
+                      type="button"
                       onClick={() => {
                         if (key === 'meta') window.location.href = '/conta';
                       }}
@@ -786,6 +787,7 @@ function WarRoom({
                       {c.conv} conv
                     </span>
                     <button
+                      type="button"
                       onClick={() => handleCampaignToggle(c)}
                       title={c.status === 'active' ? 'Pausar campanha' : 'Ativar campanha'}
                       style={{
@@ -800,6 +802,7 @@ function WarRoom({
                       {c.status === 'active' ? IC.pause(12) : IC.play(12)}
                     </button>
                     <button
+                      type="button"
                       onClick={() => navigator.clipboard.writeText(c.id)}
                       title="Copiar ID da campanha"
                       style={{
@@ -1094,6 +1097,7 @@ function WarRoom({
 
       {/* Criar primeira regra CTA */}
       <button
+        type="button"
         onClick={onGoToRules}
         style={{
           background: 'transparent',
@@ -1225,6 +1229,7 @@ function PlatformTab({
             Apos conectar, todas as metricas, campanhas e dados serao importados automaticamente.
           </div>
           <button
+            type="button"
             onClick={() => {
               if (platformKey === 'meta') window.location.href = '/conta';
             }}
@@ -1261,7 +1266,7 @@ function PlatformTab({
           },
           {
             label: 'ROAS',
-            value: isConnected ? p.roas.toFixed(2) + 'x' : '\u2014',
+            value: isConnected ? `${p.roas.toFixed(2)}x` : '\u2014',
             color: isConnected ? roasColor(p.roas) : '#3A3A3F',
           },
           {
@@ -1271,12 +1276,12 @@ function PlatformTab({
           },
           {
             label: 'CTR',
-            value: isConnected ? p.ctr.toFixed(2) + '%' : '\u2014',
+            value: isConnected ? `${p.ctr.toFixed(2)}%` : '\u2014',
             color: isConnected ? '#E0DDD8' : '#3A3A3F',
           },
           {
             label: 'CPC',
-            value: isConnected ? 'R$ ' + p.cpc.toFixed(2) : '\u2014',
+            value: isConnected ? `R$ ${p.cpc.toFixed(2)}` : '\u2014',
             color: 'var(--app-text-secondary)',
           },
         ].map((m) => (
@@ -1404,6 +1409,7 @@ function PlatformTab({
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
+                  type="button"
                   onClick={() => handleCampaignToggle(c)}
                   title={c.status === 'active' ? 'Pausar' : 'Ativar'}
                   style={{
@@ -1418,6 +1424,7 @@ function PlatformTab({
                   {c.status === 'active' ? IC.pause(12) : IC.play(12)}
                 </button>
                 <button
+                  type="button"
                   onClick={() => navigator.clipboard.writeText(c.id)}
                   title="Copiar ID"
                   style={{
@@ -1534,6 +1541,7 @@ function TrackingTab({ focus }: { focus?: string }) {
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
             <button
+              type="button"
               onClick={() => router.push('/analytics?tab=abandonos')}
               style={{
                 background: EMBER,
@@ -1550,6 +1558,7 @@ function TrackingTab({ focus }: { focus?: string }) {
               Ver abandonos
             </button>
             <button
+              type="button"
               onClick={() => router.push('/marketing/email?mode=templates')}
               style={{
                 background: 'transparent',
@@ -1566,6 +1575,7 @@ function TrackingTab({ focus }: { focus?: string }) {
               Recuperar por email
             </button>
             <button
+              type="button"
               onClick={() => router.push('/settings?section=billing')}
               style={{
                 background: 'transparent',
@@ -1610,6 +1620,7 @@ function TrackingTab({ focus }: { focus?: string }) {
               },
             ].map((item) => (
               <button
+                type="button"
                 key={item.label}
                 onClick={() => router.push(item.href)}
                 style={{
@@ -1681,7 +1692,7 @@ function TrackingTab({ focus }: { focus?: string }) {
           { label: 'PIXEL FIRES', value: Fmt(pixelFires), color: EMBER },
           { label: 'POSTBACKS', value: Fmt(postbacks), color: G },
           { label: 'UTMs', value: String(utms), color: 'var(--app-text-primary)' },
-          { label: 'ATRIBUICAO', value: attribution + '%', color: G },
+          { label: 'ATRIBUICAO', value: `${attribution}%`, color: G },
         ].map((s) => (
           <div
             key={s.label}
@@ -1776,6 +1787,7 @@ function TrackingTab({ focus }: { focus?: string }) {
               {card.desc}
             </div>
             <button
+              type="button"
               onClick={card.action}
               style={{
                 marginTop: 14,
@@ -1918,7 +1930,7 @@ function TrackingTab({ focus }: { focus?: string }) {
                 borderRadius: 6,
                 padding: 14,
                 textAlign: 'center' as const,
-                border: `1px solid ${ig.connected ? G + '33' : '#222226'}`,
+                border: `1px solid ${ig.connected ? `${G}33` : '#222226'}`,
               }}
             >
               <div
@@ -2284,6 +2296,7 @@ function RulesTab() {
                     </div>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                       <button
+                        type="button"
                         onClick={cancelEdit}
                         style={{
                           background: 'none',
@@ -2299,6 +2312,7 @@ function RulesTab() {
                         Cancelar
                       </button>
                       <button
+                        type="button"
                         onClick={() => saveEdit(r.id)}
                         disabled={!editCondition.trim() || !editAction.trim()}
                         style={{
@@ -2356,6 +2370,7 @@ function RulesTab() {
                       {r.fires}
                     </span>
                     <button
+                      type="button"
                       onClick={() => startEdit(r)}
                       style={{
                         background: 'none',
@@ -2370,6 +2385,7 @@ function RulesTab() {
                       {IC.dup(12)}
                     </button>
                     <button
+                      type="button"
                       onClick={() => toggleRule(r.id)}
                       style={{
                         width: 36,
@@ -2399,6 +2415,7 @@ function RulesTab() {
                       />
                     </button>
                     <button
+                      type="button"
                       onClick={() => deleteRule(r.id)}
                       style={{
                         background: 'none',
@@ -2507,6 +2524,7 @@ function RulesTab() {
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
               <button
+                type="button"
                 onClick={() => {
                   setShowForm(false);
                   setNewCondition('');
@@ -2526,6 +2544,7 @@ function RulesTab() {
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={handleCreateRule}
                 disabled={!newCondition.trim() || !newAction.trim()}
                 style={{
@@ -2551,10 +2570,11 @@ function RulesTab() {
 
       {/* Criar nova regra button */}
       <button
+        type="button"
         onClick={openForm}
         style={{
           background: 'transparent',
-          border: `1px dashed ${showForm ? '#3A3A3F' : EMBER + '66'}`,
+          border: `1px dashed ${showForm ? '#3A3A3F' : `${EMBER}66`}`,
           borderRadius: 6,
           padding: 16,
           color: showForm ? '#3A3A3F' : EMBER,
@@ -2726,6 +2746,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
           const icon = IC[t.iconKey];
           return (
             <button
+              type="button"
               key={t.id}
               onClick={() => goToTab(t.id)}
               style={{

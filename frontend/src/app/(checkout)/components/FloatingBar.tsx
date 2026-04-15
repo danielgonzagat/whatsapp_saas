@@ -74,6 +74,7 @@ export default function FloatingBar({
       </svg>
       <span style={{ fontSize: '13px', color: textColor, fontWeight: 500 }}>{message}</span>
       <button
+        type="button"
         onClick={() => setDismissed(true)}
         style={{
           background: 'none',

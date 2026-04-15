@@ -3,7 +3,7 @@
 import { useToast } from '@/components/kloel/ToastProvider';
 import { useCheckoutConfig } from '@/hooks/useCheckoutPlans';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import {
   Bg,

@@ -334,6 +334,7 @@ export function InboxWorkspace({
           </p>
           <div className="mt-6 flex items-center gap-3">
             <button
+              type="button"
               onClick={() => openAuthModal('login')}
               className="rounded-xl bg-[#E85D30] px-4 py-2 text-base font-semibold text-[#0A0A0C]"
             >
@@ -426,6 +427,7 @@ export function InboxWorkspace({
               ) : null}
             </div>
             <button
+              type="button"
               onClick={refreshConversations}
               disabled={loadingConversations}
               className="self-start rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 sm:self-auto"
@@ -506,6 +508,7 @@ export function InboxWorkspace({
                 ] as [ChannelFilter, string][]
               ).map(([value, label]) => (
                 <button
+                  type="button"
                   key={value}
                   onClick={() => setChannelFilter(value)}
                   className={`rounded-[calc(var(--inbox-radius)-10px)] px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold transition-colors ${
@@ -528,6 +531,7 @@ export function InboxWorkspace({
                 ] as [StatusFilter, string][]
               ).map(([value, label]) => (
                 <button
+                  type="button"
                   key={value}
                   onClick={() => setStatusFilter(value)}
                   className={`rounded-[calc(var(--inbox-radius)-10px)] px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold transition-colors ${
@@ -583,6 +587,7 @@ export function InboxWorkspace({
                     const isHandledByHuman = !!c.assignedAgent;
                     return (
                       <button
+                        type="button"
                         key={c.id}
                         onClick={() => handleSelectConversation(c.id)}
                         className={`w-full px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)] text-left transition-colors ${isActive ? 'bg-[#19191C]' : 'hover:bg-[#19191C]'}`}
@@ -698,6 +703,7 @@ export function InboxWorkspace({
 
                 {selectedConversationId && !selectedConversation?.assignedAgent ? (
                   <button
+                    type="button"
                     onClick={handleAssumir}
                     disabled={assigning}
                     className="rounded-[var(--inbox-radius)] border border-[#E85D30]/30 bg-[#E85D30]/10 px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E85D30] hover:bg-[#E85D30]/20 disabled:opacity-50"
@@ -707,6 +713,7 @@ export function InboxWorkspace({
                 ) : null}
                 {selectedConversationId && selectedConversation?.assignedAgent ? (
                   <button
+                    type="button"
                     onClick={handleDevolverIA}
                     disabled={assigning}
                     className="rounded-[var(--inbox-radius)] border border-emerald-500/30 bg-emerald-500/10 px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
@@ -746,6 +753,7 @@ export function InboxWorkspace({
                 ) : null}
 
                 <button
+                  type="button"
                   onClick={() => {
                     const href = buildDashboardHref({
                       source: 'inbox',
@@ -763,6 +771,7 @@ export function InboxWorkspace({
                   Abrir com IA
                 </button>
                 <button
+                  type="button"
                   onClick={handleCloseConversation}
                   disabled={!selectedConversationId}
                   className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"

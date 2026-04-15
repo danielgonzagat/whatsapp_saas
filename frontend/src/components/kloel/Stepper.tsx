@@ -37,6 +37,7 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
           >
             {/* Step indicator */}
             <button
+              type="button"
               onClick={() => isClickable && onStepClick(step.id)}
               disabled={!isClickable}
               style={{

@@ -1,7 +1,6 @@
 'use client';
-import { CodeSnippet, DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
-import { colors, shadows, typography } from '@/lib/design-tokens';
+import { colors, typography } from '@/lib/design-tokens';
 import {
   Check,
   Copy,
@@ -13,7 +12,6 @@ import {
   Plus,
   Sparkles,
   Trash2,
-  X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
@@ -67,7 +65,7 @@ const TRIGGER_TIMINGS = [
 export function ProductUrlsTab({ productId }: { productId: string }) {
   const [items, setItems] = useState<ProductUrlItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [_showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     description: '',
     url: '',
@@ -465,6 +463,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                   Código do widget para integrar no seu site:
                 </span>
                 <button
+                  type="button"
                   onClick={handleCopyCode}
                   className="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
                   style={{
@@ -495,6 +494,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
 
         <div className="mt-4 flex justify-end">
           <button
+            type="button"
             onClick={handleCreate}
             disabled={creating || !form.description || !form.url}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-all"
@@ -647,6 +647,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDelete(row.id)}
                         className="rounded-full p-1.5 transition-colors"
                         style={{ background: `${colors.state.error}15`, color: colors.state.error }}

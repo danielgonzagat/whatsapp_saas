@@ -575,6 +575,7 @@ export function QRCodePane({
             </p>
           ) : null}
           <button
+            type="button"
             onClick={onRefresh}
             style={{
               background: '#25D366',
@@ -753,6 +754,7 @@ function MediaItem({
           </div>
         </div>
         <button
+          type="button"
           onClick={onRemove}
           style={{
             background: 'none',
@@ -1291,7 +1293,7 @@ export default function WhatsAppExperience({
         void requestQrCode({ silent: true });
         try {
           await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
-        } catch (err: any) {
+        } catch (err) {
           if (getErrorStatus(err) === 401) {
             setSessionExpired(true);
             setError(SESSION_EXPIRED_MESSAGE);
@@ -1800,6 +1802,7 @@ export default function WhatsAppExperience({
                   {draft.selectedProducts.length} de {selectableProducts.length} selecionados
                 </span>
                 <button
+                  type="button"
                   onClick={() =>
                     setDraft((current) => ({
                       ...current,
@@ -1838,6 +1841,7 @@ export default function WhatsAppExperience({
               </div>
               <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
                 <button
+                  type="button"
                   disabled={draft.selectedProducts.length === 0 || busyKey === 'products'}
                   onClick={() => void saveProductsStep()}
                   style={{
@@ -1901,6 +1905,7 @@ export default function WhatsAppExperience({
               </div>
 
               <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 style={{
                   width: '100%',
@@ -1925,6 +1930,7 @@ export default function WhatsAppExperience({
 
               <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>
                 <button
+                  type="button"
                   onClick={() => setStep(1)}
                   style={{
                     background: 'none',
@@ -1940,6 +1946,7 @@ export default function WhatsAppExperience({
                   ← Voltar
                 </button>
                 <button
+                  type="button"
                   onClick={() => void goToConfigStep()}
                   disabled={uploadingCount > 0 || busyKey === 'arsenal'}
                   style={{
@@ -2222,6 +2229,7 @@ export default function WhatsAppExperience({
 
               <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>
                 <button
+                  type="button"
                   onClick={() => setStep(2)}
                   style={{
                     background: 'none',
@@ -2237,6 +2245,7 @@ export default function WhatsAppExperience({
                   ← Voltar
                 </button>
                 <button
+                  type="button"
                   onClick={() => void activateAi()}
                   disabled={busyKey === 'activate'}
                   style={{
@@ -2301,6 +2310,7 @@ export default function WhatsAppExperience({
           <h2 style={{ margin: 0, fontSize: 24, color: T, fontFamily: F }}>Painel operacional</h2>
         </div>
         <button
+          type="button"
           onClick={() => {
             setReconfiguring(true);
             setStep(effectiveConnection.connected ? 1 : 0);

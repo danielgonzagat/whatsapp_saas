@@ -290,6 +290,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       {/* Save Button */}
       <div className="flex items-center gap-3 pt-2">
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"

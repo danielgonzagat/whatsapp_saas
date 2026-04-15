@@ -2,7 +2,7 @@
 
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { ChevronRight } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { type NavItem, getIconComponent } from './sidebar-config';
 
 // ============================================
@@ -42,7 +42,7 @@ export function SidebarNav({
         const isActive = activeView === item.key;
         const isExpanded = expandedNav === item.key;
         const activeSubParent = activeSubView?.split(':')[0];
-        const parentHasActiveSub = activeSubParent === item.key;
+        const _parentHasActiveSub = activeSubParent === item.key;
         const isHovered = hoveredItem === item.key;
         const hasSubs = item.sub.length > 0;
 
@@ -50,6 +50,7 @@ export function SidebarNav({
           <div key={item.key} style={{ position: 'relative' }}>
             {/* Main nav button */}
             <button
+              type="button"
               onClick={() => {
                 if (hasSubs && expanded) {
                   onToggleNav(item.key);
@@ -158,6 +159,7 @@ export function SidebarNav({
 
                   return (
                     <button
+                      type="button"
                       key={sub}
                       onClick={() => onNavClick(item.key, sub)}
                       onMouseEnter={() => setHoveredSub(subKey)}

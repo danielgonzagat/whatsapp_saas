@@ -267,6 +267,7 @@ export function Bt({
 }) {
   return (
     <button
+      type="button"
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       style={{
@@ -472,6 +473,7 @@ export function TabBar({
     >
       {tabs.map((tab) => (
         <button
+          type="button"
           key={tab.k}
           onClick={() => onSelect(tab.k)}
           style={{
@@ -540,6 +542,7 @@ export function Modal({
             {title}
           </h3>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',

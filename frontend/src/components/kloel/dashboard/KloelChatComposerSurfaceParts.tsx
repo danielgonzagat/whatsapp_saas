@@ -14,7 +14,7 @@ const ERROR = KLOEL_THEME.error;
 const ERROR_BG = KLOEL_THEME.errorBg;
 const HOVER = KLOEL_THEME.bgHover;
 const OVERLAY = KLOEL_THEME.bgOverlay;
-const SURFACE = KLOEL_THEME.bgCard;
+const _SURFACE = KLOEL_THEME.bgCard;
 const SURFACE_ELEVATED = KLOEL_THEME.bgElevated;
 
 export function PopoverAction({

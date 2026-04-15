@@ -1,7 +1,7 @@
 'use client';
 
 import { useCRMMutations, useDeals, usePipelines } from '@/hooks/useCRM';
-import { type DragEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type DragEvent, type FormEvent, useCallback, useState } from 'react';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -132,13 +132,13 @@ export default function CRMPipelineView() {
   const [dragDealId, setDragDealId] = useState<string | null>(null);
 
   // deal detail modal state
-  const [detailEditing, setDetailEditing] = useState(false);
+  const [_detailEditing, setDetailEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editValue, setEditValue] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [detailSaving, setDetailSaving] = useState(false);
   const [detailDeleting, setDetailDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [_confirmDelete, setConfirmDelete] = useState(false);
 
   // form state for inline "new deal"
   const [formTitle, setFormTitle] = useState('');
@@ -224,7 +224,7 @@ export default function CRMPipelineView() {
     setConfirmDelete(false);
   }, []);
 
-  const startEditing = useCallback(() => {
+  const _startEditing = useCallback(() => {
     if (!detailDeal) return;
     setEditTitle(detailDeal.title || '');
     setEditValue(String(detailDeal.value || 0));
@@ -233,11 +233,11 @@ export default function CRMPipelineView() {
     setConfirmDelete(false);
   }, [detailDeal]);
 
-  const cancelEditing = useCallback(() => {
+  const _cancelEditing = useCallback(() => {
     setDetailEditing(false);
   }, []);
 
-  const handleSaveEdit = useCallback(async () => {
+  const _handleSaveEdit = useCallback(async () => {
     if (!detailDeal || detailSaving) return;
     const did = detailDeal._id || detailDeal.id;
     setDetailSaving(true);
@@ -266,7 +266,7 @@ export default function CRMPipelineView() {
     setDetailSaving(false);
   }, [detailDeal, editTitle, editValue, editNotes, detailSaving, updateDeal, mutateDeals]);
 
-  const handleDeleteDeal = useCallback(async () => {
+  const _handleDeleteDeal = useCallback(async () => {
     if (!detailDeal || detailDeleting) return;
     const did = detailDeal._id || detailDeal.id;
     setDetailDeleting(true);
@@ -636,6 +636,7 @@ export default function CRMPipelineView() {
                     </form>
                   ) : (
                     <button
+                      type="button"
                       onClick={() => {
                         setAddingStage(sid);
                         setFormTitle('');
@@ -712,6 +713,7 @@ export default function CRMPipelineView() {
                 {detailDeal.title}
               </span>
               <button
+                type="button"
                 onClick={() => setDetailDeal(null)}
                 style={{
                   background: 'none',

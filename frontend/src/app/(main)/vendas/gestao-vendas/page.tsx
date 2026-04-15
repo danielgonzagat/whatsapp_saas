@@ -3,11 +3,9 @@
 export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
-import { Lbl } from '@/components/kloel/Lbl';
 import { PageTitle } from '@/components/kloel/PageTitle';
-import { Val } from '@/components/kloel/Val';
 import { useCRMMutations, useContacts } from '@/hooks/useCRM';
-import { colors, motion, typography } from '@/lib/design-tokens';
+import { colors, typography } from '@/lib/design-tokens';
 import { useState } from 'react';
 
 export default function GestaoVendasPage() {
@@ -262,6 +260,7 @@ export default function GestaoVendasPage() {
                               >
                                 {tag}
                                 <button
+                                  type="button"
                                   onClick={() => handleRemoveTag(phone, tag)}
                                   style={{
                                     background: 'none',
@@ -301,6 +300,7 @@ export default function GestaoVendasPage() {
                                   autoFocus
                                 />
                                 <button
+                                  type="button"
                                   onClick={() => handleAddTag(phone)}
                                   style={{
                                     background: 'none',
@@ -316,6 +316,7 @@ export default function GestaoVendasPage() {
                               </div>
                             ) : (
                               <button
+                                type="button"
                                 onClick={() => {
                                   setActiveContact(phone);
                                   setTagInput('');
@@ -338,6 +339,7 @@ export default function GestaoVendasPage() {
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <button
+                            type="button"
                             onClick={() => window.open(`https://wa.me/${phone}`, '_blank')}
                             style={{
                               padding: '4px 10px',
@@ -364,6 +366,7 @@ export default function GestaoVendasPage() {
             {/* Pagination */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
               <button
+                type="button"
                 disabled={page === '1'}
                 onClick={() => setPage(String(Math.max(1, Number(page) - 1)))}
                 style={{
@@ -392,6 +395,7 @@ export default function GestaoVendasPage() {
                 Pagina {page}
               </span>
               <button
+                type="button"
                 disabled={!hasMore}
                 onClick={() => setPage(String(Number(page) + 1))}
                 style={{

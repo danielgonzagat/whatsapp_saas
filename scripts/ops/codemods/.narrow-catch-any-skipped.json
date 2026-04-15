@@ -1,0 +1,612 @@
+[
+  {
+    "file": "backend/scripts/test-redis.ts",
+    "line": 88,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/scripts/test-redis.ts",
+    "line": 118,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/app.controller.ts",
+    "line": 73,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/copilot/copilot.service.ts",
+    "line": 96,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/copilot/copilot.service.ts",
+    "line": 204,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/crm/neuro-crm.service.ts",
+    "line": 231,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/followup/followup.service.ts",
+    "line": 81,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/kloel/guest-chat.service.ts",
+    "line": 130,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/kloel/guest-chat.service.ts",
+    "line": 150,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/kloel/guest-chat.service.ts",
+    "line": 215,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/kloel/guest-chat.service.ts",
+    "line": 252,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/webhooks/webhooks.service.ts",
+    "line": 379,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "backend/src/whatsapp/providers/provider-registry.ts",
+    "line": 297,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useCanvasAI.ts",
+    "line": 21,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useFlows.ts",
+    "line": 49,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useFlows.ts",
+    "line": 64,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useFlows.ts",
+    "line": 82,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useFlows.ts",
+    "line": 116,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useFlows.ts",
+    "line": 134,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useFlows.ts",
+    "line": 152,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useFlows.ts",
+    "line": 168,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useFlows.ts",
+    "line": 187,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useWhatsAppSession.ts",
+    "line": 319,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/hooks/useWhatsAppSession.ts",
+    "line": 334,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/AgentDesktopViewer.tsx",
+    "line": 99,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/AgentDesktopViewer.tsx",
+    "line": 123,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/AgentDesktopViewer.tsx",
+    "line": 140,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/carteira.tsx",
+    "line": 677,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/carteira.tsx",
+    "line": 2077,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/carteira.tsx",
+    "line": 2908,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/carteira.tsx",
+    "line": 2919,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/chat-container.tsx",
+    "line": 1400,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/chat-container.tsx",
+    "line": 1525,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/chat-container.tsx",
+    "line": 1597,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/lib/api/core.ts",
+    "line": 682,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/lib/api/kloel-api.ts",
+    "line": 115,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/analytics/page.tsx",
+    "line": 1733,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/autopilot/page.tsx",
+    "line": 650,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/autopilot/page.tsx",
+    "line": 698,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/autopilot/page.tsx",
+    "line": 715,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/autopilot/page.tsx",
+    "line": 735,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/autopilot/page.tsx",
+    "line": 749,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/autopilot/page.tsx",
+    "line": 768,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/flow/page.tsx",
+    "line": 100,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/flow/page.tsx",
+    "line": 113,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/flow/page.tsx",
+    "line": 156,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/funnels/page.tsx",
+    "line": 53,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/leads/page.tsx",
+    "line": 100,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/pricing/page.tsx",
+    "line": 162,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/scrapers/page.tsx",
+    "line": 144,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/video/page.tsx",
+    "line": 180,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/video/page.tsx",
+    "line": 224,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/video/page.tsx",
+    "line": 248,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/video/page.tsx",
+    "line": 268,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/video/page.tsx",
+    "line": 299,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/video/page.tsx",
+    "line": 313,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/webinarios/page.tsx",
+    "line": 128,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/webinarios/page.tsx",
+    "line": 160,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/webinarios/page.tsx",
+    "line": 195,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/webinarios/page.tsx",
+    "line": 210,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/whatsapp/page.tsx",
+    "line": 99,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/whatsapp/page.tsx",
+    "line": 114,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 716,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 733,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 1063,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 1367,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 1378,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 1704,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 2267,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 2506,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 3346,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+    "line": 4471,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/crm/ContactDetailDrawer.tsx",
+    "line": 190,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/inbox/InboxWorkspace.tsx",
+    "line": 166,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/inbox/InboxWorkspace.tsx",
+    "line": 180,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/inbox/InboxWorkspace.tsx",
+    "line": 193,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/inbox/InboxWorkspace.tsx",
+    "line": 216,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/inbox/InboxWorkspace.tsx",
+    "line": 243,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/inbox/InboxWorkspace.tsx",
+    "line": 272,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/inbox/InboxWorkspace.tsx",
+    "line": 736,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/landing/FloatingChat.tsx",
+    "line": 290,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
+    "line": 2359,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
+    "line": 2375,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
+    "line": 2388,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
+    "line": 2406,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
+    "line": 1183,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
+    "line": 1304,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
+    "line": 1464,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
+    "line": 1509,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
+    "line": 1552,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
+    "line": 1582,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
+    "line": 1621,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/account-settings-section.tsx",
+    "line": 137,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/account-settings-section.tsx",
+    "line": 186,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/account-settings-section.tsx",
+    "line": 214,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/analytics-settings-section.tsx",
+    "line": 71,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 335,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 385,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 417,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 432,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 453,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 485,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 504,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 523,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 564,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 606,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 647,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 667,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+    "line": 710,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/crm-settings-section.tsx",
+    "line": 154,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/crm-settings-section.tsx",
+    "line": 226,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/crm-settings-section.tsx",
+    "line": 252,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/crm-settings-section.tsx",
+    "line": 279,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/crm-settings-section.tsx",
+    "line": 300,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/settings/crm-settings-section.tsx",
+    "line": 317,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/components/kloel/vendas/VendasView.tsx",
+    "line": 373,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/ferramentas/launchpad/page.tsx",
+    "line": 136,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/ferramentas/launchpad/page.tsx",
+    "line": 343,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/(main)/products/new/page.tsx",
+    "line": 471,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "frontend/src/app/api/auth/google/route.ts",
+    "line": 39,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "worker/voice-processor.ts",
+    "line": 180,
+    "reason": "member access on catch binding requires manual narrowing"
+  },
+  {
+    "file": "worker/processors/crm-processor.ts",
+    "line": 30,
+    "reason": "member access on catch binding requires manual narrowing"
+  }
+]

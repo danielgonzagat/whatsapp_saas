@@ -13,7 +13,7 @@ import { apiFetch } from '@/lib/api';
 import { buildPublicCheckoutEntryUrl, getPrimaryCheckoutLinkForPlan } from '@/lib/checkout-links';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 import { useRouter } from 'next/navigation';
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { mutate } from 'swr';
 import { ProductNerveCenterAfterPayTab } from './ProductNerveCenterAfterPayTab';
 import { ProductNerveCenterAvalTab } from './ProductNerveCenterAvalTab';
@@ -39,7 +39,6 @@ import {
   Bt,
   Dv,
   Fd,
-  IconActionButton,
   M,
   Modal,
   NP,
@@ -63,7 +62,7 @@ import {
    V — KLOEL Terminator palette (Nerve Center)
    ═══════════════════════════════════════════════════ */
 const R$ = formatBrlCents;
-const parseCurrencyInput = (value: string) => {
+const _parseCurrencyInput = (value: string) => {
   const normalized = String(value || '')
     .replace(/[^\d,.-]/g, '')
     .replace(/\.(?=\d{3}(\D|$))/g, '')
@@ -71,17 +70,17 @@ const parseCurrencyInput = (value: string) => {
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 };
-const formatCurrencyMask = (value: string) => {
+const _formatCurrencyMask = (value: string) => {
   const digits = String(value || '').replace(/\D/g, '');
   const cents = Number(digits || '0');
   return cents.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
-const sanitizePositiveInteger = (value: string, fallback = 1) => {
+const _sanitizePositiveInteger = (value: string, fallback = 1) => {
   const parsed = Number.parseInt(String(value || '').replace(/\D/g, ''), 10);
   return String(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback);
 };
 const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1));
-const SHIPPING_LABELS: Record<string, string> = {
+const _SHIPPING_LABELS: Record<string, string> = {
   NONE: 'Sem frete',
   FREE: 'Frete grátis',
   FIXED: 'Frete fixo',
@@ -303,7 +302,7 @@ export default function ProductNerveCenter({
 
   /* ── URLs state ── */
   const [urls, setUrls] = useState<any[]>([]);
-  const [urlsLoading, setUrlsLoading] = useState(false);
+  const [_urlsLoading, setUrlsLoading] = useState(false);
 
   const [coupons, setCoupons] = useState<any[]>([]);
   const [couponsLoading, setCouponsLoading] = useState(false);
@@ -535,11 +534,11 @@ export default function ProductNerveCenter({
   );
 
   /* ── Mapped URLs ── */
-  const URLS = urls.map((u: any) => ({
-    id: u.id,
-    desc: u.description || u.label || '',
-    url: u.url || '',
-    sales: u.salesCount || 0,
+  const _URLS = urls.map((u) => ({
+    id: String(u?.id ?? ''),
+    desc: String(u?.description ?? u?.label ?? ''),
+    url: String(u?.url ?? ''),
+    sales: Number(u?.salesCount ?? 0),
   }));
 
   const recommendedProducts = useMemo(() => {
@@ -2386,7 +2385,7 @@ export default function ProductNerveCenter({
      ═══════════════════════════════════════════════════ */
   const handleNewCheckout = async () => {
     try {
-      const checkoutName = 'Checkout ' + ((rawCheckouts || []).length + 1);
+      const checkoutName = `Checkout ${(rawCheckouts || []).length + 1}`;
       const res: any = await createCheckout({
         name: checkoutName,
         priceInCents: getFallbackPlanPriceInCents(),

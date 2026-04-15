@@ -80,6 +80,7 @@ export default function CookieBanner() {
           Politica de Privacidade
         </a>
         <button
+          type="button"
           onClick={handleAccept}
           style={{
             background: colors.ember.primary,

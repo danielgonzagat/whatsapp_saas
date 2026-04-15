@@ -2,7 +2,7 @@
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
-import { Loader2, Pencil, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
+import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
@@ -113,6 +113,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
           Checkouts disponiveis
         </h3>
         <button
+          type="button"
           onClick={() => {
             resetForm();
             setShowModal(true);
@@ -189,6 +190,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
             render: (_, row) => (
               <div className="flex gap-1.5">
                 <button
+                  type="button"
                   onClick={() => handleEdit(row)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
@@ -196,6 +198,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleDelete(row.id)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
@@ -227,6 +230,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 {editingCheckoutId ? 'Editar checkout' : 'Novo checkout'}
               </h3>
               <button
+                type="button"
                 onClick={() => {
                   setShowModal(false);
                   resetForm();
@@ -296,6 +300,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={() => {
                   setShowModal(false);
                   resetForm();
@@ -310,6 +315,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 Fechar
               </button>
               <button
+                type="button"
                 onClick={handleSubmit}
                 disabled={creating || !form.name}
                 className="rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
