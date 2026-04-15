@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services';
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 const GOOGLE_PEOPLE_SCOPES = [
-  'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/user.phonenumbers.read',
   'https://www.googleapis.com/auth/user.addresses.read',
 ].join(' ');
@@ -94,6 +93,8 @@ export function useCheckoutSocialIdentity({
   const initializedRef = useRef(false);
   const prefillRequestKeyRef = useRef('');
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() || '';
+  const googlePeopleScopesEnabled =
+    process.env.NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED?.trim().toLowerCase() === 'true';
 
   const [sdkReady, setSdkReady] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<CheckoutSocialProvider | null>(null);
@@ -189,7 +190,7 @@ export function useCheckoutSocialIdentity({
 
   const hydrateGooglePeopleProfile = useCallback(
     async (baseSnapshot: CheckoutSocialIdentitySnapshot) => {
-      if (!baseSnapshot.leadId) return;
+      if (!googlePeopleScopesEnabled || !baseSnapshot.leadId) return;
       if (profileHydrationLeadRef.current === baseSnapshot.leadId) {
         return;
       }
@@ -232,7 +233,7 @@ export function useCheckoutSocialIdentity({
         // Escopos adicionais são best-effort.
       }
     },
-    [deviceFingerprint],
+    [deviceFingerprint, googlePeopleScopesEnabled],
   );
 
   const handleGoogleCredential = useCallback(
@@ -307,7 +308,7 @@ export function useCheckoutSocialIdentity({
       },
     });
 
-    if (oauth2 && !tokenClientRef.current) {
+    if (googlePeopleScopesEnabled && oauth2 && !tokenClientRef.current) {
       tokenClientRef.current = oauth2.initTokenClient({
         client_id: clientId,
         scope: GOOGLE_PEOPLE_SCOPES,
@@ -326,7 +327,7 @@ export function useCheckoutSocialIdentity({
     });
 
     initializedRef.current = true;
-  }, [clientId, enabled, sdkReady]);
+  }, [clientId, enabled, googlePeopleScopesEnabled, sdkReady]);
 
   const updateLeadProgress = useCallback(
     async (payload: {
