@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/ui/stat-card';
+import { DestructiveConfirmDialog } from '@/components/admin/destructive-confirm-dialog';
 import { adminProductsApi, type AdminProductDetail } from '@/lib/api/admin-products-api';
 import { AdminApiClientError } from '@/lib/api/admin-errors';
 
@@ -24,6 +25,7 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'default
 };
 
 type Dialog = 'approve' | 'reject' | null;
+type DestructiveKind = 'PRODUCT_ARCHIVE' | 'PRODUCT_DELETE' | null;
 
 function formatDateTime(iso: string): string {
   try {
@@ -36,6 +38,7 @@ function formatDateTime(iso: string): string {
 export default function ProductDetailPage({ params }: { params: Promise<{ productId: string }> }) {
   const { productId } = use(params);
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [destructive, setDestructive] = useState<DestructiveKind>(null);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const noteId = useId();
@@ -152,6 +155,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
               <Button variant="outline" onClick={() => setDialog('reject')}>
                 Rejeitar
               </Button>
+              <Button variant="outline" onClick={() => setDestructive('PRODUCT_ARCHIVE')}>
+                Arquivar
+              </Button>
+              <Button variant="outline" onClick={() => setDestructive('PRODUCT_DELETE')}>
+                Deletar
+              </Button>
               <Button variant="ghost" asChild>
                 <Link href="/produtos">Voltar à lista</Link>
               </Button>
@@ -240,6 +249,28 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
           </Card>
         </div>
       ) : null}
+
+      <DestructiveConfirmDialog
+        open={destructive !== null}
+        intent={{
+          kind: destructive ?? 'PRODUCT_ARCHIVE',
+          targetType: 'Product',
+          targetId: productId,
+          title:
+            destructive === 'PRODUCT_DELETE'
+              ? `Deletar definitivamente ${data?.name ?? 'produto'}`
+              : `Arquivar ${data?.name ?? 'produto'}`,
+          description:
+            destructive === 'PRODUCT_DELETE'
+              ? 'Ação irreversível. A linha do produto é removida do banco e não há janela de undo.'
+              : 'Reversível por 24h via undo token. O produto some da loja mas as orders históricas permanecem.',
+        }}
+        onClose={() => setDestructive(null)}
+        onSuccess={() => {
+          setDestructive(null);
+          void mutate();
+        }}
+      />
     </section>
   );
 }
