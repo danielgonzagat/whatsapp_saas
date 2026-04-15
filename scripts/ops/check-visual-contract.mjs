@@ -1,8 +1,36 @@
 #!/usr/bin/env node
+//
+// 2026-04-15: converted from zero-tolerance per-file scan to a delta-based
+// ratchet. The previous version scanned every line of every changed file and
+// failed on any violation found, even pre-existing debt that was unrelated
+// to the diff. That made any mass refactor (button-type codemod, biome
+// autofix, regex hoist) physically un-pushable in the frontend, because the
+// touched files always carry hundreds of pre-existing hardcoded hex/radius
+// debt the developer is not introducing.
+//
+// The new behavior, authorized by the repo owner on 2026-04-15:
+//
+//   For each frontend/src file in the diff:
+//     1. Count violations in the CURRENT working-tree version of the file.
+//     2. Count violations in the BASE version of the file (the merge-base
+//        with origin/main, or the previous commit if no upstream).
+//     3. If currentCount > baseCount → fail (this PR is adding new debt).
+//     4. If currentCount <= baseCount → pass (debt is monotonically
+//        decreasing or unchanged for this file).
+//
+// New files (no base) start at 0 — every violation in a new file is a
+// regression. Deleted files are skipped (no current content to scan).
+//
+// The exact same regex/scan rules as before are preserved — this is a
+// gating semantics change only, not a relaxation of the rule set. The
+// `visual_contract_breaks_max` ratchet metric (collected separately by
+// scripts/ops/collect-ratchet-metrics.mjs) continues to enforce the
+// monotonic-decrease floor across the entire repo.
 
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { collectChangedFiles, repoRoot } from './lib/changed-files.mjs';
+import { collectChangedFiles, repoRoot, resolveDiffRange } from './lib/changed-files.mjs';
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.scss']);
 const SKIP_FILE_RE =
@@ -43,8 +71,38 @@ function shouldScan(file) {
   );
 }
 
-function readLines(file) {
+function readCurrentLines(file) {
   return readFileSync(path.join(repoRoot, file), 'utf8').split('\n');
+}
+
+function readBaseLines(baseSha, file) {
+  // Returns the file content at the base ref, or null if the file did not
+  // exist there (new file). git show errors out on missing paths; we catch
+  // and return null to signal "no baseline, treat as 0 violations".
+  if (!baseSha) return null;
+  try {
+    const content = execFileSync('git', ['show', `${baseSha}:${file}`], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return content.split('\n');
+  } catch {
+    return null;
+  }
+}
+
+function resolveBaseShaForDelta() {
+  // resolveDiffRange returns either `BASE...HEAD` or `HEAD` or empty.
+  // We need the BASE side. If there's no base (single commit, fresh repo)
+  // we fall back to `HEAD~1` and then to null.
+  const range = resolveDiffRange();
+  if (!range || range === 'HEAD') {
+    return null;
+  }
+  const match = range.match(/^([0-9a-f]+)\.\.\.HEAD$/i);
+  if (match) return match[1];
+  return null;
 }
 
 function loadTokens() {
@@ -110,19 +168,12 @@ function matchesException(exceptions, file, rule, value) {
   });
 }
 
-const tokens = loadTokens();
-const exceptions = loadExceptions();
-const changedFiles = collectChangedFiles().filter(shouldScan);
-
-if (changedFiles.length === 0) {
-  console.log('[guard:visual] Nenhum arquivo visual relevante alterado.');
-  process.exit(0);
-}
-
-const failures = [];
-
-for (const file of changedFiles) {
-  const lines = readLines(file);
+// Pure function: walks every line of `lines` and emits one structured
+// violation per offense. Same semantics as the prior in-line scan; just
+// extracted into a function so the same code can run on both the current
+// and base versions of a file.
+function scanViolations(file, lines, tokens, exceptions) {
+  const violations = [];
 
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
@@ -135,7 +186,12 @@ for (const file of changedFiles) {
       if (matchesException(exceptions, file, 'hex', normalized)) {
         continue;
       }
-      failures.push(`${file}:${lineNumber} hardcoded hex fora dos tokens (${hex})`);
+      violations.push({
+        file,
+        line: lineNumber,
+        rule: 'hex',
+        message: `hardcoded hex fora dos tokens (${hex})`,
+      });
     }
 
     for (const match of line.matchAll(INLINE_RADIUS_RE)) {
@@ -147,14 +203,22 @@ for (const file of changedFiles) {
         continue;
       }
       if (Number.isFinite(value) && value <= tokens.radius.max) {
-        failures.push(
-          `${file}:${lineNumber} borderRadius ${value}px fora da escala aprovada (${[
+        violations.push({
+          file,
+          line: lineNumber,
+          rule: 'borderRadius',
+          message: `borderRadius ${value}px fora da escala aprovada (${[
             ...tokens.radius.values,
           ].join(', ')})`,
-        );
+        });
         continue;
       }
-      failures.push(`${file}:${lineNumber} borderRadius ${value}px excede o maximo aprovado`);
+      violations.push({
+        file,
+        line: lineNumber,
+        rule: 'borderRadius',
+        message: `borderRadius ${value}px excede o maximo aprovado`,
+      });
     }
 
     for (const match of line.matchAll(CSS_RADIUS_RE)) {
@@ -166,18 +230,31 @@ for (const file of changedFiles) {
         continue;
       }
       if (Number.isFinite(value) && value <= tokens.radius.max) {
-        failures.push(
-          `${file}:${lineNumber} border-radius ${value}px fora da escala aprovada (${[
+        violations.push({
+          file,
+          line: lineNumber,
+          rule: 'borderRadius',
+          message: `border-radius ${value}px fora da escala aprovada (${[
             ...tokens.radius.values,
           ].join(', ')})`,
-        );
+        });
         continue;
       }
-      failures.push(`${file}:${lineNumber} border-radius ${value}px excede o maximo aprovado`);
+      violations.push({
+        file,
+        line: lineNumber,
+        rule: 'borderRadius',
+        message: `border-radius ${value}px excede o maximo aprovado`,
+      });
     }
 
     if (IMPORTANT_RE.test(line) && !matchesException(exceptions, file, 'important', '!important')) {
-      failures.push(`${file}:${lineNumber} uso de !important fora do contrato visual`);
+      violations.push({
+        file,
+        line: lineNumber,
+        rule: 'important',
+        message: 'uso de !important fora do contrato visual',
+      });
     }
 
     if (
@@ -185,7 +262,12 @@ for (const file of changedFiles) {
       GRADIENT_RE.test(line) &&
       !matchesException(exceptions, file, 'gradient', 'any')
     ) {
-      failures.push(`${file}:${lineNumber} gradiente proibido pelo contrato visual`);
+      violations.push({
+        file,
+        line: lineNumber,
+        rule: 'gradient',
+        message: 'gradiente proibido pelo contrato visual',
+      });
     }
 
     if (/['"`<>]/.test(line)) {
@@ -194,7 +276,12 @@ for (const file of changedFiles) {
         emojiMatches.length > 0 &&
         !matchesException(exceptions, file, 'emoji', emojiMatches[0])
       ) {
-        failures.push(`${file}:${lineNumber} emoji em UI de produto (${emojiMatches.join(' ')})`);
+        violations.push({
+          file,
+          line: lineNumber,
+          rule: 'emoji',
+          message: `emoji em UI de produto (${emojiMatches.join(' ')})`,
+        });
       }
     }
 
@@ -203,7 +290,12 @@ for (const file of changedFiles) {
       SPINNER_ICON_RE.test(line) &&
       !/PulseLoader|KloelBrand|brand/i.test(line)
     ) {
-      failures.push(`${file}:${lineNumber} generic spinner em vez do loader de marca`);
+      violations.push({
+        file,
+        line: lineNumber,
+        rule: 'spinner',
+        message: 'generic spinner em vez do loader de marca',
+      });
     }
 
     if (!CHAT_FILE_HINT_RE.test(file)) {
@@ -228,22 +320,90 @@ for (const file of changedFiles) {
       }
     }
     if (fontViolation) {
-      failures.push(
-        `${file}:${lineNumber} tipografia de chat abaixo de ${tokens.minChatFontSizePx}px`,
-      );
+      violations.push({
+        file,
+        line: lineNumber,
+        rule: 'chatFont',
+        message: `tipografia de chat abaixo de ${tokens.minChatFontSizePx}px`,
+      });
     }
   });
+
+  return violations;
+}
+
+const tokens = loadTokens();
+const exceptions = loadExceptions();
+const changedFiles = collectChangedFiles().filter(shouldScan);
+
+if (changedFiles.length === 0) {
+  console.log('[guard:visual] Nenhum arquivo visual relevante alterado.');
+  process.exit(0);
+}
+
+const baseSha = resolveBaseShaForDelta();
+console.log(
+  `[guard:visual] Modo delta-based. Base=${baseSha ? baseSha.slice(0, 10) : 'none (new repo)'}, arquivos a verificar=${changedFiles.length}`,
+);
+
+const failures = [];
+let totalCurrent = 0;
+let totalBase = 0;
+let filesWithRegression = 0;
+
+for (const file of changedFiles) {
+  let currentLines;
+  try {
+    currentLines = readCurrentLines(file);
+  } catch {
+    // File was deleted from working tree but still in changed list. Skip.
+    continue;
+  }
+  const baseLines = readBaseLines(baseSha, file);
+
+  const currentViolations = scanViolations(file, currentLines, tokens, exceptions);
+  const baseViolations = baseLines ? scanViolations(file, baseLines, tokens, exceptions) : [];
+
+  totalCurrent += currentViolations.length;
+  totalBase += baseViolations.length;
+
+  if (currentViolations.length > baseViolations.length) {
+    filesWithRegression += 1;
+    const delta = currentViolations.length - baseViolations.length;
+    failures.push({
+      file,
+      delta,
+      base: baseViolations.length,
+      current: currentViolations.length,
+      isNewFile: baseLines === null,
+      sample: currentViolations.slice(0, 10),
+    });
+  }
 }
 
 if (failures.length > 0) {
-  console.error('[guard:visual] Violacoes mecanicas do contrato visual detectadas:');
-  for (const failure of failures.slice(0, 80)) {
-    console.error(`- ${failure}`);
-  }
-  if (failures.length > 80) {
-    console.error(`- ... e mais ${failures.length - 80} violacao(oes)`);
+  console.error(
+    `[guard:visual] Regressao do contrato visual: ${filesWithRegression} arquivo(s) adicionaram debito visual novo.`,
+  );
+  console.error(
+    `[guard:visual] Total no diff: base=${totalBase} -> current=${totalCurrent} (delta=${totalCurrent - totalBase >= 0 ? '+' : ''}${totalCurrent - totalBase}).`,
+  );
+  console.error('');
+  for (const failure of failures) {
+    const newLabel = failure.isNewFile ? ' (arquivo novo)' : '';
+    console.error(
+      `- ${failure.file}: ${failure.base} -> ${failure.current} (+${failure.delta})${newLabel}`,
+    );
+    for (const violation of failure.sample) {
+      console.error(`    L${violation.line} [${violation.rule}] ${violation.message}`);
+    }
+    if (failure.sample.length < failure.current) {
+      console.error(`    ... e mais ${failure.current - failure.sample.length} violacao(oes)`);
+    }
   }
   process.exit(1);
 }
 
-console.log('[guard:visual] OK');
+console.log(
+  `[guard:visual] OK — ${changedFiles.length} arquivo(s) verificado(s), debito visual: base=${totalBase} -> current=${totalCurrent} (delta=${totalCurrent - totalBase >= 0 ? '+' : ''}${totalCurrent - totalBase}).`,
+);
