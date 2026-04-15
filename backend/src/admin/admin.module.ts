@@ -8,6 +8,7 @@ import { AdminDashboardModule } from './dashboard/admin-dashboard.module';
 import { AdminPermissionsModule } from './permissions/admin-permissions.module';
 import { AdminSeedModule } from './seed/admin-seed.module';
 import { AdminSessionsModule } from './sessions/admin-sessions.module';
+import { AdminTransactionsModule } from './transactions/admin-transactions.module';
 import { AdminUsersModule } from './users/admin-users.module';
 
 @Module({
@@ -17,6 +18,7 @@ import { AdminUsersModule } from './users/admin-users.module';
     AdminAuthModule,
     AdminDashboardModule,
     AdminAccountsModule,
+    AdminTransactionsModule,
     AdminUsersModule,
     AdminSessionsModule,
     AdminSeedModule,
