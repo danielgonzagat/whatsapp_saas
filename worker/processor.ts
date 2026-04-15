@@ -866,7 +866,7 @@ type AutopilotDecision = {
   reason?: string;
 };
 
-const bestHourCache: Map<string, { hour: number; ts: number }> = new Map();
+const bestHourCache = new Map<string, { hour: number; ts: number }>();
 const BEST_HOUR_CACHE_MAX = 500; // bounded by workspace count
 
 async function computeBestHour(workspaceId: string): Promise<number> {

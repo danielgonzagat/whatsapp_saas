@@ -37,7 +37,7 @@ interface ExecuteAssistantToolCallsInput {
     toolName: string,
     args: Record<string, unknown>,
     userId?: string,
-  ) => Promise<any>;
+  ) => Promise<unknown>;
 }
 
 interface ExecuteAssistantToolCallsResult {
@@ -72,7 +72,7 @@ export class KloelToolRouter {
         toolName: string,
         args: Record<string, unknown>,
         context: { workspaceId: string; phone: string; contactId: string },
-      ): Promise<any>;
+      ): Promise<unknown>;
     },
   ) {}
 

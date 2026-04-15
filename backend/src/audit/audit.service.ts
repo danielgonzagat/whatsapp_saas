@@ -23,7 +23,7 @@ export class AuditService {
    * Falls back to the default prisma client when no tx is provided.
    */
   async logWithTx(
-    tx: { auditLog: { create: (args: any) => Promise<any> } },
+    tx: { auditLog: { create: (args: Record<string, unknown>) => Promise<unknown> } },
     data: {
       workspaceId: string;
       action: string;

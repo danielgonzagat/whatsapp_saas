@@ -739,7 +739,7 @@ export class AsaasService implements OnModuleInit {
     };
   }
 
-  async refundPayment(workspaceId: string, paymentId: string, amount?: number): Promise<any> {
+  async refundPayment(workspaceId: string, paymentId: string, amount?: number): Promise<unknown> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -782,7 +782,7 @@ export class AsaasService implements OnModuleInit {
     workspaceId: string,
     subscriptionId: string,
     data: Record<string, unknown>,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -816,7 +816,7 @@ export class AsaasService implements OnModuleInit {
     }
   }
 
-  async cancelSubscription(workspaceId: string, subscriptionId: string): Promise<any> {
+  async cancelSubscription(workspaceId: string, subscriptionId: string): Promise<unknown> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);

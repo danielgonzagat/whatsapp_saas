@@ -307,7 +307,7 @@ interface PrismaWithDynamicModels {
   flow: {
     create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   };
-  $transaction: (fn: (tx: any) => Promise<any>) => Promise<any>;
+  $transaction: (fn: (tx: Record<string, unknown>) => Promise<unknown>) => Promise<unknown>;
 }
 
 @Injectable()

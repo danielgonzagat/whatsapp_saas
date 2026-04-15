@@ -53,7 +53,7 @@ async function request<T>(
     signal: AbortSignal.timeout(30000),
   });
 
-  const payload = await response.json().catch(() => ({}));
+  const payload = (await response.json().catch(() => ({}))) as { message?: string };
   if (!response.ok) {
     throw new Error(payload?.message || `HTTP ${response.status}`);
   }

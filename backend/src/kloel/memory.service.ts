@@ -236,7 +236,7 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
   /**
    * 📊 Estatísticas
    */
-  async getMemoryStats(workspaceId: string): Promise<any> {
+  async getMemoryStats(workspaceId: string): Promise<unknown> {
     const memories = await this.prisma.kloelMemory.findMany({
       where: { workspaceId },
       select: { category: true, updatedAt: true },

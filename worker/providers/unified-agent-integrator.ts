@@ -79,7 +79,11 @@ export async function processWithUnifiedAgent(params: {
       return null;
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as {
+      response?: string;
+      actions?: Array<{ tool: string; args: Record<string, unknown>; result?: unknown }>;
+      model?: string;
+    };
 
     log.info('unified_agent_response', {
       workspaceId,
