@@ -9,7 +9,7 @@ describe('sanitizeForAudit', () => {
     expect(sanitizeForAudit(undefined)).toBe(undefined);
   });
 
-  it('redacts password-like fields at any depth', () => {
+  it('redacts password-like fields recursively', () => {
     const out = sanitizeForAudit({
       email: 'x@y.com',
       password: 'hunter2',

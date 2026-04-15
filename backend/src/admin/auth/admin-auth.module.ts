@@ -8,6 +8,7 @@ import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminLoginAttemptsService } from './admin-login-attempts.service';
 import { AdminMfaService } from './admin-mfa.service';
+import { AdminSessionFactory } from './admin-session-factory';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
 
 @Module({
@@ -38,7 +39,13 @@ import { AdminAuthGuard } from './guards/admin-auth.guard';
     }),
   ],
   controllers: [AdminAuthController],
-  providers: [AdminAuthService, AdminMfaService, AdminLoginAttemptsService, AdminAuthGuard],
+  providers: [
+    AdminAuthService,
+    AdminMfaService,
+    AdminLoginAttemptsService,
+    AdminSessionFactory,
+    AdminAuthGuard,
+  ],
   exports: [AdminAuthService, AdminAuthGuard, JwtModule],
 })
 export class AdminAuthModule {}
