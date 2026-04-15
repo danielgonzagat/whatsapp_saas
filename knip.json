@@ -52,6 +52,27 @@
     "e2e": {
       "entry": ["playwright.config.ts", "specs/**/*.ts"],
       "project": ["**/*.ts"]
+    },
+    "frontend-admin": {
+      "entry": [
+        "src/app/**/*.{ts,tsx}",
+        "src/components/**/*.{ts,tsx}",
+        "src/lib/**/*.{ts,tsx}",
+        "src/middleware.ts",
+        "next.config.ts",
+        "eslint.config.mjs",
+        "postcss.config.mjs",
+        "vitest.config.ts",
+        "vitest.setup.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignore": [
+        ".next/**",
+        "dist/**",
+        "node_modules/**",
+        "src/**/*.spec.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}"
+      ]
     }
   }
 }

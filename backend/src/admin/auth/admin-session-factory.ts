@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { generateRawRefreshToken, sha256Hex } from '../common/admin-crypto';
 import type { AdminJwtPayload, AdminTokenScope } from './admin-token.types';
 
-export interface SignScopeOptions {
+interface SignScopeOptions {
   sub: string;
   scope: AdminTokenScope;
   ttlSeconds: number;

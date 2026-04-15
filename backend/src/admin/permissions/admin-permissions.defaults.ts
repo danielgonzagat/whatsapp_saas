@@ -62,7 +62,7 @@ export const ADMIN_PERMISSION_DEFAULTS: Readonly<Record<AdminRole, PerModule>> =
   [AdminRole.STAFF]: STAFF_DEFAULTS,
 };
 
-export interface FlatPermission {
+interface FlatPermission {
   module: AdminModule;
   action: AdminAction;
   allowed: boolean;

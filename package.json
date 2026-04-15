@@ -21,6 +21,7 @@
     "check:all": "bash scripts/ops/ci-preflight-fetch-main.sh && node scripts/ops/check-all-gates.mjs",
     "check:governance": "node scripts/ops/check-governance-boundary.mjs",
     "check:visual": "node scripts/ops/check-visual-contract.mjs",
+    "check:admin-token-parity": "node scripts/ops/check-admin-token-parity.mjs",
     "check:tests": "node scripts/ops/check-test-integrity.mjs",
     "check:security": "node scripts/ops/check-security.mjs",
     "check:architecture": "node scripts/ops/check-architecture.mjs",

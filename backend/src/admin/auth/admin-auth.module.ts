@@ -1,51 +1,25 @@
-import { forwardRef, Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AdminAuditModule } from '../audit/admin-audit.module';
 import { AdminPermissionsModule } from '../permissions/admin-permissions.module';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
+import { AdminGuardsModule } from './admin-guards.module';
 import { AdminLoginAttemptsService } from './admin-login-attempts.service';
 import { AdminMfaService } from './admin-mfa.service';
 import { AdminSessionFactory } from './admin-session-factory';
-import { AdminAuthGuard } from './guards/admin-auth.guard';
 
 @Module({
   imports: [
     PrismaModule,
     ConfigModule,
-    forwardRef(() => AdminAuditModule),
+    AdminGuardsModule,
     AdminPermissionsModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const secret = config.get<string>('ADMIN_JWT_SECRET');
-        if (!secret) {
-          throw new Error('ADMIN_JWT_SECRET must be set to boot the admin module');
-        }
-        return {
-          secret,
-          signOptions: {
-            issuer: 'kloel-admin-backend',
-            audience: 'adm.kloel.com',
-          },
-          verifyOptions: {
-            audience: 'adm.kloel.com',
-          },
-        };
-      },
-    }),
+    AdminAuditModule,
   ],
   controllers: [AdminAuthController],
-  providers: [
-    AdminAuthService,
-    AdminMfaService,
-    AdminLoginAttemptsService,
-    AdminSessionFactory,
-    AdminAuthGuard,
-  ],
-  exports: [AdminAuthService, AdminAuthGuard, JwtModule],
+  providers: [AdminAuthService, AdminMfaService, AdminLoginAttemptsService, AdminSessionFactory],
+  exports: [AdminAuthService, AdminGuardsModule],
 })
 export class AdminAuthModule {}

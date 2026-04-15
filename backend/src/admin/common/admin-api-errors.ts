@@ -7,7 +7,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
  * → authenticated) without parsing messages.
  */
 
-export type AdminErrorCode =
+type AdminErrorCode =
   | 'admin.auth.invalid_credentials'
   | 'admin.auth.account_locked'
   | 'admin.auth.rate_limited'
@@ -30,7 +30,7 @@ export type AdminErrorCode =
   | 'admin.audit.immutable'
   | 'admin.internal.crypto_failure';
 
-export class AdminApiError extends HttpException {
+class AdminApiError extends HttpException {
   constructor(
     code: AdminErrorCode,
     message: string,

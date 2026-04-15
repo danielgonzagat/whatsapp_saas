@@ -5,7 +5,6 @@ import { AdminUserStatus } from '@prisma/client';
 import type { Request } from 'express';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { adminErrors } from '../../common/admin-api-errors';
-import { sha256Hex } from '../../common/admin-crypto';
 import type { AdminJwtPayload, AuthenticatedAdmin } from '../admin-token.types';
 import { ADMIN_PUBLIC_KEY } from '../decorators/admin-public.decorator';
 import { ALLOW_PENDING_MFA_KEY } from '../decorators/allow-pending-mfa.decorator';
@@ -107,9 +106,3 @@ export class AdminAuthGuard implements CanActivate {
     return true;
   }
 }
-
-/**
- * Helper used by the session service to hash raw refresh tokens before
- * persistence. Exported here so tests can assert equivalence.
- */
-export const hashRefreshToken = (raw: string): string => sha256Hex(raw);
