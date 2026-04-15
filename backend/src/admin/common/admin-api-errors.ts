@@ -28,7 +28,13 @@ type AdminErrorCode =
   | 'admin.sessions.not_found'
   | 'admin.sessions.cannot_revoke_other'
   | 'admin.audit.immutable'
-  | 'admin.internal.crypto_failure';
+  | 'admin.internal.crypto_failure'
+  | 'admin.destructive.not_found'
+  | 'admin.destructive.invalid_state'
+  | 'admin.destructive.expired'
+  | 'admin.destructive.challenge_mismatch'
+  | 'admin.destructive.handler_missing'
+  | 'admin.destructive.undo_token_invalid';
 
 class AdminApiError extends HttpException {
   constructor(
@@ -146,5 +152,37 @@ export const adminErrors = {
       'admin.internal.crypto_failure',
       'Falha interna ao processar dados sensíveis.',
       HttpStatus.INTERNAL_SERVER_ERROR,
+    ),
+  destructiveNotFound: (id: string) =>
+    new AdminApiError(
+      'admin.destructive.not_found',
+      `DestructiveIntent ${id} não encontrado.`,
+      HttpStatus.NOT_FOUND,
+    ),
+  destructiveInvalidState: (id: string, message: string) =>
+    new AdminApiError(
+      'admin.destructive.invalid_state',
+      `${message} (intent ${id}).`,
+      HttpStatus.CONFLICT,
+    ),
+  destructiveExpired: (id: string) =>
+    new AdminApiError('admin.destructive.expired', `Intent ${id} expirou.`, HttpStatus.GONE),
+  destructiveChallengeMismatch: () =>
+    new AdminApiError(
+      'admin.destructive.challenge_mismatch',
+      'Challenge inválido.',
+      HttpStatus.UNAUTHORIZED,
+    ),
+  destructiveHandlerMissing: (kind: string) =>
+    new AdminApiError(
+      'admin.destructive.handler_missing',
+      `Nenhum handler registrado para ${kind}.`,
+      HttpStatus.NOT_IMPLEMENTED,
+    ),
+  destructiveUndoTokenInvalid: () =>
+    new AdminApiError(
+      'admin.destructive.undo_token_invalid',
+      'Token de undo inválido.',
+      HttpStatus.UNAUTHORIZED,
     ),
 };
