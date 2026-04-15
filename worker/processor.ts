@@ -201,10 +201,10 @@ const ALERT_WEBHOOK =
   process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL;
 let lastQueueAlert = 0;
 
-async function sendOpsAlert(message: string, meta: any = {}) {
-  if (!ALERT_WEBHOOK || !(global as any).fetch) return;
+async function sendOpsAlert(message: string, meta: Record<string, unknown> = {}): Promise<void> {
+  if (!ALERT_WEBHOOK || typeof globalThis.fetch !== 'function') return;
   try {
-    await (global as any).fetch(ALERT_WEBHOOK, {
+    await globalThis.fetch(ALERT_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -304,7 +304,7 @@ async function handleRunFlow(job: Job) {
   }
 
   let flowDef;
-  if (job.data.flow && job.data.flow.nodes) {
+  if (job.data.flow?.nodes) {
     // Use runtime definition from editor
     flowDef = engine.parseFlowDefinition(
       flowId || 'temp-run',
@@ -508,7 +508,14 @@ async function handleSendMessage(job: Job) {
   const start = Date.now();
   let contactId: string | null = null;
   let conversationId: string | null = null;
-  const extractExternalId = (res: any) =>
+  type ProviderSendResponse = {
+    messages?: Array<{ id?: string | null } | null | undefined> | null;
+    message?: { id?: string | null } | null;
+    id?: string | null;
+    messageId?: string | null;
+    sid?: string | null;
+  } | null;
+  const extractExternalId = (res: ProviderSendResponse): string | null =>
     res?.messages?.[0]?.id || res?.message?.id || res?.id || res?.messageId || res?.sid || null;
 
   // Lazy load workspace config if not provided
@@ -809,7 +816,10 @@ export const flowWorker = SHOULD_EXECUTE
           throw err;
         } finally {
           const duration = Number(process.hrtime.bigint() - start) / 1e9;
-          const labels: any = { queue: job.queueName, name: job.name };
+          const labels: { queue: string; name: string } = {
+            queue: job.queueName,
+            name: job.name,
+          };
           jobDuration.observe({ ...labels, status: 'processed' }, duration);
           jobCounter.inc({ ...labels, status: 'processed' });
         }
@@ -825,14 +835,20 @@ export const flowWorker = SHOULD_EXECUTE
 // EVENTO: job completou
 flowWorker?.on('completed', (job: Job) => {
   log.info('job_completed', { jobId: job?.id });
-  const labels: any = { queue: job?.queueName || 'flow-jobs', name: job?.name || 'unknown' };
+  const labels: { queue: string; name: string } = {
+    queue: job?.queueName || 'flow-jobs',
+    name: job?.name || 'unknown',
+  };
   jobCounter.inc({ ...labels, status: 'completed' });
 });
 
 // EVENTO: job falhou
 flowWorker?.on('failed', (job: Job | undefined, err: Error) => {
   log.error('job_failed', { jobId: job?.id, error: err?.message });
-  const labels: any = { queue: job?.queueName || 'flow-jobs', name: job?.name || 'unknown' };
+  const labels: { queue: string; name: string } = {
+    queue: job?.queueName || 'flow-jobs',
+    name: job?.name || 'unknown',
+  };
   jobCounter.inc({ ...labels, status: 'failed' });
 
   const workspaceId =
@@ -865,6 +881,58 @@ type AutopilotDecision = {
   action: string;
   reason?: string;
 };
+
+type AutopilotSettings = {
+  openai?: { apiKey?: string | null } | null;
+  autonomy?: { mode?: string | null } | null;
+  autopilot?: { enabled?: boolean | null } | null;
+  providerSettings?: { calendarLink?: string | null } | null;
+  calendarLink?: string | null;
+  [key: string]: unknown;
+};
+
+type AutopilotContact = {
+  tags?: ReadonlyArray<{ name: string }> | null;
+};
+
+function asNestedObject(value: Prisma.JsonValue | undefined): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function asNestedString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function parseAutopilotSettings(raw: Prisma.JsonValue | null | undefined): AutopilotSettings {
+  const base = asJsonObject(raw);
+  const openai = asNestedObject(base.openai);
+  const autonomy = asNestedObject(base.autonomy);
+  const autopilot = asNestedObject(base.autopilot);
+  const providerSettings = asNestedObject(base.providerSettings);
+
+  const parsed: AutopilotSettings = {
+    openai: openai ? { apiKey: asNestedString(openai.apiKey) } : null,
+    autonomy: autonomy ? { mode: asNestedString(autonomy.mode) } : null,
+    autopilot: autopilot
+      ? { enabled: typeof autopilot.enabled === 'boolean' ? autopilot.enabled : null }
+      : null,
+    providerSettings: providerSettings
+      ? { calendarLink: asNestedString(providerSettings.calendarLink) }
+      : null,
+    calendarLink: asNestedString(base.calendarLink),
+  };
+
+  for (const [key, value] of Object.entries(base)) {
+    if (!(key in parsed)) {
+      parsed[key] = value;
+    }
+  }
+
+  return parsed;
+}
 
 const bestHourCache = new Map<string, { hour: number; ts: number }>();
 const BEST_HOUR_CACHE_MAX = 500; // bounded by workspace count
@@ -905,7 +973,10 @@ function hasKeyword(text: string, ...keys: string[]) {
   return keys.some((k) => lower.includes(k));
 }
 
-async function decideAction(messageContent: string, settings: any): Promise<AutopilotDecision> {
+async function decideAction(
+  messageContent: string,
+  settings: AutopilotSettings,
+): Promise<AutopilotDecision> {
   const text = messageContent || '';
 
   if (hasKeyword(text, 'quanto custa', 'preco', 'preço', 'valor', 'preco?')) {
@@ -971,7 +1042,11 @@ async function decideAction(messageContent: string, settings: any): Promise<Auto
   return { intent: 'IDLE', action: 'FOLLOW_UP', reason: 'default_follow_up' };
 }
 
-async function generateTemplate(action: string, message: string, settings: any) {
+async function generateTemplate(
+  action: string,
+  message: string,
+  settings: AutopilotSettings,
+): Promise<string> {
   // PR P4-1: templates are now in worker/constants/sales-templates.ts
   // (byte-identical mirror of backend/src/common/sales-templates.ts).
   // The hardcoded `cal.com/danielpenin` is gone — calendar links come
@@ -1004,18 +1079,21 @@ async function generateTemplate(action: string, message: string, settings: any) 
   return renderTemplate('FOLLOW_UP', { calendarLink });
 }
 
-async function ensureOptInAllowed(workspaceId: string, contact: any): Promise<void> {
+async function ensureOptInAllowed(
+  _workspaceId: string,
+  contact: AutopilotContact | null | undefined,
+): Promise<void> {
   const enforce = process.env.ENFORCE_OPTIN === 'true';
   if (!enforce) return;
 
-  const tags = contact?.tags || [];
-  const hasOptIn = tags.some((t: any) => t.name === 'optin_whatsapp');
+  const tags = contact?.tags ?? [];
+  const hasOptIn = tags.some((t) => t.name === 'optin_whatsapp');
   if (!hasOptIn) {
     throw new Error('optin_required');
   }
 }
 
-function isAutonomyActive(settings: any): boolean {
+function isAutonomyActive(settings: AutopilotSettings): boolean {
   const mode = String(settings?.autonomy?.mode || '').toUpperCase();
   if (['LIVE', 'BACKLOG', 'FULL'].includes(mode)) {
     return true;
@@ -1033,7 +1111,7 @@ async function autopilotScanner() {
     });
 
     for (const workspace of workspaces) {
-      const settings = asJsonObject(workspace.providerSettings);
+      const settings = parseAutopilotSettings(workspace.providerSettings);
       if (!isAutonomyActive(settings)) continue;
 
       const convs = await prisma.conversation.findMany({

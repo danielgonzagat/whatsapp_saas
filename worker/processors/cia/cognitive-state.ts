@@ -1,5 +1,6 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import type { DemandState } from '../../providers/commercial-intelligence';
+import * as RX from './cognitive-state-patterns';
 
 export type CustomerIntent =
   | 'BUYING'
@@ -145,13 +146,13 @@ function uniqueTokens(values: Array<string | null | undefined>) {
 }
 
 function inferPaymentState(text: string) {
-  if (/(pago|paguei|compensado|confirmado)/i.test(text)) {
+  if (RX.PAGO_PAGUEI_COMPENSADO_RE.test(text)) {
     return 'PAID' as const;
   }
-  if (/(pix|boleto|link|pagamento|pagar|cartao|cartão)/i.test(text)) {
+  if (RX.PIX_BOLETO_LINK_PAGAMEN_RE.test(text)) {
     return 'PENDING' as const;
   }
-  if (/(quero fechar|quero pagar|manda o link|me cobra)/i.test(text)) {
+  if (RX.QUERO_FECHAR_QUERO_PAGA_RE.test(text)) {
     return 'READY_TO_PAY' as const;
   }
   return 'NONE' as const;
@@ -204,13 +205,13 @@ function inferStage(params: {
 
 function inferObjections(text: string) {
   const objections: string[] = [];
-  if (/(preco|preço|valor|caro|desconto|parcel)/i.test(text)) {
+  if (RX.PRECO_PRE_O_VALOR_CARO_RE.test(text)) {
     objections.push('price');
   }
-  if (/(funciona|garantia|seguro|confi|resultado|verdade)/i.test(text)) {
+  if (RX.FUNCIONA_GARANTIA_SEGUR_RE.test(text)) {
     objections.push('trust');
   }
-  if (/(prazo|demora|entrega|quando|hoje ainda)/i.test(text)) {
+  if (RX.PRAZO_DEMORA_ENTREGA_QU_RE.test(text)) {
     objections.push('timing');
   }
   return objections;
@@ -227,10 +228,10 @@ function inferRiskFlags(text: string, intent: CustomerIntent) {
   if (includesAny(text, LEGAL_RISK_HINTS)) {
     riskFlags.push('LEGAL_RISK');
   }
-  if (/(reembolso|cancel|devolu)/i.test(text)) {
+  if (RX.REEMBOLSO_CANCEL_DEVOLU_RE.test(text)) {
     riskFlags.push('REFUND_RISK');
   }
-  if (/(medic|receita|laudo|reacao|reação|dor forte)/i.test(text)) {
+  if (RX.MEDIC_RECEITA_LAUDO_REA_RE.test(text)) {
     riskFlags.push('HEALTH_RISK');
   }
   if (intent === 'SUPPORT') {
@@ -241,35 +242,35 @@ function inferRiskFlags(text: string, intent: CustomerIntent) {
 
 function inferTrustSignals(text: string) {
   const trustSignals: string[] = [];
-  if (/(obrigad|valeu|perfeito|gostei|entendi)/i.test(text)) {
+  if (RX.OBRIGAD_VALEU_PERFEITO_RE.test(text)) {
     trustSignals.push('positive_ack');
   }
-  if (/(quero|vou fechar|me manda|pode ser)/i.test(text)) {
+  if (RX.QUERO_VOU_FECHAR_ME_MAN_RE.test(text)) {
     trustSignals.push('buying_signal');
   }
-  if (/(funciona|garantia|depoimento)/i.test(text)) {
+  if (RX.FUNCIONA_GARANTIA_DEPOI_RE.test(text)) {
     trustSignals.push('needs_proof');
   }
   return uniqueTokens(trustSignals);
 }
 
 function inferEmotionalTone(text: string) {
-  if (/(ansios|insegur|medo|receio)/i.test(text)) {
+  if (RX.ANSIOS_INSEGUR_MEDO_REC_RE.test(text)) {
     return 'anxious' as const;
   }
-  if (/(frustr|cansad|raiva|problema|erro|dificil|difícil|complicado)/i.test(text)) {
+  if (RX.FRUSTR_CANSAD_RAIVA_PRO_RE.test(text)) {
     return 'frustrated' as const;
   }
-  if (/(nao entendi|não entendi|confuso|como assim|explica)/i.test(text)) {
+  if (RX.NAO_ENTENDI_N_O_ENTENDI_RE.test(text)) {
     return 'confused' as const;
   }
-  if (/(perfeito|gostei|amei|animad|valeu|obrigad)/i.test(text)) {
+  if (RX.PERFEITO_GOSTEI_AMEI_AN_RE.test(text)) {
     return 'positive' as const;
   }
-  if (/(quero|fechar|manda|agora|partiu)/i.test(text)) {
+  if (RX.QUERO_FECHAR_MANDA_AGOR_RE.test(text)) {
     return 'excited' as const;
   }
-  if (/(nao|não|caro|demora|duvida|dúvida)/i.test(text)) {
+  if (RX.NAO_N_O_CARO_DEMORA_DUV_RE.test(text)) {
     return 'negative' as const;
   }
   return 'neutral' as const;
@@ -277,7 +278,7 @@ function inferEmotionalTone(text: string) {
 
 function inferDisclosureLevel(text: string) {
   const wordCount = String(text || '')
-    .split(/\s+/)
+    .split(RX.S_RE)
     .filter(Boolean).length;
   const personalMarkers = (
     text.match(/\b(meu|minha|meus|minhas|empresa|rotina|cliente|trabalho)\b/gi) || []
@@ -291,20 +292,20 @@ function inferCorePain(text: string, objections: string[], desires: string[]) {
   if (objections.includes('timing')) return 'urgencia com receio de demora';
   if (desires.includes('resultado_rapido')) return 'quer resultado perceptivel rapido';
   if (desires.includes('seguranca')) return 'busca seguranca para decidir';
-  if (/(nao resolveu|não resolveu|tentei de tudo|ja tentei|já tentei)/i.test(text)) {
+  if (RX.NAO_RESOLVEU_N_O_RESOLV_RE.test(text)) {
     return 'frustracao por tentativas anteriores sem resultado';
   }
   return null;
 }
 
 function inferPreferredStyle(text: string, emotionalTone: string) {
-  if (/(como funciona|composi|tecnico|detalhe|explica melhor)/i.test(text)) {
+  if (RX.COMO_FUNCIONA_COMPOSI_T_RE.test(text)) {
     return 'technical' as const;
   }
   if (emotionalTone === 'frustrated' || emotionalTone === 'anxious') {
     return 'empathetic' as const;
   }
-  if (/(preco|preço|quanto|prazo|agora)/i.test(text)) {
+  if (RX.PRECO_PRE_O_QUANTO_PRAZ_RE.test(text)) {
     return 'direct' as const;
   }
   return 'consultative' as const;
