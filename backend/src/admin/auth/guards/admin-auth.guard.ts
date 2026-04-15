@@ -9,6 +9,24 @@ import type { AdminJwtPayload, AuthenticatedAdmin } from '../admin-token.types';
 import { ADMIN_PUBLIC_KEY } from '../decorators/admin-public.decorator';
 import { ALLOW_PENDING_MFA_KEY } from '../decorators/allow-pending-mfa.decorator';
 
+/**
+ * Resolve the admin JWT secret at verify time. The app-level
+ * JwtModule is registered globally with JWT_SECRET, which means
+ * AdminAuthGuard may be constructed with the wrong JwtService
+ * instance when NestJS resolves @Inject(JwtService). Passing an
+ * explicit secret on verify bypasses the DI collision entirely.
+ *
+ * Keeps the same CI/test fallback as AdminGuardsModule.
+ */
+function resolveAdminJwtSecret(): string {
+  const explicit = process.env.ADMIN_JWT_SECRET;
+  if (explicit && explicit.length > 0) return explicit;
+  if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
+    return 'kloel-admin-ci-test-secret-not-for-production';
+  }
+  throw new Error('ADMIN_JWT_SECRET must be set to verify admin tokens');
+}
+
 function extractBearerToken(header: string | undefined): string | null {
   if (!header) return null;
   const parts = header.split(/\s+/);
@@ -50,6 +68,7 @@ export class AdminAuthGuard implements CanActivate {
     try {
       payload = await this.jwt.verifyAsync<AdminJwtPayload>(token, {
         audience: 'adm.kloel.com',
+        secret: resolveAdminJwtSecret(),
       });
     } catch {
       throw adminErrors.invalidToken();
