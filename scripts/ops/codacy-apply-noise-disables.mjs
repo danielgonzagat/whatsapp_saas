@@ -176,6 +176,12 @@ const NOISE_PATTERNS = [
     reason:
       'WRONG_RULE — flags every Math.random() as cryptographically insecure. One real case (checkout slug, tracked in docs/security/deferred.json); remaining 83 are legit non-crypto uses (sampling, jitter, animation, mock data). Triaged 2026-04-15.',
   },
+  // ── Biome noSecrets is regex-only and produces 100% false positives here ──
+  {
+    id: 'Biome_lint_security_noSecrets',
+    reason:
+      'WRONG_RULE — Biome 1.9 nursery rule. Triage 2026-04-15 (docs/security/nosecrets-triage-2026-04-15.md): 145/145 findings are false positives (Next.js route literals in nav maps, console banners, Portuguese error messages, audit log enum literals, DOM/CSS selectors, LLM prompt schema descriptors, public CDN URLs). Zero real leaks. Should be re-enabled when Biome ships content-aware secret detection.',
+  },
 ];
 
 // -------------------- Env --------------------
@@ -516,6 +522,16 @@ async function main() {
     `[codacy-noise] Promoted — now isDraft=false, patternsCount=${promoted.meta?.enabledPatternsCount}`,
   );
 
+  // Snapshot current repo standards BEFORE link/unlink so we know what to clean up.
+  const preLinkRepo = await getJson(`/organizations/${ORG}/repositories/${REPO_NAME}`);
+  const preLinkStandards = (preLinkRepo.data?.standards || []).map((s) => ({
+    id: s.id,
+    name: s.name,
+  }));
+  console.log(
+    `[codacy-noise] Pre-link repo standards: [${preLinkStandards.map((s) => s.id).join(', ')}]`,
+  );
+
   console.log(`[codacy-noise] Linking ${REPO_NAME} to new standard ${draft.id}...`);
   const linkResult = await linkStandardToRepo(draft.id, REPO_NAME);
   if (!linkResult.successful?.includes(REPO_NAME)) {
@@ -539,6 +555,27 @@ async function main() {
     );
   }
 
+  // 2026-04-15: also unlink any prior `kloel-convergence-*` standards that
+  // were left linked by previous runs. The old script kept stacking them,
+  // and Codacy fires a rule if it's enabled in ANY linked standard, which
+  // means a noise pattern disabled in the new draft would still fire from
+  // the older convergence standards. Walk preLinkStandards and unlink
+  // anything matching the convergence prefix EXCEPT the new draft.
+  const KLOEL_CONVERGENCE_RE = /^kloel-convergence-/;
+  const stragglerStandards = preLinkStandards.filter(
+    (s) => s.id !== draft.id && KLOEL_CONVERGENCE_RE.test(s.name || ''),
+  );
+  for (const straggler of stragglerStandards) {
+    console.log(
+      `[codacy-noise] Unlinking straggler convergence standard ${straggler.id} (${straggler.name})...`,
+    );
+    try {
+      await unlinkStandardFromRepo(straggler.id, REPO_NAME);
+    } catch (err) {
+      console.log(`[codacy-noise]   unlink call returned: ${err.message} — continuing`);
+    }
+  }
+
   const repo = await getJson(`/organizations/${ORG}/repositories/${REPO_NAME}`);
   const standardIds = (repo.data?.standards || []).map((s) => s.id);
   console.log(`[codacy-noise] Final repo standards: [${standardIds.join(', ')}]`);
@@ -550,8 +587,15 @@ async function main() {
       `Old standard ${SOURCE_STANDARD_ID} is still linked to the repo — unlink did not take effect.`,
     );
   }
+  for (const straggler of stragglerStandards) {
+    if (standardIds.includes(straggler.id)) {
+      throw new Error(
+        `Straggler convergence standard ${straggler.id} is still linked — unlink did not take effect.`,
+      );
+    }
+  }
   console.log(
-    `[codacy-noise] Link swap verified: ${draft.id} linked, ${SOURCE_STANDARD_ID} unlinked.`,
+    `[codacy-noise] Link swap verified: ${draft.id} linked, ${SOURCE_STANDARD_ID} + ${stragglerStandards.length} straggler(s) unlinked.`,
   );
 
   // Rollback recipe

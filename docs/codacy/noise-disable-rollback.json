@@ -1,13 +1,9 @@
 {
-  "timestamp": "2026-04-15T14:00:00.000Z",
-  "newStandardId": 151563,
-  "newStandardName": "kloel-convergence-2026-04-15",
-  "oldStandardIds": [151337, 151398, 151487],
-  "oldStandardNames": [
-    "Default coding standard",
-    "kloel-convergence-2026-04-14T05-31-35",
-    "kloel-convergence-2026-04-14T19-05-37"
-  ],
+  "timestamp": "2026-04-15T16:03:22.832Z",
+  "newStandardId": 151565,
+  "newStandardName": "kloel-convergence-2026-04-15T16-00-17",
+  "oldStandardId": 151337,
+  "oldStandardName": "Default coding standard",
   "appliedNoisePatterns": [
     "Biome_lint_suspicious_noReactSpecificProps",
     "Biome_lint_correctness_noUndeclaredDependencies",
@@ -34,25 +30,18 @@
     "ESLint8_react_react-in-jsx-scope",
     "Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check",
     "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
-    "Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator"
+    "Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator",
+    "Biome_lint_security_noSecrets"
   ],
-  "appliedNoiseCount": 26,
-  "appliedAcrossTools": {
-    "Biome (934a97f8)": 7,
-    "ESLint (f8b29663)": 16,
-    "Opengrep (6792c561)": 3
-  },
-  "linkedStandardsAfter": [151338, 151563],
-  "unlinkedStandardsAfter": [151337, 151398, 151487],
   "rollback": {
-    "description": "To roll back: link 151337 (Default) back to the repo and unlink 151563.",
+    "description": "To roll back: re-link 151337 to the repo and unlink the new standard.",
     "commands": [
       "curl -X PATCH -H \"api-token: $CODACY_ACCOUNT_TOKEN\" -H \"Content-Type: application/json\" \\",
       "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151337/repositories\" \\",
       "  -d '{\"link\":[\"whatsapp_saas\"],\"unlink\":[]}'",
       "",
       "curl -X PATCH -H \"api-token: $CODACY_ACCOUNT_TOKEN\" -H \"Content-Type: application/json\" \\",
-      "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151563/repositories\" \\",
+      "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151565/repositories\" \\",
       "  -d '{\"link\":[],\"unlink\":[\"whatsapp_saas\"]}'"
     ]
   }
