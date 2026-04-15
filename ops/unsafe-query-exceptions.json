@@ -1,5 +1,38 @@
 [
   {
+    "file": "backend/src/followup/followup.service.ts",
+    "rule": "unsafeQuery",
+    "model": "followUp",
+    "method": "findMany",
+    "reason": "findDue() is a global cron (@Cron(EVERY_MINUTE)) that sweeps due follow-ups across ALL tenants; per-workspace iteration happens downstream via the processDueFollowUps loop. The multi-tenant boundary is the subsequent contact lookup and per-workspace updateMany.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "worker/voice-processor.ts",
+    "rule": "unsafeQuery",
+    "model": "voiceJob",
+    "method": "findUnique",
+    "reason": "voiceJob.findUnique({ id: jobId }) is the first step of the BullMQ job handler: the worker resolves the voiceJob and then cross-validates workspaceId against voiceProfile.workspaceId (line 59) before any side effect. Scoping happens at the validation step, not at the fetch.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "worker/voice-processor.ts",
+    "rule": "unsafeQuery",
+    "model": "voiceProfile",
+    "method": "findUnique",
+    "reason": "voiceProfile.findUnique({ id: profileId }) is paired with the subsequent workspaceId equality guard (line 59). Bug in the fetch cannot leak cross-tenant because the next line throws if workspaceIds differ.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
     "file": "worker/voice-processor.ts",
     "rule": "unsafeQuery",
     "model": "voiceJob",

@@ -11,6 +11,7 @@ describe('NeuroCrmService', () => {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
         update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
     config = {
@@ -85,8 +86,8 @@ describe('NeuroCrmService', () => {
         intent: 'BUY',
       }),
     );
-    expect(prisma.contact.update).toHaveBeenCalledWith({
-      where: { id: 'contact-1' },
+    expect(prisma.contact.updateMany).toHaveBeenCalledWith({
+      where: { id: 'contact-1', workspaceId: 'ws-1' },
       data: expect.objectContaining({
         leadScore: 91,
         sentiment: 'POSITIVE',
@@ -135,9 +136,9 @@ describe('NeuroCrmService', () => {
         purchaseProbability: expect.stringMatching(/HIGH|VERY_HIGH/),
       }),
     );
-    expect(prisma.contact.update).toHaveBeenCalledWith(
+    expect(prisma.contact.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'contact-2' },
+        where: { id: 'contact-2', workspaceId: 'ws-1' },
         data: expect.objectContaining({
           sentiment: 'POSITIVE',
           purchaseProbability: expect.stringMatching(/HIGH|VERY_HIGH/),

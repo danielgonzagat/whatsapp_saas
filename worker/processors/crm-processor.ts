@@ -67,7 +67,9 @@ async function checkInactivity(workspaceId: string) {
     const nudgeFlowId = (workspace?.providerSettings as any)?.nudgeFlowId;
 
     if (nudgeFlowId) {
-      const flow = await prisma.flow.findUnique({ where: { id: nudgeFlowId } });
+      const flow = await prisma.flow.findFirst({
+        where: { id: nudgeFlowId, workspaceId },
+      });
       if (flow) {
         // Start flow
         await engine.startFlow(
@@ -75,9 +77,9 @@ async function checkInactivity(workspaceId: string) {
           engine.parseFlowDefinition(flow.id, flow.nodes as any, flow.edges as any, workspaceId),
         );
 
-        // Update last nudge
-        await prisma.contact.update({
-          where: { id: lead.id },
+        // Update last nudge scoped by workspace so no accidental tenant cross.
+        await prisma.contact.updateMany({
+          where: { id: lead.id, workspaceId },
           data: {
             customFields: {
               ...(lead.customFields as object),

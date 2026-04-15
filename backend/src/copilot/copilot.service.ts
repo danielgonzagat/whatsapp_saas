@@ -36,7 +36,7 @@ export class CopilotService {
     const { workspaceId, contactId, phone, kbSnippet } = opts;
 
     const contact = contactId
-      ? await this.prisma.contact.findUnique({ where: { id: contactId } })
+      ? await this.prisma.contact.findFirst({ where: { id: contactId, workspaceId } })
       : await this.prisma.contact.findUnique({
           where: { workspaceId_phone: { workspaceId, phone: phone || '' } },
         });
@@ -115,7 +115,7 @@ export class CopilotService {
     const { workspaceId, contactId, phone, kbSnippet, count = 3 } = opts;
 
     const contact = contactId
-      ? await this.prisma.contact.findUnique({ where: { id: contactId } })
+      ? await this.prisma.contact.findFirst({ where: { id: contactId, workspaceId } })
       : await this.prisma.contact.findUnique({
           where: { workspaceId_phone: { workspaceId, phone: phone || '' } },
         });

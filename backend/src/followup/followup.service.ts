@@ -32,18 +32,24 @@ export class FollowUpService {
       return;
     }
 
-    // Batch-fetch contacts for all due follow-ups
-    const contactIds = [...new Set(due.map((f) => f.contactId).filter(Boolean))];
-    const contactsList = await this.prisma.contact.findMany({
-      take: 5000,
-      where: { id: { in: contactIds } },
-      select: { id: true, phone: true, name: true },
-    });
-    const contactsMap = new Map(contactsList.map((c) => [c.id, c]));
+    // Batch-fetch contacts for all due follow-ups, keyed by workspace so we
+    // can never serve a contact from a different tenant even if two tenants
+    // accidentally share a contact id.
+    const contactLookups = due
+      .filter((f) => Boolean(f.contactId))
+      .map((f) => ({ id: f.contactId, workspaceId: f.workspaceId }));
+    const contactsList = contactLookups.length
+      ? await this.prisma.contact.findMany({
+          take: 5000,
+          where: { OR: contactLookups },
+          select: { id: true, phone: true, name: true, workspaceId: true },
+        })
+      : [];
+    const contactsMap = new Map(contactsList.map((c) => [`${c.workspaceId}:${c.id}`, c]));
 
     for (const followUp of due) {
       try {
-        const contact = contactsMap.get(followUp.contactId) ?? null;
+        const contact = contactsMap.get(`${followUp.workspaceId}:${followUp.contactId}`) ?? null;
 
         if (!contact?.phone) {
           await this.update(followUp.workspaceId, followUp.id, {
@@ -71,7 +77,7 @@ export class FollowUpService {
           },
         );
 
-        await this.markSent(followUp.id);
+        await this.markSent(followUp.workspaceId, followUp.id);
       } catch (error: any) {
         this.logger.warn(`Failed to dispatch follow-up ${followUp.id}: ${error?.message || error}`);
       }
@@ -147,10 +153,11 @@ export class FollowUpService {
     if (dto.status) data.status = dto.status;
     if (dto.reason !== undefined) data.reason = dto.reason;
 
-    return this.prisma.followUp.update({
-      where: { id },
+    await this.prisma.followUp.updateMany({
+      where: { id, workspaceId },
       data,
     });
+    return { ...existing, ...data };
   }
 
   /**
@@ -183,11 +190,12 @@ export class FollowUpService {
   }
 
   /**
-   * Marca follow-up como enviado.
+   * Marca follow-up como enviado. Requires workspaceId so the multi-tenant
+   * guard can validate the row belongs to the caller.
    */
-  async markSent(id: string) {
-    return this.prisma.followUp.update({
-      where: { id },
+  async markSent(workspaceId: string, id: string) {
+    await this.prisma.followUp.updateMany({
+      where: { id, workspaceId },
       data: {
         status: 'sent',
         sentAt: new Date(),

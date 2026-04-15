@@ -262,9 +262,15 @@ export class WebhooksService {
         select: { id: true },
       });
       if (msg?.id) {
-        const updatedMsg = await this.prisma.message.update({
-          where: { id: msg.id },
+        // Re-read then update scoped by workspaceId so multi-tenant guard is
+        // explicit at the call site (msg was already scoped by the findFirst
+        // above, but the gate checks query shape, not control flow).
+        await this.prisma.message.updateMany({
+          where: { id: msg.id, workspaceId },
           data: { status, errorCode: input.errorCode || null },
+        });
+        const updatedMsg = await this.prisma.message.findFirst({
+          where: { id: msg.id, workspaceId },
           select: {
             id: true,
             conversationId: true,
@@ -272,8 +278,10 @@ export class WebhooksService {
             externalId: true,
           },
         });
-        updated = 1;
-        updatedMessages.push(updatedMsg);
+        if (updatedMsg) {
+          updated = 1;
+          updatedMessages.push(updatedMsg);
+        }
       }
     }
 

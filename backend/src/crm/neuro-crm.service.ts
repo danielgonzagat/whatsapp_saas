@@ -27,8 +27,8 @@ export class NeuroCrmService {
    * Sugere próxima melhor ação com base em score, sentimento e recência.
    */
   async nextBestAction(workspaceId: string, contactId: string) {
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
       select: {
         leadScore: true,
         sentiment: true,
@@ -180,7 +180,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
 
     if (!this.openai) {
       const fallback = this.buildFallbackAnalysis(contact, history);
-      await this.persistAnalysis(contactId, contact.customFields, fallback);
+      await this.persistAnalysis(workspaceId, contactId, contact.customFields, fallback);
       return fallback;
     }
 
@@ -224,14 +224,14 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       const rawResult = JSON.parse(completion.choices[0]?.message?.content || '{}');
       const result = this.normalizeAnalysis(rawResult, contact, history);
 
-      await this.persistAnalysis(contactId, contact.customFields, result);
+      await this.persistAnalysis(workspaceId, contactId, contact.customFields, result);
 
       this.logger.log(`NeuroCRM analysis completed for ${contact.phone}`);
       return result;
     } catch (error: any) {
       this.logger.error(`NeuroCRM analysis failed: ${error.message}`);
       const fallback = this.buildFallbackAnalysis(contact, history);
-      await this.persistAnalysis(contactId, contact.customFields, fallback);
+      await this.persistAnalysis(workspaceId, contactId, contact.customFields, fallback);
       return fallback;
     }
   }
@@ -382,6 +382,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
   }
 
   private async persistAnalysis(
+    workspaceId: string,
     contactId: string,
     currentCustomFields: any,
     result: {
@@ -403,8 +404,8 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
         ? currentCustomFields
         : {};
 
-    await this.prisma.contact.update({
-      where: { id: contactId },
+    await this.prisma.contact.updateMany({
+      where: { id: contactId, workspaceId },
       data: {
         leadScore: result.leadScore,
         sentiment: result.sentiment,
