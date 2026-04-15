@@ -21,58 +21,10 @@ export function CheckoutSocialIdentitySection({
   theme,
   googleAvailable,
   googleButtonRef,
-  socialIdentity,
+  socialIdentity: _socialIdentity,
   loadingProvider,
   error,
 }: Props) {
-  if (socialIdentity) {
-    return (
-      <div style={{ marginBottom: 20 }}>
-        <div
-          style={{
-            background: theme.successBackground,
-            border: `1px solid ${theme.successBorder}`,
-            borderRadius: 12,
-            padding: '16px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-          }}
-        >
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 16,
-              background: theme.successBadgeBackground,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="rgb(255, 255, 255)"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: theme.successText }}>
-            Identificado via {providerLabel(socialIdentity.provider)}
-          </div>
-        </div>
-        <ManualDivider theme={theme} />
-      </div>
-    );
-  }
-
   return (
     <div style={{ marginBottom: 20 }}>
       <div
@@ -248,10 +200,6 @@ function Spinner({ color, trackColor }: { color: string; trackColor: string }) {
       }}
     />
   );
-}
-
-function providerLabel(provider: CheckoutSocialProvider) {
-  return provider === 'google' ? 'Google' : provider === 'facebook' ? 'Facebook' : 'Apple';
 }
 
 function GoogleIcon() {

@@ -110,9 +110,8 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
             CPF {form.cpf}
           </div>
           {socialIdentity ? (
-            <div style={{ marginTop: 8, fontSize: 11, color: theme.successText, fontWeight: 600 }}>
-              ✓ Capturado via{' '}
-              {socialIdentity.provider === 'google' ? 'Google' : socialIdentity.provider}
+            <div style={{ marginTop: 8, fontSize: 11, color: theme.mutedText, fontWeight: 600 }}>
+              Via {socialIdentity.provider === 'google' ? 'Google' : socialIdentity.provider}
             </div>
           ) : null}
         </div>
