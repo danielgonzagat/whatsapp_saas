@@ -64,10 +64,14 @@ export class AdminSessionFactory {
   }
 
   async signScoped(options: SignScopeOptions): Promise<string> {
-    const payload: Omit<AdminJwtPayload, 'iat' | 'exp'> = {
+    // IMPORTANT: do NOT put `aud` in the payload. The JwtModule
+    // config in AdminGuardsModule already sets `audience` via
+    // signOptions; jwt.sign() throws "Bad audience option" if the
+    // payload already carries an aud. The audience is enforced on
+    // verify via JwtModule's verifyOptions.audience.
+    const payload: Omit<AdminJwtPayload, 'iat' | 'exp' | 'aud'> = {
       sub: options.sub,
       scope: options.scope,
-      aud: 'adm.kloel.com',
       sid: options.sessionId,
     };
     return this.jwt.signAsync(payload, { expiresIn: options.ttlSeconds });
