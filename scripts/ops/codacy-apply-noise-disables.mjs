@@ -160,6 +160,22 @@ const NOISE_PATTERNS = [
     reason:
       'WRONG_RULE — Next.js 16 / React 19 use the automatic JSX runtime, `import React from "react"` is not required.',
   },
+  // ── Semgrep rules with documented false-positive shapes for this repo ──
+  {
+    id: 'Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check',
+    reason:
+      'WRONG_RULE — flags every semver range like ^1.2.3 as "potential dependency hijack". Repo follows standard npm semver. Already excluded for worker/package.json in .codacy.yml; this disable extends to root and other package.json files.',
+  },
+  {
+    id: 'Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator',
+    reason:
+      'WRONG_RULE — flags any string containing ${...} as "should have been a template literal". In practice these are docs strings, SQL placeholders, and user-facing template prose. Near-100% false positive rate.',
+  },
+  {
+    id: 'Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator',
+    reason:
+      'WRONG_RULE — flags every Math.random() as cryptographically insecure. One real case (checkout slug, tracked in docs/security/deferred.json); remaining 83 are legit non-crypto uses (sampling, jitter, animation, mock data). Triaged 2026-04-15.',
+  },
 ];
 
 // -------------------- Env --------------------
@@ -413,41 +429,59 @@ async function main() {
     totalMirrorPatches += patches.length;
   }
 
-  // Apply noise disables
-  // Group by tool uuid. All current noise patterns are Biome-owned, but we
-  // resolve the uuid from the source sets to stay generic for future entries.
-  const biomeUuid = '934a97f8-835c-42fc-a6d1-02bdfca3bdfa';
-  const biomeSourceMap = sourcePatternsByTool.get(biomeUuid);
-  if (!biomeSourceMap) {
-    throw new Error('Biome not found in 151337 enabled tools — topology changed, aborting.');
-  }
-
-  const noiseToApply = [];
+  // Apply noise disables across ALL enabled tools.
+  //
+  // 2026-04-15: previous version hardcoded biomeUuid and only searched
+  // patterns within the Biome tool's pattern set. That worked for the 7
+  // Biome WRONG_RULE patterns but silently dropped the 16 ESLint /
+  // ESLint8_* patterns because they live under tool=f8b29663 (ESLint,
+  // current) — the ESLint8_ prefix is a Codacy reporting artifact, not a
+  // separate tool. Now we resolve each pattern across every enabled
+  // source tool and PATCH per-tool. Pattern-not-found stays a SKIP.
+  const noiseByTool = new Map(); // toolUuid -> [{id, enabled:false}]
   const noiseNotEnabledIn151337 = [];
+  const noiseFoundInTool = [];
   for (const { id } of NOISE_PATTERNS) {
-    if (biomeSourceMap.get(id) === true) {
-      noiseToApply.push({ id, enabled: false });
+    let foundIn = null;
+    for (const [toolUuid, sourceMap] of sourcePatternsByTool.entries()) {
+      if (sourceMap.get(id) === true) {
+        foundIn = toolUuid;
+        break;
+      }
+    }
+    if (foundIn) {
+      if (!noiseByTool.has(foundIn)) noiseByTool.set(foundIn, []);
+      noiseByTool.get(foundIn).push({ id, enabled: false });
+      noiseFoundInTool.push({ id, tool: foundIn });
     } else {
       noiseNotEnabledIn151337.push(id);
     }
   }
 
+  const totalToApply = noiseFoundInTool.length;
   console.log(
-    `[codacy-noise] Noise disables: ${noiseToApply.length} applicable, ${noiseNotEnabledIn151337.length} already disabled in 151337 (no-op).`,
+    `[codacy-noise] Noise disables: ${totalToApply} applicable across ${noiseByTool.size} tool(s), ${noiseNotEnabledIn151337.length} not enabled in 151337 (no-op).`,
   );
+  for (const { id, tool } of noiseFoundInTool) {
+    console.log(`[codacy-noise]   APPLY tool=${tool.slice(0, 8)} ${id}`);
+  }
   for (const skipped of noiseNotEnabledIn151337) {
-    console.log(`[codacy-noise]   SKIP (already disabled in 151337): ${skipped}`);
+    console.log(`[codacy-noise]   SKIP (not enabled in 151337): ${skipped}`);
   }
 
-  if (!DRY_RUN && noiseToApply.length > 0) {
-    const applied = await patchPatterns(draft.id, biomeUuid, noiseToApply);
-    console.log(`[codacy-noise] Applied ${applied} noise disables on draft ${draft.id}`);
+  if (!DRY_RUN && totalToApply > 0) {
+    for (const [toolUuid, patches] of noiseByTool.entries()) {
+      const applied = await patchPatterns(draft.id, toolUuid, patches);
+      console.log(
+        `[codacy-noise] Applied ${applied} noise disables on draft ${draft.id} for tool=${toolUuid.slice(0, 8)}`,
+      );
+    }
   }
 
   // Verify
   if (!DRY_RUN) {
     const post = await getStandard(draft.id);
-    const expected = sourceEnabledTotal - noiseToApply.length;
+    const expected = sourceEnabledTotal - totalToApply;
     const actual = post.meta?.enabledPatternsCount;
     console.log(
       `[codacy-noise] Verification: expected=${expected}, draft.enabledPatternsCount=${actual}`,
@@ -527,7 +561,7 @@ async function main() {
     newStandardName: draftName,
     oldStandardId: SOURCE_STANDARD_ID,
     oldStandardName: 'Default coding standard',
-    appliedNoisePatterns: noiseToApply.map((p) => p.id),
+    appliedNoisePatterns: noiseFoundInTool.map((p) => p.id),
     rollback: {
       description: 'To roll back: re-link 151337 to the repo and unlink the new standard.',
       commands: [

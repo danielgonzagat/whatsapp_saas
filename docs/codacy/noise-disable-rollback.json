@@ -1,9 +1,13 @@
 {
-  "timestamp": "2026-04-14T19:08:33.355Z",
-  "newStandardId": 151487,
-  "newStandardName": "kloel-convergence-2026-04-14T19-05-37",
-  "oldStandardId": 151337,
-  "oldStandardName": "Default coding standard",
+  "timestamp": "2026-04-15T14:00:00.000Z",
+  "newStandardId": 151563,
+  "newStandardName": "kloel-convergence-2026-04-15",
+  "oldStandardIds": [151337, 151398, 151487],
+  "oldStandardNames": [
+    "Default coding standard",
+    "kloel-convergence-2026-04-14T05-31-35",
+    "kloel-convergence-2026-04-14T19-05-37"
+  ],
   "appliedNoisePatterns": [
     "Biome_lint_suspicious_noReactSpecificProps",
     "Biome_lint_correctness_noUndeclaredDependencies",
@@ -11,17 +15,44 @@
     "Biome_lint_correctness_useQwikValidLexicalScope",
     "Biome_lint_performance_useSolidForComponent",
     "Biome_lint_correctness_noNodejsModules",
-    "Biome_lint_style_useImportType"
+    "Biome_lint_style_useImportType",
+    "ESLint8_es-x_no-modules",
+    "ESLint8_es-x_no-block-scoped-variables",
+    "ESLint8_es-x_no-trailing-commas",
+    "ESLint8_es-x_no-property-shorthands",
+    "ESLint8_es-x_no-template-literals",
+    "ESLint8_es-x_no-arrow-functions",
+    "ESLint8_es-x_no-trailing-function-commas",
+    "ESLint8_es-x_no-optional-chaining",
+    "ESLint8_es-x_no-destructuring",
+    "ESLint8_es-x_no-async-functions",
+    "ESLint8_es-x_no-classes",
+    "ESLint8_flowtype_no-types-missing-file-annotation",
+    "ESLint8_flowtype_require-parameter-type",
+    "ESLint8_fp_no-nil",
+    "ESLint8_@lwc_lwc_no-async-await",
+    "ESLint8_react_react-in-jsx-scope",
+    "Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check",
+    "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
+    "Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator"
   ],
+  "appliedNoiseCount": 26,
+  "appliedAcrossTools": {
+    "Biome (934a97f8)": 7,
+    "ESLint (f8b29663)": 16,
+    "Opengrep (6792c561)": 3
+  },
+  "linkedStandardsAfter": [151338, 151563],
+  "unlinkedStandardsAfter": [151337, 151398, 151487],
   "rollback": {
-    "description": "To roll back: re-link 151337 to the repo and unlink the new standard.",
+    "description": "To roll back: link 151337 (Default) back to the repo and unlink 151563.",
     "commands": [
       "curl -X PATCH -H \"api-token: $CODACY_ACCOUNT_TOKEN\" -H \"Content-Type: application/json\" \\",
       "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151337/repositories\" \\",
       "  -d '{\"link\":[\"whatsapp_saas\"],\"unlink\":[]}'",
       "",
       "curl -X PATCH -H \"api-token: $CODACY_ACCOUNT_TOKEN\" -H \"Content-Type: application/json\" \\",
-      "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151487/repositories\" \\",
+      "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151563/repositories\" \\",
       "  -d '{\"link\":[],\"unlink\":[\"whatsapp_saas\"]}'"
     ]
   }
