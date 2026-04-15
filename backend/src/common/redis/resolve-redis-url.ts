@@ -15,7 +15,8 @@ const PATTERN_RE = /:[^:@]*@/;
  * Three explicit modes control how the resolver behaves when no URL
  * can be discovered from environment variables:
  *
- *   - REDIS_MODE=required (the production default if NODE_ENV=production)
+ *   - REDIS_MODE=required (the production-like default when
+ *     NODE_ENV=production OR when running on Railway)
  *     The resolver throws RedisConfigurationError. Callers must NOT
  *     catch and degrade silently — Redis is a load-bearing dependency
  *     for queues, rate limiting, idempotency, and cache.
@@ -25,7 +26,7 @@ const PATTERN_RE = /:[^:@]*@/;
  *     in a documented degraded mode or refuse to start. There is no
  *     "fall through to localhost" behavior in this mode.
  *
- *   - REDIS_MODE unset, NODE_ENV != production
+ *   - REDIS_MODE unset outside production-like runtimes
  *     The resolver falls back to redis://localhost:6379 with a warning.
  *     This is the dev convenience path. It is not enabled in production
  *     because silently routing to localhost in prod was the original
@@ -54,8 +55,21 @@ function isRailwayPublicProxy(url: string): boolean {
   return url.includes('mainline.proxy.rlwy.net') || url.includes('.proxy.rlwy.net');
 }
 
+function isRailwayRuntime(): boolean {
+  return [
+    process.env.RAILWAY_PROJECT_ID,
+    process.env.RAILWAY_ENVIRONMENT_ID,
+    process.env.RAILWAY_SERVICE_ID,
+    process.env.RAILWAY_DEPLOYMENT_ID,
+  ].some((value) => typeof value === 'string' && value.trim().length > 0);
+}
+
+function isProductionLikeRuntime(): boolean {
+  return process.env.NODE_ENV === 'production' || isRailwayRuntime();
+}
+
 function assertProductionSafeRedisUrl(url: string): string {
-  if (process.env.NODE_ENV === 'production' && isRailwayPublicProxy(url)) {
+  if (isProductionLikeRuntime() && isRailwayPublicProxy(url)) {
     throw new RedisConfigurationError(
       'Redis URL points to Railway public proxy in production. ' +
         'Backend/worker must use the internal REDIS_URL from Railway ' +
@@ -77,8 +91,8 @@ function getMode(): 'required' | 'disabled' | 'auto' {
   if (mode === 'required') return 'required';
   if (mode === 'disabled') return 'disabled';
   if (mode === 'auto') return 'auto';
-  // Default: required in production, auto otherwise.
-  return process.env.NODE_ENV === 'production' ? 'required' : 'auto';
+  // Default: required in production-like runtimes, auto otherwise.
+  return isProductionLikeRuntime() ? 'required' : 'auto';
 }
 
 /**
@@ -109,7 +123,7 @@ export function resolveRedisUrl(): string | null {
   }
 
   // Dev convenience: host without password
-  if (host && !password && process.env.NODE_ENV !== 'production') {
+  if (host && !password && !isProductionLikeRuntime()) {
     return `redis://${host}:${port}`;
   }
 
