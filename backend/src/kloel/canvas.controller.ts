@@ -12,11 +12,36 @@ import {
   ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
+
+interface CreateCanvasDesignDto {
+  name?: string;
+  format: string;
+  width: number;
+  height: number;
+  productId?: string;
+  elements?: Prisma.InputJsonValue;
+  background?: string;
+  idempotencyKey?: string;
+}
+
+interface GenerateCanvasImageDto {
+  prompt: string;
+  productId?: string;
+  width?: number;
+  height?: number;
+}
+
+interface GenerateCanvasTextDto {
+  type: string;
+  productId?: string;
+}
 
 @UseGuards(JwtAuthGuard)
 @Controller('canvas')
@@ -29,10 +54,10 @@ export class CanvasController {
 
   // GET /canvas/designs — list designs for workspace
   @Get('designs')
-  async listDesigns(@Request() req: any, @Query('productId') productId?: string) {
+  async listDesigns(@Request() req: AuthenticatedRequest, @Query('productId') productId?: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { designs: [], count: 0 };
-    const where: any = { workspaceId };
+    const where: Prisma.KloelDesignWhereInput = { workspaceId };
     if (productId) where.productId = productId;
     const designs = await this.prisma.kloelDesign.findMany({
       where,
@@ -43,7 +68,7 @@ export class CanvasController {
 
   // GET /canvas/designs/:id — get single design
   @Get('designs/:id')
-  async getDesign(@Request() req: any, @Param('id') id: string) {
+  async getDesign(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const design = await this.prisma.kloelDesign.findFirst({
       where: { id, workspaceId },
@@ -53,20 +78,7 @@ export class CanvasController {
 
   // POST /canvas/designs — create design
   @Post('designs')
-  async createDesign(
-    @Request() req: any,
-    @Body()
-    dto: {
-      name?: string;
-      format: string;
-      width: number;
-      height: number;
-      productId?: string;
-      elements?: any;
-      background?: string;
-      idempotencyKey?: string;
-    },
-  ) {
+  async createDesign(@Request() req: AuthenticatedRequest, @Body() dto: CreateCanvasDesignDto) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) throw new NotFoundException('Workspace not found');
     const design = await this.prisma.kloelDesign.create({
@@ -77,7 +89,7 @@ export class CanvasController {
         width: dto.width,
         height: dto.height,
         productId: dto.productId || null,
-        elements: dto.elements || [],
+        elements: dto.elements ?? [],
         background: dto.background || '#0A0A0C',
       },
     });
@@ -87,7 +99,7 @@ export class CanvasController {
   // PUT /canvas/designs/:id — update design (auto-save)
   @Put('designs/:id')
   async updateDesign(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: Record<string, unknown>,
   ) {
@@ -106,7 +118,7 @@ export class CanvasController {
 
   // DELETE /canvas/designs/:id — delete design
   @Delete('designs/:id')
-  async deleteDesign(@Request() req: any, @Param('id') id: string) {
+  async deleteDesign(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelDesign.findFirst({
       where: { id, workspaceId },
@@ -125,16 +137,7 @@ export class CanvasController {
 
   // POST /canvas/generate — generate enriched prompt with product data
   @Post('generate')
-  async generateImage(
-    @Request() req: any,
-    @Body()
-    dto: {
-      prompt: string;
-      productId?: string;
-      width?: number;
-      height?: number;
-    },
-  ) {
+  async generateImage(@Request() req: AuthenticatedRequest, @Body() dto: GenerateCanvasImageDto) {
     const workspaceId = req.user?.workspaceId;
     let enrichedPrompt = dto.prompt;
 
@@ -177,14 +180,7 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
 
   // POST /canvas/generate-text — suggest marketing text based on product
   @Post('generate-text')
-  async generateText(
-    @Request() req: any,
-    @Body()
-    dto: {
-      type: string;
-      productId?: string;
-    },
-  ) {
+  async generateText(@Request() req: AuthenticatedRequest, @Body() dto: GenerateCanvasTextDto) {
     const workspaceId = req.user?.workspaceId;
     let context = '';
 

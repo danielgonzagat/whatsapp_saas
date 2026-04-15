@@ -1,26 +1,38 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import {
+  asProviderSettings,
+  type ProviderSettings,
+  type ProviderSessionSnapshot,
+} from '../whatsapp/provider-settings.types';
 import { resolveWhatsAppProvider } from '../whatsapp/providers/provider-env';
 import { SetSettingsDto } from './dto/set-settings.dto';
 import { WorkspaceService } from './workspace.service';
+
+interface AccountUpdateBody {
+  name?: string;
+  phone?: string;
+  timezone?: string;
+  webhookUrl?: string;
+  website?: string;
+  language?: string;
+  dateFormat?: string;
+  role?: string;
+  notifications?: Record<string, boolean>;
+}
 
 @Controller('workspace')
 @UseGuards(JwtAuthGuard)
 export class WorkspaceController {
   constructor(private readonly service: WorkspaceService) {}
 
-  private normalizeProviderSettings(
-    rawSettings: unknown,
-    workspaceId: string,
-  ): Record<string, any> {
-    const settings = {
-      ...((rawSettings as Record<string, any>) || {}),
-    };
-    const session =
-      ((settings.whatsappApiSession || settings.whatsappWebSession || {}) as Record<string, any>) ||
-      {};
+  private normalizeProviderSettings(rawSettings: unknown, workspaceId: string): ProviderSettings {
+    const settings: ProviderSettings = { ...asProviderSettings(rawSettings) };
+    const session: ProviderSessionSnapshot =
+      settings.whatsappApiSession || settings.whatsappWebSession || {};
     const providerType = resolveWhatsAppProvider(settings.whatsappProvider || session.provider);
     const rawStatus = String(session.rawStatus || session.status || settings.connectionStatus || '')
       .trim()
@@ -95,14 +107,14 @@ export class WorkspaceController {
   }
 
   @Get('me')
-  getMe(@Req() req: any) {
+  getMe(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
     return this.service.getWorkspace(workspaceId);
   }
 
   // Obter workspace
   @Get(':id')
-  get(@Req() req: any, @Param('id') id: string) {
+  get(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.getWorkspace(workspaceId);
   }
@@ -110,7 +122,11 @@ export class WorkspaceController {
   // Definir provedor
   @Post(':id/provider')
   @Roles('ADMIN')
-  setProvider(@Req() req: any, @Param('id') id: string, @Body('provider') provider: string) {
+  setProvider(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body('provider') provider: string,
+  ) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.setProvider(workspaceId, provider);
   }
@@ -119,7 +135,7 @@ export class WorkspaceController {
   @Post(':id/jitter')
   @Roles('ADMIN')
   setJitter(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body('min') min: number,
     @Body('max') max: number,
@@ -130,7 +146,7 @@ export class WorkspaceController {
 
   // Canais disponíveis (omnichannel beta)
   @Get(':id/channels')
-  getChannels(@Req() req: any, @Param('id') id: string) {
+  getChannels(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.getChannels(workspaceId);
   }
@@ -138,14 +154,18 @@ export class WorkspaceController {
   // Canal Email: toggle (requires ADMIN)
   @Post(':id/channels')
   @Roles('ADMIN')
-  toggleChannels(@Req() req: any, @Param('id') id: string, @Body() body: { email?: boolean }) {
+  toggleChannels(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() body: { email?: boolean },
+  ) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.setChannels(workspaceId, body?.email);
   }
 
   // Retorna settings do workspace (providerSettings + jitter)
   @Get(':id/settings')
-  async getSettings(@Req() req: any, @Param('id') id: string) {
+  async getSettings(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req, id);
     const ws = await this.service.getWorkspace(workspaceId);
     return {
@@ -158,7 +178,7 @@ export class WorkspaceController {
   }
 
   @Get(':id/account')
-  getAccount(@Req() req: any, @Param('id') id: string) {
+  getAccount(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.getAccountSettings(workspaceId);
   }
@@ -166,7 +186,11 @@ export class WorkspaceController {
   // Atualiza providerSettings com merge simples (ex: autopilot config)
   @Post(':id/settings')
   @Roles('ADMIN')
-  setSettings(@Req() req: any, @Param('id') id: string, @Body() body: SetSettingsDto) {
+  setSettings(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() body: SetSettingsDto,
+  ) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.patchSettings(workspaceId, (body || {}) as Record<string, unknown>);
   }
@@ -174,20 +198,9 @@ export class WorkspaceController {
   // Atualiza informações gerais da conta (nome, phone, timezone, webhook, notificações)
   @Post(':id/account')
   setAccount(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body()
-    body: {
-      name?: string;
-      phone?: string;
-      timezone?: string;
-      webhookUrl?: string;
-      website?: string;
-      language?: string;
-      dateFormat?: string;
-      role?: string;
-      notifications?: Record<string, boolean>;
-    },
+    @Body() body: AccountUpdateBody,
   ) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.updateAccountSettings(workspaceId, body || {});

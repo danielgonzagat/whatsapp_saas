@@ -15,8 +15,10 @@ import { DealStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CrmService } from './crm.service';
 import { CreateContactDto } from './dto/create-contact.dto';
+import { ListContactsQueryDto } from './dto/list-contacts.query.dto';
 import { UpsertContactDto } from './dto/upsert-contact.dto';
 
 @ApiTags('CRM')
@@ -27,21 +29,21 @@ export class CrmController {
   constructor(private readonly crmService: CrmService) {}
 
   @Post('contacts')
-  async createContact(@Req() req: any, @Body() body: CreateContactDto) {
+  async createContact(@Req() req: AuthenticatedRequest, @Body() body: CreateContactDto) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.createContact(effectiveWorkspaceId, data);
   }
 
   @Post('contacts/upsert')
-  async upsertContact(@Req() req: any, @Body() body: UpsertContactDto) {
+  async upsertContact(@Req() req: AuthenticatedRequest, @Body() body: UpsertContactDto) {
     const { workspaceId, phone, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.upsertContact(effectiveWorkspaceId, phone, data);
   }
 
   @Get('contacts')
-  async listContacts(@Req() req: any, @Query() query: any) {
+  async listContacts(@Req() req: AuthenticatedRequest, @Query() query: ListContactsQueryDto) {
     const { workspaceId, page, limit, search } = query;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.listContacts(effectiveWorkspaceId, {
@@ -53,7 +55,7 @@ export class CrmController {
 
   @Get('contacts/:phone')
   async getContact(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('phone') phone: string,
     @Query('workspaceId') workspaceId: string,
   ) {
@@ -63,7 +65,7 @@ export class CrmController {
 
   @Post('contacts/:phone/tags')
   async addTag(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('phone') phone: string,
     @Body() body: { workspaceId: string; tag: string },
   ) {
@@ -73,7 +75,7 @@ export class CrmController {
 
   @Delete('contacts/:phone/tags/:tag')
   async removeTag(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('phone') phone: string,
     @Param('tag') tag: string,
     @Query('workspaceId') workspaceId: string,
@@ -87,21 +89,24 @@ export class CrmController {
   // ============================================================
 
   @Post('pipelines')
-  async createPipeline(@Req() req: any, @Body() body: { workspaceId: string; name: string }) {
+  async createPipeline(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { workspaceId: string; name: string },
+  ) {
     const { workspaceId, name } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.createPipeline(effectiveWorkspaceId, name);
   }
 
   @Get('pipelines')
-  async listPipelines(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async listPipelines(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.listPipelines(effectiveWorkspaceId);
   }
 
   @Post('deals')
   async createDeal(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       contactId?: string;
@@ -129,7 +134,7 @@ export class CrmController {
 
   @Put('deals/:id/move')
   async moveDeal(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: { stageId?: string; stage?: string; workspaceId?: string },
   ) {
@@ -139,7 +144,7 @@ export class CrmController {
 
   @Put('deals/:id')
   async updateDeal(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body()
     body: {
@@ -156,7 +161,7 @@ export class CrmController {
 
   @Delete('deals/:id')
   async deleteDeal(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Query('workspaceId') workspaceId: string,
   ) {
@@ -166,7 +171,7 @@ export class CrmController {
 
   @Get('deals')
   async listDeals(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId: string,
     @Query('campaignId') campaignId?: string,
     @Query('pipeline') pipelineId?: string,

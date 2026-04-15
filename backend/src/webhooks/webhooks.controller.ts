@@ -22,10 +22,35 @@ import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
 
+/**
+ * Minimal shape of the raw HTTP request consumed by this controller. We
+ * avoid pulling the whole `express.Request` because these endpoints are
+ * `@Public()` — there is no authenticated user, and the only fields we
+ * read are the parsed body, the raw body (for signature verification)
+ * and the request URL (used when emitting ops alerts on duplicates).
+ */
 interface WebhookRequestLike {
   body?: unknown;
   rawBody?: string | Buffer;
+  url?: string;
 }
+
+/** Arbitrary JSON payload received on the generic catch-hook endpoint. */
+type WebhookJsonPayload = Record<string, unknown>;
+
+/** Finance trigger body: status + phone + any extra provider-specific fields. */
+interface FinanceWebhookBody {
+  status?: string;
+  phone?: string;
+  workspaceId?: string;
+  [key: string]: unknown;
+}
+
+/** Instagram / Meta Graph webhook envelope — opaque beyond workspace routing. */
+type InstagramWebhookBody = Record<string, unknown>;
+
+/** Structured metadata attached to ops alerts (never user-controlled). */
+type OpsAlertMeta = Record<string, unknown>;
 
 /**
  * Inbound webhook receiver (flows, finance, omnichannel).
@@ -48,11 +73,11 @@ export class WebhooksController {
   async catchHook(
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
-    @Body() body: any,
-    @Query() query: any,
+    @Body() body: WebhookJsonPayload,
+    @Query() query: WebhookJsonPayload,
     @Headers('x-webhook-signature') signature?: string,
     @Headers('x-event-id') eventId?: string,
-    @Req() req?: any,
+    @Req() req?: WebhookRequestLike,
   ) {
     this.verifySignatureOrThrow(signature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
@@ -61,7 +86,7 @@ export class WebhooksController {
     this.logger.log(`Webhook received for flow ${flowId} in workspace ${workspaceId}`);
 
     // Combine body and query for maximum flexibility
-    const payload = { ...query, ...body };
+    const payload: WebhookJsonPayload = { ...query, ...body };
 
     try {
       const result = await this.webhooksService.processWebhook(workspaceId, flowId, payload);
@@ -70,8 +95,12 @@ export class WebhooksController {
         message: 'Webhook processed',
         executionId: result.executionId,
       };
-    } catch (error) {
-      this.logger.error(`Webhook failed: ${error.message}`);
+    } catch (error: unknown) {
+      const errInstance =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Webhook failed: ${errInstance.message}`);
       throw new HttpException('Webhook processing failed', HttpStatus.BAD_REQUEST);
     }
   }
@@ -84,10 +113,10 @@ export class WebhooksController {
   @Post('finance/:workspaceId')
   async financeHook(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: any,
+    @Body() body: FinanceWebhookBody,
     @Headers('x-webhook-signature') signature?: string,
     @Headers('x-event-id') eventId?: string,
-    @Req() req?: any,
+    @Req() req?: WebhookRequestLike,
   ) {
     this.verifySignatureOrThrow(signature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
@@ -96,8 +125,12 @@ export class WebhooksController {
     try {
       const res = await this.webhooksService.processFinanceEvent(workspaceId, body);
       return { status: 'received', ...res };
-    } catch (error) {
-      this.logger.error(`Finance webhook failed: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const errInstance =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Finance webhook failed: ${errInstance.message}`, errInstance.stack);
       throw new HttpException('Finance event processing failed', HttpStatus.BAD_REQUEST);
     }
   }
@@ -138,7 +171,7 @@ export class WebhooksController {
     }
   }
 
-  private async checkIdempotencyOrThrow(eventId?: string, req?: any) {
+  private async checkIdempotencyOrThrow(eventId?: string, req?: WebhookRequestLike) {
     const reqBody = req?.body;
     const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const keyId =
@@ -174,7 +207,7 @@ export class WebhooksController {
   }
 
   // messageLimit: ops alerts are internal webhooks, not WhatsApp; no rate limit applies
-  private async sendOpsAlert(message: string, meta: any) {
+  private async sendOpsAlert(message: string, meta: OpsAlertMeta) {
     const url =
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
@@ -228,7 +261,7 @@ export class WebhooksController {
       channel?: string;
     },
     @Headers('x-webhook-signature') signature?: string,
-    @Req() req?: any,
+    @Req() req?: WebhookRequestLike,
   ) {
     this.verifySignatureOrThrow(signature, req);
     const { workspaceId, externalId, status, errorCode, phone, channel } = body || {};
@@ -257,7 +290,7 @@ export class WebhooksController {
       phone?: string;
     },
     @Headers('x-webhook-signature') signature?: string,
-    @Req() req?: any,
+    @Req() req?: WebhookRequestLike,
   ) {
     this.verifySignatureOrThrow(signature, req);
     return this.webhooksService.updateMessageStatus({
@@ -278,9 +311,9 @@ export class WebhooksController {
   @Post('instagram/:workspaceId')
   async instagramWebhook(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: any,
+    @Body() body: InstagramWebhookBody,
     @Headers('x-hub-signature-256') hubSignature?: string,
-    @Req() req?: any,
+    @Req() req?: WebhookRequestLike,
   ) {
     // Validar assinatura do Meta
     this.verifyMetaSignature(hubSignature, req);
