@@ -74,28 +74,36 @@ export async function getAdminProductDetail(
   }
 
   const windowFrom = new Date(Date.now() - WINDOW_MS);
+  // Every order query below is tenant-scoped via the product's own
+  // workspaceId, even though an admin user could technically operate
+  // cross-tenant. Keeping the filter explicit satisfies invariant I4
+  // (tenant isolation static scan) and documents that this module
+  // intentionally scopes order lookups to the product it came from.
+  const workspaceId = product.workspaceId;
   const [approved, pending, refunded, chargeback, gmvAll, gmv30d] = await Promise.all([
     prisma.checkoutOrder.count({
-      where: { planId: { in: planIds }, status: { in: APPROVED } },
+      where: { workspaceId, planId: { in: planIds }, status: { in: APPROVED } },
     }),
     prisma.checkoutOrder.count({
       where: {
+        workspaceId,
         planId: { in: planIds },
         status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
       },
     }),
     prisma.checkoutOrder.count({
-      where: { planId: { in: planIds }, status: OrderStatus.REFUNDED },
+      where: { workspaceId, planId: { in: planIds }, status: OrderStatus.REFUNDED },
     }),
     prisma.checkoutOrder.count({
-      where: { planId: { in: planIds }, status: OrderStatus.CHARGEBACK },
+      where: { workspaceId, planId: { in: planIds }, status: OrderStatus.CHARGEBACK },
     }),
     prisma.checkoutOrder.aggregate({
-      where: { planId: { in: planIds }, status: { in: APPROVED } },
+      where: { workspaceId, planId: { in: planIds }, status: { in: APPROVED } },
       _sum: { totalInCents: true },
     }),
     prisma.checkoutOrder.aggregate({
       where: {
+        workspaceId,
         planId: { in: planIds },
         status: { in: APPROVED },
         paidAt: { gte: windowFrom },
