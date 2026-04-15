@@ -4,7 +4,7 @@ import { Public } from '../../auth/public.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
-import { PlatformWalletService } from './platform-wallet.service';
+import { PlatformWalletService } from '../../platform-wallet/platform-wallet.service';
 
 /**
  * SP-9 v0 read-only endpoints for /carteira. The split engine that
