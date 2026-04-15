@@ -34,15 +34,24 @@ if ! command -v git >/dev/null 2>&1; then
   exit 0
 fi
 
-# Only fetch if origin/main is missing. Avoids network noise on local dev
-# where the ref is already present.
-if git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
-  exit 0
+# If the repo is a shallow clone (CI default with fetch-depth: 1), unshallow
+# it so that BOTH HEAD and origin/main have enough history for `git
+# merge-base HEAD origin/main` to succeed. A single-commit fetch of main
+# on top of a single-commit HEAD is not sufficient — merge-base needs a
+# common ancestor, which only exists if both refs share enough history.
+if [ -f .git/shallow ]; then
+  git fetch --unshallow --no-tags origin main >/dev/null 2>&1 || \
+    git fetch --deepen=500 --no-tags origin main >/dev/null 2>&1 || \
+    true
 fi
 
-# Shallow fetch of main. Errors are intentionally swallowed — if the
-# environment has no `origin` remote, or the fetch fails, the downstream
+# Regardless of shallow state, make sure origin/main itself exists locally.
+if ! git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
+  git fetch --no-tags --prune origin main >/dev/null 2>&1 || true
+fi
+
+# Best-effort probe: merge-base must resolve. If it doesn't, the downstream
 # guardrail will surface its own error with full context.
-git fetch --no-tags --prune --depth=1 origin main >/dev/null 2>&1 || true
+git merge-base HEAD origin/main >/dev/null 2>&1 || true
 
 exit 0
