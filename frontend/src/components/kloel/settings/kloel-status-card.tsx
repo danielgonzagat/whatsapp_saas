@@ -57,7 +57,7 @@ export function KloelStatusCard({
         </div>
 
         <div className="relative flex h-24 w-24 items-center justify-center">
-          <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
+          <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100" aria-hidden="true">
             <circle
               cx="50"
               cy="50"
@@ -95,35 +95,35 @@ export function KloelStatusCard({
 
       <div className="grid grid-cols-2 gap-3">
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <FileText className="h-4 w-4 text-[var(--app-text-secondary)]" />
+          <FileText className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">Arquivos processados</p>
             <p className="font-semibold text-[var(--app-text-primary)]">{filesProcessed}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <Package className="h-4 w-4 text-[var(--app-text-secondary)]" />
+          <Package className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">Produtos configurados</p>
             <p className="font-semibold text-[var(--app-text-primary)]">{productsConfigured}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <ShieldCheck className="h-4 w-4 text-[var(--app-text-secondary)]" />
+          <ShieldCheck className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">Regras aprendidas</p>
             <p className="font-semibold text-[var(--app-text-primary)]">{rulesLearned}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <HelpCircle className="h-4 w-4 text-[var(--app-text-secondary)]" />
+          <HelpCircle className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">FAQ preenchido</p>
             <p className="font-semibold text-[var(--app-text-primary)]">{faqFilled}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <MessageSquare className="h-4 w-4 text-[var(--app-text-secondary)]" />
+          <MessageSquare className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">Tom de voz</p>
             <p
@@ -134,7 +134,7 @@ export function KloelStatusCard({
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <CreditCard className="h-4 w-4 text-[var(--app-text-secondary)]" />
+          <CreditCard className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">Checkout</p>
             <p

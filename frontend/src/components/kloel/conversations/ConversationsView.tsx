@@ -177,7 +177,7 @@ export function ConversationsView() {
               justifyContent: 'center',
             }}
           >
-            <Plus size={16} color={EMBER} />
+            <Plus size={16} color={EMBER} aria-hidden="true" />
             <span>Novo chat</span>
           </button>
         </div>
@@ -206,7 +206,7 @@ export function ConversationsView() {
               background: SURFACE,
             }}
           >
-            <Search size={16} color={MUTED} />
+            <Search size={16} color={MUTED} aria-hidden="true" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -347,9 +347,9 @@ export function ConversationsView() {
                     >
                       {selectionMode ? (
                         isSelected ? (
-                          <CheckSquare2 size={18} />
+                          <CheckSquare2 size={18} aria-hidden="true" />
                         ) : (
-                          <Square size={18} />
+                          <Square size={18} aria-hidden="true" />
                         )
                       ) : (
                         <ConversationsIcon size={18} color={isHovered ? TEXT : MUTED} aria-hidden />
@@ -438,7 +438,7 @@ export function ConversationsView() {
                           cursor: 'pointer',
                         }}
                       >
-                        <ArrowUpRight size={15} />
+                        <ArrowUpRight size={15} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
@@ -457,7 +457,7 @@ export function ConversationsView() {
                           cursor: 'pointer',
                         }}
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={15} aria-hidden="true" />
                       </button>
                     </div>
                   )}
@@ -568,7 +568,7 @@ export function ConversationsView() {
                 cursor: 'pointer',
               }}
             >
-              <Trash2 size={14} />
+              <Trash2 size={14} aria-hidden="true" />
               Excluir
             </button>
             <button
@@ -588,7 +588,7 @@ export function ConversationsView() {
                 cursor: 'pointer',
               }}
             >
-              <X size={14} />
+              <X size={14} aria-hidden="true" />
             </button>
           </div>
         )}

@@ -206,7 +206,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               {payment.paymentMethod === 'PIX' && payment.pixKey && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-blue-500">
-                    <QrCode className="w-5 h-5" />
+                    <QrCode className="w-5 h-5" aria-hidden="true" />
                     <span className="font-medium">Pagamento via PIX</span>
                   </div>
 
@@ -224,7 +224,11 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                         onClick={copyPixKey}
                         className="p-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors"
                       >
-                        {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                        {copied ? (
+                          <Check className="w-5 h-5" aria-hidden="true" />
+                        ) : (
+                          <Copy className="w-5 h-5" aria-hidden="true" />
+                        )}
                       </button>
                     </div>
                     {copied && <p className="text-blue-500 text-xs mt-2">Chave PIX copiada!</p>}
@@ -264,7 +268,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               {payment.bankInfo && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-teal-400">
-                    <Building2 className="w-5 h-5" />
+                    <Building2 className="w-5 h-5" aria-hidden="true" />
                     <span className="font-medium">Dados Bancários</span>
                   </div>
 
@@ -304,7 +308,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               {/* No payment info available */}
               {!payment.pixKey && !payment.bankInfo && (
                 <div className="text-center py-4">
-                  <Smartphone className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <Smartphone className="w-12 h-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
                   <p className="text-gray-600">
                     Entre em contato com{' '}
                     <strong className="text-gray-900">{payment.companyName}</strong> para obter os
@@ -318,7 +322,10 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
           {/* Paid Status */}
           {payment.status === 'paid' && payment.paidAt && (
             <div className="p-6 text-center">
-              <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+              <CheckCircle2
+                className="w-16 h-16 text-emerald-400 mx-auto mb-4"
+                aria-hidden="true"
+              />
               <p className="text-emerald-400 font-medium">Pagamento confirmado!</p>
               <p className="text-gray-600 text-sm mt-2">Pago em {formatDate(payment.paidAt)}</p>
             </div>

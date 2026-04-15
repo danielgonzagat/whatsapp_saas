@@ -99,7 +99,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         }}
         {...props}
       >
-        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : leftIcon}
+        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : leftIcon}
         {children}
         {!isLoading && rightIcon}
       </button>
@@ -163,7 +163,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         }}
         {...props}
       >
-        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : icon}
+        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : icon}
       </button>
     );
   },

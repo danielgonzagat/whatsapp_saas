@@ -42,7 +42,7 @@ export function PlanActivationSuccessModal({
         <div className="mb-8 flex justify-center">
           <div className="relative flex h-24 w-24 items-center justify-center">
             {/* Outer ring */}
-            <svg className="absolute h-full w-full" viewBox="0 0 100 100">
+            <svg className="absolute h-full w-full" viewBox="0 0 100 100" aria-hidden="true">
               <circle cx="50" cy="50" r="45" fill="none" stroke="#E5E7EB" strokeWidth="6" />
               <circle
                 cx="50"
@@ -63,7 +63,7 @@ export function PlanActivationSuccessModal({
                 showCheck ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
               }`}
             >
-              <Check className="h-8 w-8 text-white" strokeWidth={3} />
+              <Check className="h-8 w-8 text-white" strokeWidth={3} aria-hidden="true" />
             </div>
           </div>
         </div>
@@ -85,7 +85,7 @@ export function PlanActivationSuccessModal({
             }}
             className="w-full rounded-xl bg-gray-900 py-6 text-white hover:bg-gray-800"
           >
-            <Sparkles className="mr-2 h-4 w-4" />
+            <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
             Testar o Kloel agora
           </Button>
           <Button
@@ -96,7 +96,7 @@ export function PlanActivationSuccessModal({
             variant="outline"
             className="w-full rounded-xl border-gray-200 py-6"
           >
-            <Settings className="mr-2 h-4 w-4" />
+            <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
             Ir para configuracoes do Kloel
           </Button>
           <Button
@@ -107,7 +107,7 @@ export function PlanActivationSuccessModal({
             variant="ghost"
             className="w-full rounded-xl py-6 text-gray-600 hover:bg-gray-50"
           >
-            <MessageSquare className="mr-2 h-4 w-4" />
+            <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
             Conversar com meu Kloel
           </Button>
         </div>

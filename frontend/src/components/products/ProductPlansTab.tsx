@@ -93,7 +93,11 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.ember.primary }} />
+        <Loader2
+          className="h-6 w-6 animate-spin"
+          style={{ color: colors.ember.primary }}
+          aria-hidden="true"
+        />
       </div>
     );
 
@@ -109,7 +113,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
-          <Plus className="h-4 w-4" /> Novo plano
+          <Plus className="h-4 w-4" aria-hidden="true" /> Novo plano
         </button>
       </div>
 
@@ -212,7 +216,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
@@ -236,7 +240,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: colors.background.elevated, color: colors.text.muted }}
                 >
-                  <Eye className="h-3.5 w-3.5" />
+                  <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
@@ -245,7 +249,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}
                 >
-                  <Link2 className="h-3.5 w-3.5" />
+                  <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               </div>
             ),
@@ -279,7 +283,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 Acessos operacionais — {linkModalPlan.name}
               </h3>
               <button type="button" onClick={() => setLinkModalPlan(null)}>
-                <X className="h-5 w-5" style={{ color: colors.text.dust }} />
+                <X className="h-5 w-5" style={{ color: colors.text.dust }} aria-hidden="true" />
               </button>
             </div>
             {[
@@ -372,7 +376,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 Novo plano
               </h3>
               <button type="button" onClick={() => setShowModal(false)}>
-                <X className="h-5 w-5" style={{ color: colors.text.dim }} />
+                <X className="h-5 w-5" style={{ color: colors.text.dim }} aria-hidden="true" />
               </button>
             </div>
             <div className="space-y-4">
@@ -465,7 +469,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   color: 'var(--app-text-on-accent)',
                 }}
               >
-                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
                 Adicionar plano
               </button>
             </div>

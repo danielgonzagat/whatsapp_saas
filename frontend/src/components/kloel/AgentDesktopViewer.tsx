@@ -178,9 +178,9 @@ export function AgentDesktopViewer({
             className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${statusTone}`}
           >
             {status?.connected ? (
-              <CheckCircle2 className="h-3.5 w-3.5" />
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
             ) : (
-              <Unplug className="h-3.5 w-3.5" />
+              <Unplug className="h-3.5 w-3.5" aria-hidden="true" />
             )}
             {status?.connected ? 'WhatsApp conectado' : 'Conexao oficial pendente'}
           </div>
@@ -234,7 +234,7 @@ export function AgentDesktopViewer({
               disabled={working}
               className="inline-flex items-center gap-2 rounded-full bg-[#F7F7F5] px-4 py-2 text-sm font-medium text-[#0B0F14] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
               {status?.connected ? 'Reconectar Meta' : 'Conectar com Meta'}
             </button>
             <button
@@ -243,7 +243,10 @@ export function AgentDesktopViewer({
               disabled={working}
               className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-[#D9DDE3] transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <RefreshCcw className={`h-4 w-4 ${working ? 'animate-spin' : ''}`} />
+              <RefreshCcw
+                className={`h-4 w-4 ${working ? 'animate-spin' : ''}`}
+                aria-hidden="true"
+              />
               Atualizar status
             </button>
           </div>
@@ -252,7 +255,7 @@ export function AgentDesktopViewer({
         <section className="flex min-h-[420px] flex-col rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-[#F7F7F5]">
-              <Smartphone className="h-5 w-5" />
+              <Smartphone className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
               <p className="text-sm font-medium text-[#F7F7F5]">Atividade do agente</p>

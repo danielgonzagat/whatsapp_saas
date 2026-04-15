@@ -47,14 +47,14 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
         {status === 'sent' ? (
           <div className="flex flex-col items-center py-8">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <Check className="h-8 w-8 text-green-600" />
+              <Check className="h-8 w-8 text-green-600" aria-hidden="true" />
             </div>
             <p className="text-center text-gray-700">Mensagem enviada com sucesso!</p>
             <p className="mt-1 text-center text-sm text-gray-500">Verifique seu WhatsApp.</p>
@@ -75,12 +75,12 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
             >
               {status === 'sending' ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                   Enviando...
                 </>
               ) : (
                 <>
-                  <Send className="mr-2 h-4 w-4" />
+                  <Send className="mr-2 h-4 w-4" aria-hidden="true" />
                   Enviar mensagem de teste
                 </>
               )}

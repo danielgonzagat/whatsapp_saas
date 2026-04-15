@@ -400,6 +400,7 @@ function CustomSizePanel({
               fill="none"
               stroke="#3A3A3F"
               strokeWidth="1.5"
+              aria-hidden="true"
             >
               <rect x="3" y="3" width="18" height="18" rx="2" />
             </svg>
@@ -456,6 +457,7 @@ function UploadPanel() {
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
+            type="button"
             style={{
               padding: '8px 16px',
               background: '#E85D30',
@@ -474,6 +476,7 @@ function UploadPanel() {
             {IC.plus(12)} Fazer upload de arquivos
           </button>
           <button
+            type="button"
             style={{
               padding: '8px 16px',
               background: '#111113',
@@ -661,6 +664,7 @@ function FormatGrid({
             Outras formas de comecar
           </p>
           <button
+            type="button"
             onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#E85D3040')}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#1C1C1F')}
             style={{

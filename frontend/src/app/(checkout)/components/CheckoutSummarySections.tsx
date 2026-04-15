@@ -285,7 +285,7 @@ export function CheckoutFooter({
         ) : null}
         <div style={{ fontSize: 13, color: theme.mutedText, marginBottom: 20 }}>{footerLegal}</div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill={theme.mutedText}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill={theme.mutedText} aria-hidden="true">
             <rect x="3" y="11" width="18" height="11" rx="2" />
             <path d="M7 11V7a5 5 0 0110 0v4" fill="none" stroke={theme.mutedText} strokeWidth="2" />
           </svg>

@@ -157,7 +157,10 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  <FlaskConical style={{ width: 14, height: 14, marginRight: 6 }} />
+                  <FlaskConical
+                    style={{ width: 14, height: 14, marginRight: 6 }}
+                    aria-hidden="true"
+                  />
                   Testar Kloel
                 </Button>
               )}
@@ -240,7 +243,7 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  <LogOut style={{ width: 14, height: 14, marginRight: 6 }} />
+                  <LogOut style={{ width: 14, height: 14, marginRight: 6 }} aria-hidden="true" />
                   Sair
                 </Button>
               </>

@@ -16,7 +16,7 @@ export default function PrivacyPage() {
           onClick={() => router.back()}
           className="flex items-center gap-2 text-white/60 hover:text-white transition-colors mb-8"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={20} aria-hidden="true" />
           Voltar
         </button>
 
@@ -36,12 +36,12 @@ export default function PrivacyPage() {
             style={{ backgroundColor: colors.background.surface1 }}
           >
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Shield size={20} style={{ color: '#E0DDD8' }} />
+              <Shield size={20} style={{ color: '#E0DDD8' }} aria-hidden="true" />
               Resumo dos seus direitos
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <Eye className="mt-1" size={18} style={{ color: '#E0DDD8' }} />
+                <Eye className="mt-1" size={18} style={{ color: '#E0DDD8' }} aria-hidden="true" />
                 <div>
                   <p className="text-white font-medium">Acesso</p>
                   <p className="text-white/60 text-sm">
@@ -50,21 +50,31 @@ export default function PrivacyPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Trash2 className="mt-1" size={18} style={{ color: '#E05252' }} />
+                <Trash2
+                  className="mt-1"
+                  size={18}
+                  style={{ color: '#E05252' }}
+                  aria-hidden="true"
+                />
                 <div>
                   <p className="text-white font-medium">Exclusão</p>
                   <p className="text-white/60 text-sm">Peça a remoção completa dos seus dados</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Download className="mt-1" size={18} style={{ color: '#6E6E73' }} />
+                <Download
+                  className="mt-1"
+                  size={18}
+                  style={{ color: '#6E6E73' }}
+                  aria-hidden="true"
+                />
                 <div>
                   <p className="text-white font-medium">Portabilidade</p>
                   <p className="text-white/60 text-sm">Exporte seus dados em formato aberto</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Bell className="mt-1" size={18} style={{ color: '#E0DDD8' }} />
+                <Bell className="mt-1" size={18} style={{ color: '#E0DDD8' }} aria-hidden="true" />
                 <div>
                   <p className="text-white font-medium">Revogação</p>
                   <p className="text-white/60 text-sm">

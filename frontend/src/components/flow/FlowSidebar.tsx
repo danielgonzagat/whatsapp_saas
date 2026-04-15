@@ -29,7 +29,7 @@ const nodeTypes: NodeType[] = [
   {
     type: 'start',
     label: 'Início',
-    icon: <Play className="w-4 h-4" />,
+    icon: <Play className="w-4 h-4" aria-hidden="true" />,
     color: 'bg-emerald-500',
     description: 'Ponto de entrada do fluxo',
     category: 'trigger',
@@ -37,7 +37,7 @@ const nodeTypes: NodeType[] = [
   {
     type: 'message',
     label: 'Mensagem',
-    icon: <MessageCircle className="w-4 h-4" />,
+    icon: <MessageCircle className="w-4 h-4" aria-hidden="true" />,
     color: 'bg-green-500',
     description: 'Enviar mensagem de texto ou mídia',
     category: 'message',
@@ -45,7 +45,7 @@ const nodeTypes: NodeType[] = [
   {
     type: 'input',
     label: 'Entrada',
-    icon: <MessageSquare className="w-4 h-4" />,
+    icon: <MessageSquare className="w-4 h-4" aria-hidden="true" />,
     color: 'bg-blue-500',
     description: 'Coletar resposta do usuário',
     category: 'message',
@@ -53,7 +53,7 @@ const nodeTypes: NodeType[] = [
   {
     type: 'condition',
     label: 'Condição',
-    icon: <GitBranch className="w-4 h-4" />,
+    icon: <GitBranch className="w-4 h-4" aria-hidden="true" />,
     color: 'bg-yellow-500',
     description: 'Bifurcar baseado em condição',
     category: 'logic',
@@ -61,7 +61,7 @@ const nodeTypes: NodeType[] = [
   {
     type: 'delay',
     label: 'Delay',
-    icon: <Clock className="w-4 h-4" />,
+    icon: <Clock className="w-4 h-4" aria-hidden="true" />,
     color: 'bg-orange-500',
     description: 'Aguardar tempo antes de continuar',
     category: 'logic',
@@ -69,7 +69,7 @@ const nodeTypes: NodeType[] = [
   {
     type: 'waitForReply',
     label: 'Aguardar Resposta',
-    icon: <Hourglass className="w-4 h-4" />,
+    icon: <Hourglass className="w-4 h-4" aria-hidden="true" />,
     color: 'bg-violet-500',
     description: 'Aguardar resposta do usuário com timeout',
     category: 'logic',
@@ -77,7 +77,7 @@ const nodeTypes: NodeType[] = [
   {
     type: 'action',
     label: 'Ação',
-    icon: <Zap className="w-4 h-4" />,
+    icon: <Zap className="w-4 h-4" aria-hidden="true" />,
     color: 'bg-teal-500',
     description: 'Executar ação (tag, webhook, etc)',
     category: 'action',
@@ -85,7 +85,7 @@ const nodeTypes: NodeType[] = [
   {
     type: 'ai',
     label: 'KLOEL IA',
-    icon: <Brain className="w-4 h-4" />,
+    icon: <Brain className="w-4 h-4" aria-hidden="true" />,
     color: 'bg-indigo-500',
     description: 'Processar com inteligência artificial',
     category: 'ai',
@@ -93,7 +93,7 @@ const nodeTypes: NodeType[] = [
   {
     type: 'end',
     label: 'Fim',
-    icon: <Flag className="w-4 h-4" />,
+    icon: <Flag className="w-4 h-4" aria-hidden="true" />,
     color: 'bg-red-500',
     description: 'Finalizar ou redirecionar fluxo',
     category: 'trigger',
@@ -148,7 +148,10 @@ export function FlowSidebar() {
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-800 mb-3">Componentes</h2>
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search
+            className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            aria-hidden="true"
+          />
           <input
             type="text"
             placeholder="Buscar componentes..."
@@ -176,6 +179,7 @@ export function FlowSidebar() {
                   className={`w-4 h-4 transition-transform ${
                     expandedCategories.has(categoryKey) ? 'rotate-0' : '-rotate-90'
                   }`}
+                  aria-hidden="true"
                 />
               </button>
 

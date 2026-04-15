@@ -182,7 +182,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.accent.webb }} />
+        <Loader2
+          className="h-6 w-6 animate-spin"
+          style={{ color: colors.accent.webb }}
+          aria-hidden="true"
+        />
       </div>
     );
 
@@ -254,7 +258,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             className="flex items-center gap-2 text-sm cursor-pointer"
             style={{ color: colors.text.starlight }}
           >
-            <Sparkles className="h-4 w-4" style={{ color: colors.accent.webb }} />
+            <Sparkles
+              className="h-4 w-4"
+              style={{ color: colors.accent.webb }}
+              aria-hidden="true"
+            />
             <input
               type="checkbox"
               checked={form.aiLearning}
@@ -267,7 +275,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             className="flex items-center gap-2 text-sm cursor-pointer"
             style={{ color: colors.text.starlight }}
           >
-            <MessageCircle className="h-4 w-4" style={{ color: colors.accent.webb }} />
+            <MessageCircle
+              className="h-4 w-4"
+              style={{ color: colors.accent.webb }}
+              aria-hidden="true"
+            />
             <input
               type="checkbox"
               checked={form.chatEnabled}
@@ -288,7 +300,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             }}
           >
             <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4" style={{ color: colors.accent.webb }} />
+              <Sparkles
+                className="h-4 w-4"
+                style={{ color: colors.accent.webb }}
+                aria-hidden="true"
+              />
               <span
                 className="text-xs font-semibold uppercase"
                 style={{ ...labelStyle, color: colors.accent.webb }}
@@ -362,7 +378,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             }}
           >
             <div className="flex items-center gap-2 mb-3">
-              <MessageCircle className="h-4 w-4" style={{ color: colors.accent.webb }} />
+              <MessageCircle
+                className="h-4 w-4"
+                style={{ color: colors.accent.webb }}
+                aria-hidden="true"
+              />
               <span
                 className="text-xs font-semibold uppercase"
                 style={{ ...labelStyle, color: colors.accent.webb }}
@@ -473,11 +493,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 >
                   {codeCopied ? (
                     <>
-                      <Check className="h-3 w-3" /> Copiado!
+                      <Check className="h-3 w-3" aria-hidden="true" /> Copiado!
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3 w-3" /> Copiar
+                      <Copy className="h-3 w-3" aria-hidden="true" /> Copiar
                     </>
                   )}
                 </button>
@@ -500,7 +520,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-all"
             style={{ backgroundColor: colors.accent.webb, boxShadow: 'none' }}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
             {creating ? 'Adicionando...' : 'Adicionar'}
           </button>
         </div>
@@ -512,7 +532,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
           className="flex flex-col items-center justify-center rounded-xl py-12"
           style={{ ...cardStyle }}
         >
-          <Globe className="h-10 w-10 mb-3" style={{ color: colors.text.void }} />
+          <Globe
+            className="h-10 w-10 mb-3"
+            style={{ color: colors.text.void }}
+            aria-hidden="true"
+          />
           <p className="text-sm" style={{ color: colors.text.dust }}>
             Nenhuma URL cadastrada
           </p>
@@ -573,7 +597,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                       className="flex items-center gap-1 text-xs truncate max-w-[200px] hover:underline"
                       style={{ color: colors.accent.webb }}
                     >
-                      {row.url} <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                      {row.url}{' '}
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
                     </a>
                   </td>
                   <td className="px-4 py-3">
@@ -641,10 +666,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                   <td className="px-4 py-3">
                     <div className="flex gap-1.5">
                       <button
+                        type="button"
                         className="rounded-full p-1.5 transition-colors"
                         style={{ background: `${colors.accent.webb}15`, color: colors.accent.webb }}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
@@ -652,7 +678,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                         className="rounded-full p-1.5 transition-colors"
                         style={{ background: `${colors.state.error}15`, color: colors.state.error }}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     </div>
                   </td>

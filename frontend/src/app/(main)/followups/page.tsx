@@ -111,11 +111,11 @@ export default function FollowupsPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'executed':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+        return <CheckCircle2 className="w-5 h-5 text-green-500" aria-hidden="true" />;
       case 'cancelled':
-        return <XCircle className="w-5 h-5 text-red-500" />;
+        return <XCircle className="w-5 h-5 text-red-500" aria-hidden="true" />;
       default:
-        return <Clock className="w-5 h-5 text-yellow-500" />;
+        return <Clock className="w-5 h-5 text-yellow-500" aria-hidden="true" />;
     }
   };
 
@@ -198,7 +198,7 @@ export default function FollowupsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-[#E0DDD8] flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-[#E85D30]" />
+              <Calendar className="w-8 h-8 text-[#E85D30]" aria-hidden="true" />
               Follow-ups Programados
             </h1>
             <p className="text-[#6E6E73] mt-1">Acompanhe todos os follow-ups agendados pela IA</p>
@@ -209,7 +209,10 @@ export default function FollowupsPage() {
             disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 bg-[#E85D30] hover:bg-[#D04E25] disabled:bg-[#E85D30]/50 text-[#0A0A0C] font-medium rounded-lg transition-colors"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
+              aria-hidden="true"
+            />
             Atualizar
           </button>
         </div>
@@ -280,7 +283,7 @@ export default function FollowupsPage() {
 
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] gap-3 mb-6">
           <div className="flex items-center gap-3 bg-[#111113] rounded-xl border border-[#222226] px-4 py-3">
-            <Search className="w-4 h-4 text-[#6E6E73]" />
+            <Search className="w-4 h-4 text-[#6E6E73]" aria-hidden="true" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -326,7 +329,7 @@ export default function FollowupsPage() {
           <div className="bg-[#111113] rounded-xl p-5 border border-[#222226]">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-[#E85D30]/15 rounded-xl flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-[#E85D30]" />
+                <Calendar className="w-6 h-6 text-[#E85D30]" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-[#6E6E73] text-sm">Total</p>
@@ -337,7 +340,7 @@ export default function FollowupsPage() {
           <div className="bg-[#111113] rounded-xl p-5 border border-[#222226]">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-yellow-500/15 rounded-xl flex items-center justify-center">
-                <Clock className="w-6 h-6 text-yellow-400" />
+                <Clock className="w-6 h-6 text-yellow-400" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-[#6E6E73] text-sm">Pendentes</p>
@@ -350,7 +353,7 @@ export default function FollowupsPage() {
           <div className="bg-[#111113] rounded-xl p-5 border border-[#222226]">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-green-500/15 rounded-xl flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6 text-green-400" />
+                <CheckCircle2 className="w-6 h-6 text-green-400" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-[#6E6E73] text-sm">Executados</p>
@@ -365,7 +368,7 @@ export default function FollowupsPage() {
         {/* Error State */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400" />
+            <AlertCircle className="w-5 h-5 text-red-400" aria-hidden="true" />
             <p className="text-red-400">{error}</p>
           </div>
         )}
@@ -373,14 +376,14 @@ export default function FollowupsPage() {
         {/* Loading State */}
         {isLoading && followups.length === 0 && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-[#E85D30] animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#E85D30] animate-spin" aria-hidden="true" />
           </div>
         )}
 
         {/* Empty State */}
         {!isLoading && followups.length === 0 && !error && (
           <div className="text-center py-20">
-            <Calendar className="w-16 h-16 text-[#6E6E73] mx-auto mb-4" />
+            <Calendar className="w-16 h-16 text-[#6E6E73] mx-auto mb-4" aria-hidden="true" />
             <h3 className="text-xl font-semibold text-[#E0DDD8] mb-2">Nenhum follow-up agendado</h3>
             <p className="text-[#6E6E73]">
               A IA agenda follow-ups automaticamente durante as conversas
@@ -406,7 +409,7 @@ export default function FollowupsPage() {
 
         {!isLoading && followups.length > 0 && filteredFollowups.length === 0 && !error && (
           <div className="text-center py-16 bg-[#111113] border border-[#222226] rounded-xl mb-6">
-            <Search className="w-12 h-12 text-[#6E6E73] mx-auto mb-4" />
+            <Search className="w-12 h-12 text-[#6E6E73] mx-auto mb-4" aria-hidden="true" />
             <h3 className="text-lg font-semibold text-[#E0DDD8] mb-2">
               Nenhum follow-up combina com os filtros
             </h3>
@@ -488,7 +491,7 @@ export default function FollowupsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-[#6E6E73]" />
+                          <Phone className="w-4 h-4 text-[#6E6E73]" aria-hidden="true" />
                           <span className="text-sm text-[#E0DDD8] font-mono">
                             {formatPhone(followup.phone)}
                           </span>
@@ -496,7 +499,10 @@ export default function FollowupsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 max-w-xs">
-                          <MessageSquare className="w-4 h-4 text-[#6E6E73] flex-shrink-0" />
+                          <MessageSquare
+                            className="w-4 h-4 text-[#6E6E73] flex-shrink-0"
+                            aria-hidden="true"
+                          />
                           <span
                             className="text-sm text-[#E0DDD8] truncate"
                             title={followup.message}

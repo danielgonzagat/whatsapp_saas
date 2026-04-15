@@ -123,6 +123,7 @@ export default function CountdownTimer({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />

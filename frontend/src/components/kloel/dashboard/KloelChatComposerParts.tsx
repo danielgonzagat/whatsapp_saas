@@ -148,7 +148,7 @@ function ProductMenuContent({
                 flexShrink: 0,
               }}
             >
-              <Link2 size={13} strokeWidth={1.9} />
+              <Link2 size={13} strokeWidth={1.9} aria-hidden="true" />
             </div>
           )}
 
@@ -218,12 +218,12 @@ function ProductMenuContent({
 export function capabilityIcon(capability: KloelChatCapability, size = 14) {
   const common = { size, strokeWidth: 1.9 };
   if (capability === 'create_image') {
-    return <Sparkles {...common} />;
+    return <Sparkles {...common} aria-hidden="true" />;
   }
   if (capability === 'create_site') {
-    return <LayoutTemplate {...common} />;
+    return <LayoutTemplate {...common} aria-hidden="true" />;
   }
-  return <Globe {...common} />;
+  return <Globe {...common} aria-hidden="true" />;
 }
 
 function statusColor(status: KloelLinkedProduct['status']) {
@@ -309,7 +309,7 @@ export function ComposerPopover({
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <PopoverAction
-              icon={<Paperclip size={15} strokeWidth={1.9} />}
+              icon={<Paperclip size={15} strokeWidth={1.9} aria-hidden="true" />}
               label="Adicionar fotos e arquivos"
               onClick={() => {
                 onOpenFilePicker();
@@ -323,10 +323,14 @@ export function ComposerPopover({
               onMouseLeave={() => onProductMenuOpenChange(false)}
             >
               <PopoverAction
-                icon={<Link2 size={15} strokeWidth={1.9} />}
+                icon={<Link2 size={15} strokeWidth={1.9} aria-hidden="true" />}
                 label="Vincular Produto"
                 onClick={() => onProductMenuOpenChange(!isProductMenuOpen)}
-                trailing={isCompactViewport ? null : <ChevronRight size={14} strokeWidth={1.8} />}
+                trailing={
+                  isCompactViewport ? null : (
+                    <ChevronRight size={14} strokeWidth={1.8} aria-hidden="true" />
+                  )
+                }
               />
 
               <AnimatePresence>
@@ -385,38 +389,44 @@ export function ComposerPopover({
             />
 
             <PopoverAction
-              icon={<Sparkles size={15} strokeWidth={1.9} />}
+              icon={<Sparkles size={15} strokeWidth={1.9} aria-hidden="true" />}
               label="Criar imagem"
               onClick={() => {
                 onCapabilityChange(activeCapability === 'create_image' ? null : 'create_image');
                 onClose();
               }}
               trailing={
-                activeCapability === 'create_image' ? <Check size={14} strokeWidth={2.2} /> : null
+                activeCapability === 'create_image' ? (
+                  <Check size={14} strokeWidth={2.2} aria-hidden="true" />
+                ) : null
               }
             />
 
             <PopoverAction
-              icon={<LayoutTemplate size={15} strokeWidth={1.9} />}
+              icon={<LayoutTemplate size={15} strokeWidth={1.9} aria-hidden="true" />}
               label="Criar site"
               onClick={() => {
                 onCapabilityChange(activeCapability === 'create_site' ? null : 'create_site');
                 onClose();
               }}
               trailing={
-                activeCapability === 'create_site' ? <Check size={14} strokeWidth={2.2} /> : null
+                activeCapability === 'create_site' ? (
+                  <Check size={14} strokeWidth={2.2} aria-hidden="true" />
+                ) : null
               }
             />
 
             <PopoverAction
-              icon={<Search size={15} strokeWidth={1.9} />}
+              icon={<Search size={15} strokeWidth={1.9} aria-hidden="true" />}
               label="Buscar"
               onClick={() => {
                 onCapabilityChange(activeCapability === 'search_web' ? null : 'search_web');
                 onClose();
               }}
               trailing={
-                activeCapability === 'search_web' ? <Check size={14} strokeWidth={2.2} /> : null
+                activeCapability === 'search_web' ? (
+                  <Check size={14} strokeWidth={2.2} aria-hidden="true" />
+                ) : null
               }
             />
           </div>

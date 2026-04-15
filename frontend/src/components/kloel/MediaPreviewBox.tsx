@@ -176,7 +176,7 @@ export function MediaPreviewBox({
                   color: '#fff',
                 }}
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             ) : null}
           </>
@@ -201,6 +201,7 @@ export function MediaPreviewBox({
                     height: 32,
                     color: dragActive ? mergedTheme.accentColor : mergedTheme.mutedColor,
                   }}
+                  aria-hidden="true"
                 />
               )
             )}

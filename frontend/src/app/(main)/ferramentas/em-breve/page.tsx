@@ -50,6 +50,7 @@ function EmBreveContent() {
             fill="none"
             stroke="#E85D30"
             strokeWidth={1.5}
+            aria-hidden="true"
           >
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />

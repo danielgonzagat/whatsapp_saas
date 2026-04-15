@@ -81,7 +81,11 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.ember.primary }} />
+        <Loader2
+          className="h-6 w-6 animate-spin"
+          style={{ color: colors.ember.primary }}
+          aria-hidden="true"
+        />
       </div>
     );
 
@@ -97,7 +101,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
-          <Plus className="h-4 w-4" /> Novo cupom
+          <Plus className="h-4 w-4" aria-hidden="true" /> Novo cupom
         </button>
       </div>
       <DataTable
@@ -180,7 +184,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                 className="rounded-full p-1.5"
                 style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             ),
           },
@@ -205,7 +209,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                 Novo cupom
               </h3>
               <button type="button" onClick={() => setShowModal(false)}>
-                <X className="h-5 w-5" style={{ color: colors.text.dim }} />
+                <X className="h-5 w-5" style={{ color: colors.text.dim }} aria-hidden="true" />
               </button>
             </div>
             <div className="space-y-4">

@@ -475,6 +475,7 @@ export function InboxWorkspace({
           <XCircle
             className="text-red-700"
             style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+            aria-hidden="true"
           />
           <span>{error}</span>
         </div>
@@ -488,6 +489,7 @@ export function InboxWorkspace({
                 <MessageSquare
                   className="text-[#6E6E73]"
                   style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                  aria-hidden="true"
                 />
                 <span className="text-[length:var(--inbox-section-title)] font-semibold text-[#E0DDD8]">
                   Conversas
@@ -551,6 +553,7 @@ export function InboxWorkspace({
                   <Loader2
                     className="animate-spin text-[#6E6E73]"
                     style={{ width: 'var(--inbox-icon-md)', height: 'var(--inbox-icon-md)' }}
+                    aria-hidden="true"
                   />
                 </div>
               ) : filteredConversations.length === 0 ? (
@@ -604,6 +607,7 @@ export function InboxWorkspace({
                                     width: 'calc(var(--inbox-icon-sm) - 2px)',
                                     height: 'calc(var(--inbox-icon-sm) - 2px)',
                                   }}
+                                  aria-hidden="true"
                                 />
                               </span>
                             ) : (
@@ -616,6 +620,7 @@ export function InboxWorkspace({
                                     width: 'calc(var(--inbox-icon-sm) - 2px)',
                                     height: 'calc(var(--inbox-icon-sm) - 2px)',
                                   }}
+                                  aria-hidden="true"
                                 />
                               </span>
                             )}
@@ -688,6 +693,7 @@ export function InboxWorkspace({
                     <span className="flex items-center gap-1.5 rounded-[calc(var(--inbox-radius)-10px)] bg-[#E85D30]/10 px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E85D30]">
                       <UserIcon
                         style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                        aria-hidden="true"
                       />
                       {selectedConversation.assignedAgent.name || 'Agente'}
                     </span>
@@ -695,6 +701,7 @@ export function InboxWorkspace({
                     <span className="flex items-center gap-1.5 rounded-[calc(var(--inbox-radius)-10px)] bg-emerald-500/10 px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold text-emerald-400">
                       <Bot
                         style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                        aria-hidden="true"
                       />
                       IA
                     </span>
@@ -787,6 +794,7 @@ export function InboxWorkspace({
                   <Loader2
                     className="animate-spin text-[#6E6E73]"
                     style={{ width: 'var(--inbox-icon-md)', height: 'var(--inbox-icon-md)' }}
+                    aria-hidden="true"
                   />
                 </div>
               ) : !selectedConversationId ? (
@@ -899,10 +907,12 @@ export function InboxWorkspace({
                       <Loader2
                         className="animate-spin"
                         style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                        aria-hidden="true"
                       />
                     ) : (
                       <Send
                         style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                        aria-hidden="true"
                       />
                     )}
                   </button>

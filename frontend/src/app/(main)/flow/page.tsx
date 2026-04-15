@@ -252,7 +252,7 @@ function FlowPageContent() {
                 : 'border-transparent text-[#6E6E73] hover:text-[#E0DDD8]'
             }`}
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-4 h-4" aria-hidden="true" />
             Editor
           </button>
           <button
@@ -264,7 +264,7 @@ function FlowPageContent() {
                 : 'border-transparent text-[#6E6E73] hover:text-[#E0DDD8]'
             }`}
           >
-            <LayoutTemplate className="w-4 h-4" />
+            <LayoutTemplate className="w-4 h-4" aria-hidden="true" />
             Templates
           </button>
           <button
@@ -276,7 +276,7 @@ function FlowPageContent() {
                 : 'border-transparent text-[#6E6E73] hover:text-[#E0DDD8]'
             }`}
           >
-            <Clock className="w-4 h-4" />
+            <Clock className="w-4 h-4" aria-hidden="true" />
             Execuções
           </button>
 
@@ -301,9 +301,9 @@ function FlowPageContent() {
               }}
             >
               {optimizing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               ) : (
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-4 h-4" aria-hidden="true" />
               )}
               {optimizing ? 'Otimizando...' : 'Otimizar IA'}
             </button>
@@ -332,13 +332,16 @@ function FlowPageContent() {
                 disabled={templatesLoading}
                 className="p-2 rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C] disabled:opacity-50"
               >
-                <RefreshCw className={`w-4 h-4 ${templatesLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${templatesLoading ? 'animate-spin' : ''}`}
+                  aria-hidden="true"
+                />
               </button>
             </div>
 
             {templatesLoading && templates.length === 0 ? (
               <div className="flex items-center gap-2 text-[#6E6E73]">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 Carregando templates...
               </div>
             ) : templatesError ? (
@@ -347,7 +350,7 @@ function FlowPageContent() {
               </div>
             ) : templates.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <LayoutTemplate className="w-12 h-12 text-[#3A3A3F]" />
+                <LayoutTemplate className="w-12 h-12 text-[#3A3A3F]" aria-hidden="true" />
                 <p className="text-[#6E6E73] text-sm">Nenhum template publico disponivel ainda</p>
                 <p className="text-[#3A3A3F] text-xs">
                   Templates criados por admins aparecerao aqui
@@ -422,7 +425,7 @@ function FlowPageContent() {
                         >
                           {isDownloading ? (
                             <span className="flex items-center justify-center gap-2">
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
                               Carregando...
                             </span>
                           ) : isDownloaded ? (
@@ -452,14 +455,17 @@ function FlowPageContent() {
                   disabled={execLoading}
                   className="p-2 rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C] disabled:opacity-50"
                 >
-                  <RefreshCw className={`w-4 h-4 ${execLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw
+                    className={`w-4 h-4 ${execLoading ? 'animate-spin' : ''}`}
+                    aria-hidden="true"
+                  />
                 </button>
               </div>
             </div>
 
             {execLoading && executions.length === 0 ? (
               <div className="flex items-center gap-2 text-[#6E6E73]">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 Carregando execucoes...
               </div>
             ) : executions.length === 0 ? (
@@ -504,7 +510,7 @@ function FlowPageContent() {
                           onClick={() => handleRetry(exec.id)}
                           className="px-3 py-2 text-sm rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C]"
                         >
-                          <RotateCcw className="w-4 h-4 mr-1 inline" />
+                          <RotateCcw className="w-4 h-4 mr-1 inline" aria-hidden="true" />
                           Reprocessar
                         </button>
                       )}
@@ -536,7 +542,7 @@ function FlowPageLoading() {
       className="h-[calc(100vh-80px)] flex items-center justify-center"
       style={{ backgroundColor: 'var(--app-bg-primary)' }}
     >
-      <Loader2 className="w-8 h-8 animate-spin text-[#E85D30]" />
+      <Loader2 className="w-8 h-8 animate-spin text-[#E85D30]" aria-hidden="true" />
     </div>
   );
 }

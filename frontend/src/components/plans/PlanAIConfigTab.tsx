@@ -706,7 +706,11 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.accent.webb }} />
+        <Loader2
+          className="h-6 w-6 animate-spin"
+          style={{ color: colors.accent.webb }}
+          aria-hidden="true"
+        />
       </div>
     );
 
@@ -720,7 +724,11 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           border: `1px solid ${colors.border.space}`,
         }}
       >
-        <Brain className="mt-0.5 h-6 w-6 flex-shrink-0" style={{ color: colors.accent.webb }} />
+        <Brain
+          className="mt-0.5 h-6 w-6 flex-shrink-0"
+          style={{ color: colors.accent.webb }}
+          aria-hidden="true"
+        />
         <div>
           <h3
             className="text-base font-semibold"
@@ -1535,6 +1543,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           <Sparkles
             className="mt-0.5 h-5 w-5 flex-shrink-0"
             style={{ color: colors.accent.webb }}
+            aria-hidden="true"
           />
           <div>
             <h4
@@ -1589,11 +1598,11 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           }}
         >
           {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : saved ? (
-            <CheckCircle className="h-4 w-4" />
+            <CheckCircle className="h-4 w-4" aria-hidden="true" />
           ) : (
-            <Save className="h-4 w-4" />
+            <Save className="h-4 w-4" aria-hidden="true" />
           )}
           {saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar configuração'}
         </button>

@@ -36,7 +36,7 @@ function StartNodeComponent({ data, selected }: NodeProps<StartNodeData>) {
     >
       <div className="flex items-center gap-2 justify-center">
         <div className="p-2 bg-emerald-500/20 rounded-full">
-          <Play className="w-4 h-4 text-emerald-400" fill="currentColor" />
+          <Play className="w-4 h-4 text-emerald-400" fill="currentColor" aria-hidden="true" />
         </div>
         <div>
           <span className="font-semibold text-sm text-emerald-400">{data.label || 'Início'}</span>

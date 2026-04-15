@@ -243,8 +243,11 @@ export function AccountSettingsSection() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--app-bg-secondary)] text-xl font-semibold text-[var(--app-text-secondary)]">
               JD
             </div>
-            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--app-bg-card)] bg-[var(--app-bg-primary)] text-[var(--app-text-primary)] transition-colors hover:bg-[var(--app-bg-hover)]">
-              <Camera className="h-3.5 w-3.5" />
+            <button
+              type="button"
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--app-bg-card)] bg-[var(--app-bg-primary)] text-[var(--app-text-primary)] transition-colors hover:bg-[var(--app-bg-hover)]"
+            >
+              <Camera className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
           <div>
@@ -339,7 +342,11 @@ export function AccountSettingsSection() {
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)]"
               >
-                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showCurrentPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
               </button>
             </div>
             <div className="relative">
@@ -354,7 +361,11 @@ export function AccountSettingsSection() {
                 onClick={() => setShowNewPassword(!showNewPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)]"
               >
-                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showNewPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
               </button>
             </div>
             <Input

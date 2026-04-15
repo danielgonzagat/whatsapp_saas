@@ -279,7 +279,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
             onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
             onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -291,8 +291,10 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
             <>
               {/* ── Contact Info ── */}
               <Section title="Informacoes">
-                <InfoRow icon={<Phone size={14} />} label={phone} />
-                {contact?.email && <InfoRow icon={<Mail size={14} />} label={contact.email} />}
+                <InfoRow icon={<Phone size={14} aria-hidden="true" />} label={phone} />
+                {contact?.email && (
+                  <InfoRow icon={<Mail size={14} aria-hidden="true" />} label={contact.email} />
+                )}
               </Section>
 
               {/* ── Tags ── */}
@@ -320,7 +322,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                         color: C.text,
                       }}
                     >
-                      <Tag size={10} style={{ color: C.accent }} />
+                      <Tag size={10} style={{ color: C.accent }} aria-hidden="true" />
                       {tag}
                       <button
                         type="button"
@@ -337,7 +339,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                         onMouseEnter={(e) => (e.currentTarget.style.color = '#FF453A')}
                         onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
                       >
-                        <X size={10} />
+                        <X size={10} aria-hidden="true" />
                       </button>
                     </span>
                   ))}
@@ -377,7 +379,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                       fontWeight: 600,
                     }}
                   >
-                    <Plus size={12} /> Adicionar
+                    <Plus size={12} aria-hidden="true" /> Adicionar
                   </button>
                 </div>
               </Section>
@@ -416,7 +418,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <TrendingUp size={14} style={{ color: C.muted }} />
+                  <TrendingUp size={14} style={{ color: C.muted }} aria-hidden="true" />
                   <span style={{ fontSize: 12, color: C.muted }}>Sentimento:</span>
                   <span
                     style={{
@@ -456,7 +458,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                     marginBottom: 10,
                   }}
                 >
-                  <Brain size={13} />
+                  <Brain size={13} aria-hidden="true" />
                   {neuroLoading ? 'Analisando...' : 'Analisar com IA'}
                 </button>
                 {neuroError && (
@@ -475,7 +477,11 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                       <div
                         style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}
                       >
-                        <Zap size={12} style={{ color: C.accent, flexShrink: 0 }} />
+                        <Zap
+                          size={12}
+                          style={{ color: C.accent, flexShrink: 0 }}
+                          aria-hidden="true"
+                        />
                         <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>
                           {neuroResult.action}
                         </span>
@@ -570,8 +576,12 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
             background: C.surface,
           }}
         >
-          <ActionButton icon={<MessageCircle size={14} />} label="Enviar mensagem" primary />
-          <ActionButton icon={<Briefcase size={14} />} label="Criar deal" />
+          <ActionButton
+            icon={<MessageCircle size={14} aria-hidden="true" />}
+            label="Enviar mensagem"
+            primary
+          />
+          <ActionButton icon={<Briefcase size={14} aria-hidden="true" />} label="Criar deal" />
         </div>
       </aside>
 
@@ -632,6 +642,7 @@ function ActionButton({
 }) {
   return (
     <button
+      type="button"
       style={{
         flex: 1,
         display: 'flex',

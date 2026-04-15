@@ -156,7 +156,7 @@ export function ContextCapsule({
             <PageIcon className="w-4 h-4" style={{ color: colors.brand.cyan }} />
           )}
           {item.type === 'focus' && (
-            <Target className="w-4 h-4" style={{ color: colors.brand.green }} />
+            <Target className="w-4 h-4" style={{ color: colors.brand.green }} aria-hidden="true" />
           )}
           {item.type === 'status' && (
             <Zap
@@ -164,6 +164,7 @@ export function ContextCapsule({
               style={{
                 color: item.value === 'ON' ? colors.brand.green : colors.text.muted,
               }}
+              aria-hidden="true"
             />
           )}
 

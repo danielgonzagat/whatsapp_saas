@@ -339,9 +339,9 @@ export function CrmSettingsSection() {
             disabled={saving}
           >
             {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
+              <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
             Auto-segmentar
           </Button>
@@ -353,9 +353,9 @@ export function CrmSettingsSection() {
             disabled={loading}
           >
             {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <RefreshCw className="mr-2 h-4 w-4" />
+              <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
             Atualizar
           </Button>
@@ -364,7 +364,7 @@ export function CrmSettingsSection() {
 
       {error ? (
         <SettingsNotice tone="danger" className="flex items-center gap-3">
-          <XCircle className="h-4 w-4" />
+          <XCircle className="h-4 w-4" aria-hidden="true" />
           <span>{error}</span>
         </SettingsNotice>
       ) : null}
@@ -390,7 +390,7 @@ export function CrmSettingsSection() {
         <SettingsCard>
           <SettingsHeader
             title="Novo contato"
-            icon={<Users className="h-4 w-4" />}
+            icon={<Users className="h-4 w-4" aria-hidden="true" />}
             description="Crie contatos no CRM e mantenha as tags comerciais dentro do shell principal."
           />
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -437,7 +437,7 @@ export function CrmSettingsSection() {
             onClick={() => void handleCreateContact()}
             disabled={saving}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
             Criar contato
           </Button>
 
@@ -465,7 +465,7 @@ export function CrmSettingsSection() {
         <SettingsCard>
           <SettingsHeader
             title="Segmentacao"
-            icon={<Sparkles className="h-4 w-4" />}
+            icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
             description="Veja presets, volumes e audiencia operacional sem sair do CRM."
           />
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -523,7 +523,7 @@ export function CrmSettingsSection() {
           <SettingsHeader
             className="mb-0"
             title="Pipeline e deals"
-            icon={<KanbanSquare className="h-4 w-4" />}
+            icon={<KanbanSquare className="h-4 w-4" aria-hidden="true" />}
             description="Crie pipeline, abra deals e mova etapas sem sair do shell principal."
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -560,7 +560,7 @@ export function CrmSettingsSection() {
               onClick={() => void handleCreatePipeline()}
               disabled={saving}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
               Criar pipeline
             </Button>
           </div>
@@ -621,7 +621,7 @@ export function CrmSettingsSection() {
           onClick={() => void handleCreateDeal()}
           disabled={saving}
         >
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
           Criar deal
         </Button>
 
@@ -676,7 +676,7 @@ export function CrmSettingsSection() {
                             onClick={() => void handleMoveDeal(deal, -1)}
                             disabled={saving || index === 0}
                           >
-                            <ArrowLeft className="h-4 w-4" />
+                            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                           </Button>
                           <Button
                             type="button"
@@ -685,7 +685,7 @@ export function CrmSettingsSection() {
                             onClick={() => void handleMoveDeal(deal, 1)}
                             disabled={saving || index === selectedPipeline.stages.length - 1}
                           >
-                            <ArrowRight className="h-4 w-4" />
+                            <ArrowRight className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </div>
                       </SettingsInset>

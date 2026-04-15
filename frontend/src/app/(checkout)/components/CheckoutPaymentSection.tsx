@@ -215,6 +215,7 @@ export function CheckoutSuccessModal({
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
             <polyline points="20 6 9 17 4 12" />
           </svg>

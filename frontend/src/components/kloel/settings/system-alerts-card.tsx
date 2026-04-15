@@ -101,7 +101,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
                       className={`flex items-center gap-1 text-xs font-medium ${styles.text} hover:underline`}
                     >
                       Ver como resolver
-                      <ChevronRight className="h-3 w-3" />
+                      <ChevronRight className="h-3 w-3" aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -120,7 +120,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
               onClick={() => setShowResolveModal(false)}
               className="flex h-8 w-8 items-center justify-center rounded-full text-[#6E6E73] hover:bg-[#19191C]"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
           <SettingsNotice

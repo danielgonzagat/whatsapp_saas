@@ -224,7 +224,12 @@ function ActivityItem({ activity }: ActivityItemProps) {
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {activity.status === 'pending' && (
-              <Loader2 size={12} className="animate-spin" style={{ color: colors.brand.cyan }} />
+              <Loader2
+                size={12}
+                className="animate-spin"
+                style={{ color: colors.brand.cyan }}
+                aria-hidden="true"
+              />
             )}
             <span className="text-xs" style={{ color: colors.text.muted }}>
               {formatTimeAgo(activity.timestamp)}
@@ -270,7 +275,9 @@ function StatCard({ label, value, icon: Icon, trend }: StatCardProps) {
     <div className="p-3 rounded-lg" style={{ backgroundColor: colors.background.surface2 }}>
       <div className="flex items-center justify-between mb-1">
         <Icon size={14} style={{ color: colors.text.muted }} />
-        {trend === 'up' && <TrendingUp size={12} style={{ color: colors.state.success }} />}
+        {trend === 'up' && (
+          <TrendingUp size={12} style={{ color: colors.state.success }} aria-hidden="true" />
+        )}
       </div>
       <div className="text-lg font-semibold" style={{ color: colors.text.primary }}>
         {value}
@@ -332,13 +339,14 @@ export function AgentConsole({
           }}
         >
           <div className="flex items-center gap-2">
-            <ChevronLeft size={16} style={{ color: colors.text.secondary }} />
+            <ChevronLeft size={16} style={{ color: colors.text.secondary }} aria-hidden="true" />
             <Bot
               size={20}
               style={{
                 color: isThinking ? colors.brand.cyan : colors.brand.green,
               }}
               className={isThinking ? 'animate-pulse' : ''}
+              aria-hidden="true"
             />
             {isThinking && (
               <span className="text-xs font-medium" style={{ color: colors.brand.cyan }}>
@@ -379,6 +387,7 @@ export function AgentConsole({
                 size={20}
                 style={{ color: colors.brand.green }}
                 className={isThinking ? 'animate-pulse' : ''}
+                aria-hidden="true"
               />
             </div>
             <div>
@@ -398,7 +407,7 @@ export function AgentConsole({
                   </>
                 ) : (
                   <>
-                    <WifiOff size={10} style={{ color: colors.state.error }} />
+                    <WifiOff size={10} style={{ color: colors.state.error }} aria-hidden="true" />
                     <span className="text-xs" style={{ color: colors.state.error }}>
                       Desconectado
                     </span>
@@ -414,7 +423,7 @@ export function AgentConsole({
             className="p-1.5 rounded-lg transition-colors hover:bg-white/5"
             style={{ color: colors.text.muted }}
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -443,13 +452,13 @@ export function AgentConsole({
         >
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <Users size={12} style={{ color: colors.text.muted }} />
+              <Users size={12} style={{ color: colors.text.muted }} aria-hidden="true" />
               <span className="text-xs font-medium" style={{ color: colors.text.secondary }}>
                 {stats.activeConversations} ativas
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Clock size={12} style={{ color: colors.text.muted }} />
+              <Clock size={12} style={{ color: colors.text.muted }} aria-hidden="true" />
               <span className="text-xs font-medium" style={{ color: colors.text.secondary }}>
                 {stats.avgResponseTime}
               </span>
@@ -475,7 +484,12 @@ export function AgentConsole({
               borderBottom: `1px solid ${colors.stroke}`,
             }}
           >
-            <Brain size={16} className="animate-pulse" style={{ color: colors.brand.cyan }} />
+            <Brain
+              size={16}
+              className="animate-pulse"
+              style={{ color: colors.brand.cyan }}
+              aria-hidden="true"
+            />
             <span className="text-sm font-medium" style={{ color: colors.brand.cyan }}>
               Agente processando...
             </span>
@@ -555,7 +569,7 @@ export function AgentConsole({
               className="flex flex-col items-center justify-center h-full text-center p-4"
               style={{ color: colors.text.muted }}
             >
-              <Activity size={32} className="mb-2 opacity-50" />
+              <Activity size={32} className="mb-2 opacity-50" aria-hidden="true" />
               <p className="text-sm">Nenhuma atividade</p>
               <p className="text-xs mt-1">As ações do agente aparecerão aqui</p>
             </div>
@@ -578,6 +592,7 @@ export function AgentConsole({
             {filteredActivities.length} atividade(s)
           </span>
           <button
+            type="button"
             className="text-xs font-medium transition-colors hover:underline"
             style={{ color: colors.brand.cyan }}
           >

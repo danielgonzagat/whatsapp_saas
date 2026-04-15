@@ -38,7 +38,7 @@ export function RealtimeUsageCard({
   return (
     <SettingsCard className="p-6">
       <SettingsHeader
-        icon={<TrendingUp className="h-5 w-5" />}
+        icon={<TrendingUp className="h-5 w-5" aria-hidden="true" />}
         title="Uso em tempo real do Kloel"
       />
 

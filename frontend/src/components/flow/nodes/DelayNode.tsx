@@ -38,7 +38,7 @@ function DelayNodeComponent({ data, selected }: NodeProps<DelayNodeData>) {
 
       <div className="flex items-center gap-2 mb-2">
         <div className="p-1.5 bg-[#E85D30]/15 rounded-md">
-          <Clock className="w-4 h-4 text-[#E85D30]" />
+          <Clock className="w-4 h-4 text-[#E85D30]" aria-hidden="true" />
         </div>
         <span className="font-medium text-sm text-[#E0DDD8]">{data.label || 'Delay'}</span>
       </div>

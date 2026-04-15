@@ -110,6 +110,7 @@ function StepperIcon({ direction }: { direction: 'up' | 'down' }) {
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
+      aria-hidden="true"
     >
       {direction === 'up' ? (
         <polyline points="6 14 12 8 18 14" />

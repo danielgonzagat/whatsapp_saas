@@ -64,7 +64,7 @@ export function ChipInput({
                 onClick={() => onChange(value.filter((t) => t !== tag))}
                 className="ml-0.5 hover:text-teal-900"
               >
-                <X className="h-3 w-3" />
+                <X className="h-3 w-3" aria-hidden="true" />
               </button>
             </span>
           ))}
@@ -262,9 +262,9 @@ export function CodeSnippet({ code, label }: { code: string; label?: string }) {
           className="absolute right-2 top-2 rounded-md bg-white border border-gray-200 p-1.5 text-gray-500 hover:text-gray-700"
         >
           {copied ? (
-            <Check className="h-3.5 w-3.5 text-teal-600" />
+            <Check className="h-3.5 w-3.5 text-teal-600" aria-hidden="true" />
           ) : (
-            <Copy className="h-3.5 w-3.5" />
+            <Copy className="h-3.5 w-3.5" aria-hidden="true" />
           )}
         </button>
       </div>

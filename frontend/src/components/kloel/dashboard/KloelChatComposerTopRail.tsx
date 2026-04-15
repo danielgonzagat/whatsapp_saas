@@ -22,9 +22,9 @@ const WARNING = KLOEL_THEME.warning;
 const EMBER = KLOEL_THEME.accent;
 
 function attachmentIcon(kind: KloelChatAttachment['kind']) {
-  if (kind === 'image') return <ImagePlus size={14} strokeWidth={1.8} />;
-  if (kind === 'audio') return <Music4 size={14} strokeWidth={1.8} />;
-  return <FileText size={14} strokeWidth={1.8} />;
+  if (kind === 'image') return <ImagePlus size={14} strokeWidth={1.8} aria-hidden="true" />;
+  if (kind === 'audio') return <Music4 size={14} strokeWidth={1.8} aria-hidden="true" />;
+  return <FileText size={14} strokeWidth={1.8} aria-hidden="true" />;
 }
 
 function resolveVisualAttachmentSource(attachment: KloelChatAttachment) {
@@ -135,7 +135,7 @@ export function ComposerTopRail({
                     color: MUTED,
                   }}
                 >
-                  <ImagePlus size={18} strokeWidth={1.8} />
+                  <ImagePlus size={18} strokeWidth={1.8} aria-hidden="true" />
                 </div>
               )}
             </button>
@@ -274,7 +274,7 @@ export function ComposerTopRail({
                 flexShrink: 0,
               }}
             >
-              <Link2 size={15} strokeWidth={2} />
+              <Link2 size={15} strokeWidth={2} aria-hidden="true" />
             </div>
           )}
 
@@ -315,7 +315,7 @@ export function ComposerTopRail({
                     flexShrink: 0,
                   }}
                 >
-                  <Link2 size={10} strokeWidth={2.1} />
+                  <Link2 size={10} strokeWidth={2.1} aria-hidden="true" />
                 </span>
                 {linkedProduct.name}
               </span>

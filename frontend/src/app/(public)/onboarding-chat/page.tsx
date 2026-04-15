@@ -244,7 +244,7 @@ function OnboardingChatContent() {
           <div className="ml-auto flex items-center gap-4">
             {status?.messagesCount > 0 && (
               <div className="flex items-center gap-2 text-base text-gray-400">
-                <MessageSquare className="w-4 h-4" />
+                <MessageSquare className="w-4 h-4" aria-hidden="true" />
                 {status.messagesCount} mensagens
               </div>
             )}
@@ -254,13 +254,13 @@ function OnboardingChatContent() {
                 onClick={goToLogin}
                 className="flex items-center gap-2 text-base text-gray-400 hover:text-white transition px-3 py-1.5 rounded-lg border border-white/20 hover:border-white/40"
               >
-                <LogIn className="w-4 h-4" />
+                <LogIn className="w-4 h-4" aria-hidden="true" />
                 <span>Entrar</span>
               </button>
             )}
             {isAuthenticated && (userName || userEmail) && (
               <div className="flex items-center gap-2 text-base text-green-400">
-                <CheckCircle2 className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
                 <span>{userName || userEmail}</span>
               </div>
             )}
@@ -289,9 +289,9 @@ function OnboardingChatContent() {
                   }`}
                 >
                   {message.role === 'assistant' ? (
-                    <Bot className="w-5 h-5 text-white" />
+                    <Bot className="w-5 h-5 text-white" aria-hidden="true" />
                   ) : (
-                    <User className="w-5 h-5 text-white" />
+                    <User className="w-5 h-5 text-white" aria-hidden="true" />
                   )}
                 </div>
 
@@ -337,7 +337,7 @@ function OnboardingChatContent() {
               animate={{ opacity: 1, scale: 1 }}
               className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-6 text-center"
             >
-              <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
+              <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" aria-hidden="true" />
               <h2 className="text-xl font-bold text-white mb-2">Configuracao Concluida!</h2>
               <p className="text-gray-300 mb-6">
                 Sua conta está pronta. Agora você pode conectar seu WhatsApp e começar a vender!
@@ -348,7 +348,7 @@ function OnboardingChatContent() {
                 className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 mx-auto hover:opacity-90 transition"
               >
                 Ir para o Dashboard
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5" aria-hidden="true" />
               </button>
             </motion.div>
           )}
@@ -379,9 +379,9 @@ function OnboardingChatContent() {
                 className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50"
               >
                 {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Send className="w-5 h-5" />
+                  <Send className="w-5 h-5" aria-hidden="true" />
                 )}
               </button>
             </div>

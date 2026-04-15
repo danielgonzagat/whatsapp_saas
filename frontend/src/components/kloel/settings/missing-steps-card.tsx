@@ -64,9 +64,9 @@ export function MissingStepsCard({
               }`}
             >
               {step.done ? (
-                <CheckCircle2 className="h-5 w-5 text-[#10B981]" />
+                <CheckCircle2 className="h-5 w-5 text-[#10B981]" aria-hidden="true" />
               ) : (
-                <Circle className="h-5 w-5 text-[var(--app-text-tertiary)]" />
+                <Circle className="h-5 w-5 text-[var(--app-text-tertiary)]" aria-hidden="true" />
               )}
               <Icon
                 className={`h-4 w-4 ${step.done ? 'text-[#10B981]' : 'text-[var(--app-text-secondary)]'}`}

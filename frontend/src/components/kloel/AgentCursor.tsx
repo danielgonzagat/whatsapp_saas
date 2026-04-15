@@ -372,7 +372,7 @@ export function AgentCursor({
           willChange: 'left, top, transform',
         }}
       >
-        <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
+        <svg width="28" height="34" viewBox="0 0 28 34" fill="none" aria-hidden="true">
           <g filter="url(#agent-cursor-shadow)">
             <path
               d="M3 2L3 28L9.5 21.5L15.5 31L19.5 29L13.5 19L22 17L3 2Z"

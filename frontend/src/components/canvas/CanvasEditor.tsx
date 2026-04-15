@@ -361,7 +361,7 @@ export default function CanvasEditor() {
             <p style={panelHeading}>Modelos</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
               {TEMPLATE_TAGS.map((tag) => (
-                <button key={tag} style={pillStyle}>
+                <button type="button" key={tag} style={pillStyle}>
                   {tag}
                 </button>
               ))}
@@ -472,6 +472,7 @@ export default function CanvasEditor() {
                           viewBox="0 0 24 24"
                           fill="#F59E0B"
                           stroke="none"
+                          aria-hidden="true"
                         >
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
                         </svg>
@@ -872,6 +873,7 @@ export default function CanvasEditor() {
                               fill="none"
                               stroke="currentColor"
                               strokeWidth={2}
+                              aria-hidden="true"
                             >
                               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                               <path d="M7 11V7a5 5 0 0110 0v4" />
@@ -884,6 +886,7 @@ export default function CanvasEditor() {
                               fill="none"
                               stroke="currentColor"
                               strokeWidth={2}
+                              aria-hidden="true"
                             >
                               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                               <path d="M7 11V7a5 5 0 019.9-1" />
@@ -1660,6 +1663,7 @@ export default function CanvasEditor() {
             stroke="#10B981"
             strokeWidth="3"
             style={{ marginLeft: 6 }}
+            aria-hidden="true"
           >
             <polyline points="20 6 9 17 4 12" />
           </svg>

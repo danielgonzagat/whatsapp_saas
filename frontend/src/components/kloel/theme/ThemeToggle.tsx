@@ -135,6 +135,7 @@ function SunIcon({ visible }: { visible: boolean }) {
         transform: visible ? 'rotate(0deg) scale(1)' : 'rotate(-70deg) scale(0.72)',
         transition: 'opacity 0.25s ease, transform 0.4s ease',
       }}
+      aria-hidden="true"
     >
       <circle cx="12" cy="12" r="4.5" />
       <path d="M12 2.5v2.2" />
@@ -165,6 +166,7 @@ function MoonIcon({ visible }: { visible: boolean }) {
         transform: visible ? 'rotate(0deg) scale(1)' : 'rotate(70deg) scale(0.72)',
         transition: 'opacity 0.25s ease, transform 0.4s ease',
       }}
+      aria-hidden="true"
     >
       <path d="M21 12.79A8.5 8.5 0 1 1 11.21 3 6.8 6.8 0 0 0 21 12.79Z" />
       <path d="M17.8 5.4h.01" />

@@ -92,6 +92,7 @@ export default function CanvasProjetos() {
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
           {['Tipo', 'Categoria', 'Data'].map((f) => (
             <button
+              type="button"
               key={f}
               style={{
                 padding: '5px 12px',

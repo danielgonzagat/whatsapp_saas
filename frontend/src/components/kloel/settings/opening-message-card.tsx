@@ -46,7 +46,7 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
   return (
     <SettingsCard className="p-6">
       <SettingsHeader
-        icon={<MessageSquare className="h-5 w-5" />}
+        icon={<MessageSquare className="h-5 w-5" aria-hidden="true" />}
         title="Mensagem de abertura do Kloel"
         description="Essa e a primeira mensagem que o Kloel envia quando um cliente inicia uma conversa."
       />

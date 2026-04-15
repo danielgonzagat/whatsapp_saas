@@ -267,7 +267,7 @@ export default function LeadsPage() {
 
       {error && (
         <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <XCircle className="h-4 w-4" />
+          <XCircle className="h-4 w-4" aria-hidden="true" />
           <span>{error}</span>
         </div>
       )}
@@ -279,14 +279,17 @@ export default function LeadsPage() {
             <div className="border-b border-[#222226] px-5 py-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-[#3A3A3F]" />
+                  <Users className="h-4 w-4 text-[#3A3A3F]" aria-hidden="true" />
                   <span className="text-sm font-semibold text-[#E0DDD8]">Lista</span>
                   <span className="text-xs text-[#6E6E73]">({filteredLeads.length})</span>
                 </div>
               </div>
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3A3A3F]" />
+                  <Search
+                    className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3A3A3F]"
+                    aria-hidden="true"
+                  />
                   <input
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -312,7 +315,7 @@ export default function LeadsPage() {
             <div className="max-h-[70vh] overflow-y-auto">
               {loadingLeads && leads.length === 0 ? (
                 <div className="flex items-center justify-center px-5 py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" />
+                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" aria-hidden="true" />
                 </div>
               ) : filteredLeads.length === 0 ? (
                 <div className="px-5 py-10 text-center">
@@ -429,9 +432,9 @@ export default function LeadsPage() {
                       className="inline-flex items-center gap-2 rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C]"
                     >
                       {copiedLeadId === selectedLead.id ? (
-                        <Check className="h-4 w-4 text-[#E0DDD8]" />
+                        <Check className="h-4 w-4 text-[#E0DDD8]" aria-hidden="true" />
                       ) : (
-                        <Copy className="h-4 w-4 text-[#6E6E73]" />
+                        <Copy className="h-4 w-4 text-[#6E6E73]" aria-hidden="true" />
                       )}
                       Copiar
                     </button>

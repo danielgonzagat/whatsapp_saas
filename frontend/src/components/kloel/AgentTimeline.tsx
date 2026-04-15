@@ -56,15 +56,35 @@ export interface AgentTimelineProps {
 function StatusIcon({ status }: { status: StepStatus }) {
   switch (status) {
     case 'completed':
-      return <CheckCircle2 className="w-5 h-5" style={{ color: colors.brand.green }} />;
+      return (
+        <CheckCircle2
+          className="w-5 h-5"
+          style={{ color: colors.brand.green }}
+          aria-hidden="true"
+        />
+      );
     case 'in-progress':
-      return <Loader2 className="w-5 h-5 animate-spin" style={{ color: colors.brand.cyan }} />;
+      return (
+        <Loader2
+          className="w-5 h-5 animate-spin"
+          style={{ color: colors.brand.cyan }}
+          aria-hidden="true"
+        />
+      );
     case 'awaiting-confirmation':
-      return <AlertTriangle className="w-5 h-5" style={{ color: colors.state.warning }} />;
+      return (
+        <AlertTriangle
+          className="w-5 h-5"
+          style={{ color: colors.state.warning }}
+          aria-hidden="true"
+        />
+      );
     case 'error':
-      return <Circle className="w-5 h-5" style={{ color: colors.state.error }} />;
+      return (
+        <Circle className="w-5 h-5" style={{ color: colors.state.error }} aria-hidden="true" />
+      );
     default:
-      return <Circle className="w-5 h-5" style={{ color: colors.text.muted }} />;
+      return <Circle className="w-5 h-5" style={{ color: colors.text.muted }} aria-hidden="true" />;
   }
 }
 
@@ -111,7 +131,7 @@ export function AgentTimeline({
         }}
       >
         <div className="flex items-center gap-3">
-          <Sparkles className="w-5 h-5" style={{ color: colors.brand.cyan }} />
+          <Sparkles className="w-5 h-5" style={{ color: colors.brand.cyan }} aria-hidden="true" />
           <span className="font-medium text-sm" style={{ color: colors.text.primary }}>
             {title}
           </span>
@@ -143,9 +163,17 @@ export function AgentTimeline({
 
           {collapsible &&
             (isCollapsed ? (
-              <ChevronDown className="w-4 h-4" style={{ color: colors.text.muted }} />
+              <ChevronDown
+                className="w-4 h-4"
+                style={{ color: colors.text.muted }}
+                aria-hidden="true"
+              />
             ) : (
-              <ChevronUp className="w-4 h-4" style={{ color: colors.text.muted }} />
+              <ChevronUp
+                className="w-4 h-4"
+                style={{ color: colors.text.muted }}
+                aria-hidden="true"
+              />
             ))}
         </div>
       </button>
@@ -219,7 +247,11 @@ export function AgentTimeline({
 
                 {step.timestamp && (
                   <div className="flex items-center gap-1 mt-1">
-                    <Clock className="w-3 h-3" style={{ color: colors.text.muted }} />
+                    <Clock
+                      className="w-3 h-3"
+                      style={{ color: colors.text.muted }}
+                      aria-hidden="true"
+                    />
                     <span className="text-xs" style={{ color: colors.text.muted }}>
                       {step.timestamp}
                     </span>
@@ -271,7 +303,11 @@ export function AgentTimelineMini({
           border: `1px solid ${colors.brand.green}30`,
         }}
       >
-        <CheckCircle2 className="w-4 h-4" style={{ color: colors.brand.green }} />
+        <CheckCircle2
+          className="w-4 h-4"
+          style={{ color: colors.brand.green }}
+          aria-hidden="true"
+        />
         <span className="text-sm" style={{ color: colors.brand.green }}>
           Concluído
         </span>
@@ -288,10 +324,18 @@ export function AgentTimelineMini({
       }}
     >
       {currentStep?.status === 'in-progress' && (
-        <Loader2 className="w-4 h-4 animate-spin" style={{ color: colors.brand.cyan }} />
+        <Loader2
+          className="w-4 h-4 animate-spin"
+          style={{ color: colors.brand.cyan }}
+          aria-hidden="true"
+        />
       )}
       {currentStep?.status === 'awaiting-confirmation' && (
-        <AlertTriangle className="w-4 h-4" style={{ color: colors.state.warning }} />
+        <AlertTriangle
+          className="w-4 h-4"
+          style={{ color: colors.state.warning }}
+          aria-hidden="true"
+        />
       )}
       <span className="text-sm" style={{ color: colors.text.secondary }}>
         {currentStep?.title || `${completedCount}/${steps.length} passos`}

@@ -24,6 +24,7 @@ export function SalesIcon({ size = 18, color = 'currentColor', style, ...props }
         ...style,
       }}
       {...props}
+      aria-hidden="true"
     >
       <g transform="translate(-621.208 -934.226)">
         <g>

@@ -238,7 +238,7 @@ export function BillingSettingsSection({
         <div className="grid gap-4 md:grid-cols-3">
           <SettingsInset className="p-4">
             <div className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-[#E85D30]" />
+              <Wallet className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
               <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
                 Creditos
               </p>
@@ -259,7 +259,7 @@ export function BillingSettingsSection({
 
           <SettingsInset className="p-4">
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-[#E85D30]" />
+              <Activity className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
               <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
                 Vendas processadas
               </p>
@@ -299,7 +299,7 @@ export function BillingSettingsSection({
 
           <SettingsInset className="p-4">
             <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-[#E85D30]" />
+              <Lock className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
               <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
                 Operacao financeira
               </p>
@@ -316,8 +316,8 @@ export function BillingSettingsSection({
 
         {creditsBalance < 1 ? (
           <SettingsNotice tone="warning" className="mt-4 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />O saldo operacional esta baixo. Revise sua
-            assinatura e forma de pagamento para evitar interrupcoes.
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />O saldo operacional esta baixo.
+            Revise sua assinatura e forma de pagamento para evitar interrupcoes.
           </SettingsNotice>
         ) : null}
 
@@ -326,15 +326,15 @@ export function BillingSettingsSection({
             <div className="rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] p-4">
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2 text-[var(--app-text-primary)]">
-                  <Check className="h-4 w-4 text-[#E85D30]" />
+                  <Check className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
                   Checkout e cobranca operados pelo Kloel
                 </div>
                 <div className="flex items-center gap-2 text-[var(--app-text-primary)]">
-                  <Check className="h-4 w-4 text-[#E85D30]" />
+                  <Check className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
                   Area de membros, afiliados e produtos no mesmo fluxo
                 </div>
                 <div className="flex items-center gap-2 text-[var(--app-text-secondary)]">
-                  <Lock className="h-4 w-4 text-[var(--app-text-placeholder)]" />
+                  <Lock className="h-4 w-4 text-[var(--app-text-placeholder)]" aria-hidden="true" />
                   Adicione um cartao para iniciar o teste
                 </div>
               </div>
@@ -344,7 +344,7 @@ export function BillingSettingsSection({
               onClick={handleActivateTrialClick}
               className={`w-full ${kloelSettingsClass.primaryButton}`}
             >
-              <Sparkles className="mr-2 h-4 w-4" />
+              <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
               Ativar teste gratis
             </Button>
           </div>
@@ -361,7 +361,7 @@ export function BillingSettingsSection({
               onClick={() => void startAddCardFlow()}
               className={kloelSettingsClass.outlineButton}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
               Adicionar cartao
             </Button>
           </div>
@@ -382,7 +382,10 @@ export function BillingSettingsSection({
 
         {cards.length === 0 ? (
           <div className="rounded-md border border-dashed border-[var(--app-border-primary)] bg-[var(--app-bg-primary)] px-4 py-8 text-center">
-            <CreditCard className="mx-auto h-5 w-5 text-[var(--app-text-secondary)]" />
+            <CreditCard
+              className="mx-auto h-5 w-5 text-[var(--app-text-secondary)]"
+              aria-hidden="true"
+            />
             <p className="mt-3 text-sm font-medium text-[var(--app-text-primary)]">
               Nenhum cartao cadastrado
             </p>
@@ -393,7 +396,7 @@ export function BillingSettingsSection({
               onClick={() => void startAddCardFlow()}
               className={`mt-4 ${kloelSettingsClass.primaryButton}`}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
               Adicionar cartao
             </Button>
           </div>
@@ -406,7 +409,7 @@ export function BillingSettingsSection({
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-primary)]">
-                    <CreditCard className="h-4 w-4 text-[#E85D30]" />
+                    <CreditCard className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[var(--app-text-primary)]">
@@ -434,7 +437,7 @@ export function BillingSettingsSection({
                     onClick={() => void handleRemove(card.id)}
                     className={kloelSettingsClass.dangerButton}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
                     Remover
                   </Button>
                 </div>

@@ -495,6 +495,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
           stroke="currentColor"
           strokeWidth={3}
           style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
+          aria-hidden="true"
         >
           <polyline points="20 6 9 17 4 12" />
         </svg>
@@ -613,6 +614,7 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
           stroke="currentColor"
           strokeWidth={3}
           style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
+          aria-hidden="true"
         >
           <polyline points="20 6 9 17 4 12" />
         </svg>
@@ -923,6 +925,7 @@ function CoprodSubTab({
                 fill="none"
                 stroke={V.em}
                 strokeWidth={2}
+                aria-hidden="true"
               >
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
@@ -1109,6 +1112,7 @@ export function ProductNerveCenterComissaoTab() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
+                aria-hidden="true"
               >
                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" />
@@ -1208,6 +1212,7 @@ export function ProductNerveCenterComissaoTab() {
               stroke="currentColor"
               strokeWidth={3}
               style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
+              aria-hidden="true"
             >
               <polyline points="20 6 9 17 4 12" />
             </svg>

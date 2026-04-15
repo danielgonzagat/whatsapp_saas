@@ -71,11 +71,11 @@ function statusColor(status: string) {
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
     case 'LIVE':
-      return <Play size={12} />;
+      return <Play size={12} aria-hidden="true" />;
     case 'COMPLETED':
-      return <CheckCircle size={12} />;
+      return <CheckCircle size={12} aria-hidden="true" />;
     default:
-      return <Clock size={12} />;
+      return <Clock size={12} aria-hidden="true" />;
   }
 }
 
@@ -244,7 +244,7 @@ export default function WebinariosPage() {
               gap: 6,
             }}
           >
-            <X size={14} /> Voltar
+            <X size={14} aria-hidden="true" /> Voltar
           </button>
           <h2
             style={{ color: 'var(--app-text-primary)', fontSize: 18, fontWeight: 600, margin: 0 }}
@@ -264,7 +264,7 @@ export default function WebinariosPage() {
               marginLeft: 'auto',
             }}
           >
-            <ExternalLink size={12} /> Abrir original
+            <ExternalLink size={12} aria-hidden="true" /> Abrir original
           </a>
         </div>
         {embedUrl ? (
@@ -303,7 +303,7 @@ export default function WebinariosPage() {
               textAlign: 'center',
             }}
           >
-            <Video size={48} style={{ color: '#E85D30', marginBottom: 16 }} />
+            <Video size={48} style={{ color: '#E85D30', marginBottom: 16 }} aria-hidden="true" />
             <p style={{ color: 'var(--app-text-primary)', fontSize: 14, marginBottom: 16 }}>
               Este link nao pode ser incorporado diretamente.
             </p>
@@ -398,7 +398,7 @@ export default function WebinariosPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Video size={20} style={{ color: '#E85D30' }} />
+          <Video size={20} style={{ color: '#E85D30' }} aria-hidden="true" />
           <h1
             style={{ color: 'var(--app-text-primary)', fontSize: 20, fontWeight: 700, margin: 0 }}
           >
@@ -423,7 +423,7 @@ export default function WebinariosPage() {
             gap: 6,
           }}
         >
-          <Plus size={14} /> Novo Webinario
+          <Plus size={14} aria-hidden="true" /> Novo Webinario
         </button>
       </div>
 
@@ -447,7 +447,11 @@ export default function WebinariosPage() {
       {/* Loading */}
       {loading && (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-          <Loader2 size={20} style={{ color: '#E85D30', animation: 'spin 1s linear infinite' }} />
+          <Loader2
+            size={20}
+            style={{ color: '#E85D30', animation: 'spin 1s linear infinite' }}
+            aria-hidden="true"
+          />
         </div>
       )}
 
@@ -462,7 +466,7 @@ export default function WebinariosPage() {
             textAlign: 'center',
           }}
         >
-          <Video size={40} style={{ color: '#444', marginBottom: 12 }} />
+          <Video size={40} style={{ color: '#444', marginBottom: 12 }} aria-hidden="true" />
           <p style={{ color: '#666', fontSize: 14 }}>Nenhum webinario criado ainda.</p>
           <p style={{ color: '#555', fontSize: 12 }}>
             Clique em &quot;Novo Webinario&quot; para comecar.
@@ -558,7 +562,7 @@ export default function WebinariosPage() {
                       alignItems: 'center',
                     }}
                   >
-                    <Pencil size={12} />
+                    <Pencil size={12} aria-hidden="true" />
                   </button>
                   <button
                     type="button"
@@ -578,7 +582,7 @@ export default function WebinariosPage() {
                       alignItems: 'center',
                     }}
                   >
-                    <Trash2 size={12} />
+                    <Trash2 size={12} aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -592,7 +596,7 @@ export default function WebinariosPage() {
                   marginBottom: 6,
                 }}
               >
-                <Calendar size={12} />
+                <Calendar size={12} aria-hidden="true" />
                 {formatDate(w.date)}
               </div>
               {w.description && (
@@ -674,7 +678,7 @@ export default function WebinariosPage() {
                   padding: 4,
                 }}
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -801,9 +805,13 @@ export default function WebinariosPage() {
                 }}
               >
                 {saving ? (
-                  <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                  <Loader2
+                    size={14}
+                    style={{ animation: 'spin 1s linear infinite' }}
+                    aria-hidden="true"
+                  />
                 ) : (
-                  <Plus size={14} />
+                  <Plus size={14} aria-hidden="true" />
                 )}
                 {saving ? 'Criando...' : 'Criar Webinario'}
               </button>
@@ -867,7 +875,7 @@ export default function WebinariosPage() {
                   padding: 4,
                 }}
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -991,7 +999,11 @@ export default function WebinariosPage() {
                 }}
               >
                 {editSaving ? (
-                  <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                  <Loader2
+                    size={14}
+                    style={{ animation: 'spin 1s linear infinite' }}
+                    aria-hidden="true"
+                  />
                 ) : null}
                 {editSaving ? 'Salvando...' : 'Salvar alteracoes'}
               </button>
@@ -1026,7 +1038,7 @@ export default function WebinariosPage() {
               textAlign: 'center',
             }}
           >
-            <Trash2 size={32} style={{ color: '#E85D30', marginBottom: 12 }} />
+            <Trash2 size={32} style={{ color: '#E85D30', marginBottom: 12 }} aria-hidden="true" />
             <p
               style={{
                 color: 'var(--app-text-primary)',
@@ -1077,7 +1089,11 @@ export default function WebinariosPage() {
                 }}
               >
                 {deletingId === confirmDeleteId ? (
-                  <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                  <Loader2
+                    size={14}
+                    style={{ animation: 'spin 1s linear infinite' }}
+                    aria-hidden="true"
+                  />
                 ) : null}
                 {deletingId === confirmDeleteId ? 'Deletando...' : 'Deletar'}
               </button>

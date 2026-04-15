@@ -243,7 +243,7 @@ function MonitorStepper({
                     transition: 'all 150ms ease',
                   }}
                 >
-                  {isCompleted ? <Check className="h-4 w-4" /> : step.id}
+                  {isCompleted ? <Check className="h-4 w-4" aria-hidden="true" /> : step.id}
                 </div>
                 {/* Label */}
                 <span
@@ -710,7 +710,7 @@ export default function NewProductPage() {
                           display: 'flex',
                         }}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-3 w-3" aria-hidden="true" />
                       </button>
                     </span>
                   ))}
@@ -1796,7 +1796,7 @@ export default function NewProductPage() {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
             }}
           >
-            <ArrowLeft style={{ width: 16, height: 16 }} />
+            <ArrowLeft style={{ width: 16, height: 16 }} aria-hidden="true" />
             {isFirstStep ? 'Voltar' : 'Anterior'}
           </button>
 
@@ -1828,7 +1828,7 @@ export default function NewProductPage() {
               }}
             >
               Continuar
-              <ArrowRight style={{ width: 16, height: 16 }} />
+              <ArrowRight style={{ width: 16, height: 16 }} aria-hidden="true" />
             </button>
           ) : (
             <button
@@ -1875,7 +1875,7 @@ export default function NewProductPage() {
                   }}
                 />
               ) : (
-                <Check style={{ width: 16, height: 16 }} />
+                <Check style={{ width: 16, height: 16 }} aria-hidden="true" />
               )}
               {saving ? 'Salvando...' : 'Publicar Produto'}
             </button>
@@ -1944,7 +1944,7 @@ function ReviewSection({
             fontFamily: typography.fontFamily.sans,
           }}
         >
-          <Pencil style={{ width: 12, height: 12 }} />
+          <Pencil style={{ width: 12, height: 12 }} aria-hidden="true" />
           Editar
         </button>
       </div>

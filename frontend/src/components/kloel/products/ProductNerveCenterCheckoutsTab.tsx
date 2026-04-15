@@ -203,6 +203,7 @@ export function ProductNerveCenterCheckoutsTab({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -221,6 +222,7 @@ export function ProductNerveCenterCheckoutsTab({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <rect x="9" y="9" width="11" height="11" rx="2" />
                       <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
@@ -238,6 +240,7 @@ export function ProductNerveCenterCheckoutsTab({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <path d="M3 6h18" />
                       <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
@@ -351,6 +354,7 @@ export function ProductNerveCenterCheckoutsTab({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -369,6 +373,7 @@ export function ProductNerveCenterCheckoutsTab({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <rect x="9" y="9" width="11" height="11" rx="2" />
                       <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
@@ -386,6 +391,7 @@ export function ProductNerveCenterCheckoutsTab({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <path d="M3 6h18" />
                       <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
@@ -934,6 +940,7 @@ function CheckoutConfigPanel({
                 stroke="currentColor"
                 strokeWidth={3}
                 style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
+                aria-hidden="true"
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>

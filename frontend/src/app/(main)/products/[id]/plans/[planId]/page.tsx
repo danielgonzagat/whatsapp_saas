@@ -73,7 +73,7 @@ export default function PlanDetailPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            <ArrowLeft style={{ width: 16, height: 16 }} />
+            <ArrowLeft style={{ width: 16, height: 16 }} aria-hidden="true" />
             Voltar ao produto
           </button>
         </div>

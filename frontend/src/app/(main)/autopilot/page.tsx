@@ -297,6 +297,7 @@ function StatCard({
                   : 'text-gray-500'
             }
             style={{ transform: trend === 'down' ? 'rotate(180deg)' : undefined }}
+            aria-hidden="true"
           />
         )}
       </div>
@@ -833,7 +834,12 @@ export default function AutopilotPage() {
         style={{ backgroundColor: colors.background.obsidian }}
       >
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw size={32} className="animate-spin" style={{ color: colors.brand.green }} />
+          <RefreshCw
+            size={32}
+            className="animate-spin"
+            style={{ color: colors.brand.green }}
+            aria-hidden="true"
+          />
           <span style={{ color: colors.text.muted }}>Carregando Autopilot...</span>
         </div>
       </div>
@@ -889,9 +895,9 @@ export default function AutopilotPage() {
                   }}
                 >
                   {status?.enabled ? (
-                    <Play size={20} style={{ color: colors.brand.green }} />
+                    <Play size={20} style={{ color: colors.brand.green }} aria-hidden="true" />
                   ) : (
-                    <Pause size={20} style={{ color: colors.text.muted }} />
+                    <Pause size={20} style={{ color: colors.text.muted }} aria-hidden="true" />
                   )}
                 </div>
               </button>
@@ -905,7 +911,7 @@ export default function AutopilotPage() {
               </span>
               {status?.billingSuspended && (
                 <span className="text-xs flex items-center gap-1" style={{ color: '#EF4444' }}>
-                  <AlertCircle size={12} />
+                  <AlertCircle size={12} aria-hidden="true" />
                   Cobrança pendente
                 </span>
               )}
@@ -925,7 +931,7 @@ export default function AutopilotPage() {
                 border: '1px solid rgba(239, 68, 68, 0.3)',
               }}
             >
-              <AlertCircle size={20} style={{ color: '#EF4444' }} />
+              <AlertCircle size={20} style={{ color: '#EF4444' }} aria-hidden="true" />
               <span style={{ color: '#EF4444' }}>{error}</span>
               <button
                 type="button"
@@ -990,7 +996,7 @@ export default function AutopilotPage() {
             >
               <div className="flex items-center justify-between gap-3 mb-5">
                 <div className="flex items-center gap-3">
-                  <Workflow size={20} style={{ color: colors.brand.green }} />
+                  <Workflow size={20} style={{ color: colors.brand.green }} aria-hidden="true" />
                   <div>
                     <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
                       Pipeline em Tempo Real
@@ -1007,7 +1013,11 @@ export default function AutopilotPage() {
                   className="p-2 rounded-lg transition-colors hover:bg-white/5"
                   style={{ color: colors.text.muted }}
                 >
-                  <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                  <RefreshCw
+                    size={16}
+                    className={isLoading ? 'animate-spin' : ''}
+                    aria-hidden="true"
+                  />
                 </button>
               </div>
 
@@ -1092,7 +1102,7 @@ export default function AutopilotPage() {
               }}
             >
               <div className="flex items-center gap-3 mb-5">
-                <Stethoscope size={20} style={{ color: colors.brand.cyan }} />
+                <Stethoscope size={20} style={{ color: colors.brand.cyan }} aria-hidden="true" />
                 <div>
                   <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
                     Saúde Real do Sistema
@@ -1159,7 +1169,7 @@ export default function AutopilotPage() {
                 size="md"
                 onClick={handleSmokeTest}
                 isLoading={isTesting}
-                leftIcon={!isTesting ? <Play size={16} /> : undefined}
+                leftIcon={!isTesting ? <Play size={16} aria-hidden="true" /> : undefined}
               >
                 {isTesting
                   ? 'Executando teste...'
@@ -1334,7 +1344,7 @@ export default function AutopilotPage() {
                   className="p-2 rounded-lg"
                   style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)' }}
                 >
-                  <DollarSign size={20} style={{ color: '#F59E0B' }} />
+                  <DollarSign size={20} style={{ color: '#F59E0B' }} aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
@@ -1350,7 +1360,7 @@ export default function AutopilotPage() {
                 size="md"
                 onClick={handleMoneyMachine}
                 isLoading={isRunningMoneyMachine}
-                leftIcon={!isRunningMoneyMachine ? <Zap size={16} /> : undefined}
+                leftIcon={!isRunningMoneyMachine ? <Zap size={16} aria-hidden="true" /> : undefined}
               >
                 {isRunningMoneyMachine ? 'Executando...' : 'Executar Money Machine'}
               </Button>
@@ -1466,7 +1476,7 @@ export default function AutopilotPage() {
           >
             <div className="flex items-center gap-3 mb-5">
               <div className="p-2 rounded-lg" style={{ backgroundColor: `${colors.brand.cyan}20` }}>
-                <Send size={20} style={{ color: colors.brand.cyan }} />
+                <Send size={20} style={{ color: colors.brand.cyan }} aria-hidden="true" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
@@ -1522,7 +1532,7 @@ export default function AutopilotPage() {
                 size="sm"
                 onClick={handleSendDirect}
                 isLoading={isSending}
-                leftIcon={!isSending ? <Send size={14} /> : undefined}
+                leftIcon={!isSending ? <Send size={14} aria-hidden="true" /> : undefined}
               >
                 {isSending ? 'Enviando...' : 'Enviar Mensagem'}
               </Button>
@@ -1539,7 +1549,7 @@ export default function AutopilotPage() {
                 >
                   {sendResult.success ? (
                     <>
-                      <CheckCircle2 size={14} />
+                      <CheckCircle2 size={14} aria-hidden="true" />
                       Mensagem enviada
                       {sendResult.messageId && (
                         <span style={{ color: colors.text.muted }}>
@@ -1549,7 +1559,7 @@ export default function AutopilotPage() {
                     </>
                   ) : (
                     <>
-                      <XCircle size={14} />
+                      <XCircle size={14} aria-hidden="true" />
                       {sendResult.error || 'Erro ao enviar'}
                     </>
                   )}
@@ -1568,7 +1578,7 @@ export default function AutopilotPage() {
               Ações Recentes
             </h2>
             <div className="flex items-center gap-2">
-              <Filter size={16} style={{ color: colors.text.muted }} />
+              <Filter size={16} style={{ color: colors.text.muted }} aria-hidden="true" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -1592,7 +1602,11 @@ export default function AutopilotPage() {
                 className="p-2 rounded-lg transition-colors hover:bg-white/5"
                 style={{ color: colors.text.muted }}
               >
-                <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                <RefreshCw
+                  size={16}
+                  className={isLoading ? 'animate-spin' : ''}
+                  aria-hidden="true"
+                />
               </button>
             </div>
           </div>
@@ -1606,7 +1620,12 @@ export default function AutopilotPage() {
                   border: `1px solid ${colors.stroke}`,
                 }}
               >
-                <Bot size={48} className="mx-auto mb-4" style={{ color: colors.text.muted }} />
+                <Bot
+                  size={48}
+                  className="mx-auto mb-4"
+                  style={{ color: colors.text.muted }}
+                  aria-hidden="true"
+                />
                 <p style={{ color: colors.text.muted }}>
                   {statusFilter === 'all'
                     ? 'Nenhuma ação registrada ainda'
@@ -1626,7 +1645,7 @@ export default function AutopilotPage() {
           {actions.length >= 50 && (
             <div className="mt-4 text-center">
               <Button variant="ghost" size="sm" onClick={handleExportActions}>
-                <ArrowUpRight size={16} className="mr-2" />
+                <ArrowUpRight size={16} className="mr-2" aria-hidden="true" />
                 Exportar todas as ações
               </Button>
             </div>
@@ -1694,7 +1713,7 @@ export default function AutopilotPage() {
                 className="p-2 rounded-lg"
                 style={{ backgroundColor: `${colors.brand.green}20` }}
               >
-                <DollarSign size={20} style={{ color: colors.brand.green }} />
+                <DollarSign size={20} style={{ color: colors.brand.green }} aria-hidden="true" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
@@ -1749,6 +1768,7 @@ export default function AutopilotPage() {
                   size={32}
                   className="mx-auto mb-2"
                   style={{ color: colors.text.muted }}
+                  aria-hidden="true"
                 />
                 <p className="text-sm" style={{ color: colors.text.muted }}>
                   Nenhum dado financeiro disponível
@@ -1771,7 +1791,7 @@ export default function AutopilotPage() {
           >
             <div className="flex items-center gap-3 mb-5">
               <div className="p-2 rounded-lg" style={{ backgroundColor: `${colors.brand.cyan}20` }}>
-                <Layers size={20} style={{ color: colors.brand.cyan }} />
+                <Layers size={20} style={{ color: colors.brand.cyan }} aria-hidden="true" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
@@ -1805,7 +1825,7 @@ export default function AutopilotPage() {
                         className="p-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: `${eventColor}20` }}
                       >
-                        <DollarSign size={16} style={{ color: eventColor }} />
+                        <DollarSign size={16} style={{ color: eventColor }} aria-hidden="true" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -1859,7 +1879,12 @@ export default function AutopilotPage() {
                 className="p-6 rounded-lg text-center"
                 style={{ backgroundColor: colors.background.surface2 }}
               >
-                <Layers size={32} className="mx-auto mb-2" style={{ color: colors.text.muted }} />
+                <Layers
+                  size={32}
+                  className="mx-auto mb-2"
+                  style={{ color: colors.text.muted }}
+                  aria-hidden="true"
+                />
                 <p className="text-sm" style={{ color: colors.text.muted }}>
                   Nenhum evento de receita registrado
                 </p>
@@ -1884,7 +1909,7 @@ export default function AutopilotPage() {
                 className="p-2 rounded-lg"
                 style={{ backgroundColor: `${colors.brand.green}20` }}
               >
-                <Lightbulb size={20} style={{ color: colors.brand.green }} />
+                <Lightbulb size={20} style={{ color: colors.brand.green }} aria-hidden="true" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
@@ -1920,7 +1945,7 @@ export default function AutopilotPage() {
                 size="md"
                 onClick={handleAskInsights}
                 isLoading={isAsking}
-                leftIcon={!isAsking ? <Sparkles size={14} /> : undefined}
+                leftIcon={!isAsking ? <Sparkles size={14} aria-hidden="true" /> : undefined}
               >
                 {isAsking ? 'Consultando...' : 'Perguntar'}
               </Button>
@@ -2029,6 +2054,7 @@ export default function AutopilotPage() {
                   size={32}
                   className="mx-auto mb-2"
                   style={{ color: colors.text.muted }}
+                  aria-hidden="true"
                 />
                 <p className="text-sm" style={{ color: colors.text.muted }}>
                   Nenhum insight disponível no momento
@@ -2056,7 +2082,7 @@ export default function AutopilotPage() {
                   className="p-2 rounded-lg"
                   style={{ backgroundColor: `${colors.brand.cyan}20` }}
                 >
-                  <Server size={20} style={{ color: colors.brand.cyan }} />
+                  <Server size={20} style={{ color: colors.brand.cyan }} aria-hidden="true" />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
@@ -2136,7 +2162,12 @@ export default function AutopilotPage() {
                   className="p-6 rounded-lg text-center"
                   style={{ backgroundColor: colors.background.surface2 }}
                 >
-                  <Server size={32} className="mx-auto mb-2" style={{ color: colors.text.muted }} />
+                  <Server
+                    size={32}
+                    className="mx-auto mb-2"
+                    style={{ color: colors.text.muted }}
+                    aria-hidden="true"
+                  />
                   <p className="text-sm" style={{ color: colors.text.muted }}>
                     Dados da fila indisponíveis
                   </p>
@@ -2157,7 +2188,7 @@ export default function AutopilotPage() {
                   className="p-2 rounded-lg"
                   style={{ backgroundColor: `${colors.brand.cyan}20` }}
                 >
-                  <Database size={20} style={{ color: colors.brand.cyan }} />
+                  <Database size={20} style={{ color: colors.brand.cyan }} aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
@@ -2207,6 +2238,7 @@ export default function AutopilotPage() {
                     size={32}
                     className="mx-auto mb-2"
                     style={{ color: colors.text.muted }}
+                    aria-hidden="true"
                   />
                   <p className="text-sm" style={{ color: colors.text.muted }}>
                     Configuracao de runtime indisponivel
@@ -2229,7 +2261,7 @@ export default function AutopilotPage() {
                     className="p-2 rounded-lg"
                     style={{ backgroundColor: `${colors.brand.green}20` }}
                   >
-                    <Settings2 size={20} style={{ color: colors.brand.green }} />
+                    <Settings2 size={20} style={{ color: colors.brand.green }} aria-hidden="true" />
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
@@ -2251,7 +2283,11 @@ export default function AutopilotPage() {
                   className="p-2 rounded-lg transition-colors hover:bg-white/5"
                   style={{ color: isEditingConfig ? '#EF4444' : colors.text.muted }}
                 >
-                  {isEditingConfig ? <XCircle size={18} /> : <Settings2 size={18} />}
+                  {isEditingConfig ? (
+                    <XCircle size={18} aria-hidden="true" />
+                  ) : (
+                    <Settings2 size={18} aria-hidden="true" />
+                  )}
                 </button>
               </div>
 
@@ -2333,7 +2369,9 @@ export default function AutopilotPage() {
                         size="sm"
                         onClick={handleSaveConfig}
                         isLoading={isSavingConfig}
-                        leftIcon={!isSavingConfig ? <Save size={14} /> : undefined}
+                        leftIcon={
+                          !isSavingConfig ? <Save size={14} aria-hidden="true" /> : undefined
+                        }
                       >
                         {isSavingConfig ? 'Salvando...' : 'Salvar'}
                       </Button>
@@ -2359,6 +2397,7 @@ export default function AutopilotPage() {
                     size={32}
                     className="mx-auto mb-2"
                     style={{ color: colors.text.muted }}
+                    aria-hidden="true"
                   />
                   <p className="text-sm" style={{ color: colors.text.muted }}>
                     Configuração indisponível
@@ -2380,7 +2419,12 @@ export default function AutopilotPage() {
               border: `1px solid ${colors.stroke}`,
             }}
           >
-            <Bot size={40} className="mx-auto mb-4" style={{ color: colors.brand.green }} />
+            <Bot
+              size={40}
+              className="mx-auto mb-4"
+              style={{ color: colors.brand.green }}
+              aria-hidden="true"
+            />
             <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
               Precisa de ajuda com o Autopilot?
             </h3>
@@ -2390,11 +2434,11 @@ export default function AutopilotPage() {
             </p>
             <div className="flex justify-center gap-3">
               <Button variant="secondary" size="sm" onClick={() => navigate('/flow')}>
-                <Settings2 size={16} className="mr-2" />
+                <Settings2 size={16} className="mr-2" aria-hidden="true" />
                 Configurar Fluxos
               </Button>
               <Button variant="primary" size="sm" onClick={() => navigate('/chat')}>
-                <MessageSquare size={16} className="mr-2" />
+                <MessageSquare size={16} className="mr-2" aria-hidden="true" />
                 Falar com KLOEL
               </Button>
             </div>

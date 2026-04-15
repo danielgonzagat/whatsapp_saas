@@ -303,6 +303,7 @@ export default function CheckoutBlanc({
               viewBox="0 0 24 24"
               fill="rgba(255,255,255,0.8)"
               stroke="none"
+              aria-hidden="true"
             >
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path
@@ -693,6 +694,7 @@ export default function CheckoutBlanc({
                   strokeWidth="3"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
@@ -888,6 +890,7 @@ export default function CheckoutBlanc({
                     strokeWidth="3"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    aria-hidden="true"
                   >
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
@@ -1882,7 +1885,14 @@ export default function CheckoutBlanc({
           ) : null}
           <div style={{ fontSize: 13, color: BLANC.muted, marginBottom: 20 }}>{footerLegal}</div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="#aaa" stroke="none">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="#aaa"
+              stroke="none"
+              aria-hidden="true"
+            >
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" fill="none" stroke="#aaa" strokeWidth="2" />
             </svg>
@@ -2082,6 +2092,7 @@ export default function CheckoutBlanc({
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>

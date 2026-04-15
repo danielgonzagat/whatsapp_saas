@@ -130,7 +130,11 @@ export function SensitiveOperationGate({
         }}
       >
         <div className="p-2 rounded-lg" style={{ backgroundColor: `${severityColors.icon}20` }}>
-          <ShieldAlert className="w-5 h-5" style={{ color: severityColors.icon }} />
+          <ShieldAlert
+            className="w-5 h-5"
+            style={{ color: severityColors.icon }}
+            aria-hidden="true"
+          />
         </div>
         <div>
           <h3 className="font-semibold text-base" style={{ color: colors.text.primary }}>
@@ -210,7 +214,7 @@ export function SensitiveOperationGate({
             color: colors.text.secondary,
           }}
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4" aria-hidden="true" />
           Cancelar
         </button>
 
@@ -229,7 +233,7 @@ export function SensitiveOperationGate({
               color: colors.text.secondary,
             }}
           >
-            <Pencil className="w-4 h-4" />
+            <Pencil className="w-4 h-4" aria-hidden="true" />
             Editar
           </button>
         )}
@@ -247,7 +251,7 @@ export function SensitiveOperationGate({
             color: colors.background.obsidian,
           }}
         >
-          <Check className="w-4 h-4" />
+          <Check className="w-4 h-4" aria-hidden="true" />
           Aprovar
         </button>
       </div>
@@ -274,7 +278,11 @@ export function SensitiveOperationGateInline({
         border: `1px solid ${colors.state.warning}40`,
       }}
     >
-      <AlertTriangle className="w-5 h-5" style={{ color: colors.state.warning }} />
+      <AlertTriangle
+        className="w-5 h-5"
+        style={{ color: colors.state.warning }}
+        aria-hidden="true"
+      />
 
       <span className="text-sm flex-1" style={{ color: colors.text.primary }}>
         {operation.message}
@@ -288,7 +296,7 @@ export function SensitiveOperationGateInline({
           className="p-1.5 rounded-md transition-colors hover:bg-white/5"
           style={{ color: colors.text.muted }}
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4" aria-hidden="true" />
         </button>
         <button
           type="button"

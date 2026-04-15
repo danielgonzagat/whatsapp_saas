@@ -62,7 +62,7 @@ export function Pagination({
             transition: 'all 150ms ease',
           }}
         >
-          <ChevronLeft size={14} />
+          <ChevronLeft size={14} aria-hidden="true" />
         </button>
 
         {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -121,7 +121,7 @@ export function Pagination({
             transition: 'all 150ms ease',
           }}
         >
-          <ChevronRight size={14} />
+          <ChevronRight size={14} aria-hidden="true" />
         </button>
       </div>
     </div>

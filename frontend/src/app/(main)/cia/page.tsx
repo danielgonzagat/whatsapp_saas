@@ -422,7 +422,7 @@ export default function CiaPage() {
                 void loadSurface();
                 void loadAdvancedData();
               }}
-              leftIcon={<RefreshCw size={16} />}
+              leftIcon={<RefreshCw size={16} aria-hidden="true" />}
               disabled={workspaceLoading}
             >
               Atualizar
@@ -430,7 +430,7 @@ export default function CiaPage() {
             <Button
               onClick={() => void handleAutopilotTotal()}
               isLoading={activating}
-              leftIcon={<Zap size={16} />}
+              leftIcon={<Zap size={16} aria-hidden="true" />}
               disabled={workspaceLoading || !workspaceId}
             >
               Autopilot Total
@@ -465,9 +465,14 @@ export default function CiaPage() {
               style={{ backgroundColor: `${colors.brand.green}18` }}
             >
               {loading ? (
-                <Loader2 className="animate-spin" size={22} style={{ color: colors.brand.green }} />
+                <Loader2
+                  className="animate-spin"
+                  size={22}
+                  style={{ color: colors.brand.green }}
+                  aria-hidden="true"
+                />
               ) : (
-                <Sparkles size={22} style={{ color: colors.brand.green }} />
+                <Sparkles size={22} style={{ color: colors.brand.green }} aria-hidden="true" />
               )}
             </div>
             <div className="min-w-0">
@@ -502,7 +507,7 @@ export default function CiaPage() {
         {moneyEvents.length > 0 && (
           <Surface className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Zap size={16} style={{ color: colors.brand.green }} />
+              <Zap size={16} style={{ color: colors.brand.green }} aria-hidden="true" />
               <p className="text-sm font-medium" style={{ color: colors.text.secondary }}>
                 Dinheiro em tempo real
               </p>
@@ -568,7 +573,7 @@ export default function CiaPage() {
           <div className="space-y-4">
             <Surface className="p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Bot size={16} style={{ color: colors.brand.green }} />
+                <Bot size={16} style={{ color: colors.brand.green }} aria-hidden="true" />
                 <p
                   className="text-sm uppercase tracking-[0.18em]"
                   style={{ color: colors.text.muted }}
@@ -619,7 +624,11 @@ export default function CiaPage() {
             </Surface>
             <Surface className="p-5">
               <div className="flex items-center gap-2 mb-4">
-                <AlertTriangle size={16} style={{ color: colors.state.warning }} />
+                <AlertTriangle
+                  size={16}
+                  style={{ color: colors.state.warning }}
+                  aria-hidden="true"
+                />
                 <p
                   className="text-sm uppercase tracking-[0.18em]"
                   style={{ color: colors.text.muted }}
@@ -773,7 +782,7 @@ export default function CiaPage() {
           <Surface className="p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Activity size={16} style={{ color: colors.brand.amber }} />
+                <Activity size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
                 <p
                   className="text-sm uppercase tracking-[0.18em]"
                   style={{ color: colors.text.muted }}
@@ -831,7 +840,7 @@ export default function CiaPage() {
         {/* ─── ACCOUNT APPROVALS PANEL ─── */}
         <Surface className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <CheckCircle size={16} style={{ color: colors.brand.amber }} />
+            <CheckCircle size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
             <p className="text-sm uppercase tracking-[0.18em]" style={{ color: colors.text.muted }}>
               Aprovações de Conta
             </p>
@@ -905,7 +914,7 @@ export default function CiaPage() {
                         onClick={() => void handleApproveApproval(approval)}
                         isLoading={approvalPendingId === approval.id}
                         disabled={workspaceLoading}
-                        leftIcon={<CheckCircle size={14} />}
+                        leftIcon={<CheckCircle size={14} aria-hidden="true" />}
                       >
                         Aprovar criação
                       </Button>
@@ -913,7 +922,7 @@ export default function CiaPage() {
                         variant="secondary"
                         onClick={() => void handleRejectApproval(approval)}
                         disabled={approvalPendingId === approval.id || workspaceLoading}
-                        leftIcon={<XCircle size={14} />}
+                        leftIcon={<XCircle size={14} aria-hidden="true" />}
                       >
                         Rejeitar
                       </Button>
@@ -928,7 +937,7 @@ export default function CiaPage() {
         {/* ─── INPUT SESSIONS PANEL ─── */}
         <Surface className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <ClipboardList size={16} style={{ color: colors.brand.amber }} />
+            <ClipboardList size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
             <p className="text-sm uppercase tracking-[0.18em]" style={{ color: colors.text.muted }}>
               Coleta de Informações
             </p>
@@ -1024,7 +1033,7 @@ export default function CiaPage() {
         {/* ─── WORK ITEMS PANEL ─── */}
         <Surface className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <ClipboardList size={16} style={{ color: colors.brand.amber }} />
+            <ClipboardList size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
             <p className="text-sm uppercase tracking-[0.18em]" style={{ color: colors.text.muted }}>
               Work Items do Agente
             </p>
@@ -1086,7 +1095,7 @@ export default function CiaPage() {
           {/* Cycle Proof */}
           <Surface className="p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Shield size={16} style={{ color: colors.brand.amber }} />
+              <Shield size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
               <p
                 className="text-sm uppercase tracking-[0.18em]"
                 style={{ color: colors.text.muted }}
@@ -1164,7 +1173,7 @@ export default function CiaPage() {
           {/* Account Proof */}
           <Surface className="p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Shield size={16} style={{ color: colors.brand.amber }} />
+              <Shield size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
               <p
                 className="text-sm uppercase tracking-[0.18em]"
                 style={{ color: colors.text.muted }}
@@ -1254,7 +1263,7 @@ export default function CiaPage() {
             type="button"
           >
             <div className="flex items-center gap-2">
-              <Bot size={16} style={{ color: colors.brand.amber }} />
+              <Bot size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
               <p
                 className="text-sm uppercase tracking-[0.18em]"
                 style={{ color: colors.text.muted }}
@@ -1269,9 +1278,9 @@ export default function CiaPage() {
               )}
             </div>
             {registriesExpanded ? (
-              <ChevronDown size={16} style={{ color: colors.text.muted }} />
+              <ChevronDown size={16} style={{ color: colors.text.muted }} aria-hidden="true" />
             ) : (
-              <ChevronRight size={16} style={{ color: colors.text.muted }} />
+              <ChevronRight size={16} style={{ color: colors.text.muted }} aria-hidden="true" />
             )}
           </button>
 

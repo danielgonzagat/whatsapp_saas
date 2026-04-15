@@ -30,7 +30,7 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
 
       <div className="flex items-center gap-2 mb-2">
         <div className="p-1.5 bg-yellow-500/15 rounded-md">
-          <GitBranch className="w-4 h-4 text-yellow-400" />
+          <GitBranch className="w-4 h-4 text-yellow-400" aria-hidden="true" />
         </div>
         <span className="font-medium text-sm text-[#E0DDD8]">{data.label || 'Condição'}</span>
       </div>

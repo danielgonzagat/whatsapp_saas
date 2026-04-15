@@ -78,7 +78,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
   return (
     <div className="mt-4 border-t border-[#19191C] pt-4">
       <div className="mb-3 flex items-center gap-2">
-        <Link className="h-4 w-4 text-[#6E6E73]" />
+        <Link className="h-4 w-4 text-[#6E6E73]" aria-hidden="true" />
         <h6 className="text-sm font-medium text-[#E0DDD8]">Planos do checkout interno</h6>
       </div>
 
@@ -103,7 +103,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                     className="rounded-md p-2 text-[#6E6E73] hover:bg-[#19191C] hover:text-[#7FE2BC]"
                     title="Definir como padrão"
                   >
-                    <Check className="h-4 w-4" />
+                    <Check className="h-4 w-4" aria-hidden="true" />
                   </button>
                 )}
                 <button
@@ -111,7 +111,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                   onClick={() => handleRemovePlan(plan.id)}
                   className="rounded-md p-2 text-[#6E6E73] hover:bg-[#19191C] hover:text-[#E05252]"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
             </SettingsInset>
@@ -208,7 +208,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
           onClick={() => setShowAddPlan(true)}
           className="w-full rounded-md border-dashed border-[#222226] bg-transparent text-sm text-[#6E6E73] hover:bg-[#19191C] hover:text-[#E0DDD8]"
         >
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
           Adicionar novo plano interno
         </Button>
       )}

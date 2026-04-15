@@ -595,7 +595,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           aria-label="Buscar conversas"
         >
           <div className="kloel-search-header">
-            <Search size={18} color="var(--app-text-secondary)" />
+            <Search size={18} color="var(--app-text-secondary)" aria-hidden="true" />
             <input
               ref={inputRef}
               className="kloel-search-input"
@@ -618,7 +618,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
                 }}
                 aria-label="Limpar busca"
               >
-                <X size={12} />
+                <X size={12} aria-hidden="true" />
               </button>
             )}
             <button type="button" className="kloel-search-pill" onClick={onClose}>
@@ -632,7 +632,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
             {results.length === 0 ? (
               <div className="kloel-search-empty">
                 <div className="kloel-search-result-icon" aria-hidden="true">
-                  <Search size={18} />
+                  <Search size={18} aria-hidden="true" />
                 </div>
                 <div className="kloel-search-empty-title">
                   {hasQuery ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa recente'}
@@ -699,7 +699,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
 
                         <div className="kloel-search-meta">
                           <span>{formatConversationSearchTime(item.updatedAt) || group.label}</span>
-                          <ArrowRight size={14} className="kloel-search-arrow" />
+                          <ArrowRight size={14} className="kloel-search-arrow" aria-hidden="true" />
                         </div>
                       </button>
                     );

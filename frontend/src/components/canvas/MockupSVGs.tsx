@@ -19,7 +19,7 @@ interface DesktopProps extends MockupProps {
 }
 
 export const PhoneSVG: React.FC<PhoneProps> = ({ c1, c2, story }) => (
-  <svg width="48" height="82" viewBox="0 0 48 82" fill="none">
+  <svg width="48" height="82" viewBox="0 0 48 82" fill="none" aria-hidden="true">
     <rect
       x="1"
       y="1"
@@ -85,7 +85,7 @@ export const PhoneSVG: React.FC<PhoneProps> = ({ c1, c2, story }) => (
 );
 
 export const DesktopSVG: React.FC<DesktopProps> = ({ c1, c2, chart }) => (
-  <svg width="82" height="54" viewBox="0 0 82 54" fill="none">
+  <svg width="82" height="54" viewBox="0 0 82 54" fill="none" aria-hidden="true">
     <rect
       x="1"
       y="1"
@@ -138,7 +138,7 @@ export const DesktopSVG: React.FC<DesktopProps> = ({ c1, c2, chart }) => (
 );
 
 export const DocSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
-  <svg width="44" height="60" viewBox="0 0 44 60" fill="none">
+  <svg width="44" height="60" viewBox="0 0 44 60" fill="none" aria-hidden="true">
     <rect
       x="1"
       y="1"
@@ -176,7 +176,7 @@ export const DocSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
 );
 
 export const CircleSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
-  <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+  <svg width="52" height="52" viewBox="0 0 52 52" fill="none" aria-hidden="true">
     <circle cx="26" cy="26" r="25" fill={`url(#cr${c1.slice(1)})`} />
     <circle cx="26" cy="21" r="7" fill="rgba(255,255,255,0.2)" />
     <ellipse cx="26" cy="37" rx="10" ry="7" fill="rgba(255,255,255,0.14)" />
@@ -190,7 +190,7 @@ export const CircleSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
 );
 
 export const SquareSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
-  <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+  <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden="true">
     <rect x="1" y="1" width="54" height="54" rx="4" fill={`url(#sq${c1.slice(1)})`} />
     <rect x="7" y="7" width="22" height="2.5" rx="1" fill="rgba(255,255,255,0.25)" />
     <rect x="7" y="12" width="14" height="1.5" rx="0.75" fill="rgba(255,255,255,0.12)" />

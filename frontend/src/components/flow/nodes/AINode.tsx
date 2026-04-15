@@ -27,7 +27,7 @@ function AINodeComponent({ data, selected }: NodeProps<AINodeData>) {
 
       <div className="flex items-center gap-2 mb-2">
         <div className="p-1.5 bg-indigo-500/15 rounded-md animate-pulse">
-          <Brain className="w-4 h-4 text-indigo-400" />
+          <Brain className="w-4 h-4 text-indigo-400" aria-hidden="true" />
         </div>
         <span className="font-medium text-sm text-[#E0DDD8]">{data.label || 'KLOEL IA'}</span>
         <span className="ml-auto text-[9px] bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded">

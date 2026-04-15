@@ -35,7 +35,7 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
   return (
     <SettingsCard className="p-6">
       <SettingsHeader
-        icon={<AlertTriangle className="h-5 w-5 text-[#E85D30]" />}
+        icon={<AlertTriangle className="h-5 w-5 text-[#E85D30]" aria-hidden="true" />}
         title="Modo de Emergencia"
         description="Configure o que o Kloel deve fazer quando houver problemas tecnicos ou instabilidades."
       />

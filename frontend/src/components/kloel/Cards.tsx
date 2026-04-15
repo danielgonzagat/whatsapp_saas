@@ -75,10 +75,22 @@ export function StatCard({
 
       {change && (
         <div className="flex items-center gap-1.5 mt-2">
-          {isPositive && <TrendingUp className="w-4 h-4" style={{ color: colors.state.success }} />}
-          {isNegative && <TrendingDown className="w-4 h-4" style={{ color: colors.state.error }} />}
+          {isPositive && (
+            <TrendingUp
+              className="w-4 h-4"
+              style={{ color: colors.state.success }}
+              aria-hidden="true"
+            />
+          )}
+          {isNegative && (
+            <TrendingDown
+              className="w-4 h-4"
+              style={{ color: colors.state.error }}
+              aria-hidden="true"
+            />
+          )}
           {!isPositive && !isNegative && (
-            <Minus className="w-4 h-4" style={{ color: colors.text.muted }} />
+            <Minus className="w-4 h-4" style={{ color: colors.text.muted }} aria-hidden="true" />
           )}
 
           <span
@@ -185,6 +197,7 @@ export function ActionCard({
         <ArrowRight
           className="w-5 h-5 flex-shrink-0 mt-0.5 transition-transform group-hover:translate-x-1"
           style={{ color: colors.text.muted }}
+          aria-hidden="true"
         />
       </div>
 

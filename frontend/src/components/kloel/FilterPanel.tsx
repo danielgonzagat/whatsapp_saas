@@ -43,7 +43,11 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
                 gap: 8,
               }}
             >
-              <Search size={14} style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }} />
+              <Search
+                size={14}
+                style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }}
+                aria-hidden="true"
+              />
               <input
                 placeholder={filter.placeholder || `Buscar...`}
                 value={values[filter.key] || ''}
@@ -98,6 +102,7 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
                 color: 'var(--app-text-tertiary)',
                 pointerEvents: 'none',
               }}
+              aria-hidden="true"
             />
           </div>
         );

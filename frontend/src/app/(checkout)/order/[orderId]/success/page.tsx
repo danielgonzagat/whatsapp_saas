@@ -9,7 +9,7 @@ import { useOrderStatus } from '../../../hooks/useCheckout';
 function AnimatedCheck() {
   return (
     <div style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto 20px' }}>
-      <svg viewBox="0 0 80 80" width="80" height="80">
+      <svg viewBox="0 0 80 80" width="80" height="80" aria-hidden="true">
         <circle
           cx="40"
           cy="40"

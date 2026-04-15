@@ -49,27 +49,27 @@ function MessageIcon({
   switch (icon) {
     case 'copy':
       return (
-        <svg {...common}>
+        <svg {...common} aria-hidden="true">
           <rect x="6.1" y="5.9" width="8.4" height="9" rx="1.8" />
           <path d="M4.5 11.4H3.8a1.8 1.8 0 0 1-1.8-1.8V3.8A1.8 1.8 0 0 1 3.8 2h5.8A1.8 1.8 0 0 1 11.4 3.8v.7" />
         </svg>
       );
     case 'check':
       return (
-        <svg {...common}>
+        <svg {...common} aria-hidden="true">
           <polyline points="3.4 9.5 7.1 12.8 14.6 5.2" />
         </svg>
       );
     case 'edit':
       return (
-        <svg {...common}>
+        <svg {...common} aria-hidden="true">
           <path d="M10.8 3.1l4.1 4.1" />
           <path d="M4 14l2.7-.6 7-7a1.7 1.7 0 1 0-2.4-2.4l-7 7L4 14z" />
         </svg>
       );
     case 'retry':
       return (
-        <svg {...common}>
+        <svg {...common} aria-hidden="true">
           <path d="M14.4 7.3A5.8 5.8 0 0 0 4.1 5.9" />
           <path d="M3.8 2.8v3.7h3.7" />
           <path d="M3.6 10.7a5.8 5.8 0 0 0 10.3 1.5" />
@@ -78,7 +78,7 @@ function MessageIcon({
       );
     case 'thumbsUp':
       return (
-        <svg {...common}>
+        <svg {...common} aria-hidden="true">
           <path
             d="M6.2 7.3V15H3.8A1.8 1.8 0 0 1 2 13.2V9.1a1.8 1.8 0 0 1 1.8-1.8h2.4Z"
             fill={active ? EMBER : 'none'}
@@ -91,7 +91,7 @@ function MessageIcon({
       );
     case 'thumbsDown':
       return (
-        <svg {...common}>
+        <svg {...common} aria-hidden="true">
           <path
             d="M6.2 10.7V3H3.8A1.8 1.8 0 0 0 2 4.8v4.1a1.8 1.8 0 0 0 1.8 1.8h2.4Z"
             fill={active ? EMBER : 'none'}

@@ -300,7 +300,7 @@ export default function FlowBuilder({
               className="p-1.5 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               title="Desfazer"
             >
-              <Undo className="w-4 h-4 text-gray-600" />
+              <Undo className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -309,7 +309,7 @@ export default function FlowBuilder({
               className="p-1.5 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               title="Refazer"
             >
-              <Redo className="w-4 h-4 text-gray-600" />
+              <Redo className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
 
             <div className="w-px h-6 bg-gray-200" />
@@ -320,7 +320,7 @@ export default function FlowBuilder({
               className="p-1.5 hover:bg-gray-100 rounded-md"
               title="Zoom in"
             >
-              <ZoomIn className="w-4 h-4 text-gray-600" />
+              <ZoomIn className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -328,7 +328,7 @@ export default function FlowBuilder({
               className="p-1.5 hover:bg-gray-100 rounded-md"
               title="Zoom out"
             >
-              <ZoomOut className="w-4 h-4 text-gray-600" />
+              <ZoomOut className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -336,7 +336,7 @@ export default function FlowBuilder({
               className="p-1.5 hover:bg-gray-100 rounded-md"
               title="Ajustar visualização"
             >
-              <Maximize className="w-4 h-4 text-gray-600" />
+              <Maximize className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
 
             <div className="w-px h-6 bg-gray-200" />
@@ -348,7 +348,7 @@ export default function FlowBuilder({
               className="p-1.5 hover:bg-red-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               title="Excluir selecionado"
             >
-              <Trash2 className="w-4 h-4 text-red-500" />
+              <Trash2 className="w-4 h-4 text-red-500" aria-hidden="true" />
             </button>
 
             <div className="w-px h-6 bg-gray-200" />
@@ -361,11 +361,14 @@ export default function FlowBuilder({
                   disabled={isSaving}
                   className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 disabled:opacity-50"
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="w-4 h-4" aria-hidden="true" />
                   {isSaving ? 'Salvando...' : 'Salvar'}
                 </button>
-                <button className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-sm rounded-md hover:bg-green-600">
-                  <Play className="w-4 h-4" />
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-sm rounded-md hover:bg-green-600"
+                >
+                  <Play className="w-4 h-4" aria-hidden="true" />
                   Testar
                 </button>
               </>

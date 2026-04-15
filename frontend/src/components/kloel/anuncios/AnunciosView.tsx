@@ -21,66 +21,98 @@ const R = '#EF4444';
 // ── Icons ──
 const IC: Record<string, (s: number) => React.ReactElement> = {
   meta: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
     </svg>
   ),
   gads: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zm5.2 17.6H6.8L12 6.4l5.2 11.2z" />
     </svg>
   ),
   tads: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13a8.28 8.28 0 005.58 2.15V11.7a4.83 4.83 0 01-3.58-1.43V6.69h3.58z" />
     </svg>
   ),
   zap: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
     </svg>
   ),
   pause: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <rect x="6" y="4" width="4" height="16" />
       <rect x="14" y="4" width="4" height="16" />
     </svg>
   ),
   play: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M8 5v14l11-7z" />
     </svg>
   ),
   dup: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <svg
+      width={s}
+      height={s}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
       <rect x="9" y="9" width="13" height="13" rx="2" />
       <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
     </svg>
   ),
   up: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 4l-8 8h5v8h6v-8h5z" />
     </svg>
   ),
   down: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 20l8-8h-5V4H9v8H4z" />
     </svg>
   ),
   search: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <svg
+      width={s}
+      height={s}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   ),
   link: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <svg
+      width={s}
+      height={s}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
       <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
       <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
     </svg>
   ),
   shield: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <svg
+      width={s}
+      height={s}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   ),

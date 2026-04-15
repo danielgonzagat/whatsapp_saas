@@ -26,7 +26,7 @@ function InputNodeComponent({ data, selected }: NodeProps<InputNodeData>) {
 
       <div className="flex items-center gap-2 mb-2">
         <div className="p-1.5 bg-blue-500/15 rounded-md">
-          <MessageSquare className="w-4 h-4 text-blue-400" />
+          <MessageSquare className="w-4 h-4 text-blue-400" aria-hidden="true" />
         </div>
         <span className="font-medium text-sm text-[#E0DDD8]">{data.label || 'Entrada'}</span>
       </div>

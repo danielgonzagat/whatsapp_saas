@@ -578,7 +578,7 @@ export default function CheckoutEditorPage() {
               fontFamily: FONT,
             }}
           >
-            <ArrowLeft style={{ width: 16, height: 16 }} />
+            <ArrowLeft style={{ width: 16, height: 16 }} aria-hidden="true" />
             {productReturnHref ? 'Voltar para produto' : 'Voltar'}
           </button>
           <div
@@ -680,7 +680,7 @@ export default function CheckoutEditorPage() {
               cursor: isLoading ? 'default' : 'pointer',
             }}
           >
-            <Star style={{ width: 14, height: 14 }} />
+            <Star style={{ width: 14, height: 14 }} aria-hidden="true" />
             Abrir com IA
           </button>
 
@@ -696,9 +696,9 @@ export default function CheckoutEditorPage() {
             }}
           >
             {copied ? (
-              <Check style={{ width: 14, height: 14, color: '#4ADE80' }} />
+              <Check style={{ width: 14, height: 14, color: '#4ADE80' }} aria-hidden="true" />
             ) : (
-              <Copy style={{ width: 14, height: 14 }} />
+              <Copy style={{ width: 14, height: 14 }} aria-hidden="true" />
             )}
             {copied ? 'Copiado!' : 'Copiar link'}
           </button>
@@ -713,9 +713,9 @@ export default function CheckoutEditorPage() {
             }}
           >
             {embedCopied ? (
-              <Check style={{ width: 14, height: 14, color: '#4ADE80' }} />
+              <Check style={{ width: 14, height: 14, color: '#4ADE80' }} aria-hidden="true" />
             ) : (
-              <Copy style={{ width: 14, height: 14 }} />
+              <Copy style={{ width: 14, height: 14 }} aria-hidden="true" />
             )}
             {embedCopied ? 'Widget copiado!' : 'Copiar widget'}
           </button>
@@ -808,7 +808,7 @@ export default function CheckoutEditorPage() {
                         onClick={() => router.push(productReturnHref)}
                         style={smallBtnStyle}
                       >
-                        <ArrowLeft style={{ width: 14, height: 14 }} />
+                        <ArrowLeft style={{ width: 14, height: 14 }} aria-hidden="true" />
                         Produto
                       </button>
                     )}
@@ -1142,7 +1142,7 @@ export default function CheckoutEditorPage() {
                       }}
                       style={removeBtnStyle}
                     >
-                      <Trash2 style={{ width: 12, height: 12 }} />
+                      <Trash2 style={{ width: 12, height: 12 }} aria-hidden="true" />
                     </button>
                   </div>
                   <Field
@@ -1192,6 +1192,7 @@ export default function CheckoutEditorPage() {
                               color: s <= t.stars ? '#FBBF24' : C.dim,
                               fill: s <= t.stars ? '#FBBF24' : 'transparent',
                             }}
+                            aria-hidden="true"
                           />
                         </button>
                       ))}
@@ -1208,7 +1209,7 @@ export default function CheckoutEditorPage() {
                 }
                 style={smallBtnStyle}
               >
-                <Plus style={{ width: 14, height: 14 }} />
+                <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
                 Adicionar depoimento
               </button>
             </div>
@@ -1287,7 +1288,7 @@ export default function CheckoutEditorPage() {
                         }}
                         style={removeBtnStyle}
                       >
-                        <Trash2 style={{ width: 12, height: 12 }} />
+                        <Trash2 style={{ width: 12, height: 12 }} aria-hidden="true" />
                       </button>
                     </div>
                   ))}
@@ -1300,7 +1301,7 @@ export default function CheckoutEditorPage() {
                     }
                     style={smallBtnStyle}
                   >
-                    <Plus style={{ width: 14, height: 14 }} />
+                    <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
                     Adicionar selo
                   </button>
                 </>
@@ -1343,7 +1344,7 @@ export default function CheckoutEditorPage() {
                       }}
                       style={removeBtnStyle}
                     >
-                      <Trash2 style={{ width: 12, height: 12 }} />
+                      <Trash2 style={{ width: 12, height: 12 }} aria-hidden="true" />
                     </button>
                   </div>
                   <Field
@@ -1401,7 +1402,7 @@ export default function CheckoutEditorPage() {
                 }
                 style={smallBtnStyle}
               >
-                <Plus style={{ width: 14, height: 14 }} />
+                <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
                 Adicionar order bump
               </button>
             </div>
@@ -1442,7 +1443,7 @@ export default function CheckoutEditorPage() {
                       }}
                       style={removeBtnStyle}
                     >
-                      <Trash2 style={{ width: 12, height: 12 }} />
+                      <Trash2 style={{ width: 12, height: 12 }} aria-hidden="true" />
                     </button>
                   </div>
                   <Field
@@ -1500,7 +1501,7 @@ export default function CheckoutEditorPage() {
                 }
                 style={smallBtnStyle}
               >
-                <Plus style={{ width: 14, height: 14 }} />
+                <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
                 Adicionar upsell
               </button>
             </div>
@@ -1637,11 +1638,11 @@ export default function CheckoutEditorPage() {
               />
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button type="button" onClick={copyEmbedCode} style={smallBtnStyle}>
-                  <Copy style={{ width: 14, height: 14 }} />
+                  <Copy style={{ width: 14, height: 14 }} aria-hidden="true" />
                   {embedCopied ? 'Widget copiado!' : 'Copiar código do widget'}
                 </button>
                 <button type="button" onClick={copyLink} style={smallBtnStyle}>
-                  <Copy style={{ width: 14, height: 14 }} />
+                  <Copy style={{ width: 14, height: 14 }} aria-hidden="true" />
                   {copied ? 'Link copiado!' : 'Copiar link público'}
                 </button>
               </div>
@@ -1683,7 +1684,7 @@ export default function CheckoutEditorPage() {
                       }}
                       style={removeBtnStyle}
                     >
-                      <Trash2 style={{ width: 12, height: 12 }} />
+                      <Trash2 style={{ width: 12, height: 12 }} aria-hidden="true" />
                     </button>
                   </div>
                   <div style={{ marginBottom: 12 }}>
@@ -1735,7 +1736,7 @@ export default function CheckoutEditorPage() {
                 }
                 style={smallBtnStyle}
               >
-                <Plus style={{ width: 14, height: 14 }} />
+                <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
                 Adicionar pixel
               </button>
             </div>

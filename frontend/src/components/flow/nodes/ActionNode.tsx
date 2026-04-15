@@ -39,7 +39,7 @@ function ActionNodeComponent({ data, selected }: NodeProps<ActionNodeData>) {
 
       <div className="flex items-center gap-2 mb-2">
         <div className="p-1.5 bg-teal-500/15 rounded-md">
-          <Zap className="w-4 h-4 text-teal-400" />
+          <Zap className="w-4 h-4 text-teal-400" aria-hidden="true" />
         </div>
         <span className="font-medium text-sm text-[#E0DDD8]">{data.label || 'Ação'}</span>
       </div>

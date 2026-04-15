@@ -52,7 +52,7 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
               gap: 4,
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path
                 d="M7.5 2.5L4 6l3.5 3.5"
                 stroke={KLOEL_THEME.textSecondary}

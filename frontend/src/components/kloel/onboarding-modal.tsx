@@ -80,7 +80,7 @@ export function OnboardingModal({
           className="absolute left-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700"
           aria-label="Fechar"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
 
         {/* Progress Bar */}
@@ -100,7 +100,7 @@ export function OnboardingModal({
         {isCompleted ? (
           <div className="flex flex-col items-center py-8 text-center">
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-              <Check className="h-10 w-10 text-green-600" />
+              <Check className="h-10 w-10 text-green-600" aria-hidden="true" />
             </div>
             <h2 className="mb-2 text-2xl font-semibold text-gray-900">Onboarding concluido!</h2>
             <p className="text-gray-500">Bem-vindo ao Kloel.</p>
@@ -110,7 +110,7 @@ export function OnboardingModal({
             {step === 1 && (
               <div className="space-y-6">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100">
-                  <Building2 className="h-7 w-7 text-gray-700" />
+                  <Building2 className="h-7 w-7 text-gray-700" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="mb-2 text-2xl font-semibold text-gray-900">Vamos comecar</h2>
@@ -163,7 +163,7 @@ export function OnboardingModal({
                   className="w-full rounded-md bg-[#E0DDD8] py-6 text-[#0A0A0C] hover:bg-[#E0DDD8]"
                 >
                   Avancar
-                  <ChevronRight className="ml-2 h-4 w-4" />
+                  <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             )}
@@ -171,7 +171,7 @@ export function OnboardingModal({
             {step === 2 && (
               <div className="space-y-6">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100">
-                  <MessageSquare className="h-7 w-7 text-gray-700" />
+                  <MessageSquare className="h-7 w-7 text-gray-700" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="mb-2 text-2xl font-semibold text-gray-900">Ensinar o Kloel</h2>
@@ -187,7 +187,7 @@ export function OnboardingModal({
                     variant="outline"
                     className="rounded-md border-gray-300 bg-white px-6 py-5"
                   >
-                    <MessageSquare className="mr-2 h-4 w-4" />
+                    <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
                     Ensinar sobre os meus produtos
                   </Button>
                 </div>
@@ -196,7 +196,7 @@ export function OnboardingModal({
                   className="w-full rounded-md bg-[#E0DDD8] py-6 text-[#0A0A0C] hover:bg-[#E0DDD8]"
                 >
                   Avancar
-                  <ChevronRight className="ml-2 h-4 w-4" />
+                  <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             )}
@@ -204,7 +204,7 @@ export function OnboardingModal({
             {step === 3 && (
               <div className="space-y-6">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100">
-                  <Smartphone className="h-7 w-7 text-green-700" />
+                  <Smartphone className="h-7 w-7 text-green-700" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="mb-2 text-2xl font-semibold text-gray-900">Conectar WhatsApp</h2>
@@ -219,7 +219,7 @@ export function OnboardingModal({
                     onClick={handleConnectWhatsApp}
                     className="rounded-md bg-green-600 px-6 py-5 hover:bg-green-700"
                   >
-                    <Smartphone className="mr-2 h-4 w-4" />
+                    <Smartphone className="mr-2 h-4 w-4" aria-hidden="true" />
                     Conectar meu WhatsApp
                   </Button>
                 </div>

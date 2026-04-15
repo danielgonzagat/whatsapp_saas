@@ -35,7 +35,7 @@ function EndNodeComponent({ data, selected }: NodeProps<EndNodeData>) {
 
       <div className="flex items-center gap-2 justify-center">
         <div className="p-2 bg-red-500/20 rounded-full">
-          <Flag className="w-4 h-4 text-red-400" />
+          <Flag className="w-4 h-4 text-red-400" aria-hidden="true" />
         </div>
         <div>
           <span className="font-semibold text-sm text-red-400">{data.label || 'Fim'}</span>

@@ -16,7 +16,7 @@ export default function TermsPage() {
           onClick={() => router.back()}
           className="flex items-center gap-2 text-white/60 hover:text-white transition-colors mb-8"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={20} aria-hidden="true" />
           Voltar
         </button>
 

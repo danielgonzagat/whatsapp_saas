@@ -445,7 +445,7 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
                   background: SURFACE,
                 }}
               >
-                <Globe size={14} strokeWidth={1.9} color={EMBER} />
+                <Globe size={14} strokeWidth={1.9} color={EMBER} aria-hidden="true" />
                 <span
                   style={{
                     fontSize: 14,

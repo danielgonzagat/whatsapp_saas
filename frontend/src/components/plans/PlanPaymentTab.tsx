@@ -181,7 +181,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full"
           style={{ background: colors.accent.webb }}
         >
-          <Check className="h-3 w-3 text-white" />
+          <Check className="h-3 w-3 text-white" aria-hidden="true" />
         </div>
       )}
       <Icon
@@ -247,7 +247,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           <option value="FREE">Grátis</option>
         </select>
         <p className="mt-2 text-xs flex items-center gap-1" style={{ color: colors.brand.amber }}>
-          <AlertTriangle className="h-3 w-3" />
+          <AlertTriangle className="h-3 w-3" aria-hidden="true" />
           Atenção! Não será possível alterar a forma de cobrança depois de publicar.
         </p>
       </div>
@@ -307,7 +307,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                 className="ml-14 text-xs flex items-center gap-1"
                 style={{ color: colors.brand.amber }}
               >
-                <AlertTriangle className="h-3 w-3" />
+                <AlertTriangle className="h-3 w-3" aria-hidden="true" />
                 Configure os descontos por tipo de pagamento no checkout.
               </p>
             )}

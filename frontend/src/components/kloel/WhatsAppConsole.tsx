@@ -536,7 +536,7 @@ function WhatsAppConsoleInner({
           className="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-2xl border border-r-0 border-[#222226] bg-[#111113] px-3 py-2 shadow-lg transition-all hover:pr-5"
         >
           <div className="flex items-center gap-2">
-            <ChevronLeft className="h-4 w-4 text-slate-500" />
+            <ChevronLeft className="h-4 w-4 text-slate-500" aria-hidden="true" />
             <WhatsAppIcon
               className={cn('h-6 w-6', connected && !isPaused ? 'animate-pulse' : undefined)}
             />
@@ -580,7 +580,7 @@ function WhatsAppConsoleInner({
               title="Desconectar WhatsApp"
               disabled={loading || !connected}
             >
-              <Power className="h-4 w-4" />
+              <Power className="h-4 w-4" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -588,7 +588,7 @@ function WhatsAppConsoleInner({
               className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               title="Fechar"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -599,7 +599,7 @@ function WhatsAppConsoleInner({
               <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center gap-3">
                   <div className="rounded-md bg-emerald-50 p-2">
-                    <Smartphone className="h-5 w-5 text-emerald-600" />
+                    <Smartphone className="h-5 w-5 text-emerald-600" aria-hidden="true" />
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-slate-900">Escaneie seu QR Code</div>
@@ -669,7 +669,7 @@ function WhatsAppConsoleInner({
                     disabled={loading}
                     className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <RefreshCcw className="h-4 w-4" />
+                    <RefreshCcw className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -760,7 +760,7 @@ function WhatsAppConsoleInner({
                       )}
                     >
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                        <MessageCircleMore className="h-4 w-4" />
+                        <MessageCircleMore className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium text-slate-900">

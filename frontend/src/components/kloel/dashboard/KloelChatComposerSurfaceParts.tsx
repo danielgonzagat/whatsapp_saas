@@ -108,7 +108,7 @@ export function RemoveIconButton({
         cursor: 'pointer',
       }}
     >
-      <X size={12} strokeWidth={2.2} />
+      <X size={12} strokeWidth={2.2} aria-hidden="true" />
     </button>
   );
 }
@@ -134,7 +134,7 @@ export function OverlayStatus({ attachment }: { attachment: KloelChatAttachment 
       {attachment.status === 'uploading' ? (
         <PulseLoader width={28} height={18} />
       ) : (
-        <X size={18} strokeWidth={2.2} />
+        <X size={18} strokeWidth={2.2} aria-hidden="true" />
       )}
     </div>
   );
@@ -155,7 +155,7 @@ export function InlineStatus({ attachment }: { attachment: KloelChatAttachment }
       {attachment.status === 'uploading' ? (
         <PulseLoader width={18} height={14} />
       ) : (
-        <X size={14} strokeWidth={2.2} />
+        <X size={14} strokeWidth={2.2} aria-hidden="true" />
       )}
     </div>
   );

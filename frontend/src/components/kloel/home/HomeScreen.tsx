@@ -53,6 +53,7 @@ function SendIcon({ size = 14 }: { size?: number }) {
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <line x1="22" y1="2" x2="11" y2="13" />
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
@@ -71,6 +72,7 @@ function PaperclipIcon({ size = 16 }: { size?: number }) {
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
     </svg>
@@ -840,6 +842,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                           strokeWidth={2}
                           strokeLinecap="round"
                           strokeLinejoin="round"
+                          aria-hidden="true"
                         >
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
@@ -853,6 +856,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                           strokeWidth={2}
                           strokeLinecap="round"
                           strokeLinejoin="round"
+                          aria-hidden="true"
                         >
                           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -893,6 +897,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                         strokeWidth={2}
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        aria-hidden="true"
                       >
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -1038,6 +1043,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                             strokeWidth={2}
                             strokeLinecap="round"
                             strokeLinejoin="round"
+                            aria-hidden="true"
                           >
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
@@ -1051,6 +1057,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                             strokeWidth={2}
                             strokeLinecap="round"
                             strokeLinejoin="round"
+                            aria-hidden="true"
                           >
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -1106,6 +1113,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           >
             {/* Paperclip */}
             <button
+              type="button"
               style={{
                 background: 'none',
                 border: 'none',

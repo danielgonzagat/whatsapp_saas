@@ -202,7 +202,7 @@ export function ProductIATab({ productId }: { productId: string }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <svg width={16} height={16} viewBox="0 0 24 24" fill={V.em}>
+          <svg width={16} height={16} viewBox="0 0 24 24" fill={V.em} aria-hidden="true">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
           <span style={{ fontSize: 13, fontWeight: 700, color: V.em, fontFamily: SORA }}>
@@ -524,7 +524,7 @@ export function ProductIATab({ productId }: { productId: string }) {
           gap: 6,
         }}
       >
-        <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
         {saved ? 'IA atualizada!' : saving ? 'Salvando...' : 'Salvar config da IA'}

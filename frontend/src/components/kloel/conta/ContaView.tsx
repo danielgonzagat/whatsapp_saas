@@ -215,6 +215,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
@@ -228,6 +229,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <rect x="4" y="2" width="16" height="20" rx="2" />
       <path d="M9 22v-4h6v4" />
@@ -242,6 +244,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
@@ -257,6 +260,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M3 21h18" />
       <path d="M3 10h18" />
@@ -276,6 +280,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
@@ -288,6 +293,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -301,6 +307,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
@@ -316,6 +323,7 @@ const Icons = {
       stroke="currentColor"
       strokeWidth={2.5}
       strokeLinecap="round"
+      aria-hidden="true"
     >
       <polyline points="20 6 9 17 4 12" />
     </svg>
@@ -328,6 +336,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
@@ -341,6 +350,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
       <line x1="12" y1="9" x2="12" y2="13" />
@@ -355,6 +365,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="17 8 12 3 7 8" />
@@ -369,6 +380,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
       <circle cx="12" cy="13" r="4" />
@@ -382,13 +394,22 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
   ),
   x: (s: number) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <svg
+      width={s}
+      height={s}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -401,6 +422,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -414,6 +436,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
@@ -439,6 +462,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
       <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
@@ -453,6 +477,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <polyline points="16 17 21 12 16 7" />
@@ -467,6 +492,7 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
@@ -482,13 +508,22 @@ const Icons = {
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
+      aria-hidden="true"
     >
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
       <polyline points="22,6 12,13 2,6" />
     </svg>
   ),
   plus: (s: number) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <svg
+      width={s}
+      height={s}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
@@ -1062,6 +1097,7 @@ function Spinner({ size = 14 }: { size?: number }) {
       stroke={EMBER}
       strokeWidth={2.5}
       style={{ animation: 'spin 1s linear infinite' }}
+      aria-hidden="true"
     >
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
@@ -1960,6 +1996,7 @@ function DadosBancariosSection({
                   transition: 'transform .15s',
                   flexShrink: 0,
                 }}
+                aria-hidden="true"
               >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
@@ -2006,6 +2043,7 @@ function DadosBancariosSection({
                       fill="none"
                       stroke="var(--app-text-placeholder)"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <circle cx="11" cy="11" r="7" />
                       <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -3097,6 +3135,7 @@ function AjudaSection() {
                 fill="none"
                 stroke="var(--app-text-placeholder)"
                 strokeWidth={2}
+                aria-hidden="true"
               >
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                 <polyline points="15 3 21 3 21 9" />
@@ -3220,6 +3259,7 @@ function AjudaSection() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
@@ -3424,7 +3464,7 @@ function MetaConnectSection() {
         }}
       >
         <div style={{ color: '#1877F2', opacity: 0.3 }}>
-          <svg width={48} height={48} viewBox="0 0 24 24" fill="currentColor">
+          <svg width={48} height={48} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
           </svg>
         </div>
@@ -3460,7 +3500,7 @@ function MetaConnectSection() {
             gap: 8,
           }}
         >
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor">
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
           </svg>
           Conectar com Meta
@@ -4588,6 +4628,7 @@ export default function ContaView() {
                         fill="none"
                         stroke="var(--app-text-secondary)"
                         strokeWidth={2}
+                        aria-hidden="true"
                       >
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                         <polyline points="15 3 21 3 21 9" />

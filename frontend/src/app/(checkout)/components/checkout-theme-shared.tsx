@@ -177,13 +177,21 @@ export const Chk = ({ stroke = 'rgb(16, 185, 129)' }: { stroke?: string }) => (
     strokeWidth="3"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
 export const Star = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="rgb(251, 191, 36)" stroke="none">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="rgb(251, 191, 36)"
+    stroke="none"
+    aria-hidden="true"
+  >
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </svg>
 );
@@ -198,6 +206,7 @@ export const Ed = ({ stroke }: { stroke: string }) => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -214,6 +223,7 @@ export const ChDown = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <polyline points="6 9 12 15 18 9" />
   </svg>
@@ -229,6 +239,7 @@ export const ChUp = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <polyline points="18 15 12 9 6 15" />
   </svg>
@@ -243,6 +254,7 @@ export const Mn = () => (
     stroke="currentColor"
     strokeWidth="2"
     strokeLinecap="round"
+    aria-hidden="true"
   >
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
@@ -257,6 +269,7 @@ export const Pl = () => (
     stroke="currentColor"
     strokeWidth="2"
     strokeLinecap="round"
+    aria-hidden="true"
   >
     <line x1="12" y1="5" x2="12" y2="19" />
     <line x1="5" y1="12" x2="19" y2="12" />
@@ -273,6 +286,7 @@ export const Px = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <path d="M6.5 6.5L12 12m0 0l5.5 5.5M12 12l5.5-5.5M12 12L6.5 17.5" />
   </svg>
@@ -288,6 +302,7 @@ export const Bc = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <rect x="3" y="4" width="18" height="16" rx="2" />
     <path d="M7 8v8M10 8v8M14 8v8M17 8v8" />
@@ -304,6 +319,7 @@ export const Cc = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
     <line x1="1" y1="10" x2="23" y2="10" />
@@ -320,6 +336,7 @@ export const Tag = ({ stroke }: { stroke: string }) => (
     strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
     <line x1="7" y1="7" x2="7.01" y2="7" />

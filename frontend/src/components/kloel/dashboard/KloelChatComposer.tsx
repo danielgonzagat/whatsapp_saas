@@ -248,7 +248,7 @@ export function KloelChatComposer({
               }}
               style={baseIconButtonStyle(disabled)}
             >
-              <Plus size={18} strokeWidth={2} />
+              <Plus size={18} strokeWidth={2} aria-hidden="true" />
             </button>
 
             {activeCapability ? (
@@ -273,7 +273,7 @@ export function KloelChatComposer({
               >
                 {capabilityIcon(activeCapability)}
                 {capabilityLabel(activeCapability)}
-                <X size={12} strokeWidth={2.2} />
+                <X size={12} strokeWidth={2.2} aria-hidden="true" />
               </button>
             ) : null}
           </div>
@@ -290,7 +290,7 @@ export function KloelChatComposer({
               color: canSend && !hasPendingUploads ? KLOEL_THEME.textOnAccent : MUTED_2,
             }}
           >
-            <SendHorizontal size={16} strokeWidth={2.4} />
+            <SendHorizontal size={16} strokeWidth={2.4} aria-hidden="true" />
           </button>
         </div>
       </div>

@@ -341,6 +341,7 @@ export default function PricingPage() {
                             style={{
                               color: feature.included ? colors.brand.green : colors.text.muted,
                             }}
+                            aria-hidden="true"
                           />
                         </div>
                         <span

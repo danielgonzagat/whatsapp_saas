@@ -349,10 +349,11 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             />
           </div>
           <button
+            type="button"
             className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-all"
             style={{ backgroundColor: colors.accent.webb, boxShadow: 'none' }}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -583,18 +584,20 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                         letterSpacing: '0.05em',
                       }}
                     >
-                      <Bot className="h-2.5 w-2.5" /> IA usa esta resposta
+                      <Bot className="h-2.5 w-2.5" aria-hidden="true" /> IA usa esta resposta
                     </span>
                   </div>
                   {isOpen ? (
                     <ChevronUp
                       className="h-4 w-4 flex-shrink-0"
                       style={{ color: colors.text.dust }}
+                      aria-hidden="true"
                     />
                   ) : (
                     <ChevronDown
                       className="h-4 w-4 flex-shrink-0"
                       style={{ color: colors.text.dust }}
+                      aria-hidden="true"
                     />
                   )}
                 </button>
@@ -636,7 +639,11 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           boxShadow: `0 0 20px ${colors.accent.webb}10, 0 0 40px ${colors.accent.webb}05`,
         }}
       >
-        <Sparkles className="mt-0.5 h-5 w-5 flex-shrink-0" style={{ color: colors.accent.webb }} />
+        <Sparkles
+          className="mt-0.5 h-5 w-5 flex-shrink-0"
+          style={{ color: colors.accent.webb }}
+          aria-hidden="true"
+        />
         <p className="text-sm" style={{ color: colors.text.moonlight }}>
           A IA do Kloel usará todas as informações configuradas nesta página para responder
           automaticamente perguntas dos seus clientes sobre entrega, rastreamento e prazos.

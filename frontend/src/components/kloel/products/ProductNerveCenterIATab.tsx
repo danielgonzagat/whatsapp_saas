@@ -112,7 +112,15 @@ export function ProductNerveCenterIATab() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={V.em} strokeWidth={2}>
+          <svg
+            width={16}
+            height={16}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={V.em}
+            strokeWidth={2}
+            aria-hidden="true"
+          >
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
           <span style={{ fontSize: 13, fontWeight: 700, color: V.em }}>Marketing Artificial</span>
@@ -263,6 +271,7 @@ export function ProductNerveCenterIATab() {
               stroke="currentColor"
               strokeWidth={2}
               style={{ marginRight: 6 }}
+              aria-hidden="true"
             >
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>

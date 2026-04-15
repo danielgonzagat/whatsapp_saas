@@ -228,7 +228,7 @@ export function AuthModal({
             onClick={onClose}
             className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
 
           {/* Branding */}
@@ -331,7 +331,7 @@ export function AuthModal({
                 onClick={handleBack}
                 className="mb-5 flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 Voltar
               </button>
 
@@ -374,9 +374,9 @@ export function AuthModal({
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showPassword ? (
-                          <EyeOff className="h-5 w-5" />
+                          <EyeOff className="h-5 w-5" aria-hidden="true" />
                         ) : (
-                          <Eye className="h-5 w-5" />
+                          <Eye className="h-5 w-5" aria-hidden="true" />
                         )}
                       </button>
                     </div>
@@ -414,15 +414,15 @@ export function AuthModal({
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showConfirmPassword ? (
-                          <EyeOff className="h-5 w-5" />
+                          <EyeOff className="h-5 w-5" aria-hidden="true" />
                         ) : (
-                          <Eye className="h-5 w-5" />
+                          <Eye className="h-5 w-5" aria-hidden="true" />
                         )}
                       </button>
                     </div>
                     {confirmPassword && password === confirmPassword && (
                       <div className="flex items-center gap-1 text-xs text-green-600">
-                        <Check className="h-3 w-3" />
+                        <Check className="h-3 w-3" aria-hidden="true" />
                         Senhas coincidem
                       </div>
                     )}
@@ -494,9 +494,9 @@ export function AuthModal({
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showPassword ? (
-                          <EyeOff className="h-5 w-5" />
+                          <EyeOff className="h-5 w-5" aria-hidden="true" />
                         ) : (
-                          <Eye className="h-5 w-5" />
+                          <Eye className="h-5 w-5" aria-hidden="true" />
                         )}
                       </button>
                     </div>

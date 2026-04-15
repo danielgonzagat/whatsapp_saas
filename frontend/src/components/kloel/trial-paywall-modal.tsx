@@ -34,13 +34,13 @@ export function TrialPaywallModal({
           onClick={onClose}
           className="absolute right-4 top-4 h-8 w-8 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </Button>
 
         <div className="flex flex-col items-center text-center">
           {/* Icon */}
           <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-md bg-[#E0DDD8]">
-            <Smartphone className="h-8 w-8 text-white" />
+            <Smartphone className="h-8 w-8 text-white" aria-hidden="true" />
           </div>
 
           {/* Title */}
@@ -77,25 +77,25 @@ export function TrialPaywallModal({
             <div className="mb-8 w-full space-y-3 rounded-md bg-gray-50 p-4 text-left">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-                  <Smartphone className="h-4 w-4 text-green-600" />
+                  <Smartphone className="h-4 w-4 text-green-600" aria-hidden="true" />
                 </div>
                 <span className="text-sm text-gray-700">Conexão direta com seu WhatsApp</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                  <Clock className="h-4 w-4 text-blue-600" />
+                  <Clock className="h-4 w-4 text-blue-600" aria-hidden="true" />
                 </div>
                 <span className="text-sm text-gray-700">Atendimento autônomo 24/7 pelo Kloel</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                  <Zap className="h-4 w-4 text-[#E0DDD8]" />
+                  <Zap className="h-4 w-4 text-[#E0DDD8]" aria-hidden="true" />
                 </div>
                 <span className="text-sm text-gray-700">7 dias de uso completo sem cobrança</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100">
-                  <MessageSquare className="h-4 w-4 text-orange-600" />
+                  <MessageSquare className="h-4 w-4 text-orange-600" aria-hidden="true" />
                 </div>
                 <span className="text-sm text-gray-700">
                   US$ 5 em créditos de mensagens para testar à vontade

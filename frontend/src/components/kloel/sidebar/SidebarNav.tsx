@@ -136,6 +136,7 @@ export function SidebarNav({
                     transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                     transition: 'transform 150ms ease',
                   }}
+                  aria-hidden="true"
                 />
               )}
             </button>

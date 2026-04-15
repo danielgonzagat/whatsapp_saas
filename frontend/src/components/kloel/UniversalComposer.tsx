@@ -202,7 +202,7 @@ export function UniversalComposer({
               style={{ color: colors.text.muted }}
               aria-label="Anexar arquivo"
             >
-              <Paperclip className="w-5 h-5" />
+              <Paperclip className="w-5 h-5" aria-hidden="true" />
             </button>
 
             {/* Voice */}
@@ -216,7 +216,7 @@ export function UniversalComposer({
               style={{ color: isRecording ? colors.state.error : colors.text.muted }}
               aria-label={isRecording ? 'Parar gravação' : 'Gravar áudio'}
             >
-              <Mic className="w-5 h-5" />
+              <Mic className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
@@ -231,7 +231,7 @@ export function UniversalComposer({
                 color: '#fff',
               }}
             >
-              <Square className="w-4 h-4" />
+              <Square className="w-4 h-4" aria-hidden="true" />
               Parar
             </button>
           ) : (
@@ -246,9 +246,9 @@ export function UniversalComposer({
               }}
             >
               {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               ) : (
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4" aria-hidden="true" />
               )}
               {!isCompact && 'Enviar'}
             </button>

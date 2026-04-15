@@ -106,9 +106,9 @@ export function AnalyticsSettingsSection() {
           className={kloelSettingsClass.outlineButton}
         >
           {loading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
           )}
           Atualizar
         </Button>
@@ -116,14 +116,17 @@ export function AnalyticsSettingsSection() {
 
       {error && (
         <SettingsNotice tone="danger" className="flex items-center gap-3">
-          <XCircle className="h-4 w-4" />
+          <XCircle className="h-4 w-4" aria-hidden="true" />
           <span>{error}</span>
         </SettingsNotice>
       )}
 
       {loading && !stats ? (
         <SettingsCard className="flex min-h-[220px] items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-[var(--app-text-secondary)]" />
+          <Loader2
+            className="h-6 w-6 animate-spin text-[var(--app-text-secondary)]"
+            aria-hidden="true"
+          />
         </SettingsCard>
       ) : !stats ? (
         <SettingsCard className="p-6">
@@ -172,7 +175,7 @@ export function AnalyticsSettingsSection() {
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <SettingsCard>
               <SettingsHeader
-                icon={<BarChart3 className="h-4 w-4" />}
+                icon={<BarChart3 className="h-4 w-4" aria-hidden="true" />}
                 title="Atividade diária"
                 className="mb-0"
               />

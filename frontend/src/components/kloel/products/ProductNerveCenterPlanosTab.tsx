@@ -107,6 +107,7 @@ export function ProductNerveCenterPlanosTab({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -125,6 +126,7 @@ export function ProductNerveCenterPlanosTab({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
                       <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
@@ -142,6 +144,7 @@ export function ProductNerveCenterPlanosTab({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
+                      aria-hidden="true"
                     >
                       <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
                       <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
@@ -305,6 +308,7 @@ export function ProductNerveCenterPlanosTab({
                     fill="none"
                     stroke="currentColor"
                     strokeWidth={2}
+                    aria-hidden="true"
                   >
                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -323,6 +327,7 @@ export function ProductNerveCenterPlanosTab({
                     fill="none"
                     stroke="currentColor"
                     strokeWidth={2}
+                    aria-hidden="true"
                   >
                     <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
@@ -340,6 +345,7 @@ export function ProductNerveCenterPlanosTab({
                     fill="none"
                     stroke="currentColor"
                     strokeWidth={2}
+                    aria-hidden="true"
                   >
                     <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
                     <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />

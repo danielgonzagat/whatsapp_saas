@@ -92,7 +92,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               className="absolute right-3 top-1/2 -translate-y-1/2"
               style={{ color: colors.text.muted }}
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPassword ? (
+                <EyeOff className="w-4 h-4" aria-hidden="true" />
+              ) : (
+                <Eye className="w-4 h-4" aria-hidden="true" />
+              )}
             </button>
           )}
 
@@ -111,7 +115,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className="mt-1.5 text-sm flex items-center gap-1"
             style={{ color: error ? colors.state.error : colors.text.muted }}
           >
-            {error && <AlertCircle className="w-3.5 h-3.5" />}
+            {error && <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />}
             {error || hint}
           </p>
         )}
@@ -136,7 +140,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
       <Input
         ref={ref}
         type="search"
-        leftIcon={<Search className="w-4 h-4" />}
+        leftIcon={<Search className="w-4 h-4" aria-hidden="true" />}
         placeholder="Buscar..."
         {...props}
       />
@@ -191,7 +195,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             className="mt-1.5 text-sm flex items-center gap-1"
             style={{ color: error ? colors.state.error : colors.text.muted }}
           >
-            {error && <AlertCircle className="w-3.5 h-3.5" />}
+            {error && <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />}
             {error || hint}
           </p>
         )}
@@ -259,7 +263,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             className="mt-1.5 text-sm flex items-center gap-1"
             style={{ color: error ? colors.state.error : colors.text.muted }}
           >
-            {error && <AlertCircle className="w-3.5 h-3.5" />}
+            {error && <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />}
             {error || hint}
           </p>
         )}
@@ -309,7 +313,11 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             }}
           >
             {checked && (
-              <Check className="w-3.5 h-3.5" style={{ color: colors.background.obsidian }} />
+              <Check
+                className="w-3.5 h-3.5"
+                style={{ color: colors.background.obsidian }}
+                aria-hidden="true"
+              />
             )}
           </div>
         </div>

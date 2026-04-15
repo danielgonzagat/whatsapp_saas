@@ -204,7 +204,7 @@ function Spinner({ color, trackColor }: { color: string; trackColor: string }) {
 
 function GoogleIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24">
+    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
         fill="rgb(66, 133, 244)"
@@ -227,7 +227,7 @@ function GoogleIcon() {
 
 function FacebookIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="rgb(24, 119, 242)">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="rgb(24, 119, 242)" aria-hidden="true">
       <path d="M24 12.073c0-6.627-5.373-12-12-12S0 .073 0 12.073c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
     </svg>
   );
@@ -235,7 +235,7 @@ function FacebookIcon() {
 
 function AppleIcon({ color }: { color: string }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill={color}>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill={color} aria-hidden="true">
       <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
     </svg>
   );

@@ -33,7 +33,7 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
 
       <div className="flex items-center gap-2 mb-2">
         <div className="p-1.5 bg-[#8B5CF6]/15 rounded-md">
-          <Hourglass className="w-4 h-4 text-[#8B5CF6]" />
+          <Hourglass className="w-4 h-4 text-[#8B5CF6]" aria-hidden="true" />
         </div>
         <span className="font-medium text-sm text-[#E0DDD8]">
           {data.label || 'Aguardar Resposta'}

@@ -83,7 +83,11 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.ember.primary }} />
+        <Loader2
+          className="h-6 w-6 animate-spin"
+          style={{ color: colors.ember.primary }}
+          aria-hidden="true"
+        />
       </div>
     );
   if (!data)
@@ -370,7 +374,11 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             opacity: saving ? 0.5 : 1,
           }}
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Save className="h-4 w-4" aria-hidden="true" />
+          )}
           {saved ? 'Salvo!' : saving ? 'Salvando...' : 'Salvar'}
         </button>
       </div>

@@ -124,7 +124,7 @@ export default function FunnelsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <GitBranch className="h-5 w-5 text-[#3A3A3F]" />
+            <GitBranch className="h-5 w-5 text-[#3A3A3F]" aria-hidden="true" />
             <h1 className="text-2xl font-semibold text-[#E0DDD8]">Funis</h1>
           </div>
           <p className="mt-1 text-sm text-[#6E6E73]">
@@ -150,7 +150,7 @@ export default function FunnelsPage() {
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-xl border border-[#222226] bg-[#111113] px-4 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
             Atualizar
           </button>
         </div>
@@ -158,7 +158,7 @@ export default function FunnelsPage() {
 
       {error && (
         <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          <XCircle className="h-4 w-4" />
+          <XCircle className="h-4 w-4" aria-hidden="true" />
           <span>{error}</span>
         </div>
       )}
@@ -175,7 +175,10 @@ export default function FunnelsPage() {
                   </p>
                 </div>
                 <div className="relative w-[240px] max-w-full">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3A3A3F]" />
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3A3A3F]"
+                    aria-hidden="true"
+                  />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -212,7 +215,7 @@ export default function FunnelsPage() {
             <div className="max-h-[70vh] overflow-y-auto">
               {loading && conversations.length === 0 ? (
                 <div className="flex items-center justify-center px-5 py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" />
+                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" aria-hidden="true" />
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">
@@ -283,7 +286,7 @@ export default function FunnelsPage() {
           <div className="rounded-2xl border border-[#222226] bg-[#111113] shadow-sm">
             <div className="flex items-center justify-between border-b border-[#222226] px-5 py-4">
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-[#3A3A3F]" />
+                <BarChart3 className="h-4 w-4 text-[#3A3A3F]" aria-hidden="true" />
                 <span className="text-sm font-semibold text-[#E0DDD8]">
                   Execuções de Flow (recentes)
                 </span>
@@ -294,7 +297,7 @@ export default function FunnelsPage() {
             <div className="max-h-[70vh] overflow-y-auto">
               {loading && executions.length === 0 ? (
                 <div className="flex items-center justify-center px-5 py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" />
+                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" aria-hidden="true" />
                 </div>
               ) : executions.length === 0 ? (
                 <div className="px-5 py-10 text-center">

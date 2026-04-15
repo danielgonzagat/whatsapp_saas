@@ -498,7 +498,7 @@ export function QRCodePane({
             style={{ width: 196, height: 196, objectFit: 'contain' }}
           />
         ) : (
-          <svg viewBox="0 0 250 250" width="196" height="196">
+          <svg viewBox="0 0 250 250" width="196" height="196" aria-hidden="true">
             {dots.map((dot, index) => (
               <rect
                 key={`${dot.x}-${dot.y}-${index}`}
@@ -697,7 +697,15 @@ function ProductCard({
         }}
       >
         {selected ? (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={V} strokeWidth="3">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={V}
+            strokeWidth="3"
+            aria-hidden="true"
+          >
             <polyline points="20 6 9 17 4 12" />
           </svg>
         ) : null}

@@ -25,6 +25,7 @@ function Stars({ rating }: { rating: number }) {
             color: i <= rating ? colors.ember.primary : colors.border.space,
             fill: i <= rating ? colors.ember.primary : 'none',
           }}
+          aria-hidden="true"
         />
       ))}
     </div>
@@ -54,7 +55,11 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.ember.primary }} />
+        <Loader2
+          className="h-6 w-6 animate-spin"
+          style={{ color: colors.ember.primary }}
+          aria-hidden="true"
+        />
       </div>
     );
 
@@ -82,7 +87,11 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
           className="flex flex-col items-center justify-center rounded-md py-16"
           style={{ border: `2px dashed ${colors.border.space}` }}
         >
-          <Star className="mb-3 h-12 w-12" style={{ color: colors.border.space }} />
+          <Star
+            className="mb-3 h-12 w-12"
+            style={{ color: colors.border.space }}
+            aria-hidden="true"
+          />
           <p className="text-sm" style={{ color: colors.text.muted }}>
             Nenhuma avaliacao recebida.
           </p>
@@ -133,7 +142,7 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
                 className="rounded-full p-1.5"
                 style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </div>
           ))}

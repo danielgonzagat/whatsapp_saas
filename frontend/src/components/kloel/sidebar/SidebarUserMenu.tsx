@@ -305,6 +305,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
               transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
               transition: 'transform 150ms ease',
             }}
+            aria-hidden="true"
           />
         )}
       </button>

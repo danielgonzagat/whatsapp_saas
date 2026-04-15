@@ -81,11 +81,11 @@ export function SettingsDrawer({
         className="fixed left-0 top-1/2 z-40 -translate-y-1/2 rounded-r-md border border-l-0 border-[var(--app-border-primary)] bg-[var(--app-bg-card)] px-3 py-2 transition-all hover:pl-5"
       >
         <div className="flex items-center gap-2">
-          <Settings className="h-5 w-5 text-[var(--app-text-secondary)]" />
+          <Settings className="h-5 w-5 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <span className="text-xs font-medium text-[var(--app-text-secondary)]">
             Configurações
           </span>
-          <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)]" />
+          <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
         </div>
       </button>
     );
@@ -120,7 +120,7 @@ export function SettingsDrawer({
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--app-text-secondary)] transition-colors hover:bg-[var(--app-bg-hover)] hover:text-[var(--app-text-primary)]"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
 

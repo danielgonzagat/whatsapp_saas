@@ -90,6 +90,7 @@ export function ProductNerveCenterAfterPayTab() {
           stroke="currentColor"
           strokeWidth={3}
           style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
+          aria-hidden="true"
         >
           <polyline points="20 6 9 17 4 12" />
         </svg>
