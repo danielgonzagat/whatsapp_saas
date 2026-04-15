@@ -2,6 +2,7 @@
 
 import { Bell, LogOut, Settings as SettingsIcon, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { AdminThemeToggle } from '@/components/admin/admin-theme-toggle';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -37,6 +38,7 @@ export function AdminTopbar() {
         </Badge>
       </div>
       <div className="flex items-center gap-3">
+        <AdminThemeToggle />
         <button
           type="button"
           aria-label="Notificações"

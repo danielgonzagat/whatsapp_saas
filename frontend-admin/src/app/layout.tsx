@@ -16,22 +16,33 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0A0A0C',
+  // Viewport theme color is the LIGHT default. When the user flips the
+  // toggle to dark we update meta[name=theme-color] at runtime via
+  // ThemeToggle to match the active palette.
+  themeColor: '#FFFFFF',
   width: 'device-width',
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning className="dark">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${sora.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
+        className={`${sora.variable} ${jetbrainsMono.variable} antialiased`}
         style={{
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
         }}
       >
         <ThemeProvider>
-          <AdminSessionProvider>{children}</AdminSessionProvider>
+          {/*
+            `.kloel-app-theme-root` scopes the `--app-*` tokens to the app
+            shell. This class is required for the theme to actually take
+            effect — outside it, globals.css falls back to dark-only tokens
+            that live on the `:root` selector.
+          */}
+          <div className="kloel-app-theme-root min-h-svh bg-background text-foreground">
+            <AdminSessionProvider>{children}</AdminSessionProvider>
+          </div>
         </ThemeProvider>
       </body>
     </html>
