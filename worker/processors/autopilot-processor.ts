@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { type Job, Worker } from 'bullmq';
 import OpenAI from 'openai';
 import {
@@ -97,6 +97,52 @@ import {
   recordDecisionLog,
   updateVariantOutcome,
 } from './cia/self-improvement';
+
+const S_RE = /\s+/;
+const P_EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
+const LID_RE = /@lid$/i;
+const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
+const MEU_NOME____S_E__S_RE =
+  /(?:meu nome(?:\s+e|\s+é)?|me chamo|sou o|sou a|aqui e o|aqui é o|aqui e a|aqui é a|pode me chamar de)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*){0,3})/iu;
+const ASSINADO______S__ATEN_RE =
+  /(?:assinado[:,]?\s*|atenciosamente[:,]?\s*)([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*){0,3})/iu;
+const N_RE = /[\n!?]+/;
+const W________W_______A_ZA_RE = /[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/;
+const RX_55_S__________D_2_RE = /(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?\d{4,5}[-\s]?\d{4}/;
+const PRE_C__O_VALOR_QUANTO_CU_RE = /pre[cç]o|valor|quanto custa|investimento/i;
+const PRAZO_ENTREGA_QUANDO_CHE_RE = /prazo|entrega|quando chega|quanto tempo/i;
+const PIX_CART_A__O_BOLETO_PAG_RE = /pix|cart[aã]o|boleto|pagamento/i;
+const RESULTADO_FUNCIONA_COMO_RE = /resultado|funciona|como funciona|benef[ií]cio/i;
+const PROBLEMA_DOR_DIFICULDADE_RE = /problema|dor|dificuldade|obje[cç][aã]o/i;
+const S_S_RE = /\{[\s\S]*\}/;
+const J__S_COMPREI_JA_S_COMPR_RE =
+  /(já\s*comprei|ja\s*comprei|comprei|paguei|pagamento aprovado|pedido confirmado|assinatura ativa)/i;
+const PIX_BOLETO_CART_A__O_CA_RE =
+  /(pix|boleto|cart[aã]o|cartao|quando virar|assim que cair|me chama amanh[aã]|pagar|pagamento)/i;
+const QUERO_VOU_COMPRAR_COMO_RE =
+  /(quero|vou comprar|como pago|manda o link|fecha comigo|posso pagar)/i;
+const QUANTO_VALOR_PRE_C__O_F_RE =
+  /(quanto|valor|pre[cç]o|funciona|tem como|me manda|link|produto|servi[cç]o)/i;
+const PAGAMENTO_APROVADO_PAGA_RE =
+  /(pagamento aprovado|pagamento confirmado|pix enviado|já paguei|ja paguei|comprei|compra aprovada|assinatura ativa|recebi acesso|recebeu acesso|pedido confirmado|nota fiscal)/i;
+const CURSO_PLANO_MENTORIA_PR_RE = /(curso|plano|mentoria|produto|assinatura|consultoria)/i;
+const OBRIGAD_VALEU_PERFEITO_RE =
+  /(obrigad|valeu|perfeito|ótimo|otimo|gostei|funcionou|recebi acesso|amei)/i;
+const OBRIGAD_VALEU_PERFEITO_RE_2 = /(obrigad|valeu|perfeito|ótimo|otimo|gostei)/i;
+const PRE_C__O_VALOR_QUANTO_O_RE = /(pre[cç]o|valor|quanto|or[cç]amento|plano|mensalidade)/i;
+const QUERO_VOU_COMPRAR_ME_MA_RE =
+  /(quero|vou comprar|me manda o link|como pago|pix|boleto|cart[aã]o|fechar|assinar)/i;
+const PROBLEMA_ERRO_SUPORTE_A_RE = /(problema|erro|suporte|ajuda|reclama|cancelar)/i;
+const PROBLEMA_RUIM_HORR_I__V_RE = /(problema|ruim|horr[ií]vel|cancelar|reclama)/i;
+const QUERO_COMPRAR_ASSINAR_F_RE = /(quero|comprar|assinar|fechar|como pago|pix|boleto)/i;
+const PROBLEMA_ERRO_SUPORTE_A_RE_2 = /(problema|erro|suporte|ajuda)/i;
+const RECLAMA_CANCELAR_RE = /(reclama|cancelar)/i;
+const CARO_SEM_DINHEIRO_AGORA_RE = /(caro|sem dinheiro|agora não|agora nao|depois|sem tempo)/i;
+const SUMI_SEM_RESPOSTA_DEPOI_RE = /(sumi|sem resposta|depois te chamo|vou ver)/i;
+const B_SOU_HOMEM_MEU_MARIDO_RE = /\b(sou homem|meu marido|pai|rapaz)\b/i;
+const B_SOU_MULHER_MINHA_ESPO_RE = /\b(sou mulher|minha esposa|mãe|mae|moça|moca)\b/i;
+const B__D_2___S_ANOS_B_RE = /\b(\d{2})\s*anos\b/i;
+const B___SOU_DE_MORO_EM_AQUI_RE = /\b(?:sou de|moro em|aqui em)\s+([a-zà-ÿ' -]{2,40})/i;
 
 const log = new WorkerLogger('autopilot');
 const WORKER_ROLE = (process.env.WORKER_ROLE || 'all').toLowerCase();
@@ -263,7 +309,7 @@ async function reportSmokeTest(smokeTestId: string | undefined, payload: Record<
 function countReplyWords(value?: string | null): number {
   const words = String(value || '')
     .trim()
-    .split(/\s+/)
+    .split(S_RE)
     .filter(Boolean);
   return Math.max(1, words.length);
 }
@@ -335,7 +381,7 @@ function finalizeReplyStyle(
   }
 
   const budget = computeReplyStyleBudget(customerMessage, historyTurns);
-  const allowEmoji = /\p{Extended_Pictographic}/u.test(customerMessage || '');
+  const allowEmoji = P_EXTENDED_PICTOGRAPHIC_RE.test(customerMessage || '');
   const withoutEmoji = allowEmoji
     ? normalized
     : normalized.replace(/\p{Extended_Pictographic}/gu, '').trim();
@@ -1455,7 +1501,7 @@ function buildLidMap(
     }
 
     normalized.set(lid, pn);
-    normalized.set(lid.replace(/@lid$/i, ''), pn);
+    normalized.set(lid.replace(LID_RE, ''), pn);
   }
 
   return normalized;
@@ -1467,9 +1513,9 @@ function resolveCanonicalChatId(chatId: string, lidMap?: Map<string, string>): s
     return '';
   }
 
-  if (/@lid$/i.test(normalizedChatId) && lidMap) {
+  if (LID_RE.test(normalizedChatId) && lidMap) {
     const mapped =
-      lidMap.get(normalizedChatId) || lidMap.get(normalizedChatId.replace(/@lid$/i, '')) || '';
+      lidMap.get(normalizedChatId) || lidMap.get(normalizedChatId.replace(LID_RE, '')) || '';
     if (mapped) {
       return mapped;
     }
@@ -1557,7 +1603,7 @@ function extractCatalogChatName(chat: any, fallbackPhone?: string | null): strin
       lowered === 'doe' ||
       lowered === 'unknown' ||
       lowered === 'desconhecido' ||
-      /^\+?\d[\d\s-]*\s+doe$/i.test(normalized) ||
+      D__D_S____S_DOE_RE.test(normalized) ||
       (!!phoneDigits && lowered === `${phoneDigits} doe`) ||
       (!!phoneDigits && normalized.replace(/\D/g, '') === phoneDigits);
     if (!isPlaceholder) {
@@ -1581,7 +1627,7 @@ function isPlaceholderCatalogName(value: unknown, fallbackPhone?: string | null)
     return true;
   }
 
-  if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
+  if (D__D_S____S_DOE_RE.test(normalized)) {
     return true;
   }
 
@@ -1635,10 +1681,7 @@ function extractTrustedNameFromMessageText(value: unknown, fallbackPhone?: strin
     return '';
   }
 
-  const matchers = [
-    /(?:meu nome(?:\s+e|\s+é)?|me chamo|sou o|sou a|aqui e o|aqui é o|aqui e a|aqui é a|pode me chamar de)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*){0,3})/iu,
-    /(?:assinado[:,]?\s*|atenciosamente[:,]?\s*)([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*){0,3})/iu,
-  ];
+  const matchers = [MEU_NOME____S_E__S_RE, ASSINADO______S__ATEN_RE];
 
   for (const matcher of matchers) {
     const matched = text.match(matcher);
@@ -1704,7 +1747,7 @@ function buildConversationLedger(history: ConversationHistoryEntry[]): {
 
       if (direction === 'OUTBOUND') {
         const questions = content
-          .split(/[\n!?]+/)
+          .split(N_RE)
           .map((part) => part.trim())
           .filter(Boolean);
         for (const question of questions) {
@@ -1719,29 +1762,29 @@ function buildConversationLedger(history: ConversationHistoryEntry[]): {
         informedFacts.add(`nome: ${extractedName}`);
       }
 
-      const emailMatch = content.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/);
+      const emailMatch = content.match(W________W_______A_ZA_RE);
       if (emailMatch?.[0]) {
         informedFacts.add(`email: ${emailMatch[0]}`);
       }
 
-      const phoneMatch = content.match(/(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?\d{4,5}[-\s]?\d{4}/);
+      const phoneMatch = content.match(RX_55_S__________D_2_RE);
       if (phoneMatch?.[0]) {
         informedFacts.add(`telefone: ${phoneMatch[0]}`);
       }
 
-      if (/pre[cç]o|valor|quanto custa|investimento/i.test(content)) {
+      if (PRE_C__O_VALOR_QUANTO_CU_RE.test(content)) {
         coveredTopics.add('preco');
       }
-      if (/prazo|entrega|quando chega|quanto tempo/i.test(content)) {
+      if (PRAZO_ENTREGA_QUANDO_CHE_RE.test(content)) {
         coveredTopics.add('prazo');
       }
-      if (/pix|cart[aã]o|boleto|pagamento/i.test(content)) {
+      if (PIX_CART_A__O_BOLETO_PAG_RE.test(content)) {
         coveredTopics.add('pagamento');
       }
-      if (/resultado|funciona|como funciona|benef[ií]cio/i.test(content)) {
+      if (RESULTADO_FUNCIONA_COMO_RE.test(content)) {
         coveredTopics.add('resultado');
       }
-      if (/problema|dor|dificuldade|obje[cç][aã]o/i.test(content)) {
+      if (PROBLEMA_DOR_DIFICULDADE_RE.test(content)) {
         coveredTopics.add('problema');
       }
 
@@ -2069,7 +2112,7 @@ function extractFirstJsonObject(raw: string): Record<string, any> | null {
   try {
     return JSON.parse(text);
   } catch {
-    const match = text.match(/\{[\s\S]*\}/);
+    const match = text.match(S_S_RE);
     if (!match) return null;
     try {
       return JSON.parse(match[0]);
@@ -4006,7 +4049,7 @@ async function generateAutonomousFallbackResponse(params: {
   if (!apiKey) {
     if (matchedProducts.length > 0) {
       return detectAndFixAntiPatterns(
-        `${contactName ? `${contactName.split(/\s+/)[0]}, ` : ''}posso te ajudar com ${matchedProducts.join(', ')}. ${
+        `${contactName ? `${contactName.split(S_RE)[0]}, ` : ''}posso te ajudar com ${matchedProducts.join(', ')}. ${
           listeningSignals.validationNeeded
             ? 'Antes de qualquer coisa, faz sentido a sua dúvida.'
             : ''
@@ -4157,7 +4200,7 @@ function buildCognitiveMessage(params: {
 }) {
   const leadFirstName = String(params.contactName || '')
     .trim()
-    .split(/\s+/)
+    .split(S_RE)
     .filter(Boolean)[0];
   const productText = params.matchedProducts?.length
     ? ` sobre ${params.matchedProducts.join(', ')}`
@@ -6332,9 +6375,7 @@ function classifyOpportunityCandidate(input: {
     customerStatus.includes('won') ||
     customerStatus.includes('cliente') ||
     customerStatus.includes('customer') ||
-    /(já\s*comprei|ja\s*comprei|comprei|paguei|pagamento aprovado|pedido confirmado|assinatura ativa)/i.test(
-      text,
-    );
+    J__S_COMPREI_JA_S_COMPR_RE.test(text);
 
   if (purchased) {
     return {
@@ -6349,14 +6390,12 @@ function classifyOpportunityCandidate(input: {
     input.candidate.cluster === 'PAYMENT' ||
     input.candidate.cognitiveState.paymentState === 'PENDING' ||
     input.candidate.cognitiveState.paymentState === 'READY_TO_PAY' ||
-    /(pix|boleto|cart[aã]o|cartao|quando virar|assim que cair|me chama amanh[aã]|pagar|pagamento)/i.test(
-      text,
-    );
+    PIX_BOLETO_CART_A__O_CA_RE.test(text);
 
   const hotIntent =
     input.candidate.cluster === 'HOT' ||
     ['HOT', 'CHECKOUT'].includes(input.candidate.cognitiveState.stage) ||
-    /(quero|vou comprar|como pago|manda o link|fecha comigo|posso pagar)/i.test(text);
+    QUERO_VOU_COMPRAR_COMO_RE.test(text);
 
   const clientWaiting =
     input.candidate.pending ||
@@ -6366,7 +6405,7 @@ function classifyOpportunityCandidate(input: {
   const askedAndGhosted =
     !clientWaiting &&
     input.candidate.silenceMinutes >= 6 * 60 &&
-    /(quanto|valor|pre[cç]o|funciona|tem como|me manda|link|produto|servi[cç]o)/i.test(text);
+    QUANTO_VALOR_PRE_C__O_F_RE.test(text);
 
   const warm =
     !askedAndGhosted &&
@@ -6753,10 +6792,7 @@ function buildHeuristicCatalogScore(input: {
   const boughtByDeal =
     String(input.wonDealTitle || '').trim().length > 0 ||
     (Number(input.wonDealValue || 0) || 0) > 0;
-  const boughtByConversation =
-    /(pagamento aprovado|pagamento confirmado|pix enviado|já paguei|ja paguei|comprei|compra aprovada|assinatura ativa|recebi acesso|recebeu acesso|pedido confirmado|nota fiscal)/i.test(
-      text,
-    );
+  const boughtByConversation = PAGAMENTO_APROVADO_PAGA_RE.test(text);
 
   if (boughtByDeal || boughtByConversation) {
     const purchaseReason = boughtByDeal
@@ -6764,17 +6800,16 @@ function buildHeuristicCatalogScore(input: {
       : 'payment_or_access_confirmed_in_chat';
     const purchasedProduct =
       String(input.wonDealTitle || '').trim() ||
-      (/(curso|plano|mentoria|produto|assinatura|consultoria)/i.exec(text)?.[0] ?? null);
+      (CURSO_PLANO_MENTORIA_PR_RE.exec(text)?.[0] ?? null);
     const purchaseValueRaw = Number(input.wonDealValue || 0) || 0;
-    const positivePostPurchaseSignal =
-      /(obrigad|valeu|perfeito|ótimo|otimo|gostei|funcionou|recebi acesso|amei)/i.test(text);
+    const positivePostPurchaseSignal = OBRIGAD_VALEU_PERFEITO_RE.test(text);
     const repurchaseProbabilityScore = positivePostPurchaseSignal ? 0.78 : 0.56;
     const repurchaseLeadScore = Math.round(repurchaseProbabilityScore * 100);
     return {
       leadScore: repurchaseLeadScore,
       purchaseProbability: positivePostPurchaseSignal ? ('HIGH' as const) : ('MEDIUM' as const),
       purchaseProbabilityScore: repurchaseProbabilityScore,
-      sentiment: /(obrigad|valeu|perfeito|ótimo|otimo|gostei)/i.test(text) ? 'POSITIVE' : 'NEUTRAL',
+      sentiment: OBRIGAD_VALEU_PERFEITO_RE_2.test(text) ? 'POSITIVE' : 'NEUTRAL',
       intent: 'BUY',
       summary:
         `${String(input.wonDealTitle || 'Cliente convertido').trim() || 'Cliente convertido'} com compra identificada.`.trim(),
@@ -6804,17 +6839,15 @@ function buildHeuristicCatalogScore(input: {
     leadScore += 12;
     reasons.push('has_unread_backlog');
   }
-  if (/(pre[cç]o|valor|quanto|or[cç]amento|plano|mensalidade)/i.test(text)) {
+  if (PRE_C__O_VALOR_QUANTO_O_RE.test(text)) {
     leadScore += 16;
     reasons.push('asked_price');
   }
-  if (
-    /(quero|vou comprar|me manda o link|como pago|pix|boleto|cart[aã]o|fechar|assinar)/i.test(text)
-  ) {
+  if (QUERO_VOU_COMPRAR_ME_MA_RE.test(text)) {
     leadScore += 24;
     reasons.push('buying_signal');
   }
-  if (/(problema|erro|suporte|ajuda|reclama|cancelar)/i.test(text)) {
+  if (PROBLEMA_ERRO_SUPORTE_A_RE.test(text)) {
     leadScore -= 12;
     reasons.push('support_or_complaint');
   }
@@ -6830,16 +6863,16 @@ function buildHeuristicCatalogScore(input: {
   leadScore = Math.max(0, Math.min(100, Math.round(leadScore)));
 
   const purchaseProbability = scoreToProbabilityBucket(leadScore);
-  const sentiment = /(problema|ruim|horr[ií]vel|cancelar|reclama)/i.test(text)
+  const sentiment = PROBLEMA_RUIM_HORR_I__V_RE.test(text)
     ? 'NEGATIVE'
-    : /(obrigad|valeu|perfeito|ótimo|otimo|gostei)/i.test(text)
+    : OBRIGAD_VALEU_PERFEITO_RE_2.test(text)
       ? 'POSITIVE'
       : 'NEUTRAL';
-  const intent = /(quero|comprar|assinar|fechar|como pago|pix|boleto)/i.test(text)
+  const intent = QUERO_COMPRAR_ASSINAR_F_RE.test(text)
     ? 'BUY'
-    : /(problema|erro|suporte|ajuda)/i.test(text)
+    : PROBLEMA_ERRO_SUPORTE_A_RE_2.test(text)
       ? 'SUPPORT'
-      : /(reclama|cancelar)/i.test(text)
+      : RECLAMA_CANCELAR_RE.test(text)
         ? 'COMPLAINT'
         : inboundMessages.length > 0
           ? 'INFO'
@@ -6850,9 +6883,9 @@ function buildHeuristicCatalogScore(input: {
       : purchaseProbability === 'MEDIUM'
         ? 'NURTURE_LATER'
         : 'MONITOR_ONLY';
-  const notPurchasedReason = /(caro|sem dinheiro|agora não|agora nao|depois|sem tempo)/i.test(text)
+  const notPurchasedReason = CARO_SEM_DINHEIRO_AGORA_RE.test(text)
     ? 'objection_or_timing'
-    : /(sumi|sem resposta|depois te chamo|vou ver)/i.test(text)
+    : SUMI_SEM_RESPOSTA_DEPOI_RE.test(text)
       ? 'follow_up_needed'
       : inboundMessages.length > 0
         ? 'still_open'
@@ -6891,13 +6924,13 @@ function inferHeuristicDemographics(text: string): {
   const normalized = String(text || '').toLowerCase();
 
   let gender = 'UNKNOWN';
-  if (/\b(sou homem|meu marido|pai|rapaz)\b/i.test(normalized)) {
+  if (B_SOU_HOMEM_MEU_MARIDO_RE.test(normalized)) {
     gender = 'MASCULINO';
-  } else if (/\b(sou mulher|minha esposa|mãe|mae|moça|moca)\b/i.test(normalized)) {
+  } else if (B_SOU_MULHER_MINHA_ESPO_RE.test(normalized)) {
     gender = 'FEMININO';
   }
 
-  const explicitAge = normalized.match(/\b(\d{2})\s*anos\b/i);
+  const explicitAge = normalized.match(B__D_2___S_ANOS_B_RE);
   let ageRange = 'UNKNOWN';
   if (explicitAge) {
     const age = Number(explicitAge[1]);
@@ -6908,8 +6941,7 @@ function inferHeuristicDemographics(text: string): {
     else if (age > 54) ageRange = '55+';
   }
 
-  const locationMatch =
-    normalized.match(/\b(?:sou de|moro em|aqui em)\s+([a-zà-ÿ' -]{2,40})/i) || null;
+  const locationMatch = normalized.match(B___SOU_DE_MORO_EM_AQUI_RE) || null;
   const location = locationMatch?.[1] ? String(locationMatch[1]).trim() : 'UNKNOWN';
 
   let confidence = 0;
@@ -7066,7 +7098,7 @@ async function runCatalogContacts(data: any) {
         lowered === 'doe' ||
         lowered === 'unknown' ||
         lowered === 'desconhecido' ||
-        /^\+?\d[\d\s-]*\s+doe$/i.test(normalized) ||
+        D__D_S____S_DOE_RE.test(normalized) ||
         lowered === `${phone} doe` ||
         normalized.replace(/\D/g, '') === phone
       );
@@ -9165,8 +9197,8 @@ async function sendAudioResponse(
     const base64Audio = audioBuffer.toString('base64');
 
     // Upload para armazenamento (local ou CDN)
-    const fs = await import('fs');
-    const path = await import('path');
+    const fs = await import('node:fs');
+    const path = await import('node:path');
 
     // Diretório de uploads do backend (servido por rota assinada/autenticada)
     const uploadsDir = path.join(process.cwd(), '..', 'backend', 'uploads', 'audio');

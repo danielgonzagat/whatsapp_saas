@@ -81,7 +81,7 @@ export function sanitizeUserInput(input: string, options: SanitizeOptions = {}):
 
   // 1. Trunca se muito longo
   if (sanitized.length > maxLength) {
-    sanitized = sanitized.substring(0, maxLength) + '... [truncado]';
+    sanitized = `${sanitized.substring(0, maxLength)}... [truncado]`;
     log.warn('input_truncated', {
       originalLength: input.length,
       maxLength,

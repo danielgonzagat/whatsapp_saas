@@ -1,5 +1,25 @@
 import type { CognitiveActionType, CustomerCognitiveState, CustomerStage } from './cognitive-state';
 
+const ANSIOS_INSEGUR_MEDO_REC_RE = /(ansios|insegur|medo|receio|duvida|duvida)/i;
+const FRUSTR_CANSAD_IRRIT_RAI_RE =
+  /(frustr|cansad|irrit|raiva|sac|complicad|dif[íi]cil|problema|erro)/i;
+const AMEI_PERFEITO_ANIMAD_GO_RE = /(amei|perfeito|animad|gostei|legal|excelente|top)/i;
+const NAO_ENTENDI_N_A__O_ENTE_RE = /(nao entendi|n[aã]o entendi|confuso|como assim|explica)/i;
+const OBRIGAD_VALEU__TIMO_OTI_RE = /(obrigad|valeu|ótimo|otimo)/i;
+const NAO_N_A__O_RUIM_CARO_DE_RE = /(nao|n[aã]o|ruim|caro|demora|medo)/i;
+const S_RE = /\s+/;
+const B_MEU_MINHA_MEUS_MINHAS_RE =
+  /\b(meu|minha|meus|minhas|trabalho|empresa|rotina|familia|cliente)\b/i;
+const PROBLEMA_ERRO_RECLAMA_N_RE =
+  /(problema|erro|reclama|nao funciona|nao resolveu|demora|frustr)/i;
+const PRECO_VALOR_PARCELA_RE = /(preco|valor|parcela)/i;
+const PRAZO_URGENTE_HOJE_AGOR_RE = /(prazo|urgente|hoje|agora)/i;
+const FUNCIONA_GARANTIA_RESUL_RE = /(funciona|garantia|resultado)/i;
+const RESULTADO_FUNCIONA_PREC_RE = /(resultado|funciona|preco|valor|prazo)/i;
+const OI_OL_A___E_AI_OPA_RE = /^(oi|ol[aá]|e ai|opa)[!,.]?\s*/i;
+const QUALQUER_D_U__VIDA_FI_RE =
+  /(?:qualquer d[uú]vida|fico [aà] disposi[cç][aã]o|estou [aà] disposi[cç][aã]o).*$/i;
+
 export type ActiveListeningSignals = {
   emotionalTone:
     | 'positive'
@@ -25,22 +45,22 @@ function normalizeText(value?: string | null): string {
 }
 
 function inferEmotionalTone(text: string): ActiveListeningSignals['emotionalTone'] {
-  if (/(ansios|insegur|medo|receio|duvida|duvida)/i.test(text)) {
+  if (ANSIOS_INSEGUR_MEDO_REC_RE.test(text)) {
     return 'anxious';
   }
-  if (/(frustr|cansad|irrit|raiva|sac|complicad|dif[íi]cil|problema|erro)/i.test(text)) {
+  if (FRUSTR_CANSAD_IRRIT_RAI_RE.test(text)) {
     return 'frustrated';
   }
-  if (/(amei|perfeito|animad|gostei|legal|excelente|top)/i.test(text)) {
+  if (AMEI_PERFEITO_ANIMAD_GO_RE.test(text)) {
     return 'excited';
   }
-  if (/(nao entendi|n[aã]o entendi|confuso|como assim|explica)/i.test(text)) {
+  if (NAO_ENTENDI_N_A__O_ENTE_RE.test(text)) {
     return 'confused';
   }
-  if (/(obrigad|valeu|ótimo|otimo)/i.test(text)) {
+  if (OBRIGAD_VALEU__TIMO_OTI_RE.test(text)) {
     return 'positive';
   }
-  if (/(nao|n[aã]o|ruim|caro|demora|medo)/i.test(text)) {
+  if (NAO_N_A__O_RUIM_CARO_DE_RE.test(text)) {
     return 'negative';
   }
   return 'neutral';
@@ -165,15 +185,11 @@ export function analyzeForActiveListening(
 ): ActiveListeningSignals {
   const text = String(messageContent || '');
   const normalized = normalizeText(text);
-  const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+  const wordCount = normalized.split(S_RE).filter(Boolean).length;
   const emotionalTone = inferEmotionalTone(normalized);
 
-  const personalDetailShared =
-    /\b(meu|minha|meus|minhas|trabalho|empresa|rotina|familia|cliente)\b/i.test(normalized) &&
-    wordCount >= 8;
-  const complaintDetected = /(problema|erro|reclama|nao funciona|nao resolveu|demora|frustr)/i.test(
-    normalized,
-  );
+  const personalDetailShared = B_MEU_MINHA_MEUS_MINHAS_RE.test(normalized) && wordCount >= 8;
+  const complaintDetected = PROBLEMA_ERRO_RECLAMA_N_RE.test(normalized);
   const validationNeeded =
     complaintDetected ||
     wordCount > 18 ||
@@ -181,11 +197,11 @@ export function analyzeForActiveListening(
     emotionalTone === 'anxious' ||
     emotionalTone === 'confused';
 
-  const inferredNeed = /(preco|valor|parcela)/i.test(normalized)
+  const inferredNeed = PRECO_VALOR_PARCELA_RE.test(normalized)
     ? 'seguranca sobre investimento'
-    : /(prazo|urgente|hoje|agora)/i.test(normalized)
+    : PRAZO_URGENTE_HOJE_AGOR_RE.test(normalized)
       ? 'agilidade'
-      : /(funciona|garantia|resultado)/i.test(normalized)
+      : FUNCIONA_GARANTIA_RESUL_RE.test(normalized)
         ? 'confianca'
         : personalDetailShared
           ? 'ser compreendido'
@@ -202,10 +218,10 @@ export function analyzeForActiveListening(
             ? 'Quando isso acontece, o que pesa mais no seu dia a dia?'
             : null;
 
-  const openLoopOpportunity = /(resultado|funciona|preco|valor|prazo)/i.test(normalized)
+  const openLoopOpportunity = RESULTADO_FUNCIONA_PREC_RE.test(normalized)
     ? 'Tem um detalhe nisso que costuma mudar a decisao.'
     : contactName
-      ? `${String(contactName).trim().split(/\s+/)[0]}, tem um ponto aqui que quase sempre passa despercebido.`
+      ? `${String(contactName).trim().split(S_RE)[0]}, tem um ponto aqui que quase sempre passa despercebido.`
       : 'Tem um ponto aqui que quase sempre passa despercebido.';
 
   return {
@@ -298,15 +314,12 @@ export function detectAndFixAntiPatterns(reply?: string | null): string {
     .replace(/\s+/g, ' ')
     .trim();
 
-  fixed = fixed.replace(/^(oi|ol[aá]|e ai|opa)[!,.]?\s*/i, '');
+  fixed = fixed.replace(OI_OL_A___E_AI_OPA_RE, '');
   fixed = fixed.replace(
     /\b(condi[cç][aã]o especial|oportunidade [uú]nica|imperd[ií]vel)\b/gi,
     'algo que faz sentido pra sua situacao',
   );
-  fixed = fixed.replace(
-    /(?:qualquer d[uú]vida|fico [aà] disposi[cç][aã]o|estou [aà] disposi[cç][aã]o).*$/i,
-    '',
-  );
+  fixed = fixed.replace(QUALQUER_D_U__VIDA_FI_RE, '');
 
   const questions = fixed.match(/\?/g) || [];
   if (questions.length > 1) {

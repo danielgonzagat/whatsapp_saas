@@ -13,8 +13,8 @@
  * - Bloqueia portas sensíveis
  */
 
-import { isIP } from 'net';
-import { lookup } from 'dns/promises';
+import { isIP } from 'node:net';
+import { lookup } from 'node:dns/promises';
 
 const FFFF___D_1_3_RE = /^(?:.*:)?ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i;
 
@@ -286,7 +286,8 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
           url: redirectUrl,
           maxRedirects: maxRedirects - 1,
         });
-      } else if (maxRedirects <= 0) {
+      }
+      if (maxRedirects <= 0) {
         throw new Error('Número máximo de redirects excedido');
       }
     }

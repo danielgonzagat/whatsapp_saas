@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 export type DemandLane = 'HOT' | 'WARM' | 'COLD' | 'SLEEP' | 'DEAD';
 export type DemandStrategy = 'PUSH' | 'EDUCATE' | 'NURTURE' | 'WAIT' | 'DROP' | 'RECOVER_PAYMENT';

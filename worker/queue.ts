@@ -58,7 +58,7 @@ function getConnection(): Redis {
   }
 
   console.log('========================================');
-  console.log('✅ [QUEUE] Connecting to Redis: ' + maskRedisUrl(resolved));
+  console.log(`✅ [QUEUE] Connecting to Redis: ${maskRedisUrl(resolved)}`);
   console.log('========================================');
 
   _connection = new Redis(resolved, redisOpts);

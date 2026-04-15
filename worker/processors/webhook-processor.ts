@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import axios from 'axios';
 import { type Job, Worker } from 'bullmq';
 import { connection } from '../queue';

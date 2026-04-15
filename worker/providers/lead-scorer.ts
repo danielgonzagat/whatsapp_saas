@@ -5,7 +5,7 @@ import { prisma } from '../db';
  * Computes a basic score from recent inbound activity and persists it on the contact.
  */
 export class LeadScorer {
-  static async analyze(workspaceId: string, contactId: string) {
+  static async analyze(_workspaceId: string, contactId: string) {
     const contact = await prisma.contact.findUnique({
       where: { id: contactId },
       include: {

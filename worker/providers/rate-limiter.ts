@@ -108,7 +108,7 @@ export class RateLimiter {
     });
 
     const plan = sub?.plan || 'FREE';
-    const limit = this.LIMITS[plan] || this.LIMITS['FREE'];
+    const limit = this.LIMITS[plan] || this.LIMITS.FREE;
 
     await redis.set(cacheKey, `${plan}:${limit}`, 'EX', 300);
     return { plan, limit };

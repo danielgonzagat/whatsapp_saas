@@ -1,4 +1,4 @@
-import http from 'http';
+import http from 'node:http';
 import { getHealth, getMetrics } from './metrics';
 
 const port = Number(process.env.PORT || process.env.WORKER_METRICS_PORT || 3003);
@@ -11,7 +11,7 @@ function sendJson(res: http.ServerResponse, status: number, data: unknown) {
 }
 
 function isAuthorized(req: http.IncomingMessage): boolean {
-  const auth = req.headers['authorization'];
+  const auth = req.headers.authorization;
   const bearer = typeof auth === 'string' && auth.startsWith('Bearer ') ? auth.slice(7) : undefined;
   const headerToken =
     bearer ||

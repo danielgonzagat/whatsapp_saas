@@ -1,5 +1,5 @@
-import crypto from 'crypto';
-import path from 'path';
+import crypto from 'node:crypto';
+import path from 'node:path';
 
 const PATTERN_RE = /\/+$/;
 const PATTERN_RE_2 = /^\/+/;
