@@ -44,7 +44,12 @@ const EXCLUDE_GLOBS = [
   'worker/dist/**',
 ];
 
-const MAX_HOISTS_PER_FILE = 10;
+// 2026-04-15: raised from 10 to 200 for the second convergence pass. The
+// Phase 2B cap was calibrated to keep early AST rewrites small while the
+// codemod was being validated. With ~6 months of stable runs and typecheck
+// + boot smoke gates enforced on every pass, the cap can absorb the full
+// skipped tail (largest current file has 67 literals).
+const MAX_HOISTS_PER_FILE = 200;
 
 function ensureTsMorphInstalled() {
   const probe = path.join(repoRoot, 'node_modules/ts-morph/package.json');

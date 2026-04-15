@@ -414,12 +414,20 @@ export function buildProductAIConfigPrompt(
   }
 
   if (config.objections && Array.isArray(config.objections)) {
-    const active = config.objections.filter((o: any) => o.enabled !== false);
+    type ObjectionEntry = {
+      id?: string;
+      label?: string;
+      response?: string;
+      enabled?: boolean;
+    };
+    const isObjectionEntry = (value: unknown): value is ObjectionEntry =>
+      typeof value === 'object' && value !== null;
+    const active = config.objections.filter(isObjectionEntry).filter((o) => o.enabled !== false);
     if (active.length) {
       parts.push(
         `OBJEÇÕES QUE VOCÊ SABE RESPONDER (${active.length}):\n${active
           .map(
-            (o: any) =>
+            (o) =>
               `- "${o.label || o.id}": Responda com estratégia "${o.response || 'valor e benefício'}"`,
           )
           .join('\n')}`,
