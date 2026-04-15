@@ -25,9 +25,16 @@ export class AdminMfaService {
   private readonly issuer: string;
 
   constructor(@Inject(ConfigService) config: ConfigService) {
-    const key = config.get<string>('ADMIN_MFA_ENCRYPTION_KEY');
+    let key = config.get<string>('ADMIN_MFA_ENCRYPTION_KEY');
     if (!key) {
-      throw new Error('ADMIN_MFA_ENCRYPTION_KEY must be set before AdminMfaService is used');
+      if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
+        // Deterministic 32-byte hex key for CI/e2e boot smoke only.
+        // Never matches a real production key. Production/staging/
+        // preview require the real env var.
+        key = '0000000000000000000000000000000000000000000000000000000000000000';
+      } else {
+        throw new Error('ADMIN_MFA_ENCRYPTION_KEY must be set before AdminMfaService is used');
+      }
     }
     this.encryptionKey = key;
     this.issuer = config.get<string>('ADMIN_MFA_ISSUER') ?? 'Kloel Admin';

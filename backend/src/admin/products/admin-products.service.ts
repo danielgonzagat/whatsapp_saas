@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { adminErrors } from '../common/admin-api-errors';
+import { getAdminProductDetail, type AdminProductDetail } from './queries/detail-product.query';
 import {
   listAdminProducts,
   type AdminProductRow,
@@ -18,6 +19,12 @@ export class AdminProductsService {
 
   async list(input: ListProductsInput): Promise<ListProductsResult> {
     return listAdminProducts(this.prisma, input);
+  }
+
+  async detail(productId: string): Promise<AdminProductDetail> {
+    const result = await getAdminProductDetail(this.prisma, productId);
+    if (!result) throw adminErrors.userNotFound();
+    return result;
   }
 
   async approve(productId: string, actorId: string, note?: string): Promise<void> {
@@ -73,4 +80,4 @@ export class AdminProductsService {
   }
 }
 
-export type { AdminProductRow, ListProductsResult };
+export type { AdminProductRow, ListProductsResult, AdminProductDetail };

@@ -23,6 +23,23 @@ export interface ListProductsResponse {
   total: number;
 }
 
+export interface AdminProductDetail extends AdminProductRow {
+  sku: string | null;
+  tags: string[];
+  stockQuantity: number | null;
+  trackStock: boolean;
+  salesPageUrl: string | null;
+  supportEmail: string | null;
+  commerce: {
+    approvedOrders: number;
+    pendingOrders: number;
+    refundedOrders: number;
+    chargebackOrders: number;
+    gmvInCents: number;
+    last30dGmvInCents: number;
+  };
+}
+
 export interface ListProductsQuery {
   search?: string;
   status?: string;
@@ -41,6 +58,9 @@ export const adminProductsApi = {
     }
     const qs = params.toString();
     return adminFetch<ListProductsResponse>(qs ? `/products?${qs}` : '/products');
+  },
+  detail(productId: string): Promise<AdminProductDetail> {
+    return adminFetch<AdminProductDetail>(`/products/${encodeURIComponent(productId)}`);
   },
   approve(productId: string, note?: string): Promise<void> {
     return adminFetch<void>(`/products/${encodeURIComponent(productId)}/approve`, {

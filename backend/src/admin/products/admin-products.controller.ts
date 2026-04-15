@@ -38,6 +38,12 @@ export class AdminProductsController {
     });
   }
 
+  @Get(':productId')
+  @RequireAdminPermission(AdminModule.PRODUTOS, AdminAction.VIEW)
+  async detail(@Param('productId') productId: string) {
+    return this.products.detail(productId);
+  }
+
   @Post(':productId/approve')
   @RequireAdminPermission(AdminModule.PRODUTOS, AdminAction.APPROVE)
   @HttpCode(HttpStatus.NO_CONTENT)
