@@ -27,6 +27,20 @@ function attachmentIcon(kind: KloelChatAttachment['kind']) {
   return <FileText size={14} strokeWidth={1.8} />;
 }
 
+function resolveVisualAttachmentSource(attachment: KloelChatAttachment) {
+  const mimeType = String(attachment.mimeType || '').toLowerCase();
+  const previewUrl = String(attachment.previewUrl || '').trim();
+  const uploadedUrl = String(attachment.url || '').trim();
+  const isVisual =
+    attachment.kind === 'image' || mimeType.startsWith('image/') || previewUrl.length > 0;
+
+  if (!isVisual) {
+    return null;
+  }
+
+  return previewUrl || uploadedUrl || null;
+}
+
 function formatFileSize(size: number) {
   if (!Number.isFinite(size) || size <= 0) return '0 KB';
   if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
@@ -68,8 +82,10 @@ export function ComposerTopRail({
         marginBottom: 12,
       }}
     >
-      {attachments.map((attachment) =>
-        attachment.kind === 'image' ? (
+      {attachments.map((attachment) => {
+        const visualSource = resolveVisualAttachmentSource(attachment);
+
+        return visualSource ? (
           <div
             key={attachment.id}
             style={{
@@ -86,9 +102,9 @@ export function ComposerTopRail({
             <button
               type="button"
               aria-label={`Abrir prévia de ${attachment.name}`}
-              disabled={attachment.status !== 'ready' || !attachment.previewUrl}
+              disabled={attachment.status !== 'ready' || !visualSource}
               onClick={() => {
-                const targetUrl = attachment.url || attachment.previewUrl;
+                const targetUrl = attachment.url || visualSource;
                 if (attachment.status === 'ready' && targetUrl) {
                   window.open(targetUrl, '_blank', 'noopener,noreferrer');
                 }
@@ -102,9 +118,9 @@ export function ComposerTopRail({
                 cursor: attachment.status === 'ready' ? 'pointer' : 'default',
               }}
             >
-              {attachment.previewUrl ? (
+              {visualSource ? (
                 <img
-                  src={attachment.previewUrl}
+                  src={visualSource}
                   alt={attachment.name}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
@@ -214,8 +230,8 @@ export function ComposerTopRail({
               onClick={() => onRemoveAttachment(attachment.id)}
             />
           </div>
-        ),
-      )}
+        );
+      })}
 
       {linkedProduct ? (
         <div

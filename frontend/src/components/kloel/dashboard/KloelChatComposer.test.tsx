@@ -123,4 +123,26 @@ describe('KloelChatComposer', () => {
     fireEvent.click(screen.getByLabelText('Remover vínculo com Produto Alfa'));
     expect(props.onRemoveLinkedProduct).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps rendering a visual thumbnail when an uploaded image keeps its preview but backend kind drifts', () => {
+    renderComposer({
+      attachments: [
+        {
+          id: 'attachment_visual_drift',
+          name: 'produto-final.png',
+          size: 4096,
+          mimeType: 'image/png',
+          kind: 'document',
+          status: 'ready',
+          previewUrl: 'blob:produto-final',
+          url: 'https://cdn.kloel.test/produto-final.png',
+        },
+      ],
+    });
+
+    const preview = screen.getByAltText('produto-final.png');
+    expect(preview).toBeInTheDocument();
+    expect(preview).toHaveAttribute('src', 'blob:produto-final');
+    expect(screen.queryByText('4 KB · pronto')).not.toBeInTheDocument();
+  });
 });
