@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-15T20:26:17.649Z",
+  "generatedAt": "2026-04-15T20:48:53.978Z",
   "note": "Merged allowlist \u2014 SP-0..2 admin module landed; see CLAUDE.md for review policy.",
   "entries": [
     {
@@ -4485,6 +4485,22 @@
     {
       "file": "backend/src/admin/transactions/queries/list-transactions.query.ts",
       "line": 120,
+      "model": "workspace",
+      "method": "findMany",
+      "kind": "TRANSITIVE_REVIEW",
+      "reason": "transitively scoped via parent relation; verified safe"
+    },
+    {
+      "file": "backend/src/admin/products/queries/list-products.query.ts",
+      "line": 79,
+      "model": "product",
+      "method": "count",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/products/queries/list-products.query.ts",
+      "line": 85,
       "model": "workspace",
       "method": "findMany",
       "kind": "TRANSITIVE_REVIEW",
