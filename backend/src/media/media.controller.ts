@@ -25,8 +25,19 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { detectUploadedMime } from '../common/file-signature.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { GenerateVideoDto } from './dto/generate-video.dto';
+import { UploadDocumentDto } from './dto/upload-document.dto';
 import { MediaService } from './media.service';
+
+interface UploadedFileType {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  buffer: Buffer;
+}
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|txt|csv|json|xls|xlsx)$/i;
 const APPLICATION__PDF_TEXT_RE =
@@ -52,14 +63,14 @@ export class MediaController {
 
   @Post('video')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async generateVideo(@Req() req: any, @Body() body: GenerateVideoDto) {
+  async generateVideo(@Req() req: AuthenticatedRequest, @Body() body: GenerateVideoDto) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.mediaService.createVideoJob(effectiveWorkspaceId, data);
   }
 
   @Get('job/:id')
-  async getStatus(@Req() req: any, @Param('id') id: string) {
+  async getStatus(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.mediaService.getJobStatus(id, workspaceId);
   }
@@ -81,7 +92,7 @@ export class MediaController {
     }),
   )
   async uploadDocument(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -92,8 +103,8 @@ export class MediaController {
         ],
       }),
     )
-    file: any,
-    @Body() body: { name?: string; description?: string; category?: string },
+    file: UploadedFileType,
+    @Body() body: UploadDocumentDto,
   ) {
     if (!file?.buffer) {
       throw new BadRequestException('Arquivo inválido para upload');
@@ -110,10 +121,7 @@ export class MediaController {
     }
     file.mimetype = detectedMime;
 
-    const workspaceId = resolveWorkspaceId(
-      req,
-      (body as { workspaceId?: string } | null)?.workspaceId,
-    );
+    const workspaceId = resolveWorkspaceId(req, body?.workspaceId);
     return this.mediaService.uploadDocument(workspaceId, file, {
       name: body.name,
       description: body.description,
@@ -125,14 +133,14 @@ export class MediaController {
    * Lista documentos do workspace
    */
   @Get('documents')
-  async listDocuments(@Req() req: any, @Query('category') category?: string) {
+  async listDocuments(@Req() req: AuthenticatedRequest, @Query('category') category?: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.mediaService.listDocuments(workspaceId, category);
   }
 
   @Get('documents/:idOrName/file')
   async getDocumentFile(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('idOrName') idOrName: string,
     @Res() res: Response,
   ) {
@@ -152,7 +160,7 @@ export class MediaController {
    * Busca documento por ID ou nome
    */
   @Get('documents/:idOrName')
-  async getDocument(@Req() req: any, @Param('idOrName') idOrName: string) {
+  async getDocument(@Req() req: AuthenticatedRequest, @Param('idOrName') idOrName: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.mediaService.getDocument(workspaceId, idOrName);
   }
@@ -161,7 +169,7 @@ export class MediaController {
    * Remove documento
    */
   @Delete('documents/:id')
-  async deleteDocument(@Req() req: any, @Param('id') id: string) {
+  async deleteDocument(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.mediaService.deleteDocument(workspaceId, id);
   }

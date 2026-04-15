@@ -1,6 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
+
+const ORDER_STATUSES = new Set<string>(Object.values(OrderStatus));
+const PAYMENT_METHODS = new Set<string>(Object.values(PaymentMethod));
+
+function toOrderStatus(value: string | undefined): OrderStatus | undefined {
+  return value && ORDER_STATUSES.has(value) ? (value as OrderStatus) : undefined;
+}
+
+function toPaymentMethod(value: string | undefined): PaymentMethod | undefined {
+  return value && PAYMENT_METHODS.has(value) ? (value as PaymentMethod) : undefined;
+}
 
 /**
  * Read-only reports service — no payment creation, no idempotencyKey needed.
@@ -30,7 +42,7 @@ export class ReportsService {
    * Apply common CheckoutOrder filters shared across multiple report methods.
    * Mutates the `where` object in place for efficiency.
    */
-  private applyCommonOrderFilters(where: any, f: ReportFiltersDto) {
+  private applyCommonOrderFilters(where: Prisma.CheckoutOrderWhereInput, f: ReportFiltersDto) {
     if (f.orderCode) where.orderNumber = { contains: f.orderCode, mode: 'insensitive' };
     if (f.buyerName) where.customerName = { contains: f.buyerName, mode: 'insensitive' };
     if (f.buyerEmail) where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
@@ -70,9 +82,14 @@ export class ReportsService {
   // ── VENDAS ──
   async getVendas(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
-    const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
-    if (f.status) where.status = f.status;
-    if (f.paymentMethod) where.paymentMethod = f.paymentMethod;
+    const where: Prisma.CheckoutOrderWhereInput = {
+      workspaceId,
+      createdAt: { gte: start, lte: end },
+    };
+    const status = toOrderStatus(f.status);
+    if (status) where.status = status;
+    const paymentMethod = toPaymentMethod(f.paymentMethod);
+    if (paymentMethod) where.paymentMethod = paymentMethod;
     this.applyCommonOrderFilters(where, f);
 
     // Resolve affiliateEmail → affiliateId filter
@@ -127,7 +144,10 @@ export class ReportsService {
 
   async getVendasSummary(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
-    const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
+    const where: Prisma.CheckoutOrderWhereInput = {
+      workspaceId,
+      createdAt: { gte: start, lte: end },
+    };
     this.applyCommonOrderFilters(where, f);
 
     const [agg, total, paid] = await Promise.all([
@@ -168,7 +188,10 @@ export class ReportsService {
 
   // ── AFTER PAY (installment orders) ──
   async getAfterPay(workspaceId: string, f: ReportFiltersDto) {
-    const where: any = { workspaceId, paymentMethod: 'CREDIT_CARD' };
+    const where: Prisma.CheckoutOrderWhereInput = {
+      workspaceId,
+      paymentMethod: 'CREDIT_CARD',
+    };
     if (f.status === 'PAID') where.status = 'PAID';
     if (f.status === 'PENDING') where.status = 'PENDING';
     this.applyCommonOrderFilters(where, f);
@@ -190,7 +213,10 @@ export class ReportsService {
   // ── CHURN ──
   async getChurn(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
-    const where: any = { workspaceId, status: 'CANCELLED' };
+    const where: Prisma.CustomerSubscriptionWhereInput = {
+      workspaceId,
+      status: 'CANCELLED',
+    };
     if (f.startDate) where.cancelledAt = { gte: start, lte: end };
 
     const [total, data] = await Promise.all([
@@ -234,7 +260,7 @@ export class ReportsService {
   async getAbandonos(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     const thirtyMinAgo = new Date(Date.now() - 30 * 60000);
-    const where: any = {
+    const where: Prisma.CheckoutOrderWhereInput = {
       workspaceId,
       status: 'PENDING',
       createdAt: { gte: start, lte: end < thirtyMinAgo ? end : thirtyMinAgo },
@@ -296,7 +322,7 @@ export class ReportsService {
 
   // ── ASSINATURAS ──
   async getAssinaturas(workspaceId: string, f: ReportFiltersDto) {
-    const where: any = { workspaceId };
+    const where: Prisma.CustomerSubscriptionWhereInput = { workspaceId };
     if (f.status) where.status = f.status;
 
     const [data, total, summary] = await Promise.all([
@@ -364,7 +390,10 @@ export class ReportsService {
   async getRecusa(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     // Build nested order filter with common filters
-    const orderWhere: any = { workspaceId, createdAt: { gte: start, lte: end } };
+    const orderWhere: Prisma.CheckoutOrderWhereInput = {
+      workspaceId,
+      createdAt: { gte: start, lte: end },
+    };
     this.applyCommonOrderFilters(orderWhere, f);
 
     const { skip, take } = this.paginate(f);
@@ -467,7 +496,10 @@ export class ReportsService {
 
   async getAdSpends(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
-    const where: any = { workspaceId, date: { gte: start, lte: end } };
+    const where: Prisma.AdSpendWhereInput = {
+      workspaceId,
+      date: { gte: start, lte: end },
+    };
     const [data, total] = await Promise.all([
       this.prisma.adSpend.findMany({
         take: Math.min(f.perPage || 10, 100),
@@ -492,7 +524,10 @@ export class ReportsService {
   // ── METRICAS ──
   async getMetricas(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
-    const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
+    const where: Prisma.CheckoutOrderWhereInput = {
+      workspaceId,
+      createdAt: { gte: start, lte: end },
+    };
     this.applyCommonOrderFilters(where, f);
 
     try {
@@ -551,7 +586,7 @@ export class ReportsService {
   // ── ESTORNOS ──
   async getEstornos(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
-    const where: any = {
+    const where: Prisma.CheckoutOrderWhereInput = {
       workspaceId,
       status: 'REFUNDED',
       refundedAt: { not: null, gte: start, lte: end },
