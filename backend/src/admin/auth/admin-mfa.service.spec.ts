@@ -4,10 +4,13 @@ import { authenticator } from 'otplib';
 import { AdminMfaService } from './admin-mfa.service';
 import { decryptAdminSecret } from '../common/admin-crypto';
 
+/**
+ * Build a real ConfigService pre-seeded with the given values. Using the
+ * real class (instead of a mock + double cast) keeps the test aligned with
+ * production behavior and avoids the unsafe-casts guardrail.
+ */
 function makeConfig(values: Record<string, string>): ConfigService {
-  return {
-    get: <T = string>(key: string) => (values[key] as unknown as T) ?? undefined,
-  } as unknown as ConfigService;
+  return new ConfigService(values);
 }
 
 describe('AdminMfaService', () => {
