@@ -168,7 +168,7 @@ export class WorkspaceController {
   @Roles('ADMIN')
   setSettings(@Req() req: any, @Param('id') id: string, @Body() body: SetSettingsDto) {
     const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.patchSettings(workspaceId, body || {});
+    return this.service.patchSettings(workspaceId, (body || {}) as Record<string, unknown>);
   }
 
   // Atualiza informações gerais da conta (nome, phone, timezone, webhook, notificações)

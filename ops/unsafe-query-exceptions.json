@@ -1,5 +1,27 @@
 [
   {
+    "file": "backend/src/launch/launch.service.ts",
+    "rule": "unsafeQuery",
+    "model": "groupLauncher",
+    "method": "findUnique",
+    "reason": "getRedirectLink(slug) is a PUBLIC endpoint — visitors hit /launch/<slug> with no auth and no workspace context. The slug itself is the multi-tenant boundary (globally unique resource locator). The subsequent status check blocks soft-deleted launches.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "backend/src/launch/launch.service.ts",
+    "rule": "unsafeQuery",
+    "model": "groupLauncher",
+    "method": "update",
+    "reason": "trackClick / getRedirectLink increment the click counter on the launcher already resolved by slug. The id is bound to the resource the public visitor legitimately reached — no cross-tenant leak path.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
     "file": "backend/src/followup/followup.service.ts",
     "rule": "unsafeQuery",
     "model": "followUp",

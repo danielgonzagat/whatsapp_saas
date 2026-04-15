@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Workspace } from '@prisma/client';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import {
   normalizeWhatsAppProvider,
   resolveDefaultWhatsAppProvider,
@@ -25,9 +27,9 @@ export class WorkspaceService {
     return ws;
   }
 
-  private async updateSettings(id: string, patch: any) {
+  private async updateSettings(id: string, patch: Record<string, unknown>) {
     const ws = await this.getWorkspace(id);
-    const currentSettings = ws.providerSettings as Record<string, any>;
+    const currentSettings = asProviderSettings(ws.providerSettings);
     const newSettings = { ...currentSettings, ...patch };
 
     return this.prisma.workspace.update({
@@ -40,16 +42,19 @@ export class WorkspaceService {
    * Atualiza providerSettings com merge superficial e merge especial de autopilot.
    * Útil para o front salvar configurações pontuais (ex: conversionFlowId).
    */
-  async patchSettings(id: string, patch: any) {
+  async patchSettings(id: string, patch: Record<string, unknown>) {
     const ws = await this.getWorkspace(id);
-    const current = (ws.providerSettings as Record<string, any>) || {};
-    const securePatch = { ...(patch || {}) };
+    const current = asProviderSettings(ws.providerSettings);
+    const securePatch = { ...(patch || {}) } as Record<string, unknown> & {
+      autonomy?: { mode?: string } & Record<string, unknown>;
+      autopilot?: { enabled?: boolean } & Record<string, unknown>;
+    };
     const mergedAutonomy = {
       ...(current.autonomy || {}),
-      ...(securePatch?.autonomy || {}),
+      ...(securePatch.autonomy || {}),
     };
     const autopilotEnabledPatch =
-      typeof securePatch?.autopilot?.enabled === 'boolean'
+      typeof securePatch.autopilot?.enabled === 'boolean'
         ? securePatch.autopilot.enabled
         : undefined;
     const autonomyModePatch =
@@ -68,16 +73,16 @@ export class WorkspaceService {
       ...securePatch,
       autopilot: {
         ...(current.autopilot || {}),
-        ...(securePatch?.autopilot || {}),
+        ...(securePatch.autopilot || {}),
         ...(typeof synchronizedAutopilotEnabled === 'boolean'
           ? { enabled: synchronizedAutopilotEnabled }
           : {}),
       },
-      ...(securePatch?.autonomy || current?.autonomy ? { autonomy: mergedAutonomy } : {}),
+      ...(securePatch.autonomy || current?.autonomy ? { autonomy: mergedAutonomy } : {}),
     };
     return this.prisma.workspace.update({
       where: { id },
-      data: { providerSettings: merged },
+      data: { providerSettings: toPrismaJsonValue(merged) },
     });
   }
 
@@ -104,7 +109,7 @@ export class WorkspaceService {
    */
   async getChannels(id: string) {
     const ws = await this.getWorkspace(id);
-    const settings = (ws.providerSettings as Record<string, any>) || {};
+    const settings = asProviderSettings(ws.providerSettings);
     return {
       whatsapp: true,
       email: !!settings.email?.enabled,
@@ -113,21 +118,21 @@ export class WorkspaceService {
 
   async setChannels(id: string, email?: boolean) {
     const ws = await this.getWorkspace(id);
-    const settings = (ws.providerSettings as Record<string, any>) || {};
+    const settings = asProviderSettings(ws.providerSettings);
     return this.prisma.workspace.update({
       where: { id },
       data: {
-        providerSettings: {
+        providerSettings: toPrismaJsonValue({
           ...settings,
           email: { ...(settings.email || {}), enabled: !!email },
-        },
+        }),
       },
     });
   }
 
   async getAccountSettings(id: string) {
     const ws = await this.getWorkspace(id);
-    const settings = (ws.providerSettings as Record<string, any>) || {};
+    const settings = asProviderSettings(ws.providerSettings);
     return {
       id: ws.id,
       name: ws.name,
@@ -159,7 +164,7 @@ export class WorkspaceService {
     },
   ) {
     const ws = await this.getWorkspace(id);
-    const settings = (ws.providerSettings as Record<string, any>) || {};
+    const settings = asProviderSettings(ws.providerSettings);
 
     const data: any = {};
     if (payload.name !== undefined) data.name = payload.name;
@@ -198,7 +203,7 @@ export class WorkspaceService {
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
       whatsappProvider:
-        normalizeWhatsAppProvider((ws.providerSettings as Record<string, any>)?.whatsappProvider) ||
+        normalizeWhatsAppProvider(asProviderSettings(ws.providerSettings)?.whatsappProvider) ||
         this.getDefaultWhatsAppProvider(),
     };
   }

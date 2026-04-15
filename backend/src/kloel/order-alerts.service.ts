@@ -224,10 +224,11 @@ export class OrderAlertsService {
       });
       if (!alert) throw new NotFoundException('Alert not found');
 
-      return tx.orderAlert.update({
-        where: { id },
+      await tx.orderAlert.updateMany({
+        where: { id, workspaceId },
         data: { resolved: true, resolvedAt: new Date() },
       });
+      return { ...alert, resolved: true, resolvedAt: new Date() };
     });
 
     return { alert: updated, success: true };
