@@ -3002,31 +3002,122 @@ enum DestructiveIntentStatus {
 }
 
 model DestructiveIntent {
-  id                     String                  @id @default(cuid())
-  createdByAdminUserId   String                  @map("created_by_admin_user_id")
-  kind                   DestructiveIntentKind
-  targetType             String                  @map("target_type")
-  targetId               String                  @map("target_id")
-  reason                 String
-  challenge              String
-  requiresOtp            Boolean                 @default(false) @map("requires_otp")
-  reversible             Boolean                 @default(false)
-  status                 DestructiveIntentStatus @default(PENDING)
-  createdAt              DateTime                @default(now()) @map("created_at")
-  expiresAt              DateTime                @map("expires_at")
-  confirmedAt            DateTime?               @map("confirmed_at")
-  executedAt             DateTime?               @map("executed_at")
-  executedByAdminUserId  String?                 @map("executed_by_admin_user_id")
-  failureMessage         String?                 @map("failure_message")
-  resultSnapshot         Json?                   @map("result_snapshot")
-  undoTokenHash          String?                 @map("undo_token_hash")
-  undoExpiresAt          DateTime?               @map("undo_expires_at")
-  undoAt                 DateTime?               @map("undo_at")
-  ip                     String
-  userAgent              String                  @map("user_agent")
+  id                    String                  @id @default(cuid())
+  createdByAdminUserId  String                  @map("created_by_admin_user_id")
+  kind                  DestructiveIntentKind
+  targetType            String                  @map("target_type")
+  targetId              String                  @map("target_id")
+  reason                String
+  challenge             String
+  requiresOtp           Boolean                 @default(false) @map("requires_otp")
+  reversible            Boolean                 @default(false)
+  status                DestructiveIntentStatus @default(PENDING)
+  createdAt             DateTime                @default(now()) @map("created_at")
+  expiresAt             DateTime                @map("expires_at")
+  confirmedAt           DateTime?               @map("confirmed_at")
+  executedAt            DateTime?               @map("executed_at")
+  executedByAdminUserId String?                 @map("executed_by_admin_user_id")
+  failureMessage        String?                 @map("failure_message")
+  resultSnapshot        Json?                   @map("result_snapshot")
+  undoTokenHash         String?                 @map("undo_token_hash")
+  undoExpiresAt         DateTime?               @map("undo_expires_at")
+  undoAt                DateTime?               @map("undo_at")
+  ip                    String
+  userAgent             String                  @map("user_agent")
 
   @@index([kind, status, createdAt])
   @@index([createdByAdminUserId, createdAt])
   @@index([targetType, targetId])
   @@map("destructive_intents")
+}
+
+// ============================================================================
+// SP-9 — Platform Wallet (I-ADMIN-W1 .. W6).
+//
+// Kloel operates as a marketplace: money flows through checkout, most
+// of it is provisioned to the producer's KloelWallet, and a fraction
+// is retained by the platform. That retained fraction had no contábil
+// representation until this epic. PlatformWallet + PlatformWalletLedger
+// give an append-only, per-currency record of the platform's own
+// balance, split into available / pending / reserved (chargeback
+// reserve) buckets.
+//
+// Design notes:
+//   * The ledger is application-enforced append-only, mirroring the
+//     KloelWalletLedger pattern (schema.prisma:1569). No database
+//     trigger blocks UPDATE/DELETE — keeping parity with the existing
+//     producer ledger reduces architectural drift. The reconciliation
+//     job catches any drift.
+//   * All amounts are BigInt cents. Float is never used in this
+//     subsystem (I-ADMIN-W4).
+//   * (orderId, kind) uniqueness is enforced by a partial unique
+//     index added in the migration so replays never double-credit
+//     (I-ADMIN-W5).
+// ============================================================================
+enum PlatformWalletBucket {
+  AVAILABLE
+  PENDING
+  RESERVED
+}
+
+enum PlatformLedgerKind {
+  PLATFORM_FEE_CREDIT
+  CHARGEBACK_RESERVE
+  REFUND_DEBIT
+  CHARGEBACK_DEBIT
+  PAYOUT_DEBIT
+  ADJUSTMENT_CREDIT
+  ADJUSTMENT_DEBIT
+  RESERVE_RELEASE
+}
+
+model PlatformWallet {
+  id                      String   @id @default(cuid())
+  currency                String   @unique
+  availableBalanceInCents BigInt   @default(0) @map("available_balance_in_cents")
+  pendingBalanceInCents   BigInt   @default(0) @map("pending_balance_in_cents")
+  reservedBalanceInCents  BigInt   @default(0) @map("reserved_balance_in_cents")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  ledger PlatformWalletLedger[]
+
+  @@map("platform_wallets")
+}
+
+model PlatformWalletLedger {
+  id            String               @id @default(cuid())
+  walletId      String               @map("wallet_id")
+  wallet        PlatformWallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  currency      String
+  direction     String // 'credit' | 'debit'
+  bucket        PlatformWalletBucket
+  amountInCents BigInt               @map("amount_in_cents")
+  kind          PlatformLedgerKind
+  orderId       String?              @map("order_id")
+  feeSnapshotId String?              @map("fee_snapshot_id")
+  reason        String
+  metadata      Json?
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  @@index([walletId, createdAt])
+  @@index([kind, createdAt])
+  @@index([orderId])
+  @@map("platform_wallet_ledger")
+}
+
+model PlatformFee {
+  id                   String    @id @default(cuid())
+  method               String // 'PIX' | 'CREDIT_CARD' | 'BOLETO' | '*'
+  feeBps               Int       @map("fee_bps") // basis points: 1000 = 10%
+  fixedFeeInCents      Int       @default(0) @map("fixed_fee_in_cents")
+  volumeFloorInCents   BigInt    @default(0) @map("volume_floor_in_cents")
+  volumeCeilingInCents BigInt?   @map("volume_ceiling_in_cents")
+  activeFrom           DateTime  @default(now()) @map("active_from")
+  activeTo             DateTime? @map("active_to")
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  @@index([method, activeFrom])
+  @@index([activeTo])
+  @@map("platform_fees")
 }
