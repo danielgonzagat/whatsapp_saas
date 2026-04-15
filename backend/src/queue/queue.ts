@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Queue as BullQueue, QueueEvents, Worker } from 'bullmq';
+import { Queue as BullQueue, QueueEvents } from 'bullmq';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
 
 // ============================================================================

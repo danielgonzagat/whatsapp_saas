@@ -2582,8 +2582,7 @@ Mensagem: ${message}`,
         const maxDiscount = Number(salesArgs.maxDiscountPercent);
         if (maxDiscount >= 0) {
           aiConfigContext.push(
-            `REGRA: Nunca ofereça mais de ${maxDiscount}% de desconto. Se o cliente pressionar por mais, ` +
-              'mantenha firme e destaque o valor do produto em vez de ceder.',
+            `REGRA: Nunca ofereça mais de ${maxDiscount}% de desconto. Se o cliente pressionar por mais, mantenha firme e destaque o valor do produto em vez de ceder.`,
           );
         }
       }
@@ -2591,8 +2590,7 @@ Mensagem: ${message}`,
 
     const aiConfigBlock =
       aiConfigContext.length > 0
-        ? '\n\nCONFIGURAÇÃO DO VENDEDOR (use como base para toda interação):\n' +
-          aiConfigContext.join('\n')
+        ? `\n\nCONFIGURAÇÃO DO VENDEDOR (use como base para toda interação):\n${aiConfigContext.join('\n')}`
         : '';
 
     return buildKloelLeadPrompt({
@@ -4521,13 +4519,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         currency: 'BRL',
       }).format(finalPrice);
 
-      const message =
-        `Oferta comercial para você\n\n` +
-        `Consegui um desconto exclusivo de *${discountPercent}%* para você!\n\n` +
-        `De: R$ ${Number(originalPrice.toFixed(2))}\n` +
-        `Por apenas: ${priceFormatted}\n\n` +
-        `${reason}\n` +
-        `Válido por ${expiresIn}. Aproveite!`;
+      const message = `Oferta comercial para você\n\nConsegui um desconto exclusivo de *${discountPercent}%* para você!\n\nDe: R$ ${Number(originalPrice.toFixed(2))}\nPor apenas: ${priceFormatted}\n\n${reason}\nVálido por ${expiresIn}. Aproveite!`;
 
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(workspaceId, phone, { message }, context);
@@ -4679,8 +4671,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         );
 
       // Enviar primeira pergunta de qualificação
-      const message =
-        `Para te ajudar melhor, preciso entender algumas coisas:\n\n` + `${questions[0]}`;
+      const message = `Para te ajudar melhor, preciso entender algumas coisas:\n\n${questions[0]}`;
 
       // Registrar evento
       await this.prisma.autopilotEvent.create({
@@ -4750,11 +4741,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         support: 'Suporte Tecnico',
       };
 
-      const message =
-        `${typeLabels[meetingType] || 'Agendamento'}\n\n` +
-        `Qual horário funciona melhor para você?\n\n` +
-        suggestedTimes.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n') +
-        `\n\nOu me diga um horário de sua preferência!`;
+      const message = `${typeLabels[meetingType] || 'Agendamento'}\n\nQual horário funciona melhor para você?\n\n${suggestedTimes.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n')}\n\nOu me diga um horário de sua preferência!`;
 
       // Registrar evento
       try {
@@ -4816,10 +4803,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
       const offer = args?.offer;
 
       const strategyMessages: Record<string, string> = {
-        discount:
-          `Antes de concluir seu cancelamento, tenho uma condição comercial para você.\n\n` +
-          `Que tal um desconto exclusivo de 30% para continuar conosco? ` +
-          `${offer || 'Você é um cliente valioso e queremos mantê-lo!'}`,
+        discount: `Antes de concluir seu cancelamento, tenho uma condição comercial para você.\n\nQue tal um desconto exclusivo de 30% para continuar conosco? ${offer || 'Você é um cliente valioso e queremos mantê-lo!'}`,
 
         upgrade:
           `Que tal um upgrade gratuito?\n\n` +

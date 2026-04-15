@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
@@ -2283,8 +2283,7 @@ export class WhatsappService {
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Se a conexão principal estiver em modo subscriber, cria uma conexão auxiliar
       this.logger.warn(
-        'Redis indisponível para deliverToContext, usando client ad-hoc: ' +
-          errInstanceofError?.message,
+        `Redis indisponível para deliverToContext, usando client ad-hoc: ${errInstanceofError?.message}`,
       );
       const fallback = createRedisClient();
       try {

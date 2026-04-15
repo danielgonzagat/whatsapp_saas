@@ -90,7 +90,7 @@ export class FeatureFlagService {
       throw new Error(`Unknown feature flag: ${flag}`);
     }
 
-    const envName = 'FF_' + flag.toUpperCase().replace(/\./g, '__');
+    const envName = `FF_${flag.toUpperCase().replace(/\./g, '__')}`;
     const raw = process.env[envName];
     if (raw !== undefined) {
       const normalized = raw.trim().toLowerCase();

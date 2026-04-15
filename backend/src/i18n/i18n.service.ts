@@ -253,7 +253,7 @@ export class I18nService {
       }
     } catch (error) {
       // PULSE:OK — Language detection non-critical; falls back to pt-BR default
-      this.logger.error('Error detecting language: ' + error);
+      this.logger.error(`Error detecting language: ${error}`);
     }
 
     return 'pt-BR';
@@ -328,7 +328,7 @@ Respond ONLY with the translated text, no explanations.`,
 
       return response.choices[0]?.message?.content?.trim() || text;
     } catch (error) {
-      this.logger.error('Translation error: ' + error);
+      this.logger.error(`Translation error: ${error}`);
       return text;
     }
   }
@@ -357,11 +357,11 @@ Respond ONLY with the translated text, no explanations.`,
 
     if (hour >= 5 && hour < 12) {
       return this.t('greeting.morning', lang);
-    } else if (hour >= 12 && hour < 18) {
-      return this.t('greeting.afternoon', lang);
-    } else {
-      return this.t('greeting.evening', lang);
     }
+    if (hour >= 12 && hour < 18) {
+      return this.t('greeting.afternoon', lang);
+    }
+    return this.t('greeting.evening', lang);
   }
 
   /**

@@ -57,7 +57,7 @@ export class SiteController {
       'The HTML must be a complete, self-contained page with inline CSS.',
       'Use modern design: dark background (#0A0A0C), light text (#E0DDD8), accent (#E85D30).',
       dto.currentHtml
-        ? 'The user wants to edit an existing page. Here is the current HTML:\n' + dto.currentHtml
+        ? `The user wants to edit an existing page. Here is the current HTML:\n${dto.currentHtml}`
         : '',
     ]
       .filter(Boolean)

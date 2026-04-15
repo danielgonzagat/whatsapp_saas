@@ -347,12 +347,11 @@ export class BillingService {
       // Log detalhado sem expor dados sensíveis
       const errMsg = err instanceof Error ? err.message : String(err);
       this.logger.error(
-        'Webhook signature verification failed: ' +
-          JSON.stringify({
-            error: errMsg,
-            signatureLength: signature?.length,
-            bodyLength: rawBody?.length,
-          }),
+        `Webhook signature verification failed: ${JSON.stringify({
+          error: errMsg,
+          signatureLength: signature?.length,
+          bodyLength: rawBody?.length,
+        })}`,
       );
       this.financialAlert?.webhookProcessingFailed(
         err instanceof Error ? err : new Error(String(err)),
@@ -362,11 +361,10 @@ export class BillingService {
     }
 
     this.logger.log(
-      'Webhook recebido: ' +
-        JSON.stringify({
-          type: event.type,
-          id: event.id,
-        }),
+      `Webhook recebido: ${JSON.stringify({
+        type: event.type,
+        id: event.id,
+      })}`,
     );
 
     try {
@@ -668,13 +666,7 @@ export class BillingService {
       const paymentIntentId =
         typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
 
-      const message =
-        `Pagamento confirmado.\n\n` +
-        `Obrigado por assinar o plano *${plan}*!\n\n` +
-        `Valor: R$ ${formattedAmount}\n` +
-        `ID: ${paymentIntentId}\n\n` +
-        `Sua conta já está ativa com todas as funcionalidades do plano. ` +
-        `Se precisar de ajuda, é só me chamar aqui.`;
+      const message = `Pagamento confirmado.\n\nObrigado por assinar o plano *${plan}*!\n\nValor: R$ ${formattedAmount}\nID: ${paymentIntentId}\n\nSua conta já está ativa com todas as funcionalidades do plano. Se precisar de ajuda, é só me chamar aqui.`;
 
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.whatsappService.sendMessage(workspaceId, phone, message);
@@ -709,7 +701,7 @@ export class BillingService {
       // PULSE:OK — ops channel notification is non-critical; billing event is already recorded
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'unknown_error';
-      this.logger.warn('notifyOps billing error: ' + errMsg);
+      this.logger.warn(`notifyOps billing error: ${errMsg}`);
     }
   }
 
@@ -816,7 +808,7 @@ export class BillingService {
         });
         // PULSE:OK — Stripe API failure is non-fatal; local DB is always updated below regardless
       } catch (err) {
-        this.logger.error('Stripe cancel error: ' + err);
+        this.logger.error(`Stripe cancel error: ${err}`);
       }
     }
 

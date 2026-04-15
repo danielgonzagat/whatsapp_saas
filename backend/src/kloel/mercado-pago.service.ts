@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import {
   BadRequestException,
   Injectable,
@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { MercadoPagoConfig, Order, Payment, PaymentRefund, User } from 'mercadopago';
 import type { OrderResponse } from 'mercadopago/dist/clients/order/commonTypes';
-import type { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
 import type { PaymentCreateRequest } from 'mercadopago/dist/clients/payment/create/types';
 import type { Options } from 'mercadopago/dist/types';
 import {

@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
@@ -192,12 +192,7 @@ export class PaymentWebhookController {
           const formattedAmount = amount.toLocaleString('pt-BR', {
             minimumFractionDigits: 2,
           });
-          const confirmationMessage =
-            `Pagamento confirmado.\n\n` +
-            `Valor: ${currency === 'BRL' ? 'R$' : currency} ${formattedAmount}\n` +
-            `ID: ${session.payment_intent || session.id}\n\n` +
-            `Obrigado pela sua compra.\n\n` +
-            `Se tiver qualquer dúvida, estou à disposição.`;
+          const confirmationMessage = `Pagamento confirmado.\n\nValor: ${currency === 'BRL' ? 'R$' : currency} ${formattedAmount}\nID: ${session.payment_intent || session.id}\n\nObrigado pela sua compra.\n\nSe tiver qualquer dúvida, estou à disposição.`;
 
           // messageLimit: enforced via PlanLimitsService.trackMessageSend
           await this.whatsapp.sendMessage(workspaceId, customerPhone, confirmationMessage);
@@ -419,11 +414,7 @@ export class PaymentWebhookController {
           typeof body.amount === 'number'
             ? body.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
             : undefined;
-        const msg =
-          `Pagamento confirmado.\n\n` +
-          (amountText ? `Valor: R$ ${amountText}\n` : '') +
-          (body.orderId ? `Pedido: ${body.orderId}\n` : '') +
-          `\nObrigado pela sua compra!`;
+        const msg = `Pagamento confirmado.\n\n${amountText ? `Valor: R$ ${amountText}\n` : ''}${body.orderId ? `Pedido: ${body.orderId}\n` : ''}\nObrigado pela sua compra!`;
         // messageLimit: enforced via PlanLimitsService.trackMessageSend
         await this.whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
       } catch (notifyErr: unknown) {

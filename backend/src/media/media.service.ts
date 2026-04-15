@@ -1,4 +1,4 @@
-import { extname } from 'path';
+import { extname } from 'node:path';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';

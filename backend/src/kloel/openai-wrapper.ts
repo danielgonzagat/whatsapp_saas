@@ -51,7 +51,7 @@ function isRetryableError(err: any): boolean {
  * Calcula delay com jitter para evitar thundering herd
  */
 function calculateDelay(attempt: number, options: Required<RetryOptions>): number {
-  const baseDelay = options.initialDelayMs * Math.pow(options.backoffMultiplier, attempt);
+  const baseDelay = options.initialDelayMs * options.backoffMultiplier ** attempt;
   const jitter = Math.random() * 0.3 * baseDelay; // 0-30% jitter
   return Math.min(baseDelay + jitter, options.maxDelayMs);
 }

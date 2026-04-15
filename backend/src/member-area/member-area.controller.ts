@@ -271,15 +271,12 @@ export class MemberAreaController {
 
     // Auto-generate slug from name if not provided
     if (!dto.slug) {
-      dto.slug =
-        (dto.name || 'area')
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '') +
-        '-' +
-        Date.now().toString(36);
+      dto.slug = `${(dto.name || 'area')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')}-${Date.now().toString(36)}`;
     }
 
     try {

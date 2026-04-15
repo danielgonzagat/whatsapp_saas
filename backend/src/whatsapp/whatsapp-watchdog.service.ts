@@ -14,7 +14,7 @@
  * ============================================
  */
 
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -801,13 +801,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         );
         health.connected = false;
         return false;
-      } else {
-        this.reconnectCounter.inc({ workspaceId, result: 'failed' });
-        this.logger.warn(
-          `⚠️ Reconnect failed: ${workspaceName || workspaceId} - ${result.message}`,
-        );
-        return false;
       }
+      this.reconnectCounter.inc({ workspaceId, result: 'failed' });
+      this.logger.warn(`⚠️ Reconnect failed: ${workspaceName || workspaceId} - ${result.message}`);
+      return false;
     } catch (error: unknown) {
       const errorInstanceofError =
         error instanceof Error

@@ -16,7 +16,7 @@ export class ReportsService {
   // All dates stored as UTC via Prisma DateTime (toISOString)
   private dateRange(f: ReportFiltersDto) {
     const start = f.startDate ? new Date(f.startDate) : new Date(Date.now() - 30 * 86400000);
-    const end = f.endDate ? new Date(f.endDate + 'T23:59:59Z') : new Date();
+    const end = f.endDate ? new Date(`${f.endDate}T23:59:59Z`) : new Date();
     return { start, end };
   }
 

@@ -138,8 +138,7 @@ export class KnowledgeBaseController {
 
     try {
       const isPdf =
-        (file.mimetype && file.mimetype.includes('pdf')) ||
-        (file.originalname || '').toLowerCase().endsWith('.pdf');
+        file.mimetype?.includes('pdf') || (file.originalname || '').toLowerCase().endsWith('.pdf');
 
       if (isPdf) {
         type = 'PDF';
@@ -152,7 +151,7 @@ export class KnowledgeBaseController {
       // keep text fallback if PDF parsing fails
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
-        this.logger.warn('Falha ao processar PDF, usando texto bruto: ' + err);
+        this.logger.warn(`Falha ao processar PDF, usando texto bruto: ${err}`);
       }
     }
 

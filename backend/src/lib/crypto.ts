@@ -9,7 +9,7 @@
  * ENCRYPTION_KEY must be 32 bytes (256 bits) hex or base64 encoded.
  */
 
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 
 const A_F0_9__64_RE = /^[a-f0-9]{64}$/i;
 const A_ZA_Z0_9_RE = /^[A-Za-z0-9+/]+=*$/;

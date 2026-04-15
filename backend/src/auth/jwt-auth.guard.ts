@@ -30,7 +30,7 @@ export class JwtAuthGuard implements CanActivate {
     if (isPublic) return true;
 
     const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers['authorization'] as string | undefined;
+    const authHeader = request.headers.authorization as string | undefined;
     const optional = process.env.NODE_ENV !== 'production' && process.env.AUTH_OPTIONAL === 'true';
 
     // Extract token from Authorization header OR httpOnly cookie

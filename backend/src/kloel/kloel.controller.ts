@@ -1,11 +1,10 @@
-import { extname } from 'path';
+import { extname } from 'node:path';
 import {
   BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
-  Headers,
   MaxFileSizeValidator,
   NotFoundException,
   Param,
@@ -382,7 +381,7 @@ export class KloelController {
 
     const workspaceId = req.workspaceId || req.user?.workspaceId;
     const folder = req.body?.folder || 'general';
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
     const stored = await this.storageService.upload(file.buffer, {
       filename,
@@ -466,7 +465,7 @@ export class KloelController {
     file.mimetype = detectedMime;
 
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
     const stored = await this.storageService.upload(file.buffer, {
       filename,
@@ -652,7 +651,7 @@ export class KloelController {
         data: { workspaceId, title: dto.title || 'Nova conversa' },
       });
     } catch {
-      return { id: 'local_' + Date.now(), title: dto.title || 'Nova conversa' };
+      return { id: `local_${Date.now()}`, title: dto.title || 'Nova conversa' };
     }
   }
 

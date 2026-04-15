@@ -82,7 +82,7 @@ export function createRedisClient(options?: RedisOptions): Redis | null {
   });
 
   client.on('error', (err) => {
-    logger.error('[REDIS] Erro de conexão: ' + err.message);
+    logger.error(`[REDIS] Erro de conexão: ${err.message}`);
   });
 
   client.on('ready', () => {

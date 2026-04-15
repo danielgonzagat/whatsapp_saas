@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   Body,
@@ -322,11 +322,9 @@ export class WebhooksController {
 
     const reqBody = req?.body;
     const raw = req?.rawBody || JSON.stringify(reqBody || '');
-    const expectedSignature =
-      'sha256=' +
-      createHmac('sha256', appSecret)
-        .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
-        .digest('hex');
+    const expectedSignature = `sha256=${createHmac('sha256', appSecret)
+      .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
+      .digest('hex')}`;
 
     if (signature !== expectedSignature) {
       this.logger.warn('[META] Invalid signature received');

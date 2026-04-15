@@ -41,7 +41,7 @@ export class AppController {
       throw new UnauthorizedException('DIAG_TOKEN not configured');
     }
     if (expected) {
-      const header = req.headers['authorization'] || '';
+      const header = req.headers.authorization || '';
       const alt = req.headers['x-diag-token'];
       const bearer =
         typeof header === 'string' && header.startsWith('Bearer ') ? header.slice(7) : undefined;

@@ -1,4 +1,4 @@
-import { randomInt, randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
@@ -178,8 +178,7 @@ export class AuthService {
             })}`,
           );
           throw new ServiceUnavailableException(
-            `Conta com inconsistência detectada (ref: ${errorId}). ` +
-              'Contate o suporte para reativar seu acesso.',
+            `Conta com inconsistência detectada (ref: ${errorId}). Contate o suporte para reativar seu acesso.`,
           );
         }
         workspaceMeta = ws;
@@ -299,9 +298,8 @@ export class AuthService {
       const candidate = cleaned || 'User';
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };
-    const finalName = (name && name.trim()) || deriveName(email);
-    const finalWorkspaceName =
-      (workspaceName && workspaceName.trim()) || `${finalName}'s Workspace`;
+    const finalName = name?.trim() || deriveName(email);
+    const finalWorkspaceName = workspaceName?.trim() || `${finalName}'s Workspace`;
 
     // 1. Verificar se já existe agent com este email em qualquer workspace
     let existing;

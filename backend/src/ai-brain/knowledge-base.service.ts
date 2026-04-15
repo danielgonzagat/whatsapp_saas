@@ -104,7 +104,7 @@ export class KnowledgeBaseService {
       data: {
         knowledgeBaseId: kbId,
         type,
-        content: finalContent.substring(0, 200) + '...', // Store snippet
+        content: `${finalContent.substring(0, 200)}...`, // Store snippet
         status: 'PENDING', // Async processing
       },
     });
@@ -125,7 +125,7 @@ export class KnowledgeBaseService {
 
       return source; // Retorna imediatamente com status PENDING
     } catch (error) {
-      this.logger.error('Error dispatching source ingestion: ' + error);
+      this.logger.error(`Error dispatching source ingestion: ${error}`);
       await this.prisma.knowledgeSource.update({
         where: { id: source.id },
         data: { status: 'FAILED' },
@@ -181,7 +181,7 @@ export class KnowledgeBaseService {
 
       return results.map((r) => r.content).join('\n\n');
     } catch (err) {
-      this.logger.error('RAG Search Error: ' + err);
+      this.logger.error(`RAG Search Error: ${err}`);
       return '';
     }
   }
@@ -196,8 +196,8 @@ export class KnowledgeBaseService {
 
     let buffer = '';
     for (const sentence of sentences) {
-      if ((buffer + ' ' + sentence).trim().length <= maxLen) {
-        buffer = (buffer + ' ' + sentence).trim();
+      if (`${buffer} ${sentence}`.trim().length <= maxLen) {
+        buffer = `${buffer} ${sentence}`.trim();
       } else {
         if (buffer) chunks.push(buffer);
         buffer = sentence.trim();
@@ -210,8 +210,8 @@ export class KnowledgeBaseService {
       const words = text.split(S_RE_2);
       buffer = '';
       for (const word of words) {
-        if ((buffer + ' ' + word).trim().length <= maxLen) {
-          buffer = (buffer + ' ' + word).trim();
+        if (`${buffer} ${word}`.trim().length <= maxLen) {
+          buffer = `${buffer} ${word}`.trim();
         } else {
           if (buffer) chunks.push(buffer);
           buffer = word;

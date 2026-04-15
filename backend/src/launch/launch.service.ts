@@ -67,9 +67,8 @@ export class LaunchService {
     // Se tiver telefone, gera wa.me. Se não, gera link interno curto (redir).
     if (phone) {
       return `https://wa.me/${phone}?text=${encoded}`;
-    } else {
-      return `https://api.whatsapp.com/send?text=${encoded}`; // Link genérico que pede pra escolher o contato
     }
+    return `https://api.whatsapp.com/send?text=${encoded}`; // Link genérico que pede pra escolher o contato
   }
 
   async trackClick(launcherId: string) {

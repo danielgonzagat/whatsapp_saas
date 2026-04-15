@@ -878,11 +878,7 @@ export class AsaasService implements OnModuleInit {
       }).format(payment.value);
 
       // Mensagem de confirmação de pagamento
-      const message =
-        `✅ *Pagamento Confirmado!*\n\n` +
-        `Recebemos seu pagamento de ${value} referente a "${productName}".\n\n` +
-        `Obrigado pela confiança! 🎉\n\n` +
-        `Seu acesso e os próximos passos serão enviados pelo canal cadastrado.`;
+      const message = `✅ *Pagamento Confirmado!*\n\nRecebemos seu pagamento de ${value} referente a "${productName}".\n\nObrigado pela confiança! 🎉\n\nSeu acesso e os próximos passos serão enviados pelo canal cadastrado.`;
 
       const normalizedPhone = sale.leadPhone.replace(/\D/g, '');
 

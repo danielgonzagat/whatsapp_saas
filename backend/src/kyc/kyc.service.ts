@@ -286,8 +286,7 @@ export class KycService {
       {
         name: 'fiscal',
         complete: !!(
-          fiscal &&
-          fiscal.type &&
+          fiscal?.type &&
           ((fiscal.type === 'PF' && fiscal.cpf && fiscal.fullName) ||
             (fiscal.type === 'PJ' && fiscal.cnpj && fiscal.razaoSocial)) &&
           fiscal.cep &&

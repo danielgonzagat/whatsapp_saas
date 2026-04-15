@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
@@ -186,7 +186,7 @@ export class MetaSdkService {
       return false;
     }
 
-    const expected = 'sha256=' + createHmac('sha256', this.appSecret).update(payload).digest('hex');
+    const expected = `sha256=${createHmac('sha256', this.appSecret).update(payload).digest('hex')}`;
 
     return expected === signature;
   }

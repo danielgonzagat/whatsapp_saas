@@ -459,8 +459,7 @@ export class MemoryManagementService {
     }
 
     this.logger.log(
-      `Cleaned ${result.count} memories from workspace ${workspaceId}` +
-        (options?.category ? ` (category: ${options.category})` : ''),
+      `Cleaned ${result.count} memories from workspace ${workspaceId}${options?.category ? ` (category: ${options.category})` : ''}`,
     );
 
     return result.count;

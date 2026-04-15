@@ -1,8 +1,8 @@
-import { existsSync } from 'fs';
-import * as path from 'path';
+import { existsSync } from 'node:fs';
+import * as path from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { readFile, unlink, writeFile } from 'fs/promises';
+import { readFile, unlink, writeFile } from 'node:fs/promises';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
@@ -117,7 +117,7 @@ export class TranscriptionService {
         );
 
         if (attempt < maxRetries) {
-          const delay = baseDelay * Math.pow(2, attempt - 1);
+          const delay = baseDelay * 2 ** (attempt - 1);
           await new Promise((r) => setTimeout(r, delay));
         }
       }

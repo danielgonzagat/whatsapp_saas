@@ -167,7 +167,7 @@ export class PlanLimitsService {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Em ambientes sem Redis ou em conexão subscriber, não bloqueia (modo tolerante para dev/test)
-      this.logger.warn('Redis indisponível para trackMessageSend: ' + errInstanceofError?.message);
+      this.logger.warn(`Redis indisponível para trackMessageSend: ${errInstanceofError?.message}`);
     }
   }
 
@@ -194,7 +194,7 @@ export class PlanLimitsService {
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.warn('Redis indisponível para ensureFlowRunRate: ' + errInstanceofError?.message);
+      this.logger.warn(`Redis indisponível para ensureFlowRunRate: ${errInstanceofError?.message}`);
       return;
     }
   }
@@ -222,7 +222,7 @@ export class PlanLimitsService {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       if (err instanceof ForbiddenException) throw err;
-      this.logger.warn('Redis indisponível para ensureTokenBudget: ' + errInstanceofError?.message);
+      this.logger.warn(`Redis indisponível para ensureTokenBudget: ${errInstanceofError?.message}`);
     }
   }
 
@@ -253,7 +253,7 @@ export class PlanLimitsService {
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.warn('Redis indisponível para trackAiUsage: ' + errInstanceofError?.message);
+      this.logger.warn(`Redis indisponível para trackAiUsage: ${errInstanceofError?.message}`);
     }
   }
 }

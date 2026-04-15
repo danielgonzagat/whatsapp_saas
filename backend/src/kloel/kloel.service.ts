@@ -5412,7 +5412,7 @@ ${pdfContent}`;
         data: {
           workspaceId,
           phone,
-          name: 'Lead ' + phone.slice(-4),
+          name: `Lead ${phone.slice(-4)}`,
           stage: 'new',
           score: 0,
         },

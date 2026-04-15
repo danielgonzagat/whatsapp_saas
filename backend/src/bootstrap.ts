@@ -42,7 +42,7 @@ try {
 } catch (err) {
   if (err instanceof RedisConfigurationError) {
     console.error('[BOOTSTRAP] FATAL: Redis is required but unresolvable.');
-    console.error('   ' + err.message);
+    console.error(`   ${err.message}`);
     process.exit(1);
   }
   throw err;
@@ -52,7 +52,7 @@ if (resolvedUrl) {
   // Make the resolved URL visible to every downstream module that
   // reads process.env.REDIS_URL.
   process.env.REDIS_URL = resolvedUrl;
-  console.log('[BOOTSTRAP] Redis URL: ' + maskRedisUrl(resolvedUrl));
+  console.log(`[BOOTSTRAP] Redis URL: ${maskRedisUrl(resolvedUrl)}`);
 
   if (resolvedUrl.includes('.railway.internal')) {
     console.warn(

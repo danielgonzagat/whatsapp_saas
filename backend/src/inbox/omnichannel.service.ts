@@ -99,7 +99,7 @@ export class OmnichannelService {
     for (const attachment of attachments) {
       try {
         // Se já tem URL pública, usar diretamente
-        if (attachment.url && attachment.url.startsWith('http')) {
+        if (attachment.url?.startsWith('http')) {
           processed.push({
             url: attachment.url,
             mimeType: attachment.mimeType || 'application/octet-stream',

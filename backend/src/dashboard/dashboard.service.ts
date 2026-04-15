@@ -52,10 +52,10 @@ export class DashboardService {
       {} as Record<string, number>,
     );
 
-    const sent = statsMap['SENT'] || 0;
-    const delivered = statsMap['DELIVERED'] || 0;
-    const read = statsMap['READ'] || 0;
-    const failed = statsMap['FAILED'] || 0;
+    const sent = statsMap.SENT || 0;
+    const delivered = statsMap.DELIVERED || 0;
+    const read = statsMap.READ || 0;
+    const failed = statsMap.FAILED || 0;
     const totalOutbound = sent + delivered + read + failed;
 
     // Delivery Rate: (Delivered + Read) / Total Attempted
@@ -126,9 +126,9 @@ export class DashboardService {
       avgLatency,
 
       // Flow Funnel (Today)
-      flowCompleted: flowStats['COMPLETED'] || 0,
-      flowRunning: flowStats['RUNNING'] || 0,
-      flowFailed: flowStats['FAILED'] || 0,
+      flowCompleted: flowStats.COMPLETED || 0,
+      flowRunning: flowStats.RUNNING || 0,
+      flowFailed: flowStats.FAILED || 0,
 
       billingSuspended,
     };

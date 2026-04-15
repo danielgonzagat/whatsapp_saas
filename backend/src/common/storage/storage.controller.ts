@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import { basename } from 'path';
+import * as fs from 'node:fs';
+import { basename } from 'node:path';
 import { Controller, ForbiddenException, Get, NotFoundException, Param, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';

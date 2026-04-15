@@ -417,13 +417,12 @@ export function buildProductAIConfigPrompt(
     const active = config.objections.filter((o: any) => o.enabled !== false);
     if (active.length) {
       parts.push(
-        `OBJEÇÕES QUE VOCÊ SABE RESPONDER (${active.length}):\n` +
-          active
-            .map(
-              (o: any) =>
-                `- "${o.label || o.id}": Responda com estratégia "${o.response || 'valor e benefício'}"`,
-            )
-            .join('\n'),
+        `OBJEÇÕES QUE VOCÊ SABE RESPONDER (${active.length}):\n${active
+          .map(
+            (o: any) =>
+              `- "${o.label || o.id}": Responda com estratégia "${o.response || 'valor e benefício'}"`,
+          )
+          .join('\n')}`,
       );
     }
   }

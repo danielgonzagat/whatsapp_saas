@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac } from 'node:crypto';
 import {
   Body,
   Controller,
@@ -70,8 +70,7 @@ export class WhatsAppBrainController {
     // Validate HMAC-SHA256 signature against the request body
     const secret = process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.META_APP_SECRET;
     if (secret && signature) {
-      const expected =
-        'sha256=' + createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+      const expected = `sha256=${createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex')}`;
       if (signature !== expected) {
         this.logger.warn('Invalid webhook signature');
         return { status: 'invalid_signature' };

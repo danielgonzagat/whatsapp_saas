@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import {
   Body,
   Controller,
@@ -48,7 +48,7 @@ export class CheckoutPublicController {
     const parts = name.trim().split(' ');
     if (parts.length === 0) return 'C***';
     const first = parts[0];
-    const masked = first[0] + '***' + (first.length > 3 ? first.slice(-1) : '');
+    const masked = `${first[0]}***${first.length > 3 ? first.slice(-1) : ''}`;
     return parts.length > 1 ? `${masked} ${parts[parts.length - 1][0]}.` : masked;
   }
 

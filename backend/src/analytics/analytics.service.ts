@@ -70,9 +70,9 @@ export class AnalyticsService {
       statusMap[(s.status || 'UNKNOWN').toUpperCase()] = s._count.status;
     });
     // Considera SENT como entregue para não zerar métricas em ambientes sem callbacks
-    const delivered = (statusMap['DELIVERED'] || 0) + (statusMap['SENT'] || 0);
-    const read = statusMap['READ'] || 0;
-    const failed = statusMap['FAILED'] || 0;
+    const delivered = (statusMap.DELIVERED || 0) + (statusMap.SENT || 0);
+    const read = statusMap.READ || 0;
+    const failed = statusMap.FAILED || 0;
     const totalOutbound = Object.values(statusMap).reduce((a, b) => a + b, 0);
     const pct = (val: number) => (totalOutbound > 0 ? Math.round((val / totalOutbound) * 100) : 0);
     const deliveryRate = pct(delivered);
@@ -89,9 +89,9 @@ export class AnalyticsService {
       messages,
       contacts,
       flows: Object.values(flowStatsMap).reduce((a, b) => a + b, 0),
-      flowCompleted: flowStatsMap['COMPLETED'] || 0,
-      flowFailed: flowStatsMap['FAILED'] || 0,
-      flowRunning: flowStatsMap['RUNNING'] || 0,
+      flowCompleted: flowStatsMap.COMPLETED || 0,
+      flowFailed: flowStatsMap.FAILED || 0,
+      flowRunning: flowStatsMap.RUNNING || 0,
       deliveryRate,
       readRate,
       errorRate,

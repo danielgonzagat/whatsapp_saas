@@ -529,14 +529,13 @@ export class KloelContextFormatter {
       : [];
     if (relevantInvoices.length > 0) {
       lines.push(
-        '- Faturas recentes:\n' +
-          relevantInvoices
-            .map((invoice) => {
-              const amount = this.formatPromptCurrency(Number(invoice.amount || 0) / 100, 'BRL');
-              const when = this.formatPromptDate(invoice.createdAt);
-              return `  - ${invoice.status} | ${amount}${when ? ` | ${when}` : ''}`;
-            })
-            .join('\n'),
+        `- Faturas recentes:\n${relevantInvoices
+          .map((invoice) => {
+            const amount = this.formatPromptCurrency(Number(invoice.amount || 0) / 100, 'BRL');
+            const when = this.formatPromptDate(invoice.createdAt);
+            return `  - ${invoice.status} | ${amount}${when ? ` | ${when}` : ''}`;
+          })
+          .join('\n')}`,
       );
     }
 
@@ -696,7 +695,7 @@ export class KloelContextFormatter {
       })
       .join('\n');
 
-    return ['- Assinaturas de clientes: ' + summary, highlights ? highlights : null]
+    return [`- Assinaturas de clientes: ${summary}`, highlights ? highlights : null]
       .filter(Boolean)
       .join('\n');
   }
@@ -732,7 +731,7 @@ export class KloelContextFormatter {
       })
       .join('\n');
 
-    return ['- Pedidos físicos: ' + summary, highlights ? highlights : null]
+    return [`- Pedidos físicos: ${summary}`, highlights ? highlights : null]
       .filter(Boolean)
       .join('\n');
   }
@@ -768,7 +767,7 @@ export class KloelContextFormatter {
       })
       .join('\n');
 
-    return ['- Pagamentos recentes: ' + summary, highlights ? highlights : null]
+    return [`- Pagamentos recentes: ${summary}`, highlights ? highlights : null]
       .filter(Boolean)
       .join('\n');
   }

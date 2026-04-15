@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac } from 'node:crypto';
 import {
   Body,
   Controller,
@@ -70,13 +70,11 @@ export class MetaWebhookController {
     // Validate signature
     const appSecret = process.env.META_APP_SECRET;
     if (appSecret && signature) {
-      const expected =
-        'sha256=' +
-        createHmac('sha256', appSecret)
-          .update(
-            Buffer.isBuffer(req?.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(body || {})),
-          )
-          .digest('hex');
+      const expected = `sha256=${createHmac('sha256', appSecret)
+        .update(
+          Buffer.isBuffer(req?.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(body || {})),
+        )
+        .digest('hex')}`;
       if (signature !== expected) {
         this.logger.warn('Invalid Meta webhook signature');
         return 'ok';

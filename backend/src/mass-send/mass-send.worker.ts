@@ -38,7 +38,7 @@ export function startMassSendWorker() {
 
   const redisUrl = getRedisUrl();
   logger.log('Iniciando MassSend Worker...');
-  logger.log('REDIS_URL detectada: ' + maskRedisUrl(redisUrl));
+  logger.log(`REDIS_URL detectada: ${maskRedisUrl(redisUrl)}`);
 
   const connection = createRedisClient();
 

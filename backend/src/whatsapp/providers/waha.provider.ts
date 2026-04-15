@@ -480,8 +480,7 @@ export class WahaProvider {
       if (errInstanceofError.name === 'AbortError') {
         diagnosis = `TIMEOUT after ${timeoutMs}ms connecting to ${this.baseUrl}`;
       } else if (
-        ((errInstanceofError as Error & { cause?: { code?: string } }).cause ?? {})?.code ===
-        'ECONNREFUSED'
+        (errInstanceofError as Error & { cause?: { code?: string } }).cause?.code === 'ECONNREFUSED'
       ) {
         diagnosis = `ECONNREFUSED — WAHA at ${this.baseUrl} is not reachable.`;
       }

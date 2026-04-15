@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
@@ -209,7 +209,7 @@ export class PaymentMethodService {
       // PULSE:OK — listing payment methods is non-destructive; Stripe API errors return empty list for graceful degradation
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'unknown_error';
-      this.logger.error('Erro ao listar payment methods: ' + errorMessage);
+      this.logger.error(`Erro ao listar payment methods: ${errorMessage}`);
       return { paymentMethods: [] };
     }
   }

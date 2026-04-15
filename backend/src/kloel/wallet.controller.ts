@@ -133,9 +133,9 @@ export class WalletController {
     const account = dto.account;
     const pixKey = dto.pixKey;
     const displayAccount = account
-      ? '****' + account.slice(-4)
+      ? `****${account.slice(-4)}`
       : pixKey
-        ? '****' + pixKey.slice(-4)
+        ? `****${pixKey.slice(-4)}`
         : null;
     const bankAccount = await this.prisma.bankAccount.create({
       data: {

@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 /**
  * Idempotency v2 cache-key construction + body fingerprinting (P6-5, I13).
@@ -36,12 +36,12 @@ export function canonicalize(value: unknown): string {
   if (value === null || value === undefined) return 'null';
   if (typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) {
-    return '[' + value.map(canonicalize).join(',') + ']';
+    return `[${value.map(canonicalize).join(',')}]`;
   }
   const entries = Object.entries(value as Record<string, unknown>)
     .filter(([, v]) => v !== undefined) // undefined fields are equivalent to missing fields
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  return '{' + entries.map(([k, v]) => JSON.stringify(k) + ':' + canonicalize(v)).join(',') + '}';
+  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalize(v)}`).join(',')}}`;
 }
 
 /**
@@ -69,17 +69,14 @@ export interface IdempotencyKeyParts {
  * corrupting the namespace.
  */
 export function buildCacheKey(parts: IdempotencyKeyParts): string {
-  return (
-    'idem:v2:' +
-    [
-      parts.workspaceId || 'anon',
-      parts.actorId || 'anon',
-      parts.routeTemplate || 'unknown',
-      parts.method || 'UNKNOWN',
-      parts.idempotencyKey,
-      parts.bodyFp,
-    ].join(':')
-  );
+  return `idem:v2:${[
+    parts.workspaceId || 'anon',
+    parts.actorId || 'anon',
+    parts.routeTemplate || 'unknown',
+    parts.method || 'UNKNOWN',
+    parts.idempotencyKey,
+    parts.bodyFp,
+  ].join(':')}`;
 }
 
 /**
@@ -93,14 +90,11 @@ export function buildCacheKey(parts: IdempotencyKeyParts): string {
  * if they differ.
  */
 export function buildScopeKey(parts: Omit<IdempotencyKeyParts, 'bodyFp'>): string {
-  return (
-    'idem:v2:scope:' +
-    [
-      parts.workspaceId || 'anon',
-      parts.actorId || 'anon',
-      parts.routeTemplate || 'unknown',
-      parts.method || 'UNKNOWN',
-      parts.idempotencyKey,
-    ].join(':')
-  );
+  return `idem:v2:scope:${[
+    parts.workspaceId || 'anon',
+    parts.actorId || 'anon',
+    parts.routeTemplate || 'unknown',
+    parts.method || 'UNKNOWN',
+    parts.idempotencyKey,
+  ].join(':')}`;
 }

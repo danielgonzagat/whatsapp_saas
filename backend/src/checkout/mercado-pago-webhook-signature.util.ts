@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 
 type MaybeHeader = string | string[] | undefined | null;
 

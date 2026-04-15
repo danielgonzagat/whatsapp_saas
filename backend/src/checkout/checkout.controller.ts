@@ -106,15 +106,12 @@ export class CheckoutController {
 
     // Auto-generate slug from name if not provided
     if (!dto.slug) {
-      dto.slug =
-        (dto.name || 'product')
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '') +
-        '-' +
-        Date.now().toString(36);
+      dto.slug = `${(dto.name || 'product')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')}-${Date.now().toString(36)}`;
     }
 
     return this.checkoutService.createProduct(workspaceId, dto);
