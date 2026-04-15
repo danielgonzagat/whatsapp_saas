@@ -1,10 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  PlatformLedgerKind,
-  PlatformWalletBucket,
-  type Prisma,
-  type PrismaClient,
-} from '@prisma/client';
+import { PlatformLedgerKind, PlatformWalletBucket, type Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const DEFAULT_CURRENCY = 'BRL';
@@ -166,8 +161,9 @@ export class PlatformWalletService {
     if (tx) {
       await runOnce(tx);
     } else {
-      const client = this.prisma as unknown as PrismaClient;
-      await client.$transaction(async (inner) => runOnce(inner));
+      // PrismaService extends PrismaClient so $transaction is on
+      // the same instance — no cast needed.
+      await this.prisma.$transaction(async (inner) => runOnce(inner));
     }
   }
 }

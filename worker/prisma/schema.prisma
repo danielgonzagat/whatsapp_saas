@@ -2968,6 +2968,70 @@ model AdminLoginAttempt {
 }
 
 // ============================================================================
+// SP-8 — Destructive Operations Safety Layer (I-ADMIN-D1 .. D6).
+//
+// Every destructive admin action (suspend/delete account, refund, force
+// logout, cache purge, etc.) routes through DestructiveIntent. The intent
+// models a two-phase commit: create -> confirm (with challenge + optional
+// OTP) -> execute. The table is protected by a PG trigger that blocks any
+// DELETE and any UPDATE outside a narrow allowlist of columns (status,
+// executedAt, executedByAdminUserId, resultSnapshot, undoTokenHash, undoAt).
+// Service-layer guards provide defense-in-depth on top of the trigger.
+// ============================================================================
+enum DestructiveIntentKind {
+  ACCOUNT_SUSPEND
+  ACCOUNT_DEACTIVATE
+  ACCOUNT_HARD_DELETE
+  PRODUCT_ARCHIVE
+  PRODUCT_DELETE
+  REFUND_MANUAL
+  PAYOUT_CANCEL
+  MFA_RESET
+  FORCE_LOGOUT_GLOBAL
+  CACHE_PURGE
+}
+
+enum DestructiveIntentStatus {
+  PENDING
+  CONFIRMED
+  EXECUTING
+  EXECUTED
+  FAILED
+  EXPIRED
+  UNDONE
+}
+
+model DestructiveIntent {
+  id                    String                  @id @default(cuid())
+  createdByAdminUserId  String                  @map("created_by_admin_user_id")
+  kind                  DestructiveIntentKind
+  targetType            String                  @map("target_type")
+  targetId              String                  @map("target_id")
+  reason                String
+  challenge             String
+  requiresOtp           Boolean                 @default(false) @map("requires_otp")
+  reversible            Boolean                 @default(false)
+  status                DestructiveIntentStatus @default(PENDING)
+  createdAt             DateTime                @default(now()) @map("created_at")
+  expiresAt             DateTime                @map("expires_at")
+  confirmedAt           DateTime?               @map("confirmed_at")
+  executedAt            DateTime?               @map("executed_at")
+  executedByAdminUserId String?                 @map("executed_by_admin_user_id")
+  failureMessage        String?                 @map("failure_message")
+  resultSnapshot        Json?                   @map("result_snapshot")
+  undoTokenHash         String?                 @map("undo_token_hash")
+  undoExpiresAt         DateTime?               @map("undo_expires_at")
+  undoAt                DateTime?               @map("undo_at")
+  ip                    String
+  userAgent             String                  @map("user_agent")
+
+  @@index([kind, status, createdAt])
+  @@index([createdByAdminUserId, createdAt])
+  @@index([targetType, targetId])
+  @@map("destructive_intents")
+}
+
+// ============================================================================
 // SP-9 — Platform Wallet (I-ADMIN-W1 .. W6).
 //
 // Kloel operates as a marketplace: money flows through checkout, most
