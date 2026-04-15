@@ -211,7 +211,7 @@ export class ReportsService {
       }),
     ]);
 
-    let monthly: any[] = [];
+    let monthly: unknown[] = [];
     try {
       monthly = await this.prisma.$queryRaw`
         SELECT TO_CHAR("cancelledAt", 'Mon') as month,

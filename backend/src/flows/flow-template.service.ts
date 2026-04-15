@@ -207,7 +207,7 @@ export class FlowTemplateService {
     });
     const existingByName = new Map(existingTemplates.map((t) => [t.name, t]));
 
-    const created: any[] = [];
+    const created: unknown[] = [];
     for (const tpl of templates) {
       const existing = existingByName.get(tpl.name);
       if (existing) {

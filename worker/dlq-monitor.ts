@@ -98,7 +98,7 @@ async function healQueue(dlqName: string, originalQueueName: string) {
 async function checkDlqs() {
   // queueRegistry is an array of Queues. We need to access their names.
   // Importing queueRegistry as 'any' to bypass potential type strictness on iteration if it's an array
-  const queues = queueRegistry as any[];
+  const queues = queueRegistry as Array<{ name: string }>;
 
   for (const queue of queues) {
     const name = queue.name; // e.g. 'flow-jobs'

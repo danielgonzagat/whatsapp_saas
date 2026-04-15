@@ -176,6 +176,25 @@ const WORKSPACE_SELF_IDENTITY_TTL_MS = Math.max(
   30_000,
   Number.parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || '60000', 10) || 60_000,
 );
+type RemoteChatSummary = {
+  id?: string;
+  chatId?: string;
+  phone?: string;
+  name?: string;
+  pushName?: string;
+  shortName?: string;
+  contact?: {
+    phone?: string;
+    name?: string;
+    pushName?: string;
+    _data?: Record<string, unknown>;
+  };
+  _data?: Record<string, unknown>;
+  timestamp?: number;
+  lastMessageTimestamp?: number;
+  [key: string]: unknown;
+};
+
 type WorkspaceSelfIdentity = {
   phone: string | null;
   ids: string[];
@@ -1889,7 +1908,9 @@ async function ensureTrustedContactProfile(input: {
 
   if (!trustedName) {
     const phoneVariants = expandComparablePhoneVariants(normalizedPhone);
-    const remoteChats = await whatsappApiProvider.getChats(input.workspaceId).catch(() => []);
+    const remoteChats: RemoteChatSummary[] = (await whatsappApiProvider
+      .getChats(input.workspaceId)
+      .catch((): RemoteChatSummary[] => [])) as RemoteChatSummary[];
 
     for (const chat of Array.isArray(remoteChats) ? remoteChats : []) {
       const remoteChatId = String(chat?.id || chat?.chatId || '').trim();
@@ -2105,7 +2126,9 @@ async function getRemoteUnreadChatSnapshot(
     chat: any;
   }>
 > {
-  const chats = await whatsappApiProvider.getChats(workspaceId).catch(() => []);
+  const chats: RemoteChatSummary[] = (await whatsappApiProvider
+    .getChats(workspaceId)
+    .catch((): RemoteChatSummary[] => [])) as RemoteChatSummary[];
   const lidMap = buildLidMap(await whatsappApiProvider.getLidMappings(workspaceId).catch(() => []));
 
   const normalizedChats = (Array.isArray(chats) ? chats : [])
@@ -6960,7 +6983,9 @@ async function runCatalogContacts(data: any) {
     Number(data?.days || CIA_CONTACT_CATALOG_LOOKBACK_DAYS) || CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
   );
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  const chats = await whatsappApiProvider.getChats(workspaceId).catch(() => []);
+  const chats: RemoteChatSummary[] = (await whatsappApiProvider
+    .getChats(workspaceId)
+    .catch((): RemoteChatSummary[] => [])) as RemoteChatSummary[];
   const lidMap = buildLidMap(await whatsappApiProvider.getLidMappings(workspaceId).catch(() => []));
   const eligibleChatMap = new Map<string, any>();
   for (const chat of Array.isArray(chats) ? chats : []) {

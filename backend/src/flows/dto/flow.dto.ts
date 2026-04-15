@@ -11,10 +11,10 @@ export class CreateFlowDto {
   description?: string;
 
   @IsArray()
-  nodes: any[];
+  nodes: unknown[];
 
   @IsArray()
-  edges: any[];
+  edges: unknown[];
 }
 
 export class UpdateFlowDto {
@@ -30,9 +30,9 @@ export class UpdateFlowDto {
 
   @IsOptional()
   @IsArray()
-  nodes?: any[];
+  nodes?: unknown[];
 
   @IsOptional()
   @IsArray()
-  edges?: any[];
+  edges?: unknown[];
 }

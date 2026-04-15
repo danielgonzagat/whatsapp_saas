@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 export interface ScraperResult {
-  leads: any[];
+  leads: unknown[];
   stats: { found: number; valid: number };
 }
 

@@ -391,7 +391,10 @@ export class AnalyticsService {
     };
   }
 
-  private groupByDay(sales: any[], days: number): number[] {
+  private groupByDay(
+    sales: Array<{ createdAt: Date | string; amount: number }>,
+    days: number,
+  ): number[] {
     const result = new Array(days).fill(0);
     const now = Date.now();
     sales.forEach((s) => {

@@ -51,11 +51,11 @@ export class AIProvider {
     messages: {
       role: 'system' | 'user' | 'assistant' | 'tool';
       content: string | null;
-      tool_calls?: any[];
+      tool_calls?: unknown[];
       tool_call_id?: string;
     }[],
     model = 'writer',
-    tools?: any[],
+    tools?: unknown[],
   ): Promise<any> {
     try {
       const params: any = {

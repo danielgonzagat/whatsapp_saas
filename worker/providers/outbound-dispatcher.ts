@@ -11,7 +11,7 @@ export async function dispatchOutboundThroughFlow(input: {
   template?: {
     name: string;
     language?: string;
-    components?: any[];
+    components?: unknown[];
   };
   jobId: string;
   externalId?: string;

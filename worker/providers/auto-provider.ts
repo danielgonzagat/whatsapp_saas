@@ -66,7 +66,7 @@ export const autoProvider = {
     to: string,
     name: string,
     language: string,
-    components: any[],
+    components: unknown[],
   ) {
     const suffix = components?.length ? ` (${language}; ${components.length} componente(s))` : '';
     return this.sendText(workspace, to, `Template ${name}${suffix}`);

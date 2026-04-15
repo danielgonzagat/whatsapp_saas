@@ -260,7 +260,7 @@ export class KloelController {
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('history')
-  async getHistory(@Request() req: AuthenticatedRequest): Promise<any[]> {
+  async getHistory(@Request() req: AuthenticatedRequest): Promise<unknown[]> {
     const workspaceId = req.user?.workspaceId;
     return this.kloelService.getHistory(workspaceId);
   }

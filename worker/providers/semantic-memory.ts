@@ -118,7 +118,7 @@ export class SemanticMemory {
         AND s.content LIKE ${`[Contact:${contactId}]%`}
         ORDER BY similarity DESC
         LIMIT 5;
-    `) as any[];
+    `) as Array<{ content: string }>;
 
     return results.map((r) => r.content.replace(`[Contact:${contactId}] `, ''));
   }

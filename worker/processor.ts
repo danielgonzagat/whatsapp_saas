@@ -879,13 +879,13 @@ async function computeBestHour(workspaceId: string): Promise<number> {
     select: { createdAt: true },
   });
 
-  const buckets = Array(24).fill(0);
+  const buckets: number[] = new Array<number>(24).fill(0);
   msgs.forEach((m) => {
     buckets[m.createdAt.getHours()]++;
   });
   let best = 10;
   let bestVal = -1;
-  buckets.forEach((v, idx) => {
+  buckets.forEach((v: number, idx: number) => {
     if (v > bestVal) {
       bestVal = v;
       best = idx;

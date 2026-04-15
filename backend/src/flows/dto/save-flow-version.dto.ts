@@ -3,11 +3,11 @@ import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 export class SaveFlowVersionDto {
   @IsOptional()
   @IsArray()
-  nodes?: any[];
+  nodes?: unknown[];
 
   @IsOptional()
   @IsArray()
-  edges?: any[];
+  edges?: unknown[];
 
   @IsOptional()
   @IsString()
