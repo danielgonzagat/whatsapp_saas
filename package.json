@@ -71,6 +71,7 @@
     "codacy:codemod:add-key-with-click": "node scripts/ops/codemods/add-key-with-click.mjs",
     "codacy:codemod:add-role-button": "node scripts/ops/codemods/add-role-button.mjs",
     "codacy:codemod:replace-array-index-key": "node scripts/ops/codemods/replace-array-index-key.mjs",
+    "codacy:codemod:pair-label-with-input": "node scripts/ops/codemods/pair-label-with-input.mjs",
     "ratchet:measure": "node scripts/ops/collect-ratchet-metrics.mjs",
     "ratchet:check": "node scripts/ops/check-ratchet.mjs",
     "ratchet:update": "node scripts/ops/check-ratchet.mjs --write-if-improved",
