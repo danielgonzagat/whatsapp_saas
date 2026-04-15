@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module';
 import { FollowUpModule } from '../followup/followup.module';
 import { AsaasService } from '../kloel/asaas.service';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { PlatformWalletModule } from '../platform-wallet/platform-wallet.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
@@ -18,7 +19,7 @@ import { FacebookCAPIService } from './facebook-capi.service';
 // Webhook ordering: CheckoutWebhookController validates event sequence via
 // validatePaymentTransition and WebhookEvent externalId unique constraint.
 @Module({
-  imports: [PrismaModule, AuditModule, AuthModule, FollowUpModule],
+  imports: [PrismaModule, PlatformWalletModule, AuditModule, AuthModule, FollowUpModule],
   controllers: [CheckoutController, CheckoutPublicController, CheckoutWebhookController],
   providers: [
     CheckoutService,

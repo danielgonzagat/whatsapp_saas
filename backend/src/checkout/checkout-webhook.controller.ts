@@ -15,6 +15,7 @@ import { Public } from '../auth/public.decorator';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { PlatformWalletService } from '../platform-wallet/platform-wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { calculatePhysicalOrderUnitCount } from './checkout-order-pricing.util';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
@@ -141,6 +142,7 @@ export class CheckoutWebhookController {
     private readonly financialAlert: FinancialAlertService,
     private readonly mercadoPago: MercadoPagoService,
     private readonly checkoutPostPaymentEffects: CheckoutPostPaymentEffectsService,
+    private readonly platformWallet: PlatformWalletService,
   ) {}
 
   @Public()
@@ -613,6 +615,51 @@ export class CheckoutWebhookController {
         where: { id: checkoutPayment.orderId, workspaceId },
         data: { status: 'PAID', paidAt: now },
       });
+
+      // 2a. SP-9 — Credit the platform wallet. Runs inside the same
+      // transaction so the PAID transition and the ledger append
+      // either both land or neither does (I-ADMIN-W3). The ledger's
+      // partial unique index on (order_id, kind) makes this
+      // idempotent even under webhook replay (I-ADMIN-W5): a retry
+      // throws P2002 which we log and swallow.
+      const platformFeeInCents = Math.round(
+        Number(context.platformNetRevenueAmount ?? context.platformFeeAmount ?? 0) * 100,
+      );
+      if (platformFeeInCents > 0) {
+        try {
+          await this.platformWallet.append(
+            {
+              direction: 'credit',
+              bucket: 'AVAILABLE',
+              amountInCents: BigInt(platformFeeInCents),
+              kind: 'PLATFORM_FEE_CREDIT',
+              orderId: checkoutPayment.orderId,
+              reason: 'platform_fee_on_paid',
+              metadata: {
+                provider: context.provider,
+                externalId: context.externalId,
+              },
+            },
+            tx,
+          );
+        } catch (walletErr: unknown) {
+          // P2002 = unique constraint — expected on webhook replays.
+          const code =
+            walletErr &&
+            typeof walletErr === 'object' &&
+            'code' in walletErr &&
+            typeof (walletErr as { code: unknown }).code === 'string'
+              ? (walletErr as { code: string }).code
+              : null;
+          if (code === 'P2002') {
+            this.logger.debug(
+              `[platform-wallet] skipped duplicate PLATFORM_FEE_CREDIT for order ${checkoutPayment.orderId}`,
+            );
+          } else {
+            throw walletErr;
+          }
+        }
+      }
 
       // 3. Create or update KloelSale
       try {
