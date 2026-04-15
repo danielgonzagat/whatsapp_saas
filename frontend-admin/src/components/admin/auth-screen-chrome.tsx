@@ -31,7 +31,8 @@ export function AuthScreenChrome({
         )}
       >
         <header className="mb-8 flex flex-col items-center gap-3 text-center">
-          <div aria-hidden className="h-6 w-6 rounded-sm border border-primary bg-primary/10" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/kloel-mushroom-animated.svg" alt="Kloel" className="h-12 w-12" aria-hidden />
           <h1 className="text-xl font-semibold tracking-tight text-foreground">Kloel Admin</h1>
           <div className="h-px w-16 bg-border" />
           <p className="text-sm font-medium text-foreground">{title}</p>

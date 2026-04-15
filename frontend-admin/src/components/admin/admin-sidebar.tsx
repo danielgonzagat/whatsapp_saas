@@ -32,9 +32,12 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
     >
       <div className="flex items-center justify-between gap-3 px-4 py-5">
         <div className="flex items-center gap-3">
-          <div
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/kloel-mushroom-animated.svg"
+            alt="Kloel"
             aria-hidden
-            className="h-6 w-6 shrink-0 rounded-sm border border-primary bg-primary/10"
+            className="h-8 w-8 shrink-0"
           />
           {!collapsed ? (
             <div className="flex flex-col leading-tight">

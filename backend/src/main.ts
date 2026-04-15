@@ -10,6 +10,7 @@ import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 
 const HTTPS_____KLOEL_FRONTEN_RE = /^https:\/\/kloel-frontend-.*\.vercel\.app$/;
+const HTTPS_____KLOEL_ADMIN_RE = /^https:\/\/kloel-admin-.*\.vercel\.app$/;
 
 async function bootstrap() {
   console.log('[BOOTSTRAP] Iniciando aplicação...');
@@ -154,9 +155,11 @@ async function bootstrap() {
     'https://kloel.com',
     'https://www.kloel.com',
     'https://app.kloel.com',
+    'https://adm.kloel.com',
     'https://auth.kloel.com',
     'https://pay.kloel.com',
     'https://kloel-frontend.vercel.app',
+    'https://kloel-admin.vercel.app',
     'https://kloel.vercel.app',
     'http://localhost:3000',
     'http://localhost:3005',
@@ -172,7 +175,7 @@ async function bootstrap() {
   }
 
   // Regex patterns para origens dinâmicas (ex: Vercel preview deploys)
-  const allowedOriginsRegex: RegExp[] = [HTTPS_____KLOEL_FRONTEN_RE];
+  const allowedOriginsRegex: RegExp[] = [HTTPS_____KLOEL_FRONTEN_RE, HTTPS_____KLOEL_ADMIN_RE];
   const extraRegex = process.env.CORS_ALLOWED_ORIGIN_REGEX;
   if (extraRegex) {
     for (const r of extraRegex.split(',')) {

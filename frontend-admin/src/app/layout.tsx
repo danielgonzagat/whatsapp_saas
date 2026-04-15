@@ -11,7 +11,10 @@ export const metadata: Metadata = {
     'Centro de comando administrativo da plataforma Kloel. Acesso restrito a administradores autorizados.',
   robots: { index: false, follow: false },
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/kloel-mushroom-animated.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32' },
+    ],
   },
 };
 
