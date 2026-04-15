@@ -94,8 +94,6 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
     color: theme.mutedText,
     lineHeight: 1.6,
   } satisfies React.CSSProperties;
-  const lockedNameEmail = Boolean(socialIdentity?.name && socialIdentity?.email);
-
   return (
     <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
       {step > 1 ? (
@@ -134,8 +132,6 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
               value={form.name}
               onChange={updateField('name')}
               placeholder="ex.: Maria de Almeida Cruz"
-              disabled={lockedNameEmail}
-              style={lockedNameEmail ? disabledInputStyle(theme) : undefined}
               labelStyle={labelStyle}
             />
             <Field
@@ -146,8 +142,6 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
               onChange={updateField('email')}
               placeholder="ex.: maria@gmail.com"
               type="email"
-              disabled={lockedNameEmail}
-              style={lockedNameEmail ? disabledInputStyle(theme) : undefined}
               labelStyle={labelStyle}
             />
             <Field
@@ -510,11 +504,4 @@ function ActionButton({
       )}
     </button>
   );
-}
-
-function disabledInputStyle(theme: CheckoutVisualTheme) {
-  return {
-    background: theme.fieldDisabledBackground,
-    color: theme.fieldDisabledText,
-  } satisfies React.CSSProperties;
 }

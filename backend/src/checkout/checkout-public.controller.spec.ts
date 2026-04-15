@@ -131,4 +131,20 @@ describe('CheckoutPublicController', () => {
       'google-access-token',
     );
   });
+
+  it('delegates social lead updates including edited name and email', async () => {
+    await controller.updateSocialLead('lead-123', {
+      name: 'Maria Corrigida',
+      email: 'maria.corrigida@gmail.com',
+      phone: '62999990000',
+      stepReached: 2,
+    });
+
+    expect(socialLeadService.updateLead).toHaveBeenCalledWith('lead-123', {
+      name: 'Maria Corrigida',
+      email: 'maria.corrigida@gmail.com',
+      phone: '62999990000',
+      stepReached: 2,
+    });
+  });
 });

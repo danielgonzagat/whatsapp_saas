@@ -183,7 +183,13 @@ export function useCheckoutExperienceSocial({
           setSubmitError('');
           setLoadingStep(true);
           setPixelEvent('InitiateCheckout');
-          await social.updateLeadProgress({ phone: form.phone, cpf: form.cpf, stepReached: 2 });
+          await social.updateLeadProgress({
+            name: form.name,
+            email: form.email,
+            phone: form.phone,
+            cpf: form.cpf,
+            stepReached: 2,
+          });
           window.setTimeout(() => {
             setStep(2);
             setLoadingStep(false);
@@ -203,6 +209,8 @@ export function useCheckoutExperienceSocial({
       setSubmitError('');
       setPixelEvent('AddPaymentInfo');
       await social.updateLeadProgress({
+        name: form.name,
+        email: form.email,
         phone: form.phone,
         cpf: form.cpf,
         cep: form.cep,
@@ -217,8 +225,17 @@ export function useCheckoutExperienceSocial({
       setStep(3);
     },
     [
+      form.email,
       form.cpf,
+      form.name,
       form.phone,
+      form.cep,
+      form.city,
+      form.complement,
+      form.neighborhood,
+      form.number,
+      form.state,
+      form.street,
       mobileCanOpenStep1,
       mobileCanOpenStep2,
       social,

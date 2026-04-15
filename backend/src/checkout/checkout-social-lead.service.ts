@@ -290,13 +290,15 @@ export class CheckoutSocialLeadService {
     }
 
     const normalizedPhone = this.normalizePhone(dto.phone) || existing.phone || null;
+    const normalizedName = this.normalizeOptional(dto.name) || existing.name || null;
+    const normalizedEmail = this.normalizeEmail(dto.email) || existing.email || null;
     const nextStep = Math.max(existing.stepReached, dto.stepReached || existing.stepReached);
     const mergedEnrichmentData = this.mergeLeadAddressSnapshot(existing.enrichmentData, dto);
     const contactId = normalizedPhone
       ? await this.upsertContact({
           workspaceId: existing.workspaceId,
-          name: existing.name,
-          email: existing.email,
+          name: normalizedName,
+          email: normalizedEmail,
           phone: normalizedPhone,
         })
       : null;
@@ -304,6 +306,8 @@ export class CheckoutSocialLeadService {
     return this.prisma.checkoutSocialLead.update({
       where: { id: leadId },
       data: {
+        name: normalizedName,
+        email: normalizedEmail,
         phone: normalizedPhone,
         cpf: this.normalizeOptional(dto.cpf) || existing.cpf || null,
         stepReached: nextStep,

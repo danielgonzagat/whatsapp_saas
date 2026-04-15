@@ -331,6 +331,8 @@ export function useCheckoutSocialIdentity({
 
   const updateLeadProgress = useCallback(
     async (payload: {
+      name?: string;
+      email?: string;
       phone?: string;
       cpf?: string;
       cep?: string;

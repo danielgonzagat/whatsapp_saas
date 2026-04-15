@@ -5,6 +5,16 @@ export class UpdateSocialLeadDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
   phone?: string;
 
   @IsOptional()
