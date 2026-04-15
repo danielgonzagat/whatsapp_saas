@@ -4,6 +4,7 @@ import { Public } from '../../auth/public.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
+import { PlatformWalletReconcileService } from '../../platform-wallet/platform-wallet-reconcile.service';
 import { PlatformWalletService } from '../../platform-wallet/platform-wallet.service';
 
 /**
@@ -17,7 +18,10 @@ import { PlatformWalletService } from '../../platform-wallet/platform-wallet.ser
 @Controller('admin/carteira')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
 export class AdminCarteiraController {
-  constructor(private readonly wallet: PlatformWalletService) {}
+  constructor(
+    private readonly wallet: PlatformWalletService,
+    private readonly reconcile: PlatformWalletReconcileService,
+  ) {}
 
   @Get('balance')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
@@ -47,5 +51,11 @@ export class AdminCarteiraController {
       skip: skip ? Number(skip) : undefined,
       take: take ? Number(take) : undefined,
     });
+  }
+
+  @Get('reconcile')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
+  async runReconcile(@Query('currency') currency?: string) {
+    return this.reconcile.reconcile(currency ?? 'BRL');
   }
 }
