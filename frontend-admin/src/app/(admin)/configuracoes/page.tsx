@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useId, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { Badge } from '@/components/ui/badge';
@@ -243,6 +243,10 @@ function CreateUserDialog({
   const [role, setRole] = useState<'OWNER' | 'MANAGER' | 'STAFF'>('STAFF');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const nameId = useId();
+  const emailId = useId();
+  const passwordId = useId();
+  const roleId = useId();
 
   async function onSubmit(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
@@ -279,9 +283,9 @@ function CreateUserDialog({
         <CardContent>
           <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Nome</Label>
+              <Label htmlFor={nameId}>Nome</Label>
               <Input
-                id="name"
+                id={nameId}
                 value={name}
                 onChange={(e) => setName(e.currentTarget.value)}
                 required
@@ -290,9 +294,9 @@ function CreateUserDialog({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor={emailId}>Email</Label>
               <Input
-                id="email"
+                id={emailId}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.currentTarget.value)}
@@ -300,9 +304,9 @@ function CreateUserDialog({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="temporaryPassword">Senha temporária</Label>
+              <Label htmlFor={passwordId}>Senha temporária</Label>
               <Input
-                id="temporaryPassword"
+                id={passwordId}
                 type="password"
                 value={temporaryPassword}
                 onChange={(e) => setTemporaryPassword(e.currentTarget.value)}
@@ -313,9 +317,9 @@ function CreateUserDialog({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor={roleId}>Role</Label>
               <select
-                id="role"
+                id={roleId}
                 value={role}
                 onChange={(e) => setRole(e.currentTarget.value as 'OWNER' | 'MANAGER' | 'STAFF')}
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"

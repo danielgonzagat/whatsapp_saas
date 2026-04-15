@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { use, useState } from 'react';
+import { use, useId, useState } from 'react';
 import useSWR from 'swr';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
   const [dialog, setDialog] = useState<Dialog>(null);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
+  const noteId = useId();
+  const reasonId = useId();
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -202,9 +204,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
             <CardContent className="flex flex-col gap-3">
               {dialog === 'approve' ? (
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="note">Nota interna (opcional)</Label>
+                  <Label htmlFor={noteId}>Nota interna (opcional)</Label>
                   <Input
-                    id="note"
+                    id={noteId}
                     value={note}
                     onChange={(e) => setNote(e.currentTarget.value)}
                     placeholder="Observação anexa ao audit log"
@@ -212,9 +214,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="reason">Motivo</Label>
+                  <Label htmlFor={reasonId}>Motivo</Label>
                   <Input
-                    id="reason"
+                    id={reasonId}
                     value={reason}
                     onChange={(e) => setReason(e.currentTarget.value)}
                     placeholder="Visível ao produtor"
