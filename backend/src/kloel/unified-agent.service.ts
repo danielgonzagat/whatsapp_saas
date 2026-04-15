@@ -17,6 +17,17 @@ import { AudioService } from './audio.service';
 import { buildKloelLeadPrompt } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
 
+const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
+const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
+const CANCEL_CANCELAR_REEMBOL_RE = /(cancel|cancelar|reembolso|desist|encerrar)/i;
+const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i;
+const D__D_S_RE = /^\+?\d[\d\s()-]+$/;
+const CONTATO_RE = /^contato$/i;
+const PROBLEMA_ERRO_NAO_FUNCI_RE =
+  /(problema|erro|nao funcion|não funcion|frustr|complicad|dificil|difícil|duvida|dúvida|medo|receio)/i;
+const P_EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
+const S_RE = /\s+/;
+
 /**
  * KLOEL Unified Agent Service
  *
@@ -1237,7 +1248,7 @@ Mensagem: ${message}`,
     const normalized = (message || '').toLowerCase();
     const topic = this.extractFallbackTopic(message);
 
-    if (/(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(normalized)) {
+    if (PRE_C__O_QUANTO_VALOR_C_RE.test(normalized)) {
       return {
         actions: [],
         response: this.finalizeReplyStyle(
@@ -1251,7 +1262,7 @@ Mensagem: ${message}`,
       };
     }
 
-    if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
+    if (AGENDAR_AGENDA_REUNI_A_RE.test(normalized)) {
       return {
         actions: [],
         response: this.finalizeReplyStyle(
@@ -1263,7 +1274,7 @@ Mensagem: ${message}`,
       };
     }
 
-    if (/(cancel|cancelar|reembolso|desist|encerrar)/i.test(normalized)) {
+    if (CANCEL_CANCELAR_REEMBOL_RE.test(normalized)) {
       return {
         actions: [],
         response: this.finalizeReplyStyle(
@@ -1275,7 +1286,7 @@ Mensagem: ${message}`,
       };
     }
 
-    if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
+    if (OL__A__BOM_DIA_BOA_TARD_RE.test(normalized)) {
       return {
         actions: [],
         response: this.finalizeReplyStyle(message, 'Oi. Como posso te ajudar?'),
@@ -2649,8 +2660,8 @@ Mensagem: ${message}`,
   private isUsableLeadName(name?: string | null): boolean {
     const normalized = String(name || '').trim();
     if (!normalized) return false;
-    if (/^\+?\d[\d\s()-]+$/.test(normalized)) return false;
-    if (/^contato$/i.test(normalized)) return false;
+    if (D__D_S_RE.test(normalized)) return false;
+    if (CONTATO_RE.test(normalized)) return false;
     return true;
   }
 
@@ -2693,11 +2704,7 @@ Mensagem: ${message}`,
       );
     }
 
-    if (
-      /(problema|erro|nao funcion|não funcion|frustr|complicad|dificil|difícil|duvida|dúvida|medo|receio)/i.test(
-        params.currentMessage,
-      )
-    ) {
+    if (PROBLEMA_ERRO_NAO_FUNCI_RE.test(params.currentMessage)) {
       hints.push(
         'O lead demonstrou atrito emocional. Antes de avançar, valide em uma frase curta o que ele sentiu e só depois conduza.',
       );
@@ -2949,7 +2956,7 @@ Mensagem: ${message}`,
     const budget = this.computeReplyStyleBudget(customerMessage, historyTurns);
     const maxSentences = budget.maxSentences;
     const maxWords = budget.maxWords;
-    const allowEmoji = /\p{Extended_Pictographic}/u.test(customerMessage || '');
+    const allowEmoji = P_EXTENDED_PICTOGRAPHIC_RE.test(customerMessage || '');
     const withoutEmoji = allowEmoji
       ? normalized
       : normalized.replace(/\p{Extended_Pictographic}/gu, '').trim();
@@ -3113,7 +3120,7 @@ Mensagem: ${message}`,
   private countWords(value?: string | null): number {
     const words = String(value || '')
       .trim()
-      .split(/\s+/)
+      .split(S_RE)
       .filter(Boolean);
     return Math.max(1, words.length);
   }

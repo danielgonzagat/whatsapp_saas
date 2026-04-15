@@ -1,3 +1,5 @@
+const A_Z0_9___3_RE = /^[A-Z0-9-]{3,}$/;
+const R__N_RE = /\r?\n+/;
 const BUYING_SIGNALS = [
   'preco',
   'preço',
@@ -168,7 +170,7 @@ export function extractMissingProductCandidate(messageContent: string): string |
   if (!rawTokens.length) return null;
 
   for (const token of rawTokens) {
-    if (/^[A-Z0-9-]{3,}$/.test(token) && !STOPWORDS.has(normalizeCatalogText(token))) {
+    if (A_Z0_9___3_RE.test(token) && !STOPWORDS.has(normalizeCatalogText(token))) {
       return token.toUpperCase();
     }
   }
@@ -243,7 +245,7 @@ export function extractMaxInstallments(value: string): number | null {
 
 export function parseOfferLines(value: string): ParsedOfferLine[] {
   const lines = String(value || '')
-    .split(/\r?\n+/)
+    .split(R__N_RE)
     .map((line) => line.trim())
     .filter(Boolean);
 

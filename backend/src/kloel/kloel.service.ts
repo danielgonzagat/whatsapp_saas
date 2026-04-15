@@ -35,6 +35,21 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import { SmartPaymentService } from './smart-payment.service';
 import { UnifiedAgentService } from './unified-agent.service';
 
+const PDRN_GHK_S____S_CU_COREA_RE = /pdrn|ghk\s*-?\s*cu|coreamy/i;
+const PATTERN_RE = /[.]+$/;
+const N_RE = /\n/;
+const S_RE = /\s+/;
+const COMO_ESTRAT_E__GIA_F_RE =
+  /[?]|como|estrat[eé]gia|funil|plano|relat[oó]rio|documento|vender|marketing|autom[aá]tica|copy|webhook|api|integra[cç][aã]o|whatsapp/i;
+const RELAT_O__RIO_DOCUMENTO_RE =
+  /(relat[oó]rio|documento|guia completo|an[aá]lise completa|plano completo|estrat[eé]gia completa|2000|2\.000|sum[aá]rio executivo|diagn[oó]stico)/i;
+const CRIE_CADASTRAR_CADASTRE_RE =
+  /(crie|cadastrar|cadastre|salve|liste|mostre|remova|delete|apague|ative|desative|ligue|desligue|conecte|conectar|envie|mande|sincronize|pesquise|busque|procure|pesquisar|buscar|abrir|feche|fechar|atualize|consultar|consulte|verifique|verificar|quero|preciso|gere|fa[cç]a|fazer|traga|me d[eê]|o que est[aá]|quais s[aã]o|qual [ée]|tem|existem)/i;
+const PRODUTO_CAT_A__LOGO_AUT_RE =
+  /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|not[ií]cia|noticias|hoje|status)/i;
+const MODEL_RE = /model/i;
+const INVALID_RE = /invalid/i;
+
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -883,7 +898,7 @@ export class KloelService {
 
   private hasLegacyProductMarker(value: string | null | undefined): boolean {
     const normalized = String(value || '').trim();
-    return /pdrn|ghk\s*-?\s*cu|coreamy/i.test(normalized);
+    return PDRN_GHK_S____S_CU_COREA_RE.test(normalized);
   }
 
   private isDefaultThreadTitle(title?: string | null): boolean {
@@ -1703,7 +1718,7 @@ export class KloelService {
             String(entry.label || '')
               .replace(/\s+/g, ' ')
               .trim()
-              .replace(/[.]+$/, ''),
+              .replace(PATTERN_RE, ''),
           )
           .filter(Boolean),
       ),
@@ -1914,20 +1929,16 @@ export class KloelService {
     const normalized = String(message || '').trim();
     if (!normalized) return false;
     if (normalized.length >= 40) return true;
-    if (/\n/.test(normalized)) return true;
-    if (normalized.split(/\s+/).length >= 8) return true;
-    return /[?]|como|estrat[eé]gia|funil|plano|relat[oó]rio|documento|vender|marketing|autom[aá]tica|copy|webhook|api|integra[cç][aã]o|whatsapp/i.test(
-      normalized,
-    );
+    if (N_RE.test(normalized)) return true;
+    if (normalized.split(S_RE).length >= 8) return true;
+    return COMO_ESTRAT_E__GIA_F_RE.test(normalized);
   }
 
   private shouldUseLongFormBudget(message: string): boolean {
     const normalized = String(message || '')
       .trim()
       .toLowerCase();
-    return /(relat[oó]rio|documento|guia completo|an[aá]lise completa|plano completo|estrat[eé]gia completa|2000|2\.000|sum[aá]rio executivo|diagn[oó]stico)/i.test(
-      normalized,
-    );
+    return RELAT_O__RIO_DOCUMENTO_RE.test(normalized);
   }
 
   private shouldAttemptToolPlanningPass(message: string): boolean {
@@ -1938,12 +1949,7 @@ export class KloelService {
     if (!normalized) return false;
 
     const explicitToolIntent =
-      /(crie|cadastrar|cadastre|salve|liste|mostre|remova|delete|apague|ative|desative|ligue|desligue|conecte|conectar|envie|mande|sincronize|pesquise|busque|procure|pesquisar|buscar|abrir|feche|fechar|atualize|consultar|consulte|verifique|verificar|quero|preciso|gere|fa[cç]a|fazer|traga|me d[eê]|o que est[aá]|quais s[aã]o|qual [ée]|tem|existem)/i.test(
-        normalized,
-      ) &&
-      /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|not[ií]cia|noticias|hoje|status)/i.test(
-        normalized,
-      );
+      CRIE_CADASTRAR_CADASTRE_RE.test(normalized) && PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized);
     return explicitToolIntent;
   }
 
@@ -1991,7 +1997,7 @@ export class KloelService {
       advancedScore >= 2 ||
       String(message || '')
         .trim()
-        .split(/\s+/).length >= 14
+        .split(S_RE).length >= 14
     ) {
       return 'INTERMEDIÁRIO';
     }
@@ -2406,9 +2412,9 @@ export class KloelService {
         this.logger.warn(`Falha ao gerar imagem no composer: ${errorMessage || errorCode}`);
 
         if (
-          /model/i.test(errorMessage) ||
-          /model/i.test(errorCode) ||
-          /invalid/i.test(errorMessage)
+          MODEL_RE.test(errorMessage) ||
+          MODEL_RE.test(errorCode) ||
+          INVALID_RE.test(errorMessage)
         ) {
           throw new Error('Não foi possível gerar a imagem agora. Tente novamente.');
         }
