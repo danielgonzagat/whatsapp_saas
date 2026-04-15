@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CreateFollowUpDto, FollowUpService, UpdateFollowUpDto } from './followup.service';
 
 @Controller('followups')
@@ -21,7 +22,7 @@ export class FollowUpController {
 
   @Get()
   async list(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId?: string,
     @Query('status') status?: string,
   ) {
@@ -30,14 +31,14 @@ export class FollowUpController {
   }
 
   @Get('stats')
-  async stats(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
+  async stats(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.followUpService.getStats(effectiveWorkspaceId);
   }
 
   @Post()
   async create(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body() dto: CreateFollowUpDto & { workspaceId?: string; idempotencyKey?: string },
   ) {
     const { workspaceId, ...rest } = dto;
@@ -47,7 +48,7 @@ export class FollowUpController {
 
   @Patch(':id')
   async update(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: UpdateFollowUpDto & { workspaceId?: string },
   ) {
@@ -58,7 +59,7 @@ export class FollowUpController {
 
   @Delete(':id')
   async cancel(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Query('workspaceId') workspaceId?: string,
   ) {
