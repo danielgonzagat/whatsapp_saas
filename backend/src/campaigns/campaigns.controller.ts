@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 
@@ -27,7 +28,7 @@ export class CampaignsController {
 
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async create(@Req() req: any, @Body() body: CreateCampaignDto) {
+  async create(@Req() req: AuthenticatedRequest, @Body() body: CreateCampaignDto) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
 
@@ -45,20 +46,24 @@ export class CampaignsController {
   }
 
   @Get()
-  findAll(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  findAll(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.campaignsService.findAll(effectiveWorkspaceId);
   }
 
   @Get(':id')
-  findOne(@Req() req: any, @Param('id') id: string, @Query('workspaceId') workspaceId: string) {
+  findOne(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Query('workspaceId') workspaceId: string,
+  ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.campaignsService.findOne(effectiveWorkspaceId, id);
   }
 
   @Post(':id/launch')
   async launch(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: { workspaceId: string; smartTime?: boolean },
   ) {
@@ -68,14 +73,14 @@ export class CampaignsController {
   }
 
   @Post(':id/pause')
-  async pause(@Req() req: any, @Param('id') id: string) {
+  async pause(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.campaignsService.pause(workspaceId, id);
   }
 
   @Post(':id/darwin/variants')
   async createVariants(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: { workspaceId?: string; variants?: number },
   ) {
@@ -85,7 +90,7 @@ export class CampaignsController {
 
   @Post(':id/darwin/evaluate')
   async evaluateDarwin(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: { workspaceId?: string },
   ) {

@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { Public } from '../../auth/public.decorator';
+import { RawBodyRequest } from '../../common/interfaces/authenticated-request.interface';
 import {
   sanitizeWebhookChallenge,
   sendPlainTextResponse,
@@ -22,6 +23,76 @@ import { OmnichannelService } from '../../inbox/omnichannel.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
+
+/**
+ * Structural shape of an inbound Meta webhook payload. Meta ships the same
+ * envelope for Instagram, Messenger (page) and WhatsApp Cloud — discriminated
+ * by `object` — so we keep the union loose at the root and narrow per handler.
+ */
+interface MetaWebhookBody {
+  object?: string;
+  entry?: MetaWebhookEntry[];
+}
+
+interface MetaWebhookEntry {
+  id?: string;
+  time?: number;
+  messaging?: MetaMessagingEvent[];
+  changes?: MetaWebhookChange[];
+}
+
+interface MetaMessagingEvent {
+  sender?: { id?: string; name?: string };
+  recipient?: { id?: string };
+  timestamp?: number;
+  message?: {
+    mid?: string;
+    text?: string;
+  };
+}
+
+interface MetaWebhookChange {
+  field?: string;
+  value?: MetaWhatsAppChangeValue;
+}
+
+interface MetaWhatsAppChangeValue {
+  metadata?: {
+    phone_number_id?: string;
+    display_phone_number?: string;
+  };
+  contacts?: MetaWhatsAppContact[];
+  messages?: MetaWhatsAppMessage[];
+  statuses?: MetaWhatsAppStatus[];
+}
+
+interface MetaWhatsAppContact {
+  wa_id?: string;
+  profile?: { name?: string };
+}
+
+interface MetaWhatsAppMessage {
+  id?: string;
+  from?: string;
+  type?: string;
+  timestamp?: string | number;
+  text?: { body?: string };
+  button?: { text?: string };
+  interactive?: {
+    button_reply?: { title?: string };
+    list_reply?: { title?: string };
+  };
+  caption?: string;
+  profile?: { name?: string };
+  /** Meta ships additional provider-specific fields we forward untouched. */
+  [key: string]: unknown;
+}
+
+interface MetaWhatsAppStatus {
+  id?: string;
+  status?: string;
+  errors?: Array<{ code?: string | number }>;
+}
 
 /**
  * Meta Graph API webhookEvent receiver (Instagram, Messenger, WhatsApp Cloud).
@@ -63,9 +134,9 @@ export class MetaWebhookController {
   @Post()
   @HttpCode(200)
   async handleWebhook(
-    @Body() body: any,
+    @Body() body: MetaWebhookBody,
     @Headers('x-hub-signature-256') signature: string,
-    @Req() req?: any,
+    @Req() req?: RawBodyRequest,
   ) {
     // Validate signature
     const appSecret = process.env.META_APP_SECRET;
@@ -106,7 +177,7 @@ export class MetaWebhookController {
     return 'ok';
   }
 
-  private async handleInstagram(entry: any) {
+  private async handleInstagram(entry: MetaWebhookEntry) {
     const workspaceId = await this.resolveMetaWorkspaceFromEntry(entry);
     if (!workspaceId) {
       this.logger.warn('[IG] Could not resolve workspace for Instagram webhook');
@@ -118,7 +189,7 @@ export class MetaWebhookController {
     });
   }
 
-  private async handlePage(entry: any) {
+  private async handlePage(entry: MetaWebhookEntry) {
     const workspaceId = await this.resolveMetaWorkspaceFromEntry(entry);
     if (!workspaceId) {
       this.logger.warn('[Messenger] Could not resolve workspace for page webhook');
@@ -144,7 +215,7 @@ export class MetaWebhookController {
     }
   }
 
-  private async handleWhatsAppCloud(entry: any) {
+  private async handleWhatsAppCloud(entry: MetaWebhookEntry) {
     for (const change of entry.changes || []) {
       if (change.field === 'messages') {
         const phoneNumberId = String(change.value?.metadata?.phone_number_id || '').trim();
@@ -164,9 +235,11 @@ export class MetaWebhookController {
           lastWebhookObject: 'whatsapp_business_account',
         });
 
-        const contacts = Array.isArray(change.value?.contacts) ? change.value.contacts : [];
-        const contactIndex = new Map(
-          contacts.map((contact: any) => [
+        const contacts: MetaWhatsAppContact[] = Array.isArray(change.value?.contacts)
+          ? change.value.contacts
+          : [];
+        const contactIndex = new Map<string, string>(
+          contacts.map((contact) => [
             String(contact?.wa_id || '').trim(),
             String(contact?.profile?.name || '').trim(),
           ]),
@@ -222,7 +295,7 @@ export class MetaWebhookController {
     }
   }
 
-  private async resolveMetaWorkspaceFromEntry(entry: any): Promise<string | null> {
+  private async resolveMetaWorkspaceFromEntry(entry: MetaWebhookEntry): Promise<string | null> {
     const pageId = String(entry?.id || entry?.messaging?.[0]?.recipient?.id || '').trim();
 
     if (!pageId) {
@@ -266,7 +339,7 @@ export class MetaWebhookController {
     }
   }
 
-  private extractWhatsAppMessageText(msg: any): string {
+  private extractWhatsAppMessageText(msg: MetaWhatsAppMessage): string {
     const text =
       msg?.text?.body ||
       msg?.button?.text ||

@@ -12,6 +12,7 @@ import {
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
 import { InstagramService } from './instagram.service';
@@ -48,7 +49,7 @@ export class InstagramController {
 
   @Get('profile')
   async getProfile(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('igAccountId') igAccountId: string,
     @Query('accessToken') accessToken: string,
   ) {
@@ -59,7 +60,7 @@ export class InstagramController {
 
   @Get('media')
   async getMedia(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('igAccountId') igAccountId: string,
     @Query('limit') limit: string,
     @Query('accessToken') accessToken: string,
@@ -76,7 +77,7 @@ export class InstagramController {
 
   @Get('insights/account')
   async getAccountInsights(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('igAccountId') igAccountId: string,
     @Query('metrics') metrics: string,
     @Query('period') period: string,
@@ -95,7 +96,7 @@ export class InstagramController {
 
   @Post('publish/photo')
   async publishPhoto(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       igAccountId: string;
@@ -120,7 +121,7 @@ export class InstagramController {
 
   @Get('media/:id/comments')
   async getComments(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') mediaId: string,
     @Query('accessToken') accessToken: string,
   ) {
@@ -134,7 +135,7 @@ export class InstagramController {
 
   @Post('comments/:id/reply')
   async replyToComment(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') commentId: string,
     @Body() body: { text: string; accessToken: string },
   ) {
@@ -154,7 +155,7 @@ export class InstagramController {
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('messages/send')
   async sendMessage(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       igAccountId: string;

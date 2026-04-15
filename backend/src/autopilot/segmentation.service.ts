@@ -1,5 +1,34 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { DealStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+const DEAL_STATUS_VALUES = new Set<string>(Object.values(DealStatus));
+
+const isDealStatus = (value: string): value is DealStatus => DEAL_STATUS_VALUES.has(value);
+
+/**
+ * Deal row shape used by the in-memory segmentation filters.
+ *
+ * Mirrors the `select` clause used in {@link SegmentationService.getAudienceBySegment}
+ * so the filter helpers can be called with the exact subset of fields we fetch.
+ */
+type SegmentationDeal = {
+  id: string;
+  value: number;
+  status: Prisma.DealGetPayload<{ select: { status: true } }>['status'];
+  createdAt: Date;
+};
+
+/**
+ * Contact row shape used by the in-memory segmentation filters.
+ */
+type SegmentationContact = {
+  id: string;
+  phone: string | null;
+  name: string | null;
+  updatedAt: Date;
+  deals: SegmentationDeal[];
+};
 
 /**
  * Tipos de segmentação suportados
@@ -112,7 +141,7 @@ export class SegmentationService {
     workspaceId: string,
     criteria: SegmentCriteria,
   ): Promise<SegmentResult> {
-    const where: any = {
+    const where: Prisma.ContactWhereInput = {
       workspaceId,
       phone: { not: null },
     };
@@ -140,28 +169,34 @@ export class SegmentationService {
     }
 
     // Última mensagem nos últimos X dias (usando updatedAt como proxy)
+    const updatedAtFilter: Prisma.DateTimeFilter<'Contact'> = {};
     if (criteria.lastMessageDays) {
       const since = new Date(now);
       since.setDate(since.getDate() - criteria.lastMessageDays);
-      where.updatedAt = { gte: since };
+      updatedAtFilter.gte = since;
     }
 
     // Sem mensagens há X dias
     if (criteria.noMessageDays) {
       const before = new Date(now);
       before.setDate(before.getDate() - criteria.noMessageDays);
-      where.updatedAt = { ...(where.updatedAt || {}), lte: before };
+      updatedAtFilter.lte = before;
+    }
+
+    if (updatedAtFilter.gte !== undefined || updatedAtFilter.lte !== undefined) {
+      where.updatedAt = updatedAtFilter;
     }
 
     // Criado após/antes
+    const createdAtFilter: Prisma.DateTimeFilter<'Contact'> = {};
     if (criteria.createdAfter) {
-      where.createdAt = { gte: criteria.createdAfter };
+      createdAtFilter.gte = criteria.createdAfter;
     }
     if (criteria.createdBefore) {
-      where.createdAt = {
-        ...(where.createdAt || {}),
-        lte: criteria.createdBefore,
-      };
+      createdAtFilter.lte = criteria.createdBefore;
+    }
+    if (createdAtFilter.gte !== undefined || createdAtFilter.lte !== undefined) {
+      where.createdAt = createdAtFilter;
     }
 
     // Pipeline e estágios
@@ -185,14 +220,17 @@ export class SegmentationService {
 
     // Status de deal
     if (criteria.dealStatus) {
-      const statusMap: Record<string, string[]> = {
+      const statusMap: Record<'open' | 'won' | 'lost', string[]> = {
         open: ['OPEN', 'NEGOTIATION'],
         won: ['WON'],
         lost: ['LOST'],
       };
+      const validStatuses: DealStatus[] = (statusMap[criteria.dealStatus] || []).filter(
+        isDealStatus,
+      );
       where.deals = {
         some: {
-          status: { in: statusMap[criteria.dealStatus] || [] },
+          status: { in: validStatuses },
         },
       };
     }
@@ -430,12 +468,15 @@ export class SegmentationService {
 
   // === Métodos auxiliares privados ===
 
-  private filterByPurchaseHistory(contacts: any[], history: 'any' | 'none' | 'recent'): any[] {
+  private filterByPurchaseHistory(
+    contacts: SegmentationContact[],
+    history: 'any' | 'none' | 'recent',
+  ): SegmentationContact[] {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     return contacts.filter((c) => {
-      const wonDeals = (c.deals || []).filter((d: any) => d.status === 'WON');
+      const wonDeals = (c.deals ?? []).filter((d) => d.status === DealStatus.WON);
 
       switch (history) {
         case 'any':
@@ -443,18 +484,22 @@ export class SegmentationService {
         case 'none':
           return wonDeals.length === 0;
         case 'recent':
-          return wonDeals.some((d: any) => new Date(d.createdAt) >= thirtyDaysAgo);
+          return wonDeals.some((d) => new Date(d.createdAt) >= thirtyDaysAgo);
         default:
           return true;
       }
     });
   }
 
-  private filterByPurchaseValue(contacts: any[], minValue?: number, maxValue?: number): any[] {
+  private filterByPurchaseValue(
+    contacts: SegmentationContact[],
+    minValue?: number,
+    maxValue?: number,
+  ): SegmentationContact[] {
     return contacts.filter((c) => {
-      const totalValue = (c.deals || [])
-        .filter((d: any) => d.status === 'WON')
-        .reduce((sum: number, d: any) => sum + (d.value || 0), 0);
+      const totalValue = (c.deals ?? [])
+        .filter((d) => d.status === DealStatus.WON)
+        .reduce((sum, d) => sum + (d.value || 0), 0);
 
       if (minValue !== undefined && totalValue < minValue) return false;
       if (maxValue !== undefined && totalValue > maxValue) return false;
@@ -463,9 +508,9 @@ export class SegmentationService {
   }
 
   private filterByEngagement(
-    contacts: any[],
+    contacts: SegmentationContact[],
     engagement: 'hot' | 'warm' | 'cold' | 'ghost',
-  ): any[] {
+  ): SegmentationContact[] {
     const now = Date.now();
 
     return contacts.filter((c) => {

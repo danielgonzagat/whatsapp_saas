@@ -7,11 +7,39 @@ import {
   Logger,
   forwardRef,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
+
+/** Arbitrary JSON payload received on the generic catch-hook endpoint. */
+type WebhookJsonPayload = Record<string, unknown>;
+
+/** Finance trigger body: status + phone + any extra provider-specific fields. */
+interface FinanceWebhookBody {
+  status?: string;
+  phone?: string;
+  amount?: number;
+  provider?: string;
+  workspaceId?: string;
+  [key: string]: unknown;
+}
+
+/** Instagram / Meta Graph webhook envelope — opaque beyond workspace routing. */
+type InstagramWebhookBody = Record<string, unknown>;
+
+/**
+ * Loose shape consumed by {@link WebhooksService.extractPhone} — arbitrary
+ * JSON bag from an upstream provider (Stripe, Hotmart, Asaas, etc.).
+ */
+type PhoneBearingPayload = Record<string, unknown>;
+
+/** Runtime-narrow helper: returns an object when `value` is a non-null record. */
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+}
 
 @Injectable()
 export class WebhooksService {
@@ -25,7 +53,7 @@ export class WebhooksService {
     private readonly omnichannelService: OmnichannelService,
   ) {}
 
-  async processWebhook(workspaceId: string, flowId: string, payload: any) {
+  async processWebhook(workspaceId: string, flowId: string, payload: WebhookJsonPayload) {
     // 1. Validate Workspace & Flow
     const flow = await this.prisma.flow.findFirst({
       where: { id: flowId, workspaceId },
@@ -75,7 +103,7 @@ export class WebhooksService {
    * Processa eventos financeiros (boleto/pix/checkout) e dispara flow conforme providerSettings.finance.*
    * Ex: { status: "paid", phone: "...", amount: 1000 }
    */
-  async processFinanceEvent(workspaceId: string, payload: any) {
+  async processFinanceEvent(workspaceId: string, payload: FinanceWebhookBody) {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -83,7 +111,7 @@ export class WebhooksService {
     if (!ws) {
       throw new ForbiddenException('Workspace not found');
     }
-    const settings = (ws.providerSettings as Record<string, any>) || {};
+    const settings = (ws.providerSettings as Record<string, unknown>) || {};
     const finance = (settings.finance as Record<string, unknown>) || {};
 
     const status = String(payload?.status || '').toLowerCase();
@@ -167,10 +195,14 @@ export class WebhooksService {
     });
   }
 
-  private extractPhone(payload: any): string | null {
+  private extractPhone(payload: PhoneBearingPayload): string | null {
     // Recursive search or specific field check?
     // Let's check common flat fields first.
-    const candidates = [
+    const data = asRecord(payload.data);
+    const dataObject = data ? asRecord(data.object) : null;
+    const customerDetails = dataObject ? asRecord(dataObject.customer_details) : null;
+    const buyer = asRecord(payload.buyer);
+    const candidates: unknown[] = [
       payload.phone,
       payload.mobile,
       payload.whatsapp,
@@ -178,10 +210,10 @@ export class WebhooksService {
       payload.celular,
       payload.contact_phone,
       // Stripe specific
-      payload.data?.object?.customer_details?.phone,
-      payload.data?.object?.phone,
+      customerDetails?.phone,
+      dataObject?.phone,
       // Hotmart specific
-      payload.buyer?.phone,
+      buyer?.phone,
       payload.checkout_phone,
     ];
 
@@ -370,24 +402,41 @@ export class WebhooksService {
    * Processa mensagens recebidas do Instagram via webhook
    * Delega para OmnichannelService que normaliza e salva na inbox
    */
-  async processInstagramMessage(workspaceId: string, payload: any) {
+  async processInstagramMessage(workspaceId: string, payload: InstagramWebhookBody) {
     this.logger.log(`[INSTAGRAM] Processing message for workspace ${workspaceId}`);
 
     try {
       const result = await this.omnichannelService.processInstagramWebhook(workspaceId, payload);
       return result;
-    } catch (error: any) {
-      this.logger.error(`[INSTAGRAM] Error processing message: ${error.message}`);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'unknown error';
+      this.logger.error(`[INSTAGRAM] Error processing message: ${message}`);
       throw error;
     }
   }
 
   // ── Webhook Event Audit Trail ──
 
-  async logWebhookEvent(provider: string, eventType: string, externalId: string, payload: any) {
+  async logWebhookEvent<T extends object>(
+    provider: string,
+    eventType: string,
+    externalId: string,
+    payload: T,
+  ) {
+    // Prisma.JsonValue requires an index signature; callers pass well-typed
+    // provider-specific DTOs (StripeEventLike, GenericPaymentWebhookBody…)
+    // that are JSON-serializable by construction. Convert via JSON round-trip
+    // to guarantee the value matches Prisma's InputJsonValue shape at runtime
+    // (strips functions, undefined, symbols, class identity, etc.).
+    const jsonPayload = JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue;
     return this.prisma.webhookEvent.upsert({
       where: { provider_externalId: { provider, externalId } },
-      create: { provider, eventType, externalId, payload, status: 'received' },
+      create: { provider, eventType, externalId, payload: jsonPayload, status: 'received' },
       update: { status: 'received', receivedAt: new Date() },
     });
   }

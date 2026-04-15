@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Query, Req, UseGuards } from '@nes
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MetaAdsService } from './meta-ads.service';
 
@@ -12,7 +13,7 @@ export class MetaAdsController {
 
   @Get('campaigns')
   async getCampaigns(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('adAccountId') adAccountId: string,
     @Query('accessToken') accessToken: string,
   ) {
@@ -25,7 +26,7 @@ export class MetaAdsController {
 
   @Patch('campaigns/:id/status')
   async updateCampaignStatus(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') campaignId: string,
     @Body() body: { status: 'ACTIVE' | 'PAUSED'; accessToken: string },
   ) {
@@ -39,7 +40,7 @@ export class MetaAdsController {
 
   @Get('insights/account')
   async getAccountInsights(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('adAccountId') adAccountId: string,
     @Query('since') since: string,
     @Query('until') until: string,
@@ -60,7 +61,7 @@ export class MetaAdsController {
 
   @Get('insights/daily')
   async getDailyInsights(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('campaignId') campaignId: string,
     @Query('since') since: string,
     @Query('until') until: string,
@@ -77,7 +78,7 @@ export class MetaAdsController {
 
   @Get('leads')
   async getLeadForms(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('pageId') pageId: string,
     @Query('accessToken') accessToken: string,
   ) {
@@ -90,7 +91,7 @@ export class MetaAdsController {
 
   @Get('leads/:formId')
   async getLeads(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('formId') formId: string,
     @Query('accessToken') accessToken: string,
   ) {

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { WhatsappService } from './whatsapp.service';
 
 type LegacySendBody = {
@@ -30,13 +31,13 @@ type LegacyBulkBody = {
 export class WhatsappController {
   constructor(private readonly whatsappService: WhatsappService) {}
 
-  private resolveWorkspaceId(req: any, workspaceId: string) {
+  private resolveWorkspaceId(req: AuthenticatedRequest, workspaceId: string) {
     return req?.workspaceId || workspaceId;
   }
 
   @Post('send')
   async send(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body() body: LegacySendBody,
   ) {
@@ -52,7 +53,7 @@ export class WhatsappController {
 
   @Post('incoming')
   async incoming(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body() body: LegacyIncomingBody,
   ) {
@@ -62,7 +63,7 @@ export class WhatsappController {
 
   @Post('opt-in/bulk')
   async optInBulk(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body() body: LegacyBulkBody,
   ) {
@@ -72,7 +73,7 @@ export class WhatsappController {
 
   @Post('opt-out/bulk')
   async optOutBulk(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body() body: LegacyBulkBody,
   ) {
@@ -82,7 +83,7 @@ export class WhatsappController {
 
   @Get('opt-status/:phone')
   async getOptStatus(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('phone') phone: string,
   ) {
