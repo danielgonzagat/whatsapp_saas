@@ -18,6 +18,7 @@ import { Idempotent } from '../common/idempotency.guard';
 import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { CheckoutService } from './checkout.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { GooglePeopleProfileDto } from './dto/google-people-profile.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
@@ -168,5 +169,11 @@ export class CheckoutPublicController {
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   updateSocialLead(@Param('leadId') leadId: string, @Body() dto: UpdateSocialLeadDto) {
     return this.checkoutSocialLeadService.updateLead(leadId, dto);
+  }
+
+  @Post('social-capture/:leadId/google-profile')
+  @Throttle({ default: { limit: 8, ttl: 60000 } })
+  hydrateGooglePeopleProfile(@Param('leadId') leadId: string, @Body() dto: GooglePeopleProfileDto) {
+    return this.checkoutSocialLeadService.hydrateGoogleProfile(leadId, dto.accessToken);
   }
 }

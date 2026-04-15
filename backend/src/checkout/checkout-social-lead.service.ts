@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CheckoutSocialLeadStatus, CheckoutSocialProvider, Prisma } from '@prisma/client';
 import { GoogleAuthService } from '../auth/google-auth.service';
 import { buildQueueJobId } from '../queue/job-id.util';
@@ -167,6 +173,93 @@ export class CheckoutSocialLeadService {
       deviceFingerprint: lead.deviceFingerprint,
       phone: lead.phone,
       cpf: lead.cpf,
+      cep: address.cep,
+      street: address.street,
+      number: address.number,
+      neighborhood: address.neighborhood,
+      city: address.city,
+      state: address.state,
+      complement: address.complement,
+    };
+  }
+
+  async hydrateGoogleProfile(leadId: string, accessToken: string) {
+    const lead = await this.prisma.checkoutSocialLead.findUnique({
+      where: { id: leadId },
+      select: {
+        id: true,
+        workspaceId: true,
+        provider: true,
+        email: true,
+        phone: true,
+        enrichmentData: true,
+      },
+    });
+
+    if (!lead) {
+      throw new NotFoundException('Lead social do checkout não encontrado.');
+    }
+
+    if (lead.provider !== CheckoutSocialProvider.GOOGLE) {
+      throw new ServiceUnavailableException('Escopos adicionais disponíveis apenas para Google.');
+    }
+
+    const peopleProfile = await this.googleAuthService.fetchPeopleProfile(accessToken);
+    const normalizedLeadEmail = this.normalizeEmail(lead.email);
+    const normalizedProfileEmail = this.normalizeEmail(peopleProfile.email);
+
+    if (
+      normalizedLeadEmail &&
+      normalizedProfileEmail &&
+      normalizedLeadEmail !== normalizedProfileEmail
+    ) {
+      this.logger.warn(
+        `google_people_email_mismatch: ${JSON.stringify({
+          leadId,
+          leadEmail: normalizedLeadEmail,
+          peopleEmail: normalizedProfileEmail,
+        })}`,
+      );
+      throw new UnauthorizedException('Conta Google divergente da identidade já capturada.');
+    }
+
+    const normalizedPhone = this.normalizePhone(peopleProfile.phone) || lead.phone || null;
+    const mergedEnrichmentData = this.mergeGooglePeopleProfile(lead.enrichmentData, peopleProfile);
+
+    const updatedLead = await this.prisma.checkoutSocialLead.update({
+      where: { id: lead.id },
+      data: {
+        phone: normalizedPhone,
+        enrichmentData: mergedEnrichmentData,
+      },
+      select: {
+        id: true,
+        provider: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+        deviceFingerprint: true,
+        phone: true,
+        cpf: true,
+        enrichmentData: true,
+      },
+    });
+
+    if (normalizedPhone) {
+      await this.syncLeadContact(updatedLead.id);
+    }
+
+    const address = this.extractAddressFromEnrichment(updatedLead.enrichmentData);
+
+    return {
+      leadId: updatedLead.id,
+      provider: this.serializeProvider(updatedLead.provider),
+      name: updatedLead.name,
+      email: updatedLead.email,
+      avatarUrl: updatedLead.avatarUrl,
+      deviceFingerprint: updatedLead.deviceFingerprint,
+      phone: updatedLead.phone,
+      cpf: updatedLead.cpf,
       cep: address.cep,
       street: address.street,
       number: address.number,
@@ -495,6 +588,36 @@ export class CheckoutSocialLeadService {
       address: {
         ...address,
         ...Object.fromEntries(addressEntries),
+      },
+    };
+  }
+
+  private mergeGooglePeopleProfile(
+    current: Prisma.JsonValue | null,
+    profile: Awaited<ReturnType<GoogleAuthService['fetchPeopleProfile']>>,
+  ): Prisma.InputJsonValue {
+    const root = this.readJsonObject(current) || {};
+    const address = this.readJsonObject(root.address) || {};
+    const providerProfile = this.readJsonObject(root.googleProfile) || {};
+
+    return {
+      ...root,
+      googleProfile: {
+        ...providerProfile,
+        email: profile.email,
+        phone: profile.phone,
+      },
+      address: {
+        ...address,
+        street: this.normalizeOptional(profile.address?.street) || address.street || null,
+        city: this.normalizeOptional(profile.address?.city) || address.city || null,
+        state: this.normalizeOptional(profile.address?.state) || address.state || null,
+        postalCode:
+          this.normalizeOptional(profile.address?.postalCode) || address.postalCode || null,
+        countryCode:
+          this.normalizeOptional(profile.address?.countryCode) || address.countryCode || null,
+        formattedValue:
+          this.normalizeOptional(profile.address?.formattedValue) || address.formattedValue || null,
       },
     };
   }

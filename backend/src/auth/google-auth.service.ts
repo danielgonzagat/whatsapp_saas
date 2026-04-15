@@ -19,9 +19,25 @@ export interface GoogleVerifiedProfile {
   emailVerified: boolean;
 }
 
+export interface GooglePeopleProfile {
+  email: string | null;
+  phone: string | null;
+  address: {
+    street: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+    countryCode: string | null;
+    formattedValue: string | null;
+  } | null;
+  raw: unknown;
+}
+
 @Injectable()
 export class GoogleAuthService {
   private readonly logger = new Logger(GoogleAuthService.name);
+  private static readonly PEOPLE_API_URL =
+    'https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses,phoneNumbers,addresses';
 
   constructor(private readonly config: ConfigService) {}
 
@@ -93,6 +109,72 @@ export class GoogleAuthService {
     };
   }
 
+  async fetchPeopleProfile(accessToken: string): Promise<GooglePeopleProfile> {
+    const token = accessToken?.trim();
+    if (!token) {
+      throw new UnauthorizedException('Access token Google ausente.');
+    }
+
+    const response = await fetch(GoogleAuthService.PEOPLE_API_URL, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      signal: AbortSignal.timeout(15000),
+    }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'unknown_error';
+      throw new ServiceUnavailableException(`Falha ao consultar perfil Google: ${message}`);
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      if (response.status === 401 || response.status === 403) {
+        throw new UnauthorizedException('Google negou acesso aos escopos adicionais.');
+      }
+
+      throw new ServiceUnavailableException(
+        `Falha ao consultar perfil Google: status ${response.status}${body ? ` ${body}` : ''}`,
+      );
+    }
+
+    const raw = (await response.json()) as {
+      emailAddresses?: Array<{ value?: string; metadata?: { primary?: boolean } }>;
+      phoneNumbers?: Array<{
+        value?: string;
+        canonicalForm?: string;
+        metadata?: { primary?: boolean };
+      }>;
+      addresses?: Array<{
+        streetAddress?: string;
+        city?: string;
+        region?: string;
+        postalCode?: string;
+        countryCode?: string;
+        formattedValue?: string;
+        metadata?: { primary?: boolean };
+      }>;
+    };
+
+    const email = pickPrimary(raw.emailAddresses)?.value?.trim().toLowerCase() || null;
+    const phoneEntry = pickPrimary(raw.phoneNumbers);
+    const addressEntry = pickPrimary(raw.addresses);
+
+    return {
+      email,
+      phone: phoneEntry?.canonicalForm?.trim() || phoneEntry?.value?.trim() || null,
+      address: addressEntry
+        ? {
+            street: addressEntry.streetAddress?.trim() || null,
+            city: addressEntry.city?.trim() || null,
+            state: addressEntry.region?.trim() || null,
+            postalCode: addressEntry.postalCode?.trim() || null,
+            countryCode: addressEntry.countryCode?.trim() || null,
+            formattedValue: addressEntry.formattedValue?.trim() || null,
+          }
+        : null,
+      raw,
+    };
+  }
+
   private assertPayload(payload: TokenPayload) {
     const issuer = payload.iss?.trim();
     if (issuer !== 'accounts.google.com' && issuer !== 'https://accounts.google.com') {
@@ -126,4 +208,12 @@ export class GoogleAuthService {
     const candidate = cleaned || 'User';
     return candidate.charAt(0).toUpperCase() + candidate.slice(1);
   }
+}
+
+function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T[]) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return null;
+  }
+
+  return entries.find((entry) => entry?.metadata?.primary) || entries[0];
 }

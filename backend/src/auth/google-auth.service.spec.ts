@@ -159,4 +159,49 @@ describe('GoogleAuthService', () => {
       ],
     });
   });
+
+  it('fetches phone and address from Google People API when extra scopes were granted', async () => {
+    const service = buildService();
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        emailAddresses: [{ value: 'googleuser@example.com', metadata: { primary: true } }],
+        phoneNumbers: [{ canonicalForm: '+5562999990000', metadata: { primary: true } }],
+        addresses: [
+          {
+            streetAddress: 'Rua das Flores, 100',
+            city: 'Caldas Novas',
+            region: 'GO',
+            postalCode: '75690-000',
+            countryCode: 'BR',
+            formattedValue: 'Rua das Flores, 100, Caldas Novas - GO',
+            metadata: { primary: true },
+          },
+        ],
+      }),
+      text: async () => '',
+    } as Response);
+
+    const profile = await service.fetchPeopleProfile('access-token');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('people.googleapis.com/v1/people/me'),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer access-token',
+        }),
+      }),
+    );
+    expect(profile).toMatchObject({
+      email: 'googleuser@example.com',
+      phone: '+5562999990000',
+      address: {
+        street: 'Rua das Flores, 100',
+        city: 'Caldas Novas',
+        state: 'GO',
+        postalCode: '75690-000',
+        countryCode: 'BR',
+      },
+    });
+  });
 });

@@ -5,6 +5,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services';
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
+const GOOGLE_PEOPLE_SCOPES = [
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/user.phonenumbers.read',
+  'https://www.googleapis.com/auth/user.addresses.read',
+].join(' ');
 const DEVICE_STORAGE_KEY = 'kloel.checkout.device-id.v1';
 const IDENTITY_STORAGE_KEY = 'kloel.checkout.identity.v1';
 
@@ -61,13 +66,31 @@ type UseCheckoutSocialIdentityOptions = {
   enabled?: boolean;
 };
 
+type GoogleTokenResponse = {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+  scope?: string;
+};
+
+type GoogleTokenClient = {
+  callback: (response: GoogleTokenResponse) => void;
+  requestAccessToken: (options?: {
+    prompt?: '' | 'consent' | 'select_account' | 'none';
+    hint?: string;
+    scope?: string;
+  }) => void;
+};
+
 export function useCheckoutSocialIdentity({
   slug,
   checkoutCode,
   enabled = true,
 }: UseCheckoutSocialIdentityOptions) {
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const tokenClientRef = useRef<GoogleTokenClient | null>(null);
   const callbackRef = useRef<(credential: string) => Promise<void>>(async () => undefined);
+  const profileHydrationLeadRef = useRef('');
   const initializedRef = useRef(false);
   const prefillRequestKeyRef = useRef('');
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() || '';
@@ -164,6 +187,54 @@ export function useCheckoutSocialIdentity({
     };
   }, [checkoutCode, deviceFingerprint, enabled, slug, snapshot]);
 
+  const hydrateGooglePeopleProfile = useCallback(
+    async (baseSnapshot: CheckoutSocialIdentitySnapshot) => {
+      if (!baseSnapshot.leadId) return;
+      if (profileHydrationLeadRef.current === baseSnapshot.leadId) {
+        return;
+      }
+
+      const tokenClient = tokenClientRef.current;
+      if (!tokenClient) {
+        return;
+      }
+
+      profileHydrationLeadRef.current = baseSnapshot.leadId;
+
+      const accessToken = await requestGoogleAccessToken(tokenClient, baseSnapshot.email);
+      if (!accessToken) {
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE}/checkout/public/social-capture/${baseSnapshot.leadId}/google-profile`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken }),
+          },
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as PrefillResponse;
+        const nextSnapshot = mergeSnapshot(
+          baseSnapshot,
+          data,
+          deviceFingerprint || baseSnapshot.deviceFingerprint,
+        );
+        persistIdentity(nextSnapshot);
+        setSnapshot(nextSnapshot);
+      } catch {
+        // Escopos adicionais são best-effort.
+      }
+    },
+    [deviceFingerprint],
+  );
+
   const handleGoogleCredential = useCallback(
     async (credential: string) => {
       if (!slug) {
@@ -200,6 +271,7 @@ export function useCheckoutSocialIdentity({
         const nextSnapshot = mergeSnapshot(snapshot, data, deviceFingerprint);
         persistIdentity(nextSnapshot);
         setSnapshot(nextSnapshot);
+        void hydrateGooglePeopleProfile(nextSnapshot);
       } catch (captureError: unknown) {
         setError(
           captureError instanceof Error ? captureError.message : 'Falha ao capturar a identidade.',
@@ -208,7 +280,7 @@ export function useCheckoutSocialIdentity({
         setLoadingProvider(null);
       }
     },
-    [checkoutCode, deviceFingerprint, slug, snapshot],
+    [checkoutCode, deviceFingerprint, hydrateGooglePeopleProfile, slug, snapshot],
   );
 
   callbackRef.current = handleGoogleCredential;
@@ -219,6 +291,7 @@ export function useCheckoutSocialIdentity({
     }
 
     const accounts = window.google?.accounts?.id;
+    const oauth2 = window.google?.accounts?.oauth2;
     if (!accounts) return;
 
     accounts.initialize({
@@ -233,6 +306,14 @@ export function useCheckoutSocialIdentity({
         }
       },
     });
+
+    if (oauth2 && !tokenClientRef.current) {
+      tokenClientRef.current = oauth2.initTokenClient({
+        client_id: clientId,
+        scope: GOOGLE_PEOPLE_SCOPES,
+        callback: () => undefined,
+      });
+    }
 
     googleButtonRef.current.innerHTML = '';
     accounts.renderButton(googleButtonRef.current, {
@@ -280,6 +361,42 @@ export function useCheckoutSocialIdentity({
     googleAvailable: enabled && Boolean(clientId),
     updateLeadProgress,
   };
+}
+
+async function requestGoogleAccessToken(tokenClient: GoogleTokenClient, hint?: string) {
+  return await new Promise<string | null>((resolve) => {
+    let settled = false;
+    const previousCallback = tokenClient.callback;
+
+    const finish = (value: string | null) => {
+      if (settled) return;
+      settled = true;
+      tokenClient.callback = previousCallback;
+      window.clearTimeout(timeout);
+      resolve(value);
+    };
+
+    const timeout = window.setTimeout(() => finish(null), 8000);
+
+    tokenClient.callback = (response: GoogleTokenResponse) => {
+      if (response.access_token?.trim()) {
+        finish(response.access_token.trim());
+        return;
+      }
+
+      finish(null);
+    };
+
+    try {
+      tokenClient.requestAccessToken({
+        prompt: 'consent',
+        hint: hint?.trim() || undefined,
+        scope: GOOGLE_PEOPLE_SCOPES,
+      });
+    } catch {
+      finish(null);
+    }
+  });
 }
 
 function ensureDeviceFingerprint() {

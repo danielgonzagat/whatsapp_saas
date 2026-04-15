@@ -21,6 +21,7 @@ describe('CheckoutPublicController', () => {
   let socialLeadService: {
     captureLead: jest.Mock;
     getLeadPrefill: jest.Mock;
+    hydrateGoogleProfile: jest.Mock;
     updateLead: jest.Mock;
   };
 
@@ -39,6 +40,7 @@ describe('CheckoutPublicController', () => {
     socialLeadService = {
       captureLead: jest.fn(),
       getLeadPrefill: jest.fn(),
+      hydrateGoogleProfile: jest.fn(),
       updateLead: jest.fn(),
     };
 
@@ -117,5 +119,16 @@ describe('CheckoutPublicController', () => {
       checkoutCode: 'MPX9Q2Z7',
       deviceFingerprint: 'device-123',
     });
+  });
+
+  it('delegates google people hydration with the captured lead id', async () => {
+    await controller.hydrateGooglePeopleProfile('lead-123', {
+      accessToken: 'google-access-token',
+    });
+
+    expect(socialLeadService.hydrateGoogleProfile).toHaveBeenCalledWith(
+      'lead-123',
+      'google-access-token',
+    );
   });
 });
