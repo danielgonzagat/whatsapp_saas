@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DestructiveIntentKind, DestructiveIntentStatus, type Prisma } from '@prisma/client';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomInt } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { sha256Hex } from '../common/admin-crypto';
 import { adminErrors } from '../common/admin-api-errors';
@@ -279,10 +279,14 @@ function clampTtl(requested: number | undefined): number {
 }
 
 function generateChallenge(): string {
-  const bytes = randomBytes(CHALLENGE_LENGTH);
+  // Use crypto.randomInt for guaranteed unbiased index selection.
+  // Reading a byte and applying `% alphabetLen` would bias the
+  // distribution unless alphabetLen divides 256 evenly — CodeQL's
+  // js/biased-cryptographic-random can't prove that at build time
+  // and flags the pattern, so we use the explicit unbiased helper.
   let out = '';
   for (let i = 0; i < CHALLENGE_LENGTH; i += 1) {
-    out += CHALLENGE_ALPHABET.charAt(bytes[i] % CHALLENGE_ALPHABET.length);
+    out += CHALLENGE_ALPHABET.charAt(randomInt(0, CHALLENGE_ALPHABET.length));
   }
   return out;
 }
