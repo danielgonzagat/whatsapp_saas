@@ -43,6 +43,7 @@ import { WorkspaceModule } from './workspaces/workspace.module';
 
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
+import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
 import { AiBrainModule } from './ai-brain/ai-brain.module';
 import { AnalyticsModule } from './analytics/analytics.module';
@@ -207,6 +208,7 @@ const isProd = process.env.NODE_ENV === 'production';
     CookieConsentModule, // Cookie consent management
     FinancialAlertModule, // Financial alerting (global)
     PulseModule, // PULSE live organism collector
+    AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)
   ],
   controllers: [AppController, PaymentWebhookController, AsaasWebhookController],
   providers: [

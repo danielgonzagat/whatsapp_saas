@@ -2835,3 +2835,134 @@ model MetaConnection {
   connectedAt           DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }
+
+// ============================================================================
+// ADMIN IDENTITY & ACCESS MANAGEMENT (adm.kloel.com)
+// ----------------------------------------------------------------------------
+// Spec: docs/superpowers/specs/2026-04-15-adm-kloel-foundation-iam-design.md
+// Invariants I-ADMIN-1..10 enforced in app + DB triggers.
+// ============================================================================
+
+enum AdminRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum AdminUserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum AdminModule {
+  HOME
+  PRODUTOS
+  MARKETING
+  VENDAS
+  CARTEIRA
+  RELATORIOS
+  CONTAS
+  COMPLIANCE
+  CLIENTES
+  CONFIGURACOES
+  IAM
+  PERFIL
+  AUDIT_LOG
+}
+
+enum AdminAction {
+  VIEW
+  CREATE
+  EDIT
+  DELETE
+  APPROVE
+  EXPORT
+}
+
+model AdminUser {
+  id                     String            @id @default(cuid())
+  name                   String
+  email                  String            @unique
+  passwordHash           String            @map("password_hash")
+  role                   AdminRole         @default(STAFF)
+  status                 AdminUserStatus   @default(ACTIVE)
+  mfaSecret              String?           @map("mfa_secret")
+  mfaEnabled             Boolean           @default(false) @map("mfa_enabled")
+  mfaPendingSetup        Boolean           @default(true)  @map("mfa_pending_setup")
+  passwordChangeRequired Boolean           @default(true)  @map("password_change_required")
+  allowedIps             Json?             @map("allowed_ips")
+  lastLoginAt            DateTime?         @map("last_login_at")
+  failedLoginCount       Int               @default(0)     @map("failed_login_count")
+  lockedUntil            DateTime?         @map("locked_until")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt      @map("updated_at")
+  createdById            String?           @map("created_by_id")
+  createdBy              AdminUser?        @relation("AdminUserCreatedBy", fields: [createdById], references: [id])
+  createdAdmins          AdminUser[]       @relation("AdminUserCreatedBy")
+  permissions            AdminPermission[]
+  sessions               AdminSession[]
+  auditLogs              AdminAuditLog[]
+
+  @@index([status, role])
+  @@map("admin_users")
+}
+
+model AdminPermission {
+  id          String      @id @default(cuid())
+  adminUserId String      @map("admin_user_id")
+  adminUser   AdminUser   @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  module      AdminModule
+  action      AdminAction
+  allowed     Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@unique([adminUserId, module, action])
+  @@map("admin_permissions")
+}
+
+model AdminSession {
+  id          String    @id @default(cuid())
+  adminUserId String    @map("admin_user_id")
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique @map("token_hash")
+  ip          String
+  userAgent   String    @map("user_agent")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  @@index([adminUserId, revokedAt])
+  @@index([expiresAt])
+  @@map("admin_sessions")
+}
+
+model AdminAuditLog {
+  id          String     @id @default(cuid())
+  adminUserId String?    @map("admin_user_id")
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id], onDelete: SetNull)
+  action      String
+  entityType  String?    @map("entity_type")
+  entityId    String?    @map("entity_id")
+  details     Json?
+  ip          String?
+  userAgent   String?    @map("user_agent")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([adminUserId, createdAt])
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@map("admin_audit_logs")
+}
+
+model AdminLoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+  @@map("admin_login_attempts")
+}
