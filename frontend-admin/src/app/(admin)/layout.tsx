@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { AdminChatbarSkeleton } from '@/components/admin/admin-chatbar-skeleton';
+import { AdminChatDrawer } from '@/components/admin/admin-chat-drawer';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminTopbar } from '@/components/admin/admin-topbar';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
@@ -32,7 +32,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <AdminTopbar />
         <main className="flex flex-1 flex-col pb-32">{children}</main>
       </div>
-      <AdminChatbarSkeleton />
+      <AdminChatDrawer />
     </div>
   );
 }
