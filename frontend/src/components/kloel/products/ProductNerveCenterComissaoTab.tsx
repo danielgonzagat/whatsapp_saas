@@ -788,6 +788,7 @@ function CoprodSubTab({
                   textTransform: 'uppercase',
                   letterSpacing: '.08em',
                 }}
+                htmlFor="papel-937880"
               >
                 Papel
               </label>
@@ -795,6 +796,7 @@ function CoprodSubTab({
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
                 style={inputSt}
+                id="papel-937880"
               >
                 <option value="COPRODUCER">Coprodutor</option>
                 <option value="MANAGER">Gerente</option>
@@ -815,6 +817,7 @@ function CoprodSubTab({
                   textTransform: 'uppercase',
                   letterSpacing: '.08em',
                 }}
+                htmlFor="nome-ba3b33"
               >
                 Nome
               </label>
@@ -823,6 +826,7 @@ function CoprodSubTab({
                 onChange={(e) => setForm({ ...form, agentName: e.target.value })}
                 style={inputSt}
                 placeholder="Nome do coprodutor"
+                id="nome-ba3b33"
               />
             </div>
             <div>
@@ -836,6 +840,7 @@ function CoprodSubTab({
                   textTransform: 'uppercase',
                   letterSpacing: '.08em',
                 }}
+                htmlFor="e-mail-e75550"
               >
                 E-mail
               </label>
@@ -844,6 +849,7 @@ function CoprodSubTab({
                 onChange={(e) => setForm({ ...form, agentEmail: e.target.value })}
                 style={inputSt}
                 placeholder="email@exemplo.com"
+                id="e-mail-e75550"
               />
             </div>
           </div>
@@ -861,6 +867,7 @@ function CoprodSubTab({
                   textTransform: 'uppercase',
                   letterSpacing: '.08em',
                 }}
+                htmlFor="comiss-o-c42440"
               >
                 Comissão (%)
               </label>
@@ -871,6 +878,7 @@ function CoprodSubTab({
                 onChange={(e) => setForm({ ...form, percentage: e.target.value })}
                 style={inputSt}
                 placeholder="10.0"
+                id="comiss-o-c42440"
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>

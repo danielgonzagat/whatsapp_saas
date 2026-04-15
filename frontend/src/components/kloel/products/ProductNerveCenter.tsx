@@ -1839,6 +1839,7 @@ export default function ProductNerveCenter({
                               textTransform: 'uppercase',
                               letterSpacing: '.08em',
                             }}
+                            htmlFor="cupom-selecionado-e99559"
                           >
                             Cupom selecionado
                           </label>
@@ -1860,6 +1861,7 @@ export default function ProductNerveCenter({
                               fontSize: 13,
                               outline: 'none',
                             }}
+                            id="cupom-selecionado-e99559"
                           >
                             {COUPONS.map((coupon) => (
                               <option key={coupon.id} value={coupon.code}>

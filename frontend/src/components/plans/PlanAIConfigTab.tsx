@@ -857,7 +857,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               ))}
             </div>
             <div>
-              <label className="mb-2 block" style={labelStyle}>
+              <label className="mb-2 block" style={labelStyle} htmlFor="problema-principal-56d67d">
                 Problema principal
               </label>
               <select
@@ -865,6 +865,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 onChange={(e) => setProblem(e.target.value)}
                 className={selectClass}
                 style={inputStyle}
+                id="problema-principal-56d67d"
               >
                 <option value="">Selecione</option>
                 {PROBLEMS.map((p) => (
@@ -948,7 +949,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </div>
           </div>
           <div>
-            <label className="mb-2 block" style={labelStyle}>
+            <label className="mb-2 block" style={labelStyle} htmlFor="escassez-urg-ncia-60da93">
               Escassez/Urgência
             </label>
             <select
@@ -956,6 +957,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               onChange={(e) => setScarcity(e.target.value)}
               className={selectClass}
               style={inputStyle}
+              id="escassez-urg-ncia-60da93"
             >
               {SCARCITY.map((s) => (
                 <option key={s.v} value={s.v}>
@@ -1182,7 +1184,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               style={{ borderLeft: `2px solid ${colors.accent.webb}30` }}
             >
               <div>
-                <label className="mb-1.5 block" style={labelStyle}>
+                <label className="mb-1.5 block" style={labelStyle} htmlFor="plano-alvo-e08e28">
                   Plano alvo
                 </label>
                 <select
@@ -1190,6 +1192,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   onChange={(e) => setUpsellTargetPlan(e.target.value)}
                   className={selectClass}
                   style={inputStyle}
+                  id="plano-alvo-e08e28"
                 >
                   <option value="">Selecione o plano</option>
                   {siblingPlans.map((p) => (
@@ -1255,7 +1258,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               style={{ borderLeft: `2px solid ${colors.accent.gold}30` }}
             >
               <div>
-                <label className="mb-1.5 block" style={labelStyle}>
+                <label className="mb-1.5 block" style={labelStyle} htmlFor="plano-alvo-464bdd">
                   Plano alvo
                 </label>
                 <select
@@ -1263,6 +1266,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   onChange={(e) => setDownsellTargetPlan(e.target.value)}
                   className={selectClass}
                   style={inputStyle}
+                  id="plano-alvo-464bdd"
                 >
                   <option value="">Selecione o plano</option>
                   {siblingPlans.map((p) => (
@@ -1393,7 +1397,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block" style={labelStyle}>
+            <label className="mb-1.5 block" style={labelStyle} htmlFor="limite-de-mensagens-c2c3d7">
               Limite de mensagens
             </label>
             <select
@@ -1401,6 +1405,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               onChange={(e) => setMessageLimit(Number(e.target.value))}
               className={selectClass}
               style={inputStyle}
+              id="limite-de-mensagens-c2c3d7"
             >
               <option value={3}>3</option>
               <option value={5}>5</option>
@@ -1451,7 +1456,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         {hasTechInfo && (
           <div className="grid gap-4 md:grid-cols-2 mt-4">
             <div>
-              <label className="mb-1 block" style={labelStyle}>
+              <label className="mb-1 block" style={labelStyle} htmlFor="modo-de-uso-eb5838">
                 Modo de uso
               </label>
               <select
@@ -1459,6 +1464,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 onChange={(e) => setUsageMode(e.target.value)}
                 className={selectClass}
                 style={inputStyle}
+                id="modo-de-uso-eb5838"
               >
                 <option value="">Selecione</option>
                 {USAGE_MODES.map((u) => (
@@ -1469,7 +1475,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               </select>
             </div>
             <div>
-              <label className="mb-1 block" style={labelStyle}>
+              <label className="mb-1 block" style={labelStyle} htmlFor="dura-o-7b3e41">
                 Duração
               </label>
               <select
@@ -1477,6 +1483,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 onChange={(e) => setDuration(e.target.value)}
                 className={selectClass}
                 style={inputStyle}
+                id="dura-o-7b3e41"
               >
                 <option value="">Selecione</option>
                 {DURATIONS.map((d) => (
@@ -1509,7 +1516,11 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               </div>
             </div>
             <div>
-              <label className="mb-1 block" style={labelStyle}>
+              <label
+                className="mb-1 block"
+                style={labelStyle}
+                htmlFor="resultados-esperados-em-b14411"
+              >
                 Resultados esperados em
               </label>
               <select
@@ -1517,6 +1528,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 onChange={(e) => setExpectedResults(e.target.value)}
                 className={selectClass}
                 style={inputStyle}
+                id="resultados-esperados-em-b14411"
               >
                 <option value="">Selecione</option>
                 {RESULTS.map((r) => (

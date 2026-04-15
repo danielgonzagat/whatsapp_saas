@@ -862,6 +862,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                         color: '#6E6E73',
                         marginBottom: 6,
                       }}
+                      htmlFor="nome-936a31"
                     >
                       Nome
                     </label>
@@ -874,6 +875,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                       style={inputBase}
                       onFocus={inputFocusHandler}
                       onBlur={inputBlurHandler}
+                      id="nome-936a31"
                     />
                   </div>
                 )}
@@ -888,6 +890,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                       color: '#6E6E73',
                       marginBottom: 6,
                     }}
+                    htmlFor="e-mail-87206e"
                   >
                     E-mail
                   </label>
@@ -900,6 +903,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                     style={inputBase}
                     onFocus={inputFocusHandler}
                     onBlur={inputBlurHandler}
+                    id="e-mail-87206e"
                   />
                 </div>
 

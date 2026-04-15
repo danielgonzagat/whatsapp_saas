@@ -742,6 +742,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             display: 'block',
             marginBottom: 6,
           }}
+          htmlFor="email-fcb2f0"
         >
           Email
         </label>
@@ -764,6 +765,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             marginBottom: 16,
             boxSizing: 'border-box' as const,
           }}
+          id="email-fcb2f0"
         />
 
         {/* Role selector (4 roles, no admin) */}

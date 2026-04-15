@@ -284,7 +284,9 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {/* productName */}
             <div>
-              <label style={labelStyle}>Product Name</label>
+              <label style={labelStyle} htmlFor="product-name-a49b69">
+                Product Name
+              </label>
               <input
                 aria-label="Nome do produto"
                 type="text"
@@ -292,12 +294,15 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 onChange={(e) => setForm({ ...form, productName: e.target.value })}
                 placeholder="Nome do produto"
                 style={inputStyle}
+                id="product-name-a49b69"
               />
             </div>
 
             {/* title */}
             <div>
-              <label style={labelStyle}>Title</label>
+              <label style={labelStyle} htmlFor="title-92908b">
+                Title
+              </label>
               <input
                 aria-label="Titulo da oferta"
                 type="text"
@@ -305,12 +310,15 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Titulo da oferta"
                 style={inputStyle}
+                id="title-92908b"
               />
             </div>
 
             {/* priceInCents */}
             <div>
-              <label style={labelStyle}>Preco (centavos)</label>
+              <label style={labelStyle} htmlFor="preco-centavos-d03654">
+                Preco (centavos)
+              </label>
               <input
                 aria-label="Preco em centavos"
                 type="number"
@@ -318,12 +326,15 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 onChange={(e) => setForm({ ...form, priceInCents: Number(e.target.value) })}
                 placeholder="Ex: 4990"
                 style={{ ...inputStyle, fontFamily: FONT_MONO }}
+                id="preco-centavos-d03654"
               />
             </div>
 
             {/* compareAtPrice */}
             <div>
-              <label style={labelStyle}>Preco comparativo (centavos)</label>
+              <label style={labelStyle} htmlFor="preco-comparativo-centavos-d2ea2e">
+                Preco comparativo (centavos)
+              </label>
               <input
                 aria-label="Preco comparativo em centavos"
                 type="number"
@@ -331,29 +342,36 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 onChange={(e) => setForm({ ...form, compareAtPrice: Number(e.target.value) })}
                 placeholder="Ex: 9990"
                 style={{ ...inputStyle, fontFamily: FONT_MONO }}
+                id="preco-comparativo-centavos-d2ea2e"
               />
             </div>
 
             {/* checkboxLabel */}
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle}>Checkbox Label</label>
+              <label style={labelStyle} htmlFor="checkbox-label-a3035d">
+                Checkbox Label
+              </label>
               <input
                 aria-label="Texto do checkbox"
                 type="text"
                 value={form.checkboxLabel}
                 onChange={(e) => setForm({ ...form, checkboxLabel: e.target.value })}
                 style={inputStyle}
+                id="checkbox-label-a3035d"
               />
             </div>
 
             {/* description */}
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle}>Descricao</label>
+              <label style={labelStyle} htmlFor="descricao-6fd837">
+                Descricao
+              </label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Descreva o bump..."
                 style={textareaStyle}
+                id="descricao-6fd837"
               />
             </div>
           </div>

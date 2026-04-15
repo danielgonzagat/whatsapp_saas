@@ -208,6 +208,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             display: 'block',
             marginBottom: 6,
           }}
+          htmlFor="nome-018e30"
         >
           Nome *
         </label>
@@ -229,6 +230,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             marginBottom: 16,
             boxSizing: 'border-box' as const,
           }}
+          id="nome-018e30"
         />
 
         <label
@@ -240,6 +242,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             display: 'block',
             marginBottom: 6,
           }}
+          htmlFor="descricao-opcional-e073f2"
         >
           Descricao (opcional)
         </label>
@@ -262,6 +265,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             boxSizing: 'border-box' as const,
             resize: 'vertical',
           }}
+          id="descricao-opcional-e073f2"
         />
 
         {error && (
@@ -421,6 +425,7 @@ function AddGroupModal({
             display: 'block',
             marginBottom: 6,
           }}
+          htmlFor="link-do-grupo-694383"
         >
           Link do grupo *
         </label>
@@ -442,6 +447,7 @@ function AddGroupModal({
             marginBottom: 16,
             boxSizing: 'border-box' as const,
           }}
+          id="link-do-grupo-694383"
         />
 
         {error && (

@@ -259,12 +259,15 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           <div className="rounded-xl p-5" style={cardStyle}>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label style={labelStyle}>Máximo de parcelas no cartão *</label>
+                <label style={labelStyle} htmlFor="m-ximo-de-parcelas-no-cart-o-8006c0">
+                  Máximo de parcelas no cartão *
+                </label>
                 <select
                   value={maxInstallments}
                   onChange={(e) => setMaxInstallments(e.target.value)}
                   className={`${selectClass} mt-1.5`}
                   style={inputStyle}
+                  id="m-ximo-de-parcelas-no-cart-o-8006c0"
                 >
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>
@@ -274,12 +277,15 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Máximo de parcelas sem juros *</label>
+                <label style={labelStyle} htmlFor="m-ximo-de-parcelas-sem-juros-d7d866">
+                  Máximo de parcelas sem juros *
+                </label>
                 <select
                   value={maxNoInterest}
                   onChange={(e) => setMaxNoInterest(e.target.value)}
                   className={`${selectClass} mt-1.5`}
                   style={inputStyle}
+                  id="m-ximo-de-parcelas-sem-juros-d7d866"
                 >
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>
@@ -329,12 +335,15 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           {sectionTitle('Configuração de assinatura')}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label style={labelStyle}>Período de assinatura</label>
+              <label style={labelStyle} htmlFor="per-odo-de-assinatura-4d62c8">
+                Período de assinatura
+              </label>
               <select
                 value={recurringInterval}
                 onChange={(e) => setRecurringInterval(e.target.value)}
                 className={`${selectClass} mt-1.5`}
                 style={inputStyle}
+                id="per-odo-de-assinatura-4d62c8"
               >
                 <option value="WEEKLY">Semanal</option>
                 <option value="BIWEEKLY">Quinzenal</option>
@@ -359,7 +368,9 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           {trialEnabled && (
             <div className="ml-14 grid gap-4 md:grid-cols-3">
               <div>
-                <label style={labelStyle}>Dias de trial</label>
+                <label style={labelStyle} htmlFor="dias-de-trial-0c4de2">
+                  Dias de trial
+                </label>
                 <input
                   type="number"
                   value={trialDays}
@@ -368,6 +379,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                   max={365}
                   className={`${selectClass} mt-1.5`}
                   style={inputStyle}
+                  id="dias-de-trial-0c4de2"
                 />
               </div>
               <CurrencyInput
@@ -399,12 +411,15 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             {boletoInstallment && (
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
-                  <label style={labelStyle}>Máximo de parcelas</label>
+                  <label style={labelStyle} htmlFor="m-ximo-de-parcelas-3a7f7a">
+                    Máximo de parcelas
+                  </label>
                   <select
                     value={boletoMaxInstallments}
                     onChange={(e) => setBoletoMaxInstallments(e.target.value)}
                     className={`${selectClass} mt-1.5`}
                     style={inputStyle}
+                    id="m-ximo-de-parcelas-3a7f7a"
                   >
                     {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                       <option key={n} value={n}>

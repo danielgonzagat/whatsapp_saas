@@ -216,11 +216,14 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           </div>
           <div className="space-y-4 md:col-span-3">
             <div>
-              <label className={labelClass}>Nome *</label>
+              <label className={labelClass} htmlFor="nome-a09147">
+                Nome *
+              </label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className={inputClass}
+                id="nome-a09147"
               />
             </div>
             <CurrencyInput value={price} onChange={setPrice} label="Valor do plano (R$) *" />
@@ -231,22 +234,28 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       {/* Additional Fields */}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <label className={labelClass}>Quantidade de itens inclusos *</label>
+          <label className={labelClass} htmlFor="quantidade-de-itens-inclusos-bc9e02">
+            Quantidade de itens inclusos *
+          </label>
           <input
             type="number"
             min={1}
             value={items}
             onChange={(e) => setItems(e.target.value)}
             className={inputClass}
+            id="quantidade-de-itens-inclusos-bc9e02"
           />
         </div>
         <div>
-          <label className={labelClass}>URL de redirecionamento (botão voltar)</label>
+          <label className={labelClass} htmlFor="url-de-redirecionamento-bot-o-vo-d91679">
+            URL de redirecionamento (botão voltar)
+          </label>
           <input
             value={redirectUrl}
             onChange={(e) => setRedirectUrl(e.target.value)}
             placeholder="https://..."
             className={inputClass}
+            id="url-de-redirecionamento-bot-o-vo-d91679"
           />
         </div>
       </div>
@@ -258,30 +267,39 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
         </h3>
         <div className="space-y-3">
           <div>
-            <label className={labelClass}>Página de obrigado</label>
+            <label className={labelClass} htmlFor="p-gina-de-obrigado-7e089c">
+              Página de obrigado
+            </label>
             <input
               value={thankyouUrl}
               onChange={(e) => setThankyouUrl(e.target.value)}
               placeholder="https://..."
               className={inputClass}
+              id="p-gina-de-obrigado-7e089c"
             />
           </div>
           <div>
-            <label className={labelClass}>Página de obrigado (boletos)</label>
+            <label className={labelClass} htmlFor="p-gina-de-obrigado-boletos-80dc3b">
+              Página de obrigado (boletos)
+            </label>
             <input
               value={thankyouBoletoUrl}
               onChange={(e) => setThankyouBoletoUrl(e.target.value)}
               placeholder="https://..."
               className={inputClass}
+              id="p-gina-de-obrigado-boletos-80dc3b"
             />
           </div>
           <div>
-            <label className={labelClass}>Página de obrigado (PIX)</label>
+            <label className={labelClass} htmlFor="p-gina-de-obrigado-pix-2e0277">
+              Página de obrigado (PIX)
+            </label>
             <input
               value={thankyouPixUrl}
               onChange={(e) => setThankyouPixUrl(e.target.value)}
               placeholder="https://..."
               className={inputClass}
+              id="p-gina-de-obrigado-pix-2e0277"
             />
           </div>
         </div>

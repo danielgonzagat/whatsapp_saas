@@ -217,6 +217,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
+                  htmlFor="codigo-09d9cb"
                 >
                   Codigo *
                 </label>
@@ -226,6 +227,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   placeholder="DESCONTO10"
                   className="font-mono uppercase"
                   style={inputStyle}
+                  id="codigo-09d9cb"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -233,6 +235,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   <label
                     className="mb-1 block text-xs font-semibold uppercase"
                     style={{ color: colors.text.muted }}
+                    htmlFor="tipo-9251a2"
                   >
                     Tipo
                   </label>
@@ -240,6 +243,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     value={form.discountType}
                     onChange={(e) => setForm({ ...form, discountType: e.target.value })}
                     style={inputStyle}
+                    id="tipo-9251a2"
                   >
                     <option value="PERCENT">Percentual (%)</option>
                     <option value="FIXED">Valor fixo (R$)</option>
@@ -249,6 +253,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   <label
                     className="mb-1 block text-xs font-semibold uppercase"
                     style={{ color: colors.text.muted }}
+                    htmlFor="valor-ba4881"
                   >
                     Valor
                   </label>
@@ -258,6 +263,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     value={form.discountValue}
                     onChange={(e) => setForm({ ...form, discountValue: e.target.value })}
                     style={inputStyle}
+                    id="valor-ba4881"
                   />
                 </div>
               </div>
@@ -266,6 +272,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   <label
                     className="mb-1 block text-xs font-semibold uppercase"
                     style={{ color: colors.text.muted }}
+                    htmlFor="max-usos-80b9d4"
                   >
                     Max usos
                   </label>
@@ -275,12 +282,14 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
                     placeholder="Ilimitado"
                     style={inputStyle}
+                    id="max-usos-80b9d4"
                   />
                 </div>
                 <div>
                   <label
                     className="mb-1 block text-xs font-semibold uppercase"
                     style={{ color: colors.text.muted }}
+                    htmlFor="expira-em-c3bb1c"
                   >
                     Expira em
                   </label>
@@ -289,6 +298,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     value={form.expiresAt}
                     onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
                     style={inputStyle}
+                    id="expira-em-c3bb1c"
                   />
                 </div>
               </div>

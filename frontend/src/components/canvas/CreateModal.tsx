@@ -258,6 +258,7 @@ function CustomSizePanel({
               display: 'block',
               marginBottom: 6,
             }}
+            htmlFor="largura-8c2b23"
           >
             Largura
           </label>
@@ -277,6 +278,7 @@ function CustomSizePanel({
               fontFamily: M,
               outline: 'none',
             }}
+            id="largura-8c2b23"
           />
         </div>
         <span style={{ color: '#3A3A3F', marginTop: 20, fontFamily: M, fontSize: 12 }}>x</span>
@@ -290,6 +292,7 @@ function CustomSizePanel({
               display: 'block',
               marginBottom: 6,
             }}
+            htmlFor="altura-c6105a"
           >
             Altura
           </label>
@@ -309,6 +312,7 @@ function CustomSizePanel({
               fontFamily: M,
               outline: 'none',
             }}
+            id="altura-c6105a"
           />
         </div>
         <div style={{ flex: 0.6 }}>
@@ -321,6 +325,7 @@ function CustomSizePanel({
               display: 'block',
               marginBottom: 6,
             }}
+            htmlFor="unidades-d2d67d"
           >
             Unidades
           </label>
@@ -336,6 +341,7 @@ function CustomSizePanel({
               fontFamily: S,
               outline: 'none',
             }}
+            id="unidades-d2d67d"
           >
             <option>px</option>
             <option>mm</option>

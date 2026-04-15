@@ -22,7 +22,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-6c0e32">
+                Nome
+              </label>
               <input
                 aria-label="Nome"
                 type="text"
@@ -30,14 +32,18 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Início"
+                id="nome-6c0e32"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Gatilho</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="gatilho-0c78bd">
+                Gatilho
+              </label>
               <select
                 value={node.data.trigger || 'manual'}
                 onChange={(e) => handleChange('trigger', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="gatilho-0c78bd"
               >
                 <option value="manual">Manual</option>
                 <option value="keyword">Palavra-chave</option>
@@ -47,7 +53,12 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             {node.data.trigger === 'keyword' && (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Palavra-chave</label>
+                <label
+                  className="block text-sm font-medium text-gray-700"
+                  htmlFor="palavra-chave-b8cfef"
+                >
+                  Palavra-chave
+                </label>
                 <input
                   aria-label="Palavra-chave"
                   type="text"
@@ -55,6 +66,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   onChange={(e) => handleChange('keyword', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="oi, olá, começar"
+                  id="palavra-chave-b8cfef"
                 />
               </div>
             )}
@@ -65,7 +77,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-ad61cf">
+                Nome
+              </label>
               <input
                 aria-label="Nome"
                 type="text"
@@ -73,20 +87,27 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Mensagem de boas-vindas"
+                id="nome-ad61cf"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Mensagem</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="mensagem-31e8a6">
+                Mensagem
+              </label>
               <textarea
                 value={node.data.message || ''}
                 onChange={(e) => handleChange('message', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
                 placeholder="Olá! Como posso ajudá-lo hoje?"
+                id="mensagem-31e8a6"
               />
               <p className="text-xs text-gray-500">Use {'{{variavel}}'} para inserir variáveis</p>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="url-da-m-dia-opcional-99f308"
+              >
                 URL da Mídia (opcional)
               </label>
               <input
@@ -96,6 +117,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('mediaUrl', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://..."
+                id="url-da-m-dia-opcional-99f308"
               />
             </div>
           </>
@@ -105,26 +127,37 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-72b978">
+                Nome
+              </label>
               <input
                 aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="nome-72b978"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Pergunta</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="pergunta-8582b4">
+                Pergunta
+              </label>
               <textarea
                 value={node.data.question || ''}
                 onChange={(e) => handleChange('question', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Qual é o seu nome?"
+                id="pergunta-8582b4"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Salvar em variável</label>
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="salvar-em-vari-vel-f8128a"
+              >
+                Salvar em variável
+              </label>
               <input
                 aria-label="Salvar em variável"
                 type="text"
@@ -132,14 +165,21 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('variableName', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="nome"
+                id="salvar-em-vari-vel-f8128a"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Tipo de entrada</label>
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="tipo-de-entrada-a9b088"
+              >
+                Tipo de entrada
+              </label>
               <select
                 value={node.data.inputType || 'text'}
                 onChange={(e) => handleChange('inputType', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="tipo-de-entrada-a9b088"
               >
                 <option value="text">Texto</option>
                 <option value="number">Número</option>
@@ -151,7 +191,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             {node.data.inputType === 'options' && (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label
+                  className="block text-sm font-medium text-gray-700"
+                  htmlFor="op-es-uma-por-linha-4b23cd"
+                >
                   Opções (uma por linha)
                 </label>
                 <textarea
@@ -161,6 +204,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Opção 1&#10;Opção 2&#10;Opção 3"
+                  id="op-es-uma-por-linha-4b23cd"
                 />
               </div>
             )}
@@ -171,17 +215,22 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-a522fb">
+                Nome
+              </label>
               <input
                 aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="nome-a522fb"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Variável</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="vari-vel-9dfa33">
+                Variável
+              </label>
               <input
                 aria-label="Variável"
                 type="text"
@@ -189,14 +238,18 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('condition', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="resposta"
+                id="vari-vel-9dfa33"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Operador</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="operador-1bcff5">
+                Operador
+              </label>
               <select
                 value={node.data.operator || 'equals'}
                 onChange={(e) => handleChange('operator', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="operador-1bcff5"
               >
                 <option value="equals">Igual a</option>
                 <option value="contains">Contém</option>
@@ -208,7 +261,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               </select>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Valor</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="valor-6600eb">
+                Valor
+              </label>
               <input
                 aria-label="Valor"
                 type="text"
@@ -216,6 +271,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('value', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="sim"
+                id="valor-6600eb"
               />
             </div>
           </>
@@ -225,21 +281,30 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-520ad2">
+                Nome
+              </label>
               <input
                 aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="nome-520ad2"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Tipo de delay</label>
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="tipo-de-delay-896e2f"
+              >
+                Tipo de delay
+              </label>
               <select
                 value={node.data.delayType || 'seconds'}
                 onChange={(e) => handleChange('delayType', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="tipo-de-delay-896e2f"
               >
                 <option value="seconds">Segundos</option>
                 <option value="minutes">Minutos</option>
@@ -250,7 +315,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             {node.data.delayType !== 'until' ? (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Valor</label>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="valor-a9256c">
+                  Valor
+                </label>
                 <input
                   aria-label="Valor do delay"
                   type="number"
@@ -258,17 +325,21 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   onChange={(e) => handleChange('delayValue', Number.parseInt(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="0"
+                  id="valor-a9256c"
                 />
               </div>
             ) : (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Horário</label>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="hor-rio-7a56c7">
+                  Horário
+                </label>
                 <input
                   aria-label="Horário"
                   type="time"
                   value={node.data.untilTime || ''}
                   onChange={(e) => handleChange('untilTime', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  id="hor-rio-7a56c7"
                 />
               </div>
             )}
@@ -279,21 +350,30 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-88ebfe">
+                Nome
+              </label>
               <input
                 aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="nome-88ebfe"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Tipo de ação</label>
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="tipo-de-a-o-b48645"
+              >
+                Tipo de ação
+              </label>
               <select
                 value={node.data.actionType || 'tag'}
                 onChange={(e) => handleChange('actionType', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="tipo-de-a-o-b48645"
               >
                 <option value="tag">Adicionar Tag</option>
                 <option value="variable">Definir Variável</option>
@@ -306,7 +386,12 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             {node.data.actionType === 'tag' && (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Nome da Tag</label>
+                <label
+                  className="block text-sm font-medium text-gray-700"
+                  htmlFor="nome-da-tag-c5de79"
+                >
+                  Nome da Tag
+                </label>
                 <input
                   aria-label="Nome da Tag"
                   type="text"
@@ -316,13 +401,19 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="cliente-vip"
+                  id="nome-da-tag-c5de79"
                 />
               </div>
             )}
             {node.data.actionType === 'webhook' && (
               <>
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">URL do Webhook</label>
+                  <label
+                    className="block text-sm font-medium text-gray-700"
+                    htmlFor="url-do-webhook-14837f"
+                  >
+                    URL do Webhook
+                  </label>
                   <input
                     aria-label="URL do Webhook"
                     type="text"
@@ -332,16 +423,23 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="https://..."
+                    id="url-do-webhook-14837f"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Método</label>
+                  <label
+                    className="block text-sm font-medium text-gray-700"
+                    htmlFor="m-todo-407dc0"
+                  >
+                    Método
+                  </label>
                   <select
                     value={node.data.config?.method || 'POST'}
                     onChange={(e) =>
                       handleChange('config', { ...node.data.config, method: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    id="m-todo-407dc0"
                   >
                     <option value="GET">GET</option>
                     <option value="POST">POST</option>
@@ -358,46 +456,66 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-5555c3">
+                Nome
+              </label>
               <input
                 aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="nome-5555c3"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Modelo</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="modelo-42467d">
+                Modelo
+              </label>
               <select
                 value={node.data.aiRole || 'writer'}
                 onChange={(e) => handleChange('aiRole', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="modelo-42467d"
               >
                 <option value="writer">Responder ao cliente</option>
                 <option value="brain">Pensar / decidir</option>
               </select>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Prompt do Sistema</label>
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="prompt-do-sistema-6bda2b"
+              >
+                Prompt do Sistema
+              </label>
               <textarea
                 value={node.data.systemPrompt || ''}
                 onChange={(e) => handleChange('systemPrompt', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
                 placeholder="Você é um assistente de vendas..."
+                id="prompt-do-sistema-6bda2b"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Prompt</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="prompt-58b6f0">
+                Prompt
+              </label>
               <textarea
                 value={node.data.prompt || ''}
                 onChange={(e) => handleChange('prompt', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
                 placeholder="Analise a mensagem do cliente: {{mensagem}}"
+                id="prompt-58b6f0"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Salvar resposta em</label>
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="salvar-resposta-em-3b9df1"
+              >
+                Salvar resposta em
+              </label>
               <input
                 aria-label="Salvar resposta em"
                 type="text"
@@ -405,10 +523,14 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('saveResponseTo', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="resposta_ia"
+                id="salvar-resposta-em-3b9df1"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="temperatura-43393b"
+              >
                 Temperatura: {node.data.temperature || 0.7}
               </label>
               <input
@@ -420,6 +542,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.temperature || 0.7}
                 onChange={(e) => handleChange('temperature', Number.parseFloat(e.target.value))}
                 className="w-full"
+                id="temperatura-43393b"
               />
             </div>
           </>
@@ -429,7 +552,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-e47f70">
+                Nome
+              </label>
               <input
                 aria-label="Nome"
                 type="text"
@@ -437,10 +562,13 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
                 placeholder="Aguardar Resposta"
+                id="nome-e47f70"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Timeout</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="timeout-b9940b">
+                Timeout
+              </label>
               <input
                 aria-label="Timeout"
                 type="number"
@@ -448,14 +576,18 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('timeoutValue', Number.parseInt(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
                 min="0"
+                id="timeout-b9940b"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Unidade</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="unidade-fe9831">
+                Unidade
+              </label>
               <select
                 value={node.data.timeoutUnit || 'minutes'}
                 onChange={(e) => handleChange('timeoutUnit', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
+                id="unidade-fe9831"
               >
                 <option value="minutes">Minutos</option>
                 <option value="hours">Horas</option>
@@ -463,7 +595,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               </select>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="mensagem-de-fallback-6e260a"
+              >
                 Mensagem de fallback
               </label>
               <textarea
@@ -471,6 +606,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('fallbackMessage', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500 min-h-[80px]"
                 placeholder="Mensagem enviada quando o timeout expira..."
+                id="mensagem-de-fallback-6e260a"
               />
               <p className="text-xs text-gray-500">
                 Enviada automaticamente quando o tempo limite expira sem resposta
@@ -483,21 +619,27 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-232a2d">
+                Nome
+              </label>
               <input
                 aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="nome-232a2d"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Ação final</label>
+              <label className="block text-sm font-medium text-gray-700" htmlFor="a-o-final-edca3f">
+                Ação final
+              </label>
               <select
                 value={node.data.endAction || 'complete'}
                 onChange={(e) => handleChange('endAction', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="a-o-final-edca3f"
               >
                 <option value="complete">Finalizar conversa</option>
                 <option value="redirect">Redirecionar para outro fluxo</option>
@@ -506,7 +648,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             {node.data.endAction === 'handoff' && (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label
+                  className="block text-sm font-medium text-gray-700"
+                  htmlFor="mensagem-de-transfer-ncia-c84c73"
+                >
                   Mensagem de transferência
                 </label>
                 <textarea
@@ -514,6 +659,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   onChange={(e) => handleChange('handoffMessage', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Aguarde, vou transferir para um atendente..."
+                  id="mensagem-de-transfer-ncia-c84c73"
                 />
               </div>
             )}

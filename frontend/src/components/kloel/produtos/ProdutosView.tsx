@@ -2306,6 +2306,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
+                  htmlFor="nome-68697e"
                 >
                   Nome
                 </label>
@@ -2314,6 +2315,7 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, name: e.target.value }))}
                   placeholder="Nome da area..."
                   style={inputStyle}
+                  id="nome-68697e"
                 />
               </div>
               <div style={{ width: 160 }}>
@@ -2325,6 +2327,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
+                  htmlFor="tipo-b44eb8"
                 >
                   Tipo
                 </label>
@@ -2332,6 +2335,7 @@ function AreaMembros({
                   value={newArea.type}
                   onChange={(e) => setNewArea((p) => ({ ...p, type: e.target.value }))}
                   style={selectStyle}
+                  id="tipo-b44eb8"
                 >
                   <option value="COURSE">Curso</option>
                   <option value="COMMUNITY">Comunidade</option>
@@ -2347,6 +2351,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
+                  htmlFor="produto-vinculado-6e0011"
                 >
                   Produto vinculado
                 </label>
@@ -2354,6 +2359,7 @@ function AreaMembros({
                   value={newArea.productId}
                   onChange={(e) => setNewArea((p) => ({ ...p, productId: e.target.value }))}
                   style={selectStyle}
+                  id="produto-vinculado-6e0011"
                 >
                   <option value="">Sem vinculo</option>
                   {productOptions.map((product) => (
@@ -2376,6 +2382,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
+                  htmlFor="slug-8559d0"
                 >
                   Slug
                 </label>
@@ -2384,6 +2391,7 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, slug: e.target.value }))}
                   placeholder="minha-area-de-membros"
                   style={inputStyle}
+                  id="slug-8559d0"
                 />
               </div>
               <div>
@@ -2432,6 +2440,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
+                  htmlFor="descricao-9b2390"
                 >
                   Descricao
                 </label>
@@ -2440,6 +2449,7 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, description: e.target.value }))}
                   placeholder="Resumo da experiencia para o aluno"
                   style={inputStyle}
+                  id="descricao-9b2390"
                 />
               </div>
               <div>
@@ -2451,6 +2461,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
+                  htmlFor="template-e6a786"
                 >
                   Template
                 </label>
@@ -2458,6 +2469,7 @@ function AreaMembros({
                   value={newArea.template}
                   onChange={(e) => setNewArea((p) => ({ ...p, template: e.target.value }))}
                   style={selectStyle}
+                  id="template-e6a786"
                 >
                   <option value="academy">Academy</option>
                   <option value="community">Community</option>
@@ -2477,6 +2489,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
+                  htmlFor="logo-da-area-5dfa38"
                 >
                   Logo da area
                 </label>
@@ -2485,6 +2498,7 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, logoUrl: e.target.value }))}
                   placeholder="https://..."
                   style={inputStyle}
+                  id="logo-da-area-5dfa38"
                 />
               </div>
               <div>
@@ -2496,6 +2510,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
+                  htmlFor="capa-da-area-77266d"
                 >
                   Capa da area
                 </label>
@@ -2504,6 +2519,7 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, coverUrl: e.target.value }))}
                   placeholder="https://..."
                   style={inputStyle}
+                  id="capa-da-area-77266d"
                 />
               </div>
             </div>

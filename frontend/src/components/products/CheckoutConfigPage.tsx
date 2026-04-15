@@ -534,11 +534,14 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
-              <label style={labelStyle}>Tipo de pixel</label>
+              <label style={labelStyle} htmlFor="tipo-de-pixel-faf3be">
+                Tipo de pixel
+              </label>
               <select
                 value={form.type}
                 onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
                 style={{ ...inputStyle, padding: '10px 14px' }}
+                id="tipo-de-pixel-faf3be"
               >
                 {PIXEL_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -548,23 +551,29 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
               </select>
             </div>
             <div>
-              <label style={labelStyle}>ID do Pixel</label>
+              <label style={labelStyle} htmlFor="id-do-pixel-6fd50a">
+                ID do Pixel
+              </label>
               <input
                 aria-label="ID do Pixel"
                 value={form.pixelId}
                 onChange={(e) => setForm((f) => ({ ...f, pixelId: e.target.value }))}
                 placeholder="Ex: 1234567890"
                 style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
+                id="id-do-pixel-6fd50a"
               />
             </div>
             <div>
-              <label style={labelStyle}>Access Token (opcional — Meta)</label>
+              <label style={labelStyle} htmlFor="access-token-opcional-meta-a65e8e">
+                Access Token (opcional — Meta)
+              </label>
               <input
                 aria-label="Access Token Meta"
                 value={form.accessToken}
                 onChange={(e) => setForm((f) => ({ ...f, accessToken: e.target.value }))}
                 placeholder="EAAG..."
                 style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
+                id="access-token-opcional-meta-a65e8e"
               />
             </div>
             {error && (
@@ -737,7 +746,9 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           {/* ── Section 1: Descricao ── */}
           <h3 style={sectionTitleStyle}>Descricao</h3>
           <div>
-            <label style={labelStyle}>Nome do checkout</label>
+            <label style={labelStyle} htmlFor="nome-do-checkout-4f941f">
+              Nome do checkout
+            </label>
             <input
               aria-label="Nome do checkout"
               type="text"
@@ -745,6 +756,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               onChange={(e) => set('checkoutName', e.target.value)}
               placeholder="Ex: Checkout principal"
               style={inputStyle}
+              id="nome-do-checkout-4f941f"
             />
           </div>
 
@@ -779,18 +791,23 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           {state.chatEnabled && (
             <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
-                <label style={labelStyle}>Mensagem de boas-vindas</label>
+                <label style={labelStyle} htmlFor="mensagem-de-boas-vindas-4173a8">
+                  Mensagem de boas-vindas
+                </label>
                 <input
                   type="text"
                   value={state.chatWelcomeMessage}
                   onChange={(e) => set('chatWelcomeMessage', e.target.value)}
                   placeholder="Ola! Posso te ajudar?"
                   style={inputStyle}
+                  id="mensagem-de-boas-vindas-4173a8"
                 />
               </div>
 
               <div>
-                <label style={labelStyle}>Delay (segundos)</label>
+                <label style={labelStyle} htmlFor="delay-segundos-19eae5">
+                  Delay (segundos)
+                </label>
                 <input
                   aria-label="Delay em segundos"
                   type="number"
@@ -798,6 +815,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                   onChange={(e) => set('chatDelay', Number(e.target.value))}
                   min={0}
                   style={{ ...inputStyle, maxWidth: 120 }}
+                  id="delay-segundos-19eae5"
                 />
               </div>
 
@@ -857,19 +875,24 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
 
               {state.chatOfferDiscount && (
                 <div>
-                  <label style={labelStyle}>Codigo do desconto</label>
+                  <label style={labelStyle} htmlFor="codigo-do-desconto-58734e">
+                    Codigo do desconto
+                  </label>
                   <input
                     type="text"
                     value={state.chatDiscountCode}
                     onChange={(e) => set('chatDiscountCode', e.target.value)}
                     placeholder="Ex: BEMVINDO10"
                     style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
+                    id="codigo-do-desconto-58734e"
                   />
                 </div>
               )}
 
               <div>
-                <label style={labelStyle}>Telefone de suporte</label>
+                <label style={labelStyle} htmlFor="telefone-de-suporte-b1e1be">
+                  Telefone de suporte
+                </label>
                 <input
                   aria-label="Telefone de suporte"
                   type="text"
@@ -877,6 +900,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                   onChange={(e) => set('chatSupportPhone', e.target.value)}
                   placeholder="+55 11 99999-9999"
                   style={inputStyle}
+                  id="telefone-de-suporte-b1e1be"
                 />
               </div>
             </div>
@@ -905,17 +929,22 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           {state.enableTimer && (
             <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
-                <label style={labelStyle}>Minutos</label>
+                <label style={labelStyle} htmlFor="minutos-fefa46">
+                  Minutos
+                </label>
                 <input
                   type="number"
                   value={state.timerMinutes}
                   onChange={(e) => set('timerMinutes', Number(e.target.value))}
                   min={1}
                   style={{ ...inputStyle, maxWidth: 120 }}
+                  id="minutos-fefa46"
                 />
               </div>
               <div>
-                <label style={labelStyle}>Mensagem do timer</label>
+                <label style={labelStyle} htmlFor="mensagem-do-timer-8e7d13">
+                  Mensagem do timer
+                </label>
                 <input
                   aria-label="Mensagem do timer"
                   type="text"
@@ -923,6 +952,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                   onChange={(e) => set('timerMessage', e.target.value)}
                   placeholder="Oferta encerra em 15 minutos."
                   style={inputStyle}
+                  id="mensagem-do-timer-8e7d13"
                 />
               </div>
             </div>
@@ -940,12 +970,15 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
 
           {state.socialProofEnabled && (
             <div style={{ marginTop: 20 }}>
-              <label style={labelStyle}>Nomes personalizados (um por linha)</label>
+              <label style={labelStyle} htmlFor="nomes-personalizados-um-por-linh-e309e4">
+                Nomes personalizados (um por linha)
+              </label>
               <textarea
                 value={state.socialProofCustomNames}
                 onChange={(e) => set('socialProofCustomNames', e.target.value)}
                 placeholder={'Maria S. de Sao Paulo\nJoao P. de Curitiba\nAna L. de Recife'}
                 style={textareaStyle}
+                id="nomes-personalizados-um-por-linh-e309e4"
               />
             </div>
           )}

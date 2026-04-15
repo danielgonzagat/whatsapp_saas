@@ -1367,6 +1367,7 @@ function ShipModal({
             marginBottom: 6,
             fontFamily: SORA,
           }}
+          htmlFor="codigo-de-rastreamento-975e51"
         >
           Codigo de rastreamento
         </label>
@@ -1388,6 +1389,7 @@ function ShipModal({
             outline: 'none',
             marginBottom: 16,
           }}
+          id="codigo-de-rastreamento-975e51"
         />
         <div style={{ display: 'flex', gap: 8 }}>
           <button

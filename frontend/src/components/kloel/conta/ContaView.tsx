@@ -2340,6 +2340,7 @@ function DadosBancariosSection({
                   marginBottom: 6,
                   fontFamily: SORA,
                 }}
+                htmlFor="tipo-da-chave-c9363f"
               >
                 Tipo da chave
               </label>
@@ -2359,6 +2360,7 @@ function DadosBancariosSection({
                   cursor: 'pointer',
                   appearance: 'none' as const,
                 }}
+                id="tipo-da-chave-c9363f"
               >
                 <option value="">Selecione...</option>
                 <option value="CPF">CPF</option>
@@ -3646,6 +3648,7 @@ function TeamSection() {
                 marginBottom: 6,
                 fontFamily: SORA,
               }}
+              htmlFor="email-6a8700"
             >
               Email
             </label>
@@ -3659,6 +3662,7 @@ function TeamSection() {
               }}
               placeholder="email@exemplo.com"
               style={inputStyle}
+              id="email-6a8700"
             />
           </div>
           <div style={{ flex: 1, minWidth: 140 }}>
@@ -3671,6 +3675,7 @@ function TeamSection() {
                 marginBottom: 6,
                 fontFamily: SORA,
               }}
+              htmlFor="funcao-1d7233"
             >
               Funcao
             </label>
@@ -3678,6 +3683,7 @@ function TeamSection() {
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value)}
               style={selectStyle}
+              id="funcao-1d7233"
             >
               {Object.entries(ROLES).map(([k, v]) => (
                 <option key={k} value={k}>

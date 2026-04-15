@@ -206,7 +206,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-1 block" style={labelStyle}>
+            <label className="mb-1 block" style={labelStyle} htmlFor="descri-o-18f199">
               Descrição *
             </label>
             <input
@@ -217,13 +217,14 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               placeholder="Página de vendas principal"
               className={selectClass}
               style={inputStyle}
+              id="descri-o-18f199"
             />
             <p className="mt-1 text-right text-xs" style={{ color: colors.text.dust }}>
               {form.description.length}/255
             </p>
           </div>
           <div>
-            <label className="mb-1 block" style={labelStyle}>
+            <label className="mb-1 block" style={labelStyle} htmlFor="url-b0fb2b">
               URL *
             </label>
             <input
@@ -234,6 +235,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               placeholder="https://..."
               className={selectClass}
               style={inputStyle}
+              id="url-b0fb2b"
             />
             <p className="mt-1 text-right text-xs" style={{ color: colors.text.dust }}>
               {form.url.length}/255
@@ -438,7 +440,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 </div>
               </div>
               <div>
-                <label className="mb-2 block" style={labelStyle}>
+                <label className="mb-2 block" style={labelStyle} htmlFor="mensagem-inicial-0ac32c">
                   Mensagem inicial
                 </label>
                 <input
@@ -449,10 +451,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                   className={selectClass}
                   style={inputStyle}
                   placeholder="Olá! Como posso ajudar?"
+                  id="mensagem-inicial-0ac32c"
                 />
               </div>
               <div>
-                <label className="mb-2 block" style={labelStyle}>
+                <label className="mb-2 block" style={labelStyle} htmlFor="quando-exibir-d5510b">
                   Quando exibir
                 </label>
                 <select
@@ -460,6 +463,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                   onChange={(e) => setWidgetTrigger(e.target.value)}
                   className={selectClass}
                   style={inputStyle}
+                  id="quando-exibir-d5510b"
                 >
                   {TRIGGER_TIMINGS.map((t) => (
                     <option key={t.v} value={t.v}>

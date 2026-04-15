@@ -2067,6 +2067,7 @@ export default function WhatsAppExperience({
                       display: 'block',
                       fontFamily: F,
                     }}
+                    htmlFor="desconto-m-ximo-que-a-ia-pode-of-53d849"
                   >
                     Desconto máximo que a IA pode oferecer:{' '}
                     <span style={{ color: E, fontFamily: M }}>{draft.config.maxDiscount}%</span>
@@ -2084,6 +2085,7 @@ export default function WhatsAppExperience({
                       }))
                     }
                     style={{ width: '100%', accentColor: E }}
+                    id="desconto-m-ximo-que-a-ia-pode-of-53d849"
                   />
                   <div
                     style={{
@@ -2168,6 +2170,7 @@ export default function WhatsAppExperience({
                         display: 'block',
                         fontFamily: F,
                       }}
+                      htmlFor="tempo-para-follow-up-4e28ea"
                     >
                       Tempo para follow-up:{' '}
                       <span style={{ color: E, fontFamily: M }}>{draft.config.followUpHours}h</span>
@@ -2185,6 +2188,7 @@ export default function WhatsAppExperience({
                         }))
                       }
                       style={{ width: '100%', accentColor: E }}
+                      id="tempo-para-follow-up-4e28ea"
                     />
                   </div>
                 ) : null}
@@ -2199,6 +2203,7 @@ export default function WhatsAppExperience({
                       display: 'block',
                       fontFamily: F,
                     }}
+                    htmlFor="hor-rio-de-atendimento-df60dc"
                   >
                     Horário de atendimento
                   </label>
@@ -2217,6 +2222,7 @@ export default function WhatsAppExperience({
                       ...selectInputStyle,
                       fontFamily: M,
                     }}
+                    id="hor-rio-de-atendimento-df60dc"
                   />
                 </div>
 
@@ -2230,6 +2236,7 @@ export default function WhatsAppExperience({
                       display: 'block',
                       fontFamily: F,
                     }}
+                    htmlFor="suas-instru-es-para-o-kloel-0ad897"
                   >
                     Suas instruções para o Kloel
                   </label>
@@ -2249,6 +2256,7 @@ export default function WhatsAppExperience({
                       minHeight: 70,
                       lineHeight: 1.5,
                     }}
+                    id="suas-instru-es-para-o-kloel-0ad897"
                   />
                 </div>
               </div>

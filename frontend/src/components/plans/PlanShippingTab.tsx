@@ -286,12 +286,15 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
         {sectionTitle('Embalagem do produto')}
         <div className="grid gap-4 md:grid-cols-5">
           <div className="md:col-span-2">
-            <label style={labelStyle}>Tipo de embalagem *</label>
+            <label style={labelStyle} htmlFor="tipo-de-embalagem-93e6f2">
+              Tipo de embalagem *
+            </label>
             <select
               value={packageType}
               onChange={(e) => setPackageType(e.target.value)}
               className={`${selectClass} mt-1.5`}
               style={inputStyle}
+              id="tipo-de-embalagem-93e6f2"
             >
               <option value="">Selecione</option>
               {PACKAGE_TYPES.map((t) => (
@@ -302,7 +305,9 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Largura (cm)</label>
+            <label style={labelStyle} htmlFor="largura-cm-0b0909">
+              Largura (cm)
+            </label>
             <input
               aria-label="Largura em cm"
               type="number"
@@ -310,10 +315,13 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               onChange={(e) => setWidth(e.target.value)}
               className={`${inputClass} mt-1.5`}
               style={inputStyle}
+              id="largura-cm-0b0909"
             />
           </div>
           <div>
-            <label style={labelStyle}>Altura (cm)</label>
+            <label style={labelStyle} htmlFor="altura-cm-2df145">
+              Altura (cm)
+            </label>
             <input
               aria-label="Altura em cm"
               type="number"
@@ -321,10 +329,13 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               onChange={(e) => setHeight(e.target.value)}
               className={`${inputClass} mt-1.5`}
               style={inputStyle}
+              id="altura-cm-2df145"
             />
           </div>
           <div>
-            <label style={labelStyle}>Comprimento (cm)</label>
+            <label style={labelStyle} htmlFor="comprimento-cm-8f78c9">
+              Comprimento (cm)
+            </label>
             <input
               aria-label="Comprimento em cm"
               type="number"
@@ -332,12 +343,15 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               onChange={(e) => setLength(e.target.value)}
               className={`${inputClass} mt-1.5`}
               style={inputStyle}
+              id="comprimento-cm-8f78c9"
             />
           </div>
         </div>
         <div className="mt-3 flex items-end gap-4">
           <div className="w-40">
-            <label style={labelStyle}>Peso (kg) *</label>
+            <label style={labelStyle} htmlFor="peso-kg-9d925c">
+              Peso (kg) *
+            </label>
             <input
               aria-label="Peso em kg"
               type="number"
@@ -346,6 +360,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               onChange={(e) => setWeight(e.target.value)}
               className={`${inputClass} mt-1.5`}
               style={inputStyle}
+              id="peso-kg-9d925c"
             />
           </div>
           <button
@@ -384,12 +399,15 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             />
 
             <div>
-              <label style={labelStyle}>Prazo de despacho *</label>
+              <label style={labelStyle} htmlFor="prazo-de-despacho-110708">
+                Prazo de despacho *
+              </label>
               <select
                 value={dispatchTime}
                 onChange={(e) => setDispatchTime(e.target.value)}
                 className={`${selectClass} mt-1.5`}
                 style={inputStyle}
+                id="prazo-de-despacho-110708"
               >
                 <option value="1">24 horas</option>
                 <option value="3">1-3 dias úteis</option>
@@ -440,7 +458,9 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             />
             {freightType === 'fixed' && (
               <div>
-                <label style={labelStyle}>Valor fixo (R$)</label>
+                <label style={labelStyle} htmlFor="valor-fixo-r-da7747">
+                  Valor fixo (R$)
+                </label>
                 <input
                   type="number"
                   step="0.01"
@@ -448,6 +468,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                   onChange={(e) => setFixedFreight(e.target.value)}
                   className={`${inputClass} mt-1.5`}
                   style={inputStyle}
+                  id="valor-fixo-r-da7747"
                 />
               </div>
             )}

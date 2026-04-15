@@ -702,7 +702,10 @@ export default function WebinariosPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  htmlFor="titulo-042897"
+                >
                   Titulo *
                 </label>
                 <input
@@ -723,11 +726,15 @@ export default function WebinariosPage() {
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
+                  id="titulo-042897"
                 />
               </div>
 
               <div>
-                <label style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  htmlFor="url-do-webinario-61dc21"
+                >
                   URL do Webinario *
                 </label>
                 <input
@@ -748,11 +755,15 @@ export default function WebinariosPage() {
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
+                  id="url-do-webinario-61dc21"
                 />
               </div>
 
               <div>
-                <label style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  htmlFor="data-e-hora-e25490"
+                >
                   Data e Hora *
                 </label>
                 <input
@@ -773,11 +784,15 @@ export default function WebinariosPage() {
                     boxSizing: 'border-box',
                     colorScheme: 'dark',
                   }}
+                  id="data-e-hora-e25490"
                 />
               </div>
 
               <div>
-                <label style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  htmlFor="descricao-opcional-6f6910"
+                >
                   Descricao (opcional)
                 </label>
                 <textarea
@@ -798,6 +813,7 @@ export default function WebinariosPage() {
                     resize: 'vertical',
                     boxSizing: 'border-box',
                   }}
+                  id="descricao-opcional-6f6910"
                 />
               </div>
 
@@ -911,7 +927,10 @@ export default function WebinariosPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  htmlFor="titulo-e26d24"
+                >
                   Titulo *
                 </label>
                 <input
@@ -931,11 +950,15 @@ export default function WebinariosPage() {
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
+                  id="titulo-e26d24"
                 />
               </div>
 
               <div>
-                <label style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  htmlFor="url-do-webinario-2f7128"
+                >
                   URL do Webinario *
                 </label>
                 <input
@@ -955,11 +978,15 @@ export default function WebinariosPage() {
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
+                  id="url-do-webinario-2f7128"
                 />
               </div>
 
               <div>
-                <label style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  htmlFor="data-e-hora-5ea9a8"
+                >
                   Data e Hora *
                 </label>
                 <input
@@ -980,11 +1007,15 @@ export default function WebinariosPage() {
                     boxSizing: 'border-box',
                     colorScheme: 'dark',
                   }}
+                  id="data-e-hora-5ea9a8"
                 />
               </div>
 
               <div>
-                <label style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  htmlFor="descricao-opcional-ff5b54"
+                >
                   Descricao (opcional)
                 </label>
                 <textarea
@@ -1004,6 +1035,7 @@ export default function WebinariosPage() {
                     resize: 'vertical',
                     boxSizing: 'border-box',
                   }}
+                  id="descricao-opcional-ff5b54"
                 />
               </div>
 

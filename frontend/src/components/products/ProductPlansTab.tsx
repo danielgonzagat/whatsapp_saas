@@ -396,6 +396,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
+                  htmlFor="nome-078dd0"
                 >
                   Nome *
                 </label>
@@ -404,12 +405,14 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   value={newPlan.name}
                   onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
                   style={inputStyle}
+                  id="nome-078dd0"
                 />
               </div>
               <div>
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
+                  htmlFor="valor-r-1bcb22"
                 >
                   Valor (R$) *
                 </label>
@@ -420,12 +423,14 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   value={newPlan.price}
                   onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
                   style={inputStyle}
+                  id="valor-r-1bcb22"
                 />
               </div>
               <div>
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
+                  htmlFor="forma-de-cobranca-998676"
                 >
                   Forma de cobranca
                 </label>
@@ -433,6 +438,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   value={newPlan.billingType}
                   onChange={(e) => setNewPlan({ ...newPlan, billingType: e.target.value })}
                   style={inputStyle}
+                  id="forma-de-cobranca-998676"
                 >
                   <option value="ONE_TIME">Unica</option>
                   <option value="RECURRING">Recorrente</option>
@@ -443,6 +449,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
+                  htmlFor="itens-por-plano-1f7158"
                 >
                   Itens por plano
                 </label>
@@ -455,6 +462,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                     setNewPlan({ ...newPlan, itemsPerPlan: Number.parseInt(e.target.value) || 1 })
                   }
                   style={inputStyle}
+                  id="itens-por-plano-1f7158"
                 />
               </div>
             </div>

@@ -216,6 +216,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             display: 'block',
             marginBottom: 6,
           }}
+          htmlFor="tipo-de-scraping-7f46cc"
         >
           Tipo de scraping
         </label>
@@ -235,6 +236,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             marginBottom: 16,
             boxSizing: 'border-box',
           }}
+          id="tipo-de-scraping-7f46cc"
         >
           <option value="MAPS">Google Maps</option>
           <option value="INSTAGRAM">Instagram</option>
@@ -250,6 +252,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             display: 'block',
             marginBottom: 6,
           }}
+          htmlFor="busca-query-c90791"
         >
           Busca / query *
         </label>
@@ -277,6 +280,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             marginBottom: 16,
             boxSizing: 'border-box',
           }}
+          id="busca-query-c90791"
         />
 
         {form.type === 'MAPS' && (
@@ -290,6 +294,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
                 display: 'block',
                 marginBottom: 6,
               }}
+              htmlFor="localidade-opcional-fcf2ec"
             >
               Localidade (opcional)
             </label>
@@ -311,6 +316,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
                 marginBottom: 16,
                 boxSizing: 'border-box',
               }}
+              id="localidade-opcional-fcf2ec"
             />
           </>
         )}

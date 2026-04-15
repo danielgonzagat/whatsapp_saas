@@ -248,6 +248,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
+                  htmlFor="descricao-cfe253"
                 >
                   Descricao *
                 </label>
@@ -255,6 +256,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   style={inputStyle}
+                  id="descricao-cfe253"
                 />
               </div>
               <div>

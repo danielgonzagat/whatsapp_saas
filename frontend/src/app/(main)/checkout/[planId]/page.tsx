@@ -1053,11 +1053,14 @@ export default function CheckoutEditorPage() {
               {config.enableTimer && (
                 <>
                   <div style={{ marginBottom: 12 }}>
-                    <label style={labelStyle}>Tipo</label>
+                    <label style={labelStyle} htmlFor="tipo-6d1cd9">
+                      Tipo
+                    </label>
                     <select
                       value={config.timerType}
                       onChange={(e) => patch({ timerType: e.target.value })}
                       style={{ ...inputStyle, cursor: 'pointer' }}
+                      id="tipo-6d1cd9"
                     >
                       <option value="countdown">Contagem regressiva</option>
                       <option value="evergreen">Evergreen</option>
@@ -1688,7 +1691,9 @@ export default function CheckoutEditorPage() {
                     </button>
                   </div>
                   <div style={{ marginBottom: 12 }}>
-                    <label style={labelStyle}>Tipo</label>
+                    <label style={labelStyle} htmlFor="tipo-32ab04">
+                      Tipo
+                    </label>
                     <select
                       value={px.type}
                       onChange={(e) => {
@@ -1697,6 +1702,7 @@ export default function CheckoutEditorPage() {
                         patch({ pixels: next });
                       }}
                       style={{ ...inputStyle, cursor: 'pointer' }}
+                      id="tipo-32ab04"
                     >
                       <option value="facebook">Facebook Pixel</option>
                       <option value="google_analytics">Google Analytics</option>

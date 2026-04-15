@@ -2268,6 +2268,7 @@ function RulesTab() {
                           display: 'block',
                           marginBottom: 4,
                         }}
+                        htmlFor="condicao-if-2115ca"
                       >
                         CONDICAO (IF)
                       </label>
@@ -2288,6 +2289,7 @@ function RulesTab() {
                           outline: 'none',
                           boxSizing: 'border-box' as const,
                         }}
+                        id="condicao-if-2115ca"
                       />
                     </div>
                     <div>
@@ -2300,6 +2302,7 @@ function RulesTab() {
                           display: 'block',
                           marginBottom: 4,
                         }}
+                        htmlFor="acao-then-8cd361"
                       >
                         ACAO (THEN)
                       </label>
@@ -2324,6 +2327,7 @@ function RulesTab() {
                           outline: 'none',
                           boxSizing: 'border-box' as const,
                         }}
+                        id="acao-then-8cd361"
                       />
                     </div>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -2517,6 +2521,7 @@ function RulesTab() {
                   display: 'block',
                   marginBottom: 6,
                 }}
+                htmlFor="condicao-if-21c06f"
               >
                 CONDICAO (IF)
               </label>
@@ -2527,6 +2532,7 @@ function RulesTab() {
                 onChange={(e) => setNewCondition(e.target.value)}
                 placeholder="Ex: ROAS < 1.0 por 48h"
                 style={inputStyle}
+                id="condicao-if-21c06f"
               />
             </div>
             <div>
@@ -2539,6 +2545,7 @@ function RulesTab() {
                   display: 'block',
                   marginBottom: 6,
                 }}
+                htmlFor="acao-then-9c4f42"
               >
                 ACAO (THEN)
               </label>
@@ -2552,6 +2559,7 @@ function RulesTab() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCreateRule();
                 }}
+                id="acao-then-9c4f42"
               />
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>

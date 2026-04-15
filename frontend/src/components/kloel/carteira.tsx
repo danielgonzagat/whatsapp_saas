@@ -2294,6 +2294,7 @@ function TabSaques({
                     textTransform: 'uppercase',
                     marginBottom: 4,
                   }}
+                  htmlFor="banco-a1b518"
                 >
                   Banco
                 </label>
@@ -2314,6 +2315,7 @@ function TabSaques({
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
+                  id="banco-a1b518"
                 />
               </div>
               <div>
@@ -2327,6 +2329,7 @@ function TabSaques({
                     textTransform: 'uppercase',
                     marginBottom: 4,
                   }}
+                  htmlFor="chave-pix-034f42"
                 >
                   Chave PIX
                 </label>
@@ -2347,6 +2350,7 @@ function TabSaques({
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
+                  id="chave-pix-034f42"
                 />
               </div>
               <div>
@@ -2360,6 +2364,7 @@ function TabSaques({
                     textTransform: 'uppercase',
                     marginBottom: 4,
                   }}
+                  htmlFor="agencia-c2deb9"
                 >
                   Agencia
                 </label>
@@ -2380,6 +2385,7 @@ function TabSaques({
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
+                  id="agencia-c2deb9"
                 />
               </div>
               <div>
@@ -2393,6 +2399,7 @@ function TabSaques({
                     textTransform: 'uppercase',
                     marginBottom: 4,
                   }}
+                  htmlFor="conta-7e1ee7"
                 >
                   Conta
                 </label>
@@ -2413,6 +2420,7 @@ function TabSaques({
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
+                  id="conta-7e1ee7"
                 />
               </div>
             </div>
