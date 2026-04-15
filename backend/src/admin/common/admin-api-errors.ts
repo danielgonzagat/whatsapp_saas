@@ -166,11 +166,7 @@ export const adminErrors = {
       HttpStatus.CONFLICT,
     ),
   destructiveExpired: (id: string) =>
-    new AdminApiError(
-      'admin.destructive.expired',
-      `Intent ${id} expirou.`,
-      HttpStatus.GONE,
-    ),
+    new AdminApiError('admin.destructive.expired', `Intent ${id} expirou.`, HttpStatus.GONE),
   destructiveChallengeMismatch: () =>
     new AdminApiError(
       'admin.destructive.challenge_mismatch',
