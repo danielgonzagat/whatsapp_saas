@@ -187,6 +187,12 @@ function ProjectCard({
           alignItems: 'center',
           justifyContent: 'center',
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       >
         {design.thumbnailUrl ? (
           <NextImage
@@ -221,7 +227,16 @@ function ProjectCard({
           </div>
         )}
       </div>
-      <div onClick={onClick} style={{ padding: '8px 10px' }}>
+      <div
+        onClick={onClick}
+        style={{ padding: '8px 10px' }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
+      >
         <p
           style={{
             fontSize: 11,

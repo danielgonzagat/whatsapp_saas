@@ -149,6 +149,12 @@ export function ModalSurface({ children, className, open = true, onClose }: Moda
           backdropFilter: 'blur(4px)',
         }}
         onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       />
 
       {/* Content */}

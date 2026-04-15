@@ -2032,6 +2032,12 @@ function VisaoGeral({
                 transition: 'all .2s',
                 overflow: 'hidden',
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
             >
               <div
                 style={{

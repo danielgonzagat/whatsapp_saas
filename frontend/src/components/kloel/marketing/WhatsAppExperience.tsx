@@ -636,6 +636,12 @@ function ProductCard({
         gap: 12,
         userSelect: 'none',
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         style={{
@@ -2025,6 +2031,12 @@ export default function WhatsAppExperience({
                           cursor: 'pointer',
                           transition: 'all .2s',
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            (e.currentTarget as HTMLElement).click();
+                          }
+                        }}
                       >
                         <div
                           style={{
@@ -2122,6 +2134,12 @@ export default function WhatsAppExperience({
                       cursor: 'pointer',
                       position: 'relative',
                       transition: 'background .2s',
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        (e.currentTarget as HTMLElement).click();
+                      }
                     }}
                   >
                     <div

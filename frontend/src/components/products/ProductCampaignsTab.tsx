@@ -429,6 +429,12 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             justifyContent: 'center',
           }}
           onClick={() => setLinkModal(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -439,6 +445,12 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
               padding: '24px 28px',
               maxWidth: 480,
               width: '100%',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
             }}
           >
             <h3
@@ -582,6 +594,12 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             justifyContent: 'center',
           }}
           onClick={() => setShowNew(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -592,6 +610,12 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
               padding: '24px 28px',
               maxWidth: 480,
               width: '100%',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
             }}
           >
             <h3

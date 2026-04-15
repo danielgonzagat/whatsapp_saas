@@ -102,6 +102,12 @@ export function SettingsDrawer({
       <div
         className="fixed inset-0 z-50 bg-[var(--app-bg-overlay)] backdrop-blur-sm transition-opacity"
         onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       />
 
       {/* Drawer */}

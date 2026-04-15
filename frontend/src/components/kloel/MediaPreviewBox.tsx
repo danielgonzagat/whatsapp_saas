@@ -137,6 +137,12 @@ export function MediaPreviewBox({
           if (file) onSelectFile(file);
         }}
         style={frameStyle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       >
         {displayUrl ? (
           <>

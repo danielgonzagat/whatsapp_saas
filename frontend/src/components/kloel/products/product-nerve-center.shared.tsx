@@ -206,6 +206,12 @@ export function Tg({
           cursor: 'pointer',
           position: 'relative',
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       >
         <div
           style={{
@@ -523,6 +529,12 @@ export function Modal({
         padding: isMobile ? 12 : 20,
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         onClick={(event) => event.stopPropagation()}
@@ -535,6 +547,12 @@ export function Modal({
           width: '100%',
           maxHeight: isMobile ? '88vh' : '85vh',
           overflowY: 'auto',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>

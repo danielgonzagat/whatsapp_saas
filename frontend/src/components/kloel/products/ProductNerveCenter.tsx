@@ -1048,6 +1048,12 @@ export default function ProductNerveCenter({
               flexShrink: 0,
               padding: 6,
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
+            }}
           >
             {currentImageUrl ? (
               <img

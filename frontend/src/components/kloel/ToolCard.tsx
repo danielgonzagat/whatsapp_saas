@@ -34,6 +34,12 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
         opacity: disabled ? 0.72 : 1,
         transition: 'all 150ms ease',
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       {/* Badge */}
       {effectiveBadge && (

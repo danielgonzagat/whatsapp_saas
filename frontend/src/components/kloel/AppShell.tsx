@@ -355,6 +355,12 @@ export function AppShell({ children }: AppShellProps) {
             className="absolute inset-0"
             style={{ background: KLOEL_THEME.bgOverlay }}
             onClick={() => setMobileMenuOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
+            }}
           />
           <div className="relative h-full" style={{ width: 'min(86vw, 320px)' }}>
             <KloelSidebar

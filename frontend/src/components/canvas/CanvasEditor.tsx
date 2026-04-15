@@ -1762,6 +1762,12 @@ export default function CanvasEditor() {
             boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
           }}
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           {ctxMenu.items.map((item, i) =>
             item.separator ? (

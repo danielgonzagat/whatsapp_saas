@@ -299,7 +299,15 @@ function DesignCard({
           </svg>
         </button>
       )}
-      <div onClick={onClick}>
+      <div
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
+      >
         <div
           style={{
             height: 96,

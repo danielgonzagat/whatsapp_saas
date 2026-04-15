@@ -683,6 +683,12 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       />
       <div
         style={{
@@ -930,6 +936,12 @@ function AffiliateDetailModal({
           inset: 0,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
         }}
       />
       <div
@@ -2356,6 +2368,12 @@ function TabAfiliados({
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLElement).style.borderColor = C.border;
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
+            }}
           >
             {/* Avatar */}
             <div
@@ -3216,6 +3234,12 @@ function TabChat({
                 onMouseLeave={(e) => {
                   if (!isSelected)
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).click();
+                  }
                 }}
               >
                 {/* Avatar */}

@@ -57,6 +57,12 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
         animation: 'fi 0.15s ease',
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -73,6 +79,12 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
           overflow: 'hidden',
           animation: 'mi 0.25s ease',
           boxShadow: '0 40px 100px rgba(0,0,0,0.6)',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
         }}
       >
         {/* Header */}

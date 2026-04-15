@@ -537,6 +537,12 @@ export default function CRMPipelineView() {
                           onMouseLeave={(e) =>
                             ((e.currentTarget as HTMLDivElement).style.borderColor = '#222226')
                           }
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              (e.currentTarget as HTMLElement).click();
+                            }
+                          }}
                         >
                           <div
                             style={{
@@ -713,6 +719,12 @@ export default function CRMPipelineView() {
             justifyContent: 'center',
             zIndex: 9999,
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -724,6 +736,12 @@ export default function CRMPipelineView() {
               maxHeight: '80vh',
               overflowY: 'auto',
               padding: 24,
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
             }}
           >
             <div

@@ -86,6 +86,12 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
         gap: 12,
       }}
       onClick={() => onRemove(toast.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       {/* Color indicator dot */}
       <div

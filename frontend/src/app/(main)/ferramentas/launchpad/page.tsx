@@ -159,6 +159,12 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       />
       <div
         style={{
@@ -365,6 +371,12 @@ function AddGroupModal({
           inset: 0,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
         }}
       />
       <div

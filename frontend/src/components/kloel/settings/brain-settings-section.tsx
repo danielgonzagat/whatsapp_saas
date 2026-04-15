@@ -1447,6 +1447,12 @@ export function BrainSettingsSection() {
               onDrop={handleKbDrop}
               onClick={() => document.getElementById('kb-file-input')?.click()}
               className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-6 text-center ${kbDragOver ? 'border-[#E85D30] bg-[#E85D30]/5' : 'border-gray-200 hover:border-gray-300'}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
             >
               <Upload className="mx-auto mb-2 h-6 w-6 text-gray-400" aria-hidden="true" />
               <p className="text-sm text-gray-600">

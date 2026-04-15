@@ -167,6 +167,12 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       />
       <div
         style={{

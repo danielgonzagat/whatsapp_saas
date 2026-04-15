@@ -362,6 +362,12 @@ function PaymentOption({
         cursor: 'pointer',
         transition: 'border-color 0.2s',
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: selected ? 14 : 0 }}

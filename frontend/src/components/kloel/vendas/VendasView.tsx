@@ -441,6 +441,12 @@ function SmartPaymentModal({
         backdropFilter: 'blur(4px)',
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -452,6 +458,12 @@ function SmartPaymentModal({
           maxHeight: '85vh',
           overflowY: 'auto',
           boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
         }}
       >
         <div
@@ -923,6 +935,12 @@ function DetailModal({
         backdropFilter: 'blur(4px)',
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -934,6 +952,12 @@ function DetailModal({
           maxHeight: '80vh',
           overflowY: 'auto',
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
         }}
       >
         <div
@@ -1300,6 +1324,12 @@ function ShipModal({
         backdropFilter: 'blur(4px)',
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -1310,6 +1340,12 @@ function ShipModal({
           width: 400,
           padding: 24,
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
         }}
       >
         <h3
@@ -1695,6 +1731,12 @@ function GestaoVendas({
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).click();
+                  }
+                }}
               >
                 <div>
                   <span
@@ -1923,6 +1965,12 @@ function GestaoAssinaturas({
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
             >
               <div>
                 <span
@@ -2144,6 +2192,12 @@ function GestaoFisicos({
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
             >
               <div>
                 <span

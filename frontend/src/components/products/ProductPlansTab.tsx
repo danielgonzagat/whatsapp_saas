@@ -268,6 +268,12 @@ export function ProductPlansTab({ productId }: { productId: string }) {
             backdropFilter: 'blur(4px)',
           }}
           onClick={() => setLinkModalPlan(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -276,6 +282,12 @@ export function ProductPlansTab({ productId }: { productId: string }) {
               backgroundColor: colors.background.void,
               border: `1px solid ${colors.border.space}`,
               boxShadow: 'var(--cookie-shadow, 0 20px 60px rgba(0,0,0,0.5))',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
             }}
           >
             <div className="mb-4 flex items-center justify-between">

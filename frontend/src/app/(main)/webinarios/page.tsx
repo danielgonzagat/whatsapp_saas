@@ -498,6 +498,12 @@ export default function WebinariosPage() {
               }}
               onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(232, 93, 48, 0.3)')}
               onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
             >
               <div
                 style={{
@@ -636,6 +642,12 @@ export default function WebinariosPage() {
             zIndex: 9999,
           }}
           onClick={() => setShowModal(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -646,6 +658,12 @@ export default function WebinariosPage() {
               padding: 28,
               width: 440,
               maxWidth: '90vw',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
             }}
           >
             <div
@@ -833,6 +851,12 @@ export default function WebinariosPage() {
             zIndex: 9999,
           }}
           onClick={() => setEditingWebinar(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -843,6 +867,12 @@ export default function WebinariosPage() {
               padding: 28,
               width: 440,
               maxWidth: '90vw',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
             }}
           >
             <div
@@ -1025,6 +1055,12 @@ export default function WebinariosPage() {
             zIndex: 9999,
           }}
           onClick={() => setConfirmDeleteId(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -1036,6 +1072,12 @@ export default function WebinariosPage() {
               width: 360,
               maxWidth: '90vw',
               textAlign: 'center',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
             }}
           >
             <Trash2 size={32} style={{ color: '#E85D30', marginBottom: 12 }} aria-hidden="true" />

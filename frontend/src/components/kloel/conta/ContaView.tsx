@@ -951,6 +951,12 @@ function DadosPessoaisSection({
             cursor: 'pointer',
             padding: 8,
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           {avatarPreviewUrl || profile?.avatarUrl ? (
             <img
@@ -1665,6 +1671,12 @@ function DocumentosSection({
           transition: 'all 150ms ease',
           background: hover ? 'rgba(232,93,48,.02)' : 'transparent',
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       >
         <span
           style={{ color: hover ? EMBER : 'var(--app-text-placeholder)', transition: 'color .15s' }}
@@ -1972,6 +1984,12 @@ function DadosBancariosSection({
                 justifyContent: 'space-between',
                 transition: 'border-color .15s, box-shadow .15s',
                 boxSizing: 'border-box' as const,
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
               }}
             >
               <span

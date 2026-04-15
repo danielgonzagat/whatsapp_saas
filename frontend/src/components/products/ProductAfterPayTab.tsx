@@ -39,6 +39,12 @@ function Toggle({
         borderBottom: `1px solid ${V.b}08`,
         cursor: 'pointer',
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div>
         <span style={{ fontSize: 12, color: V.t2, fontFamily: SORA }}>{label}</span>

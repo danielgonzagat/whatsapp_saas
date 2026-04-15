@@ -216,6 +216,12 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
           background: 'rgba(0,0,0,0.55)',
           backdropFilter: 'blur(4px)',
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       />
 
       {/* Drawer */}

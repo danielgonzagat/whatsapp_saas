@@ -1212,6 +1212,12 @@ export default function CheckoutBlanc({
                     cursor: 'pointer',
                     transition: 'border-color 0.2s',
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLElement).click();
+                    }
+                  }}
                 >
                   <div
                     style={{
@@ -1419,6 +1425,12 @@ export default function CheckoutBlanc({
                     cursor: 'pointer',
                     transition: 'border-color 0.2s',
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLElement).click();
+                    }
+                  }}
                 >
                   <div
                     style={{
@@ -1467,6 +1479,12 @@ export default function CheckoutBlanc({
                     cursor: 'pointer',
                     transition: 'border-color 0.2s',
                     marginTop: 12,
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLElement).click();
+                    }
                   }}
                 >
                   <div

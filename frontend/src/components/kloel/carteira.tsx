@@ -755,6 +755,12 @@ function WithdrawModal({
         backdropFilter: 'blur(4px)',
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
@@ -764,6 +770,12 @@ function WithdrawModal({
           borderRadius: 6,
           width: 440,
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
         }}
       >
         <div
@@ -1034,6 +1046,12 @@ function AntecipateModal({
         backdropFilter: 'blur(4px)',
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
@@ -1043,6 +1061,12 @@ function AntecipateModal({
           borderRadius: 6,
           width: 440,
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
         }}
       >
         <div

@@ -131,6 +131,12 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <div
         style={{

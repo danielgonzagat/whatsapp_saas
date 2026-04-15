@@ -184,6 +184,12 @@ export default function VerTodasPage() {
                 cursor: 'pointer',
                 transition: `all ${motion.duration.normal} ${motion.easing.gravity}`,
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
             >
               <span style={{ fontSize: 22 }}>{cat.icon}</span>
               <div>

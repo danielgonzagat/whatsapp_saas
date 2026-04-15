@@ -610,6 +610,12 @@ export function AgentConsole({
             zIndex: 44,
           }}
           onClick={onClose}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         />
       )}
     </>

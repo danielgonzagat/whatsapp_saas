@@ -28,6 +28,12 @@ export function Card({ children, style, onClick, className }: CardProps) {
         cursor: onClick ? 'pointer' : undefined,
         ...style,
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       {children}
     </div>

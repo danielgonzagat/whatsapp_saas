@@ -2861,7 +2861,16 @@ function AreaMembros({
                         <span style={{ color: areaAccent }}>{IC.users(18)}</span>
                       )}
                     </div>
-                    <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => toggleArea(a.id)}>
+                    <div
+                      style={{ flex: 1, cursor: 'pointer' }}
+                      onClick={() => toggleArea(a.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          (e.currentTarget as HTMLElement).click();
+                        }
+                      }}
+                    >
                       <div
                         style={{
                           fontFamily: SORA,
@@ -2965,6 +2974,12 @@ function AreaMembros({
                         textDecoration: 'none',
                       }}
                       title="Pre-visualizar como aluno"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          (e.currentTarget as HTMLElement).click();
+                        }
+                      }}
                     >
                       <svg
                         width={16}
@@ -3195,6 +3210,12 @@ function AreaMembros({
                             color: '#E85D30',
                             opacity: previewHref ? 1 : 0.45,
                             textDecoration: 'none',
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              (e.currentTarget as HTMLElement).click();
+                            }
                           }}
                         >
                           Preview do aluno
@@ -3760,6 +3781,12 @@ function AreaMembros({
             setStudentAreaId(null);
             setEditingStudentId(null);
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
         >
           <div
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
@@ -3770,6 +3797,12 @@ function AreaMembros({
               height: '100%',
               display: 'flex',
               flexDirection: 'column' as const,
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
             }}
           >
             <div
@@ -5228,6 +5261,12 @@ function AfiliarSe({
               cursor: 'pointer',
               transition: 'border-color 150ms ease',
               overflow: 'hidden',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
             }}
           >
             <div

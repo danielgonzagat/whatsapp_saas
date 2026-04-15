@@ -115,6 +115,12 @@ export function ProductNerveCenterAvalTab() {
                       fontSize: 18,
                       color: i <= newRevRating ? V.y : V.t3,
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        (e.currentTarget as HTMLElement).click();
+                      }
+                    }}
                   >
                     <svg
                       width={14}

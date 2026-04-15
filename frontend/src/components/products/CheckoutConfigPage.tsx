@@ -170,6 +170,12 @@ function Checkbox({
           flexShrink: 0,
           transition: 'all 0.15s ease',
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
       >
         {checked && (
           <svg

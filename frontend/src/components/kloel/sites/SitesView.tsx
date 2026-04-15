@@ -1586,7 +1586,16 @@ function CriarSite({ mode }: { mode?: string }) {
                     padding: '10px 14px',
                   }}
                 >
-                  <span style={{ color: EMBER }} onClick={() => loadSavedSite(site)}>
+                  <span
+                    style={{ color: EMBER }}
+                    onClick={() => loadSavedSite(site)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        (e.currentTarget as HTMLElement).click();
+                      }
+                    }}
+                  >
                     {IC.site(16)}
                   </span>
                   <span
@@ -1598,6 +1607,12 @@ function CriarSite({ mode }: { mode?: string }) {
                       cursor: 'pointer',
                     }}
                     onClick={() => loadSavedSite(site)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        (e.currentTarget as HTMLElement).click();
+                      }
+                    }}
                   >
                     {site.name || 'Site sem titulo'}
                   </span>
@@ -1962,10 +1977,28 @@ function EditarSite({ mode }: { mode?: string }) {
                   padding: '12px 16px',
                 }}
               >
-                <span style={{ color: EMBER }} onClick={() => setSelectedSite(site)}>
+                <span
+                  style={{ color: EMBER }}
+                  onClick={() => setSelectedSite(site)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLElement).click();
+                    }
+                  }}
+                >
                   {IC.site(20)}
                 </span>
-                <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => setSelectedSite(site)}>
+                <div
+                  style={{ flex: 1, cursor: 'pointer' }}
+                  onClick={() => setSelectedSite(site)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLElement).click();
+                    }
+                  }}
+                >
                   <div style={{ fontFamily: SORA, fontSize: 14, color: TEXT }}>
                     {site.name || 'Site sem titulo'}
                   </div>

@@ -585,7 +585,16 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
         }
       `}</style>
 
-      <div className="kloel-search-shell" onClick={onClose}>
+      <div
+        className="kloel-search-shell"
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
+      >
         <div
           className={cn('kloel-search-modal', className)}
           onClick={(event) => event.stopPropagation()}
