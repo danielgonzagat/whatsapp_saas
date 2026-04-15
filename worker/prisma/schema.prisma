@@ -3121,3 +3121,54 @@ model PlatformFee {
   @@index([activeTo])
   @@map("platform_fees")
 }
+
+// ============================================================================
+// SP-14 — Admin AI Chat (I-ADMIN-C1 .. C5).
+//
+// A LLM copilot embedded in the admin panel. The operator asks a
+// question in natural language; the assistant calls read-only tools
+// (scoped by the operator's permission matrix) to answer. Destructive
+// tools never execute directly — they create a DestructiveIntent
+// (SP-8) that the operator must confirm manually.
+//
+// v0 ships the persistence layer + append-only message log + tool
+// call audit trail. The LLM provider binding and the floating UI
+// land here too, but the LLM call itself is STUBBED out until the
+// Anthropic SDK key is wired into the admin deploy. Stub mode
+// returns a canned "copilot not yet configured" response so the UI
+// can be demoed honestly.
+// ============================================================================
+enum AdminChatRole {
+  USER
+  ASSISTANT
+  TOOL
+  SYSTEM
+}
+
+model AdminChatSession {
+  id          String             @id @default(cuid())
+  adminUserId String             @map("admin_user_id")
+  title       String?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  lastUsedAt  DateTime           @default(now()) @map("last_used_at")
+  expiresAt   DateTime           @map("expires_at")
+  messages    AdminChatMessage[]
+
+  @@index([adminUserId, lastUsedAt])
+  @@map("admin_chat_sessions")
+}
+
+model AdminChatMessage {
+  id         String           @id @default(cuid())
+  sessionId  String           @map("session_id")
+  session    AdminChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role       AdminChatRole
+  content    String           @db.Text
+  toolName   String?          @map("tool_name")
+  toolArgs   Json?            @map("tool_args")
+  toolResult Json?            @map("tool_result")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@index([sessionId, createdAt])
+  @@map("admin_chat_messages")
+}
