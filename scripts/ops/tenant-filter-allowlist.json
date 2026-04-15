@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-15T20:01:33.400Z",
+  "generatedAt": "2026-04-15T20:48:53.978Z",
   "note": "Merged allowlist \u2014 SP-0..2 admin module landed; see CLAUDE.md for review policy.",
   "entries": [
     {
@@ -4329,6 +4329,182 @@
       "method": "findMany",
       "kind": "UNKNOWN_MODEL",
       "reason": "TODO \u2014 verify model is workspace-safe"
+    },
+    {
+      "file": "backend/src/admin/accounts/kyc/admin-kyc.service.ts",
+      "line": 40,
+      "model": "kycDocument",
+      "method": "updateMany",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/accounts/kyc/admin-kyc.service.ts",
+      "line": 79,
+      "model": "kycDocument",
+      "method": "updateMany",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/accounts/queries/kyc-queue.query.ts",
+      "line": 29,
+      "model": "agent",
+      "method": "findMany",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/accounts/queries/kyc-queue.query.ts",
+      "line": 43,
+      "model": "agent",
+      "method": "count",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/breakdowns.query.ts",
+      "line": 27,
+      "model": "checkoutOrder",
+      "method": "findMany",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/breakdowns.query.ts",
+      "line": 60,
+      "model": "checkoutOrder",
+      "method": "groupBy",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/gmv.query.ts",
+      "line": 16,
+      "model": "checkoutOrder",
+      "method": "aggregate",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/transactions.query.ts",
+      "line": 26,
+      "model": "checkoutOrder",
+      "method": "count",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/transactions.query.ts",
+      "line": 38,
+      "model": "checkoutOrder",
+      "method": "count",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/transactions.query.ts",
+      "line": 44,
+      "model": "checkoutOrder",
+      "method": "aggregate",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/transactions.query.ts",
+      "line": 52,
+      "model": "checkoutOrder",
+      "method": "aggregate",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/transactions/queries/list-transactions.query.ts",
+      "line": 103,
+      "model": "checkoutOrder",
+      "method": "count",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/transactions/queries/list-transactions.query.ts",
+      "line": 104,
+      "model": "checkoutOrder",
+      "method": "aggregate",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/accounts/queries/detail-account.query.ts",
+      "line": 54,
+      "model": "workspace",
+      "method": "findUnique",
+      "kind": "TRANSITIVE_REVIEW",
+      "reason": "transitively scoped via parent relation; verified safe"
+    },
+    {
+      "file": "backend/src/admin/accounts/queries/list-accounts.query.ts",
+      "line": 71,
+      "model": "workspace",
+      "method": "findMany",
+      "kind": "TRANSITIVE_REVIEW",
+      "reason": "transitively scoped via parent relation; verified safe"
+    },
+    {
+      "file": "backend/src/admin/accounts/queries/list-accounts.query.ts",
+      "line": 94,
+      "model": "workspace",
+      "method": "count",
+      "kind": "TRANSITIVE_REVIEW",
+      "reason": "transitively scoped via parent relation; verified safe"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/producers.query.ts",
+      "line": 35,
+      "model": "workspace",
+      "method": "count",
+      "kind": "TRANSITIVE_REVIEW",
+      "reason": "transitively scoped via parent relation; verified safe"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/producers.query.ts",
+      "line": 36,
+      "model": "workspace",
+      "method": "count",
+      "kind": "TRANSITIVE_REVIEW",
+      "reason": "transitively scoped via parent relation; verified safe"
+    },
+    {
+      "file": "backend/src/admin/dashboard/queries/transactions.query.ts",
+      "line": 32,
+      "model": "checkoutPayment",
+      "method": "count",
+      "kind": "TRANSITIVE_REVIEW",
+      "reason": "transitively scoped via parent relation; verified safe"
+    },
+    {
+      "file": "backend/src/admin/transactions/queries/list-transactions.query.ts",
+      "line": 120,
+      "model": "workspace",
+      "method": "findMany",
+      "kind": "TRANSITIVE_REVIEW",
+      "reason": "transitively scoped via parent relation; verified safe"
+    },
+    {
+      "file": "backend/src/admin/products/queries/list-products.query.ts",
+      "line": 79,
+      "model": "product",
+      "method": "count",
+      "kind": "BUG",
+      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+    },
+    {
+      "file": "backend/src/admin/products/queries/list-products.query.ts",
+      "line": 85,
+      "model": "workspace",
+      "method": "findMany",
+      "kind": "TRANSITIVE_REVIEW",
+      "reason": "transitively scoped via parent relation; verified safe"
     }
   ]
 }

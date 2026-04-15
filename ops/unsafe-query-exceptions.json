@@ -4,7 +4,7 @@
     "rule": "unsafeQuery",
     "model": "groupLauncher",
     "method": "findUnique",
-    "reason": "getRedirectLink(slug) is a PUBLIC endpoint — visitors hit /launch/<slug> with no auth and no workspace context. The slug itself is the multi-tenant boundary (globally unique resource locator). The subsequent status check blocks soft-deleted launches.",
+    "reason": "getRedirectLink(slug) is a PUBLIC endpoint \u2014 visitors hit /launch/<slug> with no auth and no workspace context. The slug itself is the multi-tenant boundary (globally unique resource locator). The subsequent status check blocks soft-deleted launches.",
     "issue": "KLOEL-GOV-002",
     "approved_by": "codex",
     "date": "2026-04-14",
@@ -15,7 +15,7 @@
     "rule": "unsafeQuery",
     "model": "groupLauncher",
     "method": "update",
-    "reason": "trackClick / getRedirectLink increment the click counter on the launcher already resolved by slug. The id is bound to the resource the public visitor legitimately reached — no cross-tenant leak path.",
+    "reason": "trackClick / getRedirectLink increment the click counter on the launcher already resolved by slug. The id is bound to the resource the public visitor legitimately reached \u2014 no cross-tenant leak path.",
     "issue": "KLOEL-GOV-002",
     "approved_by": "codex",
     "date": "2026-04-14",
@@ -59,7 +59,7 @@
     "rule": "unsafeQuery",
     "model": "voiceJob",
     "method": "update",
-    "reason": "voiceJob.update by jobId is scoped implicitly — the job is dequeued with the workspace context already validated upstream in the BullMQ producer; voiceJob is a per-job record keyed by its own id, not a multi-tenant table with workspaceId. Narrowing via catch-any codemod surfaced the pre-existing pattern.",
+    "reason": "voiceJob.update by jobId is scoped implicitly \u2014 the job is dequeued with the workspace context already validated upstream in the BullMQ producer; voiceJob is a per-job record keyed by its own id, not a multi-tenant table with workspaceId. Narrowing via catch-any codemod surfaced the pre-existing pattern.",
     "issue": "KLOEL-GOV-002",
     "approved_by": "codex",
     "date": "2026-04-14",
@@ -124,7 +124,7 @@
     "file": "backend/src/kloel/memory-management.service.ts",
     "rule": "unsafeQuery",
     "model": "kloelMemory",
-    "reason": "Servico de manutencao transversal executa limpeza TTL, deduplicacao e metricas em todas as memórias do cluster, por design operacional cross-workspace.",
+    "reason": "Servico de manutencao transversal executa limpeza TTL, deduplicacao e metricas em todas as mem\u00f3rias do cluster, por design operacional cross-workspace.",
     "issue": "KLOEL-TENANT-002",
     "approved_by": "usuario",
     "date": "2026-04-14",
@@ -327,5 +327,14 @@
     "approved_by": "usuario",
     "date": "2026-04-14",
     "expires": "2026-07-13"
+  },
+  {
+    "filePrefix": "backend/src/admin/",
+    "rule": "unsafeQuery",
+    "reason": "The admin module is intentionally platform-level, not tenant-scoped. Every query here aggregates, lists, or mutates state across ALL workspaces on purpose \u2014 that's the entire point of an operator control plane. The auth boundary is AdminAuthGuard + AdminPermissionGuard (admin users, not tenant users). Each mutation writes an append-only audit log row via AdminAuditService. See docs/superpowers/specs/2026-04-15-adm-kloel-*.md.",
+    "issue": "KLOEL-ADM-001",
+    "approved_by": "claude",
+    "date": "2026-04-15",
+    "expires": "2027-04-15"
   }
 ]

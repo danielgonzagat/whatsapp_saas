@@ -1,0 +1,85 @@
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { AdminAction, AdminModule } from '@prisma/client';
+import { Public } from '../../auth/public.decorator';
+import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
+import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
+import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
+import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
+import type { AuthenticatedAdmin } from '../auth/admin-token.types';
+import { AdminAccountsService } from './admin-accounts.service';
+import { ApproveKycDto } from './dto/approve-kyc.dto';
+import { ListAccountsQueryDto } from './dto/list-accounts.dto';
+import { RejectKycDto } from './dto/reject-kyc.dto';
+
+@Public()
+@Controller('admin/accounts')
+@UseGuards(AdminAuthGuard, AdminPermissionGuard)
+export class AdminAccountsController {
+  constructor(private readonly accounts: AdminAccountsService) {}
+
+  @Get()
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
+  async list(@Query() query: ListAccountsQueryDto) {
+    return this.accounts.list({
+      search: query.search,
+      kycStatus: query.kycStatus,
+      skip: query.skip,
+      take: query.take,
+    });
+  }
+
+  @Get('kyc/queue')
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
+  async kycQueue() {
+    return this.accounts.kycQueue();
+  }
+
+  @Get(':workspaceId')
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
+  async detail(@Param('workspaceId') workspaceId: string) {
+    return this.accounts.detail(workspaceId);
+  }
+
+  @Post('agents/:agentId/kyc/approve')
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async approveKyc(
+    @Param('agentId') agentId: string,
+    @Body() dto: ApproveKycDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    await this.accounts.approveKyc(agentId, admin.id, dto.note);
+  }
+
+  @Post('agents/:agentId/kyc/reject')
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async rejectKyc(
+    @Param('agentId') agentId: string,
+    @Body() dto: RejectKycDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    await this.accounts.rejectKyc(agentId, admin.id, dto.reason);
+  }
+
+  @Post('agents/:agentId/kyc/reverify')
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reverifyKyc(
+    @Param('agentId') agentId: string,
+    @Body() dto: RejectKycDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    await this.accounts.reverifyKyc(agentId, admin.id, dto.reason);
+  }
+}
