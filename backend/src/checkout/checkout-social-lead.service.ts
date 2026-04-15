@@ -23,6 +23,24 @@ type ConversionInput = {
   deviceFingerprint?: string | null;
 };
 
+type CheckoutSocialLeadPrefill = {
+  leadId: string;
+  provider: CaptureSocialLeadDto['provider'];
+  name: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+  deviceFingerprint: string | null;
+  phone: string | null;
+  cpf: string | null;
+  cep: string | null;
+  street: string | null;
+  number: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+  complement: string | null;
+};
+
 @Injectable()
 export class CheckoutSocialLeadService {
   private readonly logger = new Logger(CheckoutSocialLeadService.name);
@@ -98,6 +116,67 @@ export class CheckoutSocialLeadService {
     };
   }
 
+  async getLeadPrefill(input: {
+    slug: string;
+    checkoutCode?: string | null;
+    deviceFingerprint?: string | null;
+  }): Promise<CheckoutSocialLeadPrefill | null> {
+    const normalizedSlug = this.normalizeOptional(input.slug);
+    const fingerprint = this.normalizeOptional(input.deviceFingerprint);
+    if (!normalizedSlug || !fingerprint) {
+      return null;
+    }
+
+    const plan = await this.resolvePlanBySlug(normalizedSlug);
+    const normalizedCheckoutCode = this.normalizeOptional(input.checkoutCode);
+    const lead = await this.prisma.checkoutSocialLead.findFirst({
+      where: {
+        workspaceId: plan.workspaceId,
+        deviceFingerprint: fingerprint,
+        OR: [
+          { checkoutSlug: plan.slug },
+          ...(normalizedCheckoutCode ? [{ checkoutCode: normalizedCheckoutCode }] : []),
+        ],
+      },
+      orderBy: [{ enrichedAt: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        provider: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+        deviceFingerprint: true,
+        phone: true,
+        cpf: true,
+        enrichmentData: true,
+      },
+    });
+
+    if (!lead) {
+      return null;
+    }
+
+    const address = this.extractAddressFromEnrichment(lead.enrichmentData);
+
+    return {
+      leadId: lead.id,
+      provider: this.serializeProvider(lead.provider),
+      name: lead.name,
+      email: lead.email,
+      avatarUrl: lead.avatarUrl,
+      deviceFingerprint: lead.deviceFingerprint,
+      phone: lead.phone,
+      cpf: lead.cpf,
+      cep: address.cep,
+      street: address.street,
+      number: address.number,
+      neighborhood: address.neighborhood,
+      city: address.city,
+      state: address.state,
+      complement: address.complement,
+    };
+  }
+
   async updateLead(leadId: string, dto: UpdateSocialLeadDto) {
     const existing = await this.prisma.checkoutSocialLead.findUnique({
       where: { id: leadId },
@@ -108,6 +187,7 @@ export class CheckoutSocialLeadService {
         email: true,
         phone: true,
         cpf: true,
+        enrichmentData: true,
         stepReached: true,
       },
     });
@@ -118,6 +198,7 @@ export class CheckoutSocialLeadService {
 
     const normalizedPhone = this.normalizePhone(dto.phone) || existing.phone || null;
     const nextStep = Math.max(existing.stepReached, dto.stepReached || existing.stepReached);
+    const mergedEnrichmentData = this.mergeLeadAddressSnapshot(existing.enrichmentData, dto);
     const contactId = normalizedPhone
       ? await this.upsertContact({
           workspaceId: existing.workspaceId,
@@ -133,6 +214,7 @@ export class CheckoutSocialLeadService {
         phone: normalizedPhone,
         cpf: this.normalizeOptional(dto.cpf) || existing.cpf || null,
         stepReached: nextStep,
+        enrichmentData: mergedEnrichmentData,
         contactId: contactId || undefined,
       },
       select: {
@@ -242,6 +324,12 @@ export class CheckoutSocialLeadService {
     return CheckoutSocialProvider.APPLE;
   }
 
+  private serializeProvider(provider: CheckoutSocialProvider): CaptureSocialLeadDto['provider'] {
+    if (provider === CheckoutSocialProvider.GOOGLE) return 'google';
+    if (provider === CheckoutSocialProvider.FACEBOOK) return 'facebook';
+    return 'apple';
+  }
+
   private async enqueueEnrichment(leadId: string) {
     await crmQueue.add(
       'checkout-social-lead-enrich',
@@ -342,6 +430,100 @@ export class CheckoutSocialLeadService {
   private normalizePhone(value?: string | null) {
     const digits = String(value || '').replace(/\D/g, '');
     return digits || null;
+  }
+
+  private extractAddressFromEnrichment(value: Prisma.JsonValue | null) {
+    const root = this.readJsonObject(value);
+    const nestedAddress = this.readJsonObject(root?.address);
+    const addressSource = nestedAddress || root;
+
+    return {
+      cep: this.readFirstString(addressSource, [
+        'cep',
+        'zip',
+        'zipCode',
+        'zipcode',
+        'postalCode',
+        'addressZip',
+      ]),
+      street: this.readFirstString(addressSource, [
+        'street',
+        'logradouro',
+        'addressStreet',
+        'addressLine1',
+        'line1',
+        'address',
+      ]),
+      number: this.readFirstString(addressSource, ['number', 'addressNumber', 'numero']),
+      neighborhood: this.readFirstString(addressSource, ['neighborhood', 'bairro', 'district']),
+      city: this.readFirstString(addressSource, ['city', 'cidade', 'addressCity']),
+      state: this.readFirstString(addressSource, ['state', 'uf', 'estado', 'addressState']),
+      complement: this.readFirstString(addressSource, [
+        'complement',
+        'complemento',
+        'addressComplement',
+        'line2',
+      ]),
+    };
+  }
+
+  private mergeLeadAddressSnapshot(
+    current: Prisma.JsonValue | null,
+    dto: UpdateSocialLeadDto,
+  ): Prisma.InputJsonValue | undefined {
+    const addressEntries = Object.entries({
+      cep: this.normalizeOptional(dto.cep),
+      street: this.normalizeOptional(dto.street),
+      number: this.normalizeOptional(dto.number),
+      neighborhood: this.normalizeOptional(dto.neighborhood),
+      city: this.normalizeOptional(dto.city),
+      state: this.normalizeOptional(dto.state),
+      complement: this.normalizeOptional(dto.complement),
+    }).filter(
+      (entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1] !== '',
+    );
+
+    if (addressEntries.length === 0) {
+      return undefined;
+    }
+
+    const root = this.readJsonObject(current) || {};
+    const address = this.readJsonObject(root.address) || {};
+
+    return {
+      ...root,
+      address: {
+        ...address,
+        ...Object.fromEntries(addressEntries),
+      },
+    };
+  }
+
+  private readJsonObject(value: Prisma.JsonValue | null | undefined) {
+    if (!value || Array.isArray(value) || typeof value !== 'object') {
+      return null;
+    }
+
+    return value as Record<string, Prisma.JsonValue>;
+  }
+
+  private readFirstString(
+    value: Record<string, Prisma.JsonValue> | null,
+    keys: readonly string[],
+  ): string | null {
+    if (!value) return null;
+
+    for (const key of keys) {
+      const candidate = value[key];
+      if (typeof candidate === 'string') {
+        const normalized = this.normalizeOptional(candidate);
+        if (normalized) {
+          return normalized;
+        }
+      }
+    }
+
+    return null;
   }
 
   private toJsonValue(value: Record<string, string | boolean | null>): Prisma.InputJsonValue {

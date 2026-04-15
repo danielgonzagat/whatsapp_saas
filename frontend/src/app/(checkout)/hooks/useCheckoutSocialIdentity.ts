@@ -17,6 +17,15 @@ export interface CheckoutSocialIdentitySnapshot {
   email: string;
   avatarUrl?: string | null;
   deviceFingerprint: string;
+  phone?: string | null;
+  cpf?: string | null;
+  cep?: string | null;
+  street?: string | null;
+  number?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  complement?: string | null;
 }
 
 type CaptureResponse = {
@@ -26,6 +35,24 @@ type CaptureResponse = {
   email: string;
   avatarUrl?: string | null;
   deviceFingerprint?: string | null;
+};
+
+type PrefillResponse = {
+  leadId: string;
+  provider: CheckoutSocialProvider;
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  deviceFingerprint?: string | null;
+  phone?: string | null;
+  cpf?: string | null;
+  cep?: string | null;
+  street?: string | null;
+  number?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  complement?: string | null;
 };
 
 type UseCheckoutSocialIdentityOptions = {
@@ -42,6 +69,7 @@ export function useCheckoutSocialIdentity({
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const callbackRef = useRef<(credential: string) => Promise<void>>(async () => undefined);
   const initializedRef = useRef(false);
+  const prefillRequestKeyRef = useRef('');
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() || '';
 
   const [sdkReady, setSdkReady] = useState(false);
@@ -92,6 +120,50 @@ export function useCheckoutSocialIdentity({
     };
   }, [clientId, enabled]);
 
+  useEffect(() => {
+    if (!enabled || !slug || !deviceFingerprint) {
+      return;
+    }
+
+    const requestKey = `${slug}:${checkoutCode || ''}:${deviceFingerprint}`;
+    if (prefillRequestKeyRef.current === requestKey) {
+      return;
+    }
+    prefillRequestKeyRef.current = requestKey;
+
+    let cancelled = false;
+    const params = new URLSearchParams({
+      slug,
+      deviceFingerprint,
+    });
+    if (checkoutCode?.trim()) {
+      params.set('checkoutCode', checkoutCode.trim());
+    }
+
+    fetch(`${API_BASE}/checkout/public/social-capture/prefill?${params.toString()}`)
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(await readResponseMessage(response, 'Falha ao recuperar o lead social.'));
+        }
+
+        return (await response.json()) as PrefillResponse | null;
+      })
+      .then((data) => {
+        if (cancelled || !data?.provider || !data?.name || !data?.email) {
+          return;
+        }
+
+        const nextSnapshot = mergeSnapshot(snapshot, data, deviceFingerprint);
+        persistIdentity(nextSnapshot);
+        setSnapshot(nextSnapshot);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [checkoutCode, deviceFingerprint, enabled, slug, snapshot]);
+
   const handleGoogleCredential = useCallback(
     async (credential: string) => {
       if (!slug) {
@@ -119,20 +191,13 @@ export function useCheckoutSocialIdentity({
         });
 
         if (!response.ok) {
-          const body = (await response.json().catch(() => ({}))) as { message?: string };
-          throw new Error(body.message || 'Falha ao capturar a identidade com Google.');
+          throw new Error(
+            await readResponseMessage(response, 'Falha ao capturar a identidade com Google.'),
+          );
         }
 
         const data = (await response.json()) as CaptureResponse;
-        const nextSnapshot: CheckoutSocialIdentitySnapshot = {
-          leadId: data.leadId,
-          provider: data.provider,
-          name: data.name,
-          email: data.email,
-          avatarUrl: data.avatarUrl || null,
-          deviceFingerprint:
-            data.deviceFingerprint || deviceFingerprint || ensureDeviceFingerprint(),
-        };
+        const nextSnapshot = mergeSnapshot(snapshot, data, deviceFingerprint);
         persistIdentity(nextSnapshot);
         setSnapshot(nextSnapshot);
       } catch (captureError: unknown) {
@@ -143,7 +208,7 @@ export function useCheckoutSocialIdentity({
         setLoadingProvider(null);
       }
     },
-    [checkoutCode, deviceFingerprint, slug],
+    [checkoutCode, deviceFingerprint, slug, snapshot],
   );
 
   callbackRef.current = handleGoogleCredential;
@@ -183,7 +248,18 @@ export function useCheckoutSocialIdentity({
   }, [clientId, enabled, sdkReady]);
 
   const updateLeadProgress = useCallback(
-    async (payload: { phone?: string; cpf?: string; stepReached?: number }) => {
+    async (payload: {
+      phone?: string;
+      cpf?: string;
+      cep?: string;
+      street?: string;
+      number?: string;
+      neighborhood?: string;
+      city?: string;
+      state?: string;
+      complement?: string;
+      stepReached?: number;
+    }) => {
       if (!snapshot?.leadId) return;
 
       await fetch(`${API_BASE}/checkout/public/social-capture/${snapshot.leadId}`, {
@@ -234,6 +310,56 @@ function readStoredIdentity() {
 
 function persistIdentity(value: CheckoutSocialIdentitySnapshot) {
   writeToStorage(IDENTITY_STORAGE_KEY, JSON.stringify(value));
+}
+
+function mergeSnapshot(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+  fallbackFingerprint: string,
+): CheckoutSocialIdentitySnapshot {
+  return {
+    leadId: incoming.leadId || current?.leadId,
+    provider: incoming.provider || current?.provider || 'google',
+    name: incoming.name || current?.name || '',
+    email: incoming.email || current?.email || '',
+    avatarUrl: incoming.avatarUrl ?? current?.avatarUrl ?? null,
+    deviceFingerprint:
+      incoming.deviceFingerprint || current?.deviceFingerprint || fallbackFingerprint,
+    phone: incoming.phone ?? current?.phone ?? null,
+    cpf: incoming.cpf ?? current?.cpf ?? null,
+    cep: incoming.cep ?? current?.cep ?? null,
+    street: incoming.street ?? current?.street ?? null,
+    number: incoming.number ?? current?.number ?? null,
+    neighborhood: incoming.neighborhood ?? current?.neighborhood ?? null,
+    city: incoming.city ?? current?.city ?? null,
+    state: incoming.state ?? current?.state ?? null,
+    complement: incoming.complement ?? current?.complement ?? null,
+  };
+}
+
+async function readResponseMessage(response: Response, fallback: string) {
+  const raw = await response.text().catch(() => '');
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as { message?: string };
+    if (parsed?.message?.trim()) {
+      return parsed.message.trim();
+    }
+  } catch {
+    if (!trimmed.startsWith('<')) {
+      return trimmed;
+    }
+  }
+
+  if (response.status === 404) {
+    return 'Checkout social não encontrado para este link.';
+  }
+
+  return fallback;
 }
 
 function readAttribution(url: string) {

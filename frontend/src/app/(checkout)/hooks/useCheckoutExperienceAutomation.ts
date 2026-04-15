@@ -82,6 +82,15 @@ export function useCheckoutExperienceAutomation({
       ...prev,
       name: socialIdentity.name || prev.name,
       email: socialIdentity.email || prev.email,
+      phone: socialIdentity.phone || prev.phone,
+      cpf: socialIdentity.cpf || prev.cpf,
+      cep: socialIdentity.cep || prev.cep,
+      street: socialIdentity.street || prev.street,
+      number: socialIdentity.number || prev.number,
+      neighborhood: socialIdentity.neighborhood || prev.neighborhood,
+      city: socialIdentity.city || prev.city,
+      state: socialIdentity.state || prev.state,
+      complement: socialIdentity.complement || prev.complement,
     }));
   }, [setForm, socialIdentity]);
 

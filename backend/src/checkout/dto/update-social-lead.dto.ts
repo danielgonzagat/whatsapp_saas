@@ -13,6 +13,41 @@ export class UpdateSocialLeadDto {
   cpf?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  cep?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  street?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  number?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  neighborhood?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  complement?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)

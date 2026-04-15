@@ -75,6 +75,19 @@ export class CheckoutPublicController {
     });
   }
 
+  @Get('social-capture/prefill')
+  getSocialLeadPrefill(
+    @Query('slug') slug?: string,
+    @Query('checkoutCode') checkoutCode?: string,
+    @Query('deviceFingerprint') deviceFingerprint?: string,
+  ) {
+    return this.checkoutSocialLeadService.getLeadPrefill({
+      slug: String(slug || ''),
+      checkoutCode,
+      deviceFingerprint,
+    });
+  }
+
   @Get(':slug')
   getCheckoutBySlug(
     @Param('slug') slug: string,

@@ -20,6 +20,7 @@ describe('CheckoutPublicController', () => {
   };
   let socialLeadService: {
     captureLead: jest.Mock;
+    getLeadPrefill: jest.Mock;
     updateLead: jest.Mock;
   };
 
@@ -37,6 +38,7 @@ describe('CheckoutPublicController', () => {
     };
     socialLeadService = {
       captureLead: jest.fn(),
+      getLeadPrefill: jest.fn(),
       updateLead: jest.fn(),
     };
 
@@ -105,5 +107,15 @@ describe('CheckoutPublicController', () => {
     );
 
     expect(isIdempotent).toBe(true);
+  });
+
+  it('delegates social prefill lookup with slug, code, and fingerprint', async () => {
+    await controller.getSocialLeadPrefill('checkout-demo', 'MPX9Q2Z7', 'device-123');
+
+    expect(socialLeadService.getLeadPrefill).toHaveBeenCalledWith({
+      slug: 'checkout-demo',
+      checkoutCode: 'MPX9Q2Z7',
+      deviceFingerprint: 'device-123',
+    });
   });
 });

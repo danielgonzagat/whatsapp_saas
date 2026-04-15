@@ -202,7 +202,18 @@ export function useCheckoutExperienceSocial({
 
       setSubmitError('');
       setPixelEvent('AddPaymentInfo');
-      await social.updateLeadProgress({ phone: form.phone, cpf: form.cpf, stepReached: 3 });
+      await social.updateLeadProgress({
+        phone: form.phone,
+        cpf: form.cpf,
+        cep: form.cep,
+        street: form.street,
+        number: form.number,
+        neighborhood: form.neighborhood,
+        city: form.city,
+        state: form.state,
+        complement: form.complement,
+        stepReached: 3,
+      });
       setStep(3);
     },
     [
