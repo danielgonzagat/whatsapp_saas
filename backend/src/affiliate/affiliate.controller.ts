@@ -14,11 +14,12 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import type { AffiliateProduct, Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
@@ -63,8 +64,11 @@ export class AffiliateController {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  private serializeAffiliateProductForResponse(req: any, product: any) {
-    if (!product) return product;
+  private serializeAffiliateProductForResponse<T extends { thumbnailUrl: string | null }>(
+    req: AuthenticatedRequest,
+    product: T | null | undefined,
+  ): (T & { thumbnailUrl: string | null }) | null {
+    if (!product) return null;
 
     return {
       ...product,
@@ -72,7 +76,7 @@ export class AffiliateController {
     };
   }
 
-  private buildAffiliateLinkUrl(req: any, code: string | null | undefined) {
+  private buildAffiliateLinkUrl(req: AuthenticatedRequest, code: string | null | undefined) {
     return buildPayCheckoutUrl(req, code);
   }
 
@@ -119,8 +123,8 @@ export class AffiliateController {
   }
 
   private async enrichAffiliateProducts(
-    req: any,
-    affiliateProducts: any[],
+    req: AuthenticatedRequest,
+    affiliateProducts: AffiliateProduct[],
     viewerWorkspaceId?: string,
   ) {
     if (!affiliateProducts.length) {
@@ -237,7 +241,7 @@ export class AffiliateController {
    */
   @Get('marketplace')
   async listMarketplace(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Query('category') category?: string,
     @Query('search') search?: string,
     @Query('sort') sort?: string,
@@ -247,7 +251,7 @@ export class AffiliateController {
     const take = Math.min(Number.parseInt(limit || '20', 10), 100);
     const skip = (Math.max(Number.parseInt(page || '1', 10), 1) - 1) * take;
 
-    const where: any = { listed: true };
+    const where: Prisma.AffiliateProductWhereInput = { listed: true };
 
     if (category) {
       where.category = category;
@@ -255,7 +259,7 @@ export class AffiliateController {
 
     const filteredWhere = await this.buildMarketplaceWhere(where);
 
-    let orderBy: any = { temperature: 'desc' };
+    let orderBy: Prisma.AffiliateProductOrderByWithRelationInput = { temperature: 'desc' };
     if (sort === 'newest') {
       orderBy = { createdAt: 'desc' };
     } else if (sort === 'commission') {
@@ -351,7 +355,7 @@ export class AffiliateController {
    * Get recommended (top temperature) products
    */
   @Get('marketplace/recommended')
-  async getRecommended(@Request() req: any, @Query('limit') limit?: string) {
+  async getRecommended(@Request() req: AuthenticatedRequest, @Query('limit') limit?: string) {
     const take = Math.min(Number.parseInt(limit || '10', 10), 50);
     const where = await this.buildMarketplaceWhere({ listed: true });
 
@@ -378,7 +382,7 @@ export class AffiliateController {
   @UseGuards(KycApprovedGuard)
   @KycRequired()
   async requestAffiliation(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('productId') productId: string,
     @Body() body: { name?: string; email?: string },
   ) {
@@ -449,7 +453,7 @@ export class AffiliateController {
    * Get products the current workspace is affiliated with
    */
   @Get('my-products')
-  async getMyProducts(@Request() req: any) {
+  async getMyProducts(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user.workspaceId;
 
     const requests = await this.prisma.affiliateRequest.findMany({
@@ -478,7 +482,7 @@ export class AffiliateController {
    * Get my affiliate links with metrics
    */
   @Get('my-links')
-  async getMyLinks(@Request() req: any) {
+  async getMyLinks(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user.workspaceId;
 
     const links = await this.prisma.affiliateLink.findMany({
@@ -525,7 +529,7 @@ export class AffiliateController {
   @UseGuards(KycApprovedGuard)
   @KycRequired()
   async listProduct(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('productId') productId: string,
     @Body() dto: ListProductDto,
   ) {
@@ -578,7 +582,7 @@ export class AffiliateController {
    */
   @Put('config/:productId')
   async configureProduct(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('productId') productId: string,
     @Body() dto: ConfigureProductDto,
   ) {
@@ -636,7 +640,7 @@ export class AffiliateController {
   }
 
   @Post('ai-search')
-  async aiSearch(@Req() req: any, @Body() body: { query: string }) {
+  async aiSearch(@Req() req: AuthenticatedRequest, @Body() body: { query: string }) {
     const workspaceId = req.user.workspaceId;
     const where = await this.buildMarketplaceWhere({
       listed: true,
@@ -658,7 +662,7 @@ export class AffiliateController {
   }
 
   @Post('suggest')
-  async suggest(@Req() req: any) {
+  async suggest(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.user.workspaceId;
     // Get workspace products to understand niche
     const myProducts = await this.prisma.product.findMany({
@@ -685,7 +689,7 @@ export class AffiliateController {
   }
 
   @Post('saved/:productId')
-  async saveProduct(@Req() req: any, @Param('productId') productId: string) {
+  async saveProduct(@Req() req: AuthenticatedRequest, @Param('productId') productId: string) {
     const workspaceId = req.user.workspaceId;
     // Idempotency: check existingRecord before creating
     const existingRecord = await this.prisma.affiliateRequest.findFirst({
@@ -707,7 +711,7 @@ export class AffiliateController {
   }
 
   @Delete('saved/:productId')
-  async unsaveProduct(@Req() req: any, @Param('productId') productId: string) {
+  async unsaveProduct(@Req() req: AuthenticatedRequest, @Param('productId') productId: string) {
     const workspaceId = req.user.workspaceId;
     await this.prisma.affiliateRequest.deleteMany({
       where: {

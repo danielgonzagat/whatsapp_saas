@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { Contact, WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import Stripe from 'stripe';
 import { Public } from '../auth/public.decorator';
@@ -22,6 +23,115 @@ import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WebhooksService } from './webhooks.service';
+
+/**
+ * Request shape seen by payment webhook endpoints. The raw body is required for
+ * HMAC/Stripe signature verification and is populated by the global body parser
+ * configured in main.ts.
+ */
+interface WebhookRequest {
+  body?: unknown;
+  rawBody?: string | Buffer;
+  url?: string;
+}
+
+/**
+ * Generic payment webhook body accepted by the default `/webhook/payment`
+ * endpoint. Keeps the original contract (arbitrary additional fields) while
+ * typing the known business fields explicitly.
+ */
+interface GenericPaymentWebhookBody {
+  workspaceId?: string;
+  contactId?: string;
+  phone?: string;
+  status?: string;
+  amount?: number;
+  orderId?: string;
+  provider?: string;
+  [key: string]: unknown;
+}
+
+/** Shopify order webhook — only the fields the controller actually reads. */
+interface ShopifyOrderWebhookBody {
+  id?: string | number;
+  order_number?: string | number;
+  financial_status?: string;
+  workspaceId?: string;
+  phone?: string;
+  total_price?: string;
+  total_price_set?: { shop_money?: { amount?: string | number } };
+  currency?: string;
+  presentment_currency?: string;
+  customer?: { phone?: string };
+}
+
+/** PagHiper webhook — only the fields the controller actually reads. */
+interface PagHiperWebhookBody {
+  status?: string;
+  workspaceId?: string;
+  value?: number;
+  value_cents?: number;
+  transaction_id?: string;
+  payer_phone?: string;
+  payer?: { phone?: string };
+  metadata?: { workspaceId?: string };
+  transaction?: {
+    status?: string;
+    transaction_id?: string;
+    payer_phone?: string;
+    payer?: { phone?: string };
+    metadata?: { workspaceId?: string };
+  };
+}
+
+/** WooCommerce order webhook — only the fields the controller actually reads. */
+interface WooCommerceMetaData {
+  key: string;
+  value: unknown;
+}
+interface WooCommerceWebhookBody {
+  id?: string | number;
+  number?: string | number;
+  status?: string;
+  total?: string;
+  currency?: string;
+  workspaceId?: string;
+  phone?: string;
+  billing?: { phone?: string };
+  customer?: { phone?: string };
+  meta_data?: WooCommerceMetaData[];
+}
+
+/**
+ * Minimal structural representation of a Stripe event / Checkout session as
+ * consumed by this controller. When a verified signature is present we use
+ * `Stripe.Event` directly; otherwise the JSON body is validated structurally
+ * against this shape.
+ */
+interface StripeCheckoutSessionLike {
+  id?: string;
+  payment_intent?: string | null;
+  amount_total?: number | null;
+  currency?: string | null;
+  customer_email?: string | null;
+  customer_details?: {
+    email?: string | null;
+    phone?: string | null;
+  } | null;
+  metadata?: {
+    workspaceId?: string;
+    phone?: string;
+    productName?: string;
+    [key: string]: string | undefined;
+  } | null;
+}
+interface StripeEventLike {
+  id?: string;
+  type?: string;
+  data?: {
+    object?: StripeCheckoutSessionLike;
+  };
+}
 
 /**
  * Webhook genérico de pagamento/loja para marcar conversões reais no Autopilot.
@@ -43,10 +153,10 @@ export class PaymentWebhookController {
   @Public()
   @Post('stripe')
   async handleStripe(
-    @Req() req: any,
+    @Req() req: WebhookRequest,
     @Headers('stripe-signature') stripeSignature: string | undefined,
     @Headers('x-event-id') eventId: string | undefined,
-    @Body() body: any,
+    @Body() body: StripeEventLike,
   ) {
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (process.env.NODE_ENV === 'production' && !endpointSecret) {
@@ -54,7 +164,7 @@ export class PaymentWebhookController {
     }
 
     // Verifica assinatura do Stripe quando configurado (recomendado sempre em prod)
-    let event: any = body;
+    let event: StripeEventLike = body;
     if (endpointSecret) {
       if (!stripeSignature) {
         throw new BadRequestException('Missing stripe-signature header');
@@ -72,7 +182,43 @@ export class PaymentWebhookController {
         };
       }
       const stripe = new Stripe(stripeKey);
-      event = stripe.webhooks.constructEvent(req.rawBody, stripeSignature, endpointSecret);
+      const verified: Stripe.Event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        stripeSignature,
+        endpointSecret,
+      );
+      // Normalize Stripe.Event into the structural shape this controller uses.
+      // We only care about checkout.session.completed; the TypeScript discriminated
+      // union on `verified.type` narrows `verified.data.object` to
+      // `Stripe.Checkout.Session` inside the guarded branch.
+      if (verified.type === 'checkout.session.completed') {
+        const session: Stripe.Checkout.Session = verified.data.object;
+        event = {
+          id: verified.id,
+          type: verified.type,
+          data: {
+            object: {
+              id: session.id,
+              payment_intent:
+                typeof session.payment_intent === 'string'
+                  ? session.payment_intent
+                  : (session.payment_intent?.id ?? null),
+              amount_total: session.amount_total ?? null,
+              currency: session.currency ?? null,
+              customer_email: session.customer_email ?? null,
+              customer_details: session.customer_details
+                ? {
+                    email: session.customer_details.email ?? null,
+                    phone: session.customer_details.phone ?? null,
+                  }
+                : null,
+              metadata: session.metadata ?? null,
+            },
+          },
+        };
+      } else {
+        event = { id: verified.id, type: verified.type };
+      }
     }
 
     const stripeDupe = await this.ensureIdempotent(eventId || event?.id || body?.id, req);
@@ -80,7 +226,7 @@ export class PaymentWebhookController {
 
     // Log webhook event for audit trail
     const stripeExternalId = event?.id || eventId || body?.id || `stripe_${Date.now()}`;
-    let webhookEvent: any;
+    let webhookEvent: WebhookEvent | undefined;
     try {
       webhookEvent = await this.webhooksService.logWebhookEvent(
         'stripe',
@@ -103,7 +249,8 @@ export class PaymentWebhookController {
     }
 
     if (event?.type === 'checkout.session.completed') {
-      const session = event.data?.object || {};
+      const rawSession = event.data?.object;
+      const session: StripeCheckoutSessionLike = rawSession ?? {};
       const workspaceId = session.metadata?.workspaceId;
       if (!workspaceId) {
         throw new BadRequestException('missing_workspaceId');
@@ -114,7 +261,7 @@ export class PaymentWebhookController {
       const amount = session.amount_total ? session.amount_total / 100 : 0;
       const currency = session.currency?.toUpperCase() || 'BRL';
 
-      let contact: any = null;
+      let contact: Contact | null = null;
       // Buscar contato por email OU telefone
       if (email) {
         contact = await this.prisma.contact.findFirst({
@@ -258,18 +405,9 @@ export class PaymentWebhookController {
     @Headers('x-signature') signature: string | undefined,
     @Headers('x-webhook-signature') webhookSignature: string | undefined,
     @Headers('x-event-id') eventId: string | undefined,
-    @Req() req: any,
+    @Req() req: WebhookRequest,
     @Body()
-    body: {
-      workspaceId?: string;
-      contactId?: string;
-      phone?: string;
-      status?: string;
-      amount?: number;
-      orderId?: string;
-      provider?: string;
-      [key: string]: any;
-    },
+    body: GenericPaymentWebhookBody,
   ) {
     const expected = process.env.PAYMENT_WEBHOOK_SECRET;
     if (process.env.NODE_ENV === 'production' && !expected) {
@@ -287,7 +425,7 @@ export class PaymentWebhookController {
 
     // Log webhook event for audit trail
     const genericExternalId = eventId || body.orderId || `generic_${Date.now()}`;
-    let genericWebhookEvent: any;
+    let genericWebhookEvent: WebhookEvent | undefined;
     try {
       genericWebhookEvent = await this.webhooksService.logWebhookEvent(
         body.provider || 'generic',
@@ -381,7 +519,7 @@ export class PaymentWebhookController {
     }
 
     // Resolve contato (se houver) para disparar pós-compra
-    let contact: any = null;
+    let contact: Contact | null = null;
     if (body.contactId) {
       contact = await this.prisma.contact.findFirst({
         where: { workspaceId, id: body.contactId },
@@ -460,19 +598,20 @@ export class PaymentWebhookController {
   @Public()
   @Post('shopify')
   async handleShopify(
-    @Req() req: any,
+    @Req() req: WebhookRequest,
     @Headers('x-shopify-hmac-sha256') hmac: string,
     @Headers('x-event-id') eventId: string | undefined,
-    @Body() body: any,
+    @Body() body: ShopifyOrderWebhookBody,
   ) {
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
     if (!secret) {
       throw new BadRequestException('SHOPIFY_WEBHOOK_SECRET not set');
     }
-    const raw = req?.rawBody || JSON.stringify(body);
+    const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
     const shopifyDupe = await this.ensureIdempotent(eventId, req);
     if (shopifyDupe) return shopifyDupe;
-    const digest = crypto.createHmac('sha256', secret).update(raw, 'utf8').digest('base64');
+    const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
+    const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
     if (digest !== hmac) {
       throw new ForbiddenException('invalid_shopify_hmac');
     }
@@ -552,8 +691,8 @@ export class PaymentWebhookController {
   async handlePagHiper(
     @Headers('x-paghiper-token') token: string,
     @Headers('x-event-id') eventId: string | undefined,
-    @Req() req: any,
-    @Body() body: any,
+    @Req() req: WebhookRequest,
+    @Body() body: PagHiperWebhookBody,
   ) {
     const expected = process.env.PAGHIPER_WEBHOOK_TOKEN;
     if (process.env.NODE_ENV === 'production' && !expected) {
@@ -607,16 +746,17 @@ export class PaymentWebhookController {
   @Public()
   @Post('woocommerce')
   async handleWoo(
-    @Req() req: any,
+    @Req() req: WebhookRequest,
     @Headers('x-wc-webhook-signature') signature: string,
-    @Body() body: any,
+    @Body() body: WooCommerceWebhookBody,
   ) {
     const secret = process.env.WC_WEBHOOK_SECRET;
     if (!secret) {
       throw new BadRequestException('WC_WEBHOOK_SECRET not set');
     }
-    const raw = req?.rawBody || JSON.stringify(body);
-    const digest = crypto.createHmac('sha256', secret).update(raw, 'utf8').digest('base64');
+    const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
+    const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
+    const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
     if (digest !== signature) {
       throw new ForbiddenException('invalid_wc_signature');
     }
@@ -625,8 +765,11 @@ export class PaymentWebhookController {
     const isPaid = status === 'completed' || status === 'processing' || status === 'paid';
     if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
+    const metaWorkspace = body?.meta_data?.find?.(
+      (m: WooCommerceMetaData) => m.key === 'workspaceId',
+    )?.value;
     const workspaceId =
-      body.workspaceId || body?.meta_data?.find?.((m: any) => m.key === 'workspaceId')?.value;
+      body.workspaceId || (typeof metaWorkspace === 'string' ? metaWorkspace : undefined);
     if (!workspaceId) {
       throw new BadRequestException('missing_workspaceId');
     }
@@ -667,7 +810,7 @@ export class PaymentWebhookController {
    */
   private async ensureIdempotent(
     eventId: string | undefined,
-    req: any,
+    req: WebhookRequest,
   ): Promise<{ ok: true; received: true; duplicate: true; reason: string } | null> {
     const reqBody = req?.body;
     const raw = req?.rawBody || JSON.stringify(reqBody || '');
@@ -699,7 +842,7 @@ export class PaymentWebhookController {
   }
 
   private verifySharedSecretOrSignature(
-    req: any,
+    req: WebhookRequest,
     expectedSecret: string,
     sharedSecret?: string,
     signature?: string,
@@ -733,7 +876,7 @@ export class PaymentWebhookController {
     return crypto.timingSafeEqual(Buffer.from(normalizedLeft), Buffer.from(normalizedRight));
   }
 
-  private async sendOpsAlert(message: string, meta: any) {
+  private async sendOpsAlert(message: string, meta: Record<string, unknown>) {
     const url =
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
