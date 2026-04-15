@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { AuditService } from '../audit/audit.service';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
 /**
  * P6-10 — focused spec for CheckoutPaymentService.processPayment.
@@ -74,6 +75,7 @@ describe('CheckoutPaymentService.processPayment (P6-10)', () => {
   let mercadoPago: any;
   let financialAlert: any;
   let auditService: any;
+  let socialLeadService: { markConvertedFromOrder: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -90,6 +92,7 @@ describe('CheckoutPaymentService.processPayment (P6-10)', () => {
     };
     financialAlert = { paymentFailed: jest.fn() };
     auditService = { logWithTx: jest.fn().mockResolvedValue(undefined) };
+    socialLeadService = { markConvertedFromOrder: jest.fn().mockResolvedValue(null) };
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
@@ -98,6 +101,7 @@ describe('CheckoutPaymentService.processPayment (P6-10)', () => {
         { provide: MercadoPagoService, useValue: mercadoPago },
         { provide: FinancialAlertService, useValue: financialAlert },
         { provide: AuditService, useValue: auditService },
+        { provide: CheckoutSocialLeadService, useValue: socialLeadService },
       ],
     }).compile();
 
@@ -202,6 +206,13 @@ describe('CheckoutPaymentService.processPayment (P6-10)', () => {
       expect(txCalls).toContain('audit.logWithTx');
       expect(txCalls.indexOf('order.update:PROCESSING')).toBeLessThan(
         txCalls.indexOf('order.update:PAID'),
+      );
+      expect(socialLeadService.markConvertedFromOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          orderId: 'order-1',
+          customerEmail: 'test@example.com',
+        }),
       );
       expect(result.approved).toBe(true);
     });

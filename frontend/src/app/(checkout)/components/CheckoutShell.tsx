@@ -6,8 +6,8 @@ import { preloadMercadoPagoDeviceSession, preloadMercadoPagoSdk } from '@/lib/me
 import { normalizePublicCheckoutResponse } from '@/lib/public-checkout';
 import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
 import React, { useEffect, useState } from 'react';
-import CheckoutBlanc from './CheckoutBlanc';
-import CheckoutNoir from './CheckoutNoir';
+import CheckoutBlancSocial from './CheckoutBlancSocial';
+import CheckoutNoirSocial from './CheckoutNoirSocial';
 import PixelTracker from './PixelTracker';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -84,14 +84,16 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
             style={{
               width: '40px',
               height: '40px',
-              border: '3px solid #2A2A2E',
-              borderTopColor: '#D4AF37',
-              borderRadius: '50%',
+              border: '3px solid rgba(255, 255, 255, 0.12)',
+              borderTopColor: 'rgba(232, 93, 48, 0.72)',
+              borderRadius: 16,
               margin: '0 auto 16px',
               animation: 'ckSpin 0.8s linear infinite',
             }}
           />
-          <div style={{ color: '#8A8A8E', fontSize: '14px' }}>Carregando checkout...</div>
+          <div style={{ color: 'rgba(255, 255, 255, 0.56)', fontSize: '14px' }}>
+            Carregando checkout...
+          </div>
           <style>{`@keyframes ckSpin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
@@ -117,11 +119,26 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
           <div style={{ marginBottom: '18px', display: 'flex', justifyContent: 'center' }}>
             <KloelBrandLockup markSize={18} fontSize={15} fontWeight={600} />
           </div>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>&#128533;</div>
-          <div style={{ fontSize: '18px', fontWeight: 700, color: '#E8E6E1', marginBottom: '8px' }}>
+          <div
+            style={{
+              width: '52px',
+              height: '52px',
+              margin: '0 auto 16px',
+              borderRadius: 16,
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+            }}
+          />
+          <div
+            style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: 'rgb(224, 221, 216)',
+              marginBottom: '8px',
+            }}
+          >
             Checkout nao encontrado
           </div>
-          <div style={{ fontSize: '14px', color: '#8A8A8E', lineHeight: '1.5' }}>
+          <div style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.56)', lineHeight: '1.5' }}>
             {error || 'O link que voce acessou pode estar incorreto ou expirado.'}
           </div>
         </div>
@@ -164,7 +181,7 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
   const themeEl =
     theme === 'NOIR' ? (
-      <CheckoutNoir
+      <CheckoutNoirSocial
         product={product}
         config={config}
         plan={plan}
@@ -176,7 +193,7 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
         merchant={data.merchant}
       />
     ) : (
-      <CheckoutBlanc
+      <CheckoutBlancSocial
         product={product}
         config={config}
         plan={plan}

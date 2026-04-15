@@ -6,6 +6,7 @@ import { validatePaymentTransition } from '../common/payment-state-machine';
 import type { MercadoPagoCheckoutLineItem } from '../kloel/mercado-pago-order.util';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 function serializeMercadoPagoError(error: unknown) {
@@ -84,6 +85,7 @@ export class CheckoutPaymentService {
     private readonly mercadoPago: MercadoPagoService,
     private readonly financialAlert: FinancialAlertService,
     private readonly auditService: AuditService,
+    private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
   ) {}
 
   // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -349,6 +351,30 @@ export class CheckoutPaymentService {
         },
         { isolationLevel: 'ReadCommitted' },
       );
+
+      if (approved) {
+        const orderMetadata =
+          order.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
+            ? (order.metadata as Record<string, unknown>)
+            : {};
+
+        await this.checkoutSocialLeadService
+          .markConvertedFromOrder({
+            workspaceId: params.workspaceId,
+            orderId: params.orderId,
+            capturedLeadId:
+              typeof orderMetadata.capturedLeadId === 'string'
+                ? orderMetadata.capturedLeadId
+                : null,
+            customerEmail: params.customerEmail,
+            customerPhone: params.customerPhone,
+            deviceFingerprint:
+              typeof orderMetadata.deviceFingerprint === 'string'
+                ? orderMetadata.deviceFingerprint
+                : null,
+          })
+          .catch(() => undefined);
+      }
 
       return {
         payment,

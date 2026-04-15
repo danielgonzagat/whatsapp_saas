@@ -114,10 +114,10 @@ export const StepBubble = ({
       style={{
         width: 34,
         height: 34,
-        borderRadius: '50%',
+        borderRadius: 16,
         background:
           state === 'done'
-            ? '#10b981'
+            ? theme.lineActive
             : state === 'active'
               ? theme.activeBubbleBg
               : theme.lockedBubbleBg,
@@ -129,9 +129,9 @@ export const StepBubble = ({
       }}
     >
       {state === 'done' ? (
-        <Chk stroke="#fff" />
+        <Chk stroke="rgb(255, 255, 255)" />
       ) : (
-        <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>{n}</span>
+        <span style={{ color: 'rgb(255, 255, 255)', fontSize: 14, fontWeight: 700 }}>{n}</span>
       )}
     </div>
     <span
@@ -167,7 +167,7 @@ export const StepLine = ({
   />
 );
 
-export const Chk = ({ stroke = '#10b981' }: { stroke?: string }) => (
+export const Chk = ({ stroke = 'rgb(16, 185, 129)' }: { stroke?: string }) => (
   <svg
     width="14"
     height="14"
@@ -183,7 +183,7 @@ export const Chk = ({ stroke = '#10b981' }: { stroke?: string }) => (
 );
 
 export const Star = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="#FBBF24" stroke="none">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="rgb(251, 191, 36)" stroke="none">
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </svg>
 );
@@ -372,6 +372,7 @@ export function ValidationInput({
   onChange,
   placeholder,
   type = 'text',
+  disabled = false,
   style = {},
   theme,
 }: {
@@ -380,6 +381,7 @@ export function ValidationInput({
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
   type?: string;
+  disabled?: boolean;
   style?: React.CSSProperties;
   theme: CheckoutThemeInputTokens;
 }) {
@@ -391,6 +393,7 @@ export function ValidationInput({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        disabled={disabled}
         style={{
           width: '100%',
           padding: '13px 38px 13px 16px',
@@ -402,9 +405,11 @@ export function ValidationInput({
           fontFamily: "'DM Sans', sans-serif",
           transition: 'border-color 0.2s, box-shadow 0.2s',
           outline: 'none',
+          cursor: disabled ? 'not-allowed' : 'text',
           ...style,
         }}
         onFocus={(event) => {
+          if (disabled) return;
           event.target.style.borderColor = theme.focusBorder;
           event.target.style.boxShadow = theme.focusShadow;
         }}

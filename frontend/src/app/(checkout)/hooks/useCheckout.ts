@@ -28,6 +28,8 @@ export interface CreateOrderData {
   planId: string;
   workspaceId: string;
   checkoutCode?: string;
+  capturedLeadId?: string;
+  deviceFingerprint?: string;
   customerName: string;
   customerEmail: string;
   customerCPF?: string;

@@ -147,6 +147,7 @@ model Workspace {
   kloelWallets        KloelWallet[]
   kloelSites          KloelSite[]
   kloelDesigns        KloelDesign[]
+  checkoutSocialLeads CheckoutSocialLead[]
   customerSubscriptions CustomerSubscription[]
   physicalOrders      PhysicalOrder[]
 
@@ -301,6 +302,7 @@ model Contact {
   deals         Deal[]
   autopilotEvents AutopilotEvent[]
   followUps     FollowUp[]
+  checkoutSocialLeads CheckoutSocialLead[]
 
   @@unique([workspaceId, phone])
 }
@@ -1399,6 +1401,7 @@ model Product {
   urls        ProductUrl[]
   aiConfig       ProductAIConfig?
   checkoutPlans  CheckoutProductPlan[]
+  checkoutSocialLeads CheckoutSocialLead[]
   campaigns      ProductCampaign[]
 
   @@unique([workspaceId, sku])
@@ -2311,6 +2314,26 @@ enum OrderStatus {
   CHARGEBACK
 }
 
+enum CheckoutSocialProvider {
+  GOOGLE
+  FACEBOOK
+  APPLE
+}
+
+enum CheckoutSocialLeadStatus {
+  CAPTURED
+  ENRICHED
+  ABANDONED
+  CONVERTED
+}
+
+enum CheckoutSocialLeadEnrichmentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
 enum PaymentStatus {
   PENDING
   PROCESSING
@@ -2345,6 +2368,7 @@ model CheckoutProductPlan {
   isActive              Boolean   @default(true)
   checkoutConfig        CheckoutConfig?
   orders                CheckoutOrder[]
+  socialLeads           CheckoutSocialLead[]
   orderBumps            OrderBump[]
   upsells               Upsell[]
   checkoutLinks         CheckoutPlanLink[] @relation("CheckoutLinksByCheckout")
@@ -2604,11 +2628,66 @@ model CheckoutOrder {
   metadata          Json?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  socialLeadsConverted CheckoutSocialLead[]
   @@index([workspaceId])
   @@index([planId])
   @@index([customerEmail])
   @@index([orderNumber])
   @@index([status])
+}
+
+model CheckoutSocialLead {
+  id                       String                           @id @default(cuid())
+  workspaceId              String
+  workspace                Workspace                        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  planId                   String
+  plan                     CheckoutProductPlan              @relation(fields: [planId], references: [id], onDelete: Cascade)
+  productId                String
+  product                  Product                          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  checkoutSlug             String
+  checkoutCode             String?
+  provider                 CheckoutSocialProvider
+  providerId               String?
+  providerEmailVerified    Boolean                          @default(false)
+  name                     String?
+  email                    String?
+  avatarUrl                String?
+  phone                    String?
+  cpf                      String?
+  status                   CheckoutSocialLeadStatus        @default(CAPTURED)
+  stepReached              Int                              @default(1)
+  sourceUrl                String?
+  refererUrl               String?
+  utmSource                String?
+  utmMedium                String?
+  utmCampaign              String?
+  utmContent               String?
+  utmTerm                  String?
+  fbclid                   String?
+  gclid                    String?
+  deviceFingerprint        String?
+  providerPayload          Json?
+  enrichmentData           Json?
+  enrichmentStatus         CheckoutSocialLeadEnrichmentStatus @default(PENDING)
+  enrichedAt               DateTime?
+  abandonedAt              DateTime?
+  convertedAt              DateTime?
+  recoveryWhatsAppSentAt   DateTime?
+  recoveryEmailSentAt      DateTime?
+  convertedOrderId         String?
+  convertedOrder           CheckoutOrder?                  @relation(fields: [convertedOrderId], references: [id], onDelete: SetNull)
+  contactId                String?
+  contact                  Contact?                        @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  createdAt                DateTime                        @default(now())
+  updatedAt                DateTime                        @updatedAt
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, status, createdAt])
+  @@index([workspaceId, email])
+  @@index([workspaceId, phone])
+  @@index([workspaceId, deviceFingerprint])
+  @@index([planId, createdAt])
+  @@index([productId, createdAt])
 }
 
 model CheckoutPayment {

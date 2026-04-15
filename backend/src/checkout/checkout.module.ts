@@ -1,10 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
+import { AuthModule } from '../auth/auth.module';
+import { FollowUpModule } from '../followup/followup.module';
 import { AsaasService } from '../kloel/asaas.service';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CheckoutPaymentService } from './checkout-payment.service';
+import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutPublicController } from './checkout-public.controller';
+import { CheckoutSocialLeadService } from './checkout-social-lead.service';
+import { CheckoutSocialRecoveryService } from './checkout-social-recovery.service';
 import { CheckoutWebhookController } from './checkout-webhook.controller';
 import { CheckoutController } from './checkout.controller';
 import { CheckoutService } from './checkout.service';
@@ -13,15 +18,18 @@ import { FacebookCAPIService } from './facebook-capi.service';
 // Webhook ordering: CheckoutWebhookController validates event sequence via
 // validatePaymentTransition and WebhookEvent externalId unique constraint.
 @Module({
-  imports: [PrismaModule, AuditModule],
+  imports: [PrismaModule, AuditModule, AuthModule, FollowUpModule],
   controllers: [CheckoutController, CheckoutPublicController, CheckoutWebhookController],
   providers: [
     CheckoutService,
     CheckoutPaymentService,
+    CheckoutPostPaymentEffectsService,
+    CheckoutSocialLeadService,
+    CheckoutSocialRecoveryService,
     AsaasService,
     MercadoPagoService,
     FacebookCAPIService,
   ],
-  exports: [CheckoutService, CheckoutPaymentService],
+  exports: [CheckoutService, CheckoutPaymentService, CheckoutSocialLeadService],
 })
 export class CheckoutModule {}

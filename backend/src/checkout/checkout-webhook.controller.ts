@@ -17,7 +17,7 @@ import { validatePaymentTransition } from '../common/payment-state-machine';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { calculatePhysicalOrderUnitCount } from './checkout-order-pricing.util';
-import { FacebookCAPIService } from './facebook-capi.service';
+import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { verifyMercadoPagoWebhookSignature } from './mercado-pago-webhook-signature.util';
 
 type PaymentConfirmationContext = {
@@ -138,9 +138,9 @@ export class CheckoutWebhookController {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly facebookCAPI: FacebookCAPIService,
     private readonly financialAlert: FinancialAlertService,
     private readonly mercadoPago: MercadoPagoService,
+    private readonly checkoutPostPaymentEffects: CheckoutPostPaymentEffectsService,
   ) {}
 
   @Public()
@@ -792,55 +792,8 @@ export class CheckoutWebhookController {
       }
     });
 
-    // Send Facebook Conversions API (CAPI) Purchase event — outside transaction (non-critical)
-    try {
-      const pixels = order?.plan?.checkoutConfig?.pixels;
-      if (pixels) {
-        const fbPixels = pixels.filter(
-          (p: any) => p.type === 'FACEBOOK' && p.isActive && p.trackPurchase && p.accessToken,
-        );
-
-        for (const pixel of fbPixels) {
-          await this.facebookCAPI.sendEvent({
-            pixelId: pixel.pixelId,
-            accessToken: pixel.accessToken!,
-            eventName: 'Purchase',
-            email: order.customerEmail,
-            phone: order.customerPhone ?? undefined,
-            amount: order.totalInCents,
-            currency: 'BRL',
-            productId: order.plan.productId,
-            ip: order.ipAddress ?? undefined,
-            userAgent: order.userAgent ?? undefined,
-          });
-        }
-      }
-    } catch (capiError) {
-      // PULSE:OK — Facebook CAPI is non-critical analytics; webhook must not fail for it
-      this.logger.error(`Facebook CAPI lookup error: ${capiError}`);
-    }
-
-    // Send payment confirmation email (non-critical)
-    try {
-      const emailService = new (await import('../auth/email.service')).EmailService();
-      await emailService.sendEmail({
-        to: order.customerEmail,
-        subject: `Pagamento confirmado — ${order.plan?.product?.name || 'Seu pedido'}`,
-        html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0A0A0C;color:#e0e0e0;padding:40px;">
-      <h1 style="color:#E85D30;">KLOEL</h1>
-      <p>Ola ${order.customerName},</p>
-      <p>Seu pagamento foi confirmado!</p>
-      <div style="background:#151517;padding:20px;border-radius:6px;margin:20px 0;">
-        <p><strong>Produto:</strong> ${order.plan?.product?.name || '—'}</p>
-        <p><strong>Valor:</strong> R$ ${Number((chargedAmount || order.totalInCents / 100 || 0).toFixed(2))}</p>
-        <p><strong>Pedido:</strong> #${order.orderNumber || order.id}</p>
-      </div>
-    </div>`,
-      });
-    } catch (emailErr) {
-      // PULSE:OK — Email delivery is non-critical; webhook already processed payment
-      this.logger.warn(`Payment confirmation email failed: ${emailErr}`);
-    }
+    await this.checkoutPostPaymentEffects.markLeadConverted(order, workspaceId);
+    await this.checkoutPostPaymentEffects.sendPurchaseSignals(order, chargedAmount);
   }
 
   // ── REFUND / CHARGEBACK ───────────────────────────────────────────

@@ -2,6 +2,7 @@ import { type Job, Worker } from 'bullmq';
 import { prisma } from '../db';
 import { FlowEngineGlobal } from '../flow-engine-global';
 import { WorkerLogger } from '../logger';
+import { processCheckoutSocialLeadEnrichment } from './checkout-social-lead-enrichment';
 import { PlanLimitsProvider } from '../providers/plan-limits';
 import { connection } from '../queue';
 
@@ -17,6 +18,11 @@ export const ghostCloserWorker = new Worker(
         // PULSE:OK — check-inactivity is scheduled via repeatable jobs or cron; no direct queue.add call
         case 'check-inactivity':
           await checkInactivity(job.data.workspaceId);
+          break;
+        case 'checkout-social-lead-enrich':
+          if (typeof job.data?.leadId === 'string' && job.data.leadId.trim()) {
+            await processCheckoutSocialLeadEnrichment(job.data.leadId);
+          }
           break;
         default:
           log.warn('unknown_job', { name: job.name });

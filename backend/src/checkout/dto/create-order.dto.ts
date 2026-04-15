@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   IsArray,
   IsIn,
   IsNumber,
@@ -21,11 +22,13 @@ export class CreateOrderDto {
   @IsString() @MaxLength(255) planId: string;
   @IsString() @MaxLength(255) workspaceId: string;
   @IsOptional() @IsString() @MaxLength(255) checkoutCode?: string;
+  @IsOptional() @IsString() @MaxLength(255) capturedLeadId?: string;
+  @IsOptional() @IsString() @MaxLength(255) deviceFingerprint?: string;
   @IsString() @MaxLength(255) customerName: string;
   @IsString() @MaxLength(255) customerEmail: string;
   @IsOptional() @IsString() @MaxLength(255) customerCPF?: string;
   @IsOptional() @IsString() @MaxLength(255) customerPhone?: string;
-  @IsObject() shippingAddress: any;
+  @IsObject() shippingAddress: Record<string, unknown>;
   @IsOptional() @IsString() @MaxLength(255) shippingMethod?: string;
   @IsOptional() @IsNumber() @Min(0) @Max(99999999) shippingPrice?: number;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(1) @Max(99) orderQuantity?: number;
@@ -35,7 +38,7 @@ export class CreateOrderDto {
   @IsNumber() @Min(0) @Max(99999999) totalInCents: number;
   @IsOptional() @IsString() @MaxLength(255) couponCode?: string;
   @IsOptional() @IsNumber() @Min(0) @Max(99999999) couponDiscount?: number;
-  @IsOptional() @IsArray() acceptedBumps?: any;
+  @IsOptional() @IsArray() @ArrayMaxSize(32) @IsString({ each: true }) acceptedBumps?: string[];
   @IsIn(Object.values(PaymentMethod)) paymentMethod: PaymentMethod;
   @IsOptional() @IsNumber() @Min(0) @Max(999999) installments?: number;
   @IsOptional() @IsString() @MaxLength(255) affiliateId?: string;

@@ -1,5 +1,9 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { IDEMPOTENCY_KEY } from '../common/idempotency.guard';
 import { CheckoutPublicController } from './checkout-public.controller';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { CheckoutService } from './checkout.service';
+import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
 describe('CheckoutPublicController', () => {
   let controller: CheckoutPublicController;
@@ -14,8 +18,12 @@ describe('CheckoutPublicController', () => {
     calculateShipping: jest.Mock;
     validateCoupon: jest.Mock;
   };
+  let socialLeadService: {
+    captureLead: jest.Mock;
+    updateLead: jest.Mock;
+  };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     checkoutService = {
       getCheckoutByCode: jest.fn(),
       getCheckoutBySlug: jest.fn(),
@@ -27,8 +35,20 @@ describe('CheckoutPublicController', () => {
       calculateShipping: jest.fn(),
       validateCoupon: jest.fn(),
     };
+    socialLeadService = {
+      captureLead: jest.fn(),
+      updateLead: jest.fn(),
+    };
 
-    controller = new CheckoutPublicController(checkoutService as any);
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      controllers: [CheckoutPublicController],
+      providers: [
+        { provide: CheckoutService, useValue: checkoutService },
+        { provide: CheckoutSocialLeadService, useValue: socialLeadService },
+      ],
+    }).compile();
+
+    controller = moduleRef.get(CheckoutPublicController);
   });
 
   it('generates a correlation id for public checkout lookups when headers are missing', async () => {
@@ -46,11 +66,19 @@ describe('CheckoutPublicController', () => {
   });
 
   it('prefers the explicit correlation header when creating an order', async () => {
+    const dto: CreateOrderDto = {
+      planId: 'plan_1',
+      workspaceId: 'ws_1',
+      customerName: 'Maria',
+      customerEmail: 'maria@example.com',
+      shippingAddress: {},
+      subtotalInCents: 1000,
+      totalInCents: 1000,
+      paymentMethod: 'PIX' as CreateOrderDto['paymentMethod'],
+    };
+
     await controller.createOrder(
-      {
-        planId: 'plan_1',
-        workspaceId: 'ws_1',
-      } as any,
+      dto,
       '127.0.0.1',
       'Mozilla/5.0',
       'meli-session-1',

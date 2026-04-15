@@ -1,10 +1,25 @@
 import { randomUUID } from 'crypto';
-import { Body, Controller, Get, Headers, Ip, Logger, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Ip,
+  Logger,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { Idempotent } from '../common/idempotency.guard';
+import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { CheckoutService } from './checkout.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
+import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
 @Controller('checkout/public')
 @Public()
@@ -12,7 +27,10 @@ import { CreateOrderDto } from './dto/create-order.dto';
 export class CheckoutPublicController {
   private readonly logger = new Logger(CheckoutPublicController.name);
 
-  constructor(private readonly checkoutService: CheckoutService) {}
+  constructor(
+    private readonly checkoutService: CheckoutService,
+    private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
+  ) {}
 
   @Get('recent-sales')
   async getRecentSales(@Query('limit') limit?: string) {
@@ -99,6 +117,7 @@ export class CheckoutPublicController {
   ) {
     return this.checkoutService.createOrder({
       ...dto,
+      shippingAddress: dto.shippingAddress as Prisma.InputJsonValue,
       ipAddress: ip,
       userAgent,
       meliSessionId,
@@ -124,5 +143,17 @@ export class CheckoutPublicController {
   @Post('shipping')
   async calculateShipping(@Body() body: { slug: string; cep: string }) {
     return this.checkoutService.calculateShipping(body.slug, body.cep);
+  }
+
+  @Post('social-capture')
+  @Throttle({ default: { limit: 12, ttl: 60000 } })
+  captureSocialLead(@Body() dto: CaptureSocialLeadDto) {
+    return this.checkoutSocialLeadService.captureLead(dto);
+  }
+
+  @Patch('social-capture/:leadId')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  updateSocialLead(@Param('leadId') leadId: string, @Body() dto: UpdateSocialLeadDto) {
+    return this.checkoutSocialLeadService.updateLead(leadId, dto);
   }
 }

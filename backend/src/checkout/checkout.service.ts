@@ -1500,10 +1500,12 @@ export class CheckoutService {
     workspaceId: string;
     correlationId?: string;
     checkoutCode?: string;
+    capturedLeadId?: string;
     customerName: string;
     customerEmail: string;
     customerCPF?: string;
     customerPhone?: string;
+    deviceFingerprint?: string;
     shippingAddress: Prisma.InputJsonValue;
     shippingMethod?: string;
     shippingPrice?: number;
@@ -1535,6 +1537,8 @@ export class CheckoutService {
     const {
       correlationId: incomingCorrelationId,
       checkoutCode,
+      capturedLeadId,
+      deviceFingerprint,
       affiliateId,
       meliSessionId,
       cardHolderName,
@@ -1733,7 +1737,9 @@ export class CheckoutService {
         affiliateId: affiliateLink?.affiliateWorkspaceId || affiliateId,
         metadata: {
           checkoutCode: checkoutCode || null,
+          capturedLeadId: capturedLeadId || null,
           correlationId,
+          deviceFingerprint: deviceFingerprint || null,
           qualityGateVersion: 'mercado_pago_fixed_v1',
           meliSessionId: qualityGate.meliSessionId,
           customerDocumentDigits: qualityGate.documentDigits,
