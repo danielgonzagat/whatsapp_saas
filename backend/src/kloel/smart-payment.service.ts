@@ -8,6 +8,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 
+const JSON_N___N_RE = /```json\n?|\n?```/g;
+
 interface PaymentContext {
   workspaceId: string;
   contactId?: string;
@@ -110,7 +112,7 @@ Responda em JSON:
         });
 
         const parsed = JSON.parse(
-          aiResponse.choices[0].message.content?.replace(/```json\n?|\n?```/g, '') || '{}',
+          aiResponse.choices[0].message.content?.replace(JSON_N___N_RE, '') || '{}',
         );
         suggestedMessage = parsed.message || '';
         if (['PIX', 'BOLETO', 'CREDIT_CARD'].includes(parsed.paymentMethod)) {
@@ -297,7 +299,7 @@ Analise e responda em JSON:
       });
 
       const parsed = JSON.parse(
-        response.choices[0].message.content?.replace(/```json\n?|\n?```/g, '') || '{}',
+        response.choices[0].message.content?.replace(JSON_N___N_RE, '') || '{}',
       );
 
       await this.planLimits

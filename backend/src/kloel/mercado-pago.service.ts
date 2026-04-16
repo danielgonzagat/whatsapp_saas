@@ -1,4 +1,4 @@
-import * as crypto from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import {
   BadRequestException,
   Injectable,
@@ -25,6 +25,8 @@ import {
   normalizeMercadoPagoPayerAddress,
   normalizeMercadoPagoReceiverAddress,
 } from './mercado-pago-order.util';
+
+const D_RE = /\D/g;
 
 const S_RE = /\s+/;
 const PATTERN_RE = /\/+$/;
@@ -135,7 +137,7 @@ function centsToMercadoPagoAmount(value: number) {
 }
 
 function normalizePhone(phone?: string | null) {
-  const digits = String(phone || '').replace(/\D/g, '');
+  const digits = String(phone || '').replace(D_RE, '');
   if (digits.length < 10) return undefined;
 
   const areaCode = digits.length >= 10 ? digits.slice(0, 2) : undefined;
@@ -146,18 +148,18 @@ function normalizePhone(phone?: string | null) {
 }
 
 function normalizeIdentification(raw?: string | null) {
-  const digits = String(raw || '').replace(/\D/g, '');
+  const digits = String(raw || '').replace(D_RE, '');
   if (digits.length === 11) return { type: 'CPF', number: digits };
   if (digits.length === 14) return { type: 'CNPJ', number: digits };
   return undefined;
 }
 
 function createPkceCodeVerifier() {
-  return crypto.randomBytes(48).toString('base64url');
+  return randomBytes(48).toString('base64url');
 }
 
 function createPkceCodeChallenge(verifier: string) {
-  return crypto.createHash('sha256').update(verifier).digest('base64url');
+  return createHash('sha256').update(verifier).digest('base64url');
 }
 
 function coerceMercadoPagoString(value: unknown) {
@@ -404,8 +406,7 @@ export class MercadoPagoService {
 
   private encodeState(payload: OAuthStatePayload) {
     const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-    const signature = crypto
-      .createHmac('sha256', this.stateSecret)
+    const signature = createHmac('sha256', this.stateSecret)
       .update(encodedPayload)
       .digest('base64url');
 
@@ -418,12 +419,11 @@ export class MercadoPagoService {
       throw new BadRequestException('OAuth state inválido.');
     }
 
-    const expected = crypto
-      .createHmac('sha256', this.stateSecret)
+    const expected = createHmac('sha256', this.stateSecret)
       .update(encodedPayload)
       .digest('base64url');
 
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
       throw new BadRequestException('OAuth state inválido.');
     }
 

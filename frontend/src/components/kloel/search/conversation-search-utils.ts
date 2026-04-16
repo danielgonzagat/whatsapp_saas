@@ -1,3 +1,13 @@
+const PATTERN_RE = /&/g;
+const PATTERN_RE_2 = /</g;
+const PATTERN_RE_3 = />/g;
+const PATTERN_RE_4 = /"/g;
+const PATTERN_RE_5 = /'/g;
+const MARK_RE = /<mark>/g;
+const MARK_RE_2 = /<\/mark>/g;
+const KLOEL_MARK_OPEN_RE = /__KLOEL_MARK_OPEN__/g;
+const KLOEL_MARK_CLOSE_RE = /__KLOEL_MARK_CLOSE__/g;
+const PATTERN_RE_6 = /[.*+?^${}()|[\]\\]/g;
 const S_RE = /\s+/;
 const S_DE_S_RE = /\s+de\s+/i;
 export interface ConversationSearchResult {
@@ -16,21 +26,21 @@ export interface ConversationSearchGroup {
 
 function escapeHtml(value: string): string {
   return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(PATTERN_RE, '&amp;')
+    .replace(PATTERN_RE_2, '&lt;')
+    .replace(PATTERN_RE_3, '&gt;')
+    .replace(PATTERN_RE_4, '&quot;')
+    .replace(PATTERN_RE_5, '&#39;');
 }
 
 export function sanitizeMarkedHtml(value: string): string {
   const placeholders = String(value || '')
-    .replace(/<mark>/g, '__KLOEL_MARK_OPEN__')
-    .replace(/<\/mark>/g, '__KLOEL_MARK_CLOSE__');
+    .replace(MARK_RE, '__KLOEL_MARK_OPEN__')
+    .replace(MARK_RE_2, '__KLOEL_MARK_CLOSE__');
 
   return escapeHtml(placeholders)
-    .replace(/__KLOEL_MARK_OPEN__/g, '<mark>')
-    .replace(/__KLOEL_MARK_CLOSE__/g, '</mark>');
+    .replace(KLOEL_MARK_OPEN_RE, '<mark>')
+    .replace(KLOEL_MARK_CLOSE_RE, '</mark>');
 }
 
 export function highlightPlainText(value: string, query: string): string {
@@ -46,7 +56,7 @@ export function highlightPlainText(value: string, query: string): string {
     return escapeHtml(text);
   }
 
-  const escapedQuery = tokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const escapedQuery = tokens.map((token) => token.replace(PATTERN_RE_6, '\\$&'));
   const regex = new RegExp(`(${escapedQuery.join('|')})`, 'gi');
   const placeholders = text.replace(regex, '__KLOEL_MARK_OPEN__$1__KLOEL_MARK_CLOSE__');
 

@@ -12,6 +12,8 @@ import type {
 import type { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
 import type { PayerAdditionalInfo } from 'mercadopago/dist/clients/payment/commonTypes';
 
+const D_RE = /\D/g;
+
 const S_RE = /\s+/;
 
 export type MercadoPagoCheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
@@ -129,9 +131,9 @@ function normalizeNumberLike(value: unknown) {
 function normalizeZipCode(value: unknown) {
   const digits =
     typeof value === 'string'
-      ? value.replace(/\D/g, '')
+      ? value.replace(D_RE, '')
       : typeof value === 'number'
-        ? String(value).replace(/\D/g, '')
+        ? String(value).replace(D_RE, '')
         : '';
   return digits || undefined;
 }
@@ -308,8 +310,8 @@ export function buildMercadoPagoAdditionalInfo(input: MercadoPagoAdditionalInfoI
       last_name: lastName,
       phone: normalizeNumberLike(input.customerPhone)
         ? {
-            area_code: String(input.customerPhone).replace(/\D/g, '').slice(0, 2),
-            number: String(input.customerPhone).replace(/\D/g, '').slice(2, 11),
+            area_code: String(input.customerPhone).replace(D_RE, '').slice(0, 2),
+            number: String(input.customerPhone).replace(D_RE, '').slice(2, 11),
           }
         : undefined,
       address: input.payerAddress

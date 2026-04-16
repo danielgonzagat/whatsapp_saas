@@ -1225,6 +1225,8 @@ function Hospedagem() {
 // TAB: Criar Site
 // ══════════════════════════════════════════
 
+const FmtMoney = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
 function CriarSite({ mode }: { mode?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1277,8 +1279,6 @@ function CriarSite({ mode }: { mode?: string }) {
       .slice(0, 6)
       .map((p: any) => ({ name: p.name || p.title || 'Produto', price: p.price ?? 0 }));
   }, [rawProducts]);
-
-  const FmtMoney = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;

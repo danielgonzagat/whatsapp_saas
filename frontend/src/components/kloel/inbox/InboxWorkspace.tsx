@@ -22,6 +22,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
+const D_RE = /\D/g;
+
 type ChannelFilter = 'all' | 'whatsapp' | 'email' | 'instagram';
 type StatusFilter = 'open' | 'closed' | 'all';
 
@@ -142,7 +144,7 @@ export function InboxWorkspace({
   }, [conversations, channelFilter, statusFilter]);
 
   const matchedConversationByPhone = useMemo(() => {
-    const normalize = (value?: string | null) => (value || '').replace(/\D/g, '');
+    const normalize = (value?: string | null) => (value || '').replace(D_RE, '');
     if (!requestedPhone) return null;
     const target = normalize(requestedPhone);
     if (!target) return null;
@@ -231,7 +233,7 @@ export function InboxWorkspace({
       if (requestedConversationId) {
         setSelectedConversationId(requestedConversationId);
       } else if (requestedPhone) {
-        const normalize = (value?: string | null) => (value || '').replace(/\D/g, '');
+        const normalize = (value?: string | null) => (value || '').replace(D_RE, '');
         const target = normalize(requestedPhone);
         const matched = next.find((conversation) =>
           normalize(conversation.contact?.phone).includes(target),

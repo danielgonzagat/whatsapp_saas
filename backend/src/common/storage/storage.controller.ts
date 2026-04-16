@@ -1,4 +1,4 @@
-import * as fs from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import { basename } from 'node:path';
 import { Controller, ForbiddenException, Get, NotFoundException, Param, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
@@ -39,7 +39,7 @@ export class StorageController {
       throw new NotFoundException('Arquivo não encontrado');
     }
 
-    if (!fs.existsSync(resolved.absolutePath)) {
+    if (!existsSync(resolved.absolutePath)) {
       const remote = await this.storage.readAccessFile(resolved.relativePath);
       if (!remote) {
         throw new NotFoundException('Arquivo não encontrado');
@@ -67,7 +67,7 @@ export class StorageController {
     );
     res.setHeader('Cache-Control', 'private, max-age=300');
 
-    const stream = fs.createReadStream(resolved.absolutePath);
+    const stream = createReadStream(resolved.absolutePath);
     stream.pipe(res);
   }
 }

@@ -1,3 +1,4 @@
+const CALENDAR_LINK_RE = /\{\{calendarLink\}\}/g;
 /**
  * Sales/autopilot message templates and helpers (PR P4-1).
  *
@@ -74,5 +75,5 @@ export function renderTemplate(key: keyof typeof SALES_TEMPLATES, vars: Template
   const raw = SALES_TEMPLATES[key];
   if (!raw) return '';
   const calendarLink = vars.calendarLink ?? process.env.DEFAULT_CALENDAR_LINK ?? '';
-  return raw.replace(/\{\{calendarLink\}\}/g, calendarLink);
+  return raw.replace(CALENDAR_LINK_RE, calendarLink);
 }

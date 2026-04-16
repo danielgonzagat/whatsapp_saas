@@ -7,6 +7,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
 
+const D_RE = /\D/g;
+
 export class CheckoutOrderSupport {
   constructor(
     private readonly prisma: PrismaService,
@@ -14,7 +16,7 @@ export class CheckoutOrderSupport {
   ) {}
 
   normalizePhoneDigits(value?: string | null) {
-    return String(value || '').replace(/\D/g, '');
+    return String(value || '').replace(D_RE, '');
   }
 
   normalizeEmail(value?: string | null) {

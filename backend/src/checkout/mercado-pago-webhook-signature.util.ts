@@ -1,4 +1,4 @@
-import * as crypto from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 type MaybeHeader = string | string[] | undefined | null;
 
@@ -93,8 +93,7 @@ export function verifyMercadoPagoWebhookSignature(params: {
     };
   }
 
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
+  const expectedSignature = createHmac('sha256', secret)
     .update(manifest)
     .digest('hex')
     .toLowerCase();
@@ -104,7 +103,7 @@ export function verifyMercadoPagoWebhookSignature(params: {
 
   const valid =
     receivedBuffer.length === expectedBuffer.length &&
-    crypto.timingSafeEqual(receivedBuffer, expectedBuffer);
+    timingSafeEqual(receivedBuffer, expectedBuffer);
 
   return {
     valid,

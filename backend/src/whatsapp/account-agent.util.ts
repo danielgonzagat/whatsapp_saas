@@ -1,3 +1,16 @@
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z0_9_S_RE = /[^a-z0-9\s-]/g;
+const S_RE = /\s+/g;
+const PATTERN_RE = /-+/g;
+const A_ZA_Z___0_9_RE = /[A-Za-zÀ-ÿ0-9-]+/g;
+const HTTPS_________S_RE = /https?:\/\/[^\s)]+/gi;
+const R___S____D_1_3_RE = /(?:R\$\s*)?\d{1,3}(?:\.\d{3})*(?:,\d{2})|(?:R\$\s*)?\d+(?:,\d{2})?/g;
+const R___S_RE = /R\$\s*/gi;
+const PATTERN_RE_2 = /\./g;
+const B__D_1_2__________D_RE = /\b(\d{1,2})(?:[.,]\d+)?\s*%/g;
+const D_RE = /[^\d.,]/g;
+const B__D_1_2___S_X_B_RE = /\b(\d{1,2})\s*x\b/gi;
+const D_RE_2 = /[^\d]/g;
 const A_Z0_9___3_RE = /^[A-Z0-9-]{3,}$/;
 const R__N_RE = /\r?\n+/;
 const BUYING_SIGNALS = [
@@ -119,14 +132,14 @@ export function normalizeCatalogText(value: string): string {
   return String(value || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(U0300__U036F_RE, '')
+    .replace(A_Z0_9_S_RE, ' ')
+    .replace(S_RE, ' ')
     .trim();
 }
 
 export function slugifyCatalogKey(value: string): string {
-  return normalizeCatalogText(value).replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 80);
+  return normalizeCatalogText(value).replace(S_RE, '-').replace(PATTERN_RE, '-').slice(0, 80);
 }
 
 export function findProductMatches(messageContent: string, productNames: string[]): string[] {
@@ -165,7 +178,7 @@ export function detectCatalogGap(params: {
 export function extractMissingProductCandidate(messageContent: string): string | null {
   const rawTokens =
     String(messageContent || '')
-      .match(/[A-Za-zÀ-ÿ0-9-]+/g)
+      .match(A_ZA_Z___0_9_RE)
       ?.filter(Boolean) || [];
   if (!rawTokens.length) return null;
 
@@ -207,38 +220,28 @@ export function extractMissingProductCandidate(messageContent: string): string |
 }
 
 export function extractUrls(value: string): string[] {
-  return Array.from(new Set(String(value || '').match(/https?:\/\/[^\s)]+/gi) || []));
+  return Array.from(new Set(String(value || '').match(HTTPS_________S_RE) || []));
 }
 
 export function extractMoneyValues(value: string): number[] {
-  const matches =
-    String(value || '').match(
-      /(?:R\$\s*)?\d{1,3}(?:\.\d{3})*(?:,\d{2})|(?:R\$\s*)?\d+(?:,\d{2})?/g,
-    ) || [];
+  const matches = String(value || '').match(R___S____D_1_3_RE) || [];
 
   return matches
-    .map((match) =>
-      Number(
-        match
-          .replace(/R\$\s*/gi, '')
-          .replace(/\./g, '')
-          .replace(',', '.'),
-      ),
-    )
+    .map((match) => Number(match.replace(R___S_RE, '').replace(PATTERN_RE_2, '').replace(',', '.')))
     .filter((value) => Number.isFinite(value) && value > 0);
 }
 
 export function extractPercentages(value: string): number[] {
-  const matches = String(value || '').match(/\b(\d{1,2})(?:[.,]\d+)?\s*%/g) || [];
+  const matches = String(value || '').match(B__D_1_2__________D_RE) || [];
   return matches
-    .map((match) => Number(match.replace(/[^\d.,]/g, '').replace(',', '.')))
+    .map((match) => Number(match.replace(D_RE, '').replace(',', '.')))
     .filter((value) => Number.isFinite(value) && value >= 0);
 }
 
 export function extractMaxInstallments(value: string): number | null {
-  const matches = String(value || '').match(/\b(\d{1,2})\s*x\b/gi) || [];
+  const matches = String(value || '').match(B__D_1_2___S_X_B_RE) || [];
   const numbers = matches
-    .map((match) => Number(match.replace(/[^\d]/g, '')))
+    .map((match) => Number(match.replace(D_RE_2, '')))
     .filter((value) => Number.isFinite(value) && value > 0);
   return numbers.length > 0 ? Math.max(...numbers) : null;
 }
@@ -252,7 +255,7 @@ export function parseOfferLines(value: string): ParsedOfferLine[] {
   return lines.map((line, index) => {
     const urls = extractUrls(line);
     const prices = extractMoneyValues(line);
-    const title = line.replace(/https?:\/\/[^\s)]+/gi, '').trim() || `Plano ${index + 1}`;
+    const title = line.replace(HTTPS_________S_RE, '').trim() || `Plano ${index + 1}`;
     return {
       raw: line,
       title,

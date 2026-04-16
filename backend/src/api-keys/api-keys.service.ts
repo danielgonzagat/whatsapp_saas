@@ -1,4 +1,4 @@
-import * as crypto from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -27,7 +27,7 @@ export class ApiKeysService {
   }
 
   async create(workspaceId: string, name: string) {
-    const key = `sk_live_${crypto.randomBytes(24).toString('hex')}`;
+    const key = `sk_live_${randomBytes(24).toString('hex')}`;
     return this.prisma.apiKey.create({
       data: {
         workspaceId,

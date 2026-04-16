@@ -1,3 +1,4 @@
+const PATTERN_RE = /\.+$/g;
 const YOUTUBE_HOSTS = new Set([
   'youtube.com',
   'www.youtube.com',
@@ -12,7 +13,7 @@ const VIMEO_HOSTS = new Set(['vimeo.com', 'www.vimeo.com', 'player.vimeo.com']);
 function normalizeHost(hostname: string): string {
   return String(hostname || '')
     .trim()
-    .replace(/\.+$/g, '')
+    .replace(PATTERN_RE, '')
     .toLowerCase();
 }
 

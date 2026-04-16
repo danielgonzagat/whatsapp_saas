@@ -26,6 +26,9 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { startTransition, useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
+const T_RE = /[:T]/g;
+const PATTERN_RE = /"/g;
+
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
@@ -1731,8 +1734,12 @@ function GestaoVendas({
                   cursor: 'pointer',
                   transition: 'background .1s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--app-bg-hover)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'none';
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -1965,8 +1972,12 @@ function GestaoAssinaturas({
                 cursor: 'pointer',
                 transition: 'background .1s',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--app-bg-hover)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'none';
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
@@ -2192,8 +2203,12 @@ function GestaoFisicos({
                 cursor: 'pointer',
                 transition: 'background .1s',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--app-bg-hover)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'none';
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
@@ -2662,10 +2677,10 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
             <button
               type="button"
               onClick={() => {
-                const now = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                const now = new Date().toISOString().slice(0, 19).replace(T_RE, '-');
                 const escape = (v: unknown) => {
                   const s = String(v ?? '');
-                  return `"${s.replace(/"/g, '""')}"`;
+                  return `"${s.replace(PATTERN_RE, '""')}"`;
                 };
                 let rows: Record<string, unknown>[] = [];
                 let filename = '';

@@ -11,6 +11,8 @@ import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kl
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
+const PATTERN_RE = /(\*\*[^*]+\*\*)/g;
+
 // ════════════════════════════════════════════
 // TYPES
 // ════════════════════════════════════════════
@@ -84,7 +86,7 @@ function PaperclipIcon({ size = 16 }: { size?: number }) {
 // ════════════════════════════════════════════
 
 function renderMessageText(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const parts = text.split(PATTERN_RE);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (

@@ -1,5 +1,7 @@
 import { loadMercadoPago } from '@mercadopago/sdk-js';
 
+const D_RE = /\D/g;
+
 type MercadoPagoConstructor = new (
   publicKey: string,
   options?: { locale?: string; advancedFraudPrevention?: boolean; trackingDisabled?: boolean },
@@ -60,7 +62,7 @@ let securityScriptReadyPromise: Promise<void> | null = null;
 const sdkInstances = new Map<string, unknown>();
 
 function asDigits(value?: string | null) {
-  return String(value || '').replace(/\D/g, '');
+  return String(value || '').replace(D_RE, '');
 }
 
 function buildMercadoPagoError(payload: unknown, fallback: string) {

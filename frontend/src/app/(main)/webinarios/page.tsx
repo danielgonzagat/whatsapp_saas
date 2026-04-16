@@ -496,8 +496,12 @@ export default function WebinariosPage() {
                 transition: 'border-color 0.15s',
                 position: 'relative',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(232, 93, 48, 0.3)')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(232, 93, 48, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();

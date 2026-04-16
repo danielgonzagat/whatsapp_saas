@@ -98,9 +98,21 @@ import {
   updateVariantOutcome,
 } from './cia/self-improvement';
 
-const S_RE = /\s+/;
-const P_EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
-const LID_RE = /@lid$/i;
+const WHITESPACE_G_RE = /\s+/g;
+const LIST_BULLET_RE = /\s*[-*\u2022]\s+/g;
+const EMOJI_GU_RE = /\p{Extended_Pictographic}/gu;
+const SENTENCE_SPLIT_RE = /[^.!?]+[.!?]?/g;
+const JSON_FENCE_RE = /```json/gi;
+const CODE_FENCE_RE = /```/g;
+const JSON_FENCE_G_RE = /```json/g;
+const DIACRITICS_RE = /[\u0300-\u036f]/g;
+const NON_ALNUM_SPACE_RE = /[^a-z0-9\s]/g;
+const NON_DIGIT_RE = /\D/g;
+const SEPARATOR_G_RE = /[_-]+/g;
+
+const WHITESPACE_RE = /\s+/;
+const EMOJI_U_RE = /\p{Extended_Pictographic}/u;
+const LINON_DIGIT_RE = /@lid$/i;
 const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
 const MEU_NOME____S_E__S_RE =
   /(?:meu nome(?:\s+e|\s+é)?|me chamo|sou o|sou a|aqui e o|aqui é o|aqui e a|aqui é a|pode me chamar de)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*){0,3})/iu;
@@ -166,9 +178,9 @@ const PENDING_MESSAGE_LIMIT = Math.max(
   1,
   Number.parseInt(process.env.AUTOPILOT_PENDING_MESSAGE_LIMIT || '12', 10) || 12,
 );
-const SHARED_REPLY_LOCK_MS = Math.max(
+const SHARENON_DIGIT_REPLY_LOCK_MS = Math.max(
   60_000,
-  Number.parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '300000', 10) || 300_000,
+  Number.parseInt(process.env.AUTOPILOT_SHARENON_DIGIT_REPLY_LOCK_MS || '300000', 10) || 300_000,
 );
 const CIA_MAIN_LOOP_LIMIT = Math.max(
   1,
@@ -309,7 +321,7 @@ async function reportSmokeTest(smokeTestId: string | undefined, payload: Record<
 function countReplyWords(value?: string | null): number {
   const words = String(value || '')
     .trim()
-    .split(S_RE)
+    .split(WHITESPACE_RE)
     .filter(Boolean);
   return Math.max(1, words.length);
 }
@@ -372,8 +384,8 @@ function finalizeReplyStyle(
   historyTurns = 0,
 ): string | undefined {
   const normalized = String(reply || '')
-    .replace(/\s+/g, ' ')
-    .replace(/\s*[-*•]\s+/g, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
+    .replace(LIST_BULLET_RE, ' ')
     .trim();
 
   if (!normalized) {
@@ -381,13 +393,11 @@ function finalizeReplyStyle(
   }
 
   const budget = computeReplyStyleBudget(customerMessage, historyTurns);
-  const allowEmoji = P_EXTENDED_PICTOGRAPHIC_RE.test(customerMessage || '');
-  const withoutEmoji = allowEmoji
-    ? normalized
-    : normalized.replace(/\p{Extended_Pictographic}/gu, '').trim();
+  const allowEmoji = EMOJI_U_RE.test(customerMessage || '');
+  const withoutEmoji = allowEmoji ? normalized : normalized.replace(EMOJI_GU_RE, '').trim();
   const sentenceMatches =
     withoutEmoji
-      .match(/[^.!?]+[.!?]?/g)
+      .match(SENTENCE_SPLIT_RE)
       ?.map((part) => part.trim())
       .filter(Boolean) || [];
   const effectiveSentenceBudget =
@@ -437,7 +447,7 @@ function buildMirroredReplyPlanFallback(
       customerMessages.length,
     ) || draftReply;
   const sentences = normalizedDraft
-    .match(/[^.!?]+[.!?]?/g)
+    .match(SENTENCE_SPLIT_RE)
     ?.map((item) => item.trim())
     .filter(Boolean) || [normalizedDraft];
 
@@ -509,8 +519,8 @@ async function buildQuotedReplyPlan(params: {
       'writer',
     );
     const raw = String(response?.content || '')
-      .replace(/```json/gi, '')
-      .replace(/```/g, '')
+      .replace(JSON_FENCE_RE, '')
+      .replace(CODE_FENCE_RE, '')
       .trim();
     // PULSE:OK — inside try/catch; parser confused by multi-line template literal in the arguments above
     const parsed = JSON.parse(raw);
@@ -704,7 +714,7 @@ ${kbContext || 'n/d'}
 Responda somente o JSON.`;
 
     const response = await ai.generateResponse(systemPrompt, userMessage, 'brain');
-    const parsed = JSON.parse(response.replace(/```json/g, '').replace(/```/g, ''));
+    const parsed = JSON.parse(response.replace(JSON_FENCE_G_RE, '').replace(CODE_FENCE_RE, ''));
     const normalizedAction = normalizeAction(parsed.action);
     return {
       intent: parsed.intent || 'IDLE',
@@ -833,9 +843,9 @@ function normalizeMatchableText(value: string): string {
   return (value || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(DIACRITICS_RE, '')
+    .replace(NON_ALNUM_SPACE_RE, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .trim();
 }
 
@@ -1359,7 +1369,7 @@ export async function runSweepUnreadConversations(data: unknown) {
 
 function normalizeCatalogPhone(phone: string): string {
   return String(phone || '')
-    .replace(/\D/g, '')
+    .replace(NON_DIGIT_RE, '')
     .replace('@c.us', '')
     .replace('@s.whatsapp.net', '');
 }
@@ -1501,7 +1511,7 @@ function buildLidMap(
     }
 
     normalized.set(lid, pn);
-    normalized.set(lid.replace(LID_RE, ''), pn);
+    normalized.set(lid.replace(LINON_DIGIT_RE, ''), pn);
   }
 
   return normalized;
@@ -1513,9 +1523,11 @@ function resolveCanonicalChatId(chatId: string, lidMap?: Map<string, string>): s
     return '';
   }
 
-  if (LID_RE.test(normalizedChatId) && lidMap) {
+  if (LINON_DIGIT_RE.test(normalizedChatId) && lidMap) {
     const mapped =
-      lidMap.get(normalizedChatId) || lidMap.get(normalizedChatId.replace(LID_RE, '')) || '';
+      lidMap.get(normalizedChatId) ||
+      lidMap.get(normalizedChatId.replace(LINON_DIGIT_RE, '')) ||
+      '';
     if (mapped) {
       return mapped;
     }
@@ -1584,7 +1596,7 @@ function resolveCatalogChatActivityTimestamp(chat: any): number {
 }
 
 function extractCatalogChatName(chat: any, fallbackPhone?: string | null): string {
-  const phoneDigits = String(fallbackPhone || '').replace(/\D/g, '');
+  const phoneDigits = String(fallbackPhone || '').replace(NON_DIGIT_RE, '');
   const candidates = [
     chat?.name,
     chat?.contact?.pushName,
@@ -1605,7 +1617,7 @@ function extractCatalogChatName(chat: any, fallbackPhone?: string | null): strin
       lowered === 'desconhecido' ||
       D__D_S____S_DOE_RE.test(normalized) ||
       (!!phoneDigits && lowered === `${phoneDigits} doe`) ||
-      (!!phoneDigits && normalized.replace(/\D/g, '') === phoneDigits);
+      (!!phoneDigits && normalized.replace(NON_DIGIT_RE, '') === phoneDigits);
     if (!isPlaceholder) {
       return normalized;
     }
@@ -1617,7 +1629,7 @@ function extractCatalogChatName(chat: any, fallbackPhone?: string | null): strin
 function isPlaceholderCatalogName(value: unknown, fallbackPhone?: string | null): boolean {
   const normalized = String(value || '').trim();
   const lowered = normalized.toLowerCase();
-  const phoneDigits = String(fallbackPhone || '').replace(/\D/g, '');
+  const phoneDigits = String(fallbackPhone || '').replace(NON_DIGIT_RE, '');
 
   if (!normalized) {
     return true;
@@ -1635,7 +1647,7 @@ function isPlaceholderCatalogName(value: unknown, fallbackPhone?: string | null)
     return true;
   }
 
-  if (phoneDigits && normalized.replace(/\D/g, '') === phoneDigits) {
+  if (phoneDigits && normalized.replace(NON_DIGIT_RE, '') === phoneDigits) {
     return true;
   }
 
@@ -1675,7 +1687,7 @@ function extractTrustedNameFromRemoteMessage(message: any, fallbackPhone?: strin
 
 function extractTrustedNameFromMessageText(value: unknown, fallbackPhone?: string | null): string {
   const text = String(value || '')
-    .replace(/\s+/g, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .trim();
   if (!text) {
     return '';
@@ -1711,7 +1723,7 @@ function extractRemoteMessageText(message: any): string {
       message?._data?.body ||
       '',
   )
-    .replace(/\s+/g, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .trim();
 }
 
@@ -1733,7 +1745,7 @@ function buildConversationLedger(history: ConversationHistoryEntry[]): {
   const transcript = history
     .map((entry) => {
       const content = String(entry?.content || '')
-        .replace(/\s+/g, ' ')
+        .replace(WHITESPACE_G_RE, ' ')
         .trim();
       if (!content) {
         return '';
@@ -2775,7 +2787,7 @@ function getSharedReplyLockKey(
   contactId?: string | null,
   phone?: string | null,
 ) {
-  const normalizedPhone = String(phone || '').replace(/\D/g, '');
+  const normalizedPhone = String(phone || '').replace(NON_DIGIT_RE, '');
   return `autopilot:reply:${workspaceId}:${contactId || normalizedPhone}`;
 }
 
@@ -2905,7 +2917,7 @@ export async function runScanContact(data: any) {
       replyLockKey,
       String(data?.messageId || runId || 'scan-contact'),
       'PX',
-      SHARED_REPLY_LOCK_MS,
+      SHARENON_DIGIT_REPLY_LOCK_MS,
       'NX',
     );
     if (replyReserved !== 'OK') {
@@ -4049,7 +4061,7 @@ async function generateAutonomousFallbackResponse(params: {
   if (!apiKey) {
     if (matchedProducts.length > 0) {
       return detectAndFixAntiPatterns(
-        `${contactName ? `${contactName.split(S_RE)[0]}, ` : ''}posso te ajudar com ${matchedProducts.join(', ')}. ${
+        `${contactName ? `${contactName.split(WHITESPACE_RE)[0]}, ` : ''}posso te ajudar com ${matchedProducts.join(', ')}. ${
           listeningSignals.validationNeeded
             ? 'Antes de qualquer coisa, faz sentido a sua dúvida.'
             : ''
@@ -4200,7 +4212,7 @@ function buildCognitiveMessage(params: {
 }) {
   const leadFirstName = String(params.contactName || '')
     .trim()
-    .split(S_RE)
+    .split(WHITESPACE_RE)
     .filter(Boolean)[0];
   const productText = params.matchedProducts?.length
     ? ` sobre ${params.matchedProducts.join(', ')}`
@@ -4457,7 +4469,7 @@ async function dispatchAutonomousTextMessage(input: {
 function normalizeOutboundMessageForDedupe(content: string): string {
   return String(content || '')
     .normalize('NFKC')
-    .replace(/\s+/g, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .trim()
     .toLowerCase()
     .slice(0, 500);
@@ -7100,7 +7112,7 @@ async function runCatalogContacts(data: any) {
         lowered === 'desconhecido' ||
         D__D_S____S_DOE_RE.test(normalized) ||
         lowered === `${phone} doe` ||
-        normalized.replace(/\D/g, '') === phone
+        normalized.replace(NON_DIGIT_RE, '') === phone
       );
     };
     const remoteName =
@@ -8637,7 +8649,7 @@ async function runCiaAction(data: any) {
 
     const actionLabel = String(data?.type || 'acao')
       .toLowerCase()
-      .replace(/[_-]+/g, ' ')
+      .replace(SEPARATOR_G_RE, ' ')
       .trim();
 
     await publishAgentEvent({

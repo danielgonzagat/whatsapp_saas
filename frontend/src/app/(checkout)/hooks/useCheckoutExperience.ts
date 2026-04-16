@@ -13,6 +13,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { createOrder, validateCoupon } from './useCheckout';
 
+const D_RE = /\D/g;
+
 type Formatters = {
   cpf: (value: string) => string;
   phone: (value: string) => string;
@@ -241,7 +243,7 @@ export function useCheckoutExperience({
       return;
     }
 
-    const cepDigits = form.cep.replace(/\D/g, '').slice(0, 8);
+    const cepDigits = form.cep.replace(D_RE, '').slice(0, 8);
     if (cepDigits.length < 8 || !slug) {
       setDynamicShippingInCents(variableShippingFloorInCents);
       setDynamicShippingLoading(false);
@@ -304,7 +306,7 @@ export function useCheckoutExperience({
       if (field === 'cep') value = fmt.cep(value);
       if (field === 'cardNumber') value = fmt.card(value);
       if (field === 'cardExp') value = fmt.exp(value);
-      if (field === 'cardCvv') value = value.replace(/\D/g, '').slice(0, 4);
+      if (field === 'cardCvv') value = value.replace(D_RE, '').slice(0, 4);
       setForm((prev) => ({ ...prev, [field]: value }));
     },
     [fmt],
@@ -312,8 +314,8 @@ export function useCheckoutExperience({
 
   const validateStep1 = useCallback(() => {
     if (!form.name.trim() || !form.email.trim()) return false;
-    if ((config?.requireCPF ?? true) && form.cpf.replace(/\D/g, '').length < 11) return false;
-    if ((config?.requirePhone ?? true) && form.phone.replace(/\D/g, '').length < 10) return false;
+    if ((config?.requireCPF ?? true) && form.cpf.replace(D_RE, '').length < 11) return false;
+    if ((config?.requirePhone ?? true) && form.phone.replace(D_RE, '').length < 10) return false;
     return true;
   }, [config?.requireCPF, config?.requirePhone, form.cpf, form.email, form.name, form.phone]);
 
@@ -460,7 +462,7 @@ export function useCheckoutExperience({
       return;
     }
 
-    if (payMethod === 'boleto' && form.cpf.replace(/\D/g, '').length < 11) {
+    if (payMethod === 'boleto' && form.cpf.replace(D_RE, '').length < 11) {
       setSubmitError('CPF válido é obrigatório para gerar boleto.');
       return;
     }

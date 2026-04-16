@@ -25,6 +25,8 @@ import {
 } from './providers/whatsapp-api.provider';
 import { WorkerRuntimeService } from './worker-runtime.service';
 
+const D_RE = /\D/g;
+
 const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
 const LID_RE = /@lid$/i;
 
@@ -1345,7 +1347,7 @@ export class WhatsAppCatchupService {
 
   private normalizePhone(phone: string): string {
     return String(phone || '')
-      .replace(/\D/g, '')
+      .replace(D_RE, '')
       .replace('@c.us', '')
       .replace('@s.whatsapp.net', '');
   }

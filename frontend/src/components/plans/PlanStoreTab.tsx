@@ -5,6 +5,29 @@ import { apiFetch } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
+const PlanStoreToggle = ({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) => (
+  <label className="flex items-center gap-3 py-2">
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-teal-600' : 'bg-gray-300'}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+      />
+    </button>
+    <span className="text-sm text-gray-700">{label}</span>
+  </label>
+);
+
 export function PlanStoreTab({ planId, productId }: { planId: string; productId: string }) {
   const [available, setAvailable] = useState(false);
   const [hideAffiliates, setHideAffiliates] = useState(false);
@@ -100,29 +123,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
     }
   };
 
-  const Toggle = ({
-    checked,
-    onChange,
-    label,
-  }: {
-    checked: boolean;
-    onChange: (v: boolean) => void;
-    label: string;
-  }) => (
-    <label className="flex items-center gap-3 py-2">
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-teal-600' : 'bg-gray-300'}`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
-        />
-      </button>
-      <span className="text-sm text-gray-700">{label}</span>
-    </label>
-  );
-
   const inputClass =
     'w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500';
   const labelClass = 'mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600';
@@ -132,31 +132,35 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       {/* Toggles */}
       <div className="grid gap-x-12 gap-y-1 md:grid-cols-2">
         <div>
-          <Toggle checked={available} onChange={setAvailable} label="Disponível para venda?" />
-          <Toggle
+          <PlanStoreToggle
+            checked={available}
+            onChange={setAvailable}
+            label="Disponível para venda?"
+          />
+          <PlanStoreToggle
             checked={hideAffiliates}
             onChange={setHideAffiliates}
             label="Ocultar plano para afiliados?"
           />
-          <Toggle checked={freeSample} onChange={setFreeSample} label="Amostra grátis?" />
-          <Toggle
+          <PlanStoreToggle checked={freeSample} onChange={setFreeSample} label="Amostra grátis?" />
+          <PlanStoreToggle
             checked={requireEmail}
             onChange={setRequireEmail}
             label="Exigir e-mail na compra?"
           />
-          <Toggle
+          <PlanStoreToggle
             checked={requireEmailConfirm}
             onChange={setRequireEmailConfirm}
             label="Exigir confirmação de e-mail?"
           />
-          <Toggle
+          <PlanStoreToggle
             checked={requireAddress}
             onChange={setRequireAddress}
             label="Exigir endereço na compra?"
           />
         </div>
         <div>
-          <Toggle
+          <PlanStoreToggle
             checked={limitSales}
             onChange={setLimitSales}
             label="Limite de vendas por plano"
@@ -170,7 +174,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
               className={`${inputClass} mb-2 ml-14 max-w-[200px]`}
             />
           )}
-          <Toggle
+          <PlanStoreToggle
             checked={limitPerApproved}
             onChange={setLimitPerApproved}
             label="Limite por venda aprovada"
@@ -183,7 +187,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
               className={`${inputClass} mb-2 ml-14 max-w-[200px]`}
             />
           )}
-          <Toggle
+          <PlanStoreToggle
             checked={minStock}
             onChange={setMinStock}
             label="Definir quantidade mínima de estoque?"

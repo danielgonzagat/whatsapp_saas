@@ -1,5 +1,7 @@
 import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 
+const A_Z0_9_RE = /[^A-Z0-9]/g;
+
 export interface NormalizedCheckoutLink {
   id: string;
   slug: string | null;
@@ -26,7 +28,7 @@ function normalizeCheckoutCode(candidate?: string | null) {
   return String(candidate || '')
     .trim()
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
+    .replace(A_Z0_9_RE, '')
     .slice(0, 8);
 }
 

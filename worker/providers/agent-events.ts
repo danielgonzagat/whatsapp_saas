@@ -1,6 +1,8 @@
 import { prisma } from '../db';
 import { redis, redisPub } from '../redis-client';
 
+const S_RE = /\s+/g;
+
 const PENSANDO_NA_MELHOR_RESP_RE = /^Pensando na melhor resposta para /i;
 const A_RESPOSTA_J__HAVIA_SID_RE = /^A resposta já havia sido executada anteriormente\.?$/i;
 
@@ -52,7 +54,7 @@ function runStateKey(workspaceId: string) {
 
 function normalizeAgentMessage(payload: AgentEventPayload): string {
   let message = String(payload.message || '')
-    .replace(/\s+/g, ' ')
+    .replace(S_RE, ' ')
     .trim();
 
   if (!message && payload.streaming && payload.token) {

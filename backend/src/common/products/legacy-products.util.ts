@@ -1,10 +1,12 @@
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]+/g;
 export const LEGACY_PRODUCT_NAMES = ['GHK-Cu', 'PDRN'] as const;
 
 function normalizeProductName(value: string | null | undefined) {
   return String(value || '')
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '')
+    .replace(U0300__U036F_RE, '')
+    .replace(A_Z_A_Z0_9_RE, '')
     .toLowerCase();
 }
 

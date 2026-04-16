@@ -15,6 +15,9 @@ import { sanitizeUserInput } from './utils/prompt-sanitizer';
 import { safeEvaluateBoolean } from './utils/safe-eval';
 import { isUrlAllowed, safeRequest, validateUrl } from './utils/ssrf-protection';
 
+const PATTERN_RE = /\{\{(.*?)\}\}/g;
+const D_RE = /\D/g;
+
 type FlowNodeData = Record<string, unknown>;
 
 type FlowNode = {
@@ -362,7 +365,7 @@ export class FlowEngineGlobal {
         await this.appendLog(state, { event: 'node_start', nodeId: node.id, type: node.type });
 
         // Automatic Retry Logic (Best in World Reliability)
-        let result;
+        let result: string | 'WAIT' | 'END' | undefined;
         let retryCount = 0;
         const MAX_RETRIES = 3;
 
@@ -446,7 +449,7 @@ export class FlowEngineGlobal {
     switch (node.type) {
       case 'messageNode': {
         const template = readString(node.data, 'text');
-        const text = template.replace(/\{\{(.*?)\}\}/g, (_, key) => {
+        const text = template.replace(PATTERN_RE, (_, key) => {
           const k = String(key).trim();
           return varAsString(state.variables[k]);
         });
@@ -660,7 +663,7 @@ export class FlowEngineGlobal {
           });
 
           const text = await res.text();
-          let parsed;
+          let parsed: unknown;
           try {
             parsed = JSON.parse(text);
           } catch {
@@ -1280,7 +1283,7 @@ export class FlowEngineGlobal {
     const { HealthMonitor } = await import('./providers/health-monitor');
     const MAX_RETRIES = 3;
     let attempt = 0;
-    let lastError;
+    let lastError: unknown;
 
     while (attempt < MAX_RETRIES) {
       const start = Date.now();
@@ -1587,7 +1590,7 @@ export class FlowEngineGlobal {
   }
 
   private normalizeUser(user: string) {
-    return (user || '').replace(/\D/g, '');
+    return (user || '').replace(D_RE, '');
   }
 
   private timeoutMember(user: string, workspaceId?: string) {

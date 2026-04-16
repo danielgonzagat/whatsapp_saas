@@ -21,6 +21,8 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+const D_RE = /\D/g;
+
 interface Followup {
   id: string;
   key: string;
@@ -148,7 +150,7 @@ export default function FollowupsPage() {
   const formatPhone = (phone: string) => {
     if (!phone) return '-';
     // Formata telefone brasileiro
-    const cleaned = phone.replace(/\D/g, '');
+    const cleaned = phone.replace(D_RE, '');
     if (cleaned.length === 13) {
       return `+${cleaned.slice(0, 2)} (${cleaned.slice(2, 4)}) ${cleaned.slice(4, 9)}-${cleaned.slice(9)}`;
     }

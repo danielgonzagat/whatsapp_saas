@@ -15,6 +15,14 @@
 
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 
+const PLUS_RE = /\+/g;
+const SLASH_RE = /\//g;
+const DASH_RE = /-/g;
+const UNDERSCORE_RE = /_/g;
+
+const HEX_64_RE = /^[0-9a-fA-F]{64}$/;
+const TRAILING_EQUALS_RE = /=+$/;
+
 const ALGORITHM = 'aes-256-gcm' as const;
 const IV_LENGTH_BYTES = 12;
 
@@ -40,7 +48,7 @@ function decodeKey(raw: string): Buffer {
   if (!raw || raw.trim().length === 0) {
     throw new Error('ADMIN_MFA_ENCRYPTION_KEY must be a non-empty string');
   }
-  if (/^[0-9a-fA-F]{64}$/.test(raw)) {
+  if (HEX_64_RE.test(raw)) {
     return Buffer.from(raw, 'hex');
   }
   // Derive 32 bytes from any other representation.
@@ -48,12 +56,16 @@ function decodeKey(raw: string): Buffer {
 }
 
 function toBase64Url(buf: Buffer): string {
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return buf
+    .toString('base64')
+    .replace(PLUS_RE, '-')
+    .replace(SLASH_RE, '_')
+    .replace(TRAILING_EQUALS_RE, '');
 }
 
 function fromBase64Url(str: string): Buffer {
   const pad = str.length % 4 === 0 ? '' : '='.repeat(4 - (str.length % 4));
-  return Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/') + pad, 'base64');
+  return Buffer.from(str.replace(DASH_RE, '+').replace(UNDERSCORE_RE, '/') + pad, 'base64');
 }
 
 export function encryptAdminSecret(plaintext: string, keyHex: string): string {

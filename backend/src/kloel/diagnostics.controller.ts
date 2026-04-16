@@ -1,4 +1,4 @@
-import * as os from 'node:os';
+import { cpus } from 'node:os';
 import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -240,7 +240,7 @@ kloel_uptime_seconds ${process.uptime()}
     return {
       cpu: {
         usage: 0, // Seria necessário sampling para calcular
-        cores: os.cpus().length,
+        cores: cpus().length,
       },
       memory: {
         used: Math.round(used.heapUsed / 1024 / 1024),

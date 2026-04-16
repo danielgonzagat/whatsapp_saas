@@ -26,6 +26,10 @@ import {
   syncWorkspaceCheckoutCouponForProduct,
 } from './product-coupon-sync.util';
 
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z0_9_RE = /[^a-z0-9]+/g;
+const PATTERN_RE = /^-+|-+$/g;
+
 /** Loose body type — accepts idempotencyKey and any other fields for safe retry. */
 type LooseObject = Record<string, any>;
 
@@ -234,10 +238,10 @@ async function ensureNoDuplicateCommission(
 function slugifyPlan(name: string, id: string) {
   const base = String(name || 'plano')
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(U0300__U036F_RE, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(A_Z0_9_RE, '-')
+    .replace(PATTERN_RE, '')
     .slice(0, 48);
 
   return `${base || 'plano'}-${id.slice(0, 8)}`;

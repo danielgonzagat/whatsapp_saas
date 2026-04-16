@@ -6,6 +6,8 @@ import {
 import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
 
+const D_RE = /\D/g;
+
 const log = new WorkerLogger('checkout-social-enrichment');
 
 type JsonPrimitive = string | number | boolean | null;
@@ -185,12 +187,12 @@ function readStringField(value: unknown, keys: string[]) {
 }
 
 function normalizePhone(value: string | null) {
-  const digits = String(value || '').replace(/\D/g, '');
+  const digits = String(value || '').replace(D_RE, '');
   return digits || null;
 }
 
 function normalizeCpf(value: string | null) {
-  const digits = String(value || '').replace(/\D/g, '');
+  const digits = String(value || '').replace(D_RE, '');
   return digits || null;
 }
 

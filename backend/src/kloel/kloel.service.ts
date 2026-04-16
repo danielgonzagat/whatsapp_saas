@@ -35,10 +35,17 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import { SmartPaymentService } from './smart-payment.service';
 import { UnifiedAgentService } from './unified-agent.service';
 
+const WHITESPACE_G_RE = /\s+/g;
+const QUOTE_TRIM_RE = /^[“’\u201c\u201d\u2018\u2019]+|[“’\u201c\u201d\u2018\u2019]+$/g;
+const TRAILING_PUNCT_G_RE = /[.!?]+$/g;
+const SEPARATOR_G_RE = /[_-]+/g;
+const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
+const NON_DIGIT_RE = /\D/g;
+
 const PDRN_GHK_S____S_CU_COREA_RE = /pdrn|ghk\s*-?\s*cu|coreamy/i;
-const PATTERN_RE = /[.]+$/;
-const N_RE = /\n/;
-const S_RE = /\s+/;
+const TRAILING_DOTS_RE = /[.]+$/;
+const NEWLINE_RE = /\n/;
+const WHITESPACE_RE = /\s+/;
 const COMO_ESTRAT_E__GIA_F_RE =
   /[?]|como|estrat[eé]gia|funil|plano|relat[oó]rio|documento|vender|marketing|autom[aá]tica|copy|webhook|api|integra[cç][aã]o|whatsapp/i;
 const RELAT_O__RIO_DOCUMENTO_RE =
@@ -910,7 +917,7 @@ export class KloelService {
 
   private buildFallbackThreadTitle(message: string): string {
     const cleaned = String(message || '')
-      .replace(/\s+/g, ' ')
+      .replace(WHITESPACE_G_RE, ' ')
       .trim();
 
     if (!cleaned) return 'Nova conversa';
@@ -924,9 +931,9 @@ export class KloelService {
 
   private sanitizeGeneratedThreadTitle(value: string | null | undefined): string {
     const sanitized = String(value || '')
-      .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
-      .replace(/[.!?]+$/g, '')
-      .replace(/\s+/g, ' ')
+      .replace(QUOTE_TRIM_RE, '')
+      .replace(TRAILING_PUNCT_G_RE, '')
+      .replace(WHITESPACE_G_RE, ' ')
       .trim()
       .slice(0, 60);
 
@@ -1716,9 +1723,9 @@ export class KloelService {
         entries
           .map((entry) =>
             String(entry.label || '')
-              .replace(/\s+/g, ' ')
+              .replace(WHITESPACE_G_RE, ' ')
               .trim()
-              .replace(PATTERN_RE, ''),
+              .replace(TRAILING_DOTS_RE, ''),
           )
           .filter(Boolean),
       ),
@@ -1764,8 +1771,8 @@ export class KloelService {
   private formatTraceToolLabel(toolName?: string | null): string {
     const raw = String(toolName || 'ferramenta')
       .trim()
-      .replace(/[_-]+/g, ' ')
-      .replace(/\s+/g, ' ');
+      .replace(SEPARATOR_G_RE, ' ')
+      .replace(WHITESPACE_G_RE, ' ');
 
     if (!raw) {
       return 'a ferramenta';
@@ -1929,8 +1936,8 @@ export class KloelService {
     const normalized = String(message || '').trim();
     if (!normalized) return false;
     if (normalized.length >= 40) return true;
-    if (N_RE.test(normalized)) return true;
-    if (normalized.split(S_RE).length >= 8) return true;
+    if (NEWLINE_RE.test(normalized)) return true;
+    if (normalized.split(WHITESPACE_RE).length >= 8) return true;
     return COMO_ESTRAT_E__GIA_F_RE.test(normalized);
   }
 
@@ -1997,7 +2004,7 @@ export class KloelService {
       advancedScore >= 2 ||
       String(message || '')
         .trim()
-        .split(S_RE).length >= 14
+        .split(WHITESPACE_RE).length >= 14
     ) {
       return 'INTERMEDIÁRIO';
     }
@@ -3280,7 +3287,7 @@ export class KloelService {
     const normalizedKey = String(args?.key || '')
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9_:-]+/g, '_')
+      .replace(NON_SLUG_CHAR_RE, '_')
       .slice(0, 80);
     const value = String(args?.value || '').trim();
 
@@ -3577,7 +3584,7 @@ export class KloelService {
     const { phone, message } = args;
 
     // Normalizar telefone
-    const normalizedPhone = phone.replace(/\D/g, '');
+    const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
 
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     if (!status.connected) {
@@ -3834,31 +3841,27 @@ export class KloelService {
   private async toolGetLeadDetails(workspaceId: string, args: any): Promise<any> {
     const { phone, leadId } = args;
 
-    let contact;
+    const contactInclude = {
+      tags: true,
+      conversations: {
+        take: 1,
+        orderBy: { updatedAt: 'desc' as const },
+        include: { messages: { take: 5, orderBy: { createdAt: 'desc' as const } } },
+      },
+    } as const;
+    type ContactWithRelations = Prisma.ContactGetPayload<{ include: typeof contactInclude }>;
+
+    let contact: ContactWithRelations | null = null;
     if (leadId) {
       contact = await this.prisma.contact.findFirst({
         where: { id: leadId, workspaceId },
-        include: {
-          tags: true,
-          conversations: {
-            take: 1,
-            orderBy: { updatedAt: 'desc' },
-            include: { messages: { take: 5, orderBy: { createdAt: 'desc' } } },
-          },
-        },
+        include: contactInclude,
       });
     } else if (phone) {
-      const normalizedPhone = phone.replace(/\D/g, '');
+      const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
       contact = await this.prisma.contact.findFirst({
         where: { phone: { contains: normalizedPhone }, workspaceId },
-        include: {
-          tags: true,
-          conversations: {
-            take: 1,
-            orderBy: { updatedAt: 'desc' },
-            include: { messages: { take: 5, orderBy: { createdAt: 'desc' } } },
-          },
-        },
+        include: contactInclude,
       });
     }
 
@@ -4019,7 +4022,7 @@ export class KloelService {
       const dataUri = `data:audio/mpeg;base64,${audioBase64}`;
 
       // Normalizar telefone
-      const normalizedPhone = phone.replace(/\D/g, '');
+      const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
 
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
       // Enviar via WhatsApp usando sendMessage com opts de mídia
@@ -4053,7 +4056,7 @@ export class KloelService {
     }
 
     try {
-      const normalizedPhone = phone.replace(/\D/g, '');
+      const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
       let documentUrl = url;
 
       // Se não tem URL direta, buscar documento por nome
@@ -4110,7 +4113,7 @@ export class KloelService {
     const { audioUrl, audioBase64, language = 'pt' } = args;
 
     try {
-      let result;
+      let result: { text: string; duration?: number; language: string };
 
       if (audioUrl) {
         result = await this.audioService.transcribeFromUrl(audioUrl, language, workspaceId);
@@ -5287,7 +5290,7 @@ ${pdfContent}`;
     this.logger.log(`KLOEL processando mensagem de ${senderPhone}`);
 
     try {
-      const normalizedPhone = String(senderPhone || '').replace(/\D/g, '');
+      const normalizedPhone = String(senderPhone || '').replace(NON_DIGIT_RE, '');
 
       // 1) Buscar workspace e checar se autopilot está habilitado
       const workspace = await this.prisma.workspace.findUnique({

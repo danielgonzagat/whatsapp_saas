@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../_lib/backend-url';
 
+const PATTERN_RE = /-/g;
+const PATTERN_RE_2 = /_/g;
+
 const BEARER_S_RE = /^Bearer\s+(.+)$/i;
 
 function decodeJwtPayload(authHeader: string) {
@@ -12,7 +15,7 @@ function decodeJwtPayload(authHeader: string) {
   if (!payload) return null;
 
   try {
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const normalized = payload.replace(PATTERN_RE, '+').replace(PATTERN_RE_2, '/');
     const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
     return JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
   } catch {

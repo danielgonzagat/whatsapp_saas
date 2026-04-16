@@ -36,6 +36,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { mutate as globalMutate } from 'swr'; // PULSE:OK — globalMutate used after Meta disconnect; SWR mutate() used in TeamSection for invite/revoke/remove
 import useSWR from 'swr';
 
+const D_RE = /\D/g;
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+
 const HTTPS_RE = /^https?:\/\//;
 
 // ═══ DOMAIN TYPES ═══
@@ -1174,7 +1177,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
 
   // ── CNPJ auto-fill from BrasilAPI ──
   const lookupCnpj = async (cnpj: string) => {
-    const clean = cnpj.replace(/\D/g, '');
+    const clean = cnpj.replace(D_RE, '');
     if (clean.length !== 14) return;
     setCnpjLoading(true);
     try {
@@ -1204,7 +1207,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
 
   // ── CEP auto-fill from ViaCEP ──
   const lookupCep = async (cep: string) => {
-    const clean = cep.replace(/\D/g, '');
+    const clean = cep.replace(D_RE, '');
     if (clean.length !== 8) return;
     setCepLoading(true);
     try {
@@ -1352,7 +1355,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
                 value={form.cnpj}
                 onChange={(v) => {
                   set('cnpj', v);
-                  const clean = v.replace(/\D/g, '');
+                  const clean = v.replace(D_RE, '');
                   if (clean.length === 14) lookupCnpj(v);
                 }}
                 onBlur={() => lookupCnpj(form.cnpj)}
@@ -1437,7 +1440,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
               value={form.cep}
               onChange={(v) => {
                 set('cep', v);
-                const clean = v.replace(/\D/g, '');
+                const clean = v.replace(D_RE, '');
                 if (clean.length === 8) lookupCep(v);
               }}
               onBlur={() => lookupCep(form.cep)}
@@ -1531,6 +1534,154 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
 
 // ═══ SECTION 3: DOCUMENTOS ═══
 
+function UploadZone({
+  label,
+  sublabel,
+  type,
+  doc,
+  inputRef,
+  uploading,
+  onUpload,
+  onDelete,
+}: {
+  label: string;
+  sublabel: string;
+  type: string;
+  doc: KycDocument | undefined;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  uploading: string | null;
+  onUpload: (type: string, file: File) => void;
+  onDelete: (docId: string) => void;
+}) {
+  const [hover, setHover] = useState(false);
+  const isUploading = uploading === type;
+
+  if (doc) {
+    return (
+      <div
+        style={{
+          background: 'var(--app-bg-secondary)',
+          border: '1px solid var(--app-border-primary)',
+          borderRadius: 6,
+          padding: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <span style={{ color: 'var(--app-text-secondary)' }}>{Icons.doc(20)}</span>
+        <div style={{ flex: 1 }}>
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'var(--app-text-primary)',
+              display: 'block',
+              fontFamily: SORA,
+            }}
+          >
+            {doc.fileName || doc.originalName || label}
+          </span>
+          <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
+            Enviado em {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('pt-BR') : '--'}
+          </span>
+        </div>
+        <StatusBadge status={doc.status || 'pending'} />
+        {(doc.status === 'pending' || !doc.status) && (
+          <button
+            type="button"
+            onClick={() => onDelete(doc.id)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#EF4444',
+              cursor: 'pointer',
+              padding: 4,
+            }}
+          >
+            {Icons.trash(14)}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => inputRef.current?.click()}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setHover(true);
+      }}
+      onDragLeave={() => setHover(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setHover(false);
+        const file = e.dataTransfer.files[0];
+        if (file) onUpload(type, file);
+      }}
+      style={{
+        border: `1px dashed ${hover ? EMBER : 'var(--app-border-primary)'}`,
+        borderRadius: 6,
+        padding: '28px 20px',
+        display: 'flex',
+        flexDirection: 'column' as const,
+        alignItems: 'center',
+        gap: 10,
+        cursor: 'pointer',
+        transition: 'all 150ms ease',
+        background: hover ? 'rgba(232,93,48,.02)' : 'transparent',
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
+    >
+      <span
+        style={{ color: hover ? EMBER : 'var(--app-text-placeholder)', transition: 'color .15s' }}
+      >
+        {Icons.upload(24)}
+      </span>
+      <div style={{ textAlign: 'center' as const }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--app-text-primary)',
+            display: 'block',
+            fontFamily: SORA,
+          }}
+        >
+          {label}
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
+          {sublabel}
+        </span>
+      </div>
+      {isUploading && (
+        <div style={{ marginTop: 2 }}>
+          <PulseLoader width={84} height={18} />
+        </div>
+      )}
+      <input
+        aria-label={label}
+        ref={inputRef}
+        type="file"
+        accept="image/*,.pdf"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onUpload(type, file);
+        }}
+      />
+    </div>
+  );
+}
+
 function DocumentosSection({
   documents,
   fiscal,
@@ -1576,149 +1727,6 @@ function DocumentosSection({
     }
   };
 
-  const UploadZone = ({
-    label,
-    sublabel,
-    type,
-    doc,
-    inputRef,
-  }: {
-    label: string;
-    sublabel: string;
-    type: string;
-    doc: KycDocument | undefined;
-    inputRef: React.RefObject<HTMLInputElement | null>;
-  }) => {
-    const [hover, setHover] = useState(false);
-    const isUploading = uploading === type;
-
-    if (doc) {
-      return (
-        <div
-          style={{
-            background: 'var(--app-bg-secondary)',
-            border: '1px solid var(--app-border-primary)',
-            borderRadius: 6,
-            padding: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <span style={{ color: 'var(--app-text-secondary)' }}>{Icons.doc(20)}</span>
-          <div style={{ flex: 1 }}>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--app-text-primary)',
-                display: 'block',
-                fontFamily: SORA,
-              }}
-            >
-              {doc.fileName || doc.originalName || label}
-            </span>
-            <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-              Enviado em{' '}
-              {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('pt-BR') : '--'}
-            </span>
-          </div>
-          <StatusBadge status={doc.status || 'pending'} />
-          {(doc.status === 'pending' || !doc.status) && (
-            <button
-              type="button"
-              onClick={() => handleDelete(doc.id)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#EF4444',
-                cursor: 'pointer',
-                padding: 4,
-              }}
-            >
-              {Icons.trash(14)}
-            </button>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <div
-        onClick={() => inputRef.current?.click()}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setHover(true);
-        }}
-        onDragLeave={() => setHover(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setHover(false);
-          const file = e.dataTransfer.files[0];
-          if (file) handleUpload(type, file);
-        }}
-        style={{
-          border: `1px dashed ${hover ? EMBER : 'var(--app-border-primary)'}`,
-          borderRadius: 6,
-          padding: '28px 20px',
-          display: 'flex',
-          flexDirection: 'column' as const,
-          alignItems: 'center',
-          gap: 10,
-          cursor: 'pointer',
-          transition: 'all 150ms ease',
-          background: hover ? 'rgba(232,93,48,.02)' : 'transparent',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
-        }}
-      >
-        <span
-          style={{ color: hover ? EMBER : 'var(--app-text-placeholder)', transition: 'color .15s' }}
-        >
-          {Icons.upload(24)}
-        </span>
-        <div style={{ textAlign: 'center' as const }}>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: 'var(--app-text-primary)',
-              display: 'block',
-              fontFamily: SORA,
-            }}
-          >
-            {label}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-            {sublabel}
-          </span>
-        </div>
-        {isUploading && (
-          <div style={{ marginTop: 2 }}>
-            <PulseLoader width={84} height={18} />
-          </div>
-        )}
-        <input
-          aria-label={label}
-          ref={inputRef}
-          type="file"
-          accept="image/*,.pdf"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleUpload(type, file);
-          }}
-        />
-      </div>
-    );
-  };
-
   return (
     <SectionCard title="Documentos" subtitle="Envie os documentos necessarios para verificacao">
       <div
@@ -1760,6 +1768,9 @@ function DocumentosSection({
           type="DOCUMENT_FRONT"
           doc={idDoc}
           inputRef={idRef}
+          uploading={uploading}
+          onUpload={handleUpload}
+          onDelete={handleDelete}
         />
         <UploadZone
           label={isPJ ? 'Contrato social ou cartao CNPJ' : 'Comprovante de residencia'}
@@ -1767,6 +1778,9 @@ function DocumentosSection({
           type={isPJ ? 'COMPANY_DOCUMENT' : 'PROOF_OF_ADDRESS'}
           doc={secondDoc}
           inputRef={secondRef}
+          uploading={uploading}
+          onUpload={handleUpload}
+          onDelete={handleDelete}
         />
       </div>
     </SectionCard>
@@ -1817,11 +1831,7 @@ function DadosBancariosSection({
   const bankRef = useRef<HTMLDivElement>(null);
 
   // Remove accents for search (itau → matches Itaú)
-  const normalize = (s: string) =>
-    s
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+  const normalize = (s: string) => s.normalize('NFD').replace(U0300__U036F_RE, '').toLowerCase();
 
   const searchTerm = bankSearch.trim();
   const filteredBanks = bankDropdownOpen

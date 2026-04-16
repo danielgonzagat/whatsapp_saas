@@ -95,7 +95,7 @@ function HeroLoop() {
     const ctx = cv.getContext('2d', { willReadFrequently: true });
     cv.width = 600;
     cv.height = 120;
-    let raf2;
+    let raf2: number;
     const drawN = () => {
       if (!gxRef.current) {
         ctx.clearRect(0, 0, 600, 120);

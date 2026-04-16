@@ -1,5 +1,7 @@
 import { PrismaService } from '../prisma/prisma.service';
 
+const A_Z0_9_RE = /[^a-z0-9_:-]+/g;
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -58,7 +60,7 @@ export class KloelConversationStore {
       const safeType = String(type || 'general')
         .trim()
         .toLowerCase()
-        .replace(/[^a-z0-9_:-]+/g, '_');
+        .replace(A_Z0_9_RE, '_');
       const key =
         metadata?.key || `${safeType}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 

@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+const PATTERN_RE = /\./g;
+
 /**
  * Feature flag service for sensitive code paths (PR P5-1).
  *
@@ -90,7 +92,7 @@ export class FeatureFlagService {
       throw new Error(`Unknown feature flag: ${flag}`);
     }
 
-    const envName = `FF_${flag.toUpperCase().replace(/\./g, '__')}`;
+    const envName = `FF_${flag.toUpperCase().replace(PATTERN_RE, '__')}`;
     const raw = process.env[envName];
     if (raw !== undefined) {
       const normalized = raw.trim().toLowerCase();

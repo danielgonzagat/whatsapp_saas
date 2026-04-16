@@ -1,3 +1,4 @@
+const S_RE = /\s+/g;
 function isDigit(char: string): boolean {
   const code = char.charCodeAt(0);
   return code >= 48 && code <= 57;
@@ -11,7 +12,7 @@ export function collapseWhitespace(value: unknown): string {
         ? String(value)
         : ''
   )
-    .replace(/\s+/g, ' ')
+    .replace(S_RE, ' ')
     .trim();
 }
 

@@ -21,6 +21,8 @@ import {
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 
+const A_Z0_9_RE = /[^A-Z0-9]/g;
+
 // ════════════════════════════════════════════
 // DESIGN TOKENS (inline — Kloel Monitor DNA)
 // ════════════════════════════════════════════
@@ -118,7 +120,7 @@ function normalizeCheckoutCode(value?: string | null) {
   return String(value || '')
     .trim()
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
+    .replace(A_Z0_9_RE, '')
     .slice(0, 8);
 }
 

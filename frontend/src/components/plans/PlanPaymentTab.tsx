@@ -7,6 +7,83 @@ import { AlertTriangle, Check, CreditCard, FileText, QrCode } from 'lucide-react
 import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
+const PaymentToggle = ({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) => (
+  <label className="flex items-center gap-3 py-1.5">
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+      style={{ backgroundColor: checked ? colors.accent.webb : colors.background.corona }}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+      />
+    </button>
+    <span className="text-sm" style={{ color: colors.text.starlight }}>
+      {label}
+    </span>
+  </label>
+);
+
+const PaymentMethodCard = ({
+  enabled,
+  onToggle,
+  icon: Icon,
+  title,
+  desc,
+  iconColor,
+}: {
+  enabled: boolean;
+  onToggle: () => void;
+  icon: typeof CreditCard;
+  title: string;
+  desc: string;
+  iconColor?: string;
+}) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    className="relative flex items-center gap-4 rounded-xl p-5 text-left transition-all"
+    style={{
+      background: enabled ? `${colors.accent.webb}08` : colors.background.nebula,
+      border: `2px solid ${enabled ? colors.accent.webb : colors.border.space}`,
+      boxShadow: 'none',
+    }}
+  >
+    {enabled && (
+      <div
+        className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full"
+        style={{ background: colors.accent.webb }}
+      >
+        <Check className="h-3 w-3 text-white" aria-hidden="true" />
+      </div>
+    )}
+    <Icon
+      className="h-8 w-8 flex-shrink-0"
+      style={{ color: enabled ? iconColor || colors.accent.webb : colors.text.dust }}
+    />
+    <div>
+      <p
+        className="text-sm font-semibold"
+        style={{ color: enabled ? colors.text.starlight : colors.text.moonlight }}
+      >
+        {title}
+      </p>
+      <p className="text-xs" style={{ color: colors.text.dust }}>
+        {desc}
+      </p>
+    </div>
+  </button>
+);
+
 export function PlanPaymentTab({ planId, productId }: { planId: string; productId: string }) {
   const [maxInstallments, setMaxInstallments] = useState('12');
   const [maxNoInterest, setMaxNoInterest] = useState('3');
@@ -91,32 +168,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
   };
 
   // Cosmos styling helpers
-  const Toggle = ({
-    checked,
-    onChange,
-    label,
-  }: {
-    checked: boolean;
-    onChange: (v: boolean) => void;
-    label: string;
-  }) => (
-    <label className="flex items-center gap-3 py-1.5">
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-        style={{ backgroundColor: checked ? colors.accent.webb : colors.background.corona }}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
-        />
-      </button>
-      <span className="text-sm" style={{ color: colors.text.starlight }}>
-        {label}
-      </span>
-    </label>
-  );
-
   const labelStyle: React.CSSProperties = {
     fontFamily: typography.fontFamily.display,
     fontSize: '11px',
@@ -148,58 +199,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
     >
       {t}
     </h3>
-  );
-
-  // Payment method card component
-  const PaymentMethodCard = ({
-    enabled,
-    onToggle,
-    icon: Icon,
-    title,
-    desc,
-    iconColor,
-  }: {
-    enabled: boolean;
-    onToggle: () => void;
-    icon: typeof CreditCard;
-    title: string;
-    desc: string;
-    iconColor?: string;
-  }) => (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="relative flex items-center gap-4 rounded-xl p-5 text-left transition-all"
-      style={{
-        background: enabled ? `${colors.accent.webb}08` : colors.background.nebula,
-        border: `2px solid ${enabled ? colors.accent.webb : colors.border.space}`,
-        boxShadow: 'none',
-      }}
-    >
-      {enabled && (
-        <div
-          className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full"
-          style={{ background: colors.accent.webb }}
-        >
-          <Check className="h-3 w-3 text-white" aria-hidden="true" />
-        </div>
-      )}
-      <Icon
-        className="h-8 w-8 flex-shrink-0"
-        style={{ color: enabled ? iconColor || colors.accent.webb : colors.text.dust }}
-      />
-      <div>
-        <p
-          className="text-sm font-semibold"
-          style={{ color: enabled ? colors.text.starlight : colors.text.moonlight }}
-        >
-          {title}
-        </p>
-        <p className="text-xs" style={{ color: colors.text.dust }}>
-          {desc}
-        </p>
-      </div>
-    </button>
   );
 
   return (
@@ -303,7 +302,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
       <div className="rounded-xl p-5" style={cardStyle}>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <Toggle
+            <PaymentToggle
               checked={discountByPayment}
               onChange={setDiscountByPayment}
               label="Desconto por tipo de pagamento?"
@@ -318,7 +317,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
               </p>
             )}
           </div>
-          <Toggle
+          <PaymentToggle
             checked={notifyBoleto}
             onChange={setNotifyBoleto}
             label="Avisar comprador sobre vencimento de boletos?"
@@ -353,14 +352,14 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                 <option value="ANNUAL">Anual</option>
               </select>
             </div>
-            <Toggle
+            <PaymentToggle
               checked={affiliateRecurring}
               onChange={setAffiliateRecurring}
               label="Afiliado recebe comissão de cobranças recorrentes?"
             />
           </div>
 
-          <Toggle
+          <PaymentToggle
             checked={trialEnabled}
             onChange={setTrialEnabled}
             label="Período experimental na assinatura?"
@@ -390,7 +389,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             </div>
           )}
 
-          <Toggle
+          <PaymentToggle
             checked={limitedBilling}
             onChange={setLimitedBilling}
             label="Cobrança limitada na assinatura?"
@@ -403,7 +402,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
         <>
           {sectionTitle('Boleto parcelado')}
           <div className="rounded-xl p-5" style={cardStyle}>
-            <Toggle
+            <PaymentToggle
               checked={boletoInstallment}
               onChange={setBoletoInstallment}
               label="Ativar boleto parcelado?"
@@ -428,7 +427,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                     ))}
                   </select>
                 </div>
-                <Toggle
+                <PaymentToggle
                   checked={boletoInterest}
                   onChange={setBoletoInterest}
                   label="Juros no boleto parcelado?"

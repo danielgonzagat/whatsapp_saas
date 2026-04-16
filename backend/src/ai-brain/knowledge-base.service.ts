@@ -11,6 +11,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { memoryQueue } from '../queue/queue';
 import { VectorService } from './vector.service';
 
+const S_RE = /\s+/g;
+
 @Injectable()
 export class KnowledgeBaseService {
   private readonly logger = new Logger(KnowledgeBaseService.name);
@@ -237,7 +239,7 @@ export class KnowledgeBaseService {
     parser.write(html);
     parser.end();
 
-    return parts.join(' ').replace(/\s+/g, ' ').trim();
+    return parts.join(' ').replace(S_RE, ' ').trim();
   }
 
   /**

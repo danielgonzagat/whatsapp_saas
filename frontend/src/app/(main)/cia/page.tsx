@@ -48,6 +48,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+const PATTERN_RE = /[_-]+/g;
+const S_RE = /\s+/g;
+const B_W_RE = /\b\w/g;
+const PATTERN_RE_2 = /_/g;
+
 type StreamEvent = {
   type: string;
   message: string;
@@ -70,10 +75,10 @@ function formatPhaseLabel(value?: string | null) {
   if (raw === 'streaming_token') return '';
 
   return raw
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(PATTERN_RE, ' ')
+    .replace(S_RE, ' ')
     .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+    .replace(B_W_RE, (char) => char.toUpperCase());
 }
 
 function formatTs(ts?: string | null) {
@@ -991,7 +996,7 @@ export default function CiaPage() {
                       )}
                     </div>
                     <Badge variant={session.status === 'COMPLETED' ? 'success' : 'warning'}>
-                      {session.status.replace(/_/g, ' ')}
+                      {session.status.replace(PATTERN_RE_2, ' ')}
                     </Badge>
                   </div>
 
@@ -1081,7 +1086,7 @@ export default function CiaPage() {
                   </div>
                   <div className="flex-shrink-0">
                     <Badge variant={workItemStateBadgeVariant(item.state)}>
-                      {item.state.replace(/_/g, ' ')}
+                      {item.state.replace(PATTERN_RE_2, ' ')}
                     </Badge>
                   </div>
                 </div>

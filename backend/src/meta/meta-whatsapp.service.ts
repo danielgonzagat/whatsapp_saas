@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
 
+const D_RE = /\D/g;
+
 const PATTERN_RE = /\/+$/;
 const HTTPS_RE = /^https?:\/\//i;
 const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
@@ -547,6 +549,6 @@ export class MetaWhatsAppService {
   }
 
   private normalizePhone(value: string): string {
-    return String(value || '').replace(/\D/g, '');
+    return String(value || '').replace(D_RE, '');
   }
 }

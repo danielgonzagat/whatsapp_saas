@@ -1,3 +1,5 @@
+const R__S_RE = /[R$\s]/g;
+const PATTERN_RE = /\./g;
 /**
  * Monetary values across the KLOEL platform must be integer cents.
  * A value of 12345 means R$ 123,45.
@@ -113,10 +115,7 @@ export function parseBRL(input: string): Cents {
   const trimmed = String(input || '').trim();
   if (!trimmed) throw new TypeError('Empty BRL string');
   // Strip currency symbol and thousand separators, normalize decimal comma.
-  const cleaned = trimmed
-    .replace(/[R$\s]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
+  const cleaned = trimmed.replace(R__S_RE, '').replace(PATTERN_RE, '').replace(',', '.');
   const parsed = Number.parseFloat(cleaned);
   if (!Number.isFinite(parsed)) {
     throw new TypeError(`Unparseable BRL value: ${input}`);

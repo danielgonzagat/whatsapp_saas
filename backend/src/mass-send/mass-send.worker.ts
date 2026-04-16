@@ -3,6 +3,8 @@ import { Job, Worker } from 'bullmq';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
 import { flowQueue } from '../queue/queue';
 
+const D_RE = /\D/g;
+
 const logger = new Logger('MassSendWorker');
 
 logger.log('MassSend Worker módulo carregado.');
@@ -64,7 +66,7 @@ export function startMassSendWorker() {
       let cumulativeDelay = 0;
 
       for (const number of numbers) {
-        const sanitized = (number || '').replace(/\D/g, '');
+        const sanitized = (number || '').replace(D_RE, '');
         if (!sanitized) continue;
         try {
           cumulativeDelay = nextDispatchDelay(cumulativeDelay);

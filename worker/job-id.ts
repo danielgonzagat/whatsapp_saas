@@ -1,8 +1,10 @@
+const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9_-]+/g;
+const PATTERN_RE = /^_+|_+$/g;
 function sanitizeQueueIdPart(value: unknown): string {
   const normalized = String(value ?? '')
     .trim()
-    .replace(/[^a-zA-Z0-9_-]+/g, '_')
-    .replace(/^_+|_+$/g, '')
+    .replace(A_Z_A_Z0_9_RE, '_')
+    .replace(PATTERN_RE, '')
     .slice(0, 80);
 
   return normalized || 'na';

@@ -303,7 +303,7 @@ async function handleRunFlow(job: Job) {
     }
   }
 
-  let flowDef;
+  let flowDef: Awaited<ReturnType<FlowEngineGlobal['loadFlow']>>;
   if (job.data.flow?.nodes) {
     // Use runtime definition from editor
     flowDef = engine.parseFlowDefinition(
@@ -491,6 +491,9 @@ async function handleScheduledFollowup(job: Job) {
 
 import { HealthMonitor } from './providers/health-monitor';
 
+const JSON_RE = /```json/g;
+const PATTERN_RE = /```/g;
+
 const PRE__VALOR_CUSTA_PIX_BO_RE = /(preç|valor|custa|pix|boleto|pag|assin|compr|checkout|fechar)/i;
 
 async function handleSendMessage(job: Job) {
@@ -590,7 +593,7 @@ async function handleSendMessage(job: Job) {
       log.warn('send_prepare_persist_failed', { error: (prepErr as any)?.message });
     }
 
-    let res;
+    let res: Awaited<ReturnType<typeof WhatsAppEngine.sendText>> | undefined;
     if (template?.name) {
       res = await WhatsAppEngine.sendTemplate(
         workspace,
@@ -1028,7 +1031,7 @@ async function decideAction(
       Mensagem: "${text}"
       `;
       const res = await ai.generateResponse('Responda apenas JSON.', prompt);
-      const parsed = JSON.parse(res.replace(/```json/g, '').replace(/```/g, ''));
+      const parsed = JSON.parse(res.replace(JSON_RE, '').replace(PATTERN_RE, ''));
       return {
         intent: parsed.intent || 'IDLE',
         action: parsed.action || 'NONE',

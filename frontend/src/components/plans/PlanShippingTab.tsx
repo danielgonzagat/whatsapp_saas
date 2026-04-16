@@ -3,7 +3,7 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { colors, typography } from '@/lib/design-tokens';
 import { Bot, ChevronDown, ChevronUp, Plus, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
 const PACKAGE_TYPES = [
@@ -121,6 +121,51 @@ const FAQ_ANSWERS: Record<number, string[]> = {
   ],
 };
 
+const cosmosLabelStyle: React.CSSProperties = {
+  fontFamily: typography.fontFamily.display,
+  fontSize: '11px',
+  fontWeight: 600,
+  color: colors.text.dust,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase' as const,
+};
+
+const CosmosRadioGroup = ({
+  value,
+  onChange,
+  label,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  options: { value: string; label: string }[];
+}) => (
+  <div>
+    <label className="mb-2 block" style={cosmosLabelStyle}>
+      {label}
+    </label>
+    <div className="space-y-2">
+      {options.map((opt) => (
+        <label key={opt.value} className="flex cursor-pointer items-start gap-2.5">
+          <input
+            type="radio"
+            name={label}
+            value={opt.value}
+            checked={value === opt.value}
+            onChange={() => onChange(opt.value)}
+            style={{ accentColor: colors.accent.webb }}
+            className="mt-0.5"
+          />
+          <span className="text-sm font-medium" style={{ color: colors.text.starlight }}>
+            {opt.label}
+          </span>
+        </label>
+      ))}
+    </div>
+  </div>
+);
+
 export function PlanShippingTab({ planId, productId }: { planId: string; productId: string }) {
   const [packageType, setPackageType] = useState('');
   const [width, setWidth] = useState('');
@@ -206,14 +251,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
   };
 
   // Cosmos styling helpers
-  const labelStyle: React.CSSProperties = {
-    fontFamily: typography.fontFamily.display,
-    fontSize: '11px',
-    fontWeight: 600,
-    color: colors.text.dust,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase' as const,
-  };
+  const labelStyle = cosmosLabelStyle;
   const cardStyle: React.CSSProperties = {
     background: colors.background.space,
     border: `1px solid ${colors.border.space}`,
@@ -239,42 +277,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
     >
       {t}
     </h3>
-  );
-
-  const CosmosRadioGroup = ({
-    value,
-    onChange,
-    label,
-    options,
-  }: {
-    value: string;
-    onChange: (v: string) => void;
-    label: string;
-    options: { value: string; label: string }[];
-  }) => (
-    <div>
-      <label className="mb-2 block" style={labelStyle}>
-        {label}
-      </label>
-      <div className="space-y-2">
-        {options.map((opt) => (
-          <label key={opt.value} className="flex cursor-pointer items-start gap-2.5">
-            <input
-              type="radio"
-              name={label}
-              value={opt.value}
-              checked={value === opt.value}
-              onChange={() => onChange(opt.value)}
-              style={{ accentColor: colors.accent.webb }}
-              className="mt-0.5"
-            />
-            <span className="text-sm font-medium" style={{ color: colors.text.starlight }}>
-              {opt.label}
-            </span>
-          </label>
-        ))}
-      </div>
-    </div>
   );
 
   const toggleFaq = (i: number) => setOpenFaqs({ ...openFaqs, [i]: !openFaqs[i] });

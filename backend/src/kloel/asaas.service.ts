@@ -5,6 +5,8 @@ import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 
+const D_RE = /\D/g;
+
 interface AsaasCustomer {
   id: string;
   name: string;
@@ -375,7 +377,7 @@ export class AsaasService implements OnModuleInit {
       signal: AbortSignal.timeout(30000),
     });
 
-    let pixData = { encodedImage: '', payload: '' };
+    let pixData: { encodedImage: string; payload: string } = { encodedImage: '', payload: '' };
     if (qrCodeResponse.ok) {
       pixData = await qrCodeResponse.json();
     }
@@ -880,7 +882,7 @@ export class AsaasService implements OnModuleInit {
       // Mensagem de confirmação de pagamento
       const message = `✅ *Pagamento Confirmado!*\n\nRecebemos seu pagamento de ${value} referente a "${productName}".\n\nObrigado pela confiança! 🎉\n\nSeu acesso e os próximos passos serão enviados pelo canal cadastrado.`;
 
-      const normalizedPhone = sale.leadPhone.replace(/\D/g, '');
+      const normalizedPhone = sale.leadPhone.replace(D_RE, '');
 
       // Enfileirar envio via WhatsApp
       // messageLimit: enforced via PlanLimitsService.trackMessageSend

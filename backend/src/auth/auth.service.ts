@@ -14,8 +14,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { Agent, Prisma, Workspace } from '@prisma/client';
+import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
@@ -23,6 +23,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { getJwtExpiresIn } from './jwt-config';
+
+const PATTERN_RE = /-/g;
+const W_RE = /[\W_]+/g;
+const D_RE = /\D/g;
 
 @Injectable()
 export class AuthService {
@@ -239,11 +243,11 @@ export class AuthService {
   async createAnonymous(ip?: string) {
     await this.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
 
-    const uid = randomUUID().replace(/-/g, '').slice(0, 12);
+    const uid = randomUUID().replace(PATTERN_RE, '').slice(0, 12);
     const email = `guest_${uid}@guest.kloel.local`;
     const name = 'Guest';
 
-    let workspace;
+    let workspace: Workspace;
     try {
       workspace = await this.prisma.workspace.create({
         data: {
@@ -264,13 +268,13 @@ export class AuthService {
       this.throwFriendlyDbInitError(error);
     }
 
-    let agent;
+    let agent: Agent;
     try {
       agent = await this.prisma.agent.create({
         data: {
           name,
           email,
-          password: await bcrypt.hash(randomUUID(), BCRYPT_ROUNDS),
+          password: await bcryptHash(randomUUID(), BCRYPT_ROUNDS),
           role: 'ADMIN',
           workspaceId: workspace.id,
         },
@@ -294,7 +298,7 @@ export class AuthService {
 
     const deriveName = (addr: string) => {
       const local = addr.split('@')[0] || 'User';
-      const cleaned = local.replace(/[\W_]+/g, ' ').trim();
+      const cleaned = local.replace(W_RE, ' ').trim();
       const candidate = cleaned || 'User';
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };
@@ -302,7 +306,7 @@ export class AuthService {
     const finalWorkspaceName = workspaceName?.trim() || `${finalName}'s Workspace`;
 
     // 1. Verificar se já existe agent com este email em qualquer workspace
-    let existing;
+    let existing: Agent | null;
     try {
       existing = await this.prisma.agent.findFirst({
         where: { email },
@@ -316,7 +320,7 @@ export class AuthService {
     }
 
     // 2. Criar Workspace
-    let workspace;
+    let workspace: Workspace;
     try {
       workspace = await this.prisma.workspace.create({
         data: {
@@ -328,10 +332,10 @@ export class AuthService {
     }
 
     // 3. Hash da senha
-    const hashed = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const hashed = await bcryptHash(password, BCRYPT_ROUNDS);
 
     // 4. Criar Agent (ADMIN) vinculado ao workspace
-    let agent;
+    let agent: Agent;
     try {
       agent = await this.prisma.agent.create({
         data: {
@@ -359,7 +363,7 @@ export class AuthService {
     // Proteção adicional por IP+email (reduz enumeração)
     await this.checkRateLimit(`login:${ip || 'ip-unknown'}:${email}`);
 
-    let agent;
+    let agent: Agent | null;
     try {
       agent = await this.prisma.agent.findFirst({
         where: { email },
@@ -380,7 +384,7 @@ export class AuthService {
       throw new UnauthorizedException('Esta conta não possui senha cadastrada.');
     }
 
-    const valid = await bcrypt.compare(password, agent.password);
+    const valid = await bcryptCompare(password, agent.password);
     if (!valid) {
       throw new UnauthorizedException('Credenciais inválidas');
     }
@@ -410,7 +414,7 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    let stored;
+    let stored: Prisma.RefreshTokenGetPayload<{ include: { agent: true } }> | null;
     try {
       stored = await this.prisma.refreshToken.findUnique({
         where: { token: refreshToken },
@@ -521,7 +525,7 @@ export class AuthService {
 
     const deriveName = (addr: string) => {
       const local = addr.split('@')[0] || 'User';
-      const cleaned = local.replace(/[\W_]+/g, ' ').trim();
+      const cleaned = local.replace(W_RE, ' ').trim();
       const candidate = cleaned || 'User';
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };
@@ -694,7 +698,7 @@ export class AuthService {
       }
 
       // Criar novo workspace + agent para OAuth (transação)
-      let newAgent;
+      let newAgent: Agent;
       try {
         const wsName = `${finalName}'s Workspace`;
         const created = await this.prisma.$transaction(async (tx) => {
@@ -837,7 +841,7 @@ export class AuthService {
           },
           body: JSON.stringify({
             messaging_product: 'whatsapp',
-            to: phone.replace(/\D/g, ''), // Remove não-dígitos
+            to: phone.replace(D_RE, ''), // Remove não-dígitos
             type: 'text',
             text: { body: message },
           }),
@@ -1001,7 +1005,7 @@ export class AuthService {
       throw new HttpException('A senha deve ter pelo menos 8 caracteres', HttpStatus.BAD_REQUEST);
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    const hashedPassword = await bcryptHash(newPassword, BCRYPT_ROUNDS);
 
     // Atualiza senha e marca token como usado
     await this.prisma.$transaction([

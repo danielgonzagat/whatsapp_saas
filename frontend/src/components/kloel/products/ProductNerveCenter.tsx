@@ -58,25 +58,29 @@ import {
   mapProductEditorPlans,
 } from './product-nerve-center.view-models';
 
+const D_RE = /[^\d,.-]/g;
+const D_3___D_RE = /\.(?=\d{3}(\D|$))/g;
+const D_RE_2 = /\D/g;
+
 /* ═══════════════════════════════════════════════════
    V — KLOEL Terminator palette (Nerve Center)
    ═══════════════════════════════════════════════════ */
 const R$ = formatBrlCents;
 const _parseCurrencyInput = (value: string) => {
   const normalized = String(value || '')
-    .replace(/[^\d,.-]/g, '')
-    .replace(/\.(?=\d{3}(\D|$))/g, '')
+    .replace(D_RE, '')
+    .replace(D_3___D_RE, '')
     .replace(',', '.');
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 };
 const _formatCurrencyMask = (value: string) => {
-  const digits = String(value || '').replace(/\D/g, '');
+  const digits = String(value || '').replace(D_RE_2, '');
   const cents = Number(digits || '0');
   return cents.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 const _sanitizePositiveInteger = (value: string, fallback = 1) => {
-  const parsed = Number.parseInt(String(value || '').replace(/\D/g, ''), 10);
+  const parsed = Number.parseInt(String(value || '').replace(D_RE_2, ''), 10);
   return String(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback);
 };
 const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1));
@@ -98,7 +102,7 @@ const COMMISSION_TYPE_OPTIONS = [
 
 const normalizeZipCodeInput = (value: string) => {
   const digits = String(value || '')
-    .replace(/\D/g, '')
+    .replace(D_RE_2, '')
     .slice(0, 8);
   if (digits.length <= 5) return digits;
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
@@ -1003,7 +1007,7 @@ export default function ProductNerveCenter({
   /* ═══════════════════════════════════════════════════
      HEADER
      ═══════════════════════════════════════════════════ */
-  function Header() {
+  function renderHeader() {
     const totalSales = PLANS.reduce((s: number, pl: any) => s + (pl.sales || 0), 0);
     return (
       <div style={{ marginBottom: 24 }}>
@@ -1151,7 +1155,7 @@ export default function ProductNerveCenter({
   /* ═══════════════════════════════════════════════════
      DADOS GERAIS TAB
      ═══════════════════════════════════════════════════ */
-  function DadosTab() {
+  function renderDadosTab() {
     return (
       <div
         style={{
@@ -2508,7 +2512,7 @@ export default function ProductNerveCenter({
             </span>
           </div>
         )}
-        {Header()}
+        {renderHeader()}
         <TabBar
           tabs={TABS}
           active={tab}
@@ -2525,7 +2529,7 @@ export default function ProductNerveCenter({
           }}
           key={`${tab}-${ckEdit}`}
         >
-          {tab === 'dados' && DadosTab()}
+          {tab === 'dados' && renderDadosTab()}
           {tab === 'planos' && (
             <ProductNerveCenterPlanosTab
               plansLoading={plansLoading}

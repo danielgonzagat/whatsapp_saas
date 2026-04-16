@@ -7,7 +7,8 @@
 
 import { WorkerLogger } from '../logger';
 
-const PATTERN_RE = /\/+$/;
+const QUESTION_MARK_RE = /\?/g;
+const TRAILING_SLASHES_RE = /\/+$/;
 
 const log = new WorkerLogger('unified-agent-integrator');
 
@@ -16,7 +17,7 @@ const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
 function resolveBackendUrl(): string | null {
   const configured =
     process.env.BACKEND_URL || process.env.API_URL || process.env.SERVICE_BASE_URL || '';
-  const normalized = configured.trim().replace(PATTERN_RE, '');
+  const normalized = configured.trim().replace(TRAILING_SLASHES_RE, '');
   return normalized || null;
 }
 
@@ -154,7 +155,7 @@ export function shouldUseUnifiedAgent(params: {
   }
 
   // Múltiplas perguntas
-  const questionCount = (messageContent.match(/\?/g) || []).length;
+  const questionCount = (messageContent.match(QUESTION_MARK_RE) || []).length;
   if (questionCount >= 2) {
     return true;
   }

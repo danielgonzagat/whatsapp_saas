@@ -10,6 +10,8 @@ import {
   createKloelStatusEvent,
 } from './kloel-stream-events';
 import { chatCompletionStreamWithRetry } from './openai-wrapper';
+
+const U2028_U2029_RE = /[<>&\u2028\u2029]/g;
 type ChatCompletionStream = AsyncIterable<OpenAI.ChatCompletionChunk>;
 
 interface KloelStreamWriterOptions {
@@ -226,7 +228,7 @@ export class KloelStreamWriter {
 }
 
 function serializeSsePayload(payload: KloelStreamEvent): string {
-  return JSON.stringify(payload).replace(/[<>&\u2028\u2029]/g, (char) => {
+  return JSON.stringify(payload).replace(U2028_U2029_RE, (char) => {
     switch (char) {
       case '<':
         return '\\u003c';

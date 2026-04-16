@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import * as path from 'node:path';
+import { basename, join } from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFile, unlink, writeFile } from 'node:fs/promises';
@@ -40,7 +40,7 @@ export class TranscriptionService {
     }
 
     // Fallback: retorna vazio com log (pode ser expandido para Vosk/local STT)
-    this.logger.warn(`Transcrição falhou para ${path.basename(filePath)}, usando fallback`);
+    this.logger.warn(`Transcrição falhou para ${basename(filePath)}, usando fallback`);
     return { text: '[Áudio não transcrito]', source: 'fallback' };
   }
 
@@ -54,7 +54,7 @@ export class TranscriptionService {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const fileBuffer = await readFile(filePath);
-        const fileName = path.basename(filePath);
+        const fileName = basename(filePath);
         const form = new FormData();
         form.append('file', new Blob([fileBuffer]), fileName);
         form.append('model', resolveBackendOpenAIModel('audio_understanding', this.config));
@@ -142,7 +142,7 @@ export class TranscriptionService {
 
       const buffer = Buffer.from(await response.arrayBuffer());
       const ext = this.guessExtension(url, response.headers.get('content-type'));
-      const tempPath = path.join('/tmp', `audio_${messageId}${ext}`);
+      const tempPath = join('/tmp', `audio_${messageId}${ext}`);
 
       await writeFile(tempPath, buffer);
       return tempPath;

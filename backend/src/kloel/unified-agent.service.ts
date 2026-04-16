@@ -17,6 +17,15 @@ import { AudioService } from './audio.service';
 import { buildKloelLeadPrompt } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
 
+const TRAILING_PUNCT_G_RE = /[!?.]+/g;
+const WHITESPACE_G_RE = /\s+/g;
+const S_______S_RE = /\s*[-*•]\s+/g;
+const P_EXTENDED_PICTOGRAPHIC_G_RE = /\p{Extended_Pictographic}/gu;
+const PATTERN_RE_2 = /[^.!?]+[.!?]?/g;
+const JSON_RE = /```json/gi;
+const PATTERN_RE_3 = /```/g;
+const D_RE = /\D/g;
+
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
 const CANCEL_CANCELAR_REEMBOL_RE = /(cancel|cancelar|reembolso|desist|encerrar)/i;
@@ -26,7 +35,7 @@ const CONTATO_RE = /^contato$/i;
 const PROBLEMA_ERRO_NAO_FUNCI_RE =
   /(problema|erro|nao funcion|não funcion|frustr|complicad|dificil|difícil|duvida|dúvida|medo|receio)/i;
 const P_EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
-const S_RE = /\s+/;
+const WHITESPACE_RE = /\s+/;
 
 /**
  * KLOEL Unified Agent Service
@@ -1156,7 +1165,7 @@ Mensagem: ${message}`,
     ];
 
     // 4. Chamar OpenAI com tools (com retry e fallback)
-    let response;
+    let response: OpenAI.Chat.ChatCompletion;
     try {
       await this.planLimits.ensureTokenBudget(params.workspaceId);
       response = await chatCompletionWithFallback(
@@ -1189,12 +1198,14 @@ Mensagem: ${message}`,
     // 5. Processar tool calls
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
       for (const toolCall of assistantMessage.tool_calls) {
-        const tc = toolCall;
-        const toolName = tc.function?.name;
-        let toolArgs = {};
+        if (toolCall.type !== 'function') {
+          continue;
+        }
+        const toolName = toolCall.function.name;
+        let toolArgs: Record<string, unknown> = {};
 
         try {
-          toolArgs = JSON.parse(tc.function?.arguments || '{}');
+          toolArgs = JSON.parse(toolCall.function.arguments || '{}');
         } catch {
           this.logger.warn(`Failed to parse tool args for ${toolName}`);
         }
@@ -2453,7 +2464,7 @@ Mensagem: ${message}`,
 
       this.logger.log(`[AGENT] Transcrevendo áudio para workspace ${workspaceId}...`);
 
-      let result;
+      let result: { text: string; duration?: number; language: string } | undefined;
       if (audioUrl) {
         result = await this.audioService.transcribeFromUrl(audioUrl, language, workspaceId);
       } else if (audioBase64) {
@@ -2640,7 +2651,7 @@ Mensagem: ${message}`,
     const normalized = String(message || '')
       .trim()
       .toLowerCase()
-      .replace(/[!?.]+/g, '');
+      .replace(TRAILING_PUNCT_G_RE, '');
 
     return [
       'sim',
@@ -2945,8 +2956,8 @@ Mensagem: ${message}`,
     historyTurns = 0,
   ): string | undefined {
     const normalized = String(reply || '')
-      .replace(/\s+/g, ' ')
-      .replace(/\s*[-*•]\s+/g, ' ')
+      .replace(WHITESPACE_G_RE, ' ')
+      .replace(S_______S_RE, ' ')
       .trim();
 
     if (!normalized) {
@@ -2959,11 +2970,11 @@ Mensagem: ${message}`,
     const allowEmoji = P_EXTENDED_PICTOGRAPHIC_RE.test(customerMessage || '');
     const withoutEmoji = allowEmoji
       ? normalized
-      : normalized.replace(/\p{Extended_Pictographic}/gu, '').trim();
+      : normalized.replace(P_EXTENDED_PICTOGRAPHIC_G_RE, '').trim();
 
     const sentenceMatches =
       withoutEmoji
-        .match(/[^.!?]+[.!?]?/g)
+        .match(PATTERN_RE_2)
         ?.map((part) => part.trim())
         .filter(Boolean) || [];
     const effectiveSentenceBudget =
@@ -3057,8 +3068,8 @@ Mensagem: ${message}`,
         .catch(() => {});
 
       const raw = String(response.choices?.[0]?.message?.content || '')
-        .replace(/```json/gi, '')
-        .replace(/```/g, '')
+        .replace(JSON_RE, '')
+        .replace(PATTERN_RE_3, '')
         .trim();
       // PULSE:OK — inside try/catch (line 3048); parser confused by multi-line template literal on line 3061-3063
       const parsed = JSON.parse(raw);
@@ -3090,7 +3101,7 @@ Mensagem: ${message}`,
         customerMessages.length,
       ) || draftReply;
     const sentences = normalizedDraft
-      .match(/[^.!?]+[.!?]?/g)
+      .match(PATTERN_RE_2)
       ?.map((item) => item.trim())
       .filter(Boolean) || [normalizedDraft];
 
@@ -3120,7 +3131,7 @@ Mensagem: ${message}`,
   private countWords(value?: string | null): number {
     const words = String(value || '')
       .trim()
-      .split(S_RE)
+      .split(WHITESPACE_RE)
       .filter(Boolean);
     return Math.max(1, words.length);
   }
@@ -3317,7 +3328,7 @@ Mensagem: ${message}`,
   // ===== KIA LAYER: GERENCIAMENTO AUTÔNOMO =====
 
   private async actionCreateProduct(workspaceId: string, args: any) {
-    const productKey = `product_${Date.now()}_${args.name.toLowerCase().replace(/\s+/g, '_')}`;
+    const productKey = `product_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
 
     // Salvar em KloelMemory para contexto da IA
     await this.prisma.kloelMemory.create({
@@ -3411,7 +3422,7 @@ Mensagem: ${message}`,
   }
 
   private async actionCreateFlow(workspaceId: string, args: any) {
-    const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(/\s+/g, '_')}`;
+    const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
 
     // Criar representação do fluxo
     const flowData = {
@@ -3874,7 +3885,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
         header.forEach((h, idx) => {
           if (h.includes('phone') || h.includes('telefone') || h.includes('whatsapp')) {
-            contact.phone = values[idx]?.replace(/\D/g, '');
+            contact.phone = values[idx]?.replace(D_RE, '');
           } else if (h.includes('name') || h.includes('nome')) {
             contact.name = values[idx];
           } else if (h.includes('email')) {
@@ -4409,7 +4420,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         };
       }
 
-      let result;
+      let result: Stripe.Response<Stripe.Subscription>;
       if (subscriptionId) {
         // Atualizar assinatura existente
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);

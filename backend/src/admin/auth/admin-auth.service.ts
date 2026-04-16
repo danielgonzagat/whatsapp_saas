@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AdminUser, AdminUserStatus } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { adminErrors } from '../common/admin-api-errors';
@@ -78,7 +78,7 @@ export class AdminAuthService {
       throw adminErrors.accountLocked(user.lockedUntil);
     }
 
-    const ok = await bcrypt.compare(password, user.passwordHash);
+    const ok = await bcryptCompare(password, user.passwordHash);
     if (!ok) {
       await this.attempts.record(normalizedEmail, ip, false);
       await this.prisma.adminUser.update({
@@ -167,7 +167,7 @@ export class AdminAuthService {
   ): Promise<LoginStateResponse> {
     if (admin.scope !== 'password_change') throw adminErrors.invalidToken();
 
-    const hash = await bcrypt.hash(newPassword, BCRYPT_WORK_FACTOR);
+    const hash = await bcryptHash(newPassword, BCRYPT_WORK_FACTOR);
     const user = await this.prisma.adminUser.update({
       where: { id: admin.id },
       data: { passwordHash: hash, passwordChangeRequired: false },
@@ -335,6 +335,6 @@ export class AdminAuthService {
 
   /** Hash a password with the service's configured work factor. */
   static async hashPassword(plain: string): Promise<string> {
-    return bcrypt.hash(plain, BCRYPT_WORK_FACTOR);
+    return bcryptHash(plain, BCRYPT_WORK_FACTOR);
   }
 }

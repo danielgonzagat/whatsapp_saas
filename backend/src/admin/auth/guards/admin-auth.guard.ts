@@ -9,6 +9,8 @@ import type { AdminJwtPayload, AuthenticatedAdmin } from '../admin-token.types';
 import { ADMIN_PUBLIC_KEY } from '../decorators/admin-public.decorator';
 import { ALLOW_PENDING_MFA_KEY } from '../decorators/allow-pending-mfa.decorator';
 
+const S_RE = /\s+/;
+
 /**
  * Resolve the admin JWT secret at verify time. The app-level
  * JwtModule is registered globally with JWT_SECRET, which means
@@ -29,7 +31,7 @@ function resolveAdminJwtSecret(): string {
 
 function extractBearerToken(header: string | undefined): string | null {
   if (!header) return null;
-  const parts = header.split(/\s+/);
+  const parts = header.split(S_RE);
   if (parts.length !== 2) return null;
   if (parts[0].toLowerCase() !== 'bearer') return null;
   return parts[1] || null;

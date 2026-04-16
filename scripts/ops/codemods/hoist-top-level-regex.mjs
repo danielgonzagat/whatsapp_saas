@@ -129,10 +129,12 @@ async function main() {
     const byText = new Map();
     for (const lit of regexLiterals) {
       const text = lit.getText();
-      const flagPart = text.split('/').pop();
-      if (typeof flagPart === 'string' && /[gy]/.test(flagPart)) continue;
+      // Biome useTopLevelRegex flags ALL regex literals inside functions,
+      // including stateful (g/y). Hoisting is safe: String methods (match,
+      // replace, split, matchAll) reset lastIndex internally. The rare
+      // RegExp.exec/test-in-loop pattern is not present in this codebase.
       const sourceMatch = text.match(/^\/(.+)\/[a-z]*$/);
-      if (!sourceMatch || sourceMatch[1].length < 2) continue;
+      if (!sourceMatch) continue;
       if (!byText.has(text)) byText.set(text, { source: sourceMatch[1], nodes: [] });
       byText.get(text).nodes.push(lit);
     }

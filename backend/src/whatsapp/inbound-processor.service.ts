@@ -17,6 +17,8 @@ import {
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 
+const D_RE = /\D/g;
+
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
 const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i;
@@ -1159,7 +1161,7 @@ export class InboundProcessorService {
    * Normaliza telefone para formato consistente
    */
   private normalizePhone(phone: string): string {
-    return phone.replace(/\D/g, '').replace('@c.us', '').replace('@s.whatsapp.net', '');
+    return phone.replace(D_RE, '').replace('@c.us', '').replace('@s.whatsapp.net', '');
   }
 
   /**

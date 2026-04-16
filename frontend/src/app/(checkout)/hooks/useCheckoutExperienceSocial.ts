@@ -15,6 +15,8 @@ import { useCheckoutExperienceAutomation } from './useCheckoutExperienceAutomati
 import { useCheckoutSocialIdentity } from './useCheckoutSocialIdentity';
 import { validateCoupon } from './useCheckout';
 
+const D_RE = /\D/g;
+
 export function useCheckoutExperienceSocial({
   product,
   config,
@@ -310,7 +312,7 @@ export function useCheckoutExperienceSocial({
       setSubmitError('Forma de pagamento indisponível neste checkout.');
       return;
     }
-    if (payMethod === 'boleto' && form.cpf.replace(/\D/g, '').length < 11) {
+    if (payMethod === 'boleto' && form.cpf.replace(D_RE, '').length < 11) {
       setSubmitError('CPF válido é obrigatório para gerar boleto.');
       return;
     }

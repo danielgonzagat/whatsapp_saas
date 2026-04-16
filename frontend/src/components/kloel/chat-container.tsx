@@ -41,11 +41,15 @@ import { PlanActivationSuccessModal } from './plan-activation-success-modal';
 import { SettingsDrawer } from './settings/settings-drawer';
 import { TrialPaywallModal } from './trial-paywall-modal';
 
+const SEPARATOR_G_RE = /[_-]+/g;
+const WHITESPACE_G_RE = /\s+/g;
+const WORD_BOUNDARY_RE = /\b\w/g;
+
 const SINCRONIZANDO_CONVERSA_RE = /^Sincronizando conversa \d+ de \d+\.$/i;
 const COME_ANDO_A_SINCRONIZA_RE = /^Começando a sincronização de \d+ conversas\.$/i;
 const ACESSANDO_SEU_WHATS_APP_RE =
   /^(Acessando seu WhatsApp|Consegui acessar seu WhatsApp|Sincronizando suas conversas)$/i;
-const PATTERN_RE = /[.!?]/;
+const SENTENCE_END_RE = /[.!?]/;
 
 const SLOW_HINT_DELAY_MS = 30_000;
 
@@ -185,17 +189,17 @@ function formatAgentPhaseLabel(value?: string | null) {
   if (raw === 'streaming_token') return '';
 
   return raw
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(SEPARATOR_G_RE, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+    .replace(WORD_BOUNDARY_RE, (char) => char.toUpperCase());
 }
 
 function traceLabel(entry: Pick<AgentTraceEntry, 'phase' | 'type' | 'message'>) {
   return (
     formatAgentPhaseLabel(entry.phase) ||
     String(entry.message || '')
-      .split(PATTERN_RE)[0]
+      .split(SENTENCE_END_RE)[0]
       .trim()
       .slice(0, 48) ||
     formatAgentPhaseLabel(entry.type) ||
@@ -207,7 +211,7 @@ function deriveActivityTitle(event: AgentStreamEvent) {
   return (
     formatAgentPhaseLabel(event.phase) ||
     String(event.message || '')
-      .split(PATTERN_RE)[0]
+      .split(SENTENCE_END_RE)[0]
       .trim()
       .slice(0, 72) ||
     'Atividade'

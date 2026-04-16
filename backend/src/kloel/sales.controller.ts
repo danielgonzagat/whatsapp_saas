@@ -20,6 +20,8 @@ import { AsaasService } from './asaas.service';
 import { ChangeSubscriptionPlanDto, ShipOrderDto } from './dto/sales-actions.dto';
 import { OrderAlertsService } from './order-alerts.service';
 
+const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9.-]/g;
+
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
 export class SalesController {
@@ -440,7 +442,7 @@ export class SalesController {
     if (!order) throw new NotFoundException('Order not found');
 
     // Sanitize tracking code — only alphanumeric, dashes, and dots allowed
-    const sanitizedCode = dto.trackingCode.replace(/[^a-zA-Z0-9.-]/g, '');
+    const sanitizedCode = dto.trackingCode.replace(A_Z_A_Z0_9_RE, '');
     if (sanitizedCode !== dto.trackingCode) {
       throw new BadRequestException('Codigo de rastreio contem caracteres invalidos');
     }

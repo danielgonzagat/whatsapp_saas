@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { KloelMushroomVisual } from './KloelBrand';
 
+const PATTERN_RE = /_/g;
+
 export interface AssistantChromeTheme {
   borderColor?: string;
   surfaceColor?: string;
@@ -297,7 +299,7 @@ export function AssistantProcessingTraceCard({
                   color: resolvedTheme.subtleTextColor,
                 }}
               >
-                {entry.phase.replace(/_/g, ' ')}
+                {entry.phase.replace(PATTERN_RE, ' ')}
               </div>
               <p
                 style={{

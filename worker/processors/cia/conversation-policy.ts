@@ -1,5 +1,11 @@
 import type { CognitiveActionType, CustomerCognitiveState, CustomerStage } from './cognitive-state';
 
+const DIACRITICS_RE = /[\u0300-\u036f]/g;
+const WHITESPACE_G_RE = /\s+/g;
+const B_CONDI_C___A__O_ESPECI_RE =
+  /\b(condi[cç][aã]o especial|oportunidade [uú]nica|imperd[ií]vel)\b/gi;
+const QUESTION_MARK_RE = /\?/g;
+
 const ANSIOS_INSEGUR_MEDO_REC_RE = /(ansios|insegur|medo|receio|duvida|duvida)/i;
 const FRUSTR_CANSAD_IRRIT_RAI_RE =
   /(frustr|cansad|irrit|raiva|sac|complicad|dif[íi]cil|problema|erro)/i;
@@ -7,7 +13,7 @@ const AMEI_PERFEITO_ANIMAD_GO_RE = /(amei|perfeito|animad|gostei|legal|excelente
 const NAO_ENTENDI_N_A__O_ENTE_RE = /(nao entendi|n[aã]o entendi|confuso|como assim|explica)/i;
 const OBRIGAD_VALEU__TIMO_OTI_RE = /(obrigad|valeu|ótimo|otimo)/i;
 const NAO_N_A__O_RUIM_CARO_DE_RE = /(nao|n[aã]o|ruim|caro|demora|medo)/i;
-const S_RE = /\s+/;
+const WHITESPACE_RE = /\s+/;
 const B_MEU_MINHA_MEUS_MINHAS_RE =
   /\b(meu|minha|meus|minhas|trabalho|empresa|rotina|familia|cliente)\b/i;
 const PROBLEMA_ERRO_RECLAMA_N_RE =
@@ -41,7 +47,7 @@ function normalizeText(value?: string | null): string {
   return String(value || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(DIACRITICS_RE, '');
 }
 
 function inferEmotionalTone(text: string): ActiveListeningSignals['emotionalTone'] {
@@ -185,7 +191,7 @@ export function analyzeForActiveListening(
 ): ActiveListeningSignals {
   const text = String(messageContent || '');
   const normalized = normalizeText(text);
-  const wordCount = normalized.split(S_RE).filter(Boolean).length;
+  const wordCount = normalized.split(WHITESPACE_RE).filter(Boolean).length;
   const emotionalTone = inferEmotionalTone(normalized);
 
   const personalDetailShared = B_MEU_MINHA_MEUS_MINHAS_RE.test(normalized) && wordCount >= 8;
@@ -221,7 +227,7 @@ export function analyzeForActiveListening(
   const openLoopOpportunity = RESULTADO_FUNCIONA_PREC_RE.test(normalized)
     ? 'Tem um detalhe nisso que costuma mudar a decisao.'
     : contactName
-      ? `${String(contactName).trim().split(S_RE)[0]}, tem um ponto aqui que quase sempre passa despercebido.`
+      ? `${String(contactName).trim().split(WHITESPACE_RE)[0]}, tem um ponto aqui que quase sempre passa despercebido.`
       : 'Tem um ponto aqui que quase sempre passa despercebido.';
 
   return {
@@ -311,25 +317,22 @@ export function buildWhatsAppConversationPrompt(params: {
 
 export function detectAndFixAntiPatterns(reply?: string | null): string {
   let fixed = String(reply || '')
-    .replace(/\s+/g, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .trim();
 
   fixed = fixed.replace(OI_OL_A___E_AI_OPA_RE, '');
-  fixed = fixed.replace(
-    /\b(condi[cç][aã]o especial|oportunidade [uú]nica|imperd[ií]vel)\b/gi,
-    'algo que faz sentido pra sua situacao',
-  );
+  fixed = fixed.replace(B_CONDI_C___A__O_ESPECI_RE, 'algo que faz sentido pra sua situacao');
   fixed = fixed.replace(QUALQUER_D_U__VIDA_FI_RE, '');
 
-  const questions = fixed.match(/\?/g) || [];
+  const questions = fixed.match(QUESTION_MARK_RE) || [];
   if (questions.length > 1) {
     const firstQuestionIndex = fixed.indexOf('?');
     if (firstQuestionIndex >= 0) {
       const before = fixed.slice(0, firstQuestionIndex + 1);
       const after = fixed
         .slice(firstQuestionIndex + 1)
-        .replace(/\?/g, '.')
-        .replace(/\s+/g, ' ')
+        .replace(QUESTION_MARK_RE, '.')
+        .replace(WHITESPACE_G_RE, ' ')
         .trim();
       fixed = `${before}${after ? ` ${after}` : ''}`.trim();
     }

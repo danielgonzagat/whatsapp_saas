@@ -52,6 +52,9 @@ import { KloelStatusCard } from './kloel-status-card';
 import { MissingStepsCard } from './missing-steps-card';
 import { OpeningMessageCard } from './opening-message-card';
 
+const D_RE = /[^\d,.-]/g;
+const D_3___D_RE = /\.(?=\d{3}(\D|$))/g;
+
 interface AccordionSectionProps {
   icon: React.ElementType;
   title: string;
@@ -149,8 +152,8 @@ function formatCurrency(value?: number | null) {
 
 function parseCurrency(value: string) {
   const normalized = String(value || '')
-    .replace(/[^\d,.-]/g, '')
-    .replace(/\.(?=\d{3}(\D|$))/g, '')
+    .replace(D_RE, '')
+    .replace(D_3___D_RE, '')
     .replace(',', '.');
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;

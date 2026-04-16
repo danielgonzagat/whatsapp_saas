@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
+const D_RE = /\D/g;
+
 const CARO_PENSAR_DEPOIS_N_O_S_RE = /caro|pensar|depois|não sei|vou ver|talvez/i;
 
 interface KloelChatBubbleProps {
@@ -476,7 +478,7 @@ export function KloelChatBubble({
       {supportPhone && (
         <div style={{ padding: '8px 12px', borderTop: '1px solid #eee', textAlign: 'center' }}>
           <a
-            href={`https://wa.me/55${supportPhone.replace(/\D/g, '')}`}
+            href={`https://wa.me/55${supportPhone.replace(D_RE, '')}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{

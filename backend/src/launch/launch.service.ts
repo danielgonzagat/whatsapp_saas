@@ -1,6 +1,8 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+const PATTERN_RE = / /g;
+
 @Injectable()
 export class LaunchService {
   constructor(private prisma: PrismaService) {}
@@ -19,7 +21,7 @@ export class LaunchService {
         ...data,
         workspaceId,
         status: 'ACTIVE',
-        slug: data.slug || data.name.toLowerCase().replace(/ /g, '-'),
+        slug: data.slug || data.name.toLowerCase().replace(PATTERN_RE, '-'),
       },
     });
   }

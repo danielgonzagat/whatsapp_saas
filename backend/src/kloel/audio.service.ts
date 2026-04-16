@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
@@ -71,13 +71,13 @@ export class AudioService {
     duration?: number;
     language: string;
   }> {
-    const tempFile = path.join(os.tmpdir(), `audio-${uuid()}.mp3`);
+    const tempFile = join(tmpdir(), `audio-${uuid()}.mp3`);
 
     try {
       // Write buffer to temp file (Whisper requires file)
       fs.writeFileSync(tempFile, audioBuffer);
 
-      let transcription;
+      let transcription: OpenAI.Audio.Transcriptions.TranscriptionVerbose;
       try {
         // tokenBudget: caller responsible for pre-flight budget check
         await this.ensureBudget(workspaceId);

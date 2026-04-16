@@ -1,5 +1,7 @@
 import { buildProductAIConfigPrompt } from './kloel.prompts';
 
+const S_RE = /\s+/g;
+
 export interface KloelContextFormatterLimits {
   workspaceProductPlanLimit: number;
   workspaceProductUrlLimit: number;
@@ -23,7 +25,7 @@ export class KloelContextFormatter {
 
   sanitizeUserNameForAssistant(value: string | null | undefined): string {
     const normalized = String(value || '')
-      .replace(/\s+/g, ' ')
+      .replace(S_RE, ' ')
       .trim();
 
     if (!normalized) return 'Usuário';
@@ -73,7 +75,7 @@ export class KloelContextFormatter {
 
   truncatePromptText(value: string | null | undefined, maxLength = 240): string {
     const normalized = String(value || '')
-      .replace(/\s+/g, ' ')
+      .replace(S_RE, ' ')
       .trim();
 
     if (!normalized) return '';

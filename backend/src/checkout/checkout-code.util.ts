@@ -1,5 +1,7 @@
 import { randomInt } from 'node:crypto';
 
+const A_Z0_9_RE = /[^A-Z0-9]/g;
+
 const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 export const DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH = 8;
 const PUBLIC_CHECKOUT_CODE_REGEX = new RegExp(`^[A-Z0-9]{${DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH}}$`);
@@ -8,7 +10,7 @@ export function normalizePublicCheckoutCode(value: string | null | undefined) {
   return String(value || '')
     .trim()
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '');
+    .replace(A_Z0_9_RE, '');
 }
 
 export function isValidPublicCheckoutCode(value: string | null | undefined) {

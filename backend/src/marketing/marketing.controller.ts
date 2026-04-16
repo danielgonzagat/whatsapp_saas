@@ -15,6 +15,8 @@ import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 
+const NAME_RE = /\{\{name\}\}/g;
+
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 
 /**
@@ -690,7 +692,7 @@ export class MarketingController {
     for (const recipient of body.recipients) {
       // unsubscribe: link included in email footer
       const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(recipient.email)}`;
-      const personalizedBody = body.html.replace(/\{\{name\}\}/g, recipient.name || 'Cliente');
+      const personalizedBody = body.html.replace(NAME_RE, recipient.name || 'Cliente');
       const htmlWithUnsub = `${personalizedBody}<br/><hr style="margin:24px 0;border:none;border-top:1px solid #ddd"/><p style="font-size:11px;color:#888;text-align:center"><a href="${unsubscribeUrl}" style="color:#888">Cancelar inscricao</a></p>`;
       try {
         if (provider === 'resend') {

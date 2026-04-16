@@ -17,6 +17,10 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z0_9_RE = /[^a-z0-9]+/g;
+const PATTERN_RE = /^-|-$/g;
+
 @UseGuards(JwtAuthGuard)
 @Controller('kloel/site')
 export class SiteController {
@@ -176,9 +180,9 @@ export class SiteController {
     const baseSlug = (existing.name || 'site')
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
+      .replace(U0300__U036F_RE, '')
+      .replace(A_Z0_9_RE, '-')
+      .replace(PATTERN_RE, '');
     const slug = `${baseSlug}-${id.slice(0, 6)}`;
 
     await this.prisma.kloelSite.updateMany({

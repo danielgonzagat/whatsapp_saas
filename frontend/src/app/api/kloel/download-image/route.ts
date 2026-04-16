@@ -1,10 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../_lib/backend-url';
 
+const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9._-]+/g;
+
 const DATA_URL_RE = /^data:([^;,]+)?(?:;charset=[^;,]+)?(;base64)?,([\s\S]*)$/;
 
 function sanitizeFilename(value: string) {
-  const normalized = value.trim().replace(/[^a-zA-Z0-9._-]+/g, '-');
+  const normalized = value.trim().replace(A_Z_A_Z0_9_RE, '-');
   return normalized || 'kloel-image.png';
 }
 

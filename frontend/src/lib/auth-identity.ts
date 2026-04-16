@@ -1,3 +1,5 @@
+const PATTERN_RE = /-/g;
+const PATTERN_RE_2 = /_/g;
 export type KloelTokenPayload = {
   sub?: string;
   email?: string;
@@ -11,7 +13,7 @@ export type KloelTokenPayload = {
 };
 
 function decodeBase64Json(base64Payload: string): Record<string, unknown> | null {
-  const normalized = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
+  const normalized = base64Payload.replace(PATTERN_RE, '+').replace(PATTERN_RE_2, '/');
   const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
 
   try {

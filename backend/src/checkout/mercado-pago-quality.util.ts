@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { normalizeMercadoPagoPayerAddress } from '../kloel/mercado-pago-order.util';
 
+const D_RE = /\D/g;
+
 export type MercadoPagoCheckoutQualityGateInput = {
   customerName: string;
   customerEmail: string;
@@ -18,7 +20,7 @@ export type MercadoPagoCheckoutQualityGateResult = {
 };
 
 function asDigits(value?: string | null) {
-  return String(value || '').replace(/\D/g, '');
+  return String(value || '').replace(D_RE, '');
 }
 
 function hasValue(value?: string | null) {

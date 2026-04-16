@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import type { DemandState } from '../../providers/commercial-intelligence';
 import * as RX from './cognitive-state-patterns';
 
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const B_MEU_MINHA_MEUS_MINHAS_RE = /\b(meu|minha|meus|minhas|empresa|rotina|cliente|trabalho)\b/gi;
+
 export type CustomerIntent =
   | 'BUYING'
   | 'PAYMENT'
@@ -134,7 +137,7 @@ function normalizeText(value?: string | null) {
   return String(value || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(U0300__U036F_RE, '');
 }
 
 function includesAny(text: string, keywords: string[]) {
@@ -280,9 +283,7 @@ function inferDisclosureLevel(text: string) {
   const wordCount = String(text || '')
     .split(RX.S_RE)
     .filter(Boolean).length;
-  const personalMarkers = (
-    text.match(/\b(meu|minha|meus|minhas|empresa|rotina|cliente|trabalho)\b/gi) || []
-  ).length;
+  const personalMarkers = (text.match(B_MEU_MINHA_MEUS_MINHAS_RE) || []).length;
   return Number(clamp(wordCount / 40 + personalMarkers * 0.08, 0, 1).toFixed(3));
 }
 

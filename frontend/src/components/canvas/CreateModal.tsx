@@ -396,8 +396,12 @@ function CustomSizePanel({
                 m: 'square',
               })
             }
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#E85D3040')}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#1C1C1F')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#E85D3040';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#1C1C1F';
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -446,8 +450,12 @@ function UploadPanel() {
       }}
     >
       <div
-        onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#E85D3040')}
-        onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#1C1C1F')}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = '#E85D3040';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = '#1C1C1F';
+        }}
         style={{
           width: '100%',
           maxWidth: 500,
@@ -594,8 +602,12 @@ function FormatGrid({
                     s: '1080x1080',
                   } as FormatItem)
                 }
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = `${a.c[0]}40`)}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#1C1C1F')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = `${a.c[0]}40`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#1C1C1F';
+                }}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -683,8 +695,12 @@ function FormatGrid({
           </p>
           <button
             type="button"
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#E85D3040')}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#1C1C1F')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#E85D3040';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#1C1C1F';
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',

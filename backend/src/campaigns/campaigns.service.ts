@@ -7,6 +7,8 @@ import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 
+const NAME_RE = /\{\{name\}\}/g;
+
 @Injectable()
 export class CampaignsService {
   private readonly logger = new Logger(CampaignsService.name);
@@ -176,7 +178,7 @@ export class CampaignsService {
           // unsubscribe: link included in email footer
           const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(contact.email)}&cid=${encodeURIComponent(campaignId)}`;
           const bodyHtml = (campaign.messageTemplate || '').replace(
-            /\{\{name\}\}/g,
+            NAME_RE,
             contact.name || 'Cliente',
           );
           const htmlWithUnsub = `${bodyHtml}<br/><hr style="margin:24px 0;border:none;border-top:1px solid #ddd"/><p style="font-size:11px;color:#888;text-align:center"><a href="${unsubscribeUrl}" style="color:#888">Cancelar inscricao</a></p>`;

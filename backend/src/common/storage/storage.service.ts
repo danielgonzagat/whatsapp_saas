@@ -13,8 +13,9 @@ import { ConfigService } from '@nestjs/config';
 import { v4 as uuid } from 'uuid';
 import { validateNoInternalAccess } from '../utils/url-validator';
 
-const PATTERN_RE = /\/+$/;
-const PATTERN_RE_2 = /^\/+/;
+const BACKSLASH_RE = /\\/g;
+const TRAILING_SLASHES_RE = /\/+$/;
+const LEADING_SLASHES_RE = /^\/+/;
 
 /**
  * StorageService - Serviço de armazenamento de mídia
@@ -599,7 +600,7 @@ export class StorageService implements OnModuleInit {
   private buildR2PublicUrl(relativePath: string): string {
     const r2PublicUrl = this.config.get('R2_PUBLIC_URL');
     if (r2PublicUrl) {
-      return `${r2PublicUrl.replace(PATTERN_RE, '')}/${relativePath}`;
+      return `${r2PublicUrl.replace(TRAILING_SLASHES_RE, '')}/${relativePath}`;
     }
     const cdnBase = this.config.get('CDN_BASE_URL');
     if (cdnBase) {
@@ -874,8 +875,8 @@ export class StorageService implements OnModuleInit {
 
   private normalizeRelativePath(relativePath: string): string {
     const normalized = path.posix
-      .normalize(String(relativePath || '').replace(/\\/g, '/'))
-      .replace(PATTERN_RE_2, '');
+      .normalize(String(relativePath || '').replace(BACKSLASH_RE, '/'))
+      .replace(LEADING_SLASHES_RE, '');
 
     if (
       !normalized ||

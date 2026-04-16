@@ -6,6 +6,9 @@ import {
   createKloelToolCallEvent,
   createKloelToolResultEvent,
 } from './kloel-stream-events';
+
+const PATTERN_RE = /[_-]+/g;
+const S_RE = /\s+/g;
 type ToolMessage = {
   role: 'tool';
   tool_call_id: string;
@@ -51,8 +54,8 @@ interface ExecuteAssistantToolCallsResult {
 function formatToolLabel(toolName: string) {
   const normalized = String(toolName || 'ferramenta')
     .trim()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(PATTERN_RE, ' ')
+    .replace(S_RE, ' ')
     .toLowerCase();
 
   return normalized || 'ferramenta';

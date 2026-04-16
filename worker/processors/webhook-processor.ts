@@ -1,4 +1,4 @@
-import * as crypto from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import axios from 'axios';
 import { type Job, Worker } from 'bullmq';
 import { connection } from '../queue';
@@ -19,8 +19,7 @@ export const webhookWorker = new Worker(
 
     // Sign payload
     const signature = secret
-      ? crypto
-          .createHmac('sha256', secret)
+      ? createHmac('sha256', secret)
           .update(`${timestamp}.${JSON.stringify(payload)}`)
           .digest('hex')
       : '';

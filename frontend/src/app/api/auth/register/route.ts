@@ -5,6 +5,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendUrl } from '../../_lib/backend-url';
 import { setSharedAuthCookies } from '../_lib/shared-auth-cookies';
 
+const W_RE = /[^\w]+/g;
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as {
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     const deriveName = (addr: string) => {
       const localPart = addr.split('@')[0] || 'User';
-      const cleaned = localPart.replace(/[^\w]+/g, ' ').trim();
+      const cleaned = localPart.replace(W_RE, ' ').trim();
       const candidate = cleaned || 'User';
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };

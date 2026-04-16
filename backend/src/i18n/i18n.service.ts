@@ -4,6 +4,8 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
+const D_RE = /\D/g;
+
 /**
  * Dicionário de traduções estáticas para mensagens comuns
  */
@@ -201,7 +203,7 @@ export class I18nService {
    */
   detectLanguageFromPhone(phone: string): SupportedLanguage {
     // Remove caracteres não numéricos
-    const cleanPhone = phone.replace(/\D/g, '');
+    const cleanPhone = phone.replace(D_RE, '');
 
     // Tenta detectar pelo código do país
     for (const [code, lang] of Object.entries(countryToLanguage)) {

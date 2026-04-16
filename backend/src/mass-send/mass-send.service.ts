@@ -2,6 +2,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 
+const D_RE = /\D/g;
+
 @Injectable()
 export class MassSendService {
   private queue: Queue;
@@ -25,7 +27,7 @@ export class MassSendService {
 
     // Sanitiza e remove duplicados
     const sanitized = Array.from(
-      new Set(numbers.map((n) => (n || '').replace(/\D/g, '')).filter((n) => n.length > 5)),
+      new Set(numbers.map((n) => (n || '').replace(D_RE, '')).filter((n) => n.length > 5)),
     );
 
     if (sanitized.length === 0) {

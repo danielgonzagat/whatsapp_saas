@@ -20,6 +20,10 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { PrismaService } from '../prisma/prisma.service';
 
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z0_9_RE = /[^a-z0-9]+/g;
+const PATTERN_RE = /^-|-$/g;
+
 interface CreateMemberAreaDto {
   name: string;
   slug?: string;
@@ -274,9 +278,9 @@ export class MemberAreaController {
       dto.slug = `${(dto.name || 'area')
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')}-${Date.now().toString(36)}`;
+        .replace(U0300__U036F_RE, '')
+        .replace(A_Z0_9_RE, '-')
+        .replace(PATTERN_RE, '')}-${Date.now().toString(36)}`;
     }
 
     try {

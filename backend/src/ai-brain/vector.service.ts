@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 
+const N_RE = /\n/g;
+
 type EmbeddingResult = { embedding: number[]; tokensUsed: number };
 
 @Injectable()
@@ -19,7 +21,7 @@ export class VectorService {
     if (!this.openai) return { embedding: [], tokensUsed: 0 };
 
     // Limpar e truncar texto se necessário
-    const cleanText = text.replace(/\n/g, ' ').slice(0, 8000);
+    const cleanText = text.replace(N_RE, ' ').slice(0, 8000);
 
     // tokenBudget: non-workspace context, budget tracked at caller level
     const response = await this.openai.embeddings.create({

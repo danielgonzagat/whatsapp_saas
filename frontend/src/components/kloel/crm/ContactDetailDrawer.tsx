@@ -282,8 +282,12 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
               alignItems: 'center',
               justifyContent: 'center',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
-            onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = C.text;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = C.muted;
+            }}
           >
             <X size={18} aria-hidden="true" />
           </button>
@@ -342,8 +346,12 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                           lineHeight: 1,
                           display: 'flex',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = '#FF453A')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#FF453A';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = C.muted;
+                        }}
                       >
                         <X size={10} aria-hidden="true" />
                       </button>
@@ -666,8 +674,12 @@ function ActionButton({
         fontFamily: C.sora,
         transition: 'opacity .15s',
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
-      onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.opacity = '0.85';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.opacity = '1';
+      }}
     >
       {icon} {label}
     </button>

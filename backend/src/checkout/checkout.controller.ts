@@ -29,6 +29,10 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { CreateUpsellDto } from './dto/create-upsell.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
 
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z0_9_RE = /[^a-z0-9]+/g;
+const PATTERN_RE = /^-|-$/g;
+
 @Controller('checkout')
 @UseGuards(JwtAuthGuard)
 @Throttle({ default: { limit: 30, ttl: 60000 } })
@@ -42,9 +46,9 @@ export class CheckoutController {
     const base = String(value || 'checkout')
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
+      .replace(U0300__U036F_RE, '')
+      .replace(A_Z0_9_RE, '-')
+      .replace(PATTERN_RE, '')
       .slice(0, 48);
 
     return `${base || 'checkout'}-${Date.now().toString(36)}`;
@@ -106,9 +110,9 @@ export class CheckoutController {
       dto.slug = `${(dto.name || 'product')
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')}-${Date.now().toString(36)}`;
+        .replace(U0300__U036F_RE, '')
+        .replace(A_Z0_9_RE, '-')
+        .replace(PATTERN_RE, '')}-${Date.now().toString(36)}`;
     }
 
     return this.checkoutService.createProduct(workspaceId, dto);

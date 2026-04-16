@@ -1,5 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 
+const PATTERN_RE = /\.+$/g;
+
 const D_1_3_______D_1_3___3_RE = /^\d{1,3}(?:\.\d{1,3}){3}$/;
 
 /**
@@ -118,7 +120,7 @@ function assertNotInternalAddress(hostname: string): void {
 function normalizeHostname(value: string): string {
   return String(value || '')
     .trim()
-    .replace(/\.+$/g, '')
+    .replace(PATTERN_RE, '')
     .toLowerCase();
 }
 

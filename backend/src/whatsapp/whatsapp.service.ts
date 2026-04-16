@@ -1,4 +1,4 @@
-import * as crypto from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
@@ -23,6 +23,9 @@ import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
 import { WorkerRuntimeService } from './worker-runtime.service';
+
+const D_RE = /\D/g;
+const PATTERN_RE = /-/g;
 
 /**
  * =====================================================================
@@ -911,7 +914,7 @@ export class WhatsappService {
   // Normalize number
   // ============================================================
   private normalizeNumber(num: string): string {
-    return num.replace(/\D/g, '');
+    return num.replace(D_RE, '');
   }
 
   private isIndividualChatId(chatId?: string | null) {
@@ -1722,7 +1725,7 @@ export class WhatsappService {
     operation: () => Promise<T>,
   ): Promise<T> {
     const key = `whatsapp:action-lock:${workspaceId}`;
-    const token = `${Date.now()}:${crypto.randomUUID()}`;
+    const token = `${Date.now()}:${randomUUID()}`;
     const ttlMs = Math.max(
       15_000,
       Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
@@ -1811,7 +1814,7 @@ export class WhatsappService {
     const stopKeywords = ['stop', 'sair', 'cancelar', 'cancel', 'parar', 'unsubscribe'];
     if (stopKeywords.some((kw) => lower.includes(kw))) {
       try {
-        await this.optOutContact(workspaceId, from.replace(/\D/g, ''));
+        await this.optOutContact(workspaceId, from.replace(D_RE, ''));
         this.slog.info('auto_optout', { workspaceId, from });
       } catch (err: unknown) {
         const errInstanceofError =
@@ -1887,7 +1890,7 @@ export class WhatsappService {
         await flowQueue.add('run-flow', {
           workspaceId,
           flowId: hotFlowId,
-          user: from.replace(/\D/g, ''),
+          user: from.replace(D_RE, ''),
           initialVars: { source: 'hot_signal', lastMessage: message },
         });
       }
@@ -2348,13 +2351,13 @@ export class WhatsappService {
       diagnostics.session = await this.providerRegistry.getSessionStatus(workspaceId);
       if (!diagnostics.session.connected) {
         issues.push(
-          `${providerType.replace(/-/g, '_')}_session_${String(
+          `${providerType.replace(PATTERN_RE, '_')}_session_${String(
             diagnostics.session.status || 'unknown',
           ).toLowerCase()}`,
         );
       }
     } catch (error: unknown) {
-      issues.push(`${providerType.replace(/-/g, '_')}_session_status_unavailable`);
+      issues.push(`${providerType.replace(PATTERN_RE, '_')}_session_status_unavailable`);
       diagnostics.session = {
         connected: false,
         status: 'UNKNOWN',

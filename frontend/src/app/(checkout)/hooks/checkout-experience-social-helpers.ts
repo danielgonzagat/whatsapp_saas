@@ -8,6 +8,8 @@ import type {
   PublicCheckoutThemeProps,
 } from '@/lib/public-checkout-contract';
 
+const D_RE = /\D/g;
+
 export type Formatters = {
   cpf: (value: string) => string;
   phone: (value: string) => string;
@@ -233,8 +235,8 @@ export function isCheckoutIdentityStepValid(
   return Boolean(
     form.name.trim() &&
     form.email.trim() &&
-    (!options.requireCPF || form.cpf.replace(/\D/g, '').length >= 11) &&
-    (!options.requirePhone || form.phone.replace(/\D/g, '').length >= 10),
+    (!options.requireCPF || form.cpf.replace(D_RE, '').length >= 11) &&
+    (!options.requirePhone || form.phone.replace(D_RE, '').length >= 10),
   );
 }
 

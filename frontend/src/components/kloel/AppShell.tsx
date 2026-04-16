@@ -13,6 +13,9 @@ import { KloelSidebar } from './sidebar/KloelSidebar';
 import { SidebarToggleIcon } from './sidebar/SidebarToggleIcon';
 import { NAV } from './sidebar/sidebar-config';
 import { useSidebarState } from './sidebar/useSidebarState';
+
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const S_RE = /\s+/g;
 // ════════════════════════════════════════════
 // TYPES
 // ════════════════════════════════════════════
@@ -116,8 +119,8 @@ function resolveRoute(view: string, subView?: string): string {
     const slug = subView
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, '-');
+      .replace(U0300__U036F_RE, '')
+      .replace(S_RE, '-');
     const subKey = `${view}-${slug}`;
     if (SUB_ROUTES[subKey]) return SUB_ROUTES[subKey];
     // Fallback: try the raw subView as key

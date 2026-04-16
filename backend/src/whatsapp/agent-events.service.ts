@@ -3,6 +3,8 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@ne
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 
+const S_RE = /\s+/g;
+
 const PENSANDO_NA_MELHOR_RESP_RE = /^Pensando na melhor resposta para /i;
 
 type AgentEventType =
@@ -37,7 +39,7 @@ type AgentListener = (event: AgentStreamEvent) => void;
 
 function normalizeAgentMessage(event: Omit<AgentStreamEvent, 'ts'> & { ts?: string }) {
   let message = String(event.message || '')
-    .replace(/\s+/g, ' ')
+    .replace(S_RE, ' ')
     .trim();
 
   if (!message && event.streaming && event.token) {

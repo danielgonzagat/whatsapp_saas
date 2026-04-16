@@ -37,6 +37,8 @@ import { ConversationalOnboardingService } from './conversational-onboarding.ser
 import { KloelService } from './kloel.service';
 import { extractThreadSearchTags, stripHtmlTags } from './thread-search.util';
 
+const S_RE = /\s+/g;
+
 interface ThinkDto {
   message: string;
   workspaceId?: string;
@@ -97,7 +99,7 @@ export class KloelController {
       const matchedContent =
         stripHtmlTags(previewHtml) ||
         String(row.matchedContent || '')
-          .replace(/\s+/g, ' ')
+          .replace(S_RE, ' ')
           .trim()
           .slice(0, 200);
 
@@ -171,7 +173,7 @@ export class KloelController {
       })
       .map((message) => {
         const matchedContent = String(message.content || '')
-          .replace(/\s+/g, ' ')
+          .replace(S_RE, ' ')
           .trim();
         return {
           id: message.thread.id,
@@ -188,7 +190,7 @@ export class KloelController {
       .filter((thread) => !seen.has(thread.id))
       .map((thread) => {
         const matchedContent = String(thread.messages?.[0]?.content || '')
-          .replace(/\s+/g, ' ')
+          .replace(S_RE, ' ')
           .trim();
         return {
           id: thread.id,
@@ -665,7 +667,7 @@ export class KloelController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     const normalizedQuery = String(q || '')
-      .replace(/\s+/g, ' ')
+      .replace(S_RE, ' ')
       .trim();
     const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 20);
 

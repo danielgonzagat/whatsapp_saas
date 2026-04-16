@@ -6,6 +6,10 @@ import {
   normalizePublicCheckoutCode,
 } from './checkout-code.util';
 
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z0_9_RE = /[^a-z0-9]+/g;
+const PATTERN_RE = /^-|-$/g;
+
 type PublicIdentifierIgnore = {
   planId?: string | null;
   linkId?: string | null;
@@ -19,9 +23,9 @@ export class CheckoutPlanLinkManager {
       .trim()
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
+      .replace(U0300__U036F_RE, '')
+      .replace(A_Z0_9_RE, '-')
+      .replace(PATTERN_RE, '')
       .slice(0, 56);
 
     return normalized || fallback;

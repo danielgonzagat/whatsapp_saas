@@ -4,6 +4,8 @@ import * as admin from 'firebase-admin';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+const N_RE = /\\n/g;
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -28,7 +30,7 @@ export class NotificationsService {
           credential: admin.credential.cert({
             projectId,
             clientEmail,
-            privateKey: privateKey.replace(/\\n/g, '\n'),
+            privateKey: privateKey.replace(N_RE, '\n'),
           }),
         });
         this.logger.log('✅ Firebase Admin SDK inicializado');

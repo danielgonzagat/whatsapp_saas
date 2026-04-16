@@ -3,9 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { authenticator } from 'otplib';
 // `qrcode` is a CJS package; the Node resolver picks up its default export.
 
-import * as QRCode from 'qrcode';
+import { toDataURL as qrToDataURL } from 'qrcode';
 import { decryptAdminSecret, encryptAdminSecret } from '../common/admin-crypto';
 import { adminErrors } from '../common/admin-api-errors';
+
+const RX_0_9__6_RE = /^[0-9]{6}$/;
 
 // otplib: 30s step, window=2 (±60s tolerance). The wider window
 // absorbs typical VM clock drift on Railway/Vercel Edge without
@@ -71,7 +73,7 @@ export class AdminMfaService {
     preEncrypted?: string,
   ): Promise<MfaSetupResult> {
     const otpauthUrl = authenticator.keyuri(accountLabel, this.issuer, secret);
-    const qrDataUrl = await QRCode.toDataURL(otpauthUrl, {
+    const qrDataUrl = await qrToDataURL(otpauthUrl, {
       errorCorrectionLevel: 'M',
       width: 240,
       margin: 1,
@@ -82,7 +84,7 @@ export class AdminMfaService {
 
   verifyCode(encryptedSecret: string | null | undefined, code: string): void {
     if (!encryptedSecret) throw adminErrors.mfaInvalidCode();
-    if (!/^[0-9]{6}$/.test(code)) throw adminErrors.mfaInvalidCode();
+    if (!RX_0_9__6_RE.test(code)) throw adminErrors.mfaInvalidCode();
     let secret: string;
     try {
       secret = decryptAdminSecret(encryptedSecret, this.encryptionKey);

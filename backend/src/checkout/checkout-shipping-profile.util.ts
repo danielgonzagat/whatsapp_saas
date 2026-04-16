@@ -1,7 +1,8 @@
+const D_RE = /\D/g;
 function toDigits(value: unknown) {
   return (
     typeof value === 'string' ? value : typeof value === 'number' ? String(value) : ''
-  ).replace(/\D/g, '');
+  ).replace(D_RE, '');
 }
 
 function clamp(value: number, min: number, max: number) {

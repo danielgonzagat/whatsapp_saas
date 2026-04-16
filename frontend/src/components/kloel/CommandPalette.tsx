@@ -18,6 +18,8 @@ import {
 } from './search/conversation-search-utils';
 import { ConversationsIcon } from './sidebar/ConversationsIcon';
 
+const S_RE = /\s+/g;
+
 export type CommandType = 'fill_chat' | 'execute' | 'execute_gate' | 'navigate';
 export type CommandRisk = 'auto' | 'confirm' | 'sensitive';
 export type CommandCategory =
@@ -55,7 +57,7 @@ export interface CommandPaletteProps {
 
 function buildRecentPreview(input?: string): string {
   const text = String(input || '')
-    .replace(/\s+/g, ' ')
+    .replace(S_RE, ' ')
     .trim();
   return text || 'Abra a conversa para retomar o contexto.';
 }

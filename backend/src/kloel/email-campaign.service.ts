@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+const NAME_RE = /\{\{name\}\}/g;
+const EMAIL_RE = /\{\{email\}\}/g;
+
 /**
  * Email Campaign Service for KLOEL Marketing
  * Uses the same email infrastructure as auth (Resend/SendGrid/SMTP)
@@ -42,8 +45,8 @@ export class EmailCampaignService {
       const recipient = recipients[i];
       try {
         const personalizedHtml = html
-          .replace(/\{\{name\}\}/g, recipient.name || 'Cliente')
-          .replace(/\{\{email\}\}/g, recipient.email);
+          .replace(NAME_RE, recipient.name || 'Cliente')
+          .replace(EMAIL_RE, recipient.email);
 
         // unsubscribe: link included in email footer
         const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(recipient.email)}`;

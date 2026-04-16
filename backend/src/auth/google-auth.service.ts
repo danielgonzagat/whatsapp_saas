@@ -5,7 +5,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OAuth2Client, TokenPayload } from 'google-auth-library';
+import { LoginTicket, OAuth2Client, TokenPayload } from 'google-auth-library';
+
+const W_RE = /[\W_]+/g;
 
 const AUDIENCE_ISSUER_TOKEN_US_RE =
   /audience|issuer|token used too late|wrong number of segments|invalid token|No pem found|Token used too early|Wrong recipient/i;
@@ -56,7 +58,7 @@ export class GoogleAuthService {
     }
 
     const client = new OAuth2Client();
-    let ticket;
+    let ticket: LoginTicket;
 
     try {
       ticket = await client.verifyIdToken({
@@ -204,7 +206,7 @@ export class GoogleAuthService {
 
   private deriveName(email: string) {
     const local = email.split('@')[0] || 'User';
-    const cleaned = local.replace(/[\W_]+/g, ' ').trim();
+    const cleaned = local.replace(W_RE, ' ').trim();
     const candidate = cleaned || 'User';
     return candidate.charAt(0).toUpperCase() + candidate.slice(1);
   }

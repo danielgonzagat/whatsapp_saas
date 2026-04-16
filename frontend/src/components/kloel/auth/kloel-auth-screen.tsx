@@ -817,8 +817,12 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   cursor: 'pointer',
                   transition: 'border-color 150ms ease',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#333338')}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#222226')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#333338';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#222226';
+                }}
               >
                 <AppleIcon />
                 Apple
@@ -1135,8 +1139,12 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               textDecoration: 'none',
               transition: 'color 150ms ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#6E6E73';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#3A3A3F';
+            }}
           >
             Suporte
           </a>
@@ -1149,8 +1157,12 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               textDecoration: 'none',
               transition: 'color 150ms ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#6E6E73';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#3A3A3F';
+            }}
           >
             Termos de Uso
           </Link>
@@ -1163,8 +1175,12 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               textDecoration: 'none',
               transition: 'color 150ms ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#6E6E73';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#3A3A3F';
+            }}
           >
             Privacidade
           </Link>

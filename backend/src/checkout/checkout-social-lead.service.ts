@@ -13,6 +13,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
 
+const D_RE = /\D/g;
+
 type CheckoutPlanContext = {
   id: string;
   slug: string;
@@ -525,7 +527,7 @@ export class CheckoutSocialLeadService {
   }
 
   private normalizePhone(value?: string | null) {
-    const digits = String(value || '').replace(/\D/g, '');
+    const digits = String(value || '').replace(D_RE, '');
     return digits || null;
   }
 

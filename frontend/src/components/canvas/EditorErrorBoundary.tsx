@@ -33,7 +33,9 @@ export class EditorErrorBoundary extends Component<{ children: ReactNode }, Stat
           </p>
           <button
             type="button"
-            onClick={() => (window.location.href = '/canvas/inicio')}
+            onClick={() => {
+              window.location.href = '/canvas/inicio';
+            }}
             style={{
               padding: '8px 20px',
               background: '#E85D30',

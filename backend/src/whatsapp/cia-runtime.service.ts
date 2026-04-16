@@ -30,12 +30,16 @@ import { extractPhoneFromChatId as normalizePhoneFromChatId } from './whatsapp-n
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 
+const WHITESPACE_G_RE = /\s+/g;
+const PATTERN_RE = /[?!.;,]+$/g;
+const D_RE = /\D/g;
+
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
 const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i;
 const B___SOBRE_DO_DA_DE_PARA_RE =
   /\b(?:sobre|do|da|de|para)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s/-]{2,40})/i;
-const S_RE = /\s+/;
+const WHITESPACE_RE = /\s+/;
 
 type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
 
@@ -1885,7 +1889,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
   private extractFallbackTopic(messageContent: string): string | null {
     const normalized = String(messageContent || '')
-      .replace(/\s+/g, ' ')
+      .replace(WHITESPACE_G_RE, ' ')
       .trim();
     if (!normalized) {
       return null;
@@ -1894,8 +1898,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
     const explicit = normalized.match(B___SOBRE_DO_DA_DE_PARA_RE)?.[1] || '';
     const candidate = explicit || normalized;
     const compact = candidate
-      .replace(/[?!.;,]+$/g, '')
-      .split(S_RE)
+      .replace(PATTERN_RE, '')
+      .split(WHITESPACE_RE)
       .slice(0, explicit ? 6 : 8)
       .join(' ')
       .trim();
@@ -1908,7 +1912,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     contactId?: string | null,
     phone?: string | null,
   ): string {
-    const normalizedPhone = String(phone || '').replace(/\D/g, '');
+    const normalizedPhone = String(phone || '').replace(D_RE, '');
     return `autopilot:reply:${workspaceId}:${contactId || normalizedPhone}`;
   }
 

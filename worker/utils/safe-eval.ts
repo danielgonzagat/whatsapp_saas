@@ -15,6 +15,23 @@
 
 import { all, create } from 'mathjs';
 
+const PROTO_RE = /__proto__/gi;
+const PROTOTYPE_RE = /prototype/gi;
+const CONSTRUCTOR_RE = /constructor/gi;
+const BEVAL_B_RE = /\beval\b/gi;
+const B_FUNCTION_B_RE = /\bFunction\b/gi;
+const BPROCESS_B_RE = /\bprocess\b/gi;
+const BREQUIRE_B_RE = /\brequire\b/gi;
+const BIMPORT_B_RE = /\bimport\b/gi;
+const BGLOBAL_B_RE = /\bglobal\b/gi;
+const BWINDOW_B_RE = /\bwindow\b/gi;
+const BDOCUMENT_B_RE = /\bdocument\b/gi;
+const PATTERN_RE = /===/g;
+const PATTERN_RE_2 = /!==/g;
+const PATTERN_RE_3 = /&&/g;
+const PATTERN_RE_4 = /\|\|/g;
+const PATTERN_RE_5 = /!(?!=)/g;
+
 // Cria instancia isolada do mathjs com todas funcoes built-in
 const math = create(all);
 
@@ -95,27 +112,27 @@ export function safeEvaluateBoolean(
 function sanitizeExpression(expr: string): string {
   // Remove tentativas de acesso a prototipos / escopo global
   let sanitized = expr
-    .replace(/__proto__/gi, '')
-    .replace(/prototype/gi, '')
-    .replace(/constructor/gi, '')
-    .replace(/\beval\b/gi, '')
-    .replace(/\bFunction\b/gi, '')
-    .replace(/\bprocess\b/gi, '')
-    .replace(/\brequire\b/gi, '')
-    .replace(/\bimport\b/gi, '')
-    .replace(/\bglobal\b/gi, '')
-    .replace(/\bwindow\b/gi, '')
-    .replace(/\bdocument\b/gi, '');
+    .replace(PROTO_RE, '')
+    .replace(PROTOTYPE_RE, '')
+    .replace(CONSTRUCTOR_RE, '')
+    .replace(BEVAL_B_RE, '')
+    .replace(B_FUNCTION_B_RE, '')
+    .replace(BPROCESS_B_RE, '')
+    .replace(BREQUIRE_B_RE, '')
+    .replace(BIMPORT_B_RE, '')
+    .replace(BGLOBAL_B_RE, '')
+    .replace(BWINDOW_B_RE, '')
+    .replace(BDOCUMENT_B_RE, '');
 
   // Converte operadores JavaScript para sintaxe mathjs
-  sanitized = sanitized.replace(/===/g, '==').replace(/!==/g, '!=');
+  sanitized = sanitized.replace(PATTERN_RE, '==').replace(PATTERN_RE_2, '!=');
 
   // mathjs usa `and`, `or`, `not` nativamente — converter && e || tambem
-  sanitized = sanitized.replace(/&&/g, ' and ').replace(/\|\|/g, ' or ');
+  sanitized = sanitized.replace(PATTERN_RE_3, ' and ').replace(PATTERN_RE_4, ' or ');
 
   // Converte `!expr` para `not expr` (cuidado para nao converter `!=`)
   // Apenas `!` que NAO e seguido por `=`
-  sanitized = sanitized.replace(/!(?!=)/g, ' not ');
+  sanitized = sanitized.replace(PATTERN_RE_5, ' not ');
 
   return sanitized.trim();
 }

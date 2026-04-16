@@ -13,6 +13,20 @@
 
 import { WorkerLogger } from '../logger';
 
+const R_N_RE = /\r\n/g;
+const R_RE = /\r/g;
+const N_3_RE = /\n{3,}/g;
+const S_S_RE = /```[\s\S]*?```/g;
+const PATTERN_RE = /`[^`]+`/g;
+const RX_1_6__S_RE = /^#{1,6}\s+/gm;
+const PATTERN_RE_2 = /\*\*([^*]+)\*\*/g;
+const PATTERN_RE_3 = /\*([^*]+)\*/g;
+const PATTERN_RE_4 = /__([^_]+)__/g;
+const PATTERN_RE_5 = /_([^_]+)_/g;
+const PATTERN_RE_6 = /\[([^\]]+)\]\([^)]+\)/g;
+const PATTERN_RE_7 = /!\[([^\]]*)\]\([^)]+\)/g;
+const S_RE = /^>\s+/gm;
+
 const log = new WorkerLogger('prompt-sanitizer');
 
 /**
@@ -114,11 +128,7 @@ export function sanitizeUserInput(input: string, options: SanitizeOptions = {}):
   }
 
   // 4. Normaliza espaços em branco
-  sanitized = sanitized
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  sanitized = sanitized.replace(R_N_RE, '\n').replace(R_RE, '\n').replace(N_3_RE, '\n\n').trim();
 
   // 5. Log para auditoria
   if (logInput && sanitized.length > 0) {
@@ -172,21 +182,21 @@ function removeMarkdownFormatting(text: string): string {
   return (
     text
       // Remove code blocks
-      .replace(/```[\s\S]*?```/g, '[código removido]')
-      .replace(/`[^`]+`/g, '')
+      .replace(S_S_RE, '[código removido]')
+      .replace(PATTERN_RE, '')
       // Remove headers
-      .replace(/^#{1,6}\s+/gm, '')
+      .replace(RX_1_6__S_RE, '')
       // Remove bold/italic
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/\*([^*]+)\*/g, '$1')
-      .replace(/__([^_]+)__/g, '$1')
-      .replace(/_([^_]+)_/g, '$1')
+      .replace(PATTERN_RE_2, '$1')
+      .replace(PATTERN_RE_3, '$1')
+      .replace(PATTERN_RE_4, '$1')
+      .replace(PATTERN_RE_5, '$1')
       // Remove links
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(PATTERN_RE_6, '$1')
       // Remove images
-      .replace(/!\[([^\]]*)\]\([^)]+\)/g, '[imagem]')
+      .replace(PATTERN_RE_7, '[imagem]')
       // Remove blockquotes
-      .replace(/^>\s+/gm, '')
+      .replace(S_RE, '')
   );
 }
 

@@ -21,6 +21,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { startTransition, useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
+const PATTERN_RE = /"/g;
+
 /*
   KLOEL — CARTEIRA
   "Cada centavo que entra. Cada centavo que sai. Tudo visivel."
@@ -1744,7 +1746,7 @@ function TabExtrato({
             if (!filtered.length) return;
             const escape = (v: unknown) => {
               const s = String(v ?? '');
-              return `"${s.replace(/"/g, '""')}"`;
+              return `"${s.replace(PATTERN_RE, '""')}"`;
             };
             const rows = filtered.map((t) => ({
               id: t.id,
@@ -1819,8 +1821,12 @@ function TabExtrato({
                   alignItems: 'center',
                   transition: 'background .1s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--app-bg-hover)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'none';
+                }}
               >
                 <div
                   style={{

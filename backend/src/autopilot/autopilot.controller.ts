@@ -6,6 +6,8 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { AutopilotService } from './autopilot.service';
 
+const PATTERN_RE = /,/g;
+
 interface AutopilotActionRow {
   createdAt: Date | string;
   contactId?: string;
@@ -90,11 +92,11 @@ export class AutopilotController {
         [
           d.createdAt,
           d.contactId || '',
-          (d.contact || '').replace(/,/g, ' '),
+          (d.contact || '').replace(PATTERN_RE, ' '),
           d.intent || '',
           d.action || '',
           d.status || '',
-          (d.reason || '').replace(/,/g, ' '),
+          (d.reason || '').replace(PATTERN_RE, ' '),
         ].join(','),
       ),
     ].join('\n');

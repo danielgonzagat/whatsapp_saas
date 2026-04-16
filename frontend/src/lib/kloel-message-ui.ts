@@ -2,7 +2,9 @@
 
 import type { KloelStreamEvent, KloelStreamPhase } from './kloel-stream-events';
 
-const PATTERN_RE = /[.]+$/;
+const WHITESPACE_G_RE = /\s+/g;
+const SEPARATOR_G_RE = /[_-]+/g;
+const TRAILING_DOTS_RE = /[.]+$/;
 
 export interface AssistantResponseVersion {
   id: string;
@@ -85,7 +87,9 @@ export function summarizeAssistantProcessingTrace(
   const labels = Array.from(
     new Set(
       entries
-        .map((entry) => entry.label.replace(/\s+/g, ' ').trim().replace(PATTERN_RE, ''))
+        .map((entry) =>
+          entry.label.replace(WHITESPACE_G_RE, ' ').trim().replace(TRAILING_DOTS_RE, ''),
+        )
         .filter(Boolean),
     ),
   );
@@ -258,8 +262,8 @@ function normalizeProcessingTraceEntry(value: unknown): AssistantProcessingTrace
 function formatTraceToolLabel(toolName?: string | null) {
   const normalized = String(toolName || 'ferramenta')
     .trim()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(SEPARATOR_G_RE, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .toLowerCase();
 
   return normalized || 'ferramenta';

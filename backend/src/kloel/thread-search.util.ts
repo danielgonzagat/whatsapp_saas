@@ -1,3 +1,7 @@
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z0_9_RE = /[^a-z0-9]+/g;
+const PATTERN_RE = /<[^>]+>/g;
+const S_RE = /\s+/g;
 const SEARCH_STOPWORDS = new Set([
   'a',
   'ao',
@@ -65,28 +69,25 @@ const DOMAIN_TAGS = [
 function stripDiacritics(value: string): string {
   return String(value || '')
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(U0300__U036F_RE, '');
 }
 
 function normalizeWord(value: string): string {
-  return stripDiacritics(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '')
-    .trim();
+  return stripDiacritics(value).toLowerCase().replace(A_Z0_9_RE, '').trim();
 }
 
 function tokenize(value: string): string[] {
   return stripDiacritics(value)
     .toLowerCase()
-    .split(/[^a-z0-9]+/g)
+    .split(A_Z0_9_RE)
     .map((token) => token.trim())
     .filter((token) => token.length >= 3 && !SEARCH_STOPWORDS.has(token));
 }
 
 export function stripHtmlTags(value: string): string {
   return String(value || '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(PATTERN_RE, ' ')
+    .replace(S_RE, ' ')
     .trim();
 }
 

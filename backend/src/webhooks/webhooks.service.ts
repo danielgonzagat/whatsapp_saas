@@ -14,6 +14,8 @@ import { OmnichannelService } from '../inbox/omnichannel.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 
+const D_RE = /\D/g;
+
 /** Arbitrary JSON payload received on the generic catch-hook endpoint. */
 type WebhookJsonPayload = Record<string, unknown>;
 
@@ -220,7 +222,7 @@ export class WebhooksService {
     for (const c of candidates) {
       if (c && typeof c === 'string') {
         // Clean string
-        const cleaned = c.replace(/\D/g, '');
+        const cleaned = c.replace(D_RE, '');
         if (cleaned.length >= 10) return cleaned; // Basic validation
       }
     }
@@ -239,7 +241,7 @@ export class WebhooksService {
     const status = (input.status || '').toUpperCase();
     const workspaceId = input.workspaceId;
     const externalId = input.externalId;
-    const phone = input.phone?.replace(/\D/g, '') || undefined;
+    const phone = input.phone?.replace(D_RE, '') || undefined;
 
     if (!workspaceId) {
       throw new BadRequestException('workspaceId é obrigatório');

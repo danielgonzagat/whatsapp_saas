@@ -19,6 +19,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue } from '../queue/queue';
 
+const D_RE = /\D/g;
+
 @Injectable()
 export class AutopilotService {
   private readonly logger = new Logger(AutopilotService.name);
@@ -41,7 +43,7 @@ export class AutopilotService {
   }
 
   private normalizePhone(phone?: string) {
-    return String(phone || '').replace(/\D/g, '');
+    return String(phone || '').replace(D_RE, '');
   }
 
   private async sleep(ms: number) {
@@ -1275,7 +1277,7 @@ Answer in Portuguese, short and actionable.`;
     }
 
     if (!contactIdResolved && phone) {
-      const normalized = phone.replace(/\D/g, '');
+      const normalized = phone.replace(D_RE, '');
       const contact = await this.prisma.contact.findUnique({
         where: {
           workspaceId_phone: {

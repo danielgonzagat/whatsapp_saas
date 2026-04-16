@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
+const D_RE = /\D/g;
+
 const STATUS_LABEL: Record<string, string> = {
   hot: 'Quente',
   warm: 'Morno',
@@ -120,7 +122,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     if (!leads.length) return;
-    const normalize = (value?: string | null) => (value || '').replace(/\D/g, '');
+    const normalize = (value?: string | null) => (value || '').replace(D_RE, '');
     const matchedLead =
       (requestedLeadId ? leads.find((lead) => lead.id === requestedLeadId) : null) ||
       (requestedPhone

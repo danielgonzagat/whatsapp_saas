@@ -6,6 +6,8 @@ import { LeadScorer } from '../providers/lead-scorer';
 import { connection } from '../queue';
 import { processFactExtraction } from './fact-extractor';
 
+const S_RE = /\s+/g;
+
 const log = new WorkerLogger('memory-worker');
 
 export const memoryWorker = new Worker(
@@ -96,7 +98,7 @@ export const memoryWorker = new Worker(
 
 function splitText(text: string, chunkSize: number, chunkOverlap = 200): string[] {
   if (!text) return [];
-  const cleanText = text.replace(/\s+/g, ' ').trim();
+  const cleanText = text.replace(S_RE, ' ').trim();
   if (cleanText.length <= chunkSize) return [cleanText];
 
   const chunks: string[] = [];

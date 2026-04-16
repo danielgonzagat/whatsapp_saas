@@ -24,6 +24,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WebhooksService } from './webhooks.service';
 
+const D_RE = /\D/g;
+
 /**
  * Request shape seen by payment webhook endpoints. The raw body is required for
  * HMAC/Stripe signature verification and is populated by the global body parser
@@ -269,7 +271,7 @@ export class PaymentWebhookController {
         });
       }
       if (!contact && phone) {
-        const normalizedPhone = String(phone).replace(/\D/g, '');
+        const normalizedPhone = String(phone).replace(D_RE, '');
         contact = await this.prisma.contact.findFirst({
           where: { workspaceId, phone: normalizedPhone },
         });
@@ -333,7 +335,7 @@ export class PaymentWebhookController {
 
       // Notificar cliente via WhatsApp
       const customerPhone =
-        contact?.phone || phone ? String(contact?.phone || phone).replace(/\D/g, '') : undefined;
+        contact?.phone || phone ? String(contact?.phone || phone).replace(D_RE, '') : undefined;
       if (customerPhone) {
         try {
           const formattedAmount = amount.toLocaleString('pt-BR', {
@@ -458,7 +460,7 @@ export class PaymentWebhookController {
     }
     await this.assertWorkspaceExists(workspaceId);
 
-    const normalizedPhone = body.phone ? String(body.phone).replace(/\D/g, '') : undefined;
+    const normalizedPhone = body.phone ? String(body.phone).replace(D_RE, '') : undefined;
 
     // Atualiza venda (KloelSale) e/ou Payment quando possível
     if (body.orderId || body.provider) {

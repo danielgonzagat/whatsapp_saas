@@ -6,6 +6,8 @@ import { prisma } from './db';
 import { resolveWorkerOpenAIModel } from './providers/openai-models';
 import { connection } from './queue';
 
+const D_RE = /\D/g;
+
 const PATTERN_RE = /\/+$/;
 
 const UPLOAD_DIR = path.join(__dirname, '../backend/public/audio');
@@ -112,12 +114,12 @@ async function handleTranscription(job: Job) {
 
     const tempFile = path.join(
       UPLOAD_DIR,
-      `temp_${Date.now()}_${String(phone || '').replace(/\D/g, '')}.mp3`,
+      `temp_${Date.now()}_${String(phone || '').replace(D_RE, '')}.mp3`,
     );
     fs.writeFileSync(tempFile, Buffer.from(await response.arrayBuffer()));
 
     const openai = getOpenAIClient();
-    let transcription;
+    let transcription: OpenAI.Audio.Transcriptions.TranscriptionVerbose;
     try {
       transcription = await openai.audio.transcriptions.create({
         file: fs.createReadStream(tempFile),

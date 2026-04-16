@@ -3,6 +3,12 @@
 import type React from 'react';
 import { S, V, ls } from './product-nerve-center.shared';
 
+const D_RE = /\D/g;
+const PATTERN_RE = /\./g;
+const D_RE_2 = /[^\d,]/g;
+const PATTERN_RE_2 = /,+/g;
+const PATTERN_RE_3 = /,/g;
+
 const shellStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'stretch',
@@ -70,7 +76,7 @@ function clamp(value: number, min: number, max?: number) {
 }
 
 function sanitizeDigits(value: string) {
-  return String(value || '').replace(/\D/g, '');
+  return String(value || '').replace(D_RE, '');
 }
 
 function formatCurrencyDigits(cents: number) {
@@ -82,17 +88,17 @@ function formatCurrencyDigits(cents: number) {
 
 function normalizePercentInput(raw: string, min: number, max: number) {
   const cleaned = String(raw || '')
-    .replace(/\./g, ',')
-    .replace(/[^\d,]/g, '')
-    .replace(/,+/g, ',');
+    .replace(PATTERN_RE, ',')
+    .replace(D_RE_2, '')
+    .replace(PATTERN_RE_2, ',');
 
   const firstCommaIndex = cleaned.indexOf(',');
   const normalized =
     firstCommaIndex === -1
       ? cleaned
-      : `${cleaned.slice(0, firstCommaIndex).replace(/,/g, '')},${cleaned
+      : `${cleaned.slice(0, firstCommaIndex).replace(PATTERN_RE_3, '')},${cleaned
           .slice(firstCommaIndex + 1)
-          .replace(/,/g, '')}`;
+          .replace(PATTERN_RE_3, '')}`;
 
   if (!normalized) return `${min}`;
 

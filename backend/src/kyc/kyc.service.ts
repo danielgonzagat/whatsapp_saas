@@ -4,7 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
 import { StorageService } from '../common/storage/storage.service';
@@ -234,10 +234,10 @@ export class KycService {
       throw new BadRequestException('OAuth users cannot change password here');
     }
 
-    const valid = await bcrypt.compare(dto.currentPassword, agent.password);
+    const valid = await bcryptCompare(dto.currentPassword, agent.password);
     if (!valid) throw new UnauthorizedException('Current password is incorrect');
 
-    const hashedPassword = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
+    const hashedPassword = await bcryptHash(dto.newPassword, BCRYPT_ROUNDS);
     await this.prisma.agent.update({
       where: { id: agentId },
       data: { password: hashedPassword },

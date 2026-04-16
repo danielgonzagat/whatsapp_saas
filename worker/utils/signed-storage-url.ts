@@ -1,8 +1,9 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
 
-const PATTERN_RE = /\/+$/;
-const PATTERN_RE_2 = /^\/+/;
+const BACKSLASH_RE = /\\/g;
+const TRAILING_SLASHES_RE = /\/+$/;
+const LEADING_SLASHES_RE = /^\/+/;
 
 function getSigningSecret(): string {
   return process.env.STORAGE_SIGNING_SECRET || process.env.JWT_SECRET || 'dev-secret-insecure';
@@ -14,13 +15,13 @@ function getBackendBaseUrl(): string {
     process.env.BACKEND_URL ||
     process.env.API_URL ||
     'http://localhost:3001'
-  ).replace(PATTERN_RE, '');
+  ).replace(TRAILING_SLASHES_RE, '');
 }
 
 function normalizeRelativePath(relativePath: string): string {
   const normalized = path.posix
-    .normalize(String(relativePath || '').replace(/\\/g, '/'))
-    .replace(PATTERN_RE_2, '');
+    .normalize(String(relativePath || '').replace(BACKSLASH_RE, '/'))
+    .replace(LEADING_SLASHES_RE, '');
 
   if (
     !normalized ||

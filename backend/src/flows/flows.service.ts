@@ -2,6 +2,8 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+const D_RE = /\D/g;
+
 // ---------------------------------------------------------------------------
 // Types for WaitForReply node handling
 // ---------------------------------------------------------------------------
@@ -171,7 +173,7 @@ export class FlowsService {
   }
 
   async createExecution(workspaceId: string, flowId: string, user: string) {
-    const normalizedUser = (user || '').replace(/\D/g, '');
+    const normalizedUser = (user || '').replace(D_RE, '');
 
     // Tenta achar contato ou cria
     let contact = await this.prisma.contact.findUnique({

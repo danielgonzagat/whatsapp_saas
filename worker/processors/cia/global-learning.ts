@@ -1,3 +1,6 @@
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z0_9_RE = /[^a-z0-9]+/g;
+const PATTERN_RE = /^_+|_+$/g;
 const R___PRECO_PRE_O_VALOR_PI_RE = /r\$|preco|preço|valor|pix|boleto/i;
 export interface GlobalLearningSignal {
   domain: string;
@@ -31,9 +34,9 @@ function normalizeToken(value?: string | null) {
       .trim()
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '') || 'generic'
+      .replace(U0300__U036F_RE, '')
+      .replace(A_Z0_9_RE, '_')
+      .replace(PATTERN_RE, '') || 'generic'
   );
 }
 

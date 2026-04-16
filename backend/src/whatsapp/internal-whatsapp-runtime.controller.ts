@@ -17,6 +17,8 @@ import { WorkspaceService } from '../workspaces/workspace.service';
 import { InboundMessage, InboundProcessorService } from './inbound-processor.service';
 import { WhatsappService } from './whatsapp.service';
 
+const D_RE = /\D/g;
+
 @Controller('internal/whatsapp-runtime')
 export class InternalWhatsAppRuntimeController {
   private readonly logger = new Logger(InternalWhatsAppRuntimeController.name);
@@ -236,7 +238,7 @@ export class InternalWhatsAppRuntimeController {
       return { success: false, reason: 'missing_fields' };
     }
 
-    const normalizedPhone = phone.replace(/\D/g, '');
+    const normalizedPhone = phone.replace(D_RE, '');
 
     try {
       const existing = await this.prisma.contact.findUnique({

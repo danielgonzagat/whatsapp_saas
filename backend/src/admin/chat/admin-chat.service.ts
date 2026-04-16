@@ -11,6 +11,8 @@ import { AdminPermissionsService } from '../permissions/admin-permissions.servic
 import { adminErrors } from '../common/admin-api-errors';
 import { ChatToolRegistry } from './chat-tool.registry';
 
+const TOOL_S____W_____S_RE = /^\/tool\s+([\w-]+)\s*(\{.*\})?$/s;
+
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 4000;
 
@@ -242,7 +244,7 @@ const STUB_RESPONSE =
 function parseToolInvocation(
   content: string,
 ): { name: string; args: Record<string, unknown> } | null {
-  const match = content.trim().match(/^\/tool\s+([\w-]+)\s*(\{.*\})?$/s);
+  const match = content.trim().match(TOOL_S____W_____S_RE);
   if (!match) return null;
   const name = match[1];
   let args: Record<string, unknown> = {};

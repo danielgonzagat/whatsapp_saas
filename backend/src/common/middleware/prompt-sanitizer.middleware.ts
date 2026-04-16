@@ -1,6 +1,8 @@
 import { Injectable, Logger, NestMiddleware } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 
+const RX_1_50_RE = /(.)\1{50,}/g;
+
 /**
  * Middleware para sanitizar inputs de texto que vão para a IA.
  * Remove tentativas comuns de prompt injection e jailbreak.
@@ -97,7 +99,7 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
       .join('');
 
     // Limita repetições excessivas (anti-flood)
-    result = result.replace(/(.)\1{50,}/g, '$1$1$1');
+    result = result.replace(RX_1_50_RE, '$1$1$1');
 
     return result;
   }

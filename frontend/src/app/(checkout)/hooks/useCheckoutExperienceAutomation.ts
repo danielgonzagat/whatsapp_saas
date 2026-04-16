@@ -5,6 +5,8 @@ import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } 
 import type { CheckoutExperienceForm } from './checkout-experience-social-helpers';
 import type { CheckoutSocialIdentitySnapshot } from './useCheckoutSocialIdentity';
 
+const D_RE = /\D/g;
+
 type UseCheckoutExperienceAutomationOptions = {
   payMethod: 'card' | 'pix' | 'boleto';
   setPayMethod: (value: 'card' | 'pix' | 'boleto') => void;
@@ -106,7 +108,7 @@ export function useCheckoutExperienceAutomation({
       return;
     }
 
-    const cepDigits = cep.replace(/\D/g, '').slice(0, 8);
+    const cepDigits = cep.replace(D_RE, '').slice(0, 8);
     if (cepDigits.length < 8) return;
 
     let cancelled = false;

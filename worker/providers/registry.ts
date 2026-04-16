@@ -3,6 +3,8 @@ import { autoProvider } from './auto-provider';
 import { emailProvider } from './email-provider';
 import { type WhatsAppProvider, getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
+const D_RE = /\D/g;
+
 function getDefaultWhatsAppProvider(): WhatsAppProvider {
   return getWhatsAppProviderFromEnv();
 }
@@ -36,7 +38,7 @@ export class ProviderRegistry {
     }
 
     // 2. Default: WhatsApp (Phone)
-    const normalized = (user || '').replace(/\D/g, '');
+    const normalized = (user || '').replace(D_RE, '');
 
     const contact = workspaceId
       ? await prisma.contact.findUnique({
