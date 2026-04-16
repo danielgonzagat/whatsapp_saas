@@ -106,7 +106,7 @@ interface ReportRowFields {
   plan?: { name?: string; product?: { name?: string } };
 }
 
-type ReportRow = ReportRowFields & Record<string, any>;
+type ReportRow = ReportRowFields & Record<string, any>;  
 
 interface SubscriptionSummaryRow {
   status: string;
