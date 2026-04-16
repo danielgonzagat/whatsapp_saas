@@ -44,6 +44,12 @@ export interface GmvDailyPoint {
   count: number;
 }
 
+export interface RevenueDailyPoint {
+  date: string;
+  revenueInCents: number;
+  count: number;
+}
+
 export interface AdminHomeResponse {
   range: {
     from: string;
@@ -67,7 +73,8 @@ export interface AdminHomeResponse {
     activeProducers: { value: number; windowDays: 30 };
     newProducers: KpiNumberValue;
     totalProducers: { value: number };
-    revenueKloel: KpiUnavailable;
+    revenueKloel: KpiMoneyValue;
+    revenueKloelRate: KpiRateValue;
     mrrProjected: KpiUnavailable;
     churnRate: KpiUnavailable;
   };
@@ -77,6 +84,9 @@ export interface AdminHomeResponse {
   };
   series: {
     gmvDaily: GmvDailyPoint[];
+    previousGmvDaily: GmvDailyPoint[];
+    revenueKloelDaily: RevenueDailyPoint[];
+    previousRevenueKloelDaily: RevenueDailyPoint[];
   };
 }
 

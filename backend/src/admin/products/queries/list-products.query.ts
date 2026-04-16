@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
 export interface AdminProductRow {
@@ -17,6 +17,14 @@ export interface AdminProductRow {
   imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
+  commerce: {
+    approvedOrders: number;
+    pendingOrders: number;
+    refundedOrders: number;
+    chargebackOrders: number;
+    gmvInCents: number;
+    last30dGmvInCents: number;
+  };
 }
 
 export interface ListProductsInput {
@@ -34,6 +42,8 @@ export interface ListProductsResult {
 
 const DEFAULT_TAKE = 50;
 const MAX_TAKE = 100;
+const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const APPROVED: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
 export async function listAdminProducts(
   prisma: PrismaService,
@@ -88,6 +98,83 @@ export async function listAdminProducts(
   });
   const nameMap = new Map(workspaces.map((w) => [w.id, w.name]));
 
+  const productIds = items.map((item) => item.id);
+  const plans = await prisma.checkoutProductPlan.findMany({
+    where: { productId: { in: productIds } },
+    select: { id: true, productId: true },
+  });
+
+  const commerceByProduct = new Map<
+    string,
+    {
+      approvedOrders: number;
+      pendingOrders: number;
+      refundedOrders: number;
+      chargebackOrders: number;
+      gmvInCents: number;
+      last30dGmvInCents: number;
+    }
+  >();
+  for (const productId of productIds) {
+    commerceByProduct.set(productId, {
+      approvedOrders: 0,
+      pendingOrders: 0,
+      refundedOrders: 0,
+      chargebackOrders: 0,
+      gmvInCents: 0,
+      last30dGmvInCents: 0,
+    });
+  }
+
+  const planToProduct = new Map(plans.map((plan) => [plan.id, plan.productId]));
+  const planIds = plans.map((plan) => plan.id);
+
+  if (planIds.length > 0) {
+    const [orderGroups, last30dGroups] = await Promise.all([
+      prisma.checkoutOrder.groupBy({
+        by: ['planId', 'status'],
+        where: { planId: { in: planIds } },
+        _count: { _all: true },
+        _sum: { totalInCents: true },
+      }),
+      prisma.checkoutOrder.groupBy({
+        by: ['planId'],
+        where: {
+          planId: { in: planIds },
+          status: { in: APPROVED },
+          paidAt: { gte: new Date(Date.now() - WINDOW_MS) },
+        },
+        _sum: { totalInCents: true },
+      }),
+    ]);
+
+    for (const group of orderGroups) {
+      const productId = planToProduct.get(group.planId);
+      if (!productId) continue;
+      const current = commerceByProduct.get(productId);
+      if (!current) continue;
+
+      if (APPROVED.includes(group.status)) {
+        current.approvedOrders += group._count._all;
+        current.gmvInCents += Number(group._sum.totalInCents ?? 0);
+      } else if (group.status === OrderStatus.PENDING || group.status === OrderStatus.PROCESSING) {
+        current.pendingOrders += group._count._all;
+      } else if (group.status === OrderStatus.REFUNDED) {
+        current.refundedOrders += group._count._all;
+      } else if (group.status === OrderStatus.CHARGEBACK) {
+        current.chargebackOrders += group._count._all;
+      }
+    }
+
+    for (const group of last30dGroups) {
+      const productId = planToProduct.get(group.planId);
+      if (!productId) continue;
+      const current = commerceByProduct.get(productId);
+      if (!current) continue;
+      current.last30dGmvInCents += Number(group._sum.totalInCents ?? 0);
+    }
+  }
+
   return {
     items: items.map((p) => ({
       id: p.id,
@@ -105,6 +192,14 @@ export async function listAdminProducts(
       imageUrl: p.imageUrl,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
+      commerce: commerceByProduct.get(p.id) || {
+        approvedOrders: 0,
+        pendingOrders: 0,
+        refundedOrders: 0,
+        chargebackOrders: 0,
+        gmvInCents: 0,
+        last30dGmvInCents: 0,
+      },
     })),
     total,
   };

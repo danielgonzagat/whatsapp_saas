@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { queryGmvInCents } from './queries/gmv.query';
+import { queryRevenueKloelInCents } from './queries/revenue.query';
 import { queryTransactionCounts, type TransactionCounts } from './queries/transactions.query';
 import { queryProducers, type ProducerCounts } from './queries/producers.query';
 import {
@@ -9,7 +10,12 @@ import {
   type GatewayBreakdownRow,
   type MethodBreakdownRow,
 } from './queries/breakdowns.query';
-import { queryGmvDailySeries, type GmvDailyPoint } from './queries/series.query';
+import {
+  queryGmvDailySeries,
+  queryRevenueKloelDailySeries,
+  type GmvDailyPoint,
+  type RevenueDailyPoint,
+} from './queries/series.query';
 import {
   resolveAdminHomeRange,
   type AdminHomeCompare,
@@ -63,7 +69,8 @@ export interface HomeResponse {
     activeProducers: { value: number; windowDays: 30 };
     newProducers: KpiNumberValue;
     totalProducers: { value: number };
-    revenueKloel: KpiUnavailable;
+    revenueKloel: KpiMoneyValue;
+    revenueKloelRate: KpiRateValue;
     mrrProjected: KpiUnavailable;
     churnRate: KpiUnavailable;
   };
@@ -73,11 +80,15 @@ export interface HomeResponse {
   };
   series: {
     gmvDaily: GmvDailyPoint[];
+    previousGmvDaily: GmvDailyPoint[];
+    revenueKloelDaily: RevenueDailyPoint[];
+    previousRevenueKloelDaily: RevenueDailyPoint[];
   };
 }
 
 interface Snapshot {
   gmvInCents: number;
+  revenueKloelInCents: number;
   approvedCount: number;
   tx: TransactionCounts;
   producers: ProducerCounts;
@@ -124,22 +135,41 @@ export class AdminDashboardService {
       ? await this.snapshot(range.previous.from, range.previous.to)
       : null;
 
-    const [byGateway, byMethod, gmvDaily] = await Promise.all([
+    const [byGateway, byMethod, gmvDaily, previousGmvDaily, revenueKloelDaily, previousRevenueKloelDaily] =
+      await Promise.all([
       queryGatewayBreakdown(this.prisma, range.from, range.to),
       queryMethodBreakdown(this.prisma, range.from, range.to),
       queryGmvDailySeries(this.prisma, range.from, range.to),
+      range.previous
+        ? queryGmvDailySeries(this.prisma, range.previous.from, range.previous.to)
+        : Promise.resolve([]),
+      queryRevenueKloelDailySeries(this.prisma, range.from, range.to),
+      range.previous
+        ? queryRevenueKloelDailySeries(this.prisma, range.previous.from, range.previous.to)
+        : Promise.resolve([]),
     ]);
 
-    return this.shape(range, current, previousSnap, byGateway, byMethod, gmvDaily);
+    return this.shape(
+      range,
+      current,
+      previousSnap,
+      byGateway,
+      byMethod,
+      gmvDaily,
+      previousGmvDaily,
+      revenueKloelDaily,
+      previousRevenueKloelDaily,
+    );
   }
 
   private async snapshot(from: Date, to: Date): Promise<Snapshot> {
-    const [{ gmvInCents, approvedCount }, tx, producers] = await Promise.all([
+    const [{ gmvInCents, approvedCount }, revenueKloelInCents, tx, producers] = await Promise.all([
       queryGmvInCents(this.prisma, from, to),
+      queryRevenueKloelInCents(this.prisma, from, to),
       queryTransactionCounts(this.prisma, from, to),
       queryProducers(this.prisma, from, to),
     ]);
-    return { gmvInCents, approvedCount, tx, producers };
+    return { gmvInCents, revenueKloelInCents, approvedCount, tx, producers };
   }
 
   private shape(
@@ -149,6 +179,9 @@ export class AdminDashboardService {
     byGateway: GatewayBreakdownRow[],
     byMethod: MethodBreakdownRow[],
     gmvDaily: GmvDailyPoint[],
+    previousGmvDaily: GmvDailyPoint[],
+    revenueKloelDaily: RevenueDailyPoint[],
+    previousRevenueKloelDaily: RevenueDailyPoint[],
   ): HomeResponse {
     const prevApprovalRate = previous
       ? computeApprovalRate(previous.tx.approved, previous.tx.declined)
@@ -158,6 +191,12 @@ export class AdminDashboardService {
       ? computeAverageTicket(previous.gmvInCents, previous.tx.approved)
       : null;
     const currAvgTicket = computeAverageTicket(current.gmvInCents, current.tx.approved);
+    const prevRevenueRate =
+      previous && previous.gmvInCents > 0
+        ? previous.revenueKloelInCents / previous.gmvInCents
+        : null;
+    const currRevenueRate =
+      current.gmvInCents > 0 ? current.revenueKloelInCents / current.gmvInCents : null;
 
     return {
       range: {
@@ -209,7 +248,18 @@ export class AdminDashboardService {
           previous?.producers.newInRange ?? null,
         ),
         totalProducers: { value: current.producers.total },
-        revenueKloel: { value: null, unavailableReason: 'platform_fee_not_configured' },
+        revenueKloel: makeMoneyKpi(
+          current.revenueKloelInCents,
+          previous?.revenueKloelInCents ?? null,
+        ),
+        revenueKloelRate: {
+          value: currRevenueRate,
+          previous: prevRevenueRate,
+          deltaPct:
+            currRevenueRate === null || prevRevenueRate === null
+              ? null
+              : deltaPct(currRevenueRate, prevRevenueRate),
+        },
         mrrProjected: {
           value: null,
           unavailableReason: 'subscription_aggregation_not_ready',
@@ -217,7 +267,12 @@ export class AdminDashboardService {
         churnRate: { value: null, unavailableReason: 'cohort_definition_pending' },
       },
       breakdowns: { byGateway, byMethod },
-      series: { gmvDaily },
+      series: {
+        gmvDaily,
+        previousGmvDaily,
+        revenueKloelDaily,
+        previousRevenueKloelDaily,
+      },
     };
   }
 }

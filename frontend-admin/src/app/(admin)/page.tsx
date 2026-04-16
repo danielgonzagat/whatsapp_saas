@@ -27,10 +27,6 @@ const METHOD_LABELS: Record<string, string> = {
   BOLETO: 'Boleto',
 };
 
-function unavailable(value?: number | null) {
-  return value ?? null;
-}
-
 export default function AdminHomePage() {
   const { admin } = useAdminSession();
   const [period, setPeriod] = useState<AdminHomePeriod>('7D');
@@ -66,22 +62,22 @@ export default function AdminHomePage() {
       />
 
       <AdminHeroSplit
-        label="GMV total da plataforma"
-        value={data?.kpis.gmv.value ?? null}
+        label="Revenue Kloel"
+        value={data?.kpis.revenueKloel.value ?? null}
         description={
           <>
-            Volume bruto aprovado em{' '}
+            Receita própria da plataforma em{' '}
             <span className="font-semibold text-[var(--app-text-primary)]">
               {data?.range.label || 'Últimos 7 dias'}
             </span>
-            .
+            . GMV permanece como camada paralela de análise, sem disputar o foco do caixa Kloel.
           </>
         }
         compactCards={[
           {
-            label: 'Revenue Kloel',
-            value: null,
-            note: 'Dados sendo coletados',
+            label: 'GMV total da plataforma',
+            value: data?.kpis.gmv.value ?? null,
+            note: 'Volume bruto aprovado no período',
             tone: 'text-[var(--app-accent)]',
           },
           {
@@ -130,12 +126,12 @@ export default function AdminHomePage() {
           },
           {
             label: 'MRR projetado',
-            value: unavailable(data?.kpis.mrrProjected.value),
+            value: data?.kpis.mrrProjected.value ?? null,
             detail: 'Dados sendo coletados',
           },
           {
             label: 'Churn de produtores',
-            value: unavailable(data?.kpis.churnRate.value),
+            value: data?.kpis.churnRate.value ?? null,
             kind: 'percentage',
             detail: 'Dados sendo coletados',
           },
