@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { MetricNumber, type MetricNumberProps } from '@/components/ui/metric-number';
 import { cn } from '@/lib/utils';
 
@@ -12,13 +12,22 @@ export function AdminPage({ children }: { children: ReactNode }) {
   );
 }
 
-export function AdminSurface({ children, className }: { children: ReactNode; className?: string }) {
+export function AdminSurface({
+  children,
+  className,
+  style,
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
     <section
       className={cn(
         'rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-card)]',
         className,
       )}
+      style={style}
     >
       {children}
     </section>
@@ -210,6 +219,44 @@ export function AdminPillTabs({
   );
 }
 
+export function AdminSubinterfaceTabs({
+  items,
+  active,
+  onChange,
+}: {
+  items: Array<{ key: string; label: string; icon?: ReactNode }>;
+  active: string;
+  onChange: (key: string) => void;
+}) {
+  return (
+    <div
+      className="mx-auto mb-6 flex max-w-[1240px] gap-1 overflow-x-auto pb-2"
+      style={{ scrollbarWidth: 'none' }}
+    >
+      {items.map((item) => {
+        const isActive = item.key === active;
+        return (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => onChange(item.key)}
+            className={cn(
+              'inline-flex shrink-0 items-center gap-1.5 rounded-md bg-transparent px-3.5 py-2 text-[12px] transition-colors',
+              isActive
+                ? 'font-semibold text-[var(--app-accent)]'
+                : 'font-medium text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)]',
+            )}
+            style={{ fontFamily: "var(--font-sora), 'Sora', sans-serif" }}
+          >
+            {item.icon ? <span className="flex items-center">{item.icon}</span> : null}
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AdminTicker({
   items,
   emptyLabel = 'Dados sendo coletados',
@@ -248,6 +295,89 @@ export function AdminTicker({
         </div>
       </div>
     </AdminSurface>
+  );
+}
+
+export function AdminProgressList({
+  items,
+  accent = 'var(--app-accent)',
+}: {
+  items: Array<{
+    label: string;
+    valueLabel: string;
+    progress: number;
+  }>;
+  accent?: string;
+}) {
+  return (
+    <div className="grid gap-3">
+      {items.map((item) => (
+        <div key={item.label}>
+          <div className="mb-1.5 flex items-center justify-between gap-3">
+            <span className="text-[11px] text-[var(--app-text-secondary)]">{item.label}</span>
+            <span
+              className="text-[11px] text-[var(--app-text-primary)]"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {item.valueLabel}
+            </span>
+          </div>
+          <div className="h-1 overflow-hidden rounded-full bg-[var(--app-border-primary)]">
+            <div
+              className="h-full rounded-full transition-[width]"
+              style={{
+                width: `${Math.max(0, Math.min(100, item.progress))}%`,
+                background: accent,
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AdminTimelineFeed({
+  items,
+}: {
+  items: Array<{
+    id: string;
+    title: string;
+    body: string;
+    meta?: string;
+  }>;
+}) {
+  if (items.length === 0) {
+    return (
+      <AdminEmptyState
+        title="Nada por aqui ainda"
+        description="Assim que eventos forem registrados, o feed passa a refletir a operação em tempo real."
+      />
+    );
+  }
+
+  return (
+    <div className="grid gap-2">
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3"
+        >
+          <div className="mb-1 text-[13px] font-semibold text-[var(--app-text-primary)]">
+            {item.title}
+          </div>
+          <div className="text-[12px] leading-6 text-[var(--app-text-secondary)]">{item.body}</div>
+          {item.meta ? (
+            <div
+              className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {item.meta}
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }
 

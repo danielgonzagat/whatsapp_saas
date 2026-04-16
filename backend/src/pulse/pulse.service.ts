@@ -1,4 +1,4 @@
-import os from 'node:os';
+import * as os from 'node:os';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -7,6 +7,8 @@ import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { SystemHealthService } from '../health/system-health.service';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
+
+const S_RE = /\s+/g;
 
 type PulseOrganismRole = 'backend' | 'worker' | 'frontend' | 'scanner';
 type PulseOrganismStatus = 'UP' | 'DEGRADED' | 'DOWN' | 'STALE';
@@ -71,7 +73,7 @@ function safeJsonParse<T>(value: string | null | undefined): T | null {
 }
 
 function compactText(value: string, max = 600) {
-  const compact = value.replace(/\s+/g, ' ').trim();
+  const compact = value.replace(S_RE, ' ').trim();
   if (compact.length <= max) return compact;
   return `${compact.slice(0, max - 3)}...`;
 }
@@ -481,6 +483,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const nodes = await this.hydrateNodes(registry);
     const now = Date.now();
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential node health check
     for (const node of nodes) {
       if (!node.stale) continue;
 
@@ -513,6 +516,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const registry = await this.redis.hgetall(FRONTEND_REGISTRY_KEY);
     const nodes = await this.hydrateNodes(registry);
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential node health check
     for (const node of nodes) {
       if (!node.stale) continue;
       if ((node.staleMs || 0) <= FRONTEND_RETENTION_MS) continue;
@@ -640,11 +644,15 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   }
 
   private getNodeSuffix() {
+    const safeHostname =
+      typeof (os as { hostname?: unknown } | undefined)?.hostname === 'function'
+        ? os.hostname()
+        : 'local';
     return (
       process.env.RAILWAY_REPLICA_ID ||
       process.env.RAILWAY_SERVICE_ID ||
       process.env.HOSTNAME ||
-      os.hostname()
+      safeHostname
     );
   }
 

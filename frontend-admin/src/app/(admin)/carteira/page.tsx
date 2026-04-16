@@ -1,22 +1,22 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { startTransition } from 'react';
-import useSWR from 'swr';
-import { MetricNumber } from '@/components/ui/metric-number';
 import {
   AdminEmptyState,
   AdminPage,
-  AdminPageIntro,
-  AdminPillTabs,
   AdminSectionHeader,
+  AdminSubinterfaceTabs,
   AdminSurface,
 } from '@/components/admin/admin-monitor-ui';
+import { MetricNumber } from '@/components/ui/metric-number';
 import {
   adminCarteiraApi,
   type ListLedgerResponse,
   type PlatformWalletBalance,
 } from '@/lib/api/admin-carteira-api';
+import { adminDashboardApi, type AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { startTransition, useMemo } from 'react';
+import useSWR from 'swr';
 
 const TABS = [
   { key: 'saldo', label: 'Saldo' },
@@ -38,6 +38,33 @@ const BUCKET_LABEL: Record<string, string> = {
   RESERVED: 'Reserva',
 };
 
+const FONT_MONO = "'JetBrains Mono', monospace";
+
+function RevenueBars({ values }: { values: number[] }) {
+  const max = Math.max(1, ...values);
+
+  return (
+    <div className="grid h-[180px] grid-cols-7 items-end gap-3">
+      {values.map((value, index) => (
+        <div key={index} className="flex flex-col items-center gap-2">
+          <div className="flex h-[150px] items-end">
+            <div
+              className="w-6 rounded-t-[4px] bg-[var(--app-accent)]"
+              style={{ height: `${Math.max(8, Math.round((value / max) * 140))}px` }}
+            />
+          </div>
+          <div
+            className="text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]"
+            style={{ fontFamily: FONT_MONO }}
+          >
+            {index + 1}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CarteiraPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -49,19 +76,24 @@ export default function CarteiraPage() {
   const { data: ledger } = useSWR<ListLedgerResponse>('admin/carteira/ledger', () =>
     adminCarteiraApi.ledger({ take: 40 }),
   );
+  const { data: dashboard } = useSWR<AdminHomeResponse>(['admin/dashboard/home', '7D'], () =>
+    adminDashboardApi.home({ period: '7D', compare: 'NONE' }),
+  );
+
+  const revenueBars = useMemo(
+    () =>
+      (dashboard?.series.revenueKloelDaily || [])
+        .map((point: { revenueInCents: number }) => point.revenueInCents)
+        .slice(-7),
+    [dashboard?.series.revenueKloelDaily],
+  );
 
   return (
     <AdminPage>
-      <AdminPageIntro
-        eyebrow="TESOURARIA"
-        title="Carteira"
-        description="Saldo, extrato e operação financeira da plataforma no mesmo ritmo visual do app principal."
-      />
-
-      <AdminPillTabs
+      <AdminSubinterfaceTabs
         items={TABS.map((tab) => ({ key: tab.key, label: tab.label }))}
         active={activeTab}
-        onChange={(nextTab) =>
+        onChange={(nextTab: string) =>
           startTransition(() => {
             router.push(`/carteira?tab=${encodeURIComponent(nextTab)}`);
           })
@@ -78,13 +110,13 @@ export default function CarteiraPage() {
               {
                 label: 'Saldo disponível',
                 value: balance?.availableInCents ?? null,
-                note: 'Disponível para operação da plataforma',
+                note: 'Dinheiro próprio da plataforma',
                 tone: 'text-[var(--app-accent)]',
               },
               {
                 label: 'A receber',
                 value: balance?.pendingInCents ?? null,
-                note: 'Transações em liquidação',
+                note: 'Liquidação em curso',
                 tone: 'text-amber-600',
               },
               {
@@ -101,7 +133,7 @@ export default function CarteiraPage() {
                       (balance.pendingInCents || 0) +
                       (balance.reservedInCents || 0)
                     : null,
-                note: 'Soma dos buckets ativos',
+                note: 'Soma dos buckets operacionais',
                 tone: 'text-[var(--app-text-primary)]',
               },
             ].map((item) => (
@@ -120,48 +152,55 @@ export default function CarteiraPage() {
           </div>
 
           {activeTab === 'saldo' ? (
-            <AdminSurface className="px-5 py-5 lg:px-6">
-              <AdminSectionHeader
-                title="Últimas transações"
-                description="Leitura resumida das linhas mais recentes do ledger da plataforma."
-              />
-              {!ledger || ledger.items.length === 0 ? (
-                <AdminEmptyState
-                  title="Nenhuma movimentação recente"
-                  description="Assim que entradas e saídas financeiras forem registradas, elas aparecerão aqui."
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.88fr)]">
+              <AdminSurface className="px-5 py-5 lg:px-6">
+                <AdminSectionHeader
+                  title="Receita - últimos 7 dias"
+                  description="Barras diárias da receita própria da Kloel."
                 />
-              ) : (
-                <div className="grid gap-2">
-                  {ledger.items.slice(0, 8).map((row) => (
-                    <div
-                      key={row.id}
-                      className="flex flex-col gap-2 rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
-                    >
-                      <div>
+                <RevenueBars values={revenueBars.length > 0 ? revenueBars : Array.from({ length: 7 }, () => 0)} />
+              </AdminSurface>
+
+              <AdminSurface className="px-5 py-5 lg:px-6">
+                <AdminSectionHeader
+                  title="Últimas transações"
+                  description="Recorte rápido do ledger da plataforma."
+                />
+                {!ledger || ledger.items.length === 0 ? (
+                  <AdminEmptyState
+                    title="Nenhuma movimentação recente"
+                    description="Assim que entradas e saídas financeiras forem registradas, elas aparecerão aqui."
+                  />
+                ) : (
+                  <div className="grid gap-2">
+                    {ledger.items.slice(0, 8).map((row) => (
+                      <div
+                        key={row.id}
+                        className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3"
+                      >
                         <div className="mb-1 text-[12px] font-semibold text-[var(--app-text-primary)]">
                           {row.kind}
                         </div>
                         <div className="text-[11px] text-[var(--app-text-secondary)]">
                           {BUCKET_LABEL[row.bucket] || row.bucket} · {row.reason}
                         </div>
-                      </div>
-                      <div className="text-left lg:text-right">
-                        <MetricNumber
-                          value={
-                            row.direction === 'credit' ? row.amountInCents : -row.amountInCents
-                          }
-                          kind="currency-brl"
-                          className="text-[14px] font-semibold text-[var(--app-text-primary)]"
-                        />
-                        <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
-                          {new Date(row.createdAt).toLocaleString('pt-BR')}
+                        <div
+                          className="mt-2 text-[12px] font-semibold text-[var(--app-text-primary)]"
+                          style={{ fontFamily: FONT_MONO }}
+                        >
+                          {row.direction === 'credit' ? '+' : '-'}
+                          <MetricNumber
+                            value={row.amountInCents}
+                            kind="currency-brl"
+                            className="inline text-[12px] font-semibold text-[var(--app-text-primary)]"
+                          />
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </AdminSurface>
+                    ))}
+                  </div>
+                )}
+              </AdminSurface>
+            </div>
           ) : null}
 
           {activeTab === 'extrato' ? (
@@ -248,7 +287,7 @@ export default function CarteiraPage() {
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
             title={TABS.find((tab) => tab.key === activeTab)?.label || 'Módulo'}
-            description="A superfície segue o mesmo design system do app principal e permanece honesta quando o dado ainda não está disponível."
+            description="Módulos extras do admin encaixados sobre a mesma base visual do app."
           />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {['Cards KPI', 'Tabela operacional', 'Ações Ember'].map((label) => (

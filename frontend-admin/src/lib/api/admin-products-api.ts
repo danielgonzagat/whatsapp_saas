@@ -16,6 +16,14 @@ export interface AdminProductRow {
   imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
+  commerce: {
+    approvedOrders: number;
+    pendingOrders: number;
+    refundedOrders: number;
+    chargebackOrders: number;
+    gmvInCents: number;
+    last30dGmvInCents: number;
+  };
 }
 
 export interface ListProductsResponse {

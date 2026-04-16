@@ -1,24 +1,23 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { startTransition, useMemo, useState } from 'react';
-import useSWR from 'swr';
-import { MetricNumber } from '@/components/ui/metric-number';
 import {
   AdminEmptyState,
-  AdminMetricGrid,
   AdminPage,
-  AdminPageIntro,
-  AdminPillTabs,
   AdminSectionHeader,
+  AdminSubinterfaceTabs,
   AdminSurface,
 } from '@/components/admin/admin-monitor-ui';
+import { MetricNumber } from '@/components/ui/metric-number';
 import {
   adminTransactionsApi,
   type ListTransactionsResponse,
   type OrderStatusValue,
   type PaymentMethodValue,
 } from '@/lib/api/admin-transactions-api';
+import { adminDashboardApi, type AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { startTransition, useMemo, useState } from 'react';
+import useSWR from 'swr';
 
 const TABS = [
   { key: 'vendas', label: 'Gestão de Vendas' },
@@ -34,20 +33,52 @@ const STATUS_OPTIONS: Array<{ value: '' | OrderStatusValue; label: string }> = [
   { value: 'PENDING', label: 'Pendente' },
   { value: 'REFUNDED', label: 'Reembolsado' },
   { value: 'CHARGEBACK', label: 'Chargeback' },
-];
+] as const;
 
 const METHOD_OPTIONS: Array<{ value: '' | PaymentMethodValue; label: string }> = [
   { value: '', label: 'Todos os métodos' },
   { value: 'CREDIT_CARD', label: 'Cartão' },
   { value: 'PIX', label: 'PIX' },
   { value: 'BOLETO', label: 'Boleto' },
-];
+] as const;
 
 const METHOD_LABELS: Record<PaymentMethodValue, string> = {
   CREDIT_CARD: 'Cartão',
   PIX: 'PIX',
   BOLETO: 'Boleto',
 };
+
+const FONT_MONO = "'JetBrains Mono', monospace";
+
+function formatInteger(value: number | null | undefined) {
+  if (value === null || value === undefined) return '—';
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
+}
+
+function DayBars({ values }: { values: number[] }) {
+  const max = Math.max(1, ...values);
+
+  return (
+    <div className="grid h-[180px] grid-cols-7 items-end gap-3">
+      {values.map((value, index) => (
+        <div key={index} className="flex flex-col items-center gap-2">
+          <div className="flex h-[150px] items-end">
+            <div
+              className="w-6 rounded-t-[4px] bg-[var(--app-accent)]"
+              style={{ height: `${Math.max(8, Math.round((value / max) * 140))}px` }}
+            />
+          </div>
+          <div
+            className="text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]"
+            style={{ fontFamily: FONT_MONO }}
+          >
+            {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'][index]}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function VendasPage() {
   const router = useRouter();
@@ -56,17 +87,22 @@ export default function VendasPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'' | OrderStatusValue>('');
   const [method, setMethod] = useState<'' | PaymentMethodValue>('');
+  const [gateway, setGateway] = useState('');
 
   const { data } = useSWR<ListTransactionsResponse>(
-    ['admin/transactions', activeTab, search, status, method],
+    ['admin/transactions', activeTab, search, status, method, gateway],
     () =>
       adminTransactionsApi.list({
         search: search || undefined,
         status: status || undefined,
         method: method || undefined,
+        gateway: gateway || undefined,
         take: 80,
       }),
     { refreshInterval: 60_000, revalidateOnFocus: false },
+  );
+  const { data: dashboard } = useSWR<AdminHomeResponse>(['admin/dashboard/home', '30D'], () =>
+    adminDashboardApi.home({ period: '30D', compare: 'NONE' }),
   );
 
   const items = data?.items || [];
@@ -75,77 +111,85 @@ export default function VendasPage() {
     (item) => item.status === 'PENDING' || item.status === 'PROCESSING',
   ).length;
   const refundedCount = items.filter((item) => item.status === 'REFUNDED').length;
-  const averageTicket =
-    items.length > 0
-      ? Math.round(items.reduce((sum, item) => sum + item.totalInCents, 0) / items.length)
-      : null;
+  const gatewayOptions = Array.from(new Set(items.map((item) => item.gateway).filter(Boolean))).sort();
 
-  const pipelineGroups = useMemo(
-    () => [
-      { label: 'Pagamento', count: paidCount },
-      { label: 'Pendente', count: pendingCount },
-      {
-        label: 'Entrega',
-        count: items.filter((item) => item.status === 'SHIPPED' || item.status === 'DELIVERED')
-          .length,
-      },
-      { label: 'Risco', count: items.filter((item) => item.status === 'CHARGEBACK').length },
-    ],
-    [items, paidCount, pendingCount],
-  );
+  const chartValues = useMemo(() => {
+    const values = Array.from({ length: 7 }, () => 0);
+    for (const item of items) {
+      const day = new Date(item.paidAt || item.createdAt).getDay();
+      values[day] += item.totalInCents;
+    }
+    return values;
+  }, [items]);
 
   return (
     <AdminPage>
-      <AdminPageIntro
-        eyebrow="OPERAÇÃO FINANCEIRA"
-        title="Vendas"
-        description="Transações, recorrência e pipeline comercial da plataforma inteira no mesmo padrão visual do app."
-      />
-
-      <AdminPillTabs
+      <AdminSubinterfaceTabs
         items={TABS.map((tab) => ({ key: tab.key, label: tab.label }))}
         active={activeTab}
-        onChange={(nextTab) =>
+        onChange={(nextTab: string) =>
           startTransition(() => {
             router.push(`/vendas?tab=${encodeURIComponent(nextTab)}`);
           })
         }
       />
 
-      <AdminMetricGrid
-        items={[
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {[
           {
-            label: 'Faturamento total',
-            value: data?.sum.totalInCents ?? null,
-            detail: 'Volume filtrado na leitura atual',
+            label: 'Receita Kloel',
+            value: dashboard?.kpis.revenueKloel.value ?? null,
+            detail: 'Receita própria da plataforma',
             tone: 'text-[var(--app-accent)]',
+          },
+          {
+            label: 'GMV',
+            value: dashboard?.kpis.gmv.value ?? null,
+            detail: 'GMV separado do dinheiro da Kloel',
+            tone: 'text-[var(--app-text-primary)]',
           },
           {
             label: 'Transações',
             value: items.length,
-            kind: 'integer',
-            detail: 'Linhas retornadas pela API',
-          },
-          {
-            label: 'Pendentes',
-            value: pendingCount,
-            kind: 'integer',
-            detail: 'Aguardando decisão ou pagamento',
+            detail: 'Linhas na leitura atual',
+            tone: 'text-[var(--app-text-primary)]',
+            kind: 'integer' as const,
           },
           {
             label: 'Ticket médio',
-            value: averageTicket,
-            detail: 'Média por transação carregada',
+            value: dashboard?.kpis.averageTicket.value ?? null,
+            detail: 'Média aprovada no período',
+            tone: 'text-[var(--app-text-primary)]',
           },
-        ]}
-      />
+        ].map((item) => (
+          <AdminSurface key={item.label} className="px-5 py-5">
+            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+              {item.label}
+            </div>
+            <MetricNumber
+              value={item.value}
+              kind={item.kind || 'currency-brl'}
+              className={`text-[28px] font-bold tracking-[-0.04em] ${item.tone}`}
+            />
+            <div className="mt-2 text-[11px] text-[var(--app-text-secondary)]">{item.detail}</div>
+          </AdminSurface>
+        ))}
+      </div>
 
       {activeTab === 'vendas' ? (
         <>
           <AdminSurface className="px-5 py-5 lg:px-6">
             <AdminSectionHeader
+              title="Vendas no período"
+              description="A mesma lógica do app: KPIs no topo e um gráfico simples para leitura rápida."
+            />
+            <DayBars values={chartValues} />
+          </AdminSurface>
+
+          <AdminSurface className="px-5 py-5 lg:px-6">
+            <AdminSectionHeader
               title="Filtros"
-              description="Busque por cliente ou produtor e refine o recorte por status e método."
+              description="Busque por cliente ou produtor, e refine por status, método e gateway."
             />
             <div className="flex flex-col gap-3 lg:flex-row">
               <input
@@ -176,13 +220,25 @@ export default function VendasPage() {
                   </option>
                 ))}
               </select>
+              <select
+                value={gateway}
+                onChange={(event) => setGateway(event.target.value)}
+                className="h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none"
+              >
+                <option value="">Todos os gateways</option>
+                {gatewayOptions.map((option) => (
+                  <option key={option} value={option || ''}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
           </AdminSurface>
 
           <AdminSurface className="px-5 py-5 lg:px-6">
             <AdminSectionHeader
               title="Gestão de vendas"
-              description="Tabela consolidada de toda a plataforma."
+              description="Tabela consolidada com visão global da plataforma."
             />
             {items.length === 0 ? (
               <AdminEmptyState
@@ -191,13 +247,14 @@ export default function VendasPage() {
               />
             ) : (
               <div className="overflow-x-auto rounded-md border border-[var(--app-border-primary)]">
-                <table className="w-full min-w-[980px] text-left text-[13px]">
+                <table className="w-full min-w-[1080px] text-left text-[13px]">
                   <thead className="bg-[var(--app-bg-secondary)] text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
                     <tr>
                       <th className="px-4 py-3">Cliente</th>
                       <th className="px-4 py-3">Produtor</th>
                       <th className="px-4 py-3">Método</th>
                       <th className="px-4 py-3">Gateway</th>
+                      <th className="px-4 py-3">Afiliado</th>
                       <th className="px-4 py-3 text-right">Valor</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Data</th>
@@ -224,6 +281,9 @@ export default function VendasPage() {
                         </td>
                         <td className="px-4 py-3 text-[var(--app-text-secondary)]">
                           {item.gateway || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                          {item.affiliateId || '—'}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <MetricNumber
@@ -254,7 +314,7 @@ export default function VendasPage() {
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
             title="Assinaturas"
-            description="Camada visual no padrão do app. Os indicadores globais aparecem sem expor backlog técnico."
+            description="Mesma superfície do app, agora em modo global."
           />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             {[
@@ -309,15 +369,12 @@ export default function VendasPage() {
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
             title="Produtos físicos"
-            description="Leitura de fulfillment usando os status já consolidados na transação."
+            description="Fulfillment global da plataforma."
           />
           <div className="grid gap-3 md:grid-cols-4">
             {[
               { label: 'Pedidos totais', value: items.length },
-              {
-                label: 'Aguardando envio',
-                value: items.filter((item) => item.status === 'PROCESSING').length,
-              },
+              { label: 'Aguardando envio', value: pendingCount },
               {
                 label: 'Em trânsito',
                 value: items.filter((item) => item.status === 'SHIPPED').length,
@@ -335,7 +392,7 @@ export default function VendasPage() {
                   {item.label}
                 </div>
                 <div className="text-[24px] font-bold tracking-[-0.04em] text-[var(--app-text-primary)]">
-                  {item.value}
+                  {formatInteger(item.value)}
                 </div>
               </div>
             ))}
@@ -347,19 +404,27 @@ export default function VendasPage() {
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
             title="Pipeline CRM"
-            description="Visão macro do fluxo operacional com os status disponíveis na camada transacional."
+            description="Visão macro do fluxo comercial e operacional."
           />
           <div className="grid gap-3 md:grid-cols-4">
-            {pipelineGroups.map((group) => (
+            {[
+              { label: 'Pago', value: paidCount },
+              { label: 'Pendente', value: pendingCount },
+              { label: 'Reembolsado', value: refundedCount },
+              {
+                label: 'Chargeback',
+                value: items.filter((item) => item.status === 'CHARGEBACK').length,
+              },
+            ].map((item) => (
               <div
-                key={group.label}
+                key={item.label}
                 className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-4"
               >
                 <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
-                  {group.label}
+                  {item.label}
                 </div>
                 <div className="text-[24px] font-bold tracking-[-0.04em] text-[var(--app-text-primary)]">
-                  {group.count}
+                  {formatInteger(item.value)}
                 </div>
               </div>
             ))}
@@ -371,16 +436,16 @@ export default function VendasPage() {
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
             title="Estratégias"
-            description="Superfície administrativa para leitura e decisão, sem metadados de desenvolvimento expostos."
+            description="Leitura operacional e comercial sem expor metadados de desenvolvimento."
           />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {[
               'Recuperar carrinhos',
-              'Oferecer order bump',
               'Escalar recorrência',
               'Cobrança imediata',
               'Fulfillment físico',
               'Pipeline comercial',
+              'Monitorar chargebacks',
             ].map((label) => (
               <div
                 key={label}
