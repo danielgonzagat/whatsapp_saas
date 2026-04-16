@@ -1,7 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { chromium } = require('playwright');
 const { MercadoPagoConfig, Order } = require('mercadopago');
-const util = require('util');
+const util = require('node:util');
 
 function required(name) {
   const value = String(process.env[name] || '').trim();

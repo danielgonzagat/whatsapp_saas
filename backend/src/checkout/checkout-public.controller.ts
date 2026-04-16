@@ -1,16 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  Ip,
-  Logger,
-  Param,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Headers, Ip, Param, Patch, Post, Query } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
@@ -26,8 +15,6 @@ import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 @Public()
 @Throttle({ default: { limit: 30, ttl: 60000 } })
 export class CheckoutPublicController {
-  private readonly logger = new Logger(CheckoutPublicController.name);
-
   constructor(
     private readonly checkoutService: CheckoutService,
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
@@ -35,7 +22,7 @@ export class CheckoutPublicController {
 
   @Get('recent-sales')
   async getRecentSales(@Query('limit') limit?: string) {
-    const take = Math.min(Number.parseInt(limit || '5'), 10);
+    const take = Math.min(Number.parseInt(limit || '5', 10), 10);
     const recent = await this.checkoutService.getRecentPaidOrders(take);
     return recent.map((order) => ({
       name: this.maskName(order.customerName || 'Cliente'),

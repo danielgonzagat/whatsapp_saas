@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
-import { AgentAssistService } from '../ai-brain/agent-assist.service';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,7 +10,6 @@ export class MoneyMachineService {
   constructor(
     private prisma: PrismaService,
     private campaigns: CampaignsService,
-    private agentAssist: AgentAssistService,
   ) {}
 
   async activate(workspaceId: string) {

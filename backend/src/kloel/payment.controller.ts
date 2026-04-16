@@ -6,7 +6,6 @@ import {
   Get,
   Headers,
   HttpCode,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -24,8 +23,6 @@ import { PaymentService } from './payment.service';
 @Controller('kloel/payments')
 @UseGuards(ThrottlerGuard)
 export class PaymentController {
-  private readonly logger = new Logger(PaymentController.name);
-
   constructor(private readonly paymentService: PaymentService) {}
 
   @Public()

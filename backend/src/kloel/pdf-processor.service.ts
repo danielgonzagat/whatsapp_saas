@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { PrismaService } from '../prisma/prisma.service';
 import { MemoryService } from './memory.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 
@@ -12,7 +11,6 @@ export class PdfProcessorService {
   private openai: OpenAI;
 
   constructor(
-    private readonly prisma: PrismaService,
     private readonly memoryService: MemoryService,
     private readonly planLimits: PlanLimitsService,
   ) {

@@ -1,13 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class MassSendService {
   private queue: Queue;
 
-  constructor(private readonly whatsappService: WhatsappService) {
+  constructor() {
     this.queue = new Queue('mass-send', {
       connection: createRedisClient(),
     });

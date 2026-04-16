@@ -260,7 +260,7 @@ export class FlowsController {
   async getFlowVersion(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
-    @Param('flowId') flowId: string,
+    @Param('flowId') _flowId: string,
     @Param('versionId') versionId: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);

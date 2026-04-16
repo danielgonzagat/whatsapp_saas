@@ -46,7 +46,7 @@ export class WhatsAppBrainService {
       to: value.metadata?.display_phone_number || 'unknown',
       message: message.text?.body || '',
       messageType: message.type,
-      timestamp: new Date(Number.parseInt(message.timestamp) * 1000),
+      timestamp: new Date(Number.parseInt(message.timestamp, 10) * 1000),
       messageId: message.id,
       workspaceId,
     };

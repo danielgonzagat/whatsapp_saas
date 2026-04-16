@@ -3,7 +3,6 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 import { validateExternalUrl } from '../common/utils/url-validator';
-import { PrismaService } from '../prisma/prisma.service';
 import { normalizeMetaGraphPath } from './meta-input.util';
 
 export interface GraphApiResponse {
@@ -24,10 +23,7 @@ export class MetaSdkService {
     return `https://graph.facebook.com/${this.graphApiVersion}`;
   }
 
-  constructor(
-    private readonly prisma: PrismaService,
-    @InjectRedis() private readonly redis: Redis,
-  ) {}
+  constructor(@InjectRedis() private readonly redis: Redis) {}
 
   // ─── Graph API helpers ───────────────────────────────────────────
 

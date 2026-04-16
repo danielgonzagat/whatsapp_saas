@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 // Jest E2E mock for @whiskeysockets/baileys
 // The backend e2e suite loads AppModule which imports Baileys for WhatsApp connection.

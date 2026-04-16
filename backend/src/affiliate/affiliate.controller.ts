@@ -243,7 +243,7 @@ export class AffiliateController {
   async listMarketplace(
     @Request() req: AuthenticatedRequest,
     @Query('category') category?: string,
-    @Query('search') search?: string,
+    @Query('search') _search?: string,
     @Query('sort') sort?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,

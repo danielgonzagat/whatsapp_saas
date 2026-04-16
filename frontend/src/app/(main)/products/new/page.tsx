@@ -423,7 +423,7 @@ export default function NewProductPage() {
         paymentType: form.paymentType,
         affiliateCommission: Number.parseFloat(form.affiliateCommission) || 0,
         salesPageUrl: form.salesPageUrl || undefined,
-        guaranteeDays: Number.parseInt(form.guaranteeDays) || 30,
+        guaranteeDays: Number.parseInt(form.guaranteeDays, 10) || 30,
         checkoutType: form.checkoutType,
         facebookPixelId: form.facebookPixelId || undefined,
         googleTagManagerId: form.googleTagManagerId || undefined,
@@ -431,8 +431,8 @@ export default function NewProductPage() {
         affiliateCommissionPercent: Number.parseFloat(form.affiliateCommissionPercent) || 0,
         affiliateApprovalMode: form.affiliateApprovalMode,
         billingType: form.billingType,
-        maxInstallments: Number.parseInt(form.maxInstallments) || 12,
-        interestFreeInstallments: Number.parseInt(form.interestFreeInstallments) || 1,
+        maxInstallments: Number.parseInt(form.maxInstallments, 10) || 12,
+        interestFreeInstallments: Number.parseInt(form.interestFreeInstallments, 10) || 1,
         status: 'PENDING',
       };
 
@@ -443,7 +443,7 @@ export default function NewProductPage() {
         body.depth = Number.parseFloat(form.depth) || undefined;
         body.weight = Number.parseFloat(form.weight) || undefined;
         body.shippingResponsible = form.shippingResponsible;
-        body.dispatchTime = Number.parseInt(form.dispatchTime) || 3;
+        body.dispatchTime = Number.parseInt(form.dispatchTime, 10) || 3;
         body.carriers = form.carriers;
       }
 
@@ -1564,7 +1564,7 @@ export default function NewProductPage() {
                     onChange={(e) => updateForm({ interestFreeInstallments: e.target.value })}
                   >
                     {Array.from(
-                      { length: Number.parseInt(form.maxInstallments) || 12 },
+                      { length: Number.parseInt(form.maxInstallments, 10) || 12 },
                       (_, i) => i + 1,
                     ).map((n) => (
                       <option key={n} value={String(n)}>

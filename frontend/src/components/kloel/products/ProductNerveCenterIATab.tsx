@@ -75,8 +75,8 @@ export function ProductNerveCenterIATab() {
           customerProfile: { whobuys, pains, promise },
           objections: objs,
           tone,
-          persistenceLevel: Number.parseInt(persist) || 3,
-          messageLimit: Number.parseInt(msgLimit) || 10,
+          persistenceLevel: Number.parseInt(persist, 10) || 3,
+          messageLimit: Number.parseInt(msgLimit, 10) || 10,
           followUpConfig: {
             schedule: followUp,
             autoCheckoutLink: autoLink,

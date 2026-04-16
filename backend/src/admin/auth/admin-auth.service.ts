@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AdminUser, AdminUserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -30,8 +30,6 @@ export interface MfaSetupPayload {
 
 @Injectable()
 export class AdminAuthService {
-  private readonly logger = new Logger(AdminAuthService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly mfa: AdminMfaService,
@@ -206,7 +204,7 @@ export class AdminAuthService {
     let otpauthUrl: string;
     let qrDataUrl: string;
 
-    if (existing && existing.mfaSecret && existing.mfaPendingSetup && !existing.mfaEnabled) {
+    if (existing?.mfaSecret && existing.mfaPendingSetup && !existing.mfaEnabled) {
       const resumed = await this.mfa.resumeSetup(admin.email, existing.mfaSecret);
       encryptedSecret = resumed.encryptedSecret;
       otpauthUrl = resumed.otpauthUrl;

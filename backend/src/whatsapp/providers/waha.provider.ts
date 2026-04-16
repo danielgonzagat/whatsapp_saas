@@ -541,16 +541,6 @@ export class WahaProvider {
     }
   }
 
-  private isSessionMissingMessage(message?: string): boolean {
-    const lower = String(message || '').toLowerCase();
-    return (
-      lower.includes('404') ||
-      lower.includes('not found') ||
-      lower.includes('session') ||
-      lower.includes('does not exist')
-    );
-  }
-
   private isAlreadyExistsMessage(message?: string): boolean {
     const lower = String(message || '').toLowerCase();
     return lower.includes('already') || lower.includes('exist') || lower.includes('conflict');

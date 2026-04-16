@@ -29,7 +29,7 @@ export class HealthMonitor {
    * Report current status of an instance.
    */
   static async reportStatus(workspaceId: string, status: InstanceStatus, meta: any = {}) {
-    const key = `${this.KEY_PREFIX}:${workspaceId}`;
+    const key = `${HealthMonitor.KEY_PREFIX}:${workspaceId}`;
     const data = {
       status,
       lastCheck: Date.now(),

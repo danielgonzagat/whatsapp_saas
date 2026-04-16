@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Logger,
   NotFoundException,
   Param,
   Patch,
@@ -34,8 +33,6 @@ import { UpdateConfigDto } from './dto/update-config.dto';
 @UseGuards(JwtAuthGuard)
 @Throttle({ default: { limit: 30, ttl: 60000 } })
 export class CheckoutController {
-  private readonly logger = new Logger(CheckoutController.name);
-
   constructor(
     private readonly checkoutService: CheckoutService,
     private readonly prisma: PrismaService,

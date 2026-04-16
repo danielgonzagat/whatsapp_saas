@@ -459,7 +459,10 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   aria-label="Itens por plano"
                   value={newPlan.itemsPerPlan}
                   onChange={(e) =>
-                    setNewPlan({ ...newPlan, itemsPerPlan: Number.parseInt(e.target.value) || 1 })
+                    setNewPlan({
+                      ...newPlan,
+                      itemsPerPlan: Number.parseInt(e.target.value, 10) || 1,
+                    })
                   }
                   style={inputStyle}
                   id="itens-por-plano-1f7158"

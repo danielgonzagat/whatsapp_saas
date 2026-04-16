@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
 /**
@@ -45,8 +45,6 @@ import type { Prisma } from '@prisma/client';
  */
 @Injectable()
 export class WalletLedgerService {
-  private readonly logger = new Logger(WalletLedgerService.name);
-
   /**
    * Append a single ledger entry inside an existing Prisma transaction.
    *

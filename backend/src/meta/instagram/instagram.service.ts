@@ -1,13 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { MetaSdkService } from '../meta-sdk.service';
 
 @Injectable()
 export class InstagramService {
-  constructor(
-    private readonly metaSdk: MetaSdkService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly metaSdk: MetaSdkService) {}
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMessage(igAccountId: string, recipientId: string, text: string, accessToken: string) {

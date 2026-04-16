@@ -73,10 +73,6 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       labelNames: ['workspaceId'],
     });
 
-  private isBrowserOnlyMode(): boolean {
-    return false;
-  }
-
   private isWahaOperationallyEnabled(): boolean {
     return false;
   }

@@ -319,7 +319,9 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
                 type="number"
                 aria-label="Tempo de garantia (dias)"
                 value={data.warrantyDays || ''}
-                onChange={(e) => update('warrantyDays', Number.parseInt(e.target.value) || null)}
+                onChange={(e) =>
+                  update('warrantyDays', Number.parseInt(e.target.value, 10) || null)
+                }
                 className={inputClass}
                 style={inputStyle}
                 id="tempo-de-garantia-dias-7e6ebd"

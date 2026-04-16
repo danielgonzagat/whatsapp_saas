@@ -5,42 +5,53 @@ Welcome to the future of automated sales. This system is not just a chatbot; it'
 ## 🌟 Key Features
 
 ### 1. WhatsApp Autopilot™ (The Driver)
+
 **What it does:**
+
 - Reads every incoming message 24/7.
 - Uses **GPT-4o** to analyze intent, sentiment, and urgency.
 - **Decides** the best action: Send Offer, Schedule Meeting, Handle Objection, or Handover to Human.
 - **SmartTime Integration:** If a buying signal comes at 3 AM, it schedules the "Closing Message" for the next morning's "Golden Hour" (e.g., 10 AM) to maximize conversion.
 
 **How to use:**
+
 1. Go to **Autopilot HQ** (/dashboard).
 2. Toggle the switch to **ONLINE**.
 3. Watch the "Métricas do Piloto" update in real-time.
 
 ### 2. Automated Money Machine™ (The Revenue Button)
+
 **What it does:**
+
 - Scans your entire database for **"Dead Money"**:
-    - Leads who haven't replied in 30 days.
-    - Conversations stuck in "Negotiation" for > 7 days.
+  - Leads who haven't replied in 30 days.
+  - Conversations stuck in "Negotiation" for > 7 days.
 - **Auto-Generates** a Reactivation Campaign with AI-written copy tailored to bring them back.
 - Creates a Flow dynamically and queues it for sending.
 
 **How to use:**
+
 1. Go to **Autopilot HQ**.
 2. Click the big glowing **"ATIVAR MÁQUINA AGORA"** button.
 3. The system will report how many leads were found and create a campaign in the **Campanhas** tab.
 
 ### 3. NeuroCRM & Sentiment Analysis
+
 **What it does:**
+
 - **Lead Scoring:** Assigns a score (0-100) based on activity and sentiment.
 - **Sentiment Tracking:** Detects `Positive`, `Negative`, or `Anxious` emotions.
 - **GhostCloser:** Automatically nudges high-score leads (>50) who stop responding for 2 hours.
 
 **How to use:**
+
 - Go to **Contatos** (/dashboard/contacts) to see the Score Bar and Sentiment Badges.
 - Analytics charts in the Dashboard show the breakdown of your audience's mood.
 
 ### 4. WhatsApp Copilot (Inbox AI)
+
 **What it does:**
+
 - Inside the Inbox, when you open a chat, the AI analyzes the history + Knowledge Base.
 - It suggests the **Perfect Reply** instantly.
 - Click "Usar" to load it into the input box.
@@ -59,6 +70,7 @@ Welcome to the future of automated sales. This system is not just a chatbot; it'
 - **Frontend:** Next.js + Tailwind (Glassmorphism UI).
 
 ## 📡 Omnichannel Fallback
+
 - O Autopilot tenta WhatsApp primeiro. Se falhar e o canal estiver habilitado:
 - **Email:** `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`, `MAIL_FROM` + toggle em Settings → Canais.
 - **Telegram:** opcional com `TELEGRAM_BOT_TOKEN` e `customFields.telegramChatId` no contato.
@@ -71,4 +83,5 @@ Welcome to the future of automated sales. This system is not just a chatbot; it'
 - Grafana: painel pronto em `worker/autopilot-grafana.json` (queue waiting/delayed/failed, erros/execuções de GhostCloser/LeadUnlocker e decisões por ação).
 
 ---
-*Built for the Global Top 1 SaaS Vision.*
+
+_Built for the Global Top 1 SaaS Vision._

@@ -20,13 +20,13 @@ export class RateLimiter {
       return true;
     }
 
-    const { plan, limit } = await this.getPlanAndLimit(workspaceId);
-    const allowed = await this.bumpAndCheck(`ratelimit:${workspaceId}`, limit);
+    const { plan, limit } = await RateLimiter.getPlanAndLimit(workspaceId);
+    const allowed = await RateLimiter.bumpAndCheck(`ratelimit:${workspaceId}`, limit);
     rateLimitCounter
       .labels({ scope: 'workspace', workspaceId, result: allowed ? 'allow' : 'block', plan })
       .inc();
     if (!allowed) {
-      await this.publishAlert(workspaceId, 'workspace_rate_limit_block', { limit, plan });
+      await RateLimiter.publishAlert(workspaceId, 'workspace_rate_limit_block', { limit, plan });
     }
     return allowed;
   }
@@ -39,15 +39,18 @@ export class RateLimiter {
       return true;
     }
 
-    const { plan, limit: planLimit } = await this.getPlanAndLimit(workspaceId);
+    const { plan, limit: planLimit } = await RateLimiter.getPlanAndLimit(workspaceId);
     // heurística: por número = 1/5 do limite do workspace, mínimo 3
     const perNumberLimit = Math.max(3, Math.floor(planLimit / 5));
-    const allowed = await this.bumpAndCheck(`ratelimit:${workspaceId}:to:${phone}`, perNumberLimit);
+    const allowed = await RateLimiter.bumpAndCheck(
+      `ratelimit:${workspaceId}:to:${phone}`,
+      perNumberLimit,
+    );
     rateLimitCounter
       .labels({ scope: 'number', workspaceId, result: allowed ? 'allow' : 'block', plan })
       .inc();
     if (!allowed) {
-      await this.publishAlert(workspaceId, 'number_rate_limit_block', {
+      await RateLimiter.publishAlert(workspaceId, 'number_rate_limit_block', {
         limit: perNumberLimit,
         phone,
         plan,
@@ -57,14 +60,14 @@ export class RateLimiter {
   }
 
   static async getLimit(workspaceId: string): Promise<number> {
-    const { limit } = await this.getPlanAndLimit(workspaceId);
+    const { limit } = await RateLimiter.getPlanAndLimit(workspaceId);
     return limit;
   }
 
   static async getUsage(workspaceId: string): Promise<{ current: number; limit: number }> {
     const key = `ratelimit:${workspaceId}`;
     const current = await redis.get(key);
-    const limit = await this.getLimit(workspaceId);
+    const limit = await RateLimiter.getLimit(workspaceId);
     return {
       current: Number(current) || 0,
       limit,
@@ -79,7 +82,7 @@ export class RateLimiter {
       const current = await redis.incr(key);
 
       if (current === 1) {
-        await redis.expire(key, this.WINDOW);
+        await redis.expire(key, RateLimiter.WINDOW);
       }
 
       return current <= limit;
@@ -108,7 +111,7 @@ export class RateLimiter {
     });
 
     const plan = sub?.plan || 'FREE';
-    const limit = this.LIMITS[plan] || this.LIMITS.FREE;
+    const limit = RateLimiter.LIMITS[plan] || RateLimiter.LIMITS.FREE;
 
     await redis.set(cacheKey, `${plan}:${limit}`, 'EX', 300);
     return { plan, limit };

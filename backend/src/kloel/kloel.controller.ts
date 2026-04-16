@@ -338,7 +338,7 @@ export class KloelController {
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: { fileSize: 25 * 1024 * 1024 },
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_req, file, cb) => {
         const allowedMimes = [
           'image/jpeg',
           'image/png',
@@ -411,7 +411,7 @@ export class KloelController {
       limits: {
         fileSize: 25 * 1024 * 1024, // 25MB max
       },
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_req, file, cb) => {
         const allowedMimes = [
           'image/jpeg',
           'image/png',

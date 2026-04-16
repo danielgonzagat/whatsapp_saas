@@ -163,7 +163,7 @@ export class SmartPaymentController {
     const result = this.paymentService.analyzePaymentRecovery({
       workspaceId: effectiveWorkspaceId,
       paymentId,
-      daysPending: Number.parseInt(daysPending) || 1,
+      daysPending: Number.parseInt(daysPending, 10) || 1,
     });
 
     return {

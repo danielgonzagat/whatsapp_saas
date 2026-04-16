@@ -63,7 +63,7 @@ export class PlanLimitsProvider {
   static async checkMessageLimit(
     workspaceId: string,
   ): Promise<{ allowed: boolean; reason?: string }> {
-    const plan = await this.getPlan(workspaceId);
+    const plan = await PlanLimitsProvider.getPlan(workspaceId);
     const cfg = planConfig[plan];
 
     // Se não tem limite (null), permite
@@ -151,7 +151,7 @@ export class PlanLimitsProvider {
   static async checkFlowRunRate(
     workspaceId: string,
   ): Promise<{ allowed: boolean; reason?: string }> {
-    const plan = await this.getPlan(workspaceId);
+    const plan = await PlanLimitsProvider.getPlan(workspaceId);
     const cfg = planConfig[plan];
     if (!cfg.flowRunsPerMinute) {
       return { allowed: true };

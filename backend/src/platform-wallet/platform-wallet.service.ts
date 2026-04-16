@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PlatformLedgerKind, PlatformWalletBucket, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -46,8 +46,6 @@ export interface ListLedgerFilters {
  */
 @Injectable()
 export class PlatformWalletService {
-  private readonly logger = new Logger(PlatformWalletService.name);
-
   constructor(private readonly prisma: PrismaService) {}
 
   async readBalance(currency: string = DEFAULT_CURRENCY): Promise<PlatformWalletBalance> {

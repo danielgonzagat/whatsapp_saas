@@ -208,7 +208,7 @@ kloel_uptime_seconds ${process.uptime()}
   @Get('errors')
   @ApiOperation({ summary: 'Últimos erros do sistema' })
   async recentErrors(@Query('limit') limit: string = '20') {
-    const limitNum = Math.min(Number.parseInt(limit) || 20, 100);
+    const limitNum = Math.min(Number.parseInt(limit, 10) || 20, 100);
 
     // Buscar eventos de erro do autopilot
     const errors = await this.prisma.autopilotEvent.findMany({

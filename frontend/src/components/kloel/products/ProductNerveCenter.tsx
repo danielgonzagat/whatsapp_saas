@@ -771,7 +771,7 @@ export default function ProductNerveCenter({
             code: newCouponCode.toUpperCase(),
             discountType: newCouponType === 'R$' ? 'FIXED' : 'PERCENT',
             discountValue: Number.parseFloat(newCouponVal || '0') || 0,
-            maxUses: newCouponMax ? Number.parseInt(newCouponMax) : undefined,
+            maxUses: newCouponMax ? Number.parseInt(newCouponMax, 10) : undefined,
             expiresAt: newCouponExpiresAt || undefined,
           },
         }),

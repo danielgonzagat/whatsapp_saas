@@ -176,7 +176,7 @@ export async function validateUrl(urlString: string): Promise<{
     }
 
     // 4. Verifica porta
-    const port = url.port ? Number.parseInt(url.port) : url.protocol === 'https:' ? 443 : 80;
+    const port = url.port ? Number.parseInt(url.port, 10) : url.protocol === 'https:' ? 443 : 80;
     if (BLOCKED_PORTS.includes(port)) {
       return { valid: false, error: `Porta bloqueada: ${port}` };
     }

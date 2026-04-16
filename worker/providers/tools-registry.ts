@@ -162,13 +162,13 @@ export class ToolsRegistry {
         }
 
         case 'create_payment_link':
-          if (this.stripe) {
+          if (ToolsRegistry.stripe) {
             try {
               const frontendUrl =
                 process.env.FRONTEND_URL ||
                 process.env.NEXT_PUBLIC_APP_URL ||
                 'http://localhost:3000';
-              const session = await this.stripe.checkout.sessions.create({
+              const session = await ToolsRegistry.stripe.checkout.sessions.create({
                 payment_method_types: ['card'],
                 line_items: [
                   {

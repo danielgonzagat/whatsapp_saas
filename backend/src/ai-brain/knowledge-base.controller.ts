@@ -21,7 +21,6 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import type { UploadedFileLike } from '../common/file-signature.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { PrismaService } from '../prisma/prisma.service';
 import { AgentAssistService } from './agent-assist.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
 
@@ -45,7 +44,6 @@ export class KnowledgeBaseController {
 
   constructor(
     private readonly kb: KnowledgeBaseService,
-    private readonly prisma: PrismaService,
     private readonly agentAssist: AgentAssistService,
   ) {}
 

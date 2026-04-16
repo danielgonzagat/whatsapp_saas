@@ -317,8 +317,8 @@ export function EditorTopBar({
               <button
                 type="button"
                 onClick={() => {
-                  const w = Number.parseInt(customW);
-                  const h = Number.parseInt(customH);
+                  const w = Number.parseInt(customW, 10);
+                  const h = Number.parseInt(customH, 10);
                   if (w > 0 && h > 0) closeAndRun(() => onResize?.(w, h));
                 }}
                 style={{

@@ -13,7 +13,6 @@ import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { createRedisClient } from '../common/redis/redis.util';
 import { renderTemplate } from '../common/sales-templates';
-import { InboxService } from '../inbox/inbox.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,7 +29,6 @@ export class AutopilotService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
-    private inbox: InboxService,
     private smartTime: SmartTimeService,
     private readonly planLimits: PlanLimitsService,
   ) {
@@ -1803,7 +1801,7 @@ Answer in Portuguese, short and actionable.`;
     return analysisResult;
   }
 
-  private decideAction(analysis: any, conv: any, isOptimalTime: boolean): string {
+  private decideAction(analysis: any, _conv: any, isOptimalTime: boolean): string {
     const { intent, sentiment, buyingSignal, stage } = analysis;
     const hour = new Date().getHours();
     const isNight = hour > 22 || hour < 7;

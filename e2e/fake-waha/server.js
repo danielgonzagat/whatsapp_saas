@@ -1,20 +1,14 @@
-const http = require("http");
-const { randomUUID } = require("crypto");
-const { URL } = require("url");
+const http = require('node:http');
+const { randomUUID } = require('node:crypto');
+const { URL } = require('node:url');
 
-const port = Number.parseInt(process.env.PORT || "3000", 10);
-const fallbackWebhookUrl =
-  process.env.FAKE_WAHA_WEBHOOK_URL ||
-  process.env.WHATSAPP_HOOK_URL ||
-  "";
+const port = Number.parseInt(process.env.PORT || '3000', 10);
+const fallbackWebhookUrl = process.env.FAKE_WAHA_WEBHOOK_URL || process.env.WHATSAPP_HOOK_URL || '';
 const fallbackWebhookSecret =
-  process.env.FAKE_WAHA_WEBHOOK_SECRET ||
-  process.env.WHATSAPP_API_WEBHOOK_SECRET ||
-  "";
-const defaultPhone = process.env.FAKE_WAHA_PHONE || "5511999999999@c.us";
-const defaultPushName = process.env.FAKE_WAHA_PUSH_NAME || "Fake WAHA";
-const defaultSessionStatus =
-  process.env.FAKE_WAHA_SESSION_STATUS || "WORKING";
+  process.env.FAKE_WAHA_WEBHOOK_SECRET || process.env.WHATSAPP_API_WEBHOOK_SECRET || '';
+const defaultPhone = process.env.FAKE_WAHA_PHONE || '5511999999999@c.us';
+const defaultPushName = process.env.FAKE_WAHA_PUSH_NAME || 'Fake WAHA';
+const defaultSessionStatus = process.env.FAKE_WAHA_SESSION_STATUS || 'WORKING';
 
 const state = {
   sentMessages: [],
@@ -30,14 +24,14 @@ function clone(value) {
 }
 
 function normalizeChatId(input) {
-  const value = String(input || "").trim();
+  const value = String(input || '').trim();
   if (!value) {
     return defaultPhone;
   }
-  if (value.includes("@")) {
+  if (value.includes('@')) {
     return value;
   }
-  return `${value.replace(/\D/g, "")}@c.us`;
+  return `${value.replace(/\D/g, '')}@c.us`;
 }
 
 function normalizeMessage(chatId, message) {
@@ -47,8 +41,8 @@ function normalizeMessage(chatId, message) {
     from: message?.from || resolvedChatId,
     to: message?.to || null,
     chatId: resolvedChatId,
-    body: String(message?.body || message?.text || ""),
-    type: String(message?.type || "chat"),
+    body: String(message?.body || message?.text || ''),
+    type: String(message?.type || 'chat'),
     timestamp: Number(message?.timestamp || nowUnix()),
     fromMe: message?.fromMe === true,
     raw: message?.raw || undefined,
@@ -73,8 +67,8 @@ function defaultMessages(chatId) {
     normalizeMessage(chatId, {
       id: `seed-${randomUUID()}`,
       from: chatId,
-      body: "Oi, preciso de ajuda para comprar.",
-      type: "chat",
+      body: 'Oi, preciso de ajuda para comprar.',
+      type: 'chat',
       fromMe: false,
       timestamp: nowUnix() - 60,
     }),
@@ -93,7 +87,7 @@ function hydrateChats(session) {
 }
 
 function ensureSession(sessionName) {
-  const resolvedName = String(sessionName || "default").trim() || "default";
+  const resolvedName = String(sessionName || 'default').trim() || 'default';
   let session = state.sessions.get(resolvedName);
   if (session) {
     return session;
@@ -148,23 +142,23 @@ function sessionPayload(session) {
 function writeJson(res, statusCode, payload) {
   const body = JSON.stringify(payload);
   res.writeHead(statusCode, {
-    "Content-Type": "application/json",
-    "Content-Length": Buffer.byteLength(body),
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(body),
   });
   res.end(body);
 }
 
 function notFound(res) {
-  writeJson(res, 404, { error: "not_found" });
+  writeJson(res, 404, { error: 'not_found' });
 }
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
-    let raw = "";
-    req.on("data", (chunk) => {
-      raw += chunk.toString("utf8");
+    let raw = '';
+    req.on('data', (chunk) => {
+      raw += chunk.toString('utf8');
     });
-    req.on("end", () => {
+    req.on('end', () => {
       if (!raw.trim()) {
         resolve({});
         return;
@@ -175,7 +169,7 @@ function parseBody(req) {
         reject(err);
       }
     });
-    req.on("error", reject);
+    req.on('error', reject);
   });
 }
 
@@ -198,7 +192,7 @@ async function emitWebhook(sessionName, event, payload) {
               url: fallbackWebhookUrl,
               events: [event],
               customHeaders: fallbackWebhookSecret
-                ? [{ name: "X-Api-Key", value: fallbackWebhookSecret }]
+                ? [{ name: 'X-Api-Key', value: fallbackWebhookSecret }]
                 : [],
             },
           ]
@@ -206,19 +200,19 @@ async function emitWebhook(sessionName, event, payload) {
 
   const results = [];
   for (const hook of hooks) {
-    const headers = { "Content-Type": "application/json" };
+    const headers = { 'Content-Type': 'application/json' };
     for (const header of hook.customHeaders || []) {
       if (header?.name) {
-        headers[header.name] = header.value || "";
+        headers[header.name] = header.value || '';
       }
     }
-    if (fallbackWebhookSecret && !headers["X-Api-Key"]) {
-      headers["X-Api-Key"] = fallbackWebhookSecret;
+    if (fallbackWebhookSecret && !headers['X-Api-Key']) {
+      headers['X-Api-Key'] = fallbackWebhookSecret;
     }
 
     try {
       const response = await fetch(hook.url, {
-        method: "POST",
+        method: 'POST',
         headers,
         body: JSON.stringify({
           event,
@@ -245,23 +239,21 @@ async function emitWebhook(sessionName, event, payload) {
 }
 
 function seedSession(body) {
-  const session = ensureSession(body.session || "default");
+  const session = ensureSession(body.session || 'default');
   session.status = String(body.status || session.status || defaultSessionStatus);
   session.me = {
     id: body.me?.id || session.me?.id || defaultPhone,
     pushName: body.me?.pushName || session.me?.pushName || defaultPushName,
   };
-  if (body.config && typeof body.config === "object") {
+  if (body.config && typeof body.config === 'object') {
     session.config = clone(body.config);
   }
 
-  if (body.messages && typeof body.messages === "object") {
+  if (body.messages && typeof body.messages === 'object') {
     session.messagesByChat = Object.fromEntries(
       Object.entries(body.messages).map(([chatId, messages]) => [
         normalizeChatId(chatId),
-        Array.isArray(messages)
-          ? messages.map((message) => normalizeMessage(chatId, message))
-          : [],
+        Array.isArray(messages) ? messages.map((message) => normalizeMessage(chatId, message)) : [],
       ]),
     );
   } else if (Array.isArray(body.chats)) {
@@ -281,17 +273,17 @@ function seedSession(body) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const pathname = requestUrl.pathname;
-  const method = req.method || "GET";
+  const method = req.method || 'GET';
 
   try {
-    if (method === "GET" && pathname === "/health") {
+    if (method === 'GET' && pathname === '/health') {
       writeJson(res, 200, { ok: true });
       return;
     }
 
-    if (method === "GET" && pathname === "/api/sessions") {
+    if (method === 'GET' && pathname === '/api/sessions') {
       writeJson(
         res,
         200,
@@ -300,28 +292,28 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (method === "POST" && pathname === "/api/sessions") {
+    if (method === 'POST' && pathname === '/api/sessions') {
       const body = await parseBody(req);
-      const session = ensureSession(body.name || "default");
-      if (body.config && typeof body.config === "object") {
+      const session = ensureSession(body.name || 'default');
+      if (body.config && typeof body.config === 'object') {
         session.config = clone(body.config);
       }
       writeJson(res, 200, sessionPayload(session));
       return;
     }
 
-    if (method === "POST" && pathname === "/api/sessions/start") {
+    if (method === 'POST' && pathname === '/api/sessions/start') {
       const body = await parseBody(req);
-      const session = ensureSession(body.name || "default");
-      session.status = "WORKING";
+      const session = ensureSession(body.name || 'default');
+      session.status = 'WORKING';
       writeJson(res, 200, sessionPayload(session));
       return;
     }
 
-    if (method === "POST" && pathname === "/api/sessions/stop") {
+    if (method === 'POST' && pathname === '/api/sessions/stop') {
       const body = await parseBody(req);
-      const session = ensureSession(body.name || "default");
-      session.status = "STOPPED";
+      const session = ensureSession(body.name || 'default');
+      session.status = 'STOPPED';
       writeJson(res, 200, sessionPayload(session));
       return;
     }
@@ -330,11 +322,11 @@ const server = http.createServer(async (req, res) => {
     if (sessionMatch) {
       const sessionName = decodeURIComponent(sessionMatch[1]);
       const session = ensureSession(sessionName);
-      if (method === "GET") {
+      if (method === 'GET') {
         writeJson(res, 200, sessionPayload(session));
         return;
       }
-      if (method === "PUT") {
+      if (method === 'PUT') {
         const body = await parseBody(req);
         session.config = clone(body?.config || body || session.config);
         writeJson(res, 200, sessionPayload(session));
@@ -343,68 +335,60 @@ const server = http.createServer(async (req, res) => {
     }
 
     const sessionActionMatch = pathname.match(/^\/api\/sessions\/([^/]+)\/(start|stop|restart)$/);
-    if (sessionActionMatch && method === "POST") {
+    if (sessionActionMatch && method === 'POST') {
       const sessionName = decodeURIComponent(sessionActionMatch[1]);
       const action = sessionActionMatch[2];
       const session = ensureSession(sessionName);
-      session.status = action === "stop" ? "STOPPED" : "WORKING";
+      session.status = action === 'stop' ? 'STOPPED' : 'WORKING';
       writeJson(res, 200, sessionPayload(session));
       return;
     }
 
     const chatsMatch = pathname.match(/^\/api\/([^/]+)\/chats(?:\/overview)?$/);
-    if (chatsMatch && method === "GET") {
+    if (chatsMatch && method === 'GET') {
       const sessionName = decodeURIComponent(chatsMatch[1]);
       const session = ensureSession(sessionName);
       writeJson(res, 200, hydrateChats(session));
       return;
     }
 
-    const chatMessagesMatch = pathname.match(
-      /^\/api\/([^/]+)\/chats\/([^/]+)\/messages$/,
-    );
-    if (chatMessagesMatch && method === "GET") {
+    const chatMessagesMatch = pathname.match(/^\/api\/([^/]+)\/chats\/([^/]+)\/messages$/);
+    if (chatMessagesMatch && method === 'GET') {
       const sessionName = decodeURIComponent(chatMessagesMatch[1]);
       const chatId = normalizeChatId(decodeURIComponent(chatMessagesMatch[2]));
       const session = ensureSession(sessionName);
       const limit = Math.max(
         1,
-        Math.min(
-          100,
-          Number.parseInt(requestUrl.searchParams.get("limit") || "20", 10) || 20,
-        ),
+        Math.min(100, Number.parseInt(requestUrl.searchParams.get('limit') || '20', 10) || 20),
       );
       const offset = Math.max(
         0,
-        Number.parseInt(requestUrl.searchParams.get("offset") || "0", 10) || 0,
+        Number.parseInt(requestUrl.searchParams.get('offset') || '0', 10) || 0,
       );
       const messages = session.messagesByChat[chatId] || [];
       writeJson(res, 200, messages.slice(offset, offset + limit));
       return;
     }
 
-    if (method === "GET" && pathname === "/api/messages") {
-      const sessionName = requestUrl.searchParams.get("session") || "default";
-      const chatId = normalizeChatId(requestUrl.searchParams.get("chatId"));
+    if (method === 'GET' && pathname === '/api/messages') {
+      const sessionName = requestUrl.searchParams.get('session') || 'default';
+      const chatId = normalizeChatId(requestUrl.searchParams.get('chatId'));
       const session = ensureSession(sessionName);
       const limit = Math.max(
         1,
-        Math.min(
-          100,
-          Number.parseInt(requestUrl.searchParams.get("limit") || "20", 10) || 20,
-        ),
+        Math.min(100, Number.parseInt(requestUrl.searchParams.get('limit') || '20', 10) || 20),
       );
       const offset = Math.max(
         0,
-        Number.parseInt(requestUrl.searchParams.get("offset") || "0", 10) || 0,
+        Number.parseInt(requestUrl.searchParams.get('offset') || '0', 10) || 0,
       );
       const messages = session.messagesByChat[chatId] || [];
       writeJson(res, 200, messages.slice(offset, offset + limit));
       return;
     }
 
-    if (method === "GET" && pathname === "/api/contacts") {
-      const sessionName = requestUrl.searchParams.get("session") || "default";
+    if (method === 'GET' && pathname === '/api/contacts') {
+      const sessionName = requestUrl.searchParams.get('session') || 'default';
       const session = ensureSession(sessionName);
       const contacts = hydrateChats(session).map((chat) => ({
         id: chat.id,
@@ -414,21 +398,21 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (method === "GET" && pathname === "/api/contacts/check-exists") {
+    if (method === 'GET' && pathname === '/api/contacts/check-exists') {
       writeJson(res, 200, { numberExists: true });
       return;
     }
 
-    if (method === "POST" && pathname === "/api/sendText") {
+    if (method === 'POST' && pathname === '/api/sendText') {
       const body = await parseBody(req);
-      const session = ensureSession(body.session || "default");
+      const session = ensureSession(body.session || 'default');
       const chatId = normalizeChatId(body.chatId);
       const message = normalizeMessage(chatId, {
         id: randomUUID(),
         from: session.me.id,
         to: chatId,
         body: body.text,
-        type: "chat",
+        type: 'chat',
         fromMe: true,
         timestamp: nowUnix(),
       });
@@ -437,7 +421,7 @@ const server = http.createServer(async (req, res) => {
       state.sentMessages.push({
         session: session.name,
         chatId,
-        text: String(body.text || ""),
+        text: String(body.text || ''),
         replyTo: body.reply_to || null,
         id: message.id,
         at: new Date().toISOString(),
@@ -447,20 +431,27 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (
-      method === "POST" &&
-      ["/api/sendSeen", "/api/startTyping", "/api/stopTyping", "/api/sendImage", "/api/sendFile", "/api/sendLocation"].includes(pathname)
+      method === 'POST' &&
+      [
+        '/api/sendSeen',
+        '/api/startTyping',
+        '/api/stopTyping',
+        '/api/sendImage',
+        '/api/sendFile',
+        '/api/sendLocation',
+      ].includes(pathname)
     ) {
       writeJson(res, 200, { success: true });
       return;
     }
 
     const presenceMatch = pathname.match(/^\/api\/([^/]+)\/presence$/);
-    if (presenceMatch && method === "POST") {
+    if (presenceMatch && method === 'POST') {
       writeJson(res, 200, { success: true });
       return;
     }
 
-    if (method === "GET" && pathname === "/__fake__/state") {
+    if (method === 'GET' && pathname === '/__fake__/state') {
       writeJson(res, 200, {
         sentMessages: state.sentMessages,
         sessions: Array.from(state.sessions.values()).map((session) => ({
@@ -471,18 +462,18 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (method === "GET" && pathname === "/__fake__/outbound") {
+    if (method === 'GET' && pathname === '/__fake__/outbound') {
       writeJson(res, 200, { items: state.sentMessages });
       return;
     }
 
-    if (method === "DELETE" && pathname === "/__fake__/outbound") {
+    if (method === 'DELETE' && pathname === '/__fake__/outbound') {
       state.sentMessages.length = 0;
       writeJson(res, 200, { cleared: true });
       return;
     }
 
-    if (method === "POST" && pathname === "/__fake__/seed") {
+    if (method === 'POST' && pathname === '/__fake__/seed') {
       const body = await parseBody(req);
       const session = seedSession(body || {});
       writeJson(res, 200, {
@@ -492,10 +483,10 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (method === "POST" && pathname === "/__fake__/emit/session-status") {
+    if (method === 'POST' && pathname === '/__fake__/emit/session-status') {
       const body = await parseBody(req);
-      const session = ensureSession(body.session || "default");
-      session.status = String(body.status || "WORKING");
+      const session = ensureSession(body.session || 'default');
+      session.status = String(body.status || 'WORKING');
       session.me = {
         id: body.me?.id || session.me.id || defaultPhone,
         pushName: body.me?.pushName || session.me.pushName || defaultPushName,
@@ -506,27 +497,27 @@ const server = http.createServer(async (req, res) => {
         phone: session.me.id,
         pushName: session.me.pushName,
       };
-      const results = await emitWebhook(session.name, "session.status", payload);
+      const results = await emitWebhook(session.name, 'session.status', payload);
       writeJson(res, 200, { ok: true, webhookResults: results, payload });
       return;
     }
 
-    if (method === "POST" && pathname === "/__fake__/emit/message-any") {
+    if (method === 'POST' && pathname === '/__fake__/emit/message-any') {
       const body = await parseBody(req);
-      const session = ensureSession(body.session || "default");
+      const session = ensureSession(body.session || 'default');
       const chatId = normalizeChatId(body.chatId || body.from);
       const message = normalizeMessage(chatId, {
         id: body.id || randomUUID(),
         from: body.from || chatId,
         to: body.to || session.me.id,
-        body: body.body || body.text || "Mensagem de teste do Fake WAHA",
-        type: body.type || "chat",
+        body: body.body || body.text || 'Mensagem de teste do Fake WAHA',
+        type: body.type || 'chat',
         fromMe: false,
         timestamp: body.timestamp || nowUnix(),
       });
       session.messagesByChat[chatId] = session.messagesByChat[chatId] || [];
       session.messagesByChat[chatId].push(message);
-      const results = await emitWebhook(session.name, "message.any", message);
+      const results = await emitWebhook(session.name, 'message.any', message);
       writeJson(res, 200, { ok: true, webhookResults: results, message });
       return;
     }
@@ -544,9 +535,9 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, () => {
   console.log(
     JSON.stringify({
-      level: "info",
-      service: "fake-waha",
-      message: "fake_waha_listening",
+      level: 'info',
+      service: 'fake-waha',
+      message: 'fake_waha_listening',
       port,
     }),
   );

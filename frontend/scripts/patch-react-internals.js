@@ -7,11 +7,25 @@
  * This runs as a postinstall script after npm install.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
-const reactIndexPath = path.join(__dirname, '..', 'node_modules', 'react', 'cjs', 'react.production.js');
-const reactDevPath = path.join(__dirname, '..', 'node_modules', 'react', 'cjs', 'react.development.js');
+const reactIndexPath = path.join(
+  __dirname,
+  '..',
+  'node_modules',
+  'react',
+  'cjs',
+  'react.production.js',
+);
+const reactDevPath = path.join(
+  __dirname,
+  '..',
+  'node_modules',
+  'react',
+  'cjs',
+  'react.development.js',
+);
 const reactIndexMain = path.join(__dirname, '..', 'node_modules', 'react', 'index.js');
 
 function patchFile(filePath) {

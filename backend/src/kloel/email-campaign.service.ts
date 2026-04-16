@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * Email Campaign Service for KLOEL Marketing
@@ -11,7 +10,7 @@ export class EmailCampaignService {
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
   private readonly fromName = process.env.EMAIL_FROM_NAME || 'KLOEL';
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor() {}
 
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
     if (process.env.RESEND_API_KEY) return 'resend';

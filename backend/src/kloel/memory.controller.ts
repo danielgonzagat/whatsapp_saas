@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Logger,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -19,8 +9,6 @@ import { MemoryService } from './memory.service';
 @Controller('kloel/memory')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MemoryController {
-  private readonly logger = new Logger(MemoryController.name);
-
   constructor(private readonly memoryService: MemoryService) {}
 
   @Post(':workspaceId/save')

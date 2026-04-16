@@ -799,7 +799,7 @@ export class ConversationalOnboardingService {
   /**
    * Retorna templates de fluxo baseados no tipo
    */
-  private getFlowTemplates(flowType: string, context?: string, customMessages?: string[]) {
+  private getFlowTemplates(flowType: string, _context?: string, customMessages?: string[]) {
     const baseY = 100;
     const spacing = 150;
 

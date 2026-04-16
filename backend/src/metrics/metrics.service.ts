@@ -1,6 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
-import { PrismaService } from '../prisma/prisma.service';
 import type { QueueSummary } from './queue-health.service';
 
 @Injectable()
@@ -12,7 +11,7 @@ export class MetricsService implements OnModuleDestroy {
   private billingGauge: Gauge<string>;
   private metricsInterval?: ReturnType<typeof setInterval>;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor() {
     this.registry = new Registry();
     const enableDefaultMetrics = process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID;
     if (enableDefaultMetrics) {

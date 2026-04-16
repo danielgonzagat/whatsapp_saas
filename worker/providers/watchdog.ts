@@ -14,10 +14,10 @@ export class Watchdog {
     const key = `health:${sessionId}:errors`;
     const count = await redis.incr(key);
     if (count === 1) {
-      await redis.expire(key, this.WINDOW);
+      await redis.expire(key, Watchdog.WINDOW);
     }
 
-    if (count >= this.ERROR_THRESHOLD) {
+    if (count >= Watchdog.ERROR_THRESHOLD) {
       console.warn(`[WATCHDOG] Session ${sessionId} is UNHEALTHY (Errors: ${count})`);
       // Trigger alert (could publish to Redis channel for dashboard)
       await redis.publish(
@@ -34,6 +34,6 @@ export class Watchdog {
 
   static async isHealthy(sessionId: string): Promise<boolean> {
     const errors = await redis.get(`health:${sessionId}:errors`);
-    return (Number(errors) || 0) < this.ERROR_THRESHOLD;
+    return (Number(errors) || 0) < Watchdog.ERROR_THRESHOLD;
   }
 }

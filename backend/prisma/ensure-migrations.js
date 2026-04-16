@@ -9,9 +9,9 @@
  * then runs `migrate deploy` for any pending ones.
  * On subsequent runs: `migrate deploy` succeeds immediately.
  */
-const { execFileSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const { execFileSync } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const cwd = path.join(__dirname, '..');
 

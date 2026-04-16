@@ -1070,7 +1070,7 @@ export default function CheckoutEditorPage() {
                   <Field
                     label="Minutos"
                     value={config.timerMinutes}
-                    onChange={(v) => patch({ timerMinutes: Number.parseInt(v) || 0 })}
+                    onChange={(v) => patch({ timerMinutes: Number.parseInt(v, 10) || 0 })}
                     type="number"
                   />
                   <Field
@@ -1102,7 +1102,7 @@ export default function CheckoutEditorPage() {
                   <Field
                     label="Quantidade ficticia"
                     value={config.fakeStockCount}
-                    onChange={(v) => patch({ fakeStockCount: Number.parseInt(v) || 0 })}
+                    onChange={(v) => patch({ fakeStockCount: Number.parseInt(v, 10) || 0 })}
                     type="number"
                   />
                 </>
@@ -1243,7 +1243,7 @@ export default function CheckoutEditorPage() {
                   <Field
                     label="Dias"
                     value={config.guaranteeDays}
-                    onChange={(v) => patch({ guaranteeDays: Number.parseInt(v) || 0 })}
+                    onChange={(v) => patch({ guaranteeDays: Number.parseInt(v, 10) || 0 })}
                     type="number"
                   />
                 </>

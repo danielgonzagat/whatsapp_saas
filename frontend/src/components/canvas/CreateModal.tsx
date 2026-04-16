@@ -354,8 +354,8 @@ function CustomSizePanel({
           onClick={() =>
             openEditor({
               l: 'Personalizado',
-              w: Number.parseInt(customW) || 1080,
-              h: Number.parseInt(customH) || 1080,
+              w: Number.parseInt(customW, 10) || 1080,
+              h: Number.parseInt(customH, 10) || 1080,
               c: ['#E85D30', '#F2784B'],
               m: 'square',
             })

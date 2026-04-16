@@ -48,7 +48,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
           code: form.code.toUpperCase(),
           discountType: form.discountType,
           discountValue: Number.parseFloat(form.discountValue) || 0,
-          maxUses: Number.parseInt(form.maxUses) || null,
+          maxUses: Number.parseInt(form.maxUses, 10) || null,
           expiresAt: form.expiresAt || null,
         },
       });

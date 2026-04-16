@@ -2,18 +2,19 @@
 
 ## RPO / RTO Targets
 
-| Store | RPO (Recovery Point Objective) | RTO (Recovery Time Objective) |
-|-------|-------------------------------|-------------------------------|
-| PostgreSQL | 24 hours (daily backup) | 4 hours |
-| Redis | 1 hour (hourly snapshot) | 30 minutes |
-| S3 Assets | 0 (versioning, continuous) | 1 hour |
-| Application Code | 0 (Git, immutable deploys) | 30 minutes |
+| Store            | RPO (Recovery Point Objective) | RTO (Recovery Time Objective) |
+| ---------------- | ------------------------------ | ----------------------------- |
+| PostgreSQL       | 24 hours (daily backup)        | 4 hours                       |
+| Redis            | 1 hour (hourly snapshot)       | 30 minutes                    |
+| S3 Assets        | 0 (versioning, continuous)     | 1 hour                        |
+| Application Code | 0 (Git, immutable deploys)     | 30 minutes                    |
 
 ---
 
 ## Incident Classification
 
 ### P1 -- Critical (Total Service Down)
+
 - Production database inaccessible or corrupted
 - Complete application outage
 - Data breach or security compromise
@@ -23,6 +24,7 @@
 **Resolution target:** 4 hours
 
 ### P2 -- Major (Significant Degradation)
+
 - WhatsApp messaging down for all users
 - Checkout/payment partial failure
 - Authentication system down
@@ -32,6 +34,7 @@
 **Resolution target:** 8 hours
 
 ### P3 -- Minor (Limited Impact)
+
 - Single workspace affected
 - Non-critical feature broken (analytics, reports)
 - Performance degradation (>2x normal latency)
@@ -41,6 +44,7 @@
 **Resolution target:** 24 hours
 
 ### P4 -- Low (Cosmetic / Non-Urgent)
+
 - UI rendering issues
 - Non-critical background job failures
 - Logging/monitoring gaps
@@ -53,17 +57,20 @@
 ## Communication Plan
 
 ### Internal Notification Chain
+
 1. Automated alert fires (Sentry / Railway health check)
 2. On-call engineer acknowledges within response time
 3. If P1/P2: notify daniel@kloel.com immediately
 4. Status updates every 30 minutes during active incident
 
 ### External Communication
+
 - P1: Status page updated within 30 minutes
 - P2: Status page updated within 1 hour
 - P3/P4: No external communication unless user-facing
 
 ### Communication Channels
+
 - Primary: Email (daniel@kloel.com)
 - Secondary: WhatsApp group (engineering team)
 - Status page: Update at each milestone
@@ -79,12 +86,14 @@
 **Steps:**
 
 1. **Confirm the issue**
+
    ```bash
    railway logs backend -e production | tail -50
    psql "$DATABASE_URL" -c "SELECT 1" 2>&1
    ```
 
 2. **Enable maintenance mode**
+
    ```bash
    railway variables set MAINTENANCE_MODE=true -e production
    ```
@@ -97,11 +106,13 @@
    Follow the PostgreSQL Restore procedure in [RESTORE.md](./RESTORE.md).
 
 5. **Run pending migrations**
+
    ```bash
    cd backend && npx prisma migrate deploy
    ```
 
 6. **Verify and resume**
+
    ```bash
    railway variables set MAINTENANCE_MODE=false -e production
    railway service restart backend -e production
@@ -118,6 +129,7 @@
 **Steps:**
 
 1. **Confirm Redis is down**
+
    ```bash
    redis-cli -u "$REDIS_URL" PING
    ```
@@ -132,6 +144,7 @@
    - Update `REDIS_URL` if instance changed
 
 4. **Restart services to reconnect**
+
    ```bash
    railway service restart backend -e production
    railway service restart worker -e production
@@ -152,24 +165,28 @@
 **Steps:**
 
 1. **Check Railway deployment status**
+
    ```bash
    railway status -e production
    railway logs backend -e production | tail -100
    ```
 
 2. **If bad deploy -- rollback**
+
    ```bash
    # Railway supports instant rollback to previous deployment
    railway rollback -e production
    ```
 
 3. **If crash loop -- check environment**
+
    ```bash
    railway variables -e production
    # Verify DATABASE_URL, REDIS_URL, JWT_SECRET are set
    ```
 
 4. **If dependency issue -- redeploy from known-good commit**
+
    ```bash
    git log --oneline -10
    git checkout <known-good-commit>
@@ -189,6 +206,7 @@
 **Steps:**
 
 1. **Check DNS resolution**
+
    ```bash
    dig kloel.com
    dig api.kloel.com
@@ -200,6 +218,7 @@
    - Verify A/CNAME records point to Vercel
 
 3. **Check SSL certificate**
+
    ```bash
    openssl s_client -connect kloel.com:443 -servername kloel.com 2>/dev/null | openssl x509 -noout -dates
    ```
@@ -292,20 +311,20 @@ Complete this for every P1 and P2 incident:
 
 ## Emergency Contacts
 
-| Role | Contact | Method |
-|------|---------|--------|
-| Engineering Lead | daniel@kloel.com | Email / WhatsApp |
-| Railway Support | support@railway.app | Email / Dashboard |
-| Vercel Support | support@vercel.com | Email / Dashboard |
-| AWS Support | AWS Console | Support ticket |
+| Role             | Contact             | Method            |
+| ---------------- | ------------------- | ----------------- |
+| Engineering Lead | daniel@kloel.com    | Email / WhatsApp  |
+| Railway Support  | support@railway.app | Email / Dashboard |
+| Vercel Support   | support@vercel.com  | Email / Dashboard |
+| AWS Support      | AWS Console         | Support ticket    |
 
 ---
 
 ## Regular DR Testing Schedule
 
-| Test | Frequency | Last Run | Next Run |
-|------|-----------|----------|----------|
-| Database restore to staging | Monthly | 2026-04-01 | 2026-05-01 |
-| Redis failover simulation | Quarterly | 2026-04-01 | 2026-07-01 |
-| Full rebuild from scratch | Quarterly | 2026-04-01 | 2026-07-01 |
-| Tabletop exercise | Semi-annually | 2026-04-01 | 2026-10-01 |
+| Test                        | Frequency     | Last Run   | Next Run   |
+| --------------------------- | ------------- | ---------- | ---------- |
+| Database restore to staging | Monthly       | 2026-04-01 | 2026-05-01 |
+| Redis failover simulation   | Quarterly     | 2026-04-01 | 2026-07-01 |
+| Full rebuild from scratch   | Quarterly     | 2026-04-01 | 2026-07-01 |
+| Tabletop exercise           | Semi-annually | 2026-04-01 | 2026-10-01 |

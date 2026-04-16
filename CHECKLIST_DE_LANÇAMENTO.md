@@ -50,16 +50,17 @@ Este documento consolida todos os passos necessários para lançar o MVP do KLOE
 
 ### Status: WAHA-ONLY ✅
 
-| Item | Status | Observação |
-|------|--------|------------|
-| TypeScript 5.7.2 | ✅ | Atualizado de 5.6.3 |
-| Build sem erros | ✅ | `npm run build` passa |
-| subscriptionStatus types | ✅ | Adicionado "suspended" |
-| Prop naming fixes | ✅ | onUpdate → onPlansChange |
-| Turbopack configurado | ✅ | turbopack.root definido |
-| Docker image | ✅ | Imagem construída |
+| Item                     | Status | Observação               |
+| ------------------------ | ------ | ------------------------ |
+| TypeScript 5.7.2         | ✅     | Atualizado de 5.6.3      |
+| Build sem erros          | ✅     | `npm run build` passa    |
+| subscriptionStatus types | ✅     | Adicionado "suspended"   |
+| Prop naming fixes        | ✅     | onUpdate → onPlansChange |
+| Turbopack configurado    | ✅     | turbopack.root definido  |
+| Docker image             | ✅     | Imagem construída        |
 
 ### Comandos de Verificação
+
 ```bash
 cd frontend
 npm install
@@ -73,13 +74,13 @@ npm run dev  # Porta 3000
 
 ### Status: COMPLETO ✅
 
-| Item | Status | Observação |
-|------|--------|------------|
-| Email/Password | ✅ | JWT + refresh token |
-| Google OAuth | ✅ | Popup flow implementado |
-| Apple Sign-In | ✅ | NextAuth provider (requer credenciais Apple em produção) |
-| Magic Link | 🟡 | Backend pronto, email service necessário |
-| Refresh Token | ✅ | Rotação automática |
+| Item           | Status | Observação                                               |
+| -------------- | ------ | -------------------------------------------------------- |
+| Email/Password | ✅     | JWT + refresh token                                      |
+| Google OAuth   | ✅     | Popup flow implementado                                  |
+| Apple Sign-In  | ✅     | NextAuth provider (requer credenciais Apple em produção) |
+| Magic Link     | 🟡     | Backend pronto, email service necessário                 |
+| Refresh Token  | ✅     | Rotação automática                                       |
 
 ### Configuração Google OAuth
 
@@ -90,6 +91,7 @@ npm run dev  # Porta 3000
    - Criar credenciais OAuth 2.0
 
 2. **Variáveis de Ambiente (produção):**
+
 ```env
 # Frontend (NextAuth)
 # IMPORTANTE: NEXTAUTH_URL/AUTH_URL deve ser a BASE do frontend.
@@ -107,7 +109,8 @@ GOOGLE_CLIENT_SECRET=GOCSPX-xxx
 ```
 
 3. **Redirect URI (Google Console):**
-  - `${NEXTAUTH_URL}/api/auth/callback/google`
+
+- `${NEXTAUTH_URL}/api/auth/callback/google`
 
 ### Fluxo de Autenticação
 
@@ -140,15 +143,15 @@ Usuário → /login → NextAuth (Google/Apple)
 
 ### Status: COMPLETO ✅
 
-| Item | Status | Observação |
-|------|--------|------------|
-| QR Code generation | ✅ | Via WAHA |
-| Status check | ✅ | Snapshot + provider registry |
-| Send text message | ✅ | Via `/whatsapp-api/send/:phone` |
-| Send media | ✅ | Suporta imagens, áudio, documentos |
-| Webhook receive | ✅ | `/webhooks/whatsapp-api` |
-| Logout/reset sessão | ✅ | `/whatsapp-api/session/logout` |
-| Health consolidado | ✅ | `/health/system` e `/health/ready` |
+| Item                | Status | Observação                         |
+| ------------------- | ------ | ---------------------------------- |
+| QR Code generation  | ✅     | Via WAHA                           |
+| Status check        | ✅     | Snapshot + provider registry       |
+| Send text message   | ✅     | Via `/whatsapp-api/send/:phone`    |
+| Send media          | ✅     | Suporta imagens, áudio, documentos |
+| Webhook receive     | ✅     | `/webhooks/whatsapp-api`           |
+| Logout/reset sessão | ✅     | `/whatsapp-api/session/logout`     |
+| Health consolidado  | ✅     | `/health/system` e `/health/ready` |
 
 ### Formato de Status
 
@@ -179,13 +182,13 @@ WORKER_METRICS_TOKEN=change-me
 
 ### Status: COMPLETO ✅
 
-| Item | Status | Observação |
-|------|--------|------------|
-| Subscription check | ✅ | GET /billing/subscription?workspaceId= |
-| Checkout session | ✅ | POST /billing/checkout |
-| Webhook handler | ✅ | POST /billing/webhook |
-| Status mapping | ✅ | mapSubscriptionStatus() |
-| Plans display | ✅ | Componente PricingPlans |
+| Item               | Status | Observação                             |
+| ------------------ | ------ | -------------------------------------- |
+| Subscription check | ✅     | GET /billing/subscription?workspaceId= |
+| Checkout session   | ✅     | POST /billing/checkout                 |
+| Webhook handler    | ✅     | POST /billing/webhook                  |
+| Status mapping     | ✅     | mapSubscriptionStatus()                |
+| Plans display      | ✅     | Componente PricingPlans                |
 
 ### Endpoints de Billing
 
@@ -207,6 +210,7 @@ POST /billing/webhook  // Stripe webhook
    - Copiar signing secret
 
 2. **Variáveis de Ambiente:**
+
 ```env
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_PUBLISHABLE_KEY=pk_test_xxx
@@ -231,12 +235,12 @@ STRIPE_PRICE_ENTERPRISE=price_xxx
 
 ### Status: COMPLETO ✅
 
-| Item | Status | Observação |
-|------|--------|------------|
-| docker-compose.prod.yml | ✅ | Todos os serviços configurados |
-| frontend service | ✅ | Next.js (porta 3000 na rede interna; exposto via NGINX 80/443) |
-| nginx config | ✅ | Proxy reverso configurado |
-| SSL template | ✅ | Certbot + Let's Encrypt |
+| Item                    | Status | Observação                                                     |
+| ----------------------- | ------ | -------------------------------------------------------------- |
+| docker-compose.prod.yml | ✅     | Todos os serviços configurados                                 |
+| frontend service        | ✅     | Next.js (porta 3000 na rede interna; exposto via NGINX 80/443) |
+| nginx config            | ✅     | Proxy reverso configurado                                      |
+| SSL template            | ✅     | Certbot + Let's Encrypt                                        |
 
 ### Arquivos de Configuração
 
@@ -295,12 +299,12 @@ docker compose -f docker-compose.prod.yml restart nginx
 
 ### Status: BUILD VERIFICADO ✅
 
-| Item | Status | Observação |
-|------|--------|------------|
-| Frontend V2 build | ✅ | Docker image criada |
-| Backend build | ✅ | Compila sem erros |
-| Worker build | ✅ | Compila sem erros |
-| E2E tests | 🟡 | Playwright configurado |
+| Item              | Status | Observação             |
+| ----------------- | ------ | ---------------------- |
+| Frontend V2 build | ✅     | Docker image criada    |
+| Backend build     | ✅     | Compila sem erros      |
+| Worker build      | ✅     | Compila sem erros      |
+| E2E tests         | 🟡     | Playwright configurado |
 
 ### Comandos de Teste
 
@@ -552,6 +556,7 @@ curl -X POST http://localhost:3030/session/default/start
 **Causa:** Variável `NEXT_PUBLIC_API_URL` não configurada no Vercel.
 
 **Solução:**
+
 1. Acesse Vercel → Projeto frontend → Settings → Environment Variables
 2. Adicione ou edite:
    ```
@@ -562,6 +567,7 @@ curl -X POST http://localhost:3030/session/default/start
 4. Redeploy o frontend (Deployments → Redeploy)
 
 **Verificação de CORS no backend:**
+
 ```bash
 # Testar preflight
 curl -sI -X OPTIONS \
@@ -573,6 +579,7 @@ curl -sI -X OPTIONS \
 ```
 
 **Configuração atual do backend (`main.ts`):**
+
 ```typescript
 app.enableCors({
   origin: [
@@ -583,7 +590,15 @@ app.enableCors({
     'http://localhost:3000',
   ],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  allowedHeaders: ['Content-Type','Authorization','Accept','Origin','User-Agent','Cache-Control','Pragma'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Accept',
+    'Origin',
+    'User-Agent',
+    'Cache-Control',
+    'Pragma',
+  ],
   credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204,
@@ -614,8 +629,8 @@ echo $REDIS_HOST $REDIS_PORT
 
 ## 📝 Histórico de Releases
 
-| Versão | Data | Mudanças |
-|--------|------|----------|
+| Versão  | Data     | Mudanças                                    |
+| ------- | -------- | ------------------------------------------- |
 | MVP 1.0 | Jun 2025 | Release inicial com auth, WhatsApp, billing |
 
 ---

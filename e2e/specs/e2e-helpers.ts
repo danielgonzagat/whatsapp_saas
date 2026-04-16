@@ -1,6 +1,6 @@
 import type { APIRequestContext, Page } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export interface E2EAuthContext {
   token: string;

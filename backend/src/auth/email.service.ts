@@ -8,7 +8,6 @@ import { Injectable, Logger } from '@nestjs/common';
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
-  private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
   constructor() {
     this.logger.log(`EmailService initialized with provider: ${this.getProvider()}`);

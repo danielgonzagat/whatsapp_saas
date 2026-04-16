@@ -3,6 +3,7 @@
 ## Prerequisites
 
 ### Tools Required
+
 - `psql` (PostgreSQL client, v14+)
 - `pg_dump` / `pg_restore`
 - Railway CLI (`railway`)
@@ -11,13 +12,16 @@
 - Git
 
 ### Access Required
+
 - Railway project access (production + staging)
 - AWS S3 bucket credentials (kloel-assets)
 - GitHub repository access
 - DNS management (Vercel dashboard)
 
 ### Environment Variables
+
 Ensure you have access to all production env vars. They are stored in:
+
 1. Railway project settings (backend + worker)
 2. Vercel project settings (frontend)
 3. `.env.pulse.local` (local diagnostics only, gitignored)
@@ -104,6 +108,7 @@ cd backend && DATABASE_URL="$PROD_DB_URL" npx prisma migrate deploy
 ### Step 1: Assess Impact
 
 Redis is used for:
+
 - BullMQ job queues (WhatsApp messages, autopilot)
 - Session cache
 - Rate limiting counters

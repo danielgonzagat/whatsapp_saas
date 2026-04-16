@@ -33,7 +33,7 @@ Todas as queries de banco incluem `workspaceId`:
 ```typescript
 // ✅ CORRETO
 await prisma.contact.findMany({
-  where: { workspaceId: req.workspaceId }
+  where: { workspaceId: req.workspaceId },
 });
 
 // ❌ NUNCA fazer isso
@@ -97,12 +97,12 @@ async function safeRequest(url: string, options: RequestOptions) {
   if (isInternalIP(url)) {
     throw new Error('SSRF blocked: internal IP');
   }
-  
+
   // Bloqueia protocolos perigosos
   if (!['http:', 'https:'].includes(new URL(url).protocol)) {
     throw new Error('SSRF blocked: invalid protocol');
   }
-  
+
   // Timeout curto
   return fetch(url, { ...options, timeout: 10000 });
 }
@@ -205,12 +205,12 @@ await auditService.log({
 
 ### SLA de Resposta
 
-| Severidade | Tempo de Resposta | Exemplo |
-|------------|-------------------|---------|
-| P0 Critical | 15 min | Data breach, service down |
-| P1 High | 1 hora | Authentication failure |
-| P2 Medium | 4 horas | Rate limiting bypass |
-| P3 Low | 24 horas | Logging gaps |
+| Severidade  | Tempo de Resposta | Exemplo                   |
+| ----------- | ----------------- | ------------------------- |
+| P0 Critical | 15 min            | Data breach, service down |
+| P1 High     | 1 hora            | Authentication failure    |
+| P2 Medium   | 4 horas           | Rate limiting bypass      |
+| P3 Low      | 24 horas          | Logging gaps              |
 
 ---
 
@@ -249,17 +249,19 @@ await auditService.log({
 
 ## 🐛 Reporting Vulnerabilities
 
-Encontrou uma vulnerabilidade? 
+Encontrou uma vulnerabilidade?
 
 **Email:** security@kloel.com.br
 
 **Expectativas:**
+
 - Resposta inicial em 24h
 - Triagem em 72h
 - Correção conforme severidade
 - Reconhecimento público (se desejado)
 
 **Não faça:**
+
 - Acessar dados de outros usuários
 - Interromper serviços
 - Divulgar antes do fix
@@ -295,4 +297,4 @@ Antes de cada deploy:
 
 ---
 
-*Última atualização: Janeiro 2025*
+_Última atualização: Janeiro 2025_

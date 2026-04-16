@@ -1740,10 +1740,7 @@ export class ProductCampaignController {
 @Controller('products/:productId/ai-config')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductAIConfigController {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly auditService: AuditService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   @Get()
   async get(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
@@ -1947,10 +1944,7 @@ export class ProductCommissionController {
 @Controller('products/:productId/affiliates')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductAffiliateController {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly auditService: AuditService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   @Get()
   async getSummary(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {

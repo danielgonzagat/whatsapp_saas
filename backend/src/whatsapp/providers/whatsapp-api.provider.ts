@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -144,8 +144,6 @@ export interface WahaSessionConfigDiagnostics {
 
 @Injectable()
 export class WhatsAppApiProvider {
-  private readonly logger = new Logger(WhatsAppApiProvider.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,

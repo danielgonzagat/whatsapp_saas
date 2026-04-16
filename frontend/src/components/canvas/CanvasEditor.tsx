@@ -110,8 +110,8 @@ export default function CanvasEditor() {
   );
 
   /* --- URL params --- */
-  const w = Number.parseInt(params.get('w') || '1080');
-  const h = Number.parseInt(params.get('h') || '1080');
+  const w = Number.parseInt(params.get('w') || '1080', 10);
+  const h = Number.parseInt(params.get('h') || '1080', 10);
   const name = params.get('name') || 'Design sem nome';
   const designId = params.get('id');
   const tplId = params.get('tpl');
@@ -1055,9 +1055,11 @@ export default function CanvasEditor() {
                     onClick={() => {
                       const nw = Number.parseInt(
                         (document.getElementById('tool-resize-w') as HTMLInputElement)?.value,
+                        10,
                       );
                       const nh = Number.parseInt(
                         (document.getElementById('tool-resize-h') as HTMLInputElement)?.value,
+                        10,
                       );
                       if (nw > 0 && nh > 0) handleResize(nw, nh);
                     }}
@@ -1315,7 +1317,9 @@ export default function CanvasEditor() {
                     max={200}
                     aria-label="Tamanho da fonte"
                     value={Math.round(selectedObj.fontSize || 16)}
-                    onChange={(e) => updateProp('fontSize', Number.parseInt(e.target.value) || 16)}
+                    onChange={(e) =>
+                      updateProp('fontSize', Number.parseInt(e.target.value, 10) || 16)
+                    }
                     style={{
                       width: 40,
                       background: '#0A0A0C',
@@ -1499,7 +1503,7 @@ export default function CanvasEditor() {
                       max={20}
                       value={selectedObj.strokeWidth || 0}
                       onChange={(e) =>
-                        updateProp('strokeWidth', Number.parseInt(e.target.value) || 0)
+                        updateProp('strokeWidth', Number.parseInt(e.target.value, 10) || 0)
                       }
                       style={{
                         width: 32,
@@ -1529,7 +1533,9 @@ export default function CanvasEditor() {
                       max={100}
                       defaultValue={0}
                       onChange={(e) =>
-                        editorRef.current?.filters.brightness(Number.parseInt(e.target.value) / 100)
+                        editorRef.current?.filters.brightness(
+                          Number.parseInt(e.target.value, 10) / 100,
+                        )
                       }
                       style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                     />
@@ -1542,7 +1548,9 @@ export default function CanvasEditor() {
                       max={100}
                       defaultValue={0}
                       onChange={(e) =>
-                        editorRef.current?.filters.contrast(Number.parseInt(e.target.value) / 100)
+                        editorRef.current?.filters.contrast(
+                          Number.parseInt(e.target.value, 10) / 100,
+                        )
                       }
                       style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                     />
@@ -1555,7 +1563,9 @@ export default function CanvasEditor() {
                       max={100}
                       defaultValue={0}
                       onChange={(e) =>
-                        editorRef.current?.filters.saturation(Number.parseInt(e.target.value) / 100)
+                        editorRef.current?.filters.saturation(
+                          Number.parseInt(e.target.value, 10) / 100,
+                        )
                       }
                       style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                     />
@@ -1604,7 +1614,7 @@ export default function CanvasEditor() {
                   min={0}
                   max={100}
                   value={Math.round((selectedObj.opacity ?? 1) * 100)}
-                  onChange={(e) => updateProp('opacity', Number.parseInt(e.target.value) / 100)}
+                  onChange={(e) => updateProp('opacity', Number.parseInt(e.target.value, 10) / 100)}
                   style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                 />
                 <span style={{ fontSize: 9, color: '#3A3A3F', fontFamily: M, width: 24 }}>

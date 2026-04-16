@@ -40,7 +40,7 @@ export class SiteController {
   // POST /kloel/site/generate — generate site HTML (proxy to AI)
   @Post('generate')
   async generateSite(
-    @Request() req: AuthenticatedRequest,
+    @Request() _req: AuthenticatedRequest,
     @Body() dto: { prompt: string; currentHtml?: string },
   ) {
     const openaiKey = process.env.OPENAI_API_KEY;

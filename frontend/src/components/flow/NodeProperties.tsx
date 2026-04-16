@@ -322,7 +322,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   aria-label="Valor do delay"
                   type="number"
                   value={node.data.delayValue || 0}
-                  onChange={(e) => handleChange('delayValue', Number.parseInt(e.target.value))}
+                  onChange={(e) => handleChange('delayValue', Number.parseInt(e.target.value, 10))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="0"
                   id="valor-a9256c"
@@ -573,7 +573,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 aria-label="Timeout"
                 type="number"
                 value={node.data.timeoutValue || 0}
-                onChange={(e) => handleChange('timeoutValue', Number.parseInt(e.target.value))}
+                onChange={(e) => handleChange('timeoutValue', Number.parseInt(e.target.value, 10))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
                 min="0"
                 id="timeout-b9940b"

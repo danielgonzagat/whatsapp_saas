@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Logger,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
@@ -28,8 +18,6 @@ import { WalletService } from './wallet.service';
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Throttle({ default: { limit: 15, ttl: 60000 } })
 export class WalletController {
-  private readonly logger = new Logger(WalletController.name);
-
   constructor(
     private readonly walletService: WalletService,
     private readonly prisma: PrismaService,

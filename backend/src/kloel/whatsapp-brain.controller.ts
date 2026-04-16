@@ -18,17 +18,13 @@ import {
   sanitizeWebhookChallenge,
   sendPlainTextResponse,
 } from '../common/utils/webhook-challenge-response.util';
-import { KloelService } from './kloel.service';
 import { WhatsAppBrainService } from './whatsapp-brain.service';
 
 @Controller('kloel/whatsapp')
 export class WhatsAppBrainController {
   private readonly logger = new Logger(WhatsAppBrainController.name);
 
-  constructor(
-    private readonly whatsappBrain: WhatsAppBrainService,
-    private readonly kloelService: KloelService,
-  ) {}
+  constructor(private readonly whatsappBrain: WhatsAppBrainService) {}
 
   @Public()
   @Get('webhook')

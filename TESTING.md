@@ -6,12 +6,12 @@ Este documento descreve a estratégia de testes e como executá-los.
 
 ## 📋 Tipos de Testes
 
-| Tipo | Framework | Cobertura | Localização |
-|------|-----------|-----------|-------------|
-| Unit Tests | Jest | Services, Guards, Utils | `backend/src/**/*.spec.ts` |
-| Integration Tests | Jest + Supertest | Controllers, Modules | `backend/test/` |
-| E2E Tests | Playwright | Flows completos | `e2e/` |
-| Smoke Tests | Shell Scripts | Endpoints críticos | `scripts/smoke_*.sh` |
+| Tipo              | Framework        | Cobertura               | Localização                |
+| ----------------- | ---------------- | ----------------------- | -------------------------- |
+| Unit Tests        | Jest             | Services, Guards, Utils | `backend/src/**/*.spec.ts` |
+| Integration Tests | Jest + Supertest | Controllers, Modules    | `backend/test/`            |
+| E2E Tests         | Playwright       | Flows completos         | `e2e/`                     |
+| Smoke Tests       | Shell Scripts    | Endpoints críticos      | `scripts/smoke_*.sh`       |
 
 ---
 
@@ -77,6 +77,7 @@ Este é o jeito mais confiável de rodar E2E local sem flakiness (alinha `DATABA
 ```
 
 Pré-requisitos:
+
 - `docker` (para Postgres/Redis via `docker compose`)
 - Portas livres: `3000` (frontend), `3001` (backend), `3003` (worker)
 
@@ -133,11 +134,11 @@ export WORKSPACE_ID=seu-workspace-id
 
 ### Endpoints Testados
 
-| Script | Endpoints |
-|--------|-----------|
-| `smoke_core.sh` | Health, Auth, Workspaces |
+| Script               | Endpoints                         |
+| -------------------- | --------------------------------- |
+| `smoke_core.sh`      | Health, Auth, Workspaces          |
 | `smoke_autopilot.sh` | Autopilot config, Process message |
-| `smoke_webhooks.sh` | WhatsApp webhooks |
+| `smoke_webhooks.sh`  | WhatsApp webhooks                 |
 
 ---
 
@@ -167,7 +168,7 @@ describe('AutopilotService', () => {
 describe('SkillEngineService', () => {
   it('should check real availability', async () => {
     const result = await service.executeSkill('ws-1', 'check_availability', {
-      date: '2025-01-20'
+      date: '2025-01-20',
     });
     expect(result.data.availableSlots).toBeDefined();
   });
@@ -176,7 +177,7 @@ describe('SkillEngineService', () => {
     const result = await service.executeSkill('ws-1', 'create_appointment', {
       datetime: '2025-01-20T10:00:00',
       customerPhone: '5511999999999',
-      service: 'Consulta'
+      service: 'Consulta',
     });
     expect(result.success).toBe(true);
   });
@@ -217,13 +218,13 @@ describe('FlowsService', () => {
 
 ## 🎯 Test Coverage Goals
 
-| Módulo | Meta | Atual |
-|--------|------|-------|
-| AutopilotService | 80% | ~70% |
-| SkillEngineService | 80% | ~65% |
-| FlowsService | 75% | ~60% |
-| WorkspaceGuard | 90% | ~85% |
-| BillingService | 80% | ~55% |
+| Módulo             | Meta | Atual |
+| ------------------ | ---- | ----- |
+| AutopilotService   | 80%  | ~70%  |
+| SkillEngineService | 80%  | ~65%  |
+| FlowsService       | 75%  | ~60%  |
+| WorkspaceGuard     | 90%  | ~85%  |
+| BillingService     | 80%  | ~55%  |
 
 ---
 
@@ -240,8 +241,8 @@ module.exports = {
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1'
-  }
+    '^@/(.*)$': '<rootDir>/$1',
+  },
 };
 ```
 
@@ -346,10 +347,10 @@ it('should return 403 when user is not workspace member', async () => {});
 it('should create flow', async () => {
   // Arrange
   const data = { name: 'Test' };
-  
+
   // Act
   const result = await service.create(data);
-  
+
   // Assert
   expect(result.id).toBeDefined();
 });
@@ -397,4 +398,4 @@ jest.spyOn(service, 'sendEmail').mockResolvedValue(true);
 
 ---
 
-*Última atualização: Janeiro 2025*
+_Última atualização: Janeiro 2025_

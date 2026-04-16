@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Parser } from 'htmlparser2';
 import { AuditService } from '../audit/audit.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import {
   collectAllowedHosts,
@@ -12,9 +11,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { memoryQueue } from '../queue/queue';
 import { VectorService } from './vector.service';
 
-const S_RE = /(?<=[.!?])\s+/;
-const S_RE_2 = /\s+/;
-
 @Injectable()
 export class KnowledgeBaseService {
   private readonly logger = new Logger(KnowledgeBaseService.name);
@@ -22,7 +18,6 @@ export class KnowledgeBaseService {
   constructor(
     private prisma: PrismaService,
     private vectorService: VectorService,
-    private planLimits: PlanLimitsService,
     private readonly auditService: AuditService,
   ) {}
 
@@ -184,59 +179,6 @@ export class KnowledgeBaseService {
       this.logger.error(`RAG Search Error: ${err}`);
       return '';
     }
-  }
-
-  /**
-   * Divide texto em chunks respeitando sentenças quando possível; fallback por palavras.
-   * Exposta via casting em testes.
-   */
-  private splitText(text: string, maxLen = 500, overlap = 50): string[] {
-    const chunks: string[] = [];
-    const sentences = text.split(S_RE);
-
-    let buffer = '';
-    for (const sentence of sentences) {
-      if (`${buffer} ${sentence}`.trim().length <= maxLen) {
-        buffer = `${buffer} ${sentence}`.trim();
-      } else {
-        if (buffer) chunks.push(buffer);
-        buffer = sentence.trim();
-      }
-    }
-    if (buffer) chunks.push(buffer);
-
-    if (chunks.length === 0) {
-      // Fallback por palavras
-      const words = text.split(S_RE_2);
-      buffer = '';
-      for (const word of words) {
-        if (`${buffer} ${word}`.trim().length <= maxLen) {
-          buffer = `${buffer} ${word}`.trim();
-        } else {
-          if (buffer) chunks.push(buffer);
-          buffer = word;
-        }
-      }
-      if (buffer) chunks.push(buffer);
-    }
-
-    // Adiciona overlap simples
-    if (overlap > 0 && chunks.length > 1) {
-      const overlapped: string[] = [];
-      for (let i = 0; i < chunks.length; i++) {
-        const current = chunks[i];
-        if (i === 0) {
-          overlapped.push(current);
-        } else {
-          const prev = chunks[i - 1];
-          const tail = prev.slice(-overlap);
-          overlapped.push(`${tail} ${current}`.trim());
-        }
-      }
-      return overlapped;
-    }
-
-    return chunks;
   }
 
   private htmlToText(html: string): string {

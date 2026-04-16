@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface MemoryItem {
@@ -23,35 +21,11 @@ export interface SearchResult {
 @Injectable()
 export class MemoryService {
   private readonly logger = new Logger(MemoryService.name);
-  private openai: OpenAI;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly planLimits: PlanLimitsService,
     private readonly auditService: AuditService,
-  ) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-
-  /**
-   * 🧠 Gera embedding para texto
-   */
-  private async generateEmbedding(text: string): Promise<number[]> {
-    try {
-      // tokenBudget: non-workspace context, budget tracked at caller level
-      const response = await this.openai.embeddings.create({
-        model: 'text-embedding-3-small',
-        input: text,
-        dimensions: 1536,
-      });
-      return response.data[0].embedding;
-    } catch (error) {
-      this.logger.error(`Erro gerando embedding: ${error.message}`);
-      throw error;
-    }
-  }
+  ) {}
 
   /**
    * 💾 Salva memória com embedding

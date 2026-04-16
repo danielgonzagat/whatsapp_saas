@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 import { codecovWebpackPlugin } from '@codecov/webpack-plugin';
