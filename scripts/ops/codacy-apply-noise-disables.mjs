@@ -176,6 +176,30 @@ const NOISE_PATTERNS = [
     reason:
       'WRONG_RULE — flags every Math.random() as cryptographically insecure. One real case (checkout slug, tracked in docs/security/deferred.json); remaining 83 are legit non-crypto uses (sampling, jitter, animation, mock data). Triaged 2026-04-15.',
   },
+  // ── Agentlinter treats Portuguese headings and domain terms as undefined acronyms ──
+  {
+    id: 'Agentlinter_clarity_undefined-term',
+    reason:
+      'WRONG_RULE — flags Portuguese words (REGRA, FASE, TIER, PULSE, CIA, SWR, IP, etc.) as "undefined terms" needing expansion. Bilingual PT-BR/EN project. 36/36 false positives.',
+  },
+  // ── Semgrep detect-openai flags intentional OpenAI SDK usage in an AI-native platform ──
+  {
+    id: 'Semgrep_ai.typescript.detect-openai.detect-openai',
+    reason:
+      'WRONG_RULE — KLOEL is an AI-native platform using OpenAI SDK by design. 53/53 intentional usage.',
+  },
+  // ── Semgrep duplicate-id in Prometheus/alerting YAML is structural ──
+  {
+    id: 'Semgrep_yaml.semgrep.duplicate-id.duplicate-id',
+    reason:
+      'WRONG_RULE — Prometheus alerting YAML uses repeated alert: keys across rule groups. 43/43 structural, not bugs.',
+  },
+  // ── Semgrep hard-coded-password flags NestJS decorators and field names ──
+  {
+    id: 'Semgrep_codacy.javascript.security.hard-coded-password',
+    reason:
+      'WRONG_RULE — flags @Roles() decorator, @Public() decorator, DTO field names. 36/36 false positives.',
+  },
   // ── Biome noSecrets is regex-only and produces 100% false positives here ──
   {
     id: 'Biome_lint_security_noSecrets',
