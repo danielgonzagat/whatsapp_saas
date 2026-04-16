@@ -1,274 +1,402 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { startTransition, useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { MetricNumber } from '@/components/ui/metric-number';
-import { Skeleton } from '@/components/ui/skeleton';
-import { StatCard } from '@/components/ui/stat-card';
+import {
+  AdminEmptyState,
+  AdminMetricGrid,
+  AdminPage,
+  AdminPageIntro,
+  AdminPillTabs,
+  AdminSectionHeader,
+  AdminSurface,
+} from '@/components/admin/admin-monitor-ui';
 import {
   adminTransactionsApi,
   type ListTransactionsResponse,
   type OrderStatusValue,
   type PaymentMethodValue,
 } from '@/lib/api/admin-transactions-api';
-import { AdminApiClientError } from '@/lib/api/admin-errors';
 
-const PAGE_SIZE = 50;
+const TABS = [
+  { key: 'vendas', label: 'Gestão de Vendas' },
+  { key: 'assinaturas', label: 'Assinaturas' },
+  { key: 'fisicos', label: 'Produtos Físicos' },
+  { key: 'pipeline', label: 'Pipeline CRM' },
+  { key: 'estrategias', label: 'Estratégias' },
+] as const;
 
-const STATUS_VARIANT: Record<string, 'ember' | 'success' | 'warning' | 'danger' | 'default'> = {
-  PAID: 'success',
-  SHIPPED: 'success',
-  DELIVERED: 'success',
-  PENDING: 'default',
-  PROCESSING: 'warning',
-  CANCELED: 'default',
-  REFUNDED: 'warning',
-  CHARGEBACK: 'danger',
-};
+const STATUS_OPTIONS: Array<{ value: '' | OrderStatusValue; label: string }> = [
+  { value: '', label: 'Todos' },
+  { value: 'PAID', label: 'Pago' },
+  { value: 'PENDING', label: 'Pendente' },
+  { value: 'REFUNDED', label: 'Reembolsado' },
+  { value: 'CHARGEBACK', label: 'Chargeback' },
+];
 
-const METHOD_LABELS: Record<string, string> = {
+const METHOD_OPTIONS: Array<{ value: '' | PaymentMethodValue; label: string }> = [
+  { value: '', label: 'Todos os métodos' },
+  { value: 'CREDIT_CARD', label: 'Cartão' },
+  { value: 'PIX', label: 'PIX' },
+  { value: 'BOLETO', label: 'Boleto' },
+];
+
+const METHOD_LABELS: Record<PaymentMethodValue, string> = {
   CREDIT_CARD: 'Cartão',
   PIX: 'PIX',
   BOLETO: 'Boleto',
 };
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleString('pt-BR');
-  } catch {
-    return iso;
-  }
-}
-
 export default function VendasPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'vendas';
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'' | OrderStatusValue>('');
   const [method, setMethod] = useState<'' | PaymentMethodValue>('');
-  const [page, setPage] = useState(0);
 
-  const { data, error, isLoading } = useSWR<ListTransactionsResponse>(
-    ['admin/transactions', search, status, method, page],
+  const { data } = useSWR<ListTransactionsResponse>(
+    ['admin/transactions', activeTab, search, status, method],
     () =>
       adminTransactionsApi.list({
         search: search || undefined,
-        status: (status || undefined) as OrderStatusValue | undefined,
-        method: (method || undefined) as PaymentMethodValue | undefined,
-        skip: page * PAGE_SIZE,
-        take: PAGE_SIZE,
+        status: status || undefined,
+        method: method || undefined,
+        take: 80,
       }),
-    { keepPreviousData: true, refreshInterval: 60_000 },
+    { refreshInterval: 60_000, revalidateOnFocus: false },
   );
 
-  const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
+  const items = data?.items || [];
+  const paidCount = items.filter((item) => item.status === 'PAID').length;
+  const pendingCount = items.filter(
+    (item) => item.status === 'PENDING' || item.status === 'PROCESSING',
+  ).length;
+  const refundedCount = items.filter((item) => item.status === 'REFUNDED').length;
+  const averageTicket =
+    items.length > 0
+      ? Math.round(items.reduce((sum, item) => sum + item.totalInCents, 0) / items.length)
+      : null;
+
+  const pipelineGroups = useMemo(
+    () => [
+      { label: 'Pagamento', count: paidCount },
+      { label: 'Pendente', count: pendingCount },
+      {
+        label: 'Entrega',
+        count: items.filter((item) => item.status === 'SHIPPED' || item.status === 'DELIVERED')
+          .length,
+      },
+      { label: 'Risco', count: items.filter((item) => item.status === 'CHARGEBACK').length },
+    ],
+    [items, paidCount, pendingCount],
+  );
 
   return (
-    <section className="flex flex-1 flex-col gap-6 px-6 py-8 pb-24">
-      <header className="flex flex-col gap-2">
-        <Badge variant="ember" className="w-fit">
-          SP-6
-        </Badge>
-        <h1 className="text-2xl font-semibold">Vendas</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Transações consolidadas de toda a plataforma. Leitura global — ações destrutivas
-          (estornar, marcar fraude) chegam em SP-8 com idempotência blindada.
-        </p>
-      </header>
+    <AdminPage>
+      <AdminPageIntro
+        eyebrow="OPERAÇÃO FINANCEIRA"
+        title="Vendas"
+        description="Transações, recorrência e pipeline comercial da plataforma inteira no mesmo padrão visual do app."
+      />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard
-          label="Total filtrado"
-          value={data?.sum.totalInCents ?? null}
-          kind="currency-brl"
-        />
-        <StatCard
-          label="Transações"
-          value={data?.total ?? null}
-          kind="integer"
-          sublabel="no filtro atual"
-        />
-        <StatCard
-          label="Ticket médio"
-          value={data && data.total > 0 ? Math.round(data.sum.totalInCents / data.total) : null}
-          kind="currency-brl"
-        />
-      </div>
+      <AdminPillTabs
+        items={TABS.map((tab) => ({ key: tab.key, label: tab.label }))}
+        active={activeTab}
+        onChange={(nextTab) =>
+          startTransition(() => {
+            router.push(`/vendas?tab=${encodeURIComponent(nextTab)}`);
+          })
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Filtros</CardTitle>
-          <CardDescription>Busca por número do pedido, email ou nome do comprador.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Input
-            placeholder="Pedido, nome, email"
-            value={search}
-            onChange={(e) => {
-              setPage(0);
-              setSearch(e.currentTarget.value);
-            }}
-            className="w-full md:max-w-sm"
-          />
-          <select
-            value={status}
-            onChange={(e) => {
-              setPage(0);
-              setStatus(e.currentTarget.value as '' | OrderStatusValue);
-            }}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
-          >
-            <option value="">Todos os status</option>
-            <option value="PENDING">Pendente</option>
-            <option value="PROCESSING">Processando</option>
-            <option value="PAID">Paga</option>
-            <option value="SHIPPED">Enviada</option>
-            <option value="DELIVERED">Entregue</option>
-            <option value="CANCELED">Cancelada</option>
-            <option value="REFUNDED">Reembolsada</option>
-            <option value="CHARGEBACK">Chargeback</option>
-          </select>
-          <select
-            value={method}
-            onChange={(e) => {
-              setPage(0);
-              setMethod(e.currentTarget.value as '' | PaymentMethodValue);
-            }}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
-          >
-            <option value="">Todos os métodos</option>
-            <option value="CREDIT_CARD">Cartão</option>
-            <option value="PIX">PIX</option>
-            <option value="BOLETO">Boleto</option>
-          </select>
-        </CardContent>
-      </Card>
+      <AdminMetricGrid
+        items={[
+          {
+            label: 'Faturamento total',
+            value: data?.sum.totalInCents ?? null,
+            detail: 'Volume filtrado na leitura atual',
+            tone: 'text-[var(--app-accent)]',
+          },
+          {
+            label: 'Transações',
+            value: items.length,
+            kind: 'integer',
+            detail: 'Linhas retornadas pela API',
+          },
+          {
+            label: 'Pendentes',
+            value: pendingCount,
+            kind: 'integer',
+            detail: 'Aguardando decisão ou pagamento',
+          },
+          {
+            label: 'Ticket médio',
+            value: averageTicket,
+            detail: 'Média por transação carregada',
+          },
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Transações</CardTitle>
-          <CardDescription>{data ? `${data.total} encontradas` : 'Carregando…'}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {isLoading ? (
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+      {activeTab === 'vendas' ? (
+        <>
+          <AdminSurface className="px-5 py-5 lg:px-6">
+            <AdminSectionHeader
+              title="Filtros"
+              description="Busque por cliente ou produtor e refine o recorte por status e método."
+            />
+            <div className="flex flex-col gap-3 lg:flex-row">
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Buscar por cliente, email ou produtor..."
+                className="h-10 flex-1 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none placeholder:text-[var(--app-text-placeholder)]"
+              />
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value as '' | OrderStatusValue)}
+                className="h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none"
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.label} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={method}
+                onChange={(event) => setMethod(event.target.value as '' | PaymentMethodValue)}
+                className="h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none"
+              >
+                {METHOD_OPTIONS.map((option) => (
+                  <option key={option.label} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
-          ) : error ? (
-            <p
-              role="alert"
-              className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-            >
-              {error instanceof AdminApiClientError
-                ? error.message
-                : 'Não foi possível carregar as vendas.'}
-            </p>
-          ) : !data || data.items.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhuma transação encontrada para os filtros atuais.
-            </p>
-          ) : (
-            <div className="overflow-x-auto rounded-sm border border-border">
-              <table className="w-full min-w-[900px] text-left text-sm">
-                <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Pedido</th>
-                    <th className="px-4 py-3">Comprador</th>
-                    <th className="px-4 py-3">Workspace</th>
-                    <th className="px-4 py-3">Método</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Valor</th>
-                    <th className="px-4 py-3">Pago em</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {data.items.map((row) => (
-                    <tr key={row.id} className="hover:bg-accent/40">
-                      <td className="px-4 py-3 font-mono text-xs">{row.orderNumber}</td>
-                      <td className="px-4 py-3 text-xs">
-                        <div className="flex flex-col">
-                          <span className="text-foreground">{row.customerName || '—'}</span>
-                          <span className="text-muted-foreground">{row.customerEmail}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {row.workspaceName ?? row.workspaceId.slice(0, 8)}
-                      </td>
-                      <td className="px-4 py-3 text-xs">
-                        <div className="flex flex-col">
-                          <span className="text-foreground">
-                            {METHOD_LABELS[row.paymentMethod] ?? row.paymentMethod}
-                          </span>
-                          {row.cardBrand && row.cardLast4 ? (
-                            <span className="text-muted-foreground">
-                              {row.cardBrand} •••• {row.cardLast4}
-                            </span>
-                          ) : null}
-                          {row.gateway ? (
-                            <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                              {row.gateway}
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={STATUS_VARIANT[row.status] ?? 'default'}>
-                          {row.status}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <MetricNumber
-                          value={row.totalInCents}
-                          kind="currency-brl"
-                          className="text-sm"
-                        />
-                        {row.installments > 1 ? (
-                          <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                            {row.installments}x
-                          </div>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {formatDateTime(row.paidAt)}
-                      </td>
+          </AdminSurface>
+
+          <AdminSurface className="px-5 py-5 lg:px-6">
+            <AdminSectionHeader
+              title="Gestão de vendas"
+              description="Tabela consolidada de toda a plataforma."
+            />
+            {items.length === 0 ? (
+              <AdminEmptyState
+                title="Nenhuma venda encontrada"
+                description="Pedidos aparecerão aqui quando as transações combinarem com o filtro selecionado."
+              />
+            ) : (
+              <div className="overflow-x-auto rounded-md border border-[var(--app-border-primary)]">
+                <table className="w-full min-w-[980px] text-left text-[13px]">
+                  <thead className="bg-[var(--app-bg-secondary)] text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                    <tr>
+                      <th className="px-4 py-3">Cliente</th>
+                      <th className="px-4 py-3">Produtor</th>
+                      <th className="px-4 py-3">Método</th>
+                      <th className="px-4 py-3">Gateway</th>
+                      <th className="px-4 py-3 text-right">Valor</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Data</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {data && totalPages > 1 ? (
-            <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
-              <span>
-                Página {page + 1} de {totalPages}
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Próxima
-                </Button>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--app-border-primary)]">
+                    {items.map((item) => (
+                      <tr key={item.id} className="bg-[var(--app-bg-card)]">
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-[var(--app-text-primary)]">
+                              {item.customerName}
+                            </span>
+                            <span className="text-[12px] text-[var(--app-text-secondary)]">
+                              {item.customerEmail}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                          {item.workspaceName || item.workspaceId}
+                        </td>
+                        <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                          {METHOD_LABELS[item.paymentMethod]}
+                        </td>
+                        <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                          {item.gateway || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <MetricNumber
+                            value={item.totalInCents}
+                            kind="currency-brl"
+                            className="text-[13px] font-semibold text-[var(--app-text-primary)]"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-secondary)]">
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                          {new Date(item.paidAt || item.createdAt).toLocaleString('pt-BR')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-    </section>
+            )}
+          </AdminSurface>
+        </>
+      ) : null}
+
+      {activeTab === 'assinaturas' ? (
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="Assinaturas"
+            description="Camada visual no padrão do app. Os indicadores globais aparecem sem expor backlog técnico."
+          />
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {[
+              { label: 'MRR', value: null, kind: 'currency-brl', detail: 'Dados sendo coletados' },
+              {
+                label: 'Assinaturas ativas',
+                value: null,
+                kind: 'integer',
+                detail: 'Dados sendo coletados',
+              },
+              {
+                label: 'Churn rate',
+                value: null,
+                kind: 'percentage',
+                detail: 'Dados sendo coletados',
+              },
+              {
+                label: 'LTV médio',
+                value: null,
+                kind: 'currency-brl',
+                detail: 'Dados sendo coletados',
+              },
+              {
+                label: 'ARR projetado',
+                value: null,
+                kind: 'currency-brl',
+                detail: 'Dados sendo coletados',
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-4"
+              >
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                  {item.label}
+                </div>
+                <MetricNumber
+                  value={item.value}
+                  kind={item.kind as any}
+                  className="text-[24px] font-bold tracking-[-0.04em]"
+                />
+                <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
+                  {item.detail}
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminSurface>
+      ) : null}
+
+      {activeTab === 'fisicos' ? (
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="Produtos físicos"
+            description="Leitura de fulfillment usando os status já consolidados na transação."
+          />
+          <div className="grid gap-3 md:grid-cols-4">
+            {[
+              { label: 'Pedidos totais', value: items.length },
+              {
+                label: 'Aguardando envio',
+                value: items.filter((item) => item.status === 'PROCESSING').length,
+              },
+              {
+                label: 'Em trânsito',
+                value: items.filter((item) => item.status === 'SHIPPED').length,
+              },
+              {
+                label: 'Entregues',
+                value: items.filter((item) => item.status === 'DELIVERED').length,
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-4"
+              >
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                  {item.label}
+                </div>
+                <div className="text-[24px] font-bold tracking-[-0.04em] text-[var(--app-text-primary)]">
+                  {item.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminSurface>
+      ) : null}
+
+      {activeTab === 'pipeline' ? (
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="Pipeline CRM"
+            description="Visão macro do fluxo operacional com os status disponíveis na camada transacional."
+          />
+          <div className="grid gap-3 md:grid-cols-4">
+            {pipelineGroups.map((group) => (
+              <div
+                key={group.label}
+                className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-4"
+              >
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                  {group.label}
+                </div>
+                <div className="text-[24px] font-bold tracking-[-0.04em] text-[var(--app-text-primary)]">
+                  {group.count}
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminSurface>
+      ) : null}
+
+      {activeTab === 'estrategias' ? (
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="Estratégias"
+            description="Superfície administrativa para leitura e decisão, sem metadados de desenvolvimento expostos."
+          />
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {[
+              'Recuperar carrinhos',
+              'Oferecer order bump',
+              'Escalar recorrência',
+              'Cobrança imediata',
+              'Fulfillment físico',
+              'Pipeline comercial',
+            ].map((label) => (
+              <div
+                key={label}
+                className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-4"
+              >
+                <div className="mb-2 text-[14px] font-semibold text-[var(--app-text-primary)]">
+                  {label}
+                </div>
+                <div className="text-[12px] leading-6 text-[var(--app-text-secondary)]">
+                  Dados sendo coletados para esta leitura estratégica.
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminSurface>
+      ) : null}
+    </AdminPage>
   );
 }

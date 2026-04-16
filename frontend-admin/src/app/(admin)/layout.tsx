@@ -3,9 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { AdminChatDrawer } from '@/components/admin/admin-chat-drawer';
-import { AdminSidebar } from '@/components/admin/admin-sidebar';
-import { AdminTopbar } from '@/components/admin/admin-topbar';
+import { AdminAppShell } from '@/components/admin/admin-app-shell';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -25,14 +23,5 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return null;
   }
 
-  return (
-    <div className="flex min-h-svh bg-background">
-      <AdminSidebar role={admin.role} />
-      <div className="flex flex-1 flex-col">
-        <AdminTopbar />
-        <main className="flex flex-1 flex-col pb-32">{children}</main>
-      </div>
-      <AdminChatDrawer />
-    </div>
-  );
+  return <AdminAppShell>{children}</AdminAppShell>;
 }

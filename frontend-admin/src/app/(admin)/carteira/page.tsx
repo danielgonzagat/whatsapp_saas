@@ -1,18 +1,36 @@
 'use client';
 
+import { useRouter, useSearchParams } from 'next/navigation';
+import { startTransition } from 'react';
 import useSWR from 'swr';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MetricNumber } from '@/components/ui/metric-number';
-import { Skeleton } from '@/components/ui/skeleton';
-import { StatCard } from '@/components/ui/stat-card';
+import {
+  AdminEmptyState,
+  AdminPage,
+  AdminPageIntro,
+  AdminPillTabs,
+  AdminSectionHeader,
+  AdminSurface,
+} from '@/components/admin/admin-monitor-ui';
 import {
   adminCarteiraApi,
   type ListLedgerResponse,
   type PlatformWalletBalance,
 } from '@/lib/api/admin-carteira-api';
-import { adminDashboardApi, type AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
-import { AdminApiClientError } from '@/lib/api/admin-errors';
+
+const TABS = [
+  { key: 'saldo', label: 'Saldo' },
+  { key: 'extrato', label: 'Extrato' },
+  { key: 'saques', label: 'Saques' },
+  { key: 'antecipacoes', label: 'Antecipações' },
+  { key: 'split', label: 'Split Engine' },
+  { key: 'fees', label: 'Fee Management' },
+  { key: 'payouts', label: 'Payouts' },
+  { key: 'conciliacao', label: 'Conciliação' },
+  { key: 'reserva', label: 'Reserva' },
+  { key: 'pl', label: 'P&L' },
+  { key: 'fiscal', label: 'Fiscal' },
+] as const;
 
 const BUCKET_LABEL: Record<string, string> = {
   AVAILABLE: 'Disponível',
@@ -20,177 +38,236 @@ const BUCKET_LABEL: Record<string, string> = {
   RESERVED: 'Reserva',
 };
 
-function formatDateTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString('pt-BR');
-  } catch {
-    return iso;
-  }
-}
-
-/**
- * SP-9 v0 — Platform wallet page. Reads live balances and ledger
- * entries from /admin/carteira. Until the split engine lands in a
- * follow-up PR, the wallet has zero balance and the ledger is
- * empty — the correct honest state per CLAUDE.md. Empty state
- * shows a "setup required" hint explaining that credits flow in
- * once the split engine is wired into the checkout confirm path.
- */
 export default function CarteiraPage() {
-  const { data: balance, error: balanceError } = useSWR<PlatformWalletBalance>(
-    'admin/carteira/balance',
-    () => adminCarteiraApi.balance(),
-  );
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'saldo';
 
-  const { data: ledger, error: ledgerError } = useSWR<ListLedgerResponse>(
-    'admin/carteira/ledger',
-    () => adminCarteiraApi.ledger({ take: 25 }),
+  const { data: balance } = useSWR<PlatformWalletBalance>('admin/carteira/balance', () =>
+    adminCarteiraApi.balance(),
   );
-
-  const { data: home } = useSWR<AdminHomeResponse>(['admin/dashboard/home', '30D'], () =>
-    adminDashboardApi.home({ period: '30D', compare: 'NONE' }),
+  const { data: ledger } = useSWR<ListLedgerResponse>('admin/carteira/ledger', () =>
+    adminCarteiraApi.ledger({ take: 40 }),
   );
-
-  const hasLedger = Boolean(ledger && ledger.items.length > 0);
 
   return (
-    <section className="flex flex-1 flex-col gap-6 px-6 py-8 pb-24">
-      <header className="flex flex-col gap-2">
-        <Badge variant="ember" className="w-fit">
-          SP-9
-        </Badge>
-        <h1 className="text-2xl font-semibold">Carteira da plataforma</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Saldo real da Kloel por moeda, com ledger append-only (invariante I-ADMIN-W2).
-          Reconciliação, split engine no checkout, payouts e P&amp;L chegam em SP-9 completo.
-        </p>
-      </header>
+    <AdminPage>
+      <AdminPageIntro
+        eyebrow="TESOURARIA"
+        title="Carteira"
+        description="Saldo, extrato e operação financeira da plataforma no mesmo ritmo visual do app principal."
+      />
 
-      {balanceError ? (
-        <p
-          role="alert"
-          className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-        >
-          {balanceError instanceof AdminApiClientError
-            ? balanceError.message
-            : 'Não foi possível carregar o saldo da carteira.'}
-        </p>
-      ) : null}
+      <AdminPillTabs
+        items={TABS.map((tab) => ({ key: tab.key, label: tab.label }))}
+        active={activeTab}
+        onChange={(nextTab) =>
+          startTransition(() => {
+            router.push(`/carteira?tab=${encodeURIComponent(nextTab)}`);
+          })
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard
-          label="Saldo disponível"
-          value={balance ? balance.availableInCents : null}
-          kind="currency-brl"
-          sublabel={
-            balance
-              ? `${balance.currency} • atualizado ${formatDateTime(balance.updatedAt)}`
-              : undefined
-          }
-        />
-        <StatCard
-          label="Saldo a receber"
-          value={balance ? balance.pendingInCents : null}
-          kind="currency-brl"
-          sublabel="liquida quando o pedido conclui"
-        />
-        <StatCard
-          label="Reserva (chargebacks)"
-          value={balance ? balance.reservedInCents : null}
-          kind="currency-brl"
-          sublabel="retido para cobrir riscos"
-        />
-      </div>
+      {activeTab === 'saldo' ||
+      activeTab === 'extrato' ||
+      activeTab === 'saques' ||
+      activeTab === 'antecipacoes' ? (
+        <>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              {
+                label: 'Saldo disponível',
+                value: balance?.availableInCents ?? null,
+                note: 'Disponível para operação da plataforma',
+                tone: 'text-[var(--app-accent)]',
+              },
+              {
+                label: 'A receber',
+                value: balance?.pendingInCents ?? null,
+                note: 'Transações em liquidação',
+                tone: 'text-amber-600',
+              },
+              {
+                label: 'Reserva',
+                value: balance?.reservedInCents ?? null,
+                note: 'Proteção para chargebacks',
+                tone: 'text-[var(--app-text-primary)]',
+              },
+              {
+                label: 'Total acumulado',
+                value:
+                  balance !== undefined
+                    ? (balance.availableInCents || 0) +
+                      (balance.pendingInCents || 0) +
+                      (balance.reservedInCents || 0)
+                    : null,
+                note: 'Soma dos buckets ativos',
+                tone: 'text-[var(--app-text-primary)]',
+              },
+            ].map((item) => (
+              <AdminSurface key={item.label} className="px-5 py-5">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                  {item.label}
+                </div>
+                <MetricNumber
+                  value={item.value}
+                  kind="currency-brl"
+                  className={`text-[28px] font-bold tracking-[-0.04em] ${item.tone}`}
+                />
+                <div className="mt-2 text-[11px] text-[var(--app-text-secondary)]">{item.note}</div>
+              </AdminSurface>
+            ))}
+          </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard
-          label="GMV — 30d"
-          value={home?.kpis.gmv.value ?? null}
-          kind="currency-brl"
-          sublabel="volume bruto processado"
-        />
-        <StatCard
-          label="Ticket médio"
-          value={home?.kpis.averageTicket.value ?? null}
-          kind="currency-brl"
-        />
-        <StatCard
-          label="Chargebacks — 30d"
-          value={home?.kpis.chargebackAmount.value ?? null}
-          kind="currency-brl"
-        />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Ledger — últimas 25 entradas</CardTitle>
-          <CardDescription>
-            Append-only. Cada mutação de saldo gera uma linha, e o par (orderId, kind) é único,
-            então replays nunca creditam duas vezes (invariante I-ADMIN-W5).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {ledgerError ? (
-            <p
-              role="alert"
-              className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-            >
-              {ledgerError instanceof AdminApiClientError
-                ? ledgerError.message
-                : 'Não foi possível carregar o ledger.'}
-            </p>
-          ) : !ledger ? (
-            <Skeleton className="h-32 w-full" />
-          ) : hasLedger ? (
-            <div className="overflow-x-auto rounded-sm border border-border">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Data</th>
-                    <th className="px-4 py-3">Kind</th>
-                    <th className="px-4 py-3">Bucket</th>
-                    <th className="px-4 py-3">Pedido</th>
-                    <th className="px-4 py-3 text-right">Valor</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {ledger.items.map((row) => (
-                    <tr key={row.id} className="hover:bg-accent/40">
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {formatDateTime(row.createdAt)}
-                      </td>
-                      <td className="px-4 py-3 text-xs">
-                        <Badge variant={row.direction === 'credit' ? 'success' : 'warning'}>
+          {activeTab === 'saldo' ? (
+            <AdminSurface className="px-5 py-5 lg:px-6">
+              <AdminSectionHeader
+                title="Últimas transações"
+                description="Leitura resumida das linhas mais recentes do ledger da plataforma."
+              />
+              {!ledger || ledger.items.length === 0 ? (
+                <AdminEmptyState
+                  title="Nenhuma movimentação recente"
+                  description="Assim que entradas e saídas financeiras forem registradas, elas aparecerão aqui."
+                />
+              ) : (
+                <div className="grid gap-2">
+                  {ledger.items.slice(0, 8).map((row) => (
+                    <div
+                      key={row.id}
+                      className="flex flex-col gap-2 rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
+                    >
+                      <div>
+                        <div className="mb-1 text-[12px] font-semibold text-[var(--app-text-primary)]">
                           {row.kind}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {BUCKET_LABEL[row.bucket] ?? row.bucket}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs">{row.orderId ?? '—'}</td>
-                      <td className="px-4 py-3 text-right">
+                        </div>
+                        <div className="text-[11px] text-[var(--app-text-secondary)]">
+                          {BUCKET_LABEL[row.bucket] || row.bucket} · {row.reason}
+                        </div>
+                      </div>
+                      <div className="text-left lg:text-right">
                         <MetricNumber
                           value={
                             row.direction === 'credit' ? row.amountInCents : -row.amountInCents
                           }
                           kind="currency-brl"
-                          className="text-sm"
+                          className="text-[14px] font-semibold text-[var(--app-text-primary)]"
                         />
-                      </td>
-                    </tr>
+                        <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
+                          {new Date(row.createdAt).toLocaleString('pt-BR')}
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="rounded-sm border border-dashed border-border bg-card/60 p-6 text-center text-xs text-muted-foreground">
-              Ledger vazio. O split engine do checkout começa a popular estas linhas assim que for
-              ligado no <code className="font-mono">checkout confirm</code> — feature flag{' '}
-              <code className="font-mono">adm.wallet.v1</code>.
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </section>
+                </div>
+              )}
+            </AdminSurface>
+          ) : null}
+
+          {activeTab === 'extrato' ? (
+            <AdminSurface className="px-5 py-5 lg:px-6">
+              <AdminSectionHeader
+                title="Extrato"
+                description="Movimentações append-only da conta operacional da Kloel."
+              />
+              {!ledger || ledger.items.length === 0 ? (
+                <AdminEmptyState
+                  title="Extrato vazio"
+                  description="As linhas do extrato aparecem automaticamente quando o ledger recebe créditos e débitos."
+                />
+              ) : (
+                <div className="overflow-x-auto rounded-md border border-[var(--app-border-primary)]">
+                  <table className="w-full min-w-[860px] text-left text-[13px]">
+                    <thead className="bg-[var(--app-bg-secondary)] text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                      <tr>
+                        <th className="px-4 py-3">Data</th>
+                        <th className="px-4 py-3">Tipo</th>
+                        <th className="px-4 py-3">Bucket</th>
+                        <th className="px-4 py-3">Motivo</th>
+                        <th className="px-4 py-3 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--app-border-primary)]">
+                      {ledger.items.map((row) => (
+                        <tr key={row.id} className="bg-[var(--app-bg-card)]">
+                          <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                            {new Date(row.createdAt).toLocaleString('pt-BR')}
+                          </td>
+                          <td className="px-4 py-3 text-[var(--app-text-primary)]">{row.kind}</td>
+                          <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                            {BUCKET_LABEL[row.bucket] || row.bucket}
+                          </td>
+                          <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                            {row.reason}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <MetricNumber
+                              value={
+                                row.direction === 'credit' ? row.amountInCents : -row.amountInCents
+                              }
+                              kind="currency-brl"
+                              className="text-[13px] font-semibold text-[var(--app-text-primary)]"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </AdminSurface>
+          ) : null}
+
+          {activeTab === 'saques' ? (
+            <AdminSurface className="px-5 py-5 lg:px-6">
+              <AdminSectionHeader
+                title="Saques"
+                description="Fluxo de saída financeira monitorado a partir do ledger da plataforma."
+              />
+              <AdminEmptyState
+                title="Nenhuma fila ativa"
+                description="Os saques operacionais aparecem aqui quando houver solicitações ou liquidações registradas."
+              />
+            </AdminSurface>
+          ) : null}
+
+          {activeTab === 'antecipacoes' ? (
+            <AdminSurface className="px-5 py-5 lg:px-6">
+              <AdminSectionHeader
+                title="Antecipações"
+                description="Espaço reservado para a leitura operacional de antecipações."
+              />
+              <AdminEmptyState
+                title="Nenhuma antecipação registrada"
+                description="Assim que houver eventos de antecipação, a superfície será preenchida com os dados reais."
+              />
+            </AdminSurface>
+          ) : null}
+        </>
+      ) : (
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title={TABS.find((tab) => tab.key === activeTab)?.label || 'Módulo'}
+            description="A superfície segue o mesmo design system do app principal e permanece honesta quando o dado ainda não está disponível."
+          />
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {['Cards KPI', 'Tabela operacional', 'Ações Ember'].map((label) => (
+              <div
+                key={label}
+                className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-4"
+              >
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                  {label}
+                </div>
+                <div className="text-[18px] font-semibold text-[var(--app-text-primary)]">—</div>
+                <div className="mt-2 text-[12px] leading-6 text-[var(--app-text-secondary)]">
+                  Dados sendo coletados
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminSurface>
+      )}
+    </AdminPage>
   );
 }

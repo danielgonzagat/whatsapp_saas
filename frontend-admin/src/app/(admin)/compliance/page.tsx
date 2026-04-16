@@ -2,12 +2,17 @@
 
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MetricNumber } from '@/components/ui/metric-number';
-import { Skeleton } from '@/components/ui/skeleton';
-import { StatCard } from '@/components/ui/stat-card';
+import {
+  AdminEmptyState,
+  AdminHeroSplit,
+  AdminMetricGrid,
+  AdminPage,
+  AdminPageIntro,
+  AdminSectionHeader,
+  AdminSurface,
+} from '@/components/admin/admin-monitor-ui';
 import {
   adminTransactionsApi,
   type ListTransactionsResponse,
@@ -25,189 +30,247 @@ function formatDateTime(iso: string | null): string {
 }
 
 export default function CompliancePage() {
-  // Chargebacks: transactions with status=CHARGEBACK. Reuse the SP-6 API.
-  const {
-    data: chargebacks,
-    error: cbError,
-    isLoading: cbLoading,
-  } = useSWR<ListTransactionsResponse>(
+  const { data: chargebacks, error: cbError } = useSWR<ListTransactionsResponse>(
     'admin/transactions?status=CHARGEBACK',
     () => adminTransactionsApi.list({ status: 'CHARGEBACK', take: 50 }),
     { refreshInterval: 60_000 },
   );
 
-  const {
-    data: refunds,
-    error: rfError,
-    isLoading: rfLoading,
-  } = useSWR<ListTransactionsResponse>(
+  const { data: refunds, error: rfError } = useSWR<ListTransactionsResponse>(
     'admin/transactions?status=REFUNDED',
     () => adminTransactionsApi.list({ status: 'REFUNDED', take: 50 }),
     { refreshInterval: 60_000 },
   );
 
-  // Recent audit events on admin/kyc for the compliance feed.
   const { data: audit } = useSWR<AdminAuditListResponse>(
     'admin/audit?action=kyc',
     () => adminAuditApi.list({ action: 'kyc', take: 20 }),
     { refreshInterval: 60_000 },
   );
 
+  const chargebackItems = chargebacks?.items ?? [];
+  const refundItems = refunds?.items ?? [];
+  const auditItems = audit?.items ?? [];
+
   return (
-    <section className="flex flex-1 flex-col gap-6 px-6 py-8 pb-24">
-      <header className="flex flex-col gap-2">
-        <Badge variant="ember" className="w-fit">
-          SP-7
-        </Badge>
-        <h1 className="text-2xl font-semibold">Compliance</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Visão de risco da plataforma: chargebacks abertos, reembolsos recentes e trilha de
-          auditoria KYC. Blacklists, fraud scoring e AML detalhado chegam em SP-7 completo.
-        </p>
-      </header>
+    <AdminPage>
+      <AdminPageIntro
+        eyebrow="RISCO OPERACIONAL"
+        title="Compliance"
+        description="Monitoramento global de chargebacks, reembolsos e decisões operacionais de KYC."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link href="/audit">Abrir audit log</Link>
+          </Button>
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          label="Chargebacks"
-          value={chargebacks?.total ?? null}
-          kind="integer"
-          sublabel="últimos 50"
-        />
-        <StatCard
-          label="Valor em chargebacks"
-          value={chargebacks?.sum.totalInCents ?? null}
-          kind="currency-brl"
-        />
-        <StatCard
-          label="Reembolsos"
-          value={refunds?.total ?? null}
-          kind="integer"
-          sublabel="últimos 50"
-        />
-        <StatCard
-          label="Valor reembolsado"
-          value={refunds?.sum.totalInCents ?? null}
-          kind="currency-brl"
-        />
-      </div>
+      <AdminHeroSplit
+        label="Valor sob observação"
+        value={chargebacks?.sum.totalInCents ?? null}
+        description="Total em chargebacks abertos na plataforma. Use esta visão para priorizar tratativas e revisar anomalias."
+        compactCards={[
+          {
+            label: 'Chargebacks',
+            value: chargebacks?.total ?? null,
+            kind: 'integer',
+            note: 'Ocorrências abertas',
+          },
+          {
+            label: 'Reembolsos',
+            value: refunds?.total ?? null,
+            kind: 'integer',
+            note: 'Ocorrências recentes',
+          },
+          {
+            label: 'Valor reembolsado',
+            value: refunds?.sum.totalInCents ?? null,
+            note: 'Últimos registros carregados',
+          },
+          {
+            label: 'Eventos KYC',
+            value: auditItems.length,
+            kind: 'integer',
+            note: 'Feed operacional recente',
+          },
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Chargebacks abertos</CardTitle>
-          <CardDescription>
-            Transações com status CHARGEBACK. Clique em uma linha para ver no módulo Vendas. Ações
-            de defesa chegam em SP-7 completo.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {cbLoading ? (
-            <Skeleton className="h-24 w-full" />
-          ) : cbError ? (
-            <p className="text-sm text-red-400">
-              {cbError instanceof AdminApiClientError
-                ? cbError.message
-                : 'Erro ao carregar chargebacks.'}
-            </p>
-          ) : !chargebacks || chargebacks.items.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhum chargeback aberto no momento.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border overflow-hidden rounded-sm border border-border">
-              {chargebacks.items.map((row) => (
-                <li
-                  key={row.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-mono text-xs">{row.orderNumber}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {row.customerName} • {row.customerEmail}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <MetricNumber
-                      value={row.totalInCents}
-                      kind="currency-brl"
-                      className="text-sm"
-                    />
-                    <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+      <AdminMetricGrid
+        items={[
+          {
+            label: 'Contestações abertas',
+            value: chargebackItems.length,
+            kind: 'integer',
+            detail: 'Fila atual de disputa',
+          },
+          {
+            label: 'Clientes impactados',
+            value: new Set(chargebackItems.map((item) => item.customerEmail)).size,
+            kind: 'integer',
+            detail: 'E-mails únicos com chargeback',
+          },
+          {
+            label: 'Gateways em disputa',
+            value: new Set(chargebackItems.map((item) => item.gateway).filter(Boolean)).size,
+            kind: 'integer',
+            detail: 'Integrações com eventos ativos',
+          },
+          {
+            label: 'Decisões KYC',
+            value: auditItems.length,
+            kind: 'integer',
+            detail: 'Eventos disponíveis no feed atual',
+          },
+        ]}
+      />
+
+      <AdminSurface className="px-5 py-5 lg:px-6">
+        <AdminSectionHeader
+          title="Chargebacks abertos"
+          description="Pedidos em disputa com leitura rápida de cliente, valor e data do evento."
+        />
+        {cbError ? (
+          <p className="text-sm text-red-400">
+            {cbError instanceof AdminApiClientError
+              ? cbError.message
+              : 'Erro ao carregar chargebacks.'}
+          </p>
+        ) : chargebackItems.length === 0 ? (
+          <AdminEmptyState
+            title="Nenhum chargeback aberto"
+            description="Quando surgirem disputas elas aparecem aqui para tratamento prioritário."
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-md border border-[var(--app-border-primary)]">
+            <table className="w-full min-w-[900px] text-left text-[13px]">
+              <thead className="bg-[var(--app-bg-secondary)] text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                <tr>
+                  <th className="px-4 py-3">Pedido</th>
+                  <th className="px-4 py-3">Cliente</th>
+                  <th className="px-4 py-3">Workspace</th>
+                  <th className="px-4 py-3">Gateway</th>
+                  <th className="px-4 py-3 text-right">Valor</th>
+                  <th className="px-4 py-3">Data</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--app-border-primary)]">
+                {chargebackItems.map((row) => (
+                  <tr key={row.id} className="bg-[var(--app-bg-card)]">
+                    <td className="px-4 py-3 font-mono text-[12px] text-[var(--app-text-primary)]">
+                      {row.orderNumber}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-[var(--app-text-primary)]">
+                          {row.customerName}
+                        </span>
+                        <span className="text-[11px] text-[var(--app-text-secondary)]">
+                          {row.customerEmail}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                      {row.workspaceName ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                      {row.gateway ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <MetricNumber
+                        value={row.totalInCents}
+                        kind="currency-brl"
+                        className="text-[13px] font-semibold text-[var(--app-text-primary)]"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-[var(--app-text-secondary)]">
                       {formatDateTime(row.paidAt ?? row.createdAt)}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </AdminSurface>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Reembolsos recentes</CardTitle>
-          <CardDescription>Transações com status REFUNDED.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {rfLoading ? (
-            <Skeleton className="h-24 w-full" />
-          ) : rfError ? (
+      <div className="grid gap-3 lg:grid-cols-2">
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="Reembolsos recentes"
+            description="Últimos reembolsos processados na plataforma."
+          />
+          {rfError ? (
             <p className="text-sm text-red-400">
               {rfError instanceof AdminApiClientError
                 ? rfError.message
                 : 'Erro ao carregar reembolsos.'}
             </p>
-          ) : !refunds || refunds.items.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhum reembolso recente.
-            </p>
+          ) : refundItems.length === 0 ? (
+            <AdminEmptyState
+              title="Nenhum reembolso recente"
+              description="A superfície será preenchida assim que houver movimentação."
+            />
           ) : (
-            <ul className="divide-y divide-border overflow-hidden rounded-sm border border-border">
-              {refunds.items.slice(0, 10).map((row) => (
+            <ul className="divide-y divide-[var(--app-border-primary)] overflow-hidden rounded-md border border-[var(--app-border-primary)]">
+              {refundItems.slice(0, 8).map((row) => (
                 <li
                   key={row.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+                  className="flex items-center justify-between gap-4 bg-[var(--app-bg-card)] px-4 py-3"
                 >
-                  <div className="flex flex-col">
-                    <span className="font-mono text-xs">{row.orderNumber}</span>
-                    <span className="text-xs text-muted-foreground">{row.customerEmail}</span>
+                  <div className="min-w-0">
+                    <div className="font-mono text-[12px] text-[var(--app-text-primary)]">
+                      {row.orderNumber}
+                    </div>
+                    <div className="truncate text-[11px] text-[var(--app-text-secondary)]">
+                      {row.customerEmail}
+                    </div>
                   </div>
-                  <MetricNumber value={row.totalInCents} kind="currency-brl" className="text-sm" />
+                  <MetricNumber
+                    value={row.totalInCents}
+                    kind="currency-brl"
+                    className="text-[13px] font-semibold text-[var(--app-text-primary)]"
+                  />
                 </li>
               ))}
             </ul>
           )}
-        </CardContent>
-      </Card>
+        </AdminSurface>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Eventos KYC recentes</CardTitle>
-          <CardDescription>
-            Últimas decisões de KYC registradas no audit log append-only.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          {!audit ? (
-            <Skeleton className="h-20 w-full" />
-          ) : audit.items.length === 0 ? (
-            <p className="py-6 text-center text-xs text-muted-foreground">
-              Nenhuma decisão KYC registrada ainda.
-            </p>
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="Eventos KYC recentes"
+            description="Leitura rápida das últimas decisões registradas pela operação."
+          />
+          {auditItems.length === 0 ? (
+            <AdminEmptyState
+              title="Nenhum evento recente"
+              description="Assim que o time registrar novas decisões elas aparecem aqui."
+            />
           ) : (
-            <ul className="divide-y divide-border">
-              {audit.items.slice(0, 10).map((item) => (
-                <li key={item.id} className="flex items-center justify-between py-2 text-xs">
-                  <code className="font-mono text-primary">{item.action}</code>
-                  <span className="text-muted-foreground">{formatDateTime(item.createdAt)}</span>
+            <ul className="divide-y divide-[var(--app-border-primary)] overflow-hidden rounded-md border border-[var(--app-border-primary)]">
+              {auditItems.slice(0, 8).map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-4 bg-[var(--app-bg-card)] px-4 py-3"
+                >
+                  <div>
+                    <div className="font-mono text-[12px] text-[var(--app-accent)]">
+                      {item.action}
+                    </div>
+                    <div className="text-[11px] text-[var(--app-text-secondary)]">
+                      {item.adminUser?.name ?? 'Operação'} • {item.entityType ?? 'KYC'}
+                    </div>
+                  </div>
+                  <div className="text-right text-[11px] text-[var(--app-text-secondary)]">
+                    {formatDateTime(item.createdAt)}
+                  </div>
                 </li>
               ))}
             </ul>
           )}
-          <Button asChild variant="outline" size="sm" className="mt-2 w-fit">
-            <Link href="/audit">Abrir audit log completo</Link>
-          </Button>
-        </CardContent>
-      </Card>
-    </section>
+        </AdminSurface>
+      </div>
+    </AdminPage>
   );
 }

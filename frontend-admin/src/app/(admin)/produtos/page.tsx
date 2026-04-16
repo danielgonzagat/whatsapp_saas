@@ -1,302 +1,371 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { startTransition, useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { MetricNumber } from '@/components/ui/metric-number';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AdminEmptyState,
+  AdminHeroSplit,
+  AdminPage,
+  AdminPageIntro,
+  AdminPillTabs,
+  AdminSectionHeader,
+  AdminSurface,
+  AdminTicker,
+} from '@/components/admin/admin-monitor-ui';
 import {
   adminProductsApi,
   type AdminProductRow,
   type ListProductsResponse,
 } from '@/lib/api/admin-products-api';
-import { AdminApiClientError } from '@/lib/api/admin-errors';
 
-const PAGE_SIZE = 25;
+const TABS = [
+  { key: 'todos', label: 'Todos os Produtos' },
+  { key: 'moderacao', label: 'Fila de Moderação' },
+  { key: 'produtor', label: 'Por Produtor' },
+  { key: 'marketplace', label: 'Marketplace' },
+] as const;
 
-const STATUS_VARIANT: Record<string, 'ember' | 'success' | 'warning' | 'danger' | 'default'> = {
-  APPROVED: 'success',
-  ACTIVE: 'success',
-  PENDING: 'warning',
-  DRAFT: 'default',
-  REJECTED: 'danger',
-  PAUSED: 'default',
-  ARCHIVED: 'default',
-};
+function currencyValue(label: string, value: number | null | undefined) {
+  return { label, value, kind: 'currency-brl' as const };
+}
 
-type ModerationDialog =
-  | { kind: 'approve'; product: AdminProductRow }
-  | { kind: 'reject'; product: AdminProductRow }
-  | null;
+function statusTone(status: string) {
+  switch (status) {
+    case 'APPROVED':
+    case 'ACTIVE':
+      return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600';
+    case 'PENDING':
+      return 'border-amber-500/30 bg-amber-500/10 text-amber-700';
+    case 'REJECTED':
+      return 'border-red-500/30 bg-red-500/10 text-red-600';
+    default:
+      return 'border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] text-[var(--app-text-secondary)]';
+  }
+}
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 2,
+  }).format(value / 100);
+}
 
 export default function ProdutosPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'todos';
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
-  const [page, setPage] = useState(0);
-  const [dialog, setDialog] = useState<ModerationDialog>(null);
-  const [reason, setReason] = useState('');
-  const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [workspaceFilter, setWorkspaceFilter] = useState('');
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const { data, error, isLoading, mutate } = useSWR<ListProductsResponse>(
-    ['admin/products', search, status, page],
+  const apiStatus = activeTab === 'moderacao' ? 'PENDING' : undefined;
+  const { data, mutate } = useSWR<ListProductsResponse>(
+    ['admin/products', activeTab, search, workspaceFilter],
     () =>
       adminProductsApi.list({
         search: search || undefined,
-        status: status || undefined,
-        skip: page * PAGE_SIZE,
-        take: PAGE_SIZE,
+        status: apiStatus,
+        take: 60,
       }),
-    { keepPreviousData: true, refreshInterval: 60_000 },
+    { refreshInterval: 60_000, revalidateOnFocus: false },
   );
 
-  const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
+  const items = useMemo(
+    () =>
+      (data?.items || []).filter((item) =>
+        workspaceFilter ? (item.workspaceName || item.workspaceId) === workspaceFilter : true,
+      ),
+    [data?.items, workspaceFilter],
+  );
+  const totalRevenueProxy = useMemo(
+    () => items.reduce((sum, item) => sum + item.priceInCents, 0),
+    [items],
+  );
+  const workspaceOptions = useMemo(
+    () => Array.from(new Set(items.map((item) => item.workspaceName).filter(Boolean))).sort(),
+    [items],
+  );
+  const tickerItems = useMemo(
+    () =>
+      items
+        .slice()
+        .sort((left, right) => right.priceInCents - left.priceInCents)
+        .slice(0, 10)
+        .map((item) => `${item.name} · ${formatMoney(item.priceInCents)}`),
+    [items],
+  );
 
-  async function confirm() {
-    if (!dialog) return;
-    setFeedback(null);
-    setBusy(true);
+  async function approveProduct(product: AdminProductRow) {
+    setBusyId(product.id);
     try {
-      if (dialog.kind === 'approve') {
-        await adminProductsApi.approve(dialog.product.id, note || undefined);
-      } else {
-        await adminProductsApi.reject(dialog.product.id, reason);
-      }
+      await adminProductsApi.approve(product.id);
       await mutate();
-      setDialog(null);
-      setNote('');
-      setReason('');
-    } catch (err) {
-      setFeedback(
-        err instanceof AdminApiClientError ? err.message : 'Erro inesperado ao moderar o produto.',
-      );
     } finally {
-      setBusy(false);
+      setBusyId(null);
+    }
+  }
+
+  async function rejectProduct(product: AdminProductRow) {
+    const reason = window.prompt('Motivo da rejeição');
+    if (!reason) return;
+
+    setBusyId(product.id);
+    try {
+      await adminProductsApi.reject(product.id, reason);
+      await mutate();
+    } finally {
+      setBusyId(null);
     }
   }
 
   return (
-    <section className="flex flex-1 flex-col gap-6 px-6 py-8 pb-24">
-      <header className="flex flex-col gap-2">
-        <Badge variant="ember" className="w-fit">
-          SP-5
-        </Badge>
-        <h1 className="text-2xl font-semibold">Produtos</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Catálogo de todos os produtos da plataforma com fila de moderação. Clique em Aprovar ou
-          Rejeitar nos produtos com status PENDING para trabalhar a fila.
-        </p>
-      </header>
+    <AdminPage>
+      <AdminPageIntro
+        eyebrow="CATÁLOGO GLOBAL"
+        title="Produtos"
+        description="Todos os produtos da plataforma Kloel, com moderação e leitura operacional em uma mesma superfície."
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Filtros</CardTitle>
-          <CardDescription>Busca por nome, descrição ou categoria.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Input
-            placeholder="Nome, descrição ou categoria"
+      <AdminPillTabs
+        items={TABS.map((tab) => ({ key: tab.key, label: tab.label }))}
+        active={activeTab}
+        onChange={(nextTab) => {
+          startTransition(() => {
+            router.push(`/produtos?tab=${encodeURIComponent(nextTab)}`);
+          });
+        }}
+      />
+
+      <AdminHeroSplit
+        label="Receita total da plataforma"
+        value={totalRevenueProxy}
+        description="Proxy de catálogo calculado a partir dos preços ativos carregados na vitrine administrativa."
+        compactCards={[
+          {
+            label: 'Produtos carregados',
+            value: items.length,
+            kind: 'integer',
+            note: 'Lista filtrada atual',
+          },
+          {
+            label: 'Pendentes',
+            value: items.filter((item) => item.status === 'PENDING').length,
+            kind: 'integer',
+            note: 'Na fila de moderação',
+          },
+          {
+            label: 'Aprovados',
+            value: items.filter((item) => item.status === 'APPROVED' || item.status === 'ACTIVE')
+              .length,
+            kind: 'integer',
+            note: 'Ativos no catálogo',
+          },
+          {
+            label: 'Rascunhos',
+            value: items.filter((item) => item.status === 'DRAFT').length,
+            kind: 'integer',
+            note: 'Ainda não publicados',
+          },
+        ]}
+      />
+
+      <AdminTicker items={tickerItems} />
+
+      <AdminSurface className="px-5 py-5 lg:px-6">
+        <AdminSectionHeader
+          title="Filtros"
+          description="Busque por nome, categoria ou produtor. Na aba de moderação a lista já entra filtrada por pendentes."
+        />
+        <div className="flex flex-col gap-3 lg:flex-row">
+          <input
             value={search}
-            onChange={(e) => {
-              setPage(0);
-              setSearch(e.currentTarget.value);
-            }}
-            className="w-full md:max-w-sm"
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar produto, categoria ou descrição"
+            className="h-10 flex-1 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none placeholder:text-[var(--app-text-placeholder)]"
           />
           <select
-            value={status}
-            onChange={(e) => {
-              setPage(0);
-              setStatus(e.currentTarget.value);
-            }}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            value={workspaceFilter}
+            onChange={(event) => setWorkspaceFilter(event.target.value)}
+            className="h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none"
           >
-            <option value="">Todos os status</option>
-            <option value="DRAFT">Rascunho</option>
-            <option value="PENDING">Pendente</option>
-            <option value="APPROVED">Aprovado</option>
-            <option value="REJECTED">Rejeitado</option>
-            <option value="ACTIVE">Ativo</option>
-            <option value="PAUSED">Pausado</option>
-            <option value="ARCHIVED">Arquivado</option>
+            <option value="">Todos os produtores</option>
+            {workspaceOptions.map((workspaceName) => (
+              <option key={workspaceName} value={workspaceName || ''}>
+                {workspaceName}
+              </option>
+            ))}
           </select>
-        </CardContent>
-      </Card>
+        </div>
+      </AdminSurface>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">
-            {data ? `${data.total} produtos` : 'Carregando…'}
-          </CardTitle>
-          <CardDescription>Atualização automática a cada 60s.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {isLoading ? (
-            <Skeleton className="h-24 w-full" />
-          ) : error ? (
-            <p
-              role="alert"
-              className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-            >
-              {error instanceof AdminApiClientError
-                ? error.message
-                : 'Não foi possível carregar os produtos.'}
-            </p>
-          ) : !data || data.items.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhum produto encontrado para os filtros atuais.
-            </p>
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title={activeTab === 'moderacao' ? 'Fila de moderação' : 'Todos os produtos'}
+            description="Cards ricos no padrão visual do app, com thumbnail, preço, produtor e status."
+          />
+
+          {items.length === 0 ? (
+            <AdminEmptyState
+              title="Nenhum produto encontrado"
+              description="Ajuste os filtros ou aguarde novos cadastros. Assim que houver catálogo, ele aparece aqui."
+            />
           ) : (
-            <div className="overflow-x-auto rounded-sm border border-border">
-              <table className="w-full min-w-[820px] text-left text-sm">
-                <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Produto</th>
-                    <th className="px-4 py-3">Workspace</th>
-                    <th className="px-4 py-3">Formato</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Preço</th>
-                    <th className="px-4 py-3 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {data.items.map((row) => (
-                    <tr key={row.id} className="hover:bg-accent/40">
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-foreground">{row.name}</span>
-                          <span className="truncate text-xs text-muted-foreground">
-                            {row.category ?? '—'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {row.workspaceName ?? row.workspaceId.slice(0, 8)}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{row.format}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant={STATUS_VARIANT[row.status] ?? 'default'}>
-                          {row.status}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <MetricNumber
-                          value={row.priceInCents}
-                          kind="currency-brl"
-                          className="text-sm"
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="inline-flex gap-2">
+            <div className="grid gap-3">
+              {items.map((product) => (
+                <div
+                  key={product.id}
+                  className="group grid gap-4 rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] p-4 lg:grid-cols-[88px_minmax(0,1fr)_auto]"
+                >
+                  <div className="overflow-hidden rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-card)]">
+                    {product.imageUrl ? (
+                      <img
+                        src={product.imageUrl}
+                        alt=""
+                        className="aspect-square h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex aspect-square items-center justify-center text-[11px] text-[var(--app-text-tertiary)]">
+                        Sem imagem
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="truncate text-[16px] font-semibold text-[var(--app-text-primary)]">
+                        {product.name}
+                      </span>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${statusTone(
+                          product.status,
+                        )}`}
+                      >
+                        {product.status}
+                      </span>
+                    </div>
+
+                    <div className="mb-2 text-[12px] text-[var(--app-text-secondary)]">
+                      {product.category || 'Sem categoria'} ·{' '}
+                      {product.workspaceName || product.workspaceId}
+                    </div>
+
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-[var(--app-accent-medium)] bg-[var(--app-bg-card)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--app-accent)]">
+                        PREÇO {formatMoney(product.priceInCents)}
+                      </span>
+                      <span className="rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-card)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-secondary)]">
+                        {product.format}
+                      </span>
+                    </div>
+
+                    <p className="line-clamp-2 max-w-2xl text-[12.5px] leading-6 text-[var(--app-text-secondary)]">
+                      {product.description || 'Sem descrição cadastrada.'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-start gap-3 lg:items-end">
+                    <div className="text-left lg:text-right">
+                      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                        Receita proxy
+                      </div>
+                      <MetricNumber
+                        value={product.priceInCents}
+                        kind="currency-brl"
+                        className="text-[20px] font-bold tracking-[-0.03em] text-[var(--app-accent)]"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/produtos/${product.id}`}>Abrir</Link>
+                      </Button>
+                      {(product.status === 'PENDING' || activeTab === 'moderacao') && (
+                        <>
                           <Button
                             size="sm"
-                            onClick={() => {
-                              setDialog({ kind: 'approve', product: row });
-                              setNote('');
-                              setReason('');
-                              setFeedback(null);
-                            }}
+                            disabled={busyId === product.id}
+                            onClick={() => void approveProduct(product)}
                           >
                             Aprovar
                           </Button>
                           <Button
-                            variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setDialog({ kind: 'reject', product: row });
-                              setNote('');
-                              setReason('');
-                              setFeedback(null);
-                            }}
+                            variant="outline"
+                            disabled={busyId === product.id}
+                            onClick={() => void rejectProduct(product)}
                           >
                             Rejeitar
                           </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-          {data && totalPages > 1 ? (
-            <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
-              <span>
-                Página {page + 1} de {totalPages}
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+        </AdminSurface>
+
+        <div className="grid gap-3">
+          <AdminSurface className="px-5 py-5 lg:px-6">
+            <AdminSectionHeader
+              title="Saúde operacional"
+              description="Leitura global do catálogo administrativo."
+            />
+            <div className="grid gap-2">
+              {[
+                { label: 'Produtos ativos', value: items.filter((item) => item.active).length },
+                {
+                  label: 'Checkouts ativos',
+                  value: items.filter((item) => item.status === 'APPROVED').length,
+                },
+                { label: 'Áreas vinculadas', value: null },
+                { label: 'Afiliados ativos', value: null },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3"
                 >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Próxima
-                </Button>
+                  <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                    {item.label}
+                  </div>
+                  <div className="text-[24px] font-bold tracking-[-0.04em] text-[var(--app-text-primary)]">
+                    {item.value === null ? '—' : item.value}
+                  </div>
+                  <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
+                    {item.value === null ? 'Dados sendo coletados' : 'Atualização contínua'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </AdminSurface>
+
+          <AdminSurface className="px-5 py-5 lg:px-6">
+            <AdminSectionHeader
+              title="Motor IA"
+              description="Status do catálogo usado para suporte e moderação."
+            />
+            <div className="rounded-md border border-[var(--app-border-primary)] bg-[#FFF4DF] px-4 py-4 text-[#5A3A12]">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em]">
+                Catálogo sincronizado
+              </div>
+              <div className="text-[18px] font-semibold">
+                Base pronta para suporte administrativo
+              </div>
+              <div className="mt-2 text-[12px] leading-6">
+                Produtos com dados incompletos continuam visíveis, mas recebem leitura reduzida na
+                análise.
               </div>
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      {dialog ? (
-        <div
-          role="dialog"
-          aria-modal
-          className="fixed inset-0 z-40 flex items-center justify-center bg-background/70 p-6"
-        >
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-sm">
-                {dialog.kind === 'approve' ? 'Aprovar produto' : 'Rejeitar produto'}
-              </CardTitle>
-              <CardDescription>
-                {dialog.product.name} — {dialog.product.workspaceName ?? dialog.product.workspaceId}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {dialog.kind === 'approve' ? (
-                <Input
-                  placeholder="Nota interna (opcional)"
-                  value={note}
-                  onChange={(e) => setNote(e.currentTarget.value)}
-                />
-              ) : (
-                <Input
-                  placeholder="Motivo da rejeição"
-                  value={reason}
-                  onChange={(e) => setReason(e.currentTarget.value)}
-                />
-              )}
-              {feedback ? <p className="text-xs text-red-400">{feedback}</p> : null}
-              <div className="flex items-center justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setDialog(null)} disabled={busy}>
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={confirm}
-                  disabled={busy || (dialog.kind === 'reject' && reason.trim().length < 3)}
-                >
-                  {busy ? 'Processando…' : 'Confirmar'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          </AdminSurface>
         </div>
-      ) : null}
-    </section>
+      </div>
+    </AdminPage>
   );
 }

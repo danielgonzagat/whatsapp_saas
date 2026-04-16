@@ -2,12 +2,19 @@
 
 import { useState } from 'react';
 import useSWR from 'swr';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AdminEmptyState,
+  AdminMetricGrid,
+  AdminPage,
+  AdminPageIntro,
+  AdminSectionHeader,
+  AdminSurface,
+} from '@/components/admin/admin-monitor-ui';
 import {
   adminAccountsApi,
   type KycQueueResponse,
@@ -55,9 +62,11 @@ export default function KycQueuePage() {
       setPending(null);
       setReason('');
       setNote('');
-    } catch (err) {
+    } catch (submitError) {
       setFeedback(
-        err instanceof AdminApiClientError ? err.message : 'Erro inesperado ao processar a ação.',
+        submitError instanceof AdminApiClientError
+          ? submitError.message
+          : 'Erro inesperado ao processar a ação.',
       );
     } finally {
       setBusy(false);
@@ -65,34 +74,63 @@ export default function KycQueuePage() {
   }
 
   return (
-    <section className="flex flex-1 flex-col gap-6 px-6 py-8 pb-24">
-      <header className="flex flex-col gap-2">
-        <Badge variant="ember" className="w-fit">
-          SP-4
-        </Badge>
-        <h1 className="text-2xl font-semibold">Fila de KYC</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Submissões aguardando revisão, ordenadas da mais antiga para a mais recente. Cada ação
-          escreve no audit log append-only.
-        </p>
-      </header>
+    <AdminPage>
+      <AdminPageIntro
+        eyebrow="KYC"
+        title="Fila de KYC"
+        description="Submissões aguardando revisão operacional, com atualização automática da fila."
+      />
+
+      <AdminMetricGrid
+        items={[
+          {
+            label: 'Na fila',
+            value: data?.total ?? null,
+            kind: 'integer',
+            detail: 'Submissões pendentes',
+          },
+          {
+            label: 'Documentos',
+            value: data?.items.reduce((sum, row) => sum + row.documentCount, 0) ?? null,
+            kind: 'integer',
+            detail: 'Arquivos anexados',
+          },
+          {
+            label: 'Aguardando +48h',
+            value:
+              data?.items.filter((row) => {
+                if (!row.kycSubmittedAt) return false;
+                return Date.now() - new Date(row.kycSubmittedAt).getTime() > 48 * 60 * 60 * 1000;
+              }).length ?? null,
+            kind: 'integer',
+            detail: 'Prioridade operacional',
+          },
+          {
+            label: 'Atualização',
+            value: 60,
+            kind: 'integer',
+            detail: 'Refresh automático em segundos',
+          },
+        ]}
+      />
 
       {error ? <ErrorBanner error={error} /> : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">
-            {data ? `${data.total} submissões pendentes` : 'Carregando…'}
-          </CardTitle>
-          <CardDescription>Atualiza automaticamente a cada 60 segundos.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
+      <AdminSurface className="px-5 py-5 lg:px-6">
+        <AdminSectionHeader
+          title="Submissões pendentes"
+          description={
+            data ? `${data.total} itens aguardando revisão` : 'Carregando fila operacional'
+          }
+        />
+        <div className="flex flex-col gap-3">
           {isLoading ? (
             <Skeleton className="h-32 w-full" />
           ) : !data || data.items.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhuma submissão KYC pendente no momento.
-            </p>
+            <AdminEmptyState
+              title="Fila vazia"
+              description="Quando novos documentos forem enviados eles aparecem aqui automaticamente."
+            />
           ) : (
             <ul className="flex flex-col gap-3">
               {data.items.map((row) => (
@@ -109,8 +147,8 @@ export default function KycQueuePage() {
               ))}
             </ul>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </AdminSurface>
 
       {pending ? (
         <DecisionDialog
@@ -128,7 +166,7 @@ export default function KycQueuePage() {
           onConfirm={submitAction}
         />
       ) : null}
-    </section>
+    </AdminPage>
   );
 }
 
@@ -140,14 +178,16 @@ function KycRowCard({
   onAction: (kind: 'approve' | 'reject' | 'reverify') => void;
 }) {
   return (
-    <li className="flex flex-col gap-3 rounded-sm border border-border p-4 md:flex-row md:items-center md:justify-between">
+    <li className="flex flex-col gap-3 rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-card)] p-4 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium text-foreground">{row.agentName}</span>
-          <Badge variant="outline">{row.workspaceName}</Badge>
+          <span className="font-medium text-[var(--app-text-primary)]">{row.agentName}</span>
+          <span className="rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-secondary)]">
+            {row.workspaceName}
+          </span>
         </div>
-        <span className="text-xs text-muted-foreground">{row.agentEmail}</span>
-        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="text-xs text-[var(--app-text-secondary)]">{row.agentEmail}</span>
+        <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--app-text-tertiary)]">
           Enviada em {formatDate(row.kycSubmittedAt)} • {row.documentCount} documentos
         </span>
       </div>
@@ -204,7 +244,7 @@ function DecisionDialog({
           <CardTitle className="text-sm">{titles[pending.kind]}</CardTitle>
           <CardDescription>
             {pending.kind === 'approve'
-              ? 'A conta será liberada e todos os documentos pendentes passam a aprovados.'
+              ? 'A conta será liberada e os documentos passam a aprovados.'
               : pending.kind === 'reject'
                 ? 'A conta ficará com KYC rejeitado e o motivo será visível ao produtor.'
                 : 'A conta volta para o estado inicial e o produtor precisará reenviar documentos.'}
@@ -218,22 +258,22 @@ function DecisionDialog({
                 id="note"
                 value={note}
                 onChange={(e) => setNote(e.currentTarget.value)}
-                placeholder="Observação anexa ao audit log"
+                placeholder="Observação para a operação"
               />
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="reason">Motivo (obrigatório)</Label>
+              <Label htmlFor="reason">Motivo</Label>
               <Input
                 id="reason"
                 value={reason}
                 onChange={(e) => setReason(e.currentTarget.value)}
-                placeholder="Será visível ao produtor"
+                placeholder="Explique a decisão"
               />
             </div>
           )}
           {feedback ? <p className="text-xs text-red-400">{feedback}</p> : null}
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
               Cancelar
             </Button>
@@ -242,7 +282,7 @@ function DecisionDialog({
               onClick={onConfirm}
               disabled={busy || (pending.kind !== 'approve' && reason.trim().length < 3)}
             >
-              {busy ? 'Processando…' : 'Confirmar'}
+              {busy ? 'Processando...' : 'Confirmar'}
             </Button>
           </div>
         </CardContent>
@@ -252,16 +292,12 @@ function DecisionDialog({
 }
 
 function ErrorBanner({ error }: { error: unknown }) {
-  const message =
-    error instanceof AdminApiClientError
-      ? error.message
-      : 'Não foi possível carregar a fila de KYC.';
   return (
     <div
       role="alert"
-      className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+      className="rounded-md border border-red-300/50 bg-red-50 px-4 py-3 text-sm text-red-600"
     >
-      {message}
+      {error instanceof AdminApiClientError ? error.message : 'Erro ao carregar a fila de KYC.'}
     </div>
   );
 }

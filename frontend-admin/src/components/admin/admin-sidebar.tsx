@@ -1,134 +1,321 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { ADMIN_SIDEBAR_SECTIONS, type AdminSidebarItem } from './admin-sidebar-config';
-import type { AdminRole } from '@/lib/auth/admin-session-types';
+import { ChevronRight, Plus, Search } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import {
+  ADMIN_SIDEBAR_SECTIONS,
+  HomeIcon,
+  SidebarToggleIcon,
+  type AdminSidebarItem,
+} from './admin-sidebar-config';
+import { AdminSidebarRecents } from './admin-sidebar-recents';
+import { AdminSidebarUserMenu } from './admin-sidebar-user-menu';
+import { useAdminSession } from '@/lib/auth/admin-session-context';
 
-function roleAllows(minRole: AdminRole | undefined, role: AdminRole): boolean {
+const STORAGE_KEY = 'kloel-admin:sidebar-expanded';
+
+function roleAllows(minRole: 'OWNER' | 'MANAGER' | 'STAFF' | undefined, role: string) {
   if (!minRole) return true;
-  const order: Record<AdminRole, number> = { STAFF: 0, MANAGER: 1, OWNER: 2 };
-  return order[role] >= order[minRole];
+  const order = { STAFF: 0, MANAGER: 1, OWNER: 2 } as const;
+  const current = order[role as keyof typeof order] ?? 0;
+  return current >= order[minRole];
 }
 
-interface AdminSidebarProps {
-  role: AdminRole;
+function routeMatches(
+  href: string,
+  pathname: string,
+  searchParams: { get(name: string): string | null },
+) {
+  const [routePath, routeQuery] = href.split('?');
+  if (routePath !== pathname) return false;
+  if (!routeQuery) return true;
+
+  const expected = new URLSearchParams(routeQuery);
+  for (const [key, value] of expected.entries()) {
+    if (searchParams.get(key) !== value) return false;
+  }
+  return true;
 }
 
-export function AdminSidebar({ role }: AdminSidebarProps) {
+export function AdminSidebar({
+  expanded,
+  onToggle,
+  onNewChat,
+  onSearch,
+}: {
+  expanded: boolean;
+  onToggle: () => void;
+  onNewChat: () => void;
+  onSearch: () => void;
+}) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { admin } = useAdminSession();
+  const [expandedNav, setExpandedNav] = useState<string | null>(null);
+
+  useEffect(() => {
+    for (const section of ADMIN_SIDEBAR_SECTIONS) {
+      const activeParent = section.items.find((item) =>
+        item.sub?.some((sub) => routeMatches(sub.href, pathname, searchParams)),
+      );
+      if (activeParent) {
+        setExpandedNav(activeParent.key);
+        return;
+      }
+    }
+  }, [pathname, searchParams]);
+
+  const quickButtonBase =
+    'flex w-full items-center rounded-md border-none bg-transparent px-2.5 py-2 text-left transition-colors hover:bg-[var(--app-bg-hover)]';
 
   return (
     <aside
-      className={cn(
-        'group flex h-svh flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out',
-        collapsed ? 'w-[72px]' : 'w-[264px]',
-      )}
+      className="relative flex h-screen flex-col border-r border-[var(--app-border-subtle)] bg-[var(--app-bg-sidebar)]"
+      style={{
+        width: expanded ? 240 : 52,
+        transition: 'width 200ms ease',
+      }}
     >
-      <div className="flex items-center justify-between gap-3 px-4 py-5">
-        <div className="flex items-center gap-3">
-          <img
-            src="/kloel-mushroom-animated.svg"
-            alt="Kloel"
-            aria-hidden
-            className="h-8 w-8 shrink-0"
-          />
-          {!collapsed ? (
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold">Kloel Admin</span>
-              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Painel interno
-              </span>
-            </div>
-          ) : null}
-        </div>
+      <div
+        className="flex min-h-[52px] items-center"
+        style={{
+          justifyContent: expanded ? 'space-between' : 'center',
+          padding: expanded ? '12px 6px 8px' : '12px 0 8px',
+          transition: 'padding 150ms ease',
+        }}
+      >
+        {expanded ? (
+          <Link
+            href="/"
+            className="flex min-h-9 items-center pl-2.5 no-underline"
+            aria-label="Kloel"
+          >
+            <span
+              style={{
+                display: 'inline-block',
+                fontFamily: "var(--font-sora), 'Sora', sans-serif",
+                fontSize: 16,
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                lineHeight: 1,
+                color: 'var(--app-text-primary)',
+              }}
+            >
+              Kloel
+            </span>
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={onToggle}
+            title="Abrir sidebar"
+            className="flex h-10 w-full items-center justify-center rounded-md bg-transparent"
+          >
+            <span className="flex h-6 w-12 items-center justify-center">
+              <SidebarToggleIcon color="var(--app-text-secondary)" size={18} />
+            </span>
+          </button>
+        )}
+
+        {expanded ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            title="Recolher sidebar"
+            className="flex size-8 items-center justify-center rounded-md bg-transparent transition-colors hover:bg-[var(--app-bg-hover)]"
+          >
+            <SidebarToggleIcon color="var(--app-text-tertiary)" size={16} />
+          </button>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-0 px-1.5">
         <button
           type="button"
-          onClick={() => setCollapsed((v) => !v)}
-          aria-label={collapsed ? 'Expandir menu' : 'Retrair menu'}
-          className="flex h-7 w-7 items-center justify-center rounded-sm border border-transparent text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+          onClick={onNewChat}
+          title={!expanded ? 'Novo chat' : undefined}
+          className={`${quickButtonBase} ${expanded ? 'gap-2.5' : 'justify-center px-0'}`}
         >
-          {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+          <span className={`flex h-6 items-center justify-center ${expanded ? 'w-6' : 'w-12'}`}>
+            <Plus size={18} className="text-[var(--app-text-secondary)]" />
+          </span>
+          {expanded ? (
+            <span className="text-[13px] text-[var(--app-text-secondary)]">Novo chat</span>
+          ) : null}
+        </button>
+
+        <button
+          type="button"
+          onClick={onSearch}
+          title={!expanded ? 'Buscar' : undefined}
+          className={`${quickButtonBase} ${expanded ? 'gap-2.5' : 'justify-center px-0'}`}
+        >
+          <span className={`flex h-6 items-center justify-center ${expanded ? 'w-6' : 'w-12'}`}>
+            <Search size={18} className="text-[var(--app-text-secondary)]" />
+          </span>
+          {expanded ? (
+            <span className="text-[13px] text-[var(--app-text-secondary)]">Buscar</span>
+          ) : null}
         </button>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 pb-6">
-        {ADMIN_SIDEBAR_SECTIONS.map((section, idx) => {
-          const visibleItems = section.items.filter((item) => roleAllows(item.minRole, role));
-          if (visibleItems.length === 0) return null;
+
+      <div className="mx-3 my-2 h-px bg-[var(--app-border-subtle)]" />
+
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-2">
+        {ADMIN_SIDEBAR_SECTIONS.map((section) => {
+          const items = section.items.filter((item) =>
+            roleAllows(item.minRole, admin?.role || 'STAFF'),
+          );
+          if (items.length === 0) return null;
+
           return (
-            <div key={section.key} className="flex flex-col">
-              {idx > 0 ? <Separator className="my-3 bg-border/70" /> : null}
-              <ul className="flex flex-col gap-0.5">
-                {visibleItems.map((item) => (
-                  <SidebarRow
+            <div key={section.key} className="px-1.5">
+              {section.key !== 'operational' ? (
+                <div className="mx-1.5 my-2 h-px bg-[var(--app-border-subtle)]" />
+              ) : null}
+              <nav className="flex flex-col gap-0.5">
+                {items.map((item) => (
+                  <SidebarItemRow
                     key={item.key}
                     item={item}
+                    expanded={expanded}
+                    expandedNav={expandedNav}
                     pathname={pathname}
-                    collapsed={collapsed}
+                    searchParams={searchParams}
+                    onNavigate={(href) => router.push(href)}
+                    onToggleNav={(key) =>
+                      setExpandedNav((current) => (current === key ? null : key))
+                    }
                   />
                 ))}
-              </ul>
+              </nav>
             </div>
           );
         })}
-      </nav>
+
+        <AdminSidebarRecents expanded={expanded} />
+      </div>
+
+      <AdminSidebarUserMenu expanded={expanded} />
     </aside>
   );
 }
 
-function SidebarRow({
+function SidebarItemRow({
   item,
+  expanded,
+  expandedNav,
   pathname,
-  collapsed,
+  searchParams,
+  onNavigate,
+  onToggleNav,
 }: {
   item: AdminSidebarItem;
+  expanded: boolean;
+  expandedNav: string | null;
   pathname: string;
-  collapsed: boolean;
+  searchParams: { get(name: string): string | null };
+  onNavigate: (href: string) => void;
+  onToggleNav: (key: string) => void;
 }) {
-  const Icon = item.icon;
-  const href = item.href ?? '/';
-  const isActive =
-    pathname === href ||
-    (href !== '/' && pathname.startsWith(`${href}/`)) ||
-    (href === '/' && pathname === '/');
-
-  if (!item.href) {
-    return (
-      <li>
-        <button
-          type="button"
-          className={cn(
-            'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
-            collapsed && 'justify-center px-2',
-          )}
-        >
-          <Icon className="size-4" />
-          {!collapsed ? <span>{item.label}</span> : null}
-        </button>
-      </li>
-    );
-  }
+  const Icon = item.icon === HomeIcon ? HomeIcon : item.icon;
+  const active =
+    routeMatches(item.href, pathname, searchParams) ||
+    Boolean(item.sub?.some((sub) => routeMatches(sub.href, pathname, searchParams)));
+  const hasSubs = Boolean(item.sub?.length);
+  const isExpanded = expandedNav === item.key;
 
   return (
-    <li>
-      <Link
-        href={href}
-        className={cn(
-          'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-          collapsed && 'justify-center px-2',
-          isActive
-            ? 'bg-primary/10 text-primary'
-            : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-        )}
+    <div>
+      <button
+        type="button"
+        onClick={() => {
+          if (expanded && hasSubs) {
+            onToggleNav(item.key);
+            return;
+          }
+          onNavigate(item.href);
+        }}
+        title={!expanded ? item.label : undefined}
+        className={`flex w-full items-center rounded-md bg-transparent px-2.5 py-2 text-left transition-colors hover:bg-[var(--app-bg-hover)] ${
+          expanded ? 'gap-2.5' : 'justify-center px-0'
+        }`}
       >
-        <Icon className="size-4" />
-        {!collapsed ? <span>{item.label}</span> : null}
-      </Link>
-    </li>
+        <span className={`flex h-6 items-center justify-center ${expanded ? 'w-6' : 'w-12'}`}>
+          <Icon
+            size={18}
+            className={active ? 'text-[var(--app-accent)]' : 'text-[var(--app-text-secondary)]'}
+          />
+        </span>
+
+        {expanded ? (
+          <>
+            <span
+              className={`flex-1 truncate text-[13px] ${
+                active
+                  ? 'font-semibold text-[var(--app-accent)]'
+                  : 'text-[var(--app-text-secondary)]'
+              }`}
+            >
+              {item.label}
+            </span>
+            {hasSubs ? (
+              <ChevronRight
+                size={14}
+                className={`text-[var(--app-text-tertiary)] transition-transform ${
+                  isExpanded ? 'rotate-90' : 'rotate-0'
+                }`}
+                aria-hidden="true"
+              />
+            ) : null}
+          </>
+        ) : null}
+      </button>
+
+      {expanded && hasSubs && isExpanded ? (
+        <div className="flex flex-col gap-0.5 pb-1">
+          {item.sub?.map((sub) => {
+            const subActive = routeMatches(sub.href, pathname, searchParams);
+            return (
+              <button
+                key={sub.key}
+                type="button"
+                onClick={() => onNavigate(sub.href)}
+                className="rounded-md bg-transparent px-9 py-[7px] text-left transition-colors hover:bg-[var(--app-bg-hover)]"
+              >
+                <span
+                  className={`truncate text-[12px] ${
+                    subActive
+                      ? 'font-semibold text-[var(--app-accent)]'
+                      : 'text-[var(--app-text-tertiary)]'
+                  }`}
+                >
+                  {sub.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
+}
+
+export function getInitialAdminSidebarExpanded() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function persistAdminSidebarExpanded(expanded: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, String(expanded));
+  } catch {}
 }

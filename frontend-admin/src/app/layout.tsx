@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
+import { AdminChatHistoryProvider } from '@/lib/admin-chat-history';
 import { AdminSessionProvider } from '@/lib/auth/admin-session-context';
 import { jetbrainsMono, sora } from './fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Kloel Admin — Painel administrativo',
+  title: 'Kloel',
   description:
     'Centro de comando administrativo da plataforma Kloel. Acesso restrito a administradores autorizados.',
   robots: { index: false, follow: false },
@@ -44,7 +45,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             that live on the `:root` selector.
           */}
           <div className="kloel-app-theme-root min-h-svh bg-background text-foreground">
-            <AdminSessionProvider>{children}</AdminSessionProvider>
+            <AdminSessionProvider>
+              <AdminChatHistoryProvider>{children}</AdminChatHistoryProvider>
+            </AdminSessionProvider>
           </div>
         </ThemeProvider>
       </body>

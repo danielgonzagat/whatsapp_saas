@@ -1,20 +1,24 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { firstName, resolveGreeting } from '@/components/admin/admin-greeting';
 import { BreakdownDonut } from '@/components/admin/god-view/breakdown-donut';
 import { GmvChart } from '@/components/admin/god-view/gmv-chart';
 import { PeriodFilter } from '@/components/admin/god-view/period-filter';
-import { ChartContainer } from '@/components/ui/chart-container';
-import { Skeleton } from '@/components/ui/skeleton';
-import { StatCard } from '@/components/ui/stat-card';
+import {
+  AdminHeroSplit,
+  AdminMetricGrid,
+  AdminPage,
+  AdminPageIntro,
+  AdminSectionHeader,
+  AdminSurface,
+} from '@/components/admin/admin-monitor-ui';
 import {
   adminDashboardApi,
   type AdminHomePeriod,
   type AdminHomeResponse,
 } from '@/lib/api/admin-dashboard-api';
-import { AdminApiClientError } from '@/lib/api/admin-errors';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 
 const METHOD_LABELS: Record<string, string> = {
@@ -23,152 +27,202 @@ const METHOD_LABELS: Record<string, string> = {
   BOLETO: 'Boleto',
 };
 
+function unavailable(value?: number | null) {
+  return value ?? null;
+}
+
 export default function AdminHomePage() {
   const { admin } = useAdminSession();
-  const [period, setPeriod] = useState<AdminHomePeriod>('30D');
-  const [now, setNow] = useState(() => new Date());
+  const [period, setPeriod] = useState<AdminHomePeriod>('7D');
+  const referenceDate = useMemo(() => new Date(), []);
+  const greeting = resolveGreeting(referenceDate.getHours());
+  const displayName = firstName(admin?.name || 'Daniel');
+  const eyebrow = referenceDate
+    .toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    })
+    .toUpperCase();
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-
-  const greeting = useMemo(() => resolveGreeting(now.getHours()), [now]);
-  const name = admin ? firstName(admin.name) : '';
-
-  const { data, error, isLoading } = useSWR<AdminHomeResponse>(
+  const { data } = useSWR<AdminHomeResponse>(
     admin ? ['admin/dashboard/home', period] : null,
     () => adminDashboardApi.home({ period, compare: 'PREVIOUS' }),
     { refreshInterval: 60_000, revalidateOnFocus: false },
   );
 
   return (
-    <section className="flex flex-1 flex-col gap-8 px-6 py-8 pb-32">
-      <header className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            {now.toLocaleString('pt-BR', {
-              weekday: 'long',
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </span>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-            {greeting}
-            {name ? `, ${name}` : ''}.
-          </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Painel global da plataforma Kloel. Dados reais, sem placeholders — métricas ainda não
-            disponíveis aparecem como <span className="font-mono">—</span> com o motivo ao lado.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <PeriodFilter value={period} onChange={setPeriod} />
-          {data ? (
-            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              {data.range.label} • comparando com período anterior
+    <AdminPage>
+      <AdminPageIntro
+        eyebrow={eyebrow}
+        title={
+          <>
+            {greeting}, <span className="text-[var(--app-accent)]">{displayName}</span>.
+          </>
+        }
+        description="Painel global da plataforma Kloel. Todas as operações em tempo real."
+        actions={<PeriodFilter value={period} onChange={setPeriod} />}
+      />
+
+      <AdminHeroSplit
+        label="GMV total da plataforma"
+        value={data?.kpis.gmv.value ?? null}
+        description={
+          <>
+            Volume bruto aprovado em{' '}
+            <span className="font-semibold text-[var(--app-text-primary)]">
+              {data?.range.label || 'Últimos 7 dias'}
             </span>
-          ) : null}
-        </div>
-      </header>
+            .
+          </>
+        }
+        compactCards={[
+          {
+            label: 'Revenue Kloel',
+            value: null,
+            note: 'Dados sendo coletados',
+            tone: 'text-[var(--app-accent)]',
+          },
+          {
+            label: 'Transações aprovadas',
+            value: data?.kpis.approvedCount.value ?? null,
+            kind: 'integer',
+            note: `${data?.kpis.pendingCount.value ?? 0} pendentes no período`,
+          },
+          {
+            label: 'Taxa de aprovação',
+            value: data?.kpis.approvalRate.value ?? null,
+            kind: 'percentage',
+            note: `${data?.kpis.declinedCount.value ?? 0} recusadas`,
+          },
+          {
+            label: 'Ticket médio',
+            value: data?.kpis.averageTicket.value ?? null,
+            note: 'Média das vendas aprovadas',
+          },
+        ]}
+      />
 
-      {error ? <ErrorBanner error={error} /> : null}
+      <AdminMetricGrid
+        items={[
+          {
+            label: 'Reembolsos',
+            value: data?.kpis.refundAmount.value ?? null,
+            detail: `${data?.kpis.refundCount.value ?? 0} ocorrências no período`,
+          },
+          {
+            label: 'Chargebacks',
+            value: data?.kpis.chargebackAmount.value ?? null,
+            detail: `${data?.kpis.chargebackCount.value ?? 0} disputas em aberto`,
+          },
+          {
+            label: 'Produtores ativos',
+            value: data?.kpis.activeProducers.value ?? null,
+            kind: 'integer',
+            detail: 'Janela móvel de 30 dias',
+          },
+          {
+            label: 'Novos produtores',
+            value: data?.kpis.newProducers.value ?? null,
+            kind: 'integer',
+            detail: `${data?.kpis.totalProducers.value ?? 0} no total da plataforma`,
+          },
+          {
+            label: 'MRR projetado',
+            value: unavailable(data?.kpis.mrrProjected.value),
+            detail: 'Dados sendo coletados',
+          },
+          {
+            label: 'Churn de produtores',
+            value: unavailable(data?.kpis.churnRate.value),
+            kind: 'percentage',
+            detail: 'Dados sendo coletados',
+          },
+          {
+            label: 'Saldo reservado',
+            value: data?.kpis.chargebackAmount.value ?? null,
+            detail: 'Reserva operacional para risco',
+          },
+          {
+            label: 'Pendências',
+            value: data?.kpis.pendingCount.value ?? null,
+            kind: 'integer',
+            detail: 'Transações aguardando definição',
+          },
+        ]}
+      />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="GMV"
-          value={data?.kpis.gmv.value ?? null}
-          kind="currency-brl"
-          deltaPct={data?.kpis.gmv.deltaPct}
-        />
-        <StatCard
-          label="Transações aprovadas"
-          value={data?.kpis.approvedCount.value ?? null}
-          kind="integer"
-          deltaPct={data?.kpis.approvedCount.deltaPct}
-        />
-        <StatCard
-          label="Taxa de aprovação"
-          value={data?.kpis.approvalRate.value ?? null}
-          kind="percentage"
-          deltaPct={data?.kpis.approvalRate.deltaPct}
-          sublabel={data ? `${data.kpis.declinedCount.value} recusadas no período` : undefined}
-        />
-        <StatCard
-          label="Ticket médio"
-          value={data?.kpis.averageTicket.value ?? null}
-          kind="currency-brl"
-          deltaPct={data?.kpis.averageTicket.deltaPct}
-        />
-        <StatCard
-          label="Reembolsos"
-          value={data?.kpis.refundAmount.value ?? null}
-          kind="currency-brl"
-          deltaPct={data?.kpis.refundAmount.deltaPct}
-          sublabel={data ? `${data.kpis.refundCount.value} ocorrências` : undefined}
-        />
-        <StatCard
-          label="Chargebacks"
-          value={data?.kpis.chargebackAmount.value ?? null}
-          kind="currency-brl"
-          deltaPct={data?.kpis.chargebackAmount.deltaPct}
-          sublabel={data ? `${data.kpis.chargebackCount.value} disputas` : undefined}
-        />
-        <StatCard
-          label="Produtores ativos"
-          value={data?.kpis.activeProducers.value ?? null}
-          kind="integer"
-          sublabel="Rolling 30 dias"
-        />
-        <StatCard
-          label="Novos produtores"
-          value={data?.kpis.newProducers.value ?? null}
-          kind="integer"
-          deltaPct={data?.kpis.newProducers.deltaPct}
-          sublabel={data ? `${data.kpis.totalProducers.value} no total` : undefined}
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard
-          label="Revenue Kloel"
-          value={null}
-          kind="currency-brl"
-          unavailableReason="Configurar taxas em SP-11"
-        />
-        <StatCard
-          label="MRR projetado"
-          value={null}
-          kind="currency-brl"
-          unavailableReason="Depende de SP-11 — Subscriptions"
-        />
-        <StatCard
-          label="Churn de produtores"
-          value={null}
-          kind="percentage"
-          unavailableReason="Definição de cohort chega em SP-3b"
-        />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr_1fr]">
-        <ChartContainer
-          title="GMV por dia"
-          description="Volume bruto transacionado por dia do período."
-        >
-          {isLoading ? (
-            <Skeleton className="h-full w-full" />
-          ) : (
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.9fr)]">
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="GMV no período"
+            description="A barra principal mostra o período ativo. Use os filtros para trocar a janela de análise."
+          />
+          <div className="h-[320px]">
             <GmvChart data={data?.series.gmvDaily ?? []} />
-          )}
-        </ChartContainer>
-        <ChartContainer
-          title="Por gateway"
-          description="Distribuição do GMV entre as integrações de pagamento."
-        >
-          {isLoading ? (
-            <Skeleton className="h-full w-full" />
-          ) : (
+          </div>
+        </AdminSurface>
+
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="Kloel no período"
+            description={data?.range.label || 'Período ativo'}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              {
+                label: 'Conversas',
+                value: null,
+                detail: 'Dados sendo coletados',
+                tone: 'text-[var(--app-accent)]',
+              },
+              {
+                label: 'Pedidos aprovados',
+                value: data?.kpis.approvedCount.value ?? null,
+                detail: 'Transações aprovadas',
+                tone: 'text-emerald-600',
+              },
+              {
+                label: 'Em atendimento',
+                value: data?.kpis.pendingCount.value ?? null,
+                detail: 'Pendentes de conclusão',
+                tone: 'text-amber-600',
+              },
+              {
+                label: 'Tempo de resposta',
+                value: null,
+                detail: 'Dados sendo coletados',
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3"
+              >
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--app-text-tertiary)]">
+                  {item.label}
+                </div>
+                <div
+                  className={`text-[24px] font-bold tracking-[-0.04em] ${item.tone || 'text-[var(--app-text-primary)]'}`}
+                >
+                  {item.value === null ? '—' : item.value}
+                </div>
+                <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
+                  {item.detail}
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminSurface>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="TPV por gateway"
+            description="Distribuição do volume bruto entre as integrações ativas."
+          />
+          <div className="h-[280px]">
             <BreakdownDonut
               data={
                 data?.breakdowns.byGateway.map((row) => ({
@@ -177,15 +231,15 @@ export default function AdminHomePage() {
                 })) ?? []
               }
             />
-          )}
-        </ChartContainer>
-        <ChartContainer
-          title="Por método"
-          description="PIX, cartão e boleto — quanto cada um representa."
-        >
-          {isLoading ? (
-            <Skeleton className="h-full w-full" />
-          ) : (
+          </div>
+        </AdminSurface>
+
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="Métodos de pagamento"
+            description="Leitura agregada dos meios de pagamento aprovados no período."
+          />
+          <div className="h-[280px]">
             <BreakdownDonut
               data={
                 data?.breakdowns.byMethod.map((row) => ({
@@ -194,24 +248,9 @@ export default function AdminHomePage() {
                 })) ?? []
               }
             />
-          )}
-        </ChartContainer>
+          </div>
+        </AdminSurface>
       </div>
-    </section>
-  );
-}
-
-function ErrorBanner({ error }: { error: unknown }) {
-  const message =
-    error instanceof AdminApiClientError
-      ? error.message
-      : 'Não foi possível carregar o painel. Tente novamente em instantes.';
-  return (
-    <div
-      role="alert"
-      className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-    >
-      {message}
-    </div>
+    </AdminPage>
   );
 }
