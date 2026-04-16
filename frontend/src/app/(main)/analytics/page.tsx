@@ -104,8 +104,7 @@ interface ReportRow {
   orderNumber?: string;
   customerEmail?: string;
   plan?: { name?: string; product?: { name?: string } };
-   
-  [key: string]: any;
+  [key: string]: any;  
 }
 
 interface SubscriptionSummaryRow {
