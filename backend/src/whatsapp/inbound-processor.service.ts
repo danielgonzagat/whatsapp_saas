@@ -873,9 +873,7 @@ export class InboundProcessorService {
     }
   }
 
-  private hasOutboundAction(
-    actions: Array<{ tool?: string; result?: Record<string, unknown> }> = [],
-  ): boolean {
+  private hasOutboundAction(actions: Array<{ tool?: string; result?: unknown }> = []): boolean {
     const outboundTools = new Set([
       'send_message',
       'send_product_info',
@@ -891,11 +889,12 @@ export class InboundProcessorService {
         return false;
       }
 
-      return (
-        action?.result?.sent === true ||
-        action?.result?.success === true ||
-        action?.result?.messageId
-      );
+      const result =
+        action?.result && typeof action.result === 'object'
+          ? (action.result as Record<string, unknown>)
+          : {};
+
+      return result.sent === true || result.success === true || Boolean(result.messageId);
     });
   }
 

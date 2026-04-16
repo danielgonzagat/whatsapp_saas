@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
 import Stripe from 'stripe';
@@ -16,6 +17,90 @@ import { AsaasService } from './asaas.service';
 import { AudioService } from './audio.service';
 import { buildKloelLeadPrompt } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
+
+type UnknownRecord = Record<string, unknown>;
+interface ToolArgs {
+  active?: boolean;
+  amount?: number;
+  audioBase64?: string;
+  audioUrl?: string;
+  autoActivate?: boolean;
+  autoReplyEnabled?: boolean;
+  autoReplyMessage?: string;
+  businessHours?: Prisma.InputJsonValue;
+  businessName?: string;
+  campaignId?: string;
+  caption?: string;
+  category?: string;
+  code?: string;
+  csvData?: string;
+  daysSilent?: number;
+  delayHours?: number;
+  description?: string;
+  discountPercent?: number;
+  documentName?: string;
+  enabled?: boolean;
+  event?: string;
+  expiresIn?: string;
+  flowId?: string;
+  flowName?: string;
+  funnelName?: string;
+  imageUrl?: string;
+  includeConnections?: boolean;
+  includeHealth?: boolean;
+  includeFollowUps?: boolean;
+  includeLink?: boolean;
+  includeMetrics?: boolean;
+  includePrice?: boolean;
+  intent?: string;
+  language?: string;
+  message?: string;
+  metric?: string;
+  mode?: string;
+  name?: string;
+  objective?: string;
+  objectionType?: string;
+  offer?: string;
+  paymentLink?: string;
+  period?: string;
+  personality?: string;
+  plan?: string;
+  price?: number;
+  priority?: string;
+  productId?: string;
+  productName?: string;
+  properties?: Prisma.InputJsonValue;
+  query?: string;
+  questions?: string[];
+  reason?: string;
+  returnUrl?: string;
+  scheduleAt?: string;
+  source?: string;
+  stage?: string;
+  status?: string;
+  stages?: string[];
+  steps?: Prisma.InputJsonValue[];
+  strategy?: string;
+  suggestedTimes?: string[];
+  tag?: string;
+  targetTags?: string[];
+  technique?: string;
+  text?: string;
+  tone?: string;
+  trigger?: string;
+  triggerValue?: string;
+  type?: string;
+  url?: string;
+  useEmojis?: boolean;
+  variables?: Prisma.InputJsonValue;
+  voice?: string;
+  workingHoursOnly?: boolean;
+}
+export interface ActionEntry {
+  tool: string;
+  args: ToolArgs;
+  result?: unknown;
+}
 
 const TRAILING_PUNCT_G_RE = /[!?.]+/g;
 const WHITESPACE_G_RE = /\s+/g;
@@ -970,6 +1055,20 @@ export class UnifiedAgentService {
     return typeof value === 'object' && value !== null;
   }
 
+  private readRecord(value: unknown): UnknownRecord {
+    return this.isRecord(value) ? value : {};
+  }
+
+  private readStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => this.readText(item).trim())
+      .filter((item): item is string => Boolean(item));
+  }
+
   private hasAutonomyExecutionClient(
     value: unknown,
   ): value is { autonomyExecution: PrismaService['autonomyExecution'] } {
@@ -1020,6 +1119,26 @@ export class UnifiedAgentService {
     return tags.join(', ') || 'nenhuma';
   }
 
+  /** Read a string from an unknown value, falling back to fb. */
+  private str(v: unknown, fb = ''): string {
+    return typeof v === 'string'
+      ? v
+      : typeof v === 'number' || typeof v === 'boolean'
+        ? String(v)
+        : fb;
+  }
+
+  /** Read a number from an unknown value, falling back to fb. */
+  private num(v: unknown, fb = 0): number {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fb;
+  }
+
+  /** Read an array of strings (or cast to string[]) from an unknown value. */
+  private strArr(v: unknown): string[] {
+    return Array.isArray(v) ? v.map((item) => String(item ?? '')) : [];
+  }
+
   private createStripeClient(): Stripe | null {
     const secretKey = this.readOptionalText(process.env.STRIPE_SECRET_KEY);
     if (!secretKey) {
@@ -1039,11 +1158,11 @@ export class UnifiedAgentService {
     message: string;
     contactId?: string;
     channel?: string;
-    context?: Record<string, any>;
+    context?: UnknownRecord;
   }): Promise<{
     reply?: string;
     response?: string;
-    actions: Array<{ tool: string; args: any; result?: any }>;
+    actions: ActionEntry[];
     intent: string;
     confidence: number;
   }> {
@@ -1072,9 +1191,9 @@ export class UnifiedAgentService {
     contactId: string;
     phone: string;
     message: string;
-    context?: Record<string, any>;
+    context?: UnknownRecord;
   }): Promise<{
-    actions: Array<{ tool: string; args: any; result?: any }>;
+    actions: ActionEntry[];
     response?: string;
     intent: string;
     confidence: number;
@@ -1095,8 +1214,13 @@ export class UnifiedAgentService {
     ]);
 
     // 1b. Carregar AI config de cada produto (cerebro comercial)
-    const productIds = products.map((p: any) => p.value?.id || p.id).filter(Boolean);
-    let aiConfigs: any[] = [];
+    const productIds = products
+      .map((product: UnknownRecord) => {
+        const productValue = this.readRecord(product.value);
+        return this.readOptionalText(productValue.id) || this.readOptionalText(product.id);
+      })
+      .filter((productId): productId is string => Boolean(productId));
+    let aiConfigs: UnknownRecord[] = [];
     if (productIds.length > 0) {
       try {
         aiConfigs = await this.prisma.productAIConfig.findMany({
@@ -1193,7 +1317,7 @@ Mensagem: ${message}`,
       .catch(() => {});
 
     const assistantMessage = response.choices[0].message;
-    const actions: Array<{ tool: string; args: any; result?: any }> = [];
+    const actions: ActionEntry[] = [];
 
     // 5. Processar tool calls
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
@@ -1252,7 +1376,7 @@ Mensagem: ${message}`,
   }
 
   private buildFallbackResult(message: string): {
-    actions: Array<{ tool: string; args: any; result?: any }>;
+    actions: ActionEntry[];
     response?: string;
     intent: string;
     confidence: number;
@@ -1328,7 +1452,7 @@ Mensagem: ${message}`,
     workspaceId?: string;
     customerMessage: string;
     assistantDraft?: string | null;
-    actions: Array<{ tool: string; args: any; result?: any }>;
+    actions: ActionEntry[];
     historyTurns: number;
   }): Promise<string | undefined> {
     const { workspaceId, customerMessage, assistantDraft, actions, historyTurns } = params;
@@ -1398,9 +1522,9 @@ Mensagem: ${message}`,
    */
   async executeTool(
     tool: string,
-    args: any,
+    args: ToolArgs,
     ctx: { workspaceId: string; contactId?: string; phone?: string },
-  ): Promise<any> {
+  ): Promise<unknown> {
     return this.executeToolAction(
       ctx.workspaceId,
       ctx.contactId || '',
@@ -1415,9 +1539,9 @@ Mensagem: ${message}`,
     contactId: string,
     phone: string,
     tool: string,
-    args: any,
-    context?: Record<string, any>,
-  ): Promise<any> {
+    args: ToolArgs,
+    context?: UnknownRecord,
+  ): Promise<unknown> {
     this.logger.log(`Executing tool: ${tool}`, { args });
 
     switch (tool) {
@@ -1480,7 +1604,7 @@ Mensagem: ${message}`,
       case 'get_product_plans':
         return {
           plans: await this.prisma.productPlan.findMany({
-            where: { productId: args.productId },
+            where: { productId: this.str(args.productId) },
             select: {
               id: true,
               name: true,
@@ -1497,14 +1621,14 @@ Mensagem: ${message}`,
       case 'get_product_ai_config':
         return {
           config: await this.prisma.productAIConfig.findUnique({
-            where: { productId: args.productId },
+            where: { productId: this.str(args.productId) },
           }),
         };
 
       case 'get_product_reviews':
         return {
           reviews: await this.prisma.productReview.findMany({
-            where: { productId: args.productId },
+            where: { productId: this.str(args.productId) },
             orderBy: { createdAt: 'desc' },
             take: 20,
           }),
@@ -1513,7 +1637,7 @@ Mensagem: ${message}`,
       case 'get_product_urls':
         return {
           urls: await this.prisma.productUrl.findMany({
-            where: { productId: args.productId, active: true },
+            where: { productId: this.str(args.productId), active: true },
             select: {
               id: true,
               productId: true,
@@ -1527,7 +1651,7 @@ Mensagem: ${message}`,
 
       case 'validate_coupon': {
         const coupon = await this.prisma.productCoupon.findFirst({
-          where: { productId: args.productId, code: args.code, active: true },
+          where: { productId: this.str(args.productId), code: this.str(args.code), active: true },
         });
         if (!coupon) return { valid: false, reason: 'not_found' };
         if (coupon.maxUses && coupon.usedCount >= coupon.maxUses)
@@ -1615,25 +1739,24 @@ Mensagem: ${message}`,
   private async actionSendMessage(
     workspaceId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
-      if (!args.message) {
+      const msgText = this.str(args.message);
+      if (!msgText) {
         return { success: false, error: 'Mensagem é obrigatória' };
       }
 
       // 🚀 ENVIAR MENSAGEM DIRETAMENTE VIA WHATSAPP SERVICE
-      this.logger.log(
-        `[AGENT] Enviando mensagem para ${phone}: "${args.message?.substring(0, 50)}..."`,
-      );
+      this.logger.log(`[AGENT] Enviando mensagem para ${phone}: "${msgText.substring(0, 50)}..."`);
 
       const result = await this.whatsappService.sendMessage(
         workspaceId,
         phone,
-        args.message,
+        msgText,
         this.buildWhatsAppSendOptions(context),
       );
       const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
@@ -1654,7 +1777,7 @@ Mensagem: ${message}`,
       );
       return {
         success: true,
-        message: args.message,
+        message: msgText,
         queued,
         sent,
         delivery: queued ? 'queued' : 'sent',
@@ -1677,18 +1800,22 @@ Mensagem: ${message}`,
   private async actionSendProductInfo(
     workspaceId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     // Buscar produto primeiro em KloelMemory (categoria 'products' do onboarding)
     // e depois na tabela Product
+    const productName = this.str(args.productName);
+    const includePrice = args.includePrice !== false;
+    const includeLink = !!args.includeLink;
+
     const product = await this.prisma.kloelMemory.findFirst({
       where: {
         workspaceId,
         category: 'products', // Corrigido: usar 'category' ao invés de 'type'
         OR: [
-          { key: { contains: args.productName.toLowerCase() } },
-          { value: { path: ['name'], string_contains: args.productName } },
+          { key: { contains: productName.toLowerCase() } },
+          { value: { path: ['name'], string_contains: productName } },
         ],
       },
     });
@@ -1698,7 +1825,7 @@ Mensagem: ${message}`,
       const dbProduct = await this.prisma.product.findFirst({
         where: {
           workspaceId,
-          name: { contains: args.productName, mode: 'insensitive' },
+          name: { contains: productName, mode: 'insensitive' },
           active: true,
         },
       });
@@ -1707,8 +1834,8 @@ Mensagem: ${message}`,
         const message = this.buildProductInfoMessage(
           dbProduct.name,
           dbProduct.description,
-          args.includePrice === false ? null : dbProduct.price,
-          args.includeLink ? dbProduct.paymentLink : undefined,
+          includePrice ? dbProduct.price : null,
+          includeLink ? dbProduct.paymentLink : undefined,
         );
         // messageLimit: enforced via PlanLimitsService.trackMessageSend
         const sendResult = await this.actionSendMessage(
@@ -1735,8 +1862,8 @@ Mensagem: ${message}`,
     const message = this.buildProductInfoMessage(
       productData.name as string,
       productData.description as string,
-      args.includePrice === false ? null : (productData.price as number),
-      args.includeLink ? (productData.paymentLink as string) : undefined,
+      includePrice ? (productData.price as number) : null,
+      includeLink ? (productData.paymentLink as string) : undefined,
     );
     // messageLimit: enforced via PlanLimitsService.trackMessageSend
     const sendResult = await this.actionSendMessage(
@@ -1792,10 +1919,14 @@ Mensagem: ${message}`,
   private async actionCreatePaymentLink(
     workspaceId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
+      const amount = this.num(args.amount);
+      const productName = this.str(args.productName);
+      const description = this.str(args.description, `Pagamento - ${productName}`);
+
       // Verificar se Asaas está configurado para o workspace
       const status = await this.asaasService.getConnectionStatus(workspaceId);
 
@@ -1810,15 +1941,15 @@ Mensagem: ${message}`,
           customerName: contact?.name || 'Cliente',
           customerPhone: phone,
           customerEmail: contact?.email || undefined,
-          amount: args.amount,
-          description: args.description || `Pagamento - ${args.productName}`,
+          amount,
+          description,
         });
 
         this.logger.log(`[AGENT] Link de pagamento criado: ${payment.pixQrCodeUrl}`);
 
         // Enviar link via WhatsApp
         // messageLimit: enforced via PlanLimitsService.trackMessageSend
-        const paymentMessage = `Seu pagamento de R$ ${Number(args.amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
+        const paymentMessage = `Seu pagamento de R$ ${Number(amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
         await this.actionSendMessage(
           workspaceId,
           phone,
@@ -1836,7 +1967,7 @@ Mensagem: ${message}`,
               resource: 'UnifiedAgent',
               resourceId: payment.id,
               details: {
-                amount: args.amount,
+                amount,
                 phone,
                 method: 'PIX',
                 provider: 'asaas',
@@ -1850,7 +1981,7 @@ Mensagem: ${message}`,
           paymentId: payment.id,
           paymentLink: payment.pixQrCodeUrl,
           pixCopyPaste: payment.pixCopyPaste,
-          amount: args.amount,
+          amount,
           sent: true,
         };
       }
@@ -1866,8 +1997,8 @@ Mensagem: ${message}`,
             workspaceId,
             externalPaymentId: paymentId,
             leadPhone: phone,
-            productName: args.productName,
-            amount: args.amount,
+            productName,
+            amount,
             status: 'pending',
             paymentMethod: 'INTERNAL',
           },
@@ -1877,7 +2008,7 @@ Mensagem: ${message}`,
           this.logger.warn('kloelSale table not available');
         });
 
-      const message = `Link de pagamento: ${paymentLink}\n\nValor: R$ ${Number(args.amount.toFixed(2))}`;
+      const message = `Link de pagamento: ${paymentLink}\n\nValor: R$ ${Number(amount.toFixed(2))}`;
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 
@@ -1885,7 +2016,7 @@ Mensagem: ${message}`,
         success: true,
         paymentId,
         paymentLink,
-        amount: args.amount,
+        amount,
         method: 'internal',
       };
     } catch (error: unknown) {
@@ -1898,8 +2029,10 @@ Mensagem: ${message}`,
     }
   }
 
-  private async actionUpdateLeadStatus(workspaceId: string, contactId: string, args: any) {
+  private async actionUpdateLeadStatus(workspaceId: string, contactId: string, args: ToolArgs) {
     if (!contactId) return { success: false, error: 'No contact ID' };
+    const statusVal = this.str(args.status);
+    const intentVal = this.str(args.intent);
 
     // Use nextBestAction para armazenar status e aiSummary para intent
     // Wrapped in $transaction to prevent race conditions with concurrent agent actions
@@ -1907,30 +2040,31 @@ Mensagem: ${message}`,
       await tx.contact.updateMany({
         where: { id: contactId, workspaceId },
         data: {
-          nextBestAction: args.status || args.intent,
-          aiSummary: args.intent ? `Intent: ${args.intent}` : undefined,
+          nextBestAction: statusVal || intentVal || undefined,
+          aiSummary: intentVal ? `Intent: ${intentVal}` : undefined,
           updatedAt: new Date(),
         },
       });
     });
 
-    return { success: true, status: args.status };
+    return { success: true, status: statusVal };
   }
 
-  private async actionAddTag(workspaceId: string, contactId: string, args: any) {
+  private async actionAddTag(workspaceId: string, contactId: string, args: ToolArgs) {
     if (!contactId) return { success: false, error: 'No contact ID' };
+    const tagName = this.str(args.tag);
 
     // Wrap find-or-create + connect in $transaction to prevent concurrent
     // calls from creating duplicate tags for the same name.
     await this.prisma.$transaction(async (tx) => {
       let tag = await tx.tag.findFirst({
-        where: { workspaceId, name: args.tag },
+        where: { workspaceId, name: tagName },
       });
 
       if (!tag) {
         tag = await tx.tag.create({
           data: {
-            name: args.tag,
+            name: tagName,
             workspaceId,
             color: '#3B82F6', // default blue
           },
@@ -1961,29 +2095,33 @@ Mensagem: ${message}`,
       });
     });
 
-    return { success: true, tag: args.tag };
+    return { success: true, tag: tagName };
   }
 
   private async actionScheduleFollowup(
     workspaceId: string,
     contactId: string,
     phone: string,
-    args: any,
+    args: ToolArgs,
   ) {
     try {
-      const delayMs = (args.delayHours || 24) * 60 * 60 * 1000;
+      const delayHours = this.num(args.delayHours, 24);
+      const delayMs = delayHours * 60 * 60 * 1000;
       const scheduledFor = new Date(Date.now() + delayMs);
+      const followMessage = this.str(args.message);
+      const followReason = this.str(args.reason, 'scheduled_by_unified_agent');
+      const followFlowId = this.str(args.flowId) || null;
 
-      this.logger.log(`[AGENT] Follow-up agendado para ${phone} em ${args.delayHours}h`);
+      this.logger.log(`[AGENT] Follow-up agendado para ${phone} em ${delayHours}h`);
 
       await this.prisma.followUp.create({
         data: {
           workspaceId,
           contactId,
           scheduledFor,
-          message: args.message,
-          reason: args.reason || 'scheduled_by_unified_agent',
-          flowId: args.flowId || null,
+          message: followMessage,
+          reason: followReason,
+          flowId: followFlowId,
           status: 'pending',
         },
       });
@@ -1997,10 +2135,10 @@ Mensagem: ${message}`,
             action: 'SCHEDULE_FOLLOWUP',
             status: 'scheduled',
             reason: `Agendado para ${scheduledFor.toISOString()}`,
-            responseText: args.message,
+            responseText: followMessage,
             meta: {
               scheduledFor: scheduledFor.toISOString(),
-              delayHours: args.delayHours,
+              delayHours,
             },
           },
         })
@@ -2011,7 +2149,7 @@ Mensagem: ${message}`,
       return {
         success: true,
         scheduledFor: scheduledFor.toISOString(),
-        message: args.message,
+        message: followMessage,
         jobId: `followup_${workspaceId}_${contactId}_${scheduledFor.getTime()}`,
       };
     } catch (error: unknown) {
@@ -2024,7 +2162,9 @@ Mensagem: ${message}`,
     }
   }
 
-  private async actionTransferToHuman(workspaceId: string, contactId: string, args: any) {
+  private async actionTransferToHuman(workspaceId: string, contactId: string, args: ToolArgs) {
+    const reason = this.str(args.reason, 'Not specified');
+    const priority = this.str(args.priority, 'normal');
     // Wrap find+update in $transaction to prevent concurrent transfers
     // from racing on conversation mode and contact status.
     if (contactId) {
@@ -2049,7 +2189,7 @@ Mensagem: ${message}`,
           where: { id: contactId, workspaceId },
           data: {
             nextBestAction: 'HUMAN_NEEDED',
-            aiSummary: `Transfer reason: ${args.reason || 'Not specified'}`,
+            aiSummary: `Transfer reason: ${reason}`,
             updatedAt: new Date(),
           },
         });
@@ -2062,11 +2202,11 @@ Mensagem: ${message}`,
                 workspaceId,
                 contactId,
                 conversationId: latestConversation?.id || null,
-                idempotencyKey: `transfer-human:${workspaceId}:${contactId}:${String(args.reason || 'generic').slice(0, 120)}`,
+                idempotencyKey: `transfer-human:${workspaceId}:${contactId}:${reason.slice(0, 120) || 'generic'}`,
                 actionType: 'TRANSFER_HUMAN',
                 request: {
-                  reason: args.reason || null,
-                  priority: args.priority || 'normal',
+                  reason,
+                  priority,
                 },
                 response: {
                   lockedConversationId: latestConversation?.id || null,
@@ -2075,8 +2215,11 @@ Mensagem: ${message}`,
                 status: 'SUCCESS',
               },
             })
-            .catch((err: any) =>
-              this.logger.warn(`Failed to create autopilot event for transfer: ${err?.message}`),
+            .catch((err: unknown) =>
+              this.logger.warn(
+                'Failed to create autopilot event for transfer: ' +
+                  (err instanceof Error ? err.message : this.str(err)),
+              ),
             );
         }
       });
@@ -2084,18 +2227,19 @@ Mensagem: ${message}`,
 
     return {
       success: true,
-      reason: args.reason,
-      priority: args.priority || 'normal',
+      reason,
+      priority,
     };
   }
 
-  private async actionSearchKnowledgeBase(workspaceId: string, args: any) {
+  private async actionSearchKnowledgeBase(workspaceId: string, args: ToolArgs) {
+    const query = this.str(args.query);
     const results = await this.prisma.kloelMemory.findMany({
       where: {
         workspaceId,
         OR: [
-          { key: { contains: args.query.toLowerCase() } },
-          { value: { path: ['$'], string_contains: args.query.toLowerCase() } },
+          { key: { contains: query.toLowerCase() } },
+          { value: { path: ['$'], string_contains: query.toLowerCase() } },
         ],
       },
       select: { id: true, key: true, value: true, category: true },
@@ -2108,20 +2252,21 @@ Mensagem: ${message}`,
     };
   }
 
-  private async actionTriggerFlow(workspaceId: string, phone: string, args: any) {
+  private async actionTriggerFlow(workspaceId: string, phone: string, args: ToolArgs) {
     try {
-      const flowId = args.flowId || args.flowName;
+      const flowIdVal = this.str(args.flowId) || this.str(args.flowName);
+      const flowNameVal = this.str(args.flowName);
 
       // Buscar fluxo pelo ID ou nome
-      let flow = flowId
-        ? await this.prisma.flow.findFirst({ where: { id: flowId, workspaceId } })
+      let flow = flowIdVal
+        ? await this.prisma.flow.findFirst({ where: { id: flowIdVal, workspaceId } })
         : null;
 
-      if (!flow && args.flowName) {
+      if (!flow && flowNameVal) {
         flow = await this.prisma.flow.findFirst({
           where: {
             workspaceId,
-            name: { contains: args.flowName, mode: 'insensitive' },
+            name: { contains: flowNameVal, mode: 'insensitive' },
             isActive: true,
           },
         });
@@ -2136,7 +2281,7 @@ Mensagem: ${message}`,
         workspaceId,
         flowId: flow.id,
         user: phone,
-        initialVars: args.variables || {},
+        initialVars: (args.variables as UnknownRecord) || {},
         triggeredBy: 'kloel-agent',
       });
 
@@ -2165,11 +2310,13 @@ Mensagem: ${message}`,
   private async actionSendMedia(
     workspaceId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
-      const { type, url, caption } = args;
+      const type = this.str(args.type, 'image');
+      const url = this.str(args.url);
+      const caption = this.str(args.caption);
 
       if (!url) {
         return { success: false, error: 'URL da mídia é obrigatória' };
@@ -2181,11 +2328,11 @@ Mensagem: ${message}`,
       const result = await this.whatsappService.sendMessage(
         workspaceId,
         phone,
-        caption || '',
+        caption,
         this.buildWhatsAppSendOptions(context, {
           mediaUrl: url,
-          mediaType: type || 'image',
-          caption: caption || '',
+          mediaType: type,
+          caption,
         }),
       );
 
@@ -2220,14 +2367,13 @@ Mensagem: ${message}`,
   private async actionSendDocument(
     workspaceId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
-      const { documentName, url, caption } = args;
-
-      let documentUrl = url;
-      let documentCaption = caption;
+      const documentName = this.str(args.documentName);
+      let documentUrl = this.str(args.url);
+      let documentCaption = this.str(args.caption);
 
       // Se documentName foi informado, busca no banco de dados
       if (documentName) {
@@ -2315,11 +2461,12 @@ Mensagem: ${message}`,
   private async actionSendVoiceNote(
     workspaceId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
-      const { text, voice = 'nova' } = args;
+      const text = this.str(args.text);
+      const voice = this.str(args.voice, 'nova');
 
       if (!text) {
         return {
@@ -2386,11 +2533,12 @@ Mensagem: ${message}`,
   private async actionSendAudio(
     workspaceId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
-      const { text, voice = 'nova' } = args;
+      const text = this.str(args.text);
+      const voice = this.str(args.voice, 'nova');
 
       if (!text) {
         return {
@@ -2448,9 +2596,11 @@ Mensagem: ${message}`,
    * Transcreve áudio usando Whisper (OpenAI)
    * Aceita URL ou base64
    */
-  private async actionTranscribeAudio(workspaceId: string, args: any) {
+  private async actionTranscribeAudio(workspaceId: string, args: ToolArgs) {
     try {
-      const { audioUrl, audioBase64, language = 'pt' } = args;
+      const audioUrl = this.str(args.audioUrl);
+      const audioBase64 = this.str(args.audioBase64);
+      const language = this.str(args.language, 'pt');
 
       if (!this.audioService) {
         return { success: false, error: 'Serviço de áudio não disponível' };
@@ -2497,16 +2647,18 @@ Mensagem: ${message}`,
     }
   }
 
-  private async actionLogEvent(workspaceId: string, contactId: string, args: any) {
+  private async actionLogEvent(workspaceId: string, contactId: string, args: ToolArgs) {
+    const eventName = this.str(args.event);
+    const properties = (args.properties ?? {}) as Record<string, string | number | boolean | null>;
     try {
       await this.prisma.autopilotEvent.create({
         data: {
           workspaceId,
           contactId,
-          intent: args.event,
+          intent: eventName,
           action: 'LOG_EVENT',
           status: 'completed',
-          meta: args.properties,
+          meta: properties,
         },
       });
     } catch (err: unknown) {
@@ -2523,77 +2675,90 @@ Mensagem: ${message}`,
       }
     }
 
-    return { success: true, event: args.event };
+    return { success: true, event: eventName };
   }
 
   // ===== HELPER METHODS =====
 
-  private buildSystemPrompt(workspace: any, products: any[], aiConfigs: any[] = []): string {
+  private buildSystemPrompt(
+    workspace: UnknownRecord,
+    products: UnknownRecord[],
+    aiConfigs: UnknownRecord[] = [],
+  ): string {
     const businessName = this.resolveBusinessDisplayName(workspace);
     const productList =
       products.length > 0
-        ? products.map((p) => `- ${p.value.name}: R$ ${p.value.price}`).join('\n')
+        ? products
+            .map((p) => {
+              const v = (p.value ?? {}) as UnknownRecord;
+              return `- ${this.readText(v.name)}: R$ ${this.readText(v.price)}`;
+            })
+            .join('\n')
         : 'Nenhum produto cadastrado';
 
     // Build AI config context from seller's brain configuration
     const aiConfigContext: string[] = [];
     for (const cfg of aiConfigs) {
-      const profile = cfg.customerProfile;
-      const objections = cfg.objections as any[];
-      const salesArgs = cfg.salesArguments;
+      const profile = (cfg.customerProfile ?? {}) as UnknownRecord;
+      const objections = cfg.objections as UnknownRecord[];
+      const salesArgs = (cfg.salesArguments ?? {}) as UnknownRecord;
 
-      if (profile?.idealCustomer) {
-        aiConfigContext.push(`PERFIL DO CLIENTE IDEAL: ${profile.idealCustomer}`);
+      if (profile.idealCustomer) {
+        aiConfigContext.push(`PERFIL DO CLIENTE IDEAL: ${this.str(profile.idealCustomer)}`);
       }
-      if (profile?.painPoints) {
-        aiConfigContext.push(`PRINCIPAIS DORES: ${profile.painPoints}`);
+      if (profile.painPoints) {
+        aiConfigContext.push(`PRINCIPAIS DORES: ${this.str(profile.painPoints)}`);
       }
-      if (profile?.promisedResult) {
-        aiConfigContext.push(`RESULTADO PROMETIDO: ${profile.promisedResult}`);
+      if (profile.promisedResult) {
+        aiConfigContext.push(`RESULTADO PROMETIDO: ${this.str(profile.promisedResult)}`);
       }
       if (objections && Array.isArray(objections) && objections.length > 0) {
         aiConfigContext.push('OBJEÇÕES E RESPOSTAS:');
         for (const obj of objections) {
           if (obj.q && obj.a)
-            aiConfigContext.push(`  - Objeção: "${obj.q}" → Resposta: "${obj.a}"`);
+            aiConfigContext.push(
+              `  - Objeção: "${this.str(obj.q)}" → Resposta: "${this.str(obj.a)}"`,
+            );
         }
       }
       if (cfg.tone) {
+        const toneKey = this.readText(cfg.tone);
         const toneMap: Record<string, string> = {
           Consultivo: 'Seja consultiva, educativa e focada em resolver problemas do cliente.',
           Agressivo: 'Seja direta, urgente e focada em fechar a venda rapidamente.',
           Amigavel: 'Seja calorosa, próxima e crie rapport antes de vender.',
           Urgente: 'Crie senso de urgência real baseado em fatos. Não invente escassez.',
         };
-        aiConfigContext.push(`TOM DE VENDA: ${toneMap[cfg.tone] || cfg.tone}`);
+        aiConfigContext.push(`TOM DE VENDA: ${toneMap[toneKey] || toneKey}`);
       }
       if (cfg.persistenceLevel) {
+        const pl = Number(cfg.persistenceLevel);
         aiConfigContext.push(
-          `NÍVEL DE PERSISTÊNCIA: ${cfg.persistenceLevel}/5 — ${cfg.persistenceLevel >= 4 ? 'insista mais vezes antes de desistir' : cfg.persistenceLevel <= 2 ? 'seja sutil e não force' : 'equilíbrio entre insistir e respeitar'}`,
+          `NÍVEL DE PERSISTÊNCIA: ${pl}/5 — ${pl >= 4 ? 'insista mais vezes antes de desistir' : pl <= 2 ? 'seja sutil e não force' : 'equilíbrio entre insistir e respeitar'}`,
         );
       }
       if (cfg.messageLimit) {
         aiConfigContext.push(
-          `LIMITE DE MENSAGENS: máximo ${cfg.messageLimit} mensagens antes de enviar link ou encerrar`,
+          `LIMITE DE MENSAGENS: máximo ${this.str(cfg.messageLimit)} mensagens antes de enviar link ou encerrar`,
         );
       }
-      if (salesArgs?.autoCheckoutLink) {
+      if (salesArgs.autoCheckoutLink) {
         aiConfigContext.push(
           'REGRA: Envie o link de checkout automaticamente quando detectar intenção de compra.',
         );
       }
-      if (salesArgs?.offerDiscount) {
+      if (salesArgs.offerDiscount) {
         aiConfigContext.push(
           'REGRA: Se detectar resistência de preço, ofereça desconto antes de perder o lead.',
         );
       }
-      if (salesArgs?.useUrgency) {
+      if (salesArgs.useUrgency) {
         aiConfigContext.push(
           'REGRA: Use urgência e escassez quando houver contexto real para isso.',
         );
       }
       // hideAiIdentity guardrail: when enabled, the agent must never confirm or deny being AI
-      if (salesArgs?.hideAiIdentity) {
+      if (salesArgs.hideAiIdentity) {
         aiConfigContext.push(
           'REGRA CRÍTICA: NUNCA revele, confirme ou negue ser uma inteligência artificial, chatbot ou assistente virtual. ' +
             'Se perguntarem se você é um robô/IA, desvie naturalmente para o atendimento sem confirmar ou negar. ' +
@@ -2601,7 +2766,7 @@ Mensagem: ${message}`,
         );
       }
       // maxDiscountPercent guardrail: cap the maximum discount the agent can offer
-      if (salesArgs?.maxDiscountPercent != null) {
+      if (salesArgs.maxDiscountPercent != null) {
         const maxDiscount = Number(salesArgs.maxDiscountPercent);
         if (maxDiscount >= 0) {
           aiConfigContext.push(
@@ -2618,7 +2783,8 @@ Mensagem: ${message}`,
 
     return buildKloelLeadPrompt({
       companyName: businessName,
-      brandVoice: (workspace.brandVoice || 'Direto, humano e focado em conversão') + aiConfigBlock,
+      brandVoice:
+        this.readText(workspace.brandVoice, 'Direto, humano e focado em conversão') + aiConfigBlock,
       productList,
       extraContext: [
         'DIRETRIZES OPERACIONAIS:',
@@ -2835,7 +3001,7 @@ Mensagem: ${message}`,
     workspaceId: string,
     contactId: string,
     phone: string,
-    contact: any,
+    contact: unknown,
   ): Promise<string | undefined> {
     const where = contactId
       ? { workspaceId, contactId }
@@ -2865,16 +3031,17 @@ Mensagem: ${message}`,
       .reverse()
       .find((message) => message.direction === 'OUTBOUND');
 
+    const c: UnknownRecord = this.isRecord(contact) ? contact : {};
     const summary = [
-      `Nome preferido: ${contact?.name || phone}`,
-      `Telefone: ${contact?.phone || phone}`,
-      `Sentimento atual: ${contact?.sentiment || 'NEUTRAL'}`,
-      `Lead score: ${contact?.leadScore || 0}`,
-      contact?.purchaseProbability
-        ? `Probabilidade de compra: ${contact.purchaseProbability}`
+      `Nome preferido: ${this.readText(c.name, phone)}`,
+      `Telefone: ${this.readText(c.phone, phone)}`,
+      `Sentimento atual: ${this.readText(c.sentiment, 'NEUTRAL')}`,
+      `Lead score: ${this.readText(c.leadScore, '0')}`,
+      c.purchaseProbability
+        ? `Probabilidade de compra: ${this.readText(c.purchaseProbability)}`
         : null,
-      contact?.aiSummary ? `Resumo do CRM: ${String(contact.aiSummary).trim()}` : null,
-      contact?.nextBestAction ? `Próxima melhor ação: ${contact.nextBestAction}` : null,
+      c.aiSummary ? `Resumo do CRM: ${this.str(c.aiSummary).trim()}` : null,
+      c.nextBestAction ? `Próxima melhor ação: ${this.readText(c.nextBestAction)}` : null,
       lastInbound?.content
         ? `Última mensagem do cliente: ${String(lastInbound.content).trim()}`
         : null,
@@ -3169,19 +3336,20 @@ Mensagem: ${message}`,
     };
   }
 
-  private resolveBusinessDisplayName(workspace: any): string {
-    const settings = (workspace?.providerSettings || {}) as Record<string, any>;
+  private resolveBusinessDisplayName(workspace: UnknownRecord): string {
+    const settings = this.readRecord(workspace?.providerSettings);
+    const waSession = this.readRecord(settings.whatsappApiSession);
     const candidates = [
-      settings?.businessName,
-      settings?.brandName,
-      settings?.companyName,
-      settings?.whatsappBusinessName,
-      settings?.whatsappApiSession?.pushName,
+      settings.businessName,
+      settings.brandName,
+      settings.companyName,
+      settings.whatsappBusinessName,
+      waSession.pushName,
       workspace?.name,
     ];
 
     for (const candidate of candidates) {
-      const label = String(candidate || '').trim();
+      const label = this.str(candidate).trim();
       if (!label || this.isGenericWorkspaceLabel(label)) {
         continue;
       }
@@ -3275,7 +3443,7 @@ Mensagem: ${message}`,
 
   // tokenBudget: ensureTokenBudget called before every chatCompletionWithFallback invocation
   private calculateConfidence(
-    actions: Array<{ tool: string; args: any }>,
+    actions: ActionEntry[],
     response: OpenAI.Chat.Completions.ChatCompletion,
   ): number {
     // Base confidence
@@ -3296,18 +3464,19 @@ Mensagem: ${message}`,
     workspaceId: string,
     contactId: string,
     action: string,
-    args: any,
-    result: any,
+    args: ToolArgs,
+    result: unknown,
   ) {
     try {
+      const r = (typeof result === 'object' && result !== null ? result : {}) as UnknownRecord;
       await this.prisma.autopilotEvent.create({
         data: {
           workspaceId,
           contactId,
           intent: 'TOOL_CALL',
           action,
-          status: result?.success ? 'completed' : 'failed',
-          meta: { args, result },
+          status: r.success ? 'completed' : 'failed',
+          meta: { args, result: r } as unknown as Prisma.InputJsonValue,
         },
       });
     } catch (err: unknown) {
@@ -3328,7 +3497,7 @@ Mensagem: ${message}`,
 
   // ===== KIA LAYER: GERENCIAMENTO AUTÔNOMO =====
 
-  private async actionCreateProduct(workspaceId: string, args: any) {
+  private async actionCreateProduct(workspaceId: string, args: ToolArgs) {
     const productKey = `product_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
 
     // Salvar em KloelMemory para contexto da IA
@@ -3384,7 +3553,7 @@ Mensagem: ${message}`,
     };
   }
 
-  private async actionUpdateProduct(workspaceId: string, args: any) {
+  private async actionUpdateProduct(workspaceId: string, args: ToolArgs) {
     // Wrap find+update in $transaction to prevent concurrent product updates
     // from overwriting each other's changes.
     const result = await this.prisma.$transaction(async (tx) => {
@@ -3408,7 +3577,7 @@ Mensagem: ${message}`,
 
       await tx.kloelMemory.updateMany({
         where: { id: product.id, workspaceId },
-        data: { value: updatedValue },
+        data: { value: updatedValue as Prisma.InputJsonValue },
       });
 
       return { success: true as const };
@@ -3422,7 +3591,7 @@ Mensagem: ${message}`,
     };
   }
 
-  private async actionCreateFlow(workspaceId: string, args: any) {
+  private async actionCreateFlow(workspaceId: string, args: ToolArgs) {
     const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
 
     // Criar representação do fluxo
@@ -3454,8 +3623,8 @@ Mensagem: ${message}`,
     };
   }
 
-  private async actionUpdateWorkspaceSettings(workspaceId: string, args: any) {
-    const updates: any = {};
+  private async actionUpdateWorkspaceSettings(workspaceId: string, args: ToolArgs) {
+    const updates: UnknownRecord = {};
 
     if (args.businessName) {
       updates.name = args.businessName;
@@ -3509,7 +3678,7 @@ Mensagem: ${message}`,
     };
   }
 
-  private async actionCreateBroadcast(workspaceId: string, args: any) {
+  private async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
     const broadcastKey = `broadcast_${Date.now()}`;
 
     // Contar contatos que receberão
@@ -3558,7 +3727,7 @@ Mensagem: ${message}`,
     };
   }
 
-  private async actionGetAnalytics(workspaceId: string, args: any) {
+  private async actionGetAnalytics(workspaceId: string, args: ToolArgs) {
     const now = new Date();
     let startDate: Date;
 
@@ -3579,7 +3748,7 @@ Mensagem: ${message}`,
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     }
 
-    let result: any = {};
+    let result: UnknownRecord = {};
 
     switch (args.metric) {
       case 'messages':
@@ -3657,7 +3826,7 @@ Mensagem: ${message}`,
     };
   }
 
-  private async actionConfigureAIPersona(workspaceId: string, args: any) {
+  private async actionConfigureAIPersona(workspaceId: string, args: ToolArgs) {
     const personaData = {
       name: args.name || 'KLOEL',
       personality: args.personality || 'Profissional, amigável e focada em resultados',
@@ -3690,7 +3859,7 @@ Mensagem: ${message}`,
   /**
    * Toggle Autopilot ON/OFF via IA
    */
-  private async actionToggleAutopilot(workspaceId: string, args: any) {
+  private async actionToggleAutopilot(workspaceId: string, args: ToolArgs) {
     const { enabled, mode = 'full', workingHoursOnly = false } = args;
 
     const autopilotConfig = {
@@ -3706,7 +3875,7 @@ Mensagem: ${message}`,
       where: { id: workspaceId },
     });
 
-    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings = (workspace?.providerSettings as UnknownRecord) || {};
     const newSettings = {
       ...currentSettings,
       autopilot: autopilotConfig,
@@ -3714,7 +3883,7 @@ Mensagem: ${message}`,
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: newSettings },
+      data: { providerSettings: newSettings as Prisma.InputJsonValue },
     });
 
     this.logger.log(`Autopilot ${enabled ? 'LIGADO' : 'DESLIGADO'} para workspace ${workspaceId}`);
@@ -3729,7 +3898,7 @@ Mensagem: ${message}`,
   /**
    * Cria fluxo completo a partir de descrição natural
    */
-  private async actionCreateFlowFromDescription(workspaceId: string, args: any) {
+  private async actionCreateFlowFromDescription(workspaceId: string, args: ToolArgs) {
     const { description, objective, autoActivate = false } = args;
 
     this.logger.log(`Criando fluxo a partir de descrição: "${description}"`);
@@ -3820,7 +3989,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   /**
    * Inicia conexão WhatsApp via fluxo oficial da Meta
    */
-  private async actionConnectWhatsApp(workspaceId: string, _args: any) {
+  private async actionConnectWhatsApp(workspaceId: string, _args: ToolArgs) {
     try {
       const provider = 'meta-cloud';
 
@@ -3829,7 +3998,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         where: { id: workspaceId },
       });
 
-      const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+      const currentSettings = (workspace?.providerSettings as UnknownRecord) || {};
       const newSettings = {
         ...currentSettings,
         whatsappProvider: provider,
@@ -3871,7 +4040,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   /**
    * Importa contatos
    */
-  private async actionImportContacts(workspaceId: string, args: any) {
+  private async actionImportContacts(workspaceId: string, args: ToolArgs) {
     const { source, csvData } = args;
 
     if (source === 'csv' && csvData) {
@@ -3882,7 +4051,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map((v: string) => v.trim());
-        const contact: any = {};
+        const contact: { phone?: string; name?: string; email?: string } = {};
 
         header.forEach((h, idx) => {
           if (h.includes('phone') || h.includes('telefone') || h.includes('whatsapp')) {
@@ -3895,7 +4064,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         });
 
         if (contact.phone) {
-          contacts.push(contact);
+          contacts.push(contact as { phone: string; name?: string; email?: string });
         }
       }
 
@@ -3941,7 +4110,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   /**
    * Gera funil de vendas completo
    */
-  private async actionGenerateSalesFunnel(workspaceId: string, args: any) {
+  private async actionGenerateSalesFunnel(workspaceId: string, args: ToolArgs) {
     const {
       funnelName,
       productId,
@@ -3967,8 +4136,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       let flowName = '';
       let trigger = 'manual';
       let triggerValue = '';
-      let nodes: any[] = [];
-      let edges: any[] = [];
+      let nodes: Prisma.InputJsonValue[] = [];
+      let edges: Prisma.InputJsonValue[] = [];
 
       switch (stage) {
         case 'awareness':
@@ -4148,10 +4317,10 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   /**
    * Agenda campanha
    */
-  private async actionScheduleCampaign(workspaceId: string, args: any) {
+  private async actionScheduleCampaign(workspaceId: string, args: ToolArgs) {
     const { campaignId, scheduleAt } = args;
 
-    const scheduledDate = new Date(scheduleAt);
+    const scheduledDate = new Date(scheduleAt || Date.now());
 
     // Atualizar campanha existente ou criar nova
     if (campaignId) {
@@ -4179,16 +4348,33 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   /**
    * Retorna status completo do workspace
    */
-  private async actionGetWorkspaceStatus(workspaceId: string, args: any) {
+  private async actionGetWorkspaceStatus(workspaceId: string, args: ToolArgs) {
     const { includeMetrics = true, includeConnections = true, includeHealth = true } = args;
 
-    const result: any = { workspaceId };
+    const result: {
+      workspaceId: string;
+      connections?: {
+        whatsapp: { provider: unknown; status: unknown; sessionId: unknown };
+        autopilot: { enabled: boolean; mode: unknown };
+      };
+      metrics?: {
+        totalContacts: number;
+        totalMessages: number;
+        activeFlows: number;
+        products: number;
+      };
+      health?: {
+        status: 'healthy' | 'warning';
+        lastActivity: string;
+        warnings: string[];
+      };
+    } = { workspaceId };
 
     if (includeConnections) {
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
       });
-      const settings = (workspace?.providerSettings as Record<string, any>) || {};
+      const settings = (workspace?.providerSettings as UnknownRecord) || {};
 
       const wapiSession = (settings.whatsappApiSession ?? {}) as Record<string, unknown>;
       const autopilotSettings = (settings.autopilot ?? {}) as Record<string, unknown>;
@@ -4199,7 +4385,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
           sessionId: wapiSession.sessionName || settings.sessionId,
         },
         autopilot: {
-          enabled: autopilotSettings.enabled || false,
+          enabled: autopilotSettings.enabled === true,
           mode: autopilotSettings.mode || 'off',
         },
       };
@@ -4252,7 +4438,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   /**
    * Gera link para atualizar cartão de crédito (Stripe SetupIntent)
    */
-  private async actionUpdateBillingInfo(workspaceId: string, args: any) {
+  private async actionUpdateBillingInfo(workspaceId: string, args: ToolArgs) {
     try {
       const stripe = this.createStripeClient();
       if (!stripe) {
@@ -4272,8 +4458,10 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
-      let customerId = settings.stripeCustomerId || workspace.stripeCustomerId;
+      const settings = this.readRecord(workspace.providerSettings);
+      let customerId =
+        this.readOptionalText(settings.stripeCustomerId) ||
+        this.readOptionalText(workspace.stripeCustomerId);
 
       if (!customerId) {
         const customer = await stripe.customers.create({
@@ -4291,7 +4479,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
             providerSettings: {
               ...settings,
               stripeCustomerId: customerId,
-            },
+            } as Prisma.InputJsonValue,
           },
         });
       }
@@ -4337,24 +4525,25 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings = this.readRecord(workspace.providerSettings);
+      const limits = this.readRecord(settings.limits);
 
       return {
         success: true,
         billing: {
-          plan: settings.plan || 'free',
-          status: settings.subscriptionStatus || 'inactive',
-          stripeCustomerId: settings.stripeCustomerId || null,
-          stripeSubscriptionId: settings.stripeSubscriptionId || null,
-          currentPeriodEnd: settings.currentPeriodEnd || null,
-          hasPaymentMethod: !!settings.paymentMethodId,
-          isSuspended: !!settings.billingSuspended,
+          plan: this.readOptionalText(settings.plan) || 'free',
+          status: this.readOptionalText(settings.subscriptionStatus) || 'inactive',
+          stripeCustomerId: this.readOptionalText(settings.stripeCustomerId) || null,
+          stripeSubscriptionId: this.readOptionalText(settings.stripeSubscriptionId) || null,
+          currentPeriodEnd: this.readOptionalText(settings.currentPeriodEnd) || null,
+          hasPaymentMethod: !!this.readOptionalText(settings.paymentMethodId),
+          isSuspended: settings.billingSuspended === true,
         },
         limits: {
-          contacts: settings.limits?.contacts || 100,
-          messagesPerDay: settings.limits?.messagesPerDay || 50,
-          flows: settings.limits?.flows || 3,
-          campaigns: settings.limits?.campaigns || 1,
+          contacts: Number(limits.contacts || 100),
+          messagesPerDay: Number(limits.messagesPerDay || 50),
+          flows: Number(limits.flows || 3),
+          campaigns: Number(limits.campaigns || 1),
         },
       };
     } catch (error: unknown) {
@@ -4370,9 +4559,9 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   /**
    * Altera o plano de assinatura
    */
-  private async actionChangePlan(workspaceId: string, args: any) {
+  private async actionChangePlan(workspaceId: string, args: ToolArgs) {
     try {
-      const { plan } = args;
+      const plan = args.plan || '';
 
       if (!['starter', 'pro', 'enterprise'].includes(plan)) {
         return {
@@ -4411,9 +4600,9 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
-      const customerId = settings.stripeCustomerId;
-      const subscriptionId = settings.stripeSubscriptionId;
+      const settings = this.readRecord(workspace.providerSettings);
+      const customerId = this.readOptionalText(settings.stripeCustomerId);
+      const subscriptionId = this.readOptionalText(settings.stripeSubscriptionId);
 
       if (!customerId) {
         return {
@@ -4453,7 +4642,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
               stripeSubscriptionId: result.id,
               plan,
               subscriptionStatus: result.status,
-            },
+            } as Prisma.InputJsonValue,
           },
         });
       }
@@ -4484,8 +4673,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
     workspaceId: string,
     contactId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
       const discountPercent = Math.min(Math.max(Number(args?.discountPercent) || 10, 1), 30);
@@ -4570,8 +4759,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
     workspaceId: string,
     contactId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
       const objectionType = args?.objectionType || 'other';
@@ -4668,8 +4857,8 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     workspaceId: string,
     contactId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
       const questions = args?.questions || [
@@ -4743,8 +4932,8 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     workspaceId: string,
     contactId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
@@ -4815,13 +5004,13 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     workspaceId: string,
     contactId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       const strategy = args?.strategy || 'discount';
-      const offer = args?.offer;
+      const offer = args?.offer || '';
 
       const strategyMessages: Record<string, string> = {
         discount: `Antes de concluir seu cancelamento, tenho uma condição comercial para você.\n\nQue tal um desconto exclusivo de 30% para continuar conosco? ${offer || 'Você é um cliente valioso e queremos mantê-lo!'}`,
@@ -4899,8 +5088,8 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     workspaceId: string,
     contactId: string,
     phone: string,
-    args: any,
-    context?: Record<string, any>,
+    args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
       const strategy = args?.strategy || 'curiosity';
@@ -4972,18 +5161,41 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     }
   }
 
-  private resolveComplianceMode(context?: Record<string, any>): 'reactive' | 'proactive' {
+  private resolveComplianceMode(context?: UnknownRecord): 'reactive' | 'proactive' {
     return context?.deliveryMode === 'reactive' ? 'reactive' : 'proactive';
   }
 
-  private buildWhatsAppSendOptions(context?: Record<string, any>, extra: Record<string, any> = {}) {
+  private buildWhatsAppSendOptions(
+    context?: UnknownRecord,
+    extra: UnknownRecord = {},
+  ): {
+    mediaUrl?: string;
+    mediaType?: 'document' | 'image' | 'audio' | 'video';
+    caption?: string;
+    externalId?: string;
+    complianceMode: 'reactive' | 'proactive';
+    forceDirect: boolean;
+    quotedMessageId?: string;
+  } {
+    const extraRecord = this.readRecord(extra);
+    const mediaType = this.readOptionalText(extraRecord.mediaType);
+    const quotedMessageId =
+      this.readOptionalText(extraRecord.quotedMessageId) ||
+      this.readOptionalText(context?.quotedMessageId) ||
+      this.readOptionalText(context?.providerMessageId);
+
     return {
-      ...extra,
-      quotedMessageId:
-        extra?.quotedMessageId ||
-        context?.quotedMessageId ||
-        context?.providerMessageId ||
-        undefined,
+      mediaUrl: this.readOptionalText(extraRecord.mediaUrl),
+      mediaType:
+        mediaType === 'document' ||
+        mediaType === 'image' ||
+        mediaType === 'audio' ||
+        mediaType === 'video'
+          ? mediaType
+          : undefined,
+      caption: this.readOptionalText(extraRecord.caption),
+      externalId: this.readOptionalText(extraRecord.externalId),
+      quotedMessageId,
       complianceMode: this.resolveComplianceMode(context),
       forceDirect: context?.forceDirect === true,
     };
