@@ -164,6 +164,7 @@ export class MetaAuthController {
       tokenUrl.searchParams.set('redirect_uri', redirectUri);
       tokenUrl.searchParams.set('code', code);
 
+      // Not SSRF: tokenUrl built from hardcoded graph.facebook.com base + server env vars
       const tokenRes = await fetch(tokenUrl.toString(), {
         signal: AbortSignal.timeout(30000),
       });

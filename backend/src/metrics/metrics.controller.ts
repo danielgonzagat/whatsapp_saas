@@ -1,6 +1,7 @@
 import { Controller, Get, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetricsService } from './metrics.service';
 import { QueueHealthService } from './queue-health.service';
@@ -64,7 +65,7 @@ export class MetricsController {
       bearer ||
       (typeof req.query?.token === 'string' ? req.query.token : undefined);
 
-    if (provided !== expected) {
+    if (!provided || !safeCompareStrings(provided, expected)) {
       throw new UnauthorizedException('Invalid metrics token');
     }
   }

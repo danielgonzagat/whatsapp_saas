@@ -833,6 +833,7 @@ export class AuthService {
       try {
         const message = `Seu código de verificação KLOEL é: *${code}*\n\nEsse código expira em 5 minutos. Não compartilhe com ninguém.`;
 
+        // Not SSRF: hardcoded Meta Graph API endpoint; metaPhoneId from server env var
         const response = await fetch(`https://graph.facebook.com/v19.0/${metaPhoneId}/messages`, {
           method: 'POST',
           headers: {

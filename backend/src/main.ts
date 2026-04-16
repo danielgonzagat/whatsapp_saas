@@ -176,6 +176,10 @@ async function bootstrap() {
 
   // Regex patterns para origens dinâmicas (ex: Vercel preview deploys)
   const allowedOriginsRegex: RegExp[] = [HTTPS_____KLOEL_FRONTEN_RE, HTTPS_____KLOEL_ADMIN_RE];
+  // SECURITY: CORS_ALLOWED_ORIGIN_REGEX is a server-admin-controlled env var,
+  // not user input. The regex is compiled once at startup and never rebuilt
+  // from request data, so ReDoS from untrusted input is not applicable here.
+  // The try/catch below guards against malformed patterns from misconfiguration.
   const extraRegex = process.env.CORS_ALLOWED_ORIGIN_REGEX;
   if (extraRegex) {
     for (const r of extraRegex.split(',')) {

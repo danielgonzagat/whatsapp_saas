@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import {
   Body,
   Controller,
@@ -39,7 +40,7 @@ export class WhatsAppBrainController {
       this.logger.error('WHATSAPP_VERIFY_TOKEN env var is not set');
       return sendPlainTextResponse(res, 'Server misconfigured', 500);
     }
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    if (mode === 'subscribe' && safeCompareStrings(token, VERIFY_TOKEN)) {
       this.logger.log('Webhook verificado');
       const sanitizedChallenge = sanitizeWebhookChallenge(challenge);
       if (!sanitizedChallenge) {
@@ -67,7 +68,7 @@ export class WhatsAppBrainController {
     const secret = process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.META_APP_SECRET;
     if (secret && signature) {
       const expected = `sha256=${createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex')}`;
-      if (signature !== expected) {
+      if (!safeCompareStrings(String(signature), expected)) {
         this.logger.warn('Invalid webhook signature');
         return { status: 'invalid_signature' };
       }

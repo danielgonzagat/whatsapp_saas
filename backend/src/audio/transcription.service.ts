@@ -1,5 +1,7 @@
+import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFile, unlink, writeFile } from 'node:fs/promises';
@@ -64,6 +66,7 @@ export class TranscriptionService {
         }
 
         // tokenBudget: tracked by caller
+        // Not SSRF: hardcoded OpenAI API endpoint
         const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
           method: 'POST',
           headers: {
@@ -85,6 +88,7 @@ export class TranscriptionService {
           }
 
           // tokenBudget: tracked by caller
+          // Not SSRF: hardcoded OpenAI API endpoint
           const fallbackResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
             method: 'POST',
             headers: {
@@ -130,7 +134,7 @@ export class TranscriptionService {
   /**
    * Baixa arquivo de URL e salva temporariamente.
    */
-  async downloadToTemp(url: string, messageId: string): Promise<string | null> {
+  async downloadToTemp(url: string, _messageId: string): Promise<string | null> {
     try {
       validateNoInternalAccess(url);
       const response = await fetch(url, {
@@ -143,7 +147,8 @@ export class TranscriptionService {
 
       const buffer = Buffer.from(await response.arrayBuffer());
       const ext = this.guessExtension(url, response.headers.get('content-type'));
-      const tempPath = join('/tmp', `audio_${messageId}${ext}`);
+      // Use crypto.randomUUID to avoid path traversal via messageId
+      const tempPath = join(tmpdir(), `audio_${randomUUID()}${ext}`);
 
       await writeFile(tempPath, buffer);
       return tempPath;
@@ -160,8 +165,14 @@ export class TranscriptionService {
    */
   async cleanup(filePath: string): Promise<void> {
     try {
-      if (existsSync(filePath)) {
-        await unlink(filePath);
+      // Path traversal guard: only delete files within the OS temp directory
+      const resolvedPath = resolve(filePath);
+      const tempRoot = resolve(tmpdir());
+      if (!resolvedPath.startsWith(`${tempRoot}/`) && resolvedPath !== tempRoot) {
+        return;
+      }
+      if (existsSync(resolvedPath)) {
+        await unlink(resolvedPath);
       }
     } catch {
       // Ignora erros de cleanup

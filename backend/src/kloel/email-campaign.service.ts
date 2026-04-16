@@ -87,6 +87,7 @@ export class EmailCampaignService {
     try {
       switch (provider) {
         case 'resend': {
+          // Not SSRF: hardcoded Resend API endpoint
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
@@ -105,6 +106,7 @@ export class EmailCampaignService {
           return true;
         }
         case 'sendgrid': {
+          // Not SSRF: hardcoded SendGrid API endpoint
           const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
             headers: {

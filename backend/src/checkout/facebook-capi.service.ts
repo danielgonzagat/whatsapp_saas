@@ -48,6 +48,7 @@ export class FacebookCAPIService {
         access_token: data.accessToken,
       };
 
+      // Not SSRF: hardcoded Meta Graph API endpoint; pixelId from workspace config
       const response = await fetch(`https://graph.facebook.com/v18.0/${data.pixelId}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

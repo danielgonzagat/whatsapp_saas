@@ -333,6 +333,7 @@ export class MercadoPagoService {
       );
     }
 
+    // Not SSRF: hardcoded Mercado Pago API endpoint
     const response = await fetch('https://api.mercadopago.com/oauth/token', {
       method: 'POST',
       headers: {
@@ -636,6 +637,7 @@ export class MercadoPagoService {
       return [];
     }
 
+    // Not SSRF: hardcoded Mercado Pago API endpoint
     const response = await fetch('https://api.mercadopago.com/v1/payment_methods', {
       headers: {
         Authorization: `Bearer ${credentials.accessToken}`,

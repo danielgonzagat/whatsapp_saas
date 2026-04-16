@@ -8,6 +8,12 @@ services:
     image: pgvector/pgvector:pg16
     container_name: whatsapp_saas_db_prod
     restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    security_opt:
+      - 'no-new-privileges:true'
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
@@ -15,7 +21,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,13 +34,18 @@ services:
     image: redis:7-alpine
     container_name: whatsapp_saas_redis_prod
     restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - 'no-new-privileges:true'
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,6 +63,8 @@ services:
       dockerfile: Dockerfile
     container_name: whatsapp_saas_backend_prod
     restart: always
+    security_opt:
+      - 'no-new-privileges:true'
     deploy:
       resources:
         limits:
@@ -64,7 +77,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # Redis - usando URL completa com autenticação
       REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
-      AUTH_OPTIONAL: "false"
+      AUTH_OPTIONAL: 'false'
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       META_STATE_SECRET: ${META_STATE_SECRET}
@@ -95,6 +108,8 @@ services:
       dockerfile: Dockerfile
     container_name: whatsapp_saas_worker_prod
     restart: always
+    security_opt:
+      - 'no-new-privileges:true'
     deploy:
       resources:
         limits:
@@ -103,7 +118,7 @@ services:
         reservations:
           memory: 1G
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3003/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -135,6 +150,8 @@ services:
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     container_name: whatsapp_saas_frontend_prod
     restart: always
+    security_opt:
+      - 'no-new-privileges:true'
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
@@ -157,9 +174,16 @@ services:
     image: nginx:alpine
     container_name: whatsapp_saas_nginx
     restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    security_opt:
+      - 'no-new-privileges:true'
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
       - ./docker/certbot/conf:/etc/letsencrypt
@@ -174,6 +198,8 @@ services:
   certbot:
     image: certbot/certbot
     container_name: whatsapp_saas_certbot
+    security_opt:
+      - 'no-new-privileges:true'
     volumes:
       - ./docker/certbot/conf:/etc/letsencrypt
       - ./docker/certbot/www:/var/www/certbot

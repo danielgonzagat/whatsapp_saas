@@ -11,6 +11,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import type Redis from 'ioredis';
 import { Public } from '../auth/public.decorator';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
@@ -67,7 +68,7 @@ export class WhatsAppApiWebhookController {
     const expected = process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.WAHA_WEBHOOK_SECRET;
     if (expected) {
       const provided = apiKey || webhookSecret;
-      if (!provided || provided !== expected) {
+      if (!provided || !safeCompareStrings(provided, expected)) {
         this.logger.warn('Legacy WAHA webhook rejected: invalid secret');
         throw new ForbiddenException('Invalid webhook secret');
       }

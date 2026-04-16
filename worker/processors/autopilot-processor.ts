@@ -9267,15 +9267,21 @@ async function sendAudioResponse(
     // Upload para armazenamento (local ou CDN)
     const fs = await import('node:fs');
     const path = await import('node:path');
+    const crypto = await import('node:crypto');
 
     // Diretório de uploads do backend (servido por rota assinada/autenticada)
-    const uploadsDir = path.join(process.cwd(), '..', 'backend', 'uploads', 'audio');
+    const uploadsDir = path.resolve(process.cwd(), '..', 'backend', 'uploads', 'audio');
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    const fileName = `audio_${workspaceId}_${Date.now()}.mp3`;
-    const filePath = path.join(uploadsDir, fileName);
+    // Use randomUUID to prevent path traversal via workspaceId
+    const fileName = `audio_${crypto.randomUUID()}_${Date.now()}.mp3`;
+    const filePath = path.resolve(uploadsDir, path.normalize(fileName));
+    // Path traversal guard
+    if (!filePath.startsWith(`${uploadsDir}${path.sep}`) && filePath !== uploadsDir) {
+      throw new Error('Path traversal detected in audio file path');
+    }
     fs.writeFileSync(filePath, audioBuffer);
 
     // Montar URL pública

@@ -448,6 +448,8 @@ export class WahaProvider {
       throw new Error('WAHA_API_URL/WAHA_BASE_URL/WAHA_URL not configured');
     }
 
+    // Not SSRF: this.baseUrl is derived from server-owned WAHA_API_URL/WAHA_BASE_URL env vars
+    // (intentional backend-to-WAHA internal service communication)
     const url = `${this.baseUrl}${path}`;
     const hasBody = body !== undefined;
     const timeoutMs = options?.timeoutMs ?? 15_000;

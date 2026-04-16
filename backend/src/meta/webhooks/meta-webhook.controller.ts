@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+import { safeCompareStrings } from '../../common/utils/crypto-compare.util';
 import {
   Body,
   Controller,
@@ -119,7 +120,7 @@ export class MetaWebhookController {
     @Res() res: Response,
   ) {
     const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'kloel_meta_verify_2026';
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    if (mode === 'subscribe' && safeCompareStrings(token, VERIFY_TOKEN)) {
       const sanitizedChallenge = sanitizeWebhookChallenge(challenge);
       if (!sanitizedChallenge) {
         throw new ForbiddenException('Verification failed');
@@ -146,7 +147,7 @@ export class MetaWebhookController {
           Buffer.isBuffer(req?.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(body || {})),
         )
         .digest('hex')}`;
-      if (signature !== expected) {
+      if (!safeCompareStrings(signature, expected)) {
         this.logger.warn('Invalid Meta webhook signature');
         return 'ok';
       }

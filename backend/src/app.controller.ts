@@ -1,6 +1,7 @@
 import { Controller, Get, Req, UnauthorizedException } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Public } from './auth/public.decorator';
+import { safeCompareStrings } from './common/utils/crypto-compare.util';
 import { PrismaService } from './prisma/prisma.service';
 
 @Controller()
@@ -49,7 +50,7 @@ export class AppController {
         (typeof alt === 'string' && alt) ||
         bearer ||
         (typeof req.query?.token === 'string' ? req.query.token : undefined);
-      if (provided !== expected) {
+      if (!provided || !safeCompareStrings(provided, expected)) {
         throw new UnauthorizedException('Invalid diag token');
       }
     }

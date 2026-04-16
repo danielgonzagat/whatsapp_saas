@@ -173,6 +173,9 @@ export class SystemHealthService {
     const timeout = setTimeout(() => controller.abort(), 3000);
 
     try {
+      // Not SSRF: workerHealthUrl is derived from server-owned env vars
+      // (WORKER_HEALTH_URL, WORKER_METRICS_URL, etc.) — intentional backend-to-worker
+      // internal communication on Railway's private network.
       const response = await fetch(workerHealthUrl, {
         method: 'GET',
         headers: workerMetricsToken

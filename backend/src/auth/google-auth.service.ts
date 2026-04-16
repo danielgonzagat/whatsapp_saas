@@ -117,6 +117,7 @@ export class GoogleAuthService {
       throw new UnauthorizedException('Access token Google ausente.');
     }
 
+    // Not SSRF: hardcoded Google People API endpoint (static readonly constant)
     const response = await fetch(GoogleAuthService.PEOPLE_API_URL, {
       headers: {
         Authorization: `Bearer ${token}`,

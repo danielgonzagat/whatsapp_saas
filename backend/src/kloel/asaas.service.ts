@@ -119,6 +119,7 @@ export class AsaasService implements OnModuleInit {
     });
   }
 
+  // Not SSRF: returns hardcoded Asaas API endpoints only
   private getBaseUrl(environment: 'sandbox' | 'production'): string {
     return environment === 'production'
       ? 'https://api.asaas.com/v3'

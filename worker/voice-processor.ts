@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { type Job, Worker } from 'bullmq';
@@ -5,14 +6,26 @@ import OpenAI from 'openai';
 import { prisma } from './db';
 import { resolveWorkerOpenAIModel } from './providers/openai-models';
 import { connection } from './queue';
-
-const D_RE = /\D/g;
+import { validateUrl } from './utils/ssrf-protection';
 
 const PATTERN_RE = /\/+$/;
 
 const UPLOAD_DIR = path.join(__dirname, '../backend/public/audio');
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+/**
+ * Resolves a file path within a base directory and guards against path traversal.
+ * Throws if the resolved path escapes the base directory.
+ */
+function safePath(basedir: string, filename: string): string {
+  const resolved = path.resolve(basedir, path.normalize(filename));
+  const base = path.resolve(basedir);
+  if (!resolved.startsWith(`${base}${path.sep}`) && resolved !== base) {
+    throw new Error('Path traversal detected');
+  }
+  return resolved;
 }
 
 let openaiClient: OpenAI | null = null;
@@ -76,7 +89,7 @@ async function handleGenerateAudio(job: Job) {
 
     const buffer = Buffer.from(await response.arrayBuffer());
     const fileName = `${jobId}.mp3`;
-    const filePath = path.join(UPLOAD_DIR, fileName);
+    const filePath = safePath(UPLOAD_DIR, fileName);
     fs.writeFileSync(filePath, buffer);
 
     const publicUrl = `${resolvePublicBackendBaseUrl()}/audio/${fileName}`;
@@ -107,15 +120,19 @@ async function handleTranscription(job: Job) {
   const { workspaceId, phone, mediaUrl, messageType } = job.data;
 
   try {
+    // SSRF protection: validate mediaUrl before fetching
+    const urlValidation = await validateUrl(mediaUrl);
+    if (!urlValidation.valid) {
+      throw new Error(`SSRF blocked for media URL: ${urlValidation.error}`);
+    }
+
     const response = await fetch(mediaUrl, { signal: AbortSignal.timeout(30000) });
     if (!response.ok) {
       throw new Error(`Failed to download audio: ${response.statusText}`);
     }
 
-    const tempFile = path.join(
-      UPLOAD_DIR,
-      `temp_${Date.now()}_${String(phone || '').replace(D_RE, '')}.mp3`,
-    );
+    // Use randomUUID for temp filename to prevent path traversal via phone
+    const tempFile = safePath(UPLOAD_DIR, `temp_${randomUUID()}.mp3`);
     fs.writeFileSync(tempFile, Buffer.from(await response.arrayBuffer()));
 
     const openai = getOpenAIClient();

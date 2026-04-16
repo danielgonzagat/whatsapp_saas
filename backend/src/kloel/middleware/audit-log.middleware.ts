@@ -1,6 +1,7 @@
 import { Injectable, Logger, NestMiddleware, OnModuleDestroy } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { sanitizePayload } from '../../common/sanitize-payload';
+import { validateNoInternalAccess } from '../../common/utils/url-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface AuditLogEntry {
@@ -216,6 +217,8 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 
       // Opcao: enviar para servico externo (Datadog, Sentry, etc)
       if (process.env.AUDIT_WEBHOOK_URL) {
+        // SSRF protection: validate env-configured webhook URL before use
+        validateNoInternalAccess(process.env.AUDIT_WEBHOOK_URL);
         await fetch(process.env.AUDIT_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

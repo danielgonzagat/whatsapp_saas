@@ -70,6 +70,7 @@ export class SiteController {
     try {
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
       if (openaiKey) {
+        // Not SSRF: hardcoded OpenAI API endpoint
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -100,6 +101,7 @@ export class SiteController {
 
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
       // Fallback to Anthropic
+      // Not SSRF: hardcoded Anthropic API endpoint
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {

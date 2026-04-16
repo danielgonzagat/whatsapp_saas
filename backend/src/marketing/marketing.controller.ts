@@ -725,6 +725,7 @@ export class MarketingController {
       const htmlWithUnsub = `${personalizedBody}<br/><hr style="margin:24px 0;border:none;border-top:1px solid #ddd"/><p style="font-size:11px;color:#888;text-align:center"><a href="${unsubscribeUrl}" style="color:#888">Cancelar inscricao</a></p>`;
       try {
         if (provider === 'resend') {
+          // Not SSRF: hardcoded Resend API endpoint
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
@@ -742,6 +743,7 @@ export class MarketingController {
           if (res.ok) sent++;
           else failed++;
         } else if (provider === 'sendgrid') {
+          // Not SSRF: hardcoded SendGrid API endpoint
           const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
             headers: {

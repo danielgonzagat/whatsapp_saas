@@ -4,6 +4,7 @@ const A_Z0_9_RE = /[^A-Z0-9]/g;
 
 const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 export const DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH = 8;
+// SECURITY: regex built from numeric constant, not user input — no ReDoS risk.
 const PUBLIC_CHECKOUT_CODE_REGEX = new RegExp(`^[A-Z0-9]{${DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH}}$`);
 
 export function normalizePublicCheckoutCode(value: string | null | undefined) {

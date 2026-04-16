@@ -275,7 +275,10 @@ export class I18nService {
     // Substitui placeholders {param} por valores
     if (params) {
       for (const [param, value] of Object.entries(params)) {
-        text = text.replace(new RegExp(`\\{${param}\\}`, 'g'), String(value));
+        // Escape param key to prevent ReDoS — params are developer-controlled
+        // but we escape defensively as defense-in-depth.
+        const escaped = param.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        text = text.replace(new RegExp(`\\{${escaped}\\}`, 'g'), String(value));
       }
     }
 

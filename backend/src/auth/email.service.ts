@@ -92,6 +92,7 @@ export class EmailService {
    * Envio via Resend API
    */
   private async sendViaResend(to: string, subject: string, html: string): Promise<boolean> {
+    // Not SSRF: hardcoded Resend API endpoint
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -120,6 +121,7 @@ export class EmailService {
    * Envio via SendGrid API
    */
   private async sendViaSendGrid(to: string, subject: string, html: string): Promise<boolean> {
+    // Not SSRF: hardcoded SendGrid API endpoint
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {

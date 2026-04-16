@@ -4,6 +4,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { SystemHealthService } from '../health/system-health.service';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
@@ -576,6 +577,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
+      // SSRF protection: validate env-configured webhook URL before use
+      validateNoInternalAccess(webhookUrl);
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {

@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Req, UnauthorizedException } from '@nestjs
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
@@ -63,7 +64,7 @@ export class PulseController {
       String(req.headers['x-metrics-token'] || '') ||
       bearer;
 
-    if (provided !== expected) {
+    if (!provided || !safeCompareStrings(provided, expected)) {
       throw new UnauthorizedException('Invalid internal access token');
     }
   }

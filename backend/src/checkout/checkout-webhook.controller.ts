@@ -12,6 +12,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import type { PaymentResponse as MercadoPagoPaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
 import { Public } from '../auth/public.decorator';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
@@ -199,7 +200,7 @@ export class CheckoutWebhookController {
   ) {
     // Signature verification — reject unauthorized webhooks
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
-    if (expected && (!accessToken || accessToken !== expected)) {
+    if (expected && (!accessToken || !safeCompareStrings(accessToken, expected))) {
       this.logger.warn(`Checkout webhook rejected — invalid token`, {
         ip: req?.ip,
       });

@@ -2669,6 +2669,7 @@ export class KloelService {
         await this.planLimits.ensureTokenBudget(workspaceId);
       }
 
+      // Not SSRF: hardcoded Anthropic API endpoint
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {

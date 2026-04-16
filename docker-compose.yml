@@ -8,6 +8,12 @@ services:
     image: pgvector/pgvector:pg15
     container_name: whatsapp_saas_db
     restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    security_opt:
+      - 'no-new-privileges:true'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
@@ -26,6 +32,11 @@ services:
     image: redis:7-alpine
     container_name: whatsapp_saas_redis
     restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - 'no-new-privileges:true'
     ports:
       - '6379:6379'
     volumes:
@@ -42,6 +53,8 @@ services:
       dockerfile: Dockerfile
     container_name: whatsapp_saas_backend
     restart: always
+    security_opt:
+      - 'no-new-privileges:true'
     ports:
       - '3001:3001'
     environment:
@@ -76,6 +89,8 @@ services:
       dockerfile: Dockerfile
     container_name: whatsapp_saas_worker
     restart: always
+    security_opt:
+      - 'no-new-privileges:true'
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}
       REDIS_HOST: redis
@@ -121,6 +136,8 @@ services:
         NEXT_PUBLIC_SCREENCAST_WS_URL: ${SCREENCAST_WS_URL:-ws://localhost:3004}
     container_name: whatsapp_saas_frontend
     restart: always
+    security_opt:
+      - 'no-new-privileges:true'
     ports:
       - '3000:3000'
     environment:
@@ -143,6 +160,8 @@ services:
   prometheus:
     image: prom/prometheus
     container_name: whatsapp_saas_prometheus
+    security_opt:
+      - 'no-new-privileges:true'
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
@@ -153,6 +172,11 @@ services:
   grafana:
     image: grafana/grafana
     container_name: whatsapp_saas_grafana
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - 'no-new-privileges:true'
     ports:
       - '3002:3000'
     environment:
@@ -169,6 +193,12 @@ services:
     image: prom/alertmanager
     container_name: whatsapp_saas_alertmanager
     restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /alertmanager
+    security_opt:
+      - 'no-new-privileges:true'
     ports:
       - '9093:9093'
     environment:
