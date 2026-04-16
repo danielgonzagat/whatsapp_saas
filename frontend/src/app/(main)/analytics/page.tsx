@@ -77,7 +77,7 @@ interface RF {
 }
 
 // Row types used by report tabs
-interface ReportRow {
+interface ReportRowFields {
   id?: string;
   status?: string;
   totalInCents?: number;
@@ -104,8 +104,9 @@ interface ReportRow {
   orderNumber?: string;
   customerEmail?: string;
   plan?: { name?: string; product?: { name?: string } };
-  [key: string]: any;  
 }
+
+type ReportRow = ReportRowFields & Record<string, any>;
 
 interface SubscriptionSummaryRow {
   status: string;
