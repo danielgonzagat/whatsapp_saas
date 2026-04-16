@@ -101,7 +101,9 @@ interface ReportRow {
   };
   refundedAt?: string;
   _count?: number;
-  // Index signature for dynamic report fields
+  orderNumber?: string;
+  customerEmail?: string;
+  plan?: { name?: string; product?: { name?: string } };
    
   [key: string]: any;
 }
@@ -1121,10 +1123,10 @@ function VendasTab({
   isMobile: boolean;
 }) {
   const gid = useId();
-   
-  const { data: summary, isLoading: ls } = useReport<any>('vendas/summary', filters);
-  const { data: daily, isLoading: ld } = useReport<any[]>('vendas/daily', filters);
-  const { data: vendas, isLoading: lv } = useReport<any>('vendas', baseFilters);
+
+  const { data: summary, isLoading: ls } = useReport<ReportRow>('vendas/summary', filters);
+  const { data: daily, isLoading: ld } = useReport<ReportRow[]>('vendas/daily', filters);
+  const { data: vendas, isLoading: lv } = useReport<ReportRow>('vendas', baseFilters);
   const rows = vendas?.data || [];
   const dailyData = Array.isArray(daily) ? daily : [];
 
@@ -1352,7 +1354,7 @@ function AfterPayTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<any>('afterpay', baseFilters);
+  const { data, isLoading } = useReport<ReportRow>('afterpay', baseFilters);
   const rows = data?.data || [];
   const aReceberTotal = rows.reduce((acc: number, r: ReportRow) => acc + (r.totalInCents || 0), 0);
   const atrasadasCount = rows.filter(
@@ -1507,7 +1509,7 @@ function AfterPayTab({
 
 // ── CHURN TAB ──
 function ChurnTab({ filters }: { filters: RF }) {
-  const { data, isLoading } = useReport<any>('churn', filters);
+  const { data, isLoading } = useReport<ReportRow>('churn', filters);
   const monthly = data?.monthly || [];
   return (
     <>
@@ -1572,7 +1574,7 @@ function AbandonosTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<any>('abandonos', baseFilters);
+  const { data, isLoading } = useReport<ReportRow>('abandonos', baseFilters);
   const rows = data?.data || [];
   return (
     <>
@@ -1803,7 +1805,8 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
         period: `${filters.startDate},${filters.endDate}`,
         filters,
       });
-      if ((res as any)?.error) throw new Error((res as any).error);
+      const resObj = res as unknown as Record<string, unknown>;
+      if (resObj?.error) throw new Error(String(resObj.error));
       setResult({ ok: true, message: `Relatório enviado para ${email.trim()}` });
     } catch (error: unknown) {
       setResult({
@@ -2015,7 +2018,7 @@ function ExportacoesTab({
 
 // ── AFILIADOS TAB ──
 function AfiliadosTab({ filters }: { filters: RF }) {
-  const { data, isLoading } = useReport<any[]>('afiliados', filters);
+  const { data, isLoading } = useReport<ReportRow[]>('afiliados', filters);
   const rows = Array.isArray(data) ? data : [];
   return (
     <>
@@ -2079,7 +2082,7 @@ function AfiliadosTab({ filters }: { filters: RF }) {
 
 // ── INDICADORES TAB ──
 function IndicadoresTab({ filters }: { filters: RF }) {
-  const { data, isLoading } = useReport<any[]>('indicadores', filters);
+  const { data, isLoading } = useReport<ReportRow[]>('indicadores', filters);
   const rows = Array.isArray(data) ? data : [];
   return (
     <>
@@ -2147,7 +2150,7 @@ function AssinaturasTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<any>('assinaturas', baseFilters);
+  const { data, isLoading } = useReport<ReportRow>('assinaturas', baseFilters);
   const rows = data?.data || [];
   const summary = data?.summary || [];
   const activeCount =
@@ -2277,7 +2280,7 @@ function AssinaturasTab({
 
 // ── INDICADORES PRODUTO TAB ──
 function IndProdTab({ filters }: { filters: RF }) {
-  const { data, isLoading } = useReport<any[]>('indicadores-produto', filters);
+  const { data, isLoading } = useReport<ReportRow[]>('indicadores-produto', filters);
   const rows = Array.isArray(data) ? data : [];
   return (
     <>
@@ -2336,7 +2339,7 @@ function RecusaTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<any>('recusa', baseFilters);
+  const { data, isLoading } = useReport<ReportRow>('recusa', baseFilters);
   const rows = data?.data || [];
   return (
     <>
@@ -2411,7 +2414,7 @@ function RecusaTab({
 
 // ── ORIGEM TAB ──
 function OrigemTab({ filters }: { filters: RF }) {
-  const { data, isLoading } = useReport<any[]>('origem', filters);
+  const { data, isLoading } = useReport<ReportRow[]>('origem', filters);
   const rows = Array.isArray(data) ? data : [];
   const PIE_COLORS = [V.em, V.bl, V.p, V.g2, V.y, V.cy, V.pk, V.r, V.t3];
   const totalVendas = rows.reduce((s: number, r: ReportRow) => s + (Number(r.vendas) || 0), 0);
@@ -2601,7 +2604,7 @@ function OrigemTab({ filters }: { filters: RF }) {
 
 // ── MÉTRICAS TAB ──
 function MetricasTab({ filters }: { filters: RF }) {
-  const { data, isLoading } = useReport<any>('metricas', filters);
+  const { data, isLoading } = useReport<ReportRow>('metricas', filters);
   const methods = data?.byMethod || {};
   const total = data?.totalSales || 0;
   return (
@@ -2704,7 +2707,7 @@ function EstornosTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<any>('estornos', baseFilters);
+  const { data, isLoading } = useReport<ReportRow>('estornos', baseFilters);
   const rows = data?.data || [];
   const valorEstornado = rows.reduce(
     (acc: number, r: ReportRow) => acc + (Number(r.totalInCents) || 0),
@@ -2866,7 +2869,7 @@ function ChargebackTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<any>('chargeback', baseFilters);
+  const { data, isLoading } = useReport<ReportRow>('chargeback', baseFilters);
   const rows = data?.data || [];
   const totalChargebackValue = rows.reduce(
     (acc: number, c: ReportRow) => acc + (Number(c.order?.totalInCents) || 0),
