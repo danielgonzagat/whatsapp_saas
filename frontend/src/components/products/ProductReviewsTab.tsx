@@ -17,13 +17,13 @@ interface Review {
 function Stars({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
+      {[1, 2, 3, 4, 5].map((star) => (
         <Star
-          key={i}
+          key={star}
           className="h-4 w-4"
           style={{
-            color: i <= rating ? colors.ember.primary : colors.border.space,
-            fill: i <= rating ? colors.ember.primary : 'none',
+            color: star <= rating ? colors.ember.primary : colors.border.space,
+            fill: star <= rating ? colors.ember.primary : 'none',
           }}
           aria-hidden="true"
         />

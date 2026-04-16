@@ -116,6 +116,7 @@ async function refreshQueueMetrics() {
   try {
     queueGauge.reset();
     const queueNames = Object.keys(queueRegistry);
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const name of queueNames) {
       const q = queueRegistry[name];
       const mainCounts = await q.getJobCounts();

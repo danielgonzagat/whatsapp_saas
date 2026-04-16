@@ -258,6 +258,7 @@ export class CheckoutService {
       select: { id: true },
     });
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential legacy plan migration
     for (const legacyPlan of legacyPlans) {
       await this.ensureLegacyCheckoutForPlan(legacyPlan.id);
     }

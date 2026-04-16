@@ -74,6 +74,7 @@ export const kloelApi = {
         };
 
         try {
+          // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;

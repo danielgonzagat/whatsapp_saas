@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Check, Eye, EyeOff, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useId } from 'react';
 import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import { useAuth } from './auth-provider';
 import { GoogleSignInButton } from './google-sign-in-button';
@@ -30,6 +30,7 @@ export function AuthModal({
   initialMode = 'signup',
   initialEmail,
 }: AuthModalProps) {
+  const fid = useId();
   const { signUp, signIn, signInWithGoogle } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -389,11 +390,13 @@ export function AuthModal({
                     {password && (
                       <div className="mt-2 flex items-center gap-2">
                         <div className="flex flex-1 gap-1">
-                          {[1, 2, 3, 4].map((i) => (
+                          {[1, 2, 3, 4].map((level) => (
                             <div
-                              key={i}
+                              key={`strength-${level}`}
                               className={`h-1 flex-1 rounded-full transition-colors ${
-                                i <= passwordStrength.level ? passwordStrength.color : 'bg-gray-200'
+                                level <= passwordStrength.level
+                                  ? passwordStrength.color
+                                  : 'bg-gray-200'
                               }`}
                             />
                           ))}
@@ -439,14 +442,14 @@ export function AuthModal({
 
                   <div className="flex items-start gap-3 pt-2">
                     <Checkbox
-                      id="terms"
+                      id={`${fid}-terms`}
                       checked={acceptedTerms}
                       onCheckedChange={(checked: boolean | 'indeterminate') =>
                         setAcceptedTerms(checked === true)
                       }
                       className="mt-0.5"
                     />
-                    <label htmlFor="terms" className="text-sm text-gray-600">
+                    <label htmlFor={`${fid}-terms`} className="text-sm text-gray-600">
                       Eu concordo com os{' '}
                       <a href="#" className="text-gray-900 hover:underline">
                         Termos de Uso

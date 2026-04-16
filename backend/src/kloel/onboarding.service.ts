@@ -146,6 +146,7 @@ export class OnboardingService {
   }
 
   private async finalize(workspaceId: string, data: Record<string, string>): Promise<void> {
+    // biome-ignore lint/performance/noAwaitInLoops: sequential workspace settings update
     for (const [key, value] of Object.entries(data)) {
       await this.prisma.kloelMemory
         .create({

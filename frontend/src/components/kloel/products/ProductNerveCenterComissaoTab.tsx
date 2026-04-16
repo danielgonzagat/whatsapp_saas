@@ -3,7 +3,7 @@
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { IntegerStepperField, PercentStepperField } from './product-nerve-center.inputs';
 import {
@@ -465,6 +465,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
             }}
           >
             <svg
+              aria-hidden="true"
               width={14}
               height={14}
               viewBox="0 0 24 24"
@@ -584,6 +585,7 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
             }}
           >
             <svg
+              aria-hidden="true"
               width={14}
               height={14}
               viewBox="0 0 24 24"
@@ -636,6 +638,7 @@ function CoprodSubTab({
   initialFocus?: string;
   router: any;
 }) {
+  const fid = useId();
   const { showToast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -788,7 +791,7 @@ function CoprodSubTab({
                   textTransform: 'uppercase',
                   letterSpacing: '.08em',
                 }}
-                htmlFor="papel-937880"
+                htmlFor={`${fid}-papel`}
               >
                 Papel
               </label>
@@ -796,7 +799,7 @@ function CoprodSubTab({
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
                 style={inputSt}
-                id="papel-937880"
+                id={`${fid}-papel`}
               >
                 <option value="COPRODUCER">Coprodutor</option>
                 <option value="MANAGER">Gerente</option>
@@ -817,7 +820,7 @@ function CoprodSubTab({
                   textTransform: 'uppercase',
                   letterSpacing: '.08em',
                 }}
-                htmlFor="nome-ba3b33"
+                htmlFor={`${fid}-nome`}
               >
                 Nome
               </label>
@@ -826,7 +829,7 @@ function CoprodSubTab({
                 onChange={(e) => setForm({ ...form, agentName: e.target.value })}
                 style={inputSt}
                 placeholder="Nome do coprodutor"
-                id="nome-ba3b33"
+                id={`${fid}-nome`}
               />
             </div>
             <div>
@@ -840,7 +843,7 @@ function CoprodSubTab({
                   textTransform: 'uppercase',
                   letterSpacing: '.08em',
                 }}
-                htmlFor="e-mail-e75550"
+                htmlFor={`${fid}-email`}
               >
                 E-mail
               </label>
@@ -849,7 +852,7 @@ function CoprodSubTab({
                 onChange={(e) => setForm({ ...form, agentEmail: e.target.value })}
                 style={inputSt}
                 placeholder="email@exemplo.com"
-                id="e-mail-e75550"
+                id={`${fid}-email`}
               />
             </div>
           </div>
@@ -867,7 +870,7 @@ function CoprodSubTab({
                   textTransform: 'uppercase',
                   letterSpacing: '.08em',
                 }}
-                htmlFor="comiss-o-c42440"
+                htmlFor={`${fid}-comissao`}
               >
                 Comissão (%)
               </label>
@@ -878,7 +881,7 @@ function CoprodSubTab({
                 onChange={(e) => setForm({ ...form, percentage: e.target.value })}
                 style={inputSt}
                 placeholder="10.0"
-                id="comiss-o-c42440"
+                id={`${fid}-comissao`}
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
@@ -969,6 +972,7 @@ function CoprodSubTab({
               title="Excluir"
             >
               <svg
+                aria-hidden="true"
                 width={14}
                 height={14}
                 viewBox="0 0 24 24"

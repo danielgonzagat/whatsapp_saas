@@ -127,6 +127,7 @@ export function FloatingChat({
       let buffer = '';
       let full = '';
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -188,6 +189,7 @@ export function FloatingChat({
       let buffer = '';
       let full = '';
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -429,6 +431,7 @@ export function FloatingChat({
               }}
             >
               <svg
+                aria-hidden="true"
                 width={14}
                 height={14}
                 viewBox="0 0 24 24"
@@ -645,6 +648,7 @@ export function FloatingChat({
                 }}
               >
                 <svg
+                  aria-hidden="true"
                   width={14}
                   height={14}
                   viewBox="0 0 24 24"

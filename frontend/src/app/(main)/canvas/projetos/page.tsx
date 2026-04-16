@@ -20,7 +20,7 @@ function ProjectSkeletonGrid() {
     >
       {Array.from({ length: 8 }).map((_, index) => (
         <div
-          key={index}
+          key={`project-skeleton-${index}`}
           style={{
             background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',

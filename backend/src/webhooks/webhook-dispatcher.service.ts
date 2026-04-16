@@ -30,6 +30,7 @@ export class WebhookDispatcherService {
 
     const eventDate = new Date().toISOString();
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential webhook dispatch with error isolation
     for (const sub of subscriptions) {
       // Deduplicate via jobId: same subscription + event + payload hash
       const jobId = `webhook-dispatch:${sub.id}:${event}:${randomUUID()}`;

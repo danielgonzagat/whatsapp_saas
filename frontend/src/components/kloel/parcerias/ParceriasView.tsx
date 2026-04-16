@@ -17,7 +17,7 @@ import { affiliateApi, partnershipsApi } from '@/lib/api/misc';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { buildPayUrl } from '@/lib/subdomains';
 import { usePathname, useRouter } from 'next/navigation';
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState, useId } from 'react';
 import useSWR from 'swr';
 
 /* ── Local view types (mirrors API shape) ── */
@@ -645,6 +645,7 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
    ═══════════════════════════════════════════════ */
 
 function InviteModal({ onClose }: { onClose: () => void }) {
+  const fid = useId();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('manager');
   const [sending, setSending] = useState(false);
@@ -742,7 +743,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             display: 'block',
             marginBottom: 6,
           }}
-          htmlFor="email-fcb2f0"
+          htmlFor={`${fid}-email`}
         >
           Email
         </label>
@@ -765,11 +766,11 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             marginBottom: 16,
             boxSizing: 'border-box' as const,
           }}
-          id="email-fcb2f0"
+          id={`${fid}-email`}
         />
 
         {/* Role selector (4 roles, no admin) */}
-        <label
+        <span
           style={{
             fontFamily: FONT.sans,
             fontSize: 12,
@@ -780,7 +781,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           }}
         >
           Funcao
-        </label>
+        </span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
           {inviteRoles.map((r) => (
             <button
@@ -1090,9 +1091,9 @@ function AffiliateDetailModal({
             transition: 'opacity 200ms ease',
           }}
         >
-          {statCards.map((sc, i) => (
+          {statCards.map((sc) => (
             <div
-              key={i}
+              key={sc.label}
               style={{
                 background: C.bg,
                 border: `1px solid ${C.border}`,
@@ -1149,7 +1150,7 @@ function AffiliateDetailModal({
           >
             {chartData.map((v: any, i: number) => (
               <div
-                key={i}
+                key={`chart-bar-${i}`}
                 style={{
                   flex: 1,
                   display: 'flex',
@@ -1195,9 +1196,9 @@ function AffiliateDetailModal({
           </h4>
           {a.products && a.products.length > 0 ? (
             <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-              {a.products.map((p: string, i: number) => (
+              {a.products.map((p: string) => (
                 <span
-                  key={i}
+                  key={p}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -2666,9 +2667,9 @@ function MyAffiliateLinks() {
           { label: 'Vendas', value: totals.sales },
           { label: 'Receita', value: fmtMoney(totals.revenue) },
           { label: 'Comissao', value: fmtMoney(totals.commission) },
-        ].map((s, i) => (
+        ].map((s) => (
           <div
-            key={i}
+            key={s.label}
             style={{
               background: C.card,
               border: `1px solid ${C.border}`,

@@ -453,6 +453,7 @@ export class SegmentationService {
 
     const results = { hot: 0, warm: 0, cold: 0, ghost: 0, processed: 0 };
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential contact processing with DB writes
     for (const contact of contacts) {
       const { level } = await this.calculateEngagementScore(contact.id);
       results[level]++;

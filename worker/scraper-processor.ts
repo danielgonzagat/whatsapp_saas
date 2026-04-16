@@ -95,6 +95,7 @@ export const scraperWorker = new Worker(
       const firstStageId = stage.id;
 
       const importedContacts: string[] = [];
+      // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing
       for (const lead of leads) {
         const scraped = await prisma.scrapedLead.create({
           data: {

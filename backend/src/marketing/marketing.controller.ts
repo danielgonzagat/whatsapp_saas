@@ -689,6 +689,7 @@ export class MarketingController {
     let sent = 0;
     let failed = 0;
 
+    // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
     for (const recipient of body.recipients) {
       // unsubscribe: link included in email footer
       const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(recipient.email)}`;

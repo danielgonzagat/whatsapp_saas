@@ -106,14 +106,14 @@ export function ProductNerveCenterAvalTab() {
             <Fd label="Nome do autor" value={newRevName} onChange={setNewRevName} />
             <Fd label="Nota">
               <div style={{ display: 'flex', gap: 4 }}>
-                {[1, 2, 3, 4, 5].map((i) => (
+                {[1, 2, 3, 4, 5].map((star) => (
                   <span
-                    key={i}
-                    onClick={() => setNewRevRating(i)}
+                    key={star}
+                    onClick={() => setNewRevRating(star)}
                     style={{
                       cursor: 'pointer',
                       fontSize: 18,
-                      color: i <= newRevRating ? V.y : V.t3,
+                      color: star <= newRevRating ? V.y : V.t3,
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -171,12 +171,12 @@ export function ProductNerveCenterAvalTab() {
                 )}
               </span>
               <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginTop: 4 }}>
-                {[1, 2, 3, 4, 5].map((i) => (
+                {[1, 2, 3, 4, 5].map((star) => (
                   <span
-                    key={i}
+                    key={star}
                     style={{
                       color:
-                        i <=
+                        star <=
                         Math.round(
                           REVIEWS.reduce((s: number, r: any) => s + r.rating, 0) / REVIEWS.length,
                         )
@@ -273,8 +273,8 @@ export function ProductNerveCenterAvalTab() {
                 <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>{r.name}</span>
                 {r.ver && <Bg color={V.g}>VERIFICADO</Bg>}
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <span key={i} style={{ color: i <= r.rating ? V.y : V.t3, fontSize: 12 }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} style={{ color: star <= r.rating ? V.y : V.t3, fontSize: 12 }}>
                       <svg
                         width={14}
                         height={14}

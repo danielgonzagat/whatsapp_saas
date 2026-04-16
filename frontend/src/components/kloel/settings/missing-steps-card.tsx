@@ -54,11 +54,11 @@ export function MissingStepsCard({
       />
 
       <div className="space-y-2">
-        {steps.map((step, index) => {
+        {steps.map((step) => {
           const Icon = step.icon;
           return (
             <SettingsInset
-              key={index}
+              key={step.label}
               className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
                 step.done ? 'border-[#10B981]/20 bg-[#10B981]/10' : ''
               }`}

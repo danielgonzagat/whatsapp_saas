@@ -1,6 +1,6 @@
 'use client';
 
-import type { Dispatch, RefObject, SetStateAction } from 'react';
+import { useId, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
 import { Ed, ValidationInput } from './checkout-theme-shared';
 import { CheckoutSocialIdentitySection } from './CheckoutSocialIdentitySection';
@@ -68,6 +68,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
     shippingInCents,
     fmtBrl,
   } = props;
+  const fid = useId();
   const labelStyle = {
     display: 'block',
     fontSize: 14,
@@ -128,7 +129,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
             <Field
               theme={theme}
               label="Nome completo"
-              id="checkout-name"
+              id={`${fid}-name`}
               value={form.name}
               onChange={updateField('name')}
               placeholder="ex.: Maria de Almeida Cruz"
@@ -137,7 +138,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
             <Field
               theme={theme}
               label="E-mail"
-              id="checkout-email"
+              id={`${fid}-email`}
               value={form.email}
               onChange={updateField('email')}
               placeholder="ex.: maria@gmail.com"
@@ -147,7 +148,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
             <Field
               theme={theme}
               label="CPF"
-              id="checkout-cpf"
+              id={`${fid}-cpf`}
               value={form.cpf}
               onChange={updateField('cpf')}
               placeholder="000.000.000-00"
@@ -155,7 +156,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
               wrapperStyle={{ width: 'fit-content', minWidth: 220 }}
             />
             <div>
-              <label htmlFor="checkout-phone" style={labelStyle}>
+              <label htmlFor={`${fid}-phone`} style={labelStyle}>
                 {config?.phoneLabel || 'Celular / WhatsApp'}
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -179,7 +180,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
                 <div style={{ flex: 1 }}>
                   <ValidationInput
                     theme={theme.input}
-                    id="checkout-phone"
+                    id={`${fid}-phone`}
                     value={form.phone}
                     onChange={updateField('phone')}
                     placeholder="(00) 00000-0000"
@@ -232,7 +233,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
               <Field
                 theme={theme}
                 label="CEP"
-                id="checkout-cep"
+                id={`${fid}-cep`}
                 value={form.cep}
                 onChange={updateField('cep')}
                 placeholder="00000-000"
@@ -242,7 +243,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
               <Field
                 theme={theme}
                 label="Endereço"
-                id="checkout-street"
+                id={`${fid}-street`}
                 value={form.street}
                 onChange={updateField('street')}
                 placeholder="Rua, avenida..."
@@ -252,7 +253,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
                 <Field
                   theme={theme}
                   label="Número"
-                  id="checkout-number"
+                  id={`${fid}-number`}
                   value={form.number}
                   onChange={updateField('number')}
                   placeholder="Nº"
@@ -262,7 +263,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
                 <Field
                   theme={theme}
                   label="Bairro"
-                  id="checkout-neighborhood"
+                  id={`${fid}-neighborhood`}
                   value={form.neighborhood}
                   onChange={updateField('neighborhood')}
                   placeholder="Bairro"
@@ -273,7 +274,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
               <Field
                 theme={theme}
                 label="Complemento (opcional)"
-                id="checkout-complement"
+                id={`${fid}-complement`}
                 value={form.complement}
                 onChange={updateField('complement')}
                 placeholder="Apto, bloco..."
@@ -283,7 +284,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
                 <Field
                   theme={theme}
                   label="Cidade"
-                  id="checkout-city"
+                  id={`${fid}-city`}
                   value={form.city}
                   onChange={updateField('city')}
                   placeholder="Cidade"
@@ -293,7 +294,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
                 <Field
                   theme={theme}
                   label="UF"
-                  id="checkout-state"
+                  id={`${fid}-state`}
                   value={form.state}
                   onChange={updateField('state')}
                   placeholder="UF"
@@ -304,7 +305,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
               <Field
                 theme={theme}
                 label="Destinatário"
-                id="checkout-destinatario"
+                id={`${fid}-destinatario`}
                 value={form.destinatario}
                 onChange={updateField('destinatario')}
                 placeholder="Nome do destinatário"

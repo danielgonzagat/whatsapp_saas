@@ -17,6 +17,7 @@ export class ClipboardManager {
     const objs = this.canvas.getActiveObjects();
     if (objs.length === 0) return;
     this._clipboard = [];
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const obj of objs) {
       const clone = await obj.clone();
       this._clipboard.push(clone);
@@ -36,6 +37,7 @@ export class ClipboardManager {
     if (this._clipboard.length === 0) return;
     this.canvas.discardActiveObject();
     const cloned: FabricObject[] = [];
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const obj of this._clipboard) {
       const clone = await obj.clone();
       clone.left = (clone.left ?? 0) + PASTE_OFFSET;

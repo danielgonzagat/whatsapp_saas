@@ -1,7 +1,7 @@
 'use client';
 
 import { apiFetch } from '@/lib/api';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
 /* ── Design Tokens ── */
@@ -106,6 +106,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 export function PlanThankYouTab({ planId, productId }: { planId: string; productId: string }) {
+  const uid = useId();
   const [_loading, setLoading] = useState(true);
   const [urlCard, setUrlCard] = useState('');
   const [urlBoleto, setUrlBoleto] = useState('');
@@ -190,7 +191,9 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {/* Card URL */}
         <div>
-          <label style={labelStyle}>URL de obrigado (cartao aprovado)</label>
+          <label htmlFor={`${uid}-url-card`} style={labelStyle}>
+            URL de obrigado (cartao aprovado)
+          </label>
           <div style={{ position: 'relative' }}>
             <div
               style={{
@@ -205,6 +208,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
               <LinkIcon />
             </div>
             <input
+              id={`${uid}-url-card`}
               type="url"
               aria-label="URL de obrigado (cartão aprovado)"
               value={urlCard}
@@ -217,7 +221,9 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
 
         {/* Boleto URL */}
         <div>
-          <label style={labelStyle}>URL de obrigado para boletos</label>
+          <label htmlFor={`${uid}-url-boleto`} style={labelStyle}>
+            URL de obrigado para boletos
+          </label>
           <div style={{ position: 'relative' }}>
             <div
               style={{
@@ -232,6 +238,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
               <LinkIcon />
             </div>
             <input
+              id={`${uid}-url-boleto`}
               type="url"
               aria-label="URL de obrigado para boletos"
               value={urlBoleto}
@@ -244,7 +251,9 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
 
         {/* Pix URL */}
         <div>
-          <label style={labelStyle}>URL de obrigado para Pix</label>
+          <label htmlFor={`${uid}-url-pix`} style={labelStyle}>
+            URL de obrigado para Pix
+          </label>
           <div style={{ position: 'relative' }}>
             <div
               style={{
@@ -259,6 +268,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
               <LinkIcon />
             </div>
             <input
+              id={`${uid}-url-pix`}
               type="url"
               aria-label="URL de obrigado para Pix"
               value={urlPix}

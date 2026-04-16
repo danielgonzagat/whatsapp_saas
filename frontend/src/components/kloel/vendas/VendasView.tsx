@@ -23,7 +23,7 @@ import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
 import { smartPaymentApi } from '@/lib/api/misc';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 const T_RE = /[:T]/g;
@@ -365,7 +365,7 @@ function MiniChart({ data, color = '#E85D30' }: { data: number[]; color?: string
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
       {data.map((v, i) => (
         <div
-          key={i}
+          key={`bar-${i}`}
           style={{
             flex: 1,
             height: `${(v / max) * 100}%`,
@@ -1313,6 +1313,7 @@ function ShipModal({
   onShipOrder: (id: string) => void;
   actionLoading: boolean;
 }) {
+  const fid = useId();
   if (!showShipModal) return null;
   return (
     <div
@@ -1370,7 +1371,7 @@ function ShipModal({
             marginBottom: 6,
             fontFamily: SORA,
           }}
-          htmlFor="codigo-de-rastreamento-975e51"
+          htmlFor={`${fid}-tracking`}
         >
           Codigo de rastreamento
         </label>
@@ -1392,7 +1393,7 @@ function ShipModal({
             outline: 'none',
             marginBottom: 16,
           }}
-          id="codigo-de-rastreamento-975e51"
+          id={`${fid}-tracking`}
         />
         <div style={{ display: 'flex', gap: 8 }}>
           <button

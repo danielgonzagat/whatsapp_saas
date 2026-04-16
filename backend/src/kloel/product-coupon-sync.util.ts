@@ -148,6 +148,7 @@ export async function syncAllWorkspaceCheckoutCouponsForProduct(
     },
   });
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential coupon sync with external payment provider
   for (const coupon of coupons) {
     await syncWorkspaceCheckoutCouponForProduct(prisma, workspaceId, productId, coupon.code);
   }

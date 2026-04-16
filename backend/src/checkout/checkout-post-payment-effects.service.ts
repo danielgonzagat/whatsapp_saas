@@ -81,6 +81,7 @@ export class CheckoutPostPaymentEffectsService {
           Boolean(pixel.accessToken),
       );
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential Facebook CAPI event sending
       for (const pixel of fbPixels) {
         if (!pixel.pixelId || !pixel.accessToken) continue;
         await this.facebookCAPI.sendEvent({

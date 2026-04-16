@@ -116,6 +116,7 @@ export class SegmentationController {
     const presets = this.segmentationService.getAvailablePresets();
     const stats: Record<string, number> = {};
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential preset creation with unique constraints
     for (const preset of presets) {
       const result = await this.segmentationService.getPresetSegment(
         workspaceId,

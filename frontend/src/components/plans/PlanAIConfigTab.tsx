@@ -15,7 +15,7 @@ import {
   Sparkles,
   Zap,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
 const B_X_B_RE = /\bX\b/;
@@ -378,10 +378,14 @@ function Toggle({
   onChange: (v: boolean) => void;
   label: string;
 }) {
+  const toggleLabelId = useId();
   return (
-    <label className="flex items-center gap-3 py-1">
+    <div className="flex items-center gap-3 py-1">
       <button
         type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={`${toggleLabelId}-lbl`}
         onClick={() => onChange(!checked)}
         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
         style={{ backgroundColor: checked ? colors.accent.webb : colors.background.corona }}
@@ -390,10 +394,14 @@ function Toggle({
           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
         />
       </button>
-      <span className="text-sm" style={{ color: colors.text.starlight }}>
+      <span
+        id={`${toggleLabelId}-lbl`}
+        className="text-sm"
+        style={{ color: colors.text.starlight }}
+      >
         {label}
       </span>
-    </label>
+    </div>
   );
 }
 
@@ -402,6 +410,8 @@ function Toggle({
 // ============================================
 
 export function PlanAIConfigTab({ planId, productId }: { planId: string; productId: string }) {
+  const fid = useId();
+  const uid = useId();
   // Loading/saving state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -755,10 +765,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               {GENDERS.map((g) => (
                 <label
                   key={g}
+                  htmlFor={`${uid}-gender-${g}`}
                   className="flex items-center gap-1.5 text-sm cursor-pointer"
                   style={{ color: colors.text.starlight }}
                 >
                   <input
+                    id={`${uid}-gender-${g}`}
                     type="checkbox"
                     checked={genders.includes(g)}
                     onChange={() => toggleList(genders, g, setGenders)}
@@ -777,10 +789,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               {AGE_RANGES.map((a) => (
                 <label
                   key={a}
+                  htmlFor={`${uid}-age-${a}`}
                   className="flex items-center gap-1.5 text-sm cursor-pointer"
                   style={{ color: colors.text.starlight }}
                 >
                   <input
+                    id={`${uid}-age-${a}`}
                     type="checkbox"
                     checked={ages.includes(a)}
                     onChange={() => toggleList(ages, a, setAges)}
@@ -799,10 +813,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               {LIFE_MOMENTS.map((m) => (
                 <label
                   key={m}
+                  htmlFor={`${uid}-moment-${m}`}
                   className="flex items-center gap-1.5 text-sm cursor-pointer"
                   style={{ color: colors.text.starlight }}
                 >
                   <input
+                    id={`${uid}-moment-${m}`}
                     type="checkbox"
                     checked={moments.includes(m)}
                     onChange={() => toggleList(moments, m, setMoments)}
@@ -821,12 +837,14 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               {KNOWLEDGE_LEVELS.map((k) => (
                 <label
                   key={k.v}
+                  htmlFor={`${uid}-knowledge-${k.v}`}
                   className="flex items-center gap-1.5 text-sm cursor-pointer"
                   style={{ color: colors.text.starlight }}
                 >
                   <input
+                    id={`${uid}-knowledge-${k.v}`}
                     type="radio"
-                    name="knowledge"
+                    name={`${uid}-knowledge`}
                     checked={knowledge === k.v}
                     onChange={() => setKnowledge(k.v)}
                     style={{ accentColor: colors.accent.webb }}
@@ -842,12 +860,14 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               {BUYING_POWER.map((b) => (
                 <label
                   key={b.v}
+                  htmlFor={`${uid}-buying-${b.v}`}
                   className="flex items-center gap-1.5 text-sm cursor-pointer"
                   style={{ color: colors.text.starlight }}
                 >
                   <input
+                    id={`${uid}-buying-${b.v}`}
                     type="radio"
-                    name="buying"
+                    name={`${uid}-buying`}
                     checked={buyingPower === b.v}
                     onChange={() => setBuyingPower(b.v)}
                     style={{ accentColor: colors.accent.webb }}
@@ -857,7 +877,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               ))}
             </div>
             <div>
-              <label className="mb-2 block" style={labelStyle} htmlFor="problema-principal-56d67d">
+              <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-problema`}>
                 Problema principal
               </label>
               <select
@@ -865,7 +885,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 onChange={(e) => setProblem(e.target.value)}
                 className={selectClass}
                 style={inputStyle}
-                id="problema-principal-56d67d"
+                id={`${fid}-problema`}
               >
                 <option value="">Selecione</option>
                 {PROBLEMS.map((p) => (
@@ -890,12 +910,14 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             {TIERS.map((t) => (
               <label
                 key={t.v}
+                htmlFor={`${uid}-tier-${t.v}`}
                 className="flex items-center gap-1.5 text-sm cursor-pointer"
                 style={{ color: colors.text.starlight }}
               >
                 <input
+                  id={`${uid}-tier-${t.v}`}
                   type="radio"
-                  name="tier"
+                  name={`${uid}-tier`}
                   checked={tier === t.v}
                   onChange={() => setTier(t.v)}
                   style={{ accentColor: colors.accent.webb }}
@@ -912,10 +934,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               {WHEN_TO_OFFER.map((w) => (
                 <label
                   key={w}
+                  htmlFor={`${uid}-whenoffer-${w}`}
                   className="flex items-center gap-1.5 text-sm cursor-pointer"
                   style={{ color: colors.text.starlight }}
                 >
                   <input
+                    id={`${uid}-whenoffer-${w}`}
                     type="checkbox"
                     checked={whenOffer.includes(w)}
                     onChange={() => toggleList(whenOffer, w, setWhenOffer)}
@@ -934,10 +958,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               {DIFFERENTIATORS.map((d) => (
                 <label
                   key={d}
+                  htmlFor={`${uid}-diff-${d}`}
                   className="flex items-center gap-1.5 text-sm cursor-pointer"
                   style={{ color: colors.text.starlight }}
                 >
                   <input
+                    id={`${uid}-diff-${d}`}
                     type="checkbox"
                     checked={differentiators.includes(d)}
                     onChange={() => toggleList(differentiators, d, setDifferentiators)}
@@ -949,7 +975,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </div>
           </div>
           <div>
-            <label className="mb-2 block" style={labelStyle} htmlFor="escassez-urg-ncia-60da93">
+            <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-escassez`}>
               Escassez/Urgência
             </label>
             <select
@@ -957,7 +983,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               onChange={(e) => setScarcity(e.target.value)}
               className={selectClass}
               style={inputStyle}
-              id="escassez-urg-ncia-60da93"
+              id={`${fid}-escassez`}
             >
               {SCARCITY.map((s) => (
                 <option key={s.v} value={s.v}>
@@ -1184,7 +1210,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               style={{ borderLeft: `2px solid ${colors.accent.webb}30` }}
             >
               <div>
-                <label className="mb-1.5 block" style={labelStyle} htmlFor="plano-alvo-e08e28">
+                <label className="mb-1.5 block" style={labelStyle} htmlFor={`${fid}-plano-alvo-1`}>
                   Plano alvo
                 </label>
                 <select
@@ -1192,7 +1218,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   onChange={(e) => setUpsellTargetPlan(e.target.value)}
                   className={selectClass}
                   style={inputStyle}
-                  id="plano-alvo-e08e28"
+                  id={`${fid}-plano-alvo-1`}
                 >
                   <option value="">Selecione o plano</option>
                   {siblingPlans.map((p) => (
@@ -1210,10 +1236,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   {UPSELL_WHEN.map((w) => (
                     <label
                       key={w}
+                      htmlFor={`${uid}-upsellwhen-${w}`}
                       className="flex items-center gap-1.5 text-sm cursor-pointer"
                       style={{ color: colors.text.starlight }}
                     >
                       <input
+                        id={`${uid}-upsellwhen-${w}`}
                         type="checkbox"
                         checked={upsellWhen.includes(w)}
                         onChange={() => toggleList(upsellWhen, w, setUpsellWhen)}
@@ -1231,12 +1259,14 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 {UPSELL_ARGUMENTS.map((a) => (
                   <label
                     key={a}
+                    htmlFor={`${uid}-upsellarg-${a}`}
                     className="flex items-center gap-1.5 text-sm cursor-pointer"
                     style={{ color: colors.text.starlight }}
                   >
                     <input
+                      id={`${uid}-upsellarg-${a}`}
                       type="radio"
-                      name="upsell_arg"
+                      name={`${uid}-upsell_arg`}
                       checked={upsellArgument === a}
                       onChange={() => setUpsellArgument(a)}
                       style={{ accentColor: colors.accent.webb }}
@@ -1258,7 +1288,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               style={{ borderLeft: `2px solid ${colors.accent.gold}30` }}
             >
               <div>
-                <label className="mb-1.5 block" style={labelStyle} htmlFor="plano-alvo-464bdd">
+                <label className="mb-1.5 block" style={labelStyle} htmlFor={`${fid}-plano-alvo-2`}>
                   Plano alvo
                 </label>
                 <select
@@ -1266,7 +1296,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   onChange={(e) => setDownsellTargetPlan(e.target.value)}
                   className={selectClass}
                   style={inputStyle}
-                  id="plano-alvo-464bdd"
+                  id={`${fid}-plano-alvo-2`}
                 >
                   <option value="">Selecione o plano</option>
                   {siblingPlans.map((p) => (
@@ -1284,10 +1314,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   {DOWNSELL_WHEN.map((w) => (
                     <label
                       key={w}
+                      htmlFor={`${uid}-downsellwhen-${w}`}
                       className="flex items-center gap-1.5 text-sm cursor-pointer"
                       style={{ color: colors.text.starlight }}
                     >
                       <input
+                        id={`${uid}-downsellwhen-${w}`}
                         type="checkbox"
                         checked={downsellWhen.includes(w)}
                         onChange={() => toggleList(downsellWhen, w, setDownsellWhen)}
@@ -1305,12 +1337,14 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 {DOWNSELL_ARGUMENTS.map((a) => (
                   <label
                     key={a}
+                    htmlFor={`${uid}-downsellarg-${a}`}
                     className="flex items-center gap-1.5 text-sm cursor-pointer"
                     style={{ color: colors.text.starlight }}
                   >
                     <input
+                      id={`${uid}-downsellarg-${a}`}
                       type="radio"
-                      name="downsell_arg"
+                      name={`${uid}-downsell_arg`}
                       checked={downsellArgument === a}
                       onChange={() => setDownsellArgument(a)}
                       style={{ accentColor: colors.accent.webb }}
@@ -1327,9 +1361,9 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       {/* S6: AI Behavior — visual card selection for tone */}
       {sectionTitle('6. Comportamento da IA')}
       <div className="rounded-xl p-5" style={cardStyle}>
-        <label className="mb-3 block" style={labelStyle}>
+        <span className="mb-3 block" style={labelStyle}>
           Tom da conversa
-        </label>
+        </span>
         <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6 mb-6">
           {TONES.map((t) => {
             const Icon = t.icon;
@@ -1369,11 +1403,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
 
         <div className="grid gap-6 md:grid-cols-3">
           <div>
-            <label className="mb-1.5 block" style={labelStyle}>
+            <label htmlFor={`${uid}-persistence`} className="mb-1.5 block" style={labelStyle}>
               Insistência ({persistence}/5)
             </label>
             <div className="relative mt-2">
               <input
+                id={`${uid}-persistence`}
                 type="range"
                 min={1}
                 max={5}
@@ -1397,7 +1432,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block" style={labelStyle} htmlFor="limite-de-mensagens-c2c3d7">
+            <label className="mb-1.5 block" style={labelStyle} htmlFor={`${fid}-msg-limit`}>
               Limite de mensagens
             </label>
             <select
@@ -1405,7 +1440,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               onChange={(e) => setMessageLimit(Number(e.target.value))}
               className={selectClass}
               style={inputStyle}
-              id="limite-de-mensagens-c2c3d7"
+              id={`${fid}-msg-limit`}
             >
               <option value={3}>3</option>
               <option value={5}>5</option>
@@ -1415,10 +1450,11 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block" style={labelStyle}>
+            <label htmlFor={`${uid}-followup`} className="mb-1.5 block" style={labelStyle}>
               Follow-up
             </label>
             <select
+              id={`${uid}-followup`}
               value={followUpHours}
               onChange={(e) => setFollowUpHours(e.target.value)}
               className={selectClass}
@@ -1456,7 +1492,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         {hasTechInfo && (
           <div className="grid gap-4 md:grid-cols-2 mt-4">
             <div>
-              <label className="mb-1 block" style={labelStyle} htmlFor="modo-de-uso-eb5838">
+              <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-modo-uso`}>
                 Modo de uso
               </label>
               <select
@@ -1464,7 +1500,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 onChange={(e) => setUsageMode(e.target.value)}
                 className={selectClass}
                 style={inputStyle}
-                id="modo-de-uso-eb5838"
+                id={`${fid}-modo-uso`}
               >
                 <option value="">Selecione</option>
                 {USAGE_MODES.map((u) => (
@@ -1475,7 +1511,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               </select>
             </div>
             <div>
-              <label className="mb-1 block" style={labelStyle} htmlFor="dura-o-7b3e41">
+              <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-duracao`}>
                 Duração
               </label>
               <select
@@ -1483,7 +1519,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 onChange={(e) => setDuration(e.target.value)}
                 className={selectClass}
                 style={inputStyle}
-                id="dura-o-7b3e41"
+                id={`${fid}-duracao`}
               >
                 <option value="">Selecione</option>
                 {DURATIONS.map((d) => (
@@ -1501,10 +1537,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 {CONTRAINDICATIONS.map((c) => (
                   <label
                     key={c}
+                    htmlFor={`${uid}-contra-${c}`}
                     className="flex items-center gap-1.5 text-sm cursor-pointer"
                     style={{ color: colors.text.starlight }}
                   >
                     <input
+                      id={`${uid}-contra-${c}`}
                       type="checkbox"
                       checked={contraindications.includes(c)}
                       onChange={() => toggleList(contraindications, c, setContraindications)}
@@ -1516,11 +1554,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               </div>
             </div>
             <div>
-              <label
-                className="mb-1 block"
-                style={labelStyle}
-                htmlFor="resultados-esperados-em-b14411"
-              >
+              <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-resultados`}>
                 Resultados esperados em
               </label>
               <select
@@ -1528,7 +1562,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 onChange={(e) => setExpectedResults(e.target.value)}
                 className={selectClass}
                 style={inputStyle}
-                id="resultados-esperados-em-b14411"
+                id={`${fid}-resultados`}
               >
                 <option value="">Selecione</option>
                 {RESULTS.map((r) => (
@@ -1582,11 +1616,11 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             { label: 'Up/Down', complete: s5Complete, partial: s5Partial },
             { label: 'Comportamento', complete: s6Complete, partial: true },
             { label: 'Técnico', complete: s7Complete, partial: s7Partial },
-          ].map((item, idx) => {
+          ].map((item) => {
             const color = completenessColor(item.complete, item.partial);
             const Icon = item.complete ? CheckCircle : item.partial ? MinusCircle : Circle;
             return (
-              <div key={idx} className="flex items-center gap-1.5">
+              <div key={item.label} className="flex items-center gap-1.5">
                 <Icon className="h-3.5 w-3.5 flex-shrink-0" style={{ color }} />
                 <span className="text-[10px] font-medium" style={{ color }}>
                   {item.label}

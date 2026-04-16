@@ -3,7 +3,7 @@ import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 interface Commission {
@@ -21,6 +21,7 @@ const ROLES = [
 ];
 
 export function ProductCommissionsTab({ productId }: { productId: string }) {
+  const fid = useId();
   const [items, setItems] = useState<Commission[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -209,7 +210,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="papel-ebff74"
+                  htmlFor={`${fid}-papel`}
                 >
                   Papel
                 </label>
@@ -217,7 +218,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
                   style={inputStyle}
-                  id="papel-ebff74"
+                  id={`${fid}-papel`}
                 >
                   {ROLES.map((r) => (
                     <option key={r.value} value={r.value}>
@@ -230,7 +231,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="comissao-e72f87"
+                  htmlFor={`${fid}-comissao`}
                 >
                   Comissao (%)
                 </label>
@@ -240,14 +241,14 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   value={form.percentage}
                   onChange={(e) => setForm({ ...form, percentage: e.target.value })}
                   style={inputStyle}
-                  id="comissao-e72f87"
+                  id={`${fid}-comissao`}
                 />
               </div>
               <div>
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="nome-3378b7"
+                  htmlFor={`${fid}-nome`}
                 >
                   Nome
                 </label>
@@ -255,14 +256,14 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   value={form.agentName}
                   onChange={(e) => setForm({ ...form, agentName: e.target.value })}
                   style={inputStyle}
-                  id="nome-3378b7"
+                  id={`${fid}-nome`}
                 />
               </div>
               <div>
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="e-mail-1fb81c"
+                  htmlFor={`${fid}-email`}
                 >
                   E-mail
                 </label>
@@ -270,7 +271,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   value={form.agentEmail}
                   onChange={(e) => setForm({ ...form, agentEmail: e.target.value })}
                   style={inputStyle}
-                  id="e-mail-1fb81c"
+                  id={`${fid}-email`}
                 />
               </div>
             </div>

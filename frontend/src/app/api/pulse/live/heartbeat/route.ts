@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
 
   let lastError: unknown;
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const baseUrl of getBackendCandidateUrls()) {
     const response = await fetch(`${baseUrl}/pulse/live/heartbeat`, {
       method: 'POST',

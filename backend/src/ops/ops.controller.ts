@@ -56,6 +56,7 @@ export class OpsController {
     const jobs = await dlq.getJobs(['waiting', 'failed'], 0, clampedLimit - 1);
 
     let retried = 0;
+    // biome-ignore lint/performance/noAwaitInLoops: sequential job processing
     for (const job of jobs) {
       // Preserve original opts and add jobId for deduplication on retry
       const retryOpts = { ...job.opts, jobId: `dlq-retry:${job.id || Date.now()}` };

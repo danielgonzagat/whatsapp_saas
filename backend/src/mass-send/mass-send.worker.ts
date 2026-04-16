@@ -65,6 +65,7 @@ export function startMassSendWorker() {
 
       let cumulativeDelay = 0;
 
+      // biome-ignore lint/performance/noAwaitInLoops: WhatsApp mass-send requires sequential delivery for rate limits
       for (const number of numbers) {
         const sanitized = (number || '').replace(D_RE, '');
         if (!sanitized) continue;

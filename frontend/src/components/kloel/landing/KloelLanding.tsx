@@ -4,7 +4,7 @@
 'use client';
 import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import ThanosSection from './ThanosSection';
 
@@ -144,10 +144,12 @@ function HeroLoop() {
     }
 
     const run = async () => {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
       while (m.current) {
         setResurrected(false);
         setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
         // TYPE
+        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i <= L1.length; i++) {
           if (!m.current) return;
           setVis({ text: L1.slice(0, i), strike: 0, suffix: '', phase: 'typing' });
@@ -156,6 +158,7 @@ function HeroLoop() {
         await wait(450);
         // STRIKE
         setVis((d) => ({ ...d, phase: 'strike' }));
+        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i <= 100; i += 3) {
           if (!m.current) return;
           setVis((d) => ({ ...d, strike: i }));
@@ -163,6 +166,7 @@ function HeroLoop() {
         }
         await wait(250);
         // MORREU
+        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i <= DEATH.length; i++) {
           if (!m.current) return;
           setVis((d) => ({ ...d, suffix: DEATH.slice(0, i), phase: 'death' }));
@@ -171,6 +175,7 @@ function HeroLoop() {
         await wait(700);
         // GLITCH BUILD
         const full = L1 + DEATH;
+        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i < 8; i++) {
           if (!m.current) return;
           setGx({
@@ -184,6 +189,7 @@ function HeroLoop() {
           await wait(45);
         }
         // CHAOS
+        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i < 16; i++) {
           if (!m.current) return;
           setGx({
@@ -201,6 +207,7 @@ function HeroLoop() {
         await wait(50);
         // RESOLVE
         setVis((d) => ({ ...d, phase: 'hidden' }));
+        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i < 14; i++) {
           if (!m.current) return;
           const p = i / 14;
@@ -222,6 +229,7 @@ function HeroLoop() {
         setResurrected(true);
         await wait(3200);
         // GLITCH BACK
+        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i < 6; i++) {
           if (!m.current) return;
           setGx({
@@ -346,7 +354,7 @@ function HeroLoop() {
         )}
         {gx.slices.map((s, i) => (
           <div
-            key={i}
+            key={`slice-${s.off}-${s.top}`}
             style={{
               position: 'absolute',
               left: s.off,
@@ -469,6 +477,7 @@ function MultiChannel() {
 
     let c = false;
     const run = async () => {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
       for (let i = 0; i < flow.length; i++) {
         if (c) return;
         await wait(flow[i].f === 'ai' ? 1100 : flow[i].f === 'ok' ? 1400 : 650);
@@ -522,7 +531,7 @@ function MultiChannel() {
         {(msgs[ch] || []).map((msg, i) =>
           msg.f === 'ok' ? (
             <div
-              key={i}
+              key={`${msg.f}-${msg.text}-${i}`}
               style={{ textAlign: 'center', padding: '5px 0', animation: 'fm .3s ease both' }}
             >
               <span
@@ -542,7 +551,7 @@ function MultiChannel() {
             </div>
           ) : (
             <div
-              key={i}
+              key={`${msg.f}-${msg.text}-${i}`}
               style={{
                 alignSelf: msg.f === 'ai' ? 'flex-end' : 'flex-start',
                 maxWidth: '88%',
@@ -720,6 +729,7 @@ function FinalManifestLoop() {
 
     const typePhrase = async (phrase: string, nextTone: 'light' | 'ember') => {
       setTone(nextTone);
+      // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
       for (let i = 1; i <= phrase.length; i++) {
         if (!alive) return;
         setText(phrase.slice(0, i));
@@ -732,6 +742,7 @@ function FinalManifestLoop() {
 
     const deletePhrase = async (phrase: string, nextTone: 'light' | 'ember') => {
       setTone(nextTone);
+      // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
       for (let i = phrase.length - 1; i >= 0; i--) {
         if (!alive) return;
         setText(phrase.slice(0, i));
@@ -740,6 +751,7 @@ function FinalManifestLoop() {
     };
 
     const run = async () => {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
       while (alive) {
         setText('');
         setTone('light');
@@ -846,6 +858,7 @@ function FinalManifestLoop() {
 }
 
 export default function KloelLanding() {
+  const fid = useId();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [email, setEmail] = useState('');
   const [faq, setFaq] = useState<any>(null);
@@ -1480,7 +1493,7 @@ export default function KloelLanding() {
         </section>
       </div>
 
-      <div id="ativar">
+      <div id={fid}>
         <section
           className="landing-final-cta"
           style={{
@@ -1621,7 +1634,7 @@ export default function KloelLanding() {
             },
             { q: 'É seguro?', a: 'Criptografia ponta a ponta, servidores isolados, LGPD.' },
           ].map((f, i) => (
-            <Reveal key={i} delay={30 * i}>
+            <Reveal key={f.q} delay={30 * i}>
               <div style={{ borderBottom: '1px solid #19191C' }}>
                 <button
                   type="button"

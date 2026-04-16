@@ -26,6 +26,7 @@ export class HealthService {
     let totalDlqWaiting = 0;
     let totalDlqFailed = 0;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential queue health check with DLQ creation
     for (const queue of Object.values(queueRegistry)) {
       const mainCounts = await queue.getJobCounts('waiting', 'active', 'delayed', 'failed');
       const dlq = new Queue(`${queue.name}-dlq`, {

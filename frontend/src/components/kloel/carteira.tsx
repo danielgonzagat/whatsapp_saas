@@ -18,7 +18,7 @@ import {
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 const PATTERN_RE = /"/g;
@@ -840,7 +840,7 @@ function WithdrawModal({
             </span>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label
+            <span
               style={{
                 display: 'block',
                 fontSize: 11,
@@ -852,7 +852,7 @@ function WithdrawModal({
               }}
             >
               Valor do saque
-            </label>
+            </span>
             <div
               style={{
                 display: 'flex',
@@ -886,7 +886,7 @@ function WithdrawModal({
             </div>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label
+            <span
               style={{
                 display: 'block',
                 fontSize: 11,
@@ -898,7 +898,7 @@ function WithdrawModal({
               }}
             >
               Conta destino
-            </label>
+            </span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {bankAccounts.length === 0 ? (
                 <div
@@ -918,8 +918,7 @@ function WithdrawModal({
               ) : (
                 bankAccounts.map((b, i) => (
                   <label
-                    key={i}
-                    onClick={() => setSelectedBank(i)}
+                    key={`${b.bank}-${b.acc}`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -932,7 +931,15 @@ function WithdrawModal({
                       cursor: 'pointer',
                     }}
                   >
+                    <input
+                      type="radio"
+                      name="bank-account"
+                      checked={selectedBank === i}
+                      onChange={() => setSelectedBank(i)}
+                      style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                    />
                     <div
+                      aria-hidden="true"
                       style={{
                         width: 16,
                         height: 16,
@@ -1457,7 +1464,7 @@ function TabSaldo({
                 const max = Math.max(...revenueWeek);
                 return (
                   <div
-                    key={i}
+                    key={`rev-bar-${i}`}
                     style={{
                       flex: 1,
                       display: 'flex',
@@ -1510,7 +1517,7 @@ function TabSaldo({
                 </div>
                 {revenueWeek.map((_, i) => (
                   <div
-                    key={i}
+                    key={`empty-bar-${i}`}
                     style={{
                       flex: 1,
                       display: 'flex',
@@ -2085,7 +2092,7 @@ function TabMovimentacoes({
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 100 }}>
             {monthDays.map((d, i) => (
               <div
-                key={i}
+                key={`day-${d.day}`}
                 style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
               >
                 <div
@@ -2130,6 +2137,7 @@ function TabSaques({
   onOpenWithdraw: () => void;
   withdrawals: any[];
 }) {
+  const fid = useId();
   const { accounts, addBankAccount, removeBankAccount } = useBankAccounts();
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [addForm, setAddForm] = useState({
@@ -2300,7 +2308,7 @@ function TabSaques({
                     textTransform: 'uppercase',
                     marginBottom: 4,
                   }}
-                  htmlFor="banco-a1b518"
+                  htmlFor={`${fid}-banco`}
                 >
                   Banco
                 </label>
@@ -2321,7 +2329,7 @@ function TabSaques({
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
-                  id="banco-a1b518"
+                  id={`${fid}-banco`}
                 />
               </div>
               <div>
@@ -2335,7 +2343,7 @@ function TabSaques({
                     textTransform: 'uppercase',
                     marginBottom: 4,
                   }}
-                  htmlFor="chave-pix-034f42"
+                  htmlFor={`${fid}-chave-pix`}
                 >
                   Chave PIX
                 </label>
@@ -2356,7 +2364,7 @@ function TabSaques({
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
-                  id="chave-pix-034f42"
+                  id={`${fid}-chave-pix`}
                 />
               </div>
               <div>
@@ -2370,7 +2378,7 @@ function TabSaques({
                     textTransform: 'uppercase',
                     marginBottom: 4,
                   }}
-                  htmlFor="agencia-c2deb9"
+                  htmlFor={`${fid}-agencia`}
                 >
                   Agencia
                 </label>
@@ -2391,7 +2399,7 @@ function TabSaques({
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
-                  id="agencia-c2deb9"
+                  id={`${fid}-agencia`}
                 />
               </div>
               <div>
@@ -2405,7 +2413,7 @@ function TabSaques({
                     textTransform: 'uppercase',
                     marginBottom: 4,
                   }}
-                  htmlFor="conta-7e1ee7"
+                  htmlFor={`${fid}-conta`}
                 >
                   Conta
                 </label>
@@ -2426,7 +2434,7 @@ function TabSaques({
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
-                  id="conta-7e1ee7"
+                  id={`${fid}-conta`}
                 />
               </div>
             </div>
@@ -3090,7 +3098,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         >
           {Array.from({ length: 4 }).map((_, i) => (
             <div
-              key={i}
+              key={`skeleton-card-${i}`}
               style={{
                 background: 'var(--app-bg-card)',
                 border: '1px solid var(--app-border-primary)',

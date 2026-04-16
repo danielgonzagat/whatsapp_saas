@@ -96,6 +96,7 @@ export class OmnichannelService {
   ): Promise<ProcessedAttachment[]> {
     const processed: ProcessedAttachment[] = [];
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential attachment processing
     for (const attachment of attachments) {
       try {
         // Se já tem URL pública, usar diretamente

@@ -103,6 +103,7 @@ export const campaignWorker = new Worker(
         sentCount = contacts.length;
 
         // Atribuição básica: marcar último campaignId no contato
+        // biome-ignore lint/performance/noAwaitInLoops: sequential per-contact processing
         for (const contact of contacts) {
           if (!contact.id) continue;
           const cf: any = contact.customFields || {};
@@ -140,6 +141,7 @@ export const campaignWorker = new Worker(
         await flowQueue.addBulk(jobs);
         sentCount = contacts.length;
 
+        // biome-ignore lint/performance/noAwaitInLoops: sequential per-contact processing
         for (const contact of contacts) {
           if (!contact.id) continue;
           const cf: any = contact.customFields || {};

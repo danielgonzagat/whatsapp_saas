@@ -338,6 +338,7 @@ export class WebhooksService {
 
     // 4) Notifica clientes conectados
     if (updatedMessages.length > 0) {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential message status update
       for (const m of updatedMessages) {
         this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', {
           id: m.id,

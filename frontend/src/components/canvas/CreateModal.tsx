@@ -9,7 +9,7 @@ import {
   SOCIAL_PLATFORMS,
 } from '@/lib/canvas-formats';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { IC, getIcon } from './CanvasIcons';
 import { FormatCard } from './FormatCard';
 
@@ -240,6 +240,7 @@ function CustomSizePanel({
   setCustomH: (v: string) => void;
   openEditor: (fmt: any) => void;
 }) {
+  const fid = useId();
   return (
     <div>
       <h3
@@ -258,7 +259,7 @@ function CustomSizePanel({
               display: 'block',
               marginBottom: 6,
             }}
-            htmlFor="largura-8c2b23"
+            htmlFor={`${fid}-largura`}
           >
             Largura
           </label>
@@ -278,7 +279,7 @@ function CustomSizePanel({
               fontFamily: M,
               outline: 'none',
             }}
-            id="largura-8c2b23"
+            id={`${fid}-largura`}
           />
         </div>
         <span style={{ color: '#3A3A3F', marginTop: 20, fontFamily: M, fontSize: 12 }}>x</span>
@@ -292,7 +293,7 @@ function CustomSizePanel({
               display: 'block',
               marginBottom: 6,
             }}
-            htmlFor="altura-c6105a"
+            htmlFor={`${fid}-altura`}
           >
             Altura
           </label>
@@ -312,7 +313,7 @@ function CustomSizePanel({
               fontFamily: M,
               outline: 'none',
             }}
-            id="altura-c6105a"
+            id={`${fid}-altura`}
           />
         </div>
         <div style={{ flex: 0.6 }}>
@@ -325,7 +326,7 @@ function CustomSizePanel({
               display: 'block',
               marginBottom: 6,
             }}
-            htmlFor="unidades-d2d67d"
+            htmlFor={`${fid}-unidades`}
           >
             Unidades
           </label>
@@ -341,7 +342,7 @@ function CustomSizePanel({
               fontFamily: S,
               outline: 'none',
             }}
-            id="unidades-d2d67d"
+            id={`${fid}-unidades`}
           >
             <option>px</option>
             <option>mm</option>
@@ -383,10 +384,10 @@ function CustomSizePanel({
         Dimensoes recentes
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        {RECENT_DIMENSIONS.map((d, i) => (
+        {RECENT_DIMENSIONS.map((d) => (
           <button
             type="button"
-            key={i}
+            key={`${d.w}x${d.h}`}
             onClick={() =>
               openEditor({
                 l: `${d.w}x${d.h}`,

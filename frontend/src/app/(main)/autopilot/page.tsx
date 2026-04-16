@@ -1668,9 +1668,9 @@ export default function AutopilotPage() {
               }}
             >
               <div className="space-y-3">
-                {impact.samples.map((sample, i) => (
+                {impact.samples.map((sample) => (
                   <div
-                    key={i}
+                    key={sample.contact}
                     className="flex items-center justify-between p-3 rounded-lg"
                     style={{ backgroundColor: colors.background.surface2 }}
                   >

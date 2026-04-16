@@ -567,6 +567,7 @@ export async function persistMarketSignals(
     signals: MarketSignal[];
   },
 ) {
+  // biome-ignore lint/performance/noAwaitInLoops: sequential signal processing
   for (const signal of input.signals.slice(0, 10)) {
     await upsertMemory(prisma, {
       workspaceId: input.workspaceId,

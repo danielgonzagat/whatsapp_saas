@@ -231,6 +231,7 @@ export class IdempotencyGuard implements CanActivate {
 
     if (cached?.processing === true) {
       // Another request is in flight. Poll briefly for its completion.
+      // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for lock release
       for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
         await sleep(POLL_INTERVAL_MS);
         const retry = await this.redis.get(cacheKey).catch(() => null);

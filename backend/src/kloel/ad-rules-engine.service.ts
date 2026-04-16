@@ -43,6 +43,7 @@ export class AdRulesEngineService {
       if (rules.length === 0) return;
       this.logger.log(`Evaluating ${rules.length} active ad rule(s)...`);
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential ad rule evaluation with side effects
       for (const rule of rules) {
         try {
           const shouldFire = await this.shouldFireRule(rule);

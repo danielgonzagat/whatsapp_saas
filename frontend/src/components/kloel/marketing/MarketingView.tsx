@@ -408,7 +408,7 @@ function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string })
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {feed.map((m, i) => (
         <div
-          key={i}
+          key={`feed-${m}-${i}`}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -441,9 +441,9 @@ function LiveFeed({
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {events.map((ev, i) => (
+      {events.map((ev) => (
         <div
-          key={i}
+          key={`${ev.text}-${ev.time}`}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -595,9 +595,9 @@ function ConnectFlow({
             { label: 'Mensagens', value: Fmt(channelData.messages) },
             { label: 'Leads', value: Fmt(channelData.leads) },
             { label: 'Vendas', value: channelData.sales.toString() },
-          ].map((s, i) => (
+          ].map((s) => (
             <div
-              key={i}
+              key={s.label}
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -912,9 +912,9 @@ function EmailTab({
           { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
           { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
           { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
-        ].map((s, i) => (
+        ].map((s) => (
           <div
-            key={i}
+            key={s.label}
             style={{
               background: BG_CARD,
               borderRadius: 6,
@@ -1355,9 +1355,9 @@ function InstagramTab({
                 0,
             ),
           },
-        ].map((s, i) => (
+        ].map((s) => (
           <div
-            key={i}
+            key={s.label}
             style={{
               background: BG_CARD,
               borderRadius: 6,
@@ -1390,9 +1390,9 @@ function InstagramTab({
           { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
           { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
           { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
-        ].map((s, i) => (
+        ].map((s) => (
           <div
-            key={i}
+            key={s.label}
             style={{
               position: 'relative',
               display: 'flex',
@@ -1544,9 +1544,9 @@ function FacebookTab({
           { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
           { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
           { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
-        ].map((s, i) => (
+        ].map((s) => (
           <div
-            key={i}
+            key={s.label}
             style={{
               position: 'relative',
               display: 'flex',
@@ -1687,9 +1687,9 @@ function MetaConnectPrompt({
             { label: 'Mensagens', value: Fmt(channelData.messages) },
             { label: 'Leads', value: Fmt(channelData.leads) },
             { label: 'Vendas', value: channelData.sales.toString() },
-          ].map((s, i) => (
+          ].map((s) => (
             <div
-              key={i}
+              key={s.label}
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -2148,9 +2148,9 @@ function VisaoGeral({
               Nenhum produto cadastrado
             </div>
           ) : (
-            products.map((p, i) => (
+            products.map((p) => (
               <div
-                key={i}
+                key={p.name}
                 style={{
                   flex: 1,
                   background: BG_ELEVATED,

@@ -528,7 +528,7 @@ export function SkeletonEmptyState({ lines = 3, className }: SkeletonEmptyStateP
     <div className={cn('animate-pulse space-y-3', className)}>
       {Array.from({ length: lines }).map((_, i) => (
         <div
-          key={i}
+          key={`skeleton-line-${i}`}
           className="h-4 rounded"
           style={{
             backgroundColor: colors.background.surface2,

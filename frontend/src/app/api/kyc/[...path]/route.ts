@@ -46,6 +46,7 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
     return NextResponse.json({ message: 'Servidor backend nao configurado.' }, { status: 502 });
   }
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const baseUrl of candidates) {
     const url = `${baseUrl}${kycPath}`;
     const response = await fetch(url, {

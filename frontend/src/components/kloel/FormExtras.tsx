@@ -4,7 +4,7 @@ import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 import { Check, Copy, X } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 // ============================================
 // CHIP INPUT (Tags with max, Enter to add)
@@ -24,6 +24,8 @@ export function ChipInput({
   label?: string;
 }) {
   const [input, setInput] = useState('');
+  const autoId = useId();
+  const inputId = `${autoId}-chip`;
 
   const handleAdd = () => {
     const t = input.trim();
@@ -36,12 +38,16 @@ export function ChipInput({
   return (
     <div>
       {label && (
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">
+        <label
+          htmlFor={inputId}
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600"
+        >
           {label}
         </label>
       )}
       <div className="flex gap-2">
         <input
+          id={inputId}
           aria-label={label || placeholder}
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -89,10 +95,16 @@ export function CurrencyInput({
   label?: string;
   placeholder?: string;
 }) {
+  const autoId = useId();
+  const inputId = `${autoId}-currency`;
+
   return (
     <div>
       {label && (
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">
+        <label
+          htmlFor={inputId}
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600"
+        >
           {label}
         </label>
       )}
@@ -101,6 +113,7 @@ export function CurrencyInput({
           R$
         </span>
         <input
+          id={inputId}
           aria-label={label || 'Valor em reais'}
           type="number"
           step="0.01"
@@ -132,19 +145,22 @@ export function RadioGroup({
   label?: string;
   direction?: 'vertical' | 'horizontal';
 }) {
+  const autoId = useId();
+  const groupName = `${autoId}-radio`;
+
   return (
-    <div>
+    <fieldset>
       {label && (
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-600">
+        <legend className="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-600">
           {label}
-        </label>
+        </legend>
       )}
       <div className={direction === 'horizontal' ? 'flex flex-wrap gap-3' : 'space-y-2'}>
         {options.map((opt) => (
           <label key={opt.value} className="flex cursor-pointer items-start gap-2.5">
             <input
               type="radio"
-              name={label}
+              name={groupName}
               value={opt.value}
               checked={value === opt.value}
               onChange={() => onChange(opt.value)}
@@ -157,7 +173,7 @@ export function RadioGroup({
           </label>
         ))}
       </div>
-    </div>
+    </fieldset>
   );
 }
 
@@ -248,9 +264,9 @@ export function CodeSnippet({ code, label }: { code: string; label?: string }) {
   return (
     <div>
       {label && (
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">
+        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">
           {label}
-        </label>
+        </span>
       )}
       <div className="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
         <pre className="overflow-x-auto text-xs text-gray-700 font-mono whitespace-pre-wrap">

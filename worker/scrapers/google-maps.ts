@@ -121,6 +121,7 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
     const items = await page.$$('div[role="article"]');
     console.log(`[MAPS] Found ${items.length} items. Processing details...`);
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
     for (let i = 0; i < Math.min(items.length, limit); i++) {
       try {
         const currentItems = await page.$$('div[role="article"]');

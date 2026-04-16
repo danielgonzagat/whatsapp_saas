@@ -4,7 +4,7 @@ import { KloelBrandLockup, KloelLoadingState } from '@/components/kloel/KloelBra
 import { colors } from '@/lib/design-tokens';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { type FormEvent, Suspense, useState } from 'react';
+import { type FormEvent, Suspense, useId, useState } from 'react';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
@@ -53,6 +53,7 @@ function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
 
+  const uid = useId();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -290,6 +291,7 @@ function ResetPasswordContent() {
                 {/* New password */}
                 <div>
                   <label
+                    htmlFor={`${uid}-password`}
                     style={{
                       display: 'block',
                       fontSize: 12,
@@ -301,6 +303,7 @@ function ResetPasswordContent() {
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
+                      id={`${uid}-password`}
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Minimo 8 caracteres"
                       value={password}
@@ -338,6 +341,7 @@ function ResetPasswordContent() {
                 {/* Confirm password */}
                 <div>
                   <label
+                    htmlFor={`${uid}-confirm-password`}
                     style={{
                       display: 'block',
                       fontSize: 12,
@@ -349,6 +353,7 @@ function ResetPasswordContent() {
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
+                      id={`${uid}-confirm-password`}
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Repita a nova senha"
                       value={confirmPassword}

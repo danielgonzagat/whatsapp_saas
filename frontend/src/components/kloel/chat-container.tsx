@@ -1021,6 +1021,7 @@ export function ChatContainer({
         const decoder = new TextDecoder();
         let buffer = '';
 
+        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
         while (!isCancelled) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -1206,6 +1207,7 @@ export function ChatContainer({
         let fullContent = '';
         let buffer = '';
 
+        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;

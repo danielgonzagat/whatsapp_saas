@@ -1136,6 +1136,7 @@ export class AccountAgentService {
     });
     const existingUrls = new Set(existingLinks.map((item) => item.paymentUrl));
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential offer creation with unique constraints
     for (const offer of offers.filter((item) => item.url && !existingUrls.has(String(item.url)))) {
       // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
       await this.prisma.externalPaymentLink.create({

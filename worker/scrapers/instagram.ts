@@ -83,6 +83,7 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
 
     console.log(`[IG] Found ${postLinks.length} posts. Analyzing profiles...`);
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const link of postLinks) {
       try {
         const newPage = await browser.newPage();

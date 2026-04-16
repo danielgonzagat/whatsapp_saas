@@ -208,6 +208,7 @@ export class FlowTemplateService {
     const existingByName = new Map(existingTemplates.map((t) => [t.name, t]));
 
     const created: unknown[] = [];
+    // biome-ignore lint/performance/noAwaitInLoops: sequential template creation with unique constraints
     for (const tpl of templates) {
       const existing = existingByName.get(tpl.name);
       if (existing) {

@@ -42,8 +42,11 @@ function InputNodeComponent({ data, selected }: NodeProps<InputNodeData>) {
 
       {data.inputType === 'options' && data.options && data.options.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
-          {data.options.slice(0, 3).map((opt, i) => (
-            <span key={i} className="text-[10px] bg-[#19191C] text-[#E0DDD8] px-1.5 py-0.5 rounded">
+          {data.options.slice(0, 3).map((opt) => (
+            <span
+              key={opt}
+              className="text-[10px] bg-[#19191C] text-[#E0DDD8] px-1.5 py-0.5 rounded"
+            >
               {opt}
             </span>
           ))}

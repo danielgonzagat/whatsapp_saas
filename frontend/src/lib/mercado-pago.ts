@@ -156,6 +156,7 @@ export async function preloadMercadoPagoSdk(publicKey?: string | null) {
 export async function getMercadoPagoDeviceSessionId() {
   await ensureMercadoPagoSecurityScript();
 
+  // biome-ignore lint/performance/noAwaitInLoops: retry loop with backoff
   for (let attempt = 0; attempt < 25; attempt += 1) {
     const sessionId = (
       window as Window & {

@@ -106,7 +106,7 @@ export const DesktopSVG: React.FC<DesktopProps> = ({ c1, c2, chart }) => (
       <>
         {[22, 28, 34, 40, 46, 52, 58].map((x, i) => (
           <rect
-            key={i}
+            key={x}
             x={x}
             y={32 - [6, 10, 14, 8, 16, 12, 7][i]}
             width="4.5"

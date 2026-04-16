@@ -2,7 +2,7 @@
 import { CurrencyInput, ImageUpload } from '@/components/kloel/FormExtras';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 const PlanStoreToggle = ({
@@ -13,22 +13,31 @@ const PlanStoreToggle = ({
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
-}) => (
-  <label className="flex items-center gap-3 py-2">
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-teal-600' : 'bg-gray-300'}`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
-      />
-    </button>
-    <span className="text-sm text-gray-700">{label}</span>
-  </label>
-);
+}) => {
+  const toggleId = useId();
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={`${toggleId}-lbl`}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-teal-600' : 'bg-gray-300'}`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+        />
+      </button>
+      <span id={`${toggleId}-lbl`} className="text-sm text-gray-700">
+        {label}
+      </span>
+    </div>
+  );
+};
 
 export function PlanStoreTab({ planId, productId }: { planId: string; productId: string }) {
+  const fid = useId();
   const [available, setAvailable] = useState(false);
   const [hideAffiliates, setHideAffiliates] = useState(false);
   const [freeSample, setFreeSample] = useState(false);
@@ -220,14 +229,14 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           </div>
           <div className="space-y-4 md:col-span-3">
             <div>
-              <label className={labelClass} htmlFor="nome-a09147">
+              <label className={labelClass} htmlFor={`${fid}-nome`}>
                 Nome *
               </label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className={inputClass}
-                id="nome-a09147"
+                id={`${fid}-nome`}
               />
             </div>
             <CurrencyInput value={price} onChange={setPrice} label="Valor do plano (R$) *" />
@@ -238,7 +247,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       {/* Additional Fields */}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <label className={labelClass} htmlFor="quantidade-de-itens-inclusos-bc9e02">
+          <label className={labelClass} htmlFor={`${fid}-qty`}>
             Quantidade de itens inclusos *
           </label>
           <input
@@ -247,11 +256,11 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
             value={items}
             onChange={(e) => setItems(e.target.value)}
             className={inputClass}
-            id="quantidade-de-itens-inclusos-bc9e02"
+            id={`${fid}-qty`}
           />
         </div>
         <div>
-          <label className={labelClass} htmlFor="url-de-redirecionamento-bot-o-vo-d91679">
+          <label className={labelClass} htmlFor={`${fid}-url-redirect`}>
             URL de redirecionamento (botão voltar)
           </label>
           <input
@@ -259,7 +268,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
             onChange={(e) => setRedirectUrl(e.target.value)}
             placeholder="https://..."
             className={inputClass}
-            id="url-de-redirecionamento-bot-o-vo-d91679"
+            id={`${fid}-url-redirect`}
           />
         </div>
       </div>
@@ -271,7 +280,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
         </h3>
         <div className="space-y-3">
           <div>
-            <label className={labelClass} htmlFor="p-gina-de-obrigado-7e089c">
+            <label className={labelClass} htmlFor={`${fid}-ty-page`}>
               Página de obrigado
             </label>
             <input
@@ -279,11 +288,11 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
               onChange={(e) => setThankyouUrl(e.target.value)}
               placeholder="https://..."
               className={inputClass}
-              id="p-gina-de-obrigado-7e089c"
+              id={`${fid}-ty-page`}
             />
           </div>
           <div>
-            <label className={labelClass} htmlFor="p-gina-de-obrigado-boletos-80dc3b">
+            <label className={labelClass} htmlFor={`${fid}-ty-boleto`}>
               Página de obrigado (boletos)
             </label>
             <input
@@ -291,11 +300,11 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
               onChange={(e) => setThankyouBoletoUrl(e.target.value)}
               placeholder="https://..."
               className={inputClass}
-              id="p-gina-de-obrigado-boletos-80dc3b"
+              id={`${fid}-ty-boleto`}
             />
           </div>
           <div>
-            <label className={labelClass} htmlFor="p-gina-de-obrigado-pix-2e0277">
+            <label className={labelClass} htmlFor={`${fid}-ty-pix`}>
               Página de obrigado (PIX)
             </label>
             <input
@@ -303,7 +312,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
               onChange={(e) => setThankyouPixUrl(e.target.value)}
               placeholder="https://..."
               className={inputClass}
-              id="p-gina-de-obrigado-pix-2e0277"
+              id={`${fid}-ty-pix`}
             />
           </div>
         </div>

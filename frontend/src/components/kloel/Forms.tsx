@@ -8,6 +8,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
   forwardRef,
+  useId,
   useState,
 } from 'react';
 
@@ -41,6 +42,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     ref,
   ) => {
     const [showPassword, setShowPassword] = useState(false);
+    const autoId = useId();
+    const inputId = props.id ?? `${autoId}-input`;
     const isPassword = type === 'password';
     const inputType = isPassword && showPassword ? 'text' : type;
 
@@ -48,6 +51,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <div className={cn(fullWidth ? 'w-full' : 'inline-flex flex-col', className)}>
         {label && (
           <label
+            htmlFor={inputId}
             className="block text-sm font-medium mb-1.5"
             style={{ color: colors.text.secondary }}
           >
@@ -67,6 +71,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
           <input
             ref={ref}
+            id={inputId}
             type={inputType}
             disabled={disabled}
             className={cn(
@@ -163,10 +168,14 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, hint, fullWidth = true, className, disabled, ...props }, ref) => {
+    const autoId = useId();
+    const textareaId = props.id ?? `${autoId}-textarea`;
+
     return (
       <div className={cn(fullWidth ? 'w-full' : 'inline-flex flex-col', className)}>
         {label && (
           <label
+            htmlFor={textareaId}
             className="block text-sm font-medium mb-1.5"
             style={{ color: colors.text.secondary }}
           >
@@ -176,6 +185,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 
         <textarea
           ref={ref}
+          id={textareaId}
           disabled={disabled}
           className={cn(
             'w-full min-h-[100px] px-3 py-2.5 rounded-lg text-sm transition-all resize-y',
@@ -220,10 +230,14 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, hint, options, fullWidth = true, className, disabled, ...props }, ref) => {
+    const autoId = useId();
+    const selectId = props.id ?? `${autoId}-select`;
+
     return (
       <div className={cn(fullWidth ? 'w-full' : 'inline-flex flex-col', className)}>
         {label && (
           <label
+            htmlFor={selectId}
             className="block text-sm font-medium mb-1.5"
             style={{ color: colors.text.secondary }}
           >
@@ -233,6 +247,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
         <select
           ref={ref}
+          id={selectId}
           disabled={disabled}
           className={cn(
             'w-full h-10 px-3 rounded-lg text-sm appearance-none cursor-pointer transition-all',
@@ -373,8 +388,10 @@ export function Toggle({
 
   const s = sizes[size];
 
+  const autoId = useId();
+
   return (
-    <label
+    <div
       className={cn(
         'flex items-start gap-3 cursor-pointer',
         disabled && 'opacity-50 cursor-not-allowed',
@@ -385,6 +402,7 @@ export function Toggle({
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-labelledby={label ? `${autoId}-toggle-label` : undefined}
         disabled={disabled}
         onClick={() => onChange?.(!checked)}
         className={cn('relative inline-flex flex-shrink-0 rounded-full transition-colors', s.track)}
@@ -407,7 +425,11 @@ export function Toggle({
       {(label || description) && (
         <div>
           {label && (
-            <span className="text-sm font-medium" style={{ color: colors.text.primary }}>
+            <span
+              id={`${autoId}-toggle-label`}
+              className="text-sm font-medium"
+              style={{ color: colors.text.primary }}
+            >
               {label}
             </span>
           )}
@@ -418,6 +440,6 @@ export function Toggle({
           )}
         </div>
       )}
-    </label>
+    </div>
   );
 }

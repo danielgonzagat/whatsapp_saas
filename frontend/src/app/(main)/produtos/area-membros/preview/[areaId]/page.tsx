@@ -197,7 +197,7 @@ export default function MemberAreaPreviewPage() {
           {loading ? (
             <div style={{ padding: '16px' }}>
               {[0, 1, 2].map((index) => (
-                <div key={index} style={{ marginBottom: 20 }}>
+                <div key={`skeleton-${index}`} style={{ marginBottom: 20 }}>
                   <SkeletonBlock
                     width={`${68 - index * 8}%`}
                     height={14}

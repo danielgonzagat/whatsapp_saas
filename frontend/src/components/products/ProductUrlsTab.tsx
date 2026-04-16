@@ -13,7 +13,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 interface ProductUrlItem {
@@ -63,6 +63,7 @@ const TRIGGER_TIMINGS = [
 ];
 
 export function ProductUrlsTab({ productId }: { productId: string }) {
+  const fid = useId();
   const [items, setItems] = useState<ProductUrlItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [_showForm, setShowForm] = useState(false);
@@ -206,7 +207,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-1 block" style={labelStyle} htmlFor="descri-o-18f199">
+            <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-desc`}>
               Descrição *
             </label>
             <input
@@ -217,14 +218,14 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               placeholder="Página de vendas principal"
               className={selectClass}
               style={inputStyle}
-              id="descri-o-18f199"
+              id={`${fid}-desc`}
             />
             <p className="mt-1 text-right text-xs" style={{ color: colors.text.dust }}>
               {form.description.length}/255
             </p>
           </div>
           <div>
-            <label className="mb-1 block" style={labelStyle} htmlFor="url-b0fb2b">
+            <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-url`}>
               URL *
             </label>
             <input
@@ -235,7 +236,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               placeholder="https://..."
               className={selectClass}
               style={inputStyle}
-              id="url-b0fb2b"
+              id={`${fid}-url`}
             />
             <p className="mt-1 text-right text-xs" style={{ color: colors.text.dust }}>
               {form.url.length}/255
@@ -316,9 +317,9 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-2 block" style={labelStyle}>
+                <span className="mb-2 block" style={labelStyle}>
                   O que a IA deve aprender?
-                </label>
+                </span>
                 <div className="space-y-1.5">
                   {AI_LEARN_OPTIONS.map((opt) => (
                     <label
@@ -344,9 +345,9 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 </div>
               </div>
               <div>
-                <label className="mb-2 block" style={labelStyle}>
+                <span className="mb-2 block" style={labelStyle}>
                   Frequência de atualização
-                </label>
+                </span>
                 <div className="space-y-1.5">
                   {UPDATE_FREQ.map((f) => (
                     <label
@@ -394,9 +395,9 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-2 block" style={labelStyle}>
+                <span className="mb-2 block" style={labelStyle}>
                   Posição do widget
-                </label>
+                </span>
                 <div className="space-y-1.5">
                   {WIDGET_POSITIONS.map((p) => (
                     <label
@@ -417,11 +418,12 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 </div>
               </div>
               <div>
-                <label className="mb-2 block" style={labelStyle}>
+                <label htmlFor={`${fid}-widgetcolor`} className="mb-2 block" style={labelStyle}>
                   Cor primária
                 </label>
                 <div className="flex items-center gap-3">
                   <input
+                    id={`${fid}-widgetcolor`}
                     aria-label="Cor primaria do widget (seletor)"
                     type="color"
                     value={widgetColor}
@@ -440,7 +442,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 </div>
               </div>
               <div>
-                <label className="mb-2 block" style={labelStyle} htmlFor="mensagem-inicial-0ac32c">
+                <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-msg`}>
                   Mensagem inicial
                 </label>
                 <input
@@ -451,11 +453,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                   className={selectClass}
                   style={inputStyle}
                   placeholder="Olá! Como posso ajudar?"
-                  id="mensagem-inicial-0ac32c"
+                  id={`${fid}-msg`}
                 />
               </div>
               <div>
-                <label className="mb-2 block" style={labelStyle} htmlFor="quando-exibir-d5510b">
+                <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-quando`}>
                   Quando exibir
                 </label>
                 <select
@@ -463,7 +465,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                   onChange={(e) => setWidgetTrigger(e.target.value)}
                   className={selectClass}
                   style={inputStyle}
-                  id="quando-exibir-d5510b"
+                  id={`${fid}-quando`}
                 >
                   {TRIGGER_TIMINGS.map((t) => (
                     <option key={t.v} value={t.v}>

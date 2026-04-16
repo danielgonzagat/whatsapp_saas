@@ -49,6 +49,7 @@ export class QueueHealthService {
   async getQueuesStatus(): Promise<QueueSummary[]> {
     const results: QueueSummary[] = [];
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential queue metrics collection with DLQ creation
     for (const queue of this.queues) {
       // IMPORTANTE: usar queueOptions com connection explícita, não queue.opts
       const dlq = new Queue(`${queue.name}-dlq`, {

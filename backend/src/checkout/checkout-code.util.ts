@@ -28,6 +28,7 @@ export async function generateUniquePublicCheckoutCode(
   exists: (candidate: string) => Promise<boolean>,
   length = DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
 ) {
+  // biome-ignore lint/performance/noAwaitInLoops: retry loop for unique code generation
   for (let attempt = 0; attempt < 24; attempt += 1) {
     const candidate = generatePublicCheckoutCode(length);
     if (!(await exists(candidate))) {

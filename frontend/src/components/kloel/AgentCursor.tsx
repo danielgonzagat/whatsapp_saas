@@ -1,7 +1,7 @@
 'use client';
 
 import type { WhatsAppProofEntry } from '@/lib/api';
-import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 export interface AgentCursorTarget {
   x: number;
@@ -81,6 +81,7 @@ export function AgentCursor({
   streamConnected,
   cursorTarget,
 }: AgentCursorProps) {
+  const svgFilterId = useId();
   const [displayPoint, setDisplayPoint] = useState({ x: 0, y: 0 });
   const [hasPosition, setHasPosition] = useState(false);
   const [bubbleVisible, setBubbleVisible] = useState(false);
@@ -373,7 +374,7 @@ export function AgentCursor({
         }}
       >
         <svg width="28" height="34" viewBox="0 0 28 34" fill="none" aria-hidden="true">
-          <g filter="url(#agent-cursor-shadow)">
+          <g filter={`url(#${svgFilterId}-shadow)`}>
             <path
               d="M3 2L3 28L9.5 21.5L15.5 31L19.5 29L13.5 19L22 17L3 2Z"
               fill="#111111"
@@ -384,7 +385,7 @@ export function AgentCursor({
           </g>
           <defs>
             <filter
-              id="agent-cursor-shadow"
+              id={`${svgFilterId}-shadow`}
               x="0"
               y="0"
               width="28"

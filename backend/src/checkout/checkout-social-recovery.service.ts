@@ -48,6 +48,7 @@ export class CheckoutSocialRecoveryService {
       orderBy: { createdAt: 'asc' },
     });
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing with external calls
     for (const lead of leads) {
       const age = now - lead.createdAt.getTime();
 

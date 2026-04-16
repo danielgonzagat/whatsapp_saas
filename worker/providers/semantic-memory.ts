@@ -58,6 +58,7 @@ export class SemanticMemory {
       });
     }
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const fact of facts) {
       // Generate Embedding
       const embeddingResponse = await this.openai.embeddings.create({

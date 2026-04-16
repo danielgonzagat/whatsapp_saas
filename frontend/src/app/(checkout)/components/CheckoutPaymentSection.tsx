@@ -1,6 +1,6 @@
 'use client';
 
-import type { Dispatch, SetStateAction } from 'react';
+import { useId, type Dispatch, type SetStateAction } from 'react';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
 import { Bc, Cc, Px, ValidationInput } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
@@ -38,6 +38,7 @@ type Props = {
 };
 
 export function CheckoutPaymentSection(props: Props) {
+  const fid = useId();
   const {
     theme,
     config,
@@ -100,7 +101,7 @@ export function CheckoutPaymentSection(props: Props) {
             title="Cartão de crédito"
             onClick={() => setPayMethod('card')}
           >
-            {renderCardForm(theme, labelStyle, form, updateField, installmentOptions)}
+            {renderCardForm(theme, labelStyle, form, updateField, installmentOptions, fid)}
           </PaymentOption>
         ) : null}
         {supportsPix ? (
@@ -253,13 +254,14 @@ function renderCardForm(
     field: keyof FormState,
   ) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void,
   installmentOptions: Array<{ value: number; label: string }>,
+  fid: string,
 ) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <Field
         theme={theme}
         label="Número do cartão"
-        id="checkout-card-number"
+        id={`${fid}-card-number`}
         value={form.cardNumber}
         onChange={updateField('cardNumber')}
         placeholder="1234 1234 1234 1234"
@@ -269,7 +271,7 @@ function renderCardForm(
         <Field
           theme={theme}
           label="Validade"
-          id="checkout-card-exp"
+          id={`${fid}-card-exp`}
           value={form.cardExp}
           onChange={updateField('cardExp')}
           placeholder="MM/AA"
@@ -279,7 +281,7 @@ function renderCardForm(
         <Field
           theme={theme}
           label="CVV"
-          id="checkout-card-cvv"
+          id={`${fid}-card-cvv`}
           value={form.cardCvv}
           onChange={updateField('cardCvv')}
           placeholder="123"
@@ -290,7 +292,7 @@ function renderCardForm(
       <Field
         theme={theme}
         label="Nome do titular"
-        id="checkout-card-name"
+        id={`${fid}-card-name`}
         value={form.cardName}
         onChange={updateField('cardName')}
         placeholder="Nome completo"
@@ -299,18 +301,18 @@ function renderCardForm(
       <Field
         theme={theme}
         label="CPF do titular"
-        id="checkout-card-cpf"
+        id={`${fid}-card-cpf`}
         value={form.cardCpf}
         onChange={updateField('cardCpf')}
         placeholder="000.000.000-00"
         labelStyle={labelStyle}
       />
       <div>
-        <label htmlFor="checkout-installments" style={labelStyle}>
+        <label htmlFor={`${fid}-installments`} style={labelStyle}>
           Parcelamento
         </label>
         <select
-          id="checkout-installments"
+          id={`${fid}-installments`}
           value={form.installments}
           onChange={updateField('installments')}
           style={{

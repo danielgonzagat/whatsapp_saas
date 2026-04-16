@@ -88,6 +88,7 @@ export class LedgerReconciliationService {
       },
     });
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential order reconciliation for data integrity
     for (const order of orders) {
       if (!order.payment) {
         drifts.push({
@@ -235,6 +236,7 @@ export class LedgerReconciliationService {
       take: 5000,
     });
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential wallet reconciliation for data integrity
     for (const wallet of wallets) {
       // Aggregate the ledger by (bucket, direction). Using groupBy on a
       // BigInt column requires the raw form because Prisma's groupBy

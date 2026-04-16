@@ -185,6 +185,7 @@ export class MemoryManagementService {
 
     let totalRemoved = 0;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential memory cleanup per category
     for (const [category, days] of Object.entries(this.EXPIRATION_DAYS)) {
       if (category === 'default') continue;
 
@@ -253,6 +254,7 @@ export class MemoryManagementService {
         },
       });
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential memory group processing
       for (const group of groups) {
         // PULSE:OK — each group has unique workspace+category filter; dedup requires per-group scan
         const memories = await this.prisma.kloelMemory.findMany({
@@ -494,6 +496,7 @@ export class MemoryManagementService {
 
     let merged = 0;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential memory consolidation with AI calls
     for (const [_prefix, mems] of groups) {
       if (mems.length <= 1) continue;
 

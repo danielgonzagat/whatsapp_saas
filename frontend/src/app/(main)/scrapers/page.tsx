@@ -12,7 +12,7 @@ import {
   useScrapers,
 } from '@/hooks/useScrapers';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 const STATUS_COLORS: Record<string, string> = {
   RUNNING: '#3B82F6',
@@ -125,6 +125,7 @@ interface NewJobForm {
 }
 
 function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const fid = useId();
   const [form, setForm] = useState<NewJobForm>({ type: 'MAPS', query: '', location: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -216,7 +217,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             display: 'block',
             marginBottom: 6,
           }}
-          htmlFor="tipo-de-scraping-7f46cc"
+          htmlFor={`${fid}-scraping-type`}
         >
           Tipo de scraping
         </label>
@@ -236,7 +237,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             marginBottom: 16,
             boxSizing: 'border-box',
           }}
-          id="tipo-de-scraping-7f46cc"
+          id={`${fid}-scraping-type`}
         >
           <option value="MAPS">Google Maps</option>
           <option value="INSTAGRAM">Instagram</option>
@@ -252,7 +253,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             display: 'block',
             marginBottom: 6,
           }}
-          htmlFor="busca-query-c90791"
+          htmlFor={`${fid}-query`}
         >
           Busca / query *
         </label>
@@ -280,7 +281,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             marginBottom: 16,
             boxSizing: 'border-box',
           }}
-          id="busca-query-c90791"
+          id={`${fid}-query`}
         />
 
         {form.type === 'MAPS' && (
@@ -294,7 +295,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
                 display: 'block',
                 marginBottom: 6,
               }}
-              htmlFor="localidade-opcional-fcf2ec"
+              htmlFor={`${fid}-location`}
             >
               Localidade (opcional)
             </label>
@@ -316,7 +317,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
                 marginBottom: 16,
                 boxSizing: 'border-box',
               }}
-              id="localidade-opcional-fcf2ec"
+              id={`${fid}-location`}
             />
           </>
         )}

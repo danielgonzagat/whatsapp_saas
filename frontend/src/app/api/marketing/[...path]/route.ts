@@ -75,6 +75,7 @@ async function proxyMarketing(request: NextRequest, pathSegments: string[]) {
 
   let lastError: unknown;
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const baseUrl of candidates) {
     const url = `${baseUrl}${upstreamPath}`;
 

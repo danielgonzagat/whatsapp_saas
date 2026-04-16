@@ -1113,6 +1113,7 @@ async function autopilotScanner() {
       select: { id: true, providerSettings: true, jitterMin: true, jitterMax: true },
     });
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential workspace processing
     for (const workspace of workspaces) {
       const settings = parseAutopilotSettings(workspace.providerSettings);
       if (!isAutonomyActive(settings)) continue;
@@ -1127,6 +1128,7 @@ async function autopilotScanner() {
         },
       });
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential conversation processing
       for (const conv of convs) {
         const lastMsg = conv.messages[0];
         if (!lastMsg) continue;

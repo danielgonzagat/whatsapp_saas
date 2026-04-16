@@ -60,6 +60,7 @@ async function checkInactivity(workspaceId: string) {
     take: 50, // Batch process
   });
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing
   for (const lead of leads) {
     // Check if we already nudged recently (custom field or tag)
     const hasNudged = (lead.customFields as any)?.last_nudge_at;

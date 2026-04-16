@@ -60,6 +60,7 @@ async function healQueue(dlqName: string, originalQueueName: string) {
     'Connection terminated',
   ];
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential job processing
   for (const job of jobs) {
     const reason = (job.data?.failedReason || job.failedReason || '').toLowerCase();
     const isTransient = TRANSIENT_ERRORS.some((err) => reason.includes(err.toLowerCase()));
@@ -100,6 +101,7 @@ async function checkDlqs() {
   // Importing queueRegistry as 'any' to bypass potential type strictness on iteration if it's an array
   const queues = queueRegistry as Array<{ name: string }>;
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential queue health check
   for (const queue of queues) {
     const name = queue.name; // e.g. 'flow-jobs'
     const dlqName = `${name}-dlq`;

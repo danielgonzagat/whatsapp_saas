@@ -1,6 +1,6 @@
 'use client';
 import { apiFetch } from '@/lib/api';
-import { type CSSProperties, useCallback, useEffect, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 interface Props {
@@ -152,11 +152,13 @@ function Checkbox({
         color: TEXT,
       }}
     >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={() => onChange(!checked)}
+        style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+      />
       <div
-        onClick={(e) => {
-          e.preventDefault();
-          onChange(!checked);
-        }}
         style={{
           width: 18,
           height: 18,
@@ -170,12 +172,7 @@ function Checkbox({
           flexShrink: 0,
           transition: 'all 0.15s ease',
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
-        }}
+        aria-hidden="true"
       >
         {checked && (
           <svg
@@ -220,11 +217,13 @@ function Radio({
         fontSize: 13,
         color: TEXT,
       }}
-      onClick={(e) => {
-        e.preventDefault();
-        onChange();
-      }}
     >
+      <input
+        type="radio"
+        checked={checked}
+        onChange={() => onChange()}
+        style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+      />
       <div
         style={{
           width: 18,
@@ -236,6 +235,7 @@ function Radio({
           justifyContent: 'center',
           flexShrink: 0,
         }}
+        aria-hidden="true"
       >
         {checked && (
           <div
@@ -284,6 +284,7 @@ interface Pixel {
 }
 
 function PixelsSection({ configId, planId }: { configId: string | null; planId: string }) {
+  const fid = useId();
   const [pixels, setPixels] = useState<Pixel[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -534,14 +535,14 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
-              <label style={labelStyle} htmlFor="tipo-de-pixel-faf3be">
+              <label style={labelStyle} htmlFor={`${fid}-pixel-type`}>
                 Tipo de pixel
               </label>
               <select
                 value={form.type}
                 onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
                 style={{ ...inputStyle, padding: '10px 14px' }}
-                id="tipo-de-pixel-faf3be"
+                id={`${fid}-pixel-type`}
               >
                 {PIXEL_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -551,7 +552,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
               </select>
             </div>
             <div>
-              <label style={labelStyle} htmlFor="id-do-pixel-6fd50a">
+              <label style={labelStyle} htmlFor={`${fid}-pixel-id`}>
                 ID do Pixel
               </label>
               <input
@@ -560,11 +561,11 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                 onChange={(e) => setForm((f) => ({ ...f, pixelId: e.target.value }))}
                 placeholder="Ex: 1234567890"
                 style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
-                id="id-do-pixel-6fd50a"
+                id={`${fid}-pixel-id`}
               />
             </div>
             <div>
-              <label style={labelStyle} htmlFor="access-token-opcional-meta-a65e8e">
+              <label style={labelStyle} htmlFor={`${fid}-access-token`}>
                 Access Token (opcional — Meta)
               </label>
               <input
@@ -573,7 +574,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                 onChange={(e) => setForm((f) => ({ ...f, accessToken: e.target.value }))}
                 placeholder="EAAG..."
                 style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
-                id="access-token-opcional-meta-a65e8e"
+                id={`${fid}-access-token`}
               />
             </div>
             {error && (
@@ -657,6 +658,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
 /* ── Main Component ── */
 
 export function CheckoutConfigPage({ planId, config, onSave }: Props) {
+  const fid = useId();
   const [state, setState] = useState<any>({
     checkoutName: '',
     enableBoleto: false,
@@ -746,7 +748,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           {/* ── Section 1: Descricao ── */}
           <h3 style={sectionTitleStyle}>Descricao</h3>
           <div>
-            <label style={labelStyle} htmlFor="nome-do-checkout-4f941f">
+            <label style={labelStyle} htmlFor={`${fid}-checkout-name`}>
               Nome do checkout
             </label>
             <input
@@ -756,7 +758,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               onChange={(e) => set('checkoutName', e.target.value)}
               placeholder="Ex: Checkout principal"
               style={inputStyle}
-              id="nome-do-checkout-4f941f"
+              id={`${fid}-checkout-name`}
             />
           </div>
 
@@ -791,7 +793,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           {state.chatEnabled && (
             <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
-                <label style={labelStyle} htmlFor="mensagem-de-boas-vindas-4173a8">
+                <label style={labelStyle} htmlFor={`${fid}-welcome`}>
                   Mensagem de boas-vindas
                 </label>
                 <input
@@ -800,12 +802,12 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                   onChange={(e) => set('chatWelcomeMessage', e.target.value)}
                   placeholder="Ola! Posso te ajudar?"
                   style={inputStyle}
-                  id="mensagem-de-boas-vindas-4173a8"
+                  id={`${fid}-welcome`}
                 />
               </div>
 
               <div>
-                <label style={labelStyle} htmlFor="delay-segundos-19eae5">
+                <label style={labelStyle} htmlFor={`${fid}-delay`}>
                   Delay (segundos)
                 </label>
                 <input
@@ -815,12 +817,12 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                   onChange={(e) => set('chatDelay', Number(e.target.value))}
                   min={0}
                   style={{ ...inputStyle, maxWidth: 120 }}
-                  id="delay-segundos-19eae5"
+                  id={`${fid}-delay`}
                 />
               </div>
 
               <div>
-                <label style={labelStyle}>Posicao do chat</label>
+                <span style={labelStyle}>Posicao do chat</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
                   <Radio
                     checked={state.chatPosition === 'bottom-right'}
@@ -836,9 +838,12 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               </div>
 
               <div>
-                <label style={labelStyle}>Cor do chat</label>
+                <label htmlFor={`${fid}-chatcolor`} style={labelStyle}>
+                  Cor do chat
+                </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <input
+                    id={`${fid}-chatcolor`}
                     type="color"
                     value={state.chatColor}
                     onChange={(e) => set('chatColor', e.target.value)}
@@ -875,7 +880,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
 
               {state.chatOfferDiscount && (
                 <div>
-                  <label style={labelStyle} htmlFor="codigo-do-desconto-58734e">
+                  <label style={labelStyle} htmlFor={`${fid}-discount-code`}>
                     Codigo do desconto
                   </label>
                   <input
@@ -884,13 +889,13 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                     onChange={(e) => set('chatDiscountCode', e.target.value)}
                     placeholder="Ex: BEMVINDO10"
                     style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
-                    id="codigo-do-desconto-58734e"
+                    id={`${fid}-discount-code`}
                   />
                 </div>
               )}
 
               <div>
-                <label style={labelStyle} htmlFor="telefone-de-suporte-b1e1be">
+                <label style={labelStyle} htmlFor={`${fid}-phone`}>
                   Telefone de suporte
                 </label>
                 <input
@@ -900,7 +905,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                   onChange={(e) => set('chatSupportPhone', e.target.value)}
                   placeholder="+55 11 99999-9999"
                   style={inputStyle}
-                  id="telefone-de-suporte-b1e1be"
+                  id={`${fid}-phone`}
                 />
               </div>
             </div>
@@ -929,7 +934,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           {state.enableTimer && (
             <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
-                <label style={labelStyle} htmlFor="minutos-fefa46">
+                <label style={labelStyle} htmlFor={`${fid}-minutes`}>
                   Minutos
                 </label>
                 <input
@@ -938,11 +943,11 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                   onChange={(e) => set('timerMinutes', Number(e.target.value))}
                   min={1}
                   style={{ ...inputStyle, maxWidth: 120 }}
-                  id="minutos-fefa46"
+                  id={`${fid}-minutes`}
                 />
               </div>
               <div>
-                <label style={labelStyle} htmlFor="mensagem-do-timer-8e7d13">
+                <label style={labelStyle} htmlFor={`${fid}-timer-msg`}>
                   Mensagem do timer
                 </label>
                 <input
@@ -952,7 +957,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                   onChange={(e) => set('timerMessage', e.target.value)}
                   placeholder="Oferta encerra em 15 minutos."
                   style={inputStyle}
-                  id="mensagem-do-timer-8e7d13"
+                  id={`${fid}-timer-msg`}
                 />
               </div>
             </div>
@@ -970,7 +975,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
 
           {state.socialProofEnabled && (
             <div style={{ marginTop: 20 }}>
-              <label style={labelStyle} htmlFor="nomes-personalizados-um-por-linh-e309e4">
+              <label style={labelStyle} htmlFor={`${fid}-custom-names`}>
                 Nomes personalizados (um por linha)
               </label>
               <textarea
@@ -978,7 +983,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                 onChange={(e) => set('socialProofCustomNames', e.target.value)}
                 placeholder={'Maria S. de Sao Paulo\nJoao P. de Curitiba\nAna L. de Recife'}
                 style={textareaStyle}
-                id="nomes-personalizados-um-por-linh-e309e4"
+                id={`${fid}-custom-names`}
               />
             </div>
           )}

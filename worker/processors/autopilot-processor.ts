@@ -1035,6 +1035,7 @@ async function buildPendingMessageBatch(params: {
     remoteChatCandidates.find((candidate) => candidate.includes('@')) || `${resolvedPhone}@c.us`;
 
   if (!effectiveMessages.length && resolvedPhone) {
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const remoteChatId of remoteChatCandidates) {
       const remoteMessages = await whatsappApiProvider
         .getChatMessages(workspaceId, remoteChatId, {
@@ -1319,6 +1320,7 @@ export async function runSweepUnreadConversations(data: unknown) {
     },
   });
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation processing with reply locks
   for (const [index, conversation] of conversations.entries()) {
     const displayName = conversation.contact?.name || conversation.contact?.phone || 'contato';
 
@@ -1927,6 +1929,7 @@ async function ensureTrustedContactProfile(input: {
   );
 
   if (!trustedName) {
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const candidate of chatCandidates) {
       const remoteMessages = await whatsappApiProvider
         .getChatMessages(input.workspaceId, candidate, {
@@ -2247,6 +2250,7 @@ async function getRemoteUnreadChatSnapshot(
       .sort((left, right) => right.activityTimestamp - left.activityTimestamp)
       .slice(0, CIA_REMOTE_PENDING_PROBE_LIMIT);
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const candidate of probeCandidates) {
       const probeChatId = candidate.canonicalChatId || candidate.chatId;
       const messages = await whatsappApiProvider
@@ -2299,6 +2303,7 @@ async function seedRemoteUnreadConversationShells(input: {
   }>;
 }) {
   let seeded = 0;
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const item of input.chats) {
     if (
       !item.phone ||
@@ -3825,6 +3830,7 @@ export async function runScanContact(data: any) {
         ),
       );
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
       for (const candidate of readCandidates) {
         await whatsappApiProvider.readChatMessages(workspaceId, candidate).catch((err) => {
           log.warn('read_chat_messages_failed', { error: err?.message, candidate });
@@ -4553,6 +4559,7 @@ async function dispatchAutonomousReplyPlan(input: {
     });
   }
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const [index, reply] of replyPlan.entries()) {
     const effectiveQuotedMessageId = reply.quotedMessageId || input.quotedMessageId;
     await dispatchAutonomousTextMessage({
@@ -7071,6 +7078,7 @@ async function runCatalogContacts(data: any) {
   let cataloged = 0;
   let scoredQueued = 0;
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const item of eligibleChats) {
     const chat = item.chat;
     const chatId = item.chatId;
@@ -7623,6 +7631,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
   );
   const rankings: Array<Record<string, any>> = [];
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution
   for (const candidate of seedState.candidates) {
     const conversation = conversationMap.get(candidate.conversationId);
     if (!conversation?.contact?.id) {
@@ -8030,6 +8039,7 @@ async function runCiaCycleAll() {
     take: 500,
   });
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential workspace processing
   for (const workspace of workspaces) {
     const settings: any = workspace.providerSettings || {};
     if (settings?.billingSuspended === true) {
@@ -8338,6 +8348,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     },
   });
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential action execution
   for (const [index, action] of batch.actions.entries()) {
     await autopilotQueue.add(
       'cia-action',
@@ -8749,6 +8760,7 @@ async function runCiaSelfImproveAll() {
     take: 500,
   });
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential workspace processing
   for (const workspace of workspaces) {
     const settings: any = workspace.providerSettings || {};
     if (!isAutonomousEnabled(settings)) continue;
@@ -8787,6 +8799,7 @@ async function runCiaGlobalLearningAll() {
   );
   const signals: NonNullable<ReturnType<typeof anonymizeDecisionLog>>[] = [];
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const workspace of enabledWorkspaces) {
     const domain = inferWorkspaceDomain(workspace.providerSettings || {});
     const logs = await prisma.kloelMemory
@@ -8812,6 +8825,7 @@ async function runCiaGlobalLearningAll() {
   const patterns = computeGlobalPatterns(signals);
   await persistGlobalPatterns(redis, patterns);
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const workspace of enabledWorkspaces) {
     const domain = inferWorkspaceDomain(workspace.providerSettings || {});
     const topPattern = patterns.find((pattern) => pattern.domain === domain);
@@ -8851,6 +8865,7 @@ async function runCycleAll() {
     select: { id: true, providerSettings: true },
     take: 500,
   });
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const ws of workspaces) {
     const settings: any = ws.providerSettings || {};
     if (settings?.billingSuspended === true) {
@@ -9057,6 +9072,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
   }
 
   let executed = 0;
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const { conv, lastInbound, lastMessage, demandState } of enriched) {
     if (conv.contact?.id) {
       await persistDemandState(prisma, {

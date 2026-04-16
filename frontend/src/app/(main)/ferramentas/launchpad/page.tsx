@@ -6,7 +6,7 @@ import { Card } from '@/components/kloel/Card';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { launchApi } from '@/lib/api/misc';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useId } from 'react';
 
 const SORA = "'Sora', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
@@ -116,6 +116,7 @@ function LauncherRow({
 }
 
 function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const fid = useId();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -208,7 +209,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             display: 'block',
             marginBottom: 6,
           }}
-          htmlFor="nome-018e30"
+          htmlFor={`${fid}-nome`}
         >
           Nome *
         </label>
@@ -230,7 +231,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             marginBottom: 16,
             boxSizing: 'border-box' as const,
           }}
-          id="nome-018e30"
+          id={`${fid}-nome`}
         />
 
         <label
@@ -242,7 +243,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             display: 'block',
             marginBottom: 6,
           }}
-          htmlFor="descricao-opcional-e073f2"
+          htmlFor={`${fid}-desc`}
         >
           Descricao (opcional)
         </label>
@@ -265,7 +266,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             boxSizing: 'border-box' as const,
             resize: 'vertical',
           }}
-          id="descricao-opcional-e073f2"
+          id={`${fid}-desc`}
         />
 
         {error && (
@@ -337,6 +338,7 @@ function AddGroupModal({
   onClose: () => void;
   onAdded: () => void;
 }) {
+  const fid = useId();
   const [groupLink, setGroupLink] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -425,7 +427,7 @@ function AddGroupModal({
             display: 'block',
             marginBottom: 6,
           }}
-          htmlFor="link-do-grupo-694383"
+          htmlFor={`${fid}-link`}
         >
           Link do grupo *
         </label>
@@ -447,7 +449,7 @@ function AddGroupModal({
             marginBottom: 16,
             boxSizing: 'border-box' as const,
           }}
-          id="link-do-grupo-694383"
+          id={`${fid}-link`}
         />
 
         {error && (

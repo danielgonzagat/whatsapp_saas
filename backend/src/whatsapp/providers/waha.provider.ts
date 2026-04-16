@@ -824,6 +824,7 @@ export class WahaProvider {
     const path = `/api/sessions/${encodeURIComponent(sessionId)}`;
     const payloadVariants = [{ config }, config];
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential WAHA API attempts with different payloads
     for (const payload of payloadVariants) {
       try {
         await this.request('PUT', path, payload);
@@ -1093,6 +1094,7 @@ export class WahaProvider {
     const collected: WahaLidMapping[] = [];
     const seen = new Set<string>();
 
+    // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
     for (let page = 0; page < maxPages; page += 1) {
       const offset = page * pageSize;
       const payload = await this.tryRequest<any>(
@@ -1507,6 +1509,7 @@ export class WahaProvider {
       () => this.tryRequest('POST', '/api/contacts', genericPayload),
     ];
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential session resolution attempts
     for (const attempt of attempts) {
       const result = await attempt();
       if (result) {
@@ -1561,6 +1564,7 @@ export class WahaProvider {
     const collected: any[] = [];
     const seen = new Set<string>();
 
+    // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
     for (let page = 0; page < maxPages; page += 1) {
       const offset = page * pageSize;
       const payload = await this.tryRequest<any>(
@@ -1672,6 +1676,7 @@ export class WahaProvider {
 
   async sendSeen(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
+    // biome-ignore lint/performance/noAwaitInLoops: sequential chatId candidate resolution
     for (const candidate of this.buildChatIdCandidates(chatId)) {
       const delivered = await this.tryRequest('POST', '/api/sendSeen', {
         session: resolvedSessionId,
@@ -1688,6 +1693,7 @@ export class WahaProvider {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const candidates = this.buildChatIdCandidates(chatId);
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution with early return
     for (const candidate of candidates) {
       const sessionScoped = await this.tryRequest(
         'POST',
@@ -1699,6 +1705,7 @@ export class WahaProvider {
       }
     }
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution with early return
     for (const candidate of candidates) {
       await this.sendSeen(resolvedSessionId, candidate).catch(() => undefined);
     }

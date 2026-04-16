@@ -47,6 +47,7 @@ export const memoryWorker = new Worker(
           // Chunking Logic
           const chunks = splitText(content, 1000, 200).slice(0, maxChunks || 400);
 
+          // biome-ignore lint/performance/noAwaitInLoops: sequential chunk processing
           for (const chunk of chunks) {
             const embeddingResponse = await openai.embeddings.create({
               model: 'text-embedding-3-small',

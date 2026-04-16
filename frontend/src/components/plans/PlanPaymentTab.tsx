@@ -4,7 +4,7 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { colors, typography } from '@/lib/design-tokens';
 import { AlertTriangle, Check, CreditCard, FileText, QrCode } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 const PaymentToggle = ({
@@ -15,23 +15,29 @@ const PaymentToggle = ({
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
-}) => (
-  <label className="flex items-center gap-3 py-1.5">
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-      style={{ backgroundColor: checked ? colors.accent.webb : colors.background.corona }}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
-      />
-    </button>
-    <span className="text-sm" style={{ color: colors.text.starlight }}>
-      {label}
-    </span>
-  </label>
-);
+}) => {
+  const toggleId = useId();
+  return (
+    <div className="flex items-center gap-3 py-1.5">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={`${toggleId}-lbl`}
+        onClick={() => onChange(!checked)}
+        className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+        style={{ backgroundColor: checked ? colors.accent.webb : colors.background.corona }}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+        />
+      </button>
+      <span id={`${toggleId}-lbl`} className="text-sm" style={{ color: colors.text.starlight }}>
+        {label}
+      </span>
+    </div>
+  );
+};
 
 const PaymentMethodCard = ({
   enabled,
@@ -85,6 +91,7 @@ const PaymentMethodCard = ({
 );
 
 export function PlanPaymentTab({ planId, productId }: { planId: string; productId: string }) {
+  const fid = useId();
   const [maxInstallments, setMaxInstallments] = useState('12');
   const [maxNoInterest, setMaxNoInterest] = useState('3');
   const [discountByPayment, setDiscountByPayment] = useState(false);
@@ -258,7 +265,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           <div className="rounded-xl p-5" style={cardStyle}>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label style={labelStyle} htmlFor="m-ximo-de-parcelas-no-cart-o-8006c0">
+                <label style={labelStyle} htmlFor={`${fid}-max-parcelas`}>
                   Máximo de parcelas no cartão *
                 </label>
                 <select
@@ -266,7 +273,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                   onChange={(e) => setMaxInstallments(e.target.value)}
                   className={`${selectClass} mt-1.5`}
                   style={inputStyle}
-                  id="m-ximo-de-parcelas-no-cart-o-8006c0"
+                  id={`${fid}-max-parcelas`}
                 >
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>
@@ -276,7 +283,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                 </select>
               </div>
               <div>
-                <label style={labelStyle} htmlFor="m-ximo-de-parcelas-sem-juros-d7d866">
+                <label style={labelStyle} htmlFor={`${fid}-max-sj`}>
                   Máximo de parcelas sem juros *
                 </label>
                 <select
@@ -284,7 +291,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                   onChange={(e) => setMaxNoInterest(e.target.value)}
                   className={`${selectClass} mt-1.5`}
                   style={inputStyle}
-                  id="m-ximo-de-parcelas-sem-juros-d7d866"
+                  id={`${fid}-max-sj`}
                 >
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>
@@ -334,7 +341,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           {sectionTitle('Configuração de assinatura')}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label style={labelStyle} htmlFor="per-odo-de-assinatura-4d62c8">
+              <label style={labelStyle} htmlFor={`${fid}-periodo`}>
                 Período de assinatura
               </label>
               <select
@@ -342,7 +349,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                 onChange={(e) => setRecurringInterval(e.target.value)}
                 className={`${selectClass} mt-1.5`}
                 style={inputStyle}
-                id="per-odo-de-assinatura-4d62c8"
+                id={`${fid}-periodo`}
               >
                 <option value="WEEKLY">Semanal</option>
                 <option value="BIWEEKLY">Quinzenal</option>
@@ -367,7 +374,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           {trialEnabled && (
             <div className="ml-14 grid gap-4 md:grid-cols-3">
               <div>
-                <label style={labelStyle} htmlFor="dias-de-trial-0c4de2">
+                <label style={labelStyle} htmlFor={`${fid}-trial`}>
                   Dias de trial
                 </label>
                 <input
@@ -378,7 +385,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                   max={365}
                   className={`${selectClass} mt-1.5`}
                   style={inputStyle}
-                  id="dias-de-trial-0c4de2"
+                  id={`${fid}-trial`}
                 />
               </div>
               <CurrencyInput
@@ -410,7 +417,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             {boletoInstallment && (
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
-                  <label style={labelStyle} htmlFor="m-ximo-de-parcelas-3a7f7a">
+                  <label style={labelStyle} htmlFor={`${fid}-max-parcelas-sub`}>
                     Máximo de parcelas
                   </label>
                   <select
@@ -418,7 +425,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                     onChange={(e) => setBoletoMaxInstallments(e.target.value)}
                     className={`${selectClass} mt-1.5`}
                     style={inputStyle}
-                    id="m-ximo-de-parcelas-3a7f7a"
+                    id={`${fid}-max-parcelas-sub`}
                   >
                     {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                       <option key={n} value={n}>

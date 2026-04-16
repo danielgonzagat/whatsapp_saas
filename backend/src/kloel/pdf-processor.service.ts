@@ -88,6 +88,7 @@ Retorne JSON:
   private async saveToMemory(workspaceId: string, sourceName: string, analysis: any) {
     const pdfId = sourceName.replace(A_Z_A_Z0_9_RE, '_');
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential product embedding with AI calls
     for (let i = 0; i < analysis.products.length; i++) {
       const product = analysis.products[i];
       await this.memoryService.saveProduct(workspaceId, `${pdfId}_product_${i}`, {
@@ -118,6 +119,7 @@ Retorne JSON:
       );
     }
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential objection embedding with AI calls
     for (let i = 0; i < analysis.objections.length; i++) {
       const obj = analysis.objections[i];
       await this.memoryService.saveMemory(

@@ -47,6 +47,7 @@ export class FollowUpService {
       : [];
     const contactsMap = new Map(contactsList.map((c) => [`${c.workspaceId}:${c.id}`, c]));
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential follow-up execution with rate limiting
     for (const followUp of due) {
       try {
         const contact = contactsMap.get(`${followUp.workspaceId}:${followUp.contactId}`) ?? null;

@@ -26,7 +26,7 @@ function RecentSkeletonGrid() {
     >
       {Array.from({ length: 6 }).map((_, index) => (
         <div
-          key={index}
+          key={`canvas-skeleton-${index}`}
           style={{
             background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
@@ -287,6 +287,7 @@ function DesignCard({
           }}
         >
           <svg
+            aria-hidden="true"
             width={16}
             height={16}
             viewBox="0 0 24 24"

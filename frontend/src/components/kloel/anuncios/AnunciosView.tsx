@@ -6,7 +6,7 @@ import { metaAdsApi } from '@/lib/api/meta';
 import { swrFetcher } from '@/lib/fetcher';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type React from 'react';
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState, useId } from 'react';
 import useSWR, { mutate } from 'swr';
 
 // ── Fonts ──
@@ -1055,9 +1055,9 @@ function WarRoom({
             </div>
             {TOP_KEYWORDS.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
-                {TOP_KEYWORDS.map((kw, i) => (
+                {TOP_KEYWORDS.map((kw) => (
                   <div
-                    key={i}
+                    key={kw.keyword}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -2027,6 +2027,7 @@ function TrackingTab({ focus }: { focus?: string }) {
 
 // ── RulesTab — CONNECTED TO /ad-rules backend via SWR ──
 function RulesTab() {
+  const fid = useId();
   const { data: rulesData, mutate: mutateRules } = useSWR<any[]>('/ad-rules', swrFetcher, {
     keepPreviousData: true,
   });
@@ -2268,7 +2269,7 @@ function RulesTab() {
                           display: 'block',
                           marginBottom: 4,
                         }}
-                        htmlFor="condicao-if-2115ca"
+                        htmlFor={`${fid}-cond-1`}
                       >
                         CONDICAO (IF)
                       </label>
@@ -2289,7 +2290,7 @@ function RulesTab() {
                           outline: 'none',
                           boxSizing: 'border-box' as const,
                         }}
-                        id="condicao-if-2115ca"
+                        id={`${fid}-cond-1`}
                       />
                     </div>
                     <div>
@@ -2302,7 +2303,7 @@ function RulesTab() {
                           display: 'block',
                           marginBottom: 4,
                         }}
-                        htmlFor="acao-then-8cd361"
+                        htmlFor={`${fid}-acao-1`}
                       >
                         ACAO (THEN)
                       </label>
@@ -2327,7 +2328,7 @@ function RulesTab() {
                           outline: 'none',
                           boxSizing: 'border-box' as const,
                         }}
-                        id="acao-then-8cd361"
+                        id={`${fid}-acao-1`}
                       />
                     </div>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -2521,7 +2522,7 @@ function RulesTab() {
                   display: 'block',
                   marginBottom: 6,
                 }}
-                htmlFor="condicao-if-21c06f"
+                htmlFor={`${fid}-cond-2`}
               >
                 CONDICAO (IF)
               </label>
@@ -2532,7 +2533,7 @@ function RulesTab() {
                 onChange={(e) => setNewCondition(e.target.value)}
                 placeholder="Ex: ROAS < 1.0 por 48h"
                 style={inputStyle}
-                id="condicao-if-21c06f"
+                id={`${fid}-cond-2`}
               />
             </div>
             <div>
@@ -2545,7 +2546,7 @@ function RulesTab() {
                   display: 'block',
                   marginBottom: 6,
                 }}
-                htmlFor="acao-then-9c4f42"
+                htmlFor={`${fid}-acao-2`}
               >
                 ACAO (THEN)
               </label>
@@ -2559,7 +2560,7 @@ function RulesTab() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCreateRule();
                 }}
-                id="acao-then-9c4f42"
+                id={`${fid}-acao-2`}
               />
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>

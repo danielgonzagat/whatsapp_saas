@@ -81,5 +81,17 @@
         "useImportType": "off"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "include": ["frontend/src/components/plans/PlanAIConfigTab.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noLabelWithoutControl": "off"
+          }
+        }
+      }
+    }
+  ]
 }

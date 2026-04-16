@@ -1,7 +1,7 @@
 'use client';
 
 import { useOrderBumps } from '@/hooks/useCheckoutPlans';
-import { useState } from 'react';
+import { useState, useId } from 'react';
 
 /* ── Inline SVG Icons ── */
 const GiftIcon = () => (
@@ -147,6 +147,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 export function PlanOrderBumpTab({ planId }: { planId: string }) {
+  const fid = useId();
   const { bumps, isLoading, createBump, updateBump, deleteBump } = useOrderBumps(planId);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -284,7 +285,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {/* productName */}
             <div>
-              <label style={labelStyle} htmlFor="product-name-a49b69">
+              <label style={labelStyle} htmlFor={`${fid}-product-name`}>
                 Product Name
               </label>
               <input
@@ -294,13 +295,13 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 onChange={(e) => setForm({ ...form, productName: e.target.value })}
                 placeholder="Nome do produto"
                 style={inputStyle}
-                id="product-name-a49b69"
+                id={`${fid}-product-name`}
               />
             </div>
 
             {/* title */}
             <div>
-              <label style={labelStyle} htmlFor="title-92908b">
+              <label style={labelStyle} htmlFor={`${fid}-title`}>
                 Title
               </label>
               <input
@@ -310,13 +311,13 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Titulo da oferta"
                 style={inputStyle}
-                id="title-92908b"
+                id={`${fid}-title`}
               />
             </div>
 
             {/* priceInCents */}
             <div>
-              <label style={labelStyle} htmlFor="preco-centavos-d03654">
+              <label style={labelStyle} htmlFor={`${fid}-price`}>
                 Preco (centavos)
               </label>
               <input
@@ -326,13 +327,13 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 onChange={(e) => setForm({ ...form, priceInCents: Number(e.target.value) })}
                 placeholder="Ex: 4990"
                 style={{ ...inputStyle, fontFamily: FONT_MONO }}
-                id="preco-centavos-d03654"
+                id={`${fid}-price`}
               />
             </div>
 
             {/* compareAtPrice */}
             <div>
-              <label style={labelStyle} htmlFor="preco-comparativo-centavos-d2ea2e">
+              <label style={labelStyle} htmlFor={`${fid}-compare-price`}>
                 Preco comparativo (centavos)
               </label>
               <input
@@ -342,13 +343,13 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 onChange={(e) => setForm({ ...form, compareAtPrice: Number(e.target.value) })}
                 placeholder="Ex: 9990"
                 style={{ ...inputStyle, fontFamily: FONT_MONO }}
-                id="preco-comparativo-centavos-d2ea2e"
+                id={`${fid}-compare-price`}
               />
             </div>
 
             {/* checkboxLabel */}
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle} htmlFor="checkbox-label-a3035d">
+              <label style={labelStyle} htmlFor={`${fid}-checkbox-label`}>
                 Checkbox Label
               </label>
               <input
@@ -357,13 +358,13 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 value={form.checkboxLabel}
                 onChange={(e) => setForm({ ...form, checkboxLabel: e.target.value })}
                 style={inputStyle}
-                id="checkbox-label-a3035d"
+                id={`${fid}-checkbox-label`}
               />
             </div>
 
             {/* description */}
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle} htmlFor="descricao-6fd837">
+              <label style={labelStyle} htmlFor={`${fid}-desc`}>
                 Descricao
               </label>
               <textarea
@@ -371,7 +372,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Descreva o bump..."
                 style={textareaStyle}
-                id="descricao-6fd837"
+                id={`${fid}-desc`}
               />
             </div>
           </div>

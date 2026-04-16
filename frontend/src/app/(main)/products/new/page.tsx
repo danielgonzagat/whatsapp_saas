@@ -26,7 +26,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { mutate } from 'swr';
 
 // ============================================
@@ -300,7 +300,7 @@ function MonitorInputField({
 }) {
   return (
     <div style={{ marginBottom: 20 }}>
-      {label && <label style={monitorLabel}>{label}</label>}
+      {label && <span style={monitorLabel}>{label}</span>}
       {children}
       {hint && (
         <p
@@ -323,6 +323,7 @@ function MonitorInputField({
 // ============================================
 
 export default function NewProductPage() {
+  const uid = useId();
   const router = useRouter();
   const workspaceId = useWorkspaceId();
   const { showToast } = useToast();
@@ -1086,6 +1087,7 @@ export default function NewProductPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 <div>
                   <label
+                    htmlFor={`${uid}-width`}
                     style={{
                       fontSize: 11,
                       color: colors.text.dust,
@@ -1096,6 +1098,7 @@ export default function NewProductPage() {
                     Largura
                   </label>
                   <input
+                    id={`${uid}-width`}
                     {...inputProps}
                     type="number"
                     min="0"
@@ -1107,6 +1110,7 @@ export default function NewProductPage() {
                 </div>
                 <div>
                   <label
+                    htmlFor={`${uid}-height`}
                     style={{
                       fontSize: 11,
                       color: colors.text.dust,
@@ -1117,6 +1121,7 @@ export default function NewProductPage() {
                     Altura
                   </label>
                   <input
+                    id={`${uid}-height`}
                     aria-label="Altura em cm"
                     {...inputProps}
                     type="number"
@@ -1129,6 +1134,7 @@ export default function NewProductPage() {
                 </div>
                 <div>
                   <label
+                    htmlFor={`${uid}-depth`}
                     style={{
                       fontSize: 11,
                       color: colors.text.dust,
@@ -1139,6 +1145,7 @@ export default function NewProductPage() {
                     Profundidade
                   </label>
                   <input
+                    id={`${uid}-depth`}
                     aria-label="Profundidade em cm"
                     {...inputProps}
                     type="number"

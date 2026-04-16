@@ -5,6 +5,7 @@ import type {
   PublicCheckoutThemeProps,
 } from '@/lib/public-checkout-contract';
 import type * as React from 'react';
+import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import PixelTracker from './PixelTracker';
 import {
@@ -86,6 +87,7 @@ export default function CheckoutNoir({
   affiliateContext,
   merchant,
 }: CheckoutNoirProps) {
+  const fid = useId();
   const {
     step,
     setStep,
@@ -746,24 +748,24 @@ export default function CheckoutNoir({
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <label htmlFor="checkout-name" style={L}>
+                  <label htmlFor={`${fid}-name`} style={L}>
                     Nome completo
                   </label>
                   <SharedValidationInput
                     theme={inputTheme}
-                    id="checkout-name"
+                    id={`${fid}-name`}
                     value={form.name}
                     onChange={updateField('name')}
                     placeholder="ex.: Maria de Almeida Cruz"
                   />
                 </div>
                 <div>
-                  <label htmlFor="checkout-email" style={L}>
+                  <label htmlFor={`${fid}-email`} style={L}>
                     E-mail
                   </label>
                   <SharedValidationInput
                     theme={inputTheme}
-                    id="checkout-email"
+                    id={`${fid}-email`}
                     value={form.email}
                     onChange={updateField('email')}
                     placeholder="ex.: maria@gmail.com"
@@ -771,19 +773,19 @@ export default function CheckoutNoir({
                   />
                 </div>
                 <div style={{ width: 'fit-content', minWidth: 220 }}>
-                  <label htmlFor="checkout-cpf" style={L}>
+                  <label htmlFor={`${fid}-cpf`} style={L}>
                     CPF
                   </label>
                   <SharedValidationInput
                     theme={inputTheme}
-                    id="checkout-cpf"
+                    id={`${fid}-cpf`}
                     value={form.cpf}
                     onChange={updateField('cpf')}
                     placeholder="000.000.000-00"
                   />
                 </div>
                 <div>
-                  <label htmlFor="checkout-phone" style={L}>
+                  <label htmlFor={`${fid}-phone`} style={L}>
                     {config?.phoneLabel || 'Celular / WhatsApp'}
                   </label>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -807,7 +809,7 @@ export default function CheckoutNoir({
                     <div style={{ flex: 1 }}>
                       <SharedValidationInput
                         theme={inputTheme}
-                        id="checkout-phone"
+                        id={`${fid}-phone`}
                         value={form.phone}
                         onChange={updateField('phone')}
                         placeholder="(00) 00000-0000"
@@ -920,12 +922,12 @@ export default function CheckoutNoir({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
                     <div style={{ minWidth: 180 }}>
-                      <label htmlFor="checkout-cep" style={L}>
+                      <label htmlFor={`${fid}-cep`} style={L}>
                         CEP
                       </label>
                       <SharedValidationInput
                         theme={inputTheme}
-                        id="checkout-cep"
+                        id={`${fid}-cep`}
                         value={form.cep}
                         onChange={updateField('cep')}
                         placeholder="00000-000"
@@ -933,12 +935,12 @@ export default function CheckoutNoir({
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="checkout-street" style={L}>
+                    <label htmlFor={`${fid}-street`} style={L}>
                       Endereço
                     </label>
                     <SharedValidationInput
                       theme={inputTheme}
-                      id="checkout-street"
+                      id={`${fid}-street`}
                       value={form.street}
                       onChange={updateField('street')}
                       placeholder="Rua, avenida..."
@@ -946,24 +948,24 @@ export default function CheckoutNoir({
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ flex: '0 0 35%' }}>
-                      <label htmlFor="checkout-number" style={L}>
+                      <label htmlFor={`${fid}-number`} style={L}>
                         Número
                       </label>
                       <SharedValidationInput
                         theme={inputTheme}
-                        id="checkout-number"
+                        id={`${fid}-number`}
                         value={form.number}
                         onChange={updateField('number')}
                         placeholder="Nº"
                       />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <label htmlFor="checkout-neighborhood" style={L}>
+                      <label htmlFor={`${fid}-neighborhood`} style={L}>
                         Bairro
                       </label>
                       <SharedValidationInput
                         theme={inputTheme}
-                        id="checkout-neighborhood"
+                        id={`${fid}-neighborhood`}
                         value={form.neighborhood}
                         onChange={updateField('neighborhood')}
                         placeholder="Bairro"
@@ -971,12 +973,12 @@ export default function CheckoutNoir({
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="checkout-complement" style={L}>
+                    <label htmlFor={`${fid}-complement`} style={L}>
                       Complemento <span style={{ opacity: 0.4, fontWeight: 400 }}>(opcional)</span>
                     </label>
                     <SharedValidationInput
                       theme={inputTheme}
-                      id="checkout-complement"
+                      id={`${fid}-complement`}
                       value={form.complement}
                       onChange={updateField('complement')}
                       placeholder="Apto, bloco..."
@@ -984,24 +986,24 @@ export default function CheckoutNoir({
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ flex: 1 }}>
-                      <label htmlFor="checkout-city" style={L}>
+                      <label htmlFor={`${fid}-city`} style={L}>
                         Cidade
                       </label>
                       <SharedValidationInput
                         theme={inputTheme}
-                        id="checkout-city"
+                        id={`${fid}-city`}
                         value={form.city}
                         onChange={updateField('city')}
                         placeholder="Cidade"
                       />
                     </div>
                     <div style={{ flex: '0 0 24%' }}>
-                      <label htmlFor="checkout-state" style={L}>
+                      <label htmlFor={`${fid}-state`} style={L}>
                         UF
                       </label>
                       <SharedValidationInput
                         theme={inputTheme}
-                        id="checkout-state"
+                        id={`${fid}-state`}
                         value={form.state}
                         onChange={updateField('state')}
                         placeholder="UF"
@@ -1009,12 +1011,12 @@ export default function CheckoutNoir({
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="checkout-destinatario" style={L}>
+                    <label htmlFor={`${fid}-destinatario`} style={L}>
                       Destinatário
                     </label>
                     <SharedValidationInput
                       theme={inputTheme}
-                      id="checkout-destinatario"
+                      id={`${fid}-destinatario`}
                       value={form.destinatario}
                       onChange={updateField('destinatario')}
                       placeholder="Nome do destinatário"
@@ -1237,12 +1239,12 @@ export default function CheckoutNoir({
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                         <div>
-                          <label htmlFor="checkout-card-number" style={L}>
+                          <label htmlFor={`${fid}-card-number`} style={L}>
                             Número do cartão
                           </label>
                           <SharedValidationInput
                             theme={inputTheme}
-                            id="checkout-card-number"
+                            id={`${fid}-card-number`}
                             value={form.cardNumber}
                             onChange={updateField('cardNumber')}
                             placeholder="1234 1234 1234 1234"
@@ -1250,24 +1252,24 @@ export default function CheckoutNoir({
                         </div>
                         <div style={{ display: 'flex', gap: 12 }}>
                           <div style={{ flex: 1 }}>
-                            <label htmlFor="checkout-card-exp" style={L}>
+                            <label htmlFor={`${fid}-card-exp`} style={L}>
                               Validade <span style={{ opacity: 0.4 }}>(mês/ano)</span>
                             </label>
                             <SharedValidationInput
                               theme={inputTheme}
-                              id="checkout-card-exp"
+                              id={`${fid}-card-exp`}
                               value={form.cardExp}
                               onChange={updateField('cardExp')}
                               placeholder="MM/AA"
                             />
                           </div>
                           <div style={{ flex: '0 0 38%' }}>
-                            <label htmlFor="checkout-card-cvv" style={L}>
+                            <label htmlFor={`${fid}-card-cvv`} style={L}>
                               Cód. de segurança
                             </label>
                             <SharedValidationInput
                               theme={inputTheme}
-                              id="checkout-card-cvv"
+                              id={`${fid}-card-cvv`}
                               value={form.cardCvv}
                               onChange={updateField('cardCvv')}
                               placeholder="•••"
@@ -1275,35 +1277,35 @@ export default function CheckoutNoir({
                           </div>
                         </div>
                         <div>
-                          <label htmlFor="checkout-card-name" style={L}>
+                          <label htmlFor={`${fid}-card-name`} style={L}>
                             Nome e sobrenome do titular
                           </label>
                           <SharedValidationInput
                             theme={inputTheme}
-                            id="checkout-card-name"
+                            id={`${fid}-card-name`}
                             value={form.cardName}
                             onChange={updateField('cardName')}
                             placeholder="ex.: Maria de Almeida Cruz"
                           />
                         </div>
                         <div>
-                          <label htmlFor="checkout-card-cpf" style={L}>
+                          <label htmlFor={`${fid}-card-cpf`} style={L}>
                             CPF do titular
                           </label>
                           <SharedValidationInput
                             theme={inputTheme}
-                            id="checkout-card-cpf"
+                            id={`${fid}-card-cpf`}
                             value={form.cardCpf}
                             onChange={updateField('cardCpf')}
                             placeholder="000.000.000-00"
                           />
                         </div>
                         <div>
-                          <label htmlFor="checkout-installments" style={L}>
+                          <label htmlFor={`${fid}-installments`} style={L}>
                             Nº de Parcelas
                           </label>
                           <select
-                            id="checkout-installments"
+                            id={`${fid}-installments`}
                             value={form.installments}
                             onChange={updateField('installments')}
                             style={{

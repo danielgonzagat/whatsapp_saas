@@ -3,7 +3,7 @@ import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 interface Coupon {
@@ -18,6 +18,7 @@ interface Coupon {
 }
 
 export function ProductCouponsTab({ productId }: { productId: string }) {
+  const fid = useId();
   const [items, setItems] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -217,7 +218,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="codigo-09d9cb"
+                  htmlFor={`${fid}-codigo`}
                 >
                   Codigo *
                 </label>
@@ -227,7 +228,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   placeholder="DESCONTO10"
                   className="font-mono uppercase"
                   style={inputStyle}
-                  id="codigo-09d9cb"
+                  id={`${fid}-codigo`}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -235,7 +236,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   <label
                     className="mb-1 block text-xs font-semibold uppercase"
                     style={{ color: colors.text.muted }}
-                    htmlFor="tipo-9251a2"
+                    htmlFor={`${fid}-tipo`}
                   >
                     Tipo
                   </label>
@@ -243,7 +244,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     value={form.discountType}
                     onChange={(e) => setForm({ ...form, discountType: e.target.value })}
                     style={inputStyle}
-                    id="tipo-9251a2"
+                    id={`${fid}-tipo`}
                   >
                     <option value="PERCENT">Percentual (%)</option>
                     <option value="FIXED">Valor fixo (R$)</option>
@@ -253,7 +254,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   <label
                     className="mb-1 block text-xs font-semibold uppercase"
                     style={{ color: colors.text.muted }}
-                    htmlFor="valor-ba4881"
+                    htmlFor={`${fid}-valor`}
                   >
                     Valor
                   </label>
@@ -263,7 +264,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     value={form.discountValue}
                     onChange={(e) => setForm({ ...form, discountValue: e.target.value })}
                     style={inputStyle}
-                    id="valor-ba4881"
+                    id={`${fid}-valor`}
                   />
                 </div>
               </div>
@@ -272,7 +273,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   <label
                     className="mb-1 block text-xs font-semibold uppercase"
                     style={{ color: colors.text.muted }}
-                    htmlFor="max-usos-80b9d4"
+                    htmlFor={`${fid}-max-usos`}
                   >
                     Max usos
                   </label>
@@ -282,14 +283,14 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
                     placeholder="Ilimitado"
                     style={inputStyle}
-                    id="max-usos-80b9d4"
+                    id={`${fid}-max-usos`}
                   />
                 </div>
                 <div>
                   <label
                     className="mb-1 block text-xs font-semibold uppercase"
                     style={{ color: colors.text.muted }}
-                    htmlFor="expira-em-c3bb1c"
+                    htmlFor={`${fid}-expira`}
                   >
                     Expira em
                   </label>
@@ -298,7 +299,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     value={form.expiresAt}
                     onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
                     style={inputStyle}
-                    id="expira-em-c3bb1c"
+                    id={`${fid}-expira`}
                   />
                 </div>
               </div>

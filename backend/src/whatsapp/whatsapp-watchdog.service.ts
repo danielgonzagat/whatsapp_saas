@@ -345,6 +345,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     }
 
     let deleted = 0;
+    // biome-ignore lint/performance/noAwaitInLoops: sequential session health checks
     for (const session of sessions) {
       if (String(session.state || '').toUpperCase() !== 'FAILED') {
         continue;
@@ -425,6 +426,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       workspaceIdsToRefresh.add(workspaceId);
     }
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential workspace refresh cycle
     for (const workspaceId of workspaceIdsToRefresh) {
       try {
         await this.providerRegistry.getSessionStatus(workspaceId);
@@ -602,6 +604,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         `🐕 Checking ${workspaces.length} workspaces (total with providerSettings: ${allWorkspaces.length})`,
       );
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential workspace health monitoring
       for (const workspace of workspaces) {
         await this.checkWorkspaceSession(workspace.id, workspace.name);
       }

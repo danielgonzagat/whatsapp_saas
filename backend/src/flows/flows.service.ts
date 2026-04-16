@@ -496,6 +496,7 @@ export class FlowsService {
       take: batchSize,
     });
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential flow execution processing
     for (const execution of candidates) {
       const state = (execution.state as WaitState) || ({} as WaitState);
       if (!state.waitExpiresAt) continue;

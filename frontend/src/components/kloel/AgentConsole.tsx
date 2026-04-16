@@ -494,13 +494,13 @@ export function AgentConsole({
               Agente processando...
             </span>
             <div className="flex gap-1 ml-auto">
-              {[0, 1, 2].map((i) => (
+              {[0, 1, 2].map((dotIdx) => (
                 <div
-                  key={i}
+                  key={`dot-${dotIdx}`}
                   className="w-1.5 h-1.5 rounded-full animate-bounce"
                   style={{
                     backgroundColor: colors.brand.cyan,
-                    animationDelay: `${i * 0.15}s`,
+                    animationDelay: `${dotIdx * 0.15}s`,
                   }}
                 />
               ))}

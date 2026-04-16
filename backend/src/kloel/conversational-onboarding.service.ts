@@ -408,6 +408,7 @@ export class ConversationalOnboardingService {
 
       // Processar tool calls se houver
       if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+        // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
         for (const toolCall of assistantMessage.tool_calls) {
           // Type guard para tool calls com função
           if (!('function' in toolCall)) continue;
@@ -452,6 +453,7 @@ export class ConversationalOnboardingService {
 
         // Processar mais tool calls se houver (recursivamente simplificado)
         if (finalResponse.choices[0].message.tool_calls) {
+          // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
           for (const toolCall of finalResponse.choices[0].message.tool_calls) {
             if (!('function' in toolCall)) continue;
             const functionName = toolCall.function.name;

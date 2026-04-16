@@ -4,8 +4,27 @@
    ═══════════════════════════════════════════ */
 
 import type React from 'react';
+import { useId } from 'react';
 
 type IconFn = (s?: number) => React.ReactElement;
+
+/** Color icon needs useId for SVG gradient — must be a component */
+export function ColorIcon({ s = 16 }: { s?: number }) {
+  const gid = useId();
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="5" fill={`url(#${gid}-rg)`} />
+      <defs>
+        <radialGradient id={`${gid}-rg`}>
+          <stop stopColor="#FF6B6B" />
+          <stop offset="0.5" stopColor="#4ECDC4" />
+          <stop offset="1" stopColor="#45B7D1" />
+        </radialGradient>
+      </defs>
+    </svg>
+  );
+}
 
 export const IC: Record<string, IconFn> = {
   plus: (s = 16) => (
@@ -360,19 +379,7 @@ export const IC: Record<string, IconFn> = {
       <polyline points="15 18 9 12 15 6" />
     </svg>
   ),
-  color: (s = 16) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="12" cy="12" r="5" fill="url(#rg)" />
-      <defs>
-        <radialGradient id="rg">
-          <stop stopColor="#FF6B6B" />
-          <stop offset="0.5" stopColor="#4ECDC4" />
-          <stop offset="1" stopColor="#45B7D1" />
-        </radialGradient>
-      </defs>
-    </svg>
-  ),
+  color: (s = 16) => <ColorIcon s={s} />,
   lock: (s = 14) => (
     <svg
       width={s}

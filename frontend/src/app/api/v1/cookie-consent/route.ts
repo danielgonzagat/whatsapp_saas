@@ -106,6 +106,7 @@ async function fetchBackendConsent(
     headers['Content-Type'] = 'application/json';
   }
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const baseUrl of getBackendCandidateUrls()) {
     try {
       const response = await fetch(`${baseUrl}/api/v1/cookie-consent`, {

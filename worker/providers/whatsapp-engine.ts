@@ -110,6 +110,7 @@ async function withWorkspaceActionLock<T>(
   const backoffMin = isTestEnv ? 50 : 250;
   const backoffJitter = isTestEnv ? 50 : 250;
 
+  // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for condition
   while (Date.now() < deadline) {
     const acquired = await redis.set(key, token, 'PX', ttlMs, 'NX');
     if (acquired === 'OK') {

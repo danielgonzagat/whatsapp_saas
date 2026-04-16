@@ -771,9 +771,9 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
       <div>
         <SectionLabel>Seus Sites</SectionLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {sites.map((s, i) => (
+          {sites.map((s) => (
             <Card
-              key={i}
+              key={s.domain}
               style={{
                 display: 'flex',
                 alignItems: isMobile ? 'flex-start' : 'center',
@@ -884,9 +884,9 @@ function Dominios() {
               borderBottom: `1px solid ${BORDER}`,
             }}
           >
-            {['Dominio', 'SSL', 'DNS', 'Status', 'Expira', ''].map((h, i) => (
+            {['Dominio', 'SSL', 'DNS', 'Status', 'Expira', ''].map((h) => (
               <div
-                key={i}
+                key={h || 'actions'}
                 style={{
                   fontFamily: SORA,
                   fontSize: 10,
@@ -903,7 +903,7 @@ function Dominios() {
         {domains.map((d, i) =>
           isMobile ? (
             <div
-              key={i}
+              key={d.name}
               style={{
                 padding: '14px 16px',
                 borderBottom: i < domains.length - 1 ? `1px solid ${BORDER}` : 'none',
@@ -959,7 +959,7 @@ function Dominios() {
             </div>
           ) : (
             <div
-              key={i}
+              key={d.name}
               style={{
                 display: 'grid',
                 gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px',
@@ -1049,8 +1049,8 @@ function Dominios() {
           {[
             { type: 'A', name: '@', value: '76.223.105.230' },
             { type: 'CNAME', name: 'www', value: 'proxy.kloel.com' },
-          ].map((r, i) => (
-            <React.Fragment key={i}>
+          ].map((r) => (
+            <React.Fragment key={r.type}>
               <div
                 style={{
                   fontFamily: MONO,
@@ -1147,8 +1147,8 @@ function Hospedagem() {
             { label: 'Memoria RAM', value: 512, max: 1024, color: '#3B82F6' },
             { label: 'Disco', value: 2.4, max: 10, color: '#F59E0B' },
             { label: 'Bandwidth', value: 45, max: 100, color: EMBER },
-          ].map((r, i) => (
-            <div key={i}>
+          ].map((r) => (
+            <div key={r.label}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ fontFamily: SORA, fontSize: 12, color: TEXT }}>{r.label}</span>
                 <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>
@@ -1174,8 +1174,11 @@ function Hospedagem() {
             { label: 'CDN', value: 'CloudFront (ativo)' },
             { label: 'SSL', value: "Let's Encrypt (auto-renovacao)" },
             { label: 'Backups', value: 'Diarios (7 dias retencao)' },
-          ].map((info, i) => (
-            <div key={i} style={{ padding: '8px 12px', background: BG_ELEVATED, borderRadius: 6 }}>
+          ].map((info) => (
+            <div
+              key={info.label}
+              style={{ padding: '8px 12px', background: BG_ELEVATED, borderRadius: 6 }}
+            >
               <div
                 style={{
                   fontFamily: SORA,
@@ -1200,7 +1203,7 @@ function Hospedagem() {
         <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 40 }}>
           {Array.from({ length: 30 }, (_, i) => (
             <div
-              key={i}
+              key={`uptime-day-${i}`}
               style={{ flex: 1, height: 40, background: '#10B981', borderRadius: 2, opacity: 0.3 }}
             />
           ))}
@@ -1502,10 +1505,10 @@ function CriarSite({ mode }: { mode?: string }) {
           <div style={{ width: '100%', maxWidth: 500 }}>
             <SectionLabel>Seus Produtos (clique para incluir)</SectionLabel>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {productList.map((p, i) => (
+              {productList.map((p) => (
                 <button
                   type="button"
-                  key={i}
+                  key={p.name}
                   onClick={() => setPrompt((prev) => prev + (prev ? ', ' : '') + p.name)}
                   style={{
                     fontFamily: MONO,
@@ -2192,8 +2195,8 @@ function Apps() {
             gap: 10,
           }}
         >
-          {installedApps.map((app, i) => (
-            <Card key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {installedApps.map((app) => (
+            <Card key={app.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ color: EMBER }}>{app.icon(20)}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>{app.name}</div>
@@ -2215,8 +2218,8 @@ function Apps() {
             gap: 10,
           }}
         >
-          {availableApps.map((app, i) => (
-            <Card key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {availableApps.map((app) => (
+            <Card key={app.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ color: TEXT_DIM }}>{app.icon(20)}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>{app.name}</div>
@@ -2350,9 +2353,9 @@ function Protecao() {
               status: 'valido',
             },
             { domain: 'blog.meusite.com.br', issuer: '--', expires: '--', status: 'pendente' },
-          ].map((cert, i) => (
+          ].map((cert) => (
             <div
-              key={i}
+              key={cert.domain}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -2388,9 +2391,9 @@ function Protecao() {
             { time: '1h', event: 'Certificado SSL renovado automaticamente', severity: 'info' },
             { time: '3h', event: 'Backup automatico concluido', severity: 'info' },
             { time: '6h', event: 'Bot crawler bloqueado', severity: 'baixa' },
-          ].map((item, i) => (
+          ].map((item) => (
             <div
-              key={i}
+              key={item.event}
               style={{
                 display: 'flex',
                 alignItems: 'center',

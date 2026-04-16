@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Eye, Link2, Loader2, Pencil, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 interface Plan {
@@ -20,6 +20,7 @@ interface Plan {
 }
 
 export function ProductPlansTab({ productId }: { productId: string }) {
+  const fid = useId();
   const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -396,7 +397,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="nome-078dd0"
+                  htmlFor={`${fid}-nome`}
                 >
                   Nome *
                 </label>
@@ -405,14 +406,14 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   value={newPlan.name}
                   onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
                   style={inputStyle}
-                  id="nome-078dd0"
+                  id={`${fid}-nome`}
                 />
               </div>
               <div>
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="valor-r-1bcb22"
+                  htmlFor={`${fid}-valor`}
                 >
                   Valor (R$) *
                 </label>
@@ -423,14 +424,14 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   value={newPlan.price}
                   onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
                   style={inputStyle}
-                  id="valor-r-1bcb22"
+                  id={`${fid}-valor`}
                 />
               </div>
               <div>
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="forma-de-cobranca-998676"
+                  htmlFor={`${fid}-cobranca`}
                 >
                   Forma de cobranca
                 </label>
@@ -438,7 +439,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   value={newPlan.billingType}
                   onChange={(e) => setNewPlan({ ...newPlan, billingType: e.target.value })}
                   style={inputStyle}
-                  id="forma-de-cobranca-998676"
+                  id={`${fid}-cobranca`}
                 >
                   <option value="ONE_TIME">Unica</option>
                   <option value="RECURRING">Recorrente</option>
@@ -449,7 +450,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="itens-por-plano-1f7158"
+                  htmlFor={`${fid}-itens`}
                 >
                   Itens por plano
                 </label>
@@ -465,7 +466,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                     })
                   }
                   style={inputStyle}
-                  id="itens-por-plano-1f7158"
+                  id={`${fid}-itens`}
                 />
               </div>
             </div>

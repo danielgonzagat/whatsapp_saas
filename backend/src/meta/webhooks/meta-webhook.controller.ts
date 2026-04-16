@@ -155,6 +155,7 @@ export class MetaWebhookController {
     const object = body.object;
     this.logger.log(`Meta webhook: object=${object}, entries=${body.entry?.length || 0}`);
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential webhook entry processing with error isolation
     for (const entry of body.entry || []) {
       try {
         switch (object) {
@@ -196,6 +197,7 @@ export class MetaWebhookController {
       return;
     }
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential Messenger message processing
     for (const msg of entry.messaging || []) {
       if (msg.message) {
         await this.omnichannelService.handleIncomingMessage({
@@ -216,6 +218,7 @@ export class MetaWebhookController {
   }
 
   private async handleWhatsAppCloud(entry: MetaWebhookEntry) {
+    // biome-ignore lint/performance/noAwaitInLoops: sequential WhatsApp Cloud change processing
     for (const change of entry.changes || []) {
       if (change.field === 'messages') {
         const phoneNumberId = String(change.value?.metadata?.phone_number_id || '').trim();
@@ -245,6 +248,7 @@ export class MetaWebhookController {
           ]),
         );
 
+        // biome-ignore lint/performance/noAwaitInLoops: sequential inbound message processing preserving order
         for (const msg of change.value?.messages || []) {
           const senderPhone = String(msg?.from || '').trim();
           const messageType = this.normalizeWhatsAppMessageType(msg?.type);
@@ -274,6 +278,7 @@ export class MetaWebhookController {
           });
         }
 
+        // biome-ignore lint/performance/noAwaitInLoops: sequential message status update
         for (const status of change.value?.statuses || []) {
           const externalId = String(status?.id || '').trim();
           if (!externalId) {

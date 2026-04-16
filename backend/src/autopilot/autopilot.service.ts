@@ -236,6 +236,7 @@ export class AutopilotService {
 
     const startedAt = Date.now();
     let result: any = null;
+    // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for async result
     while (Date.now() - startedAt < waitMs) {
       const current = await this.redisClient.get(smokeKey);
       if (current) {
@@ -868,6 +869,7 @@ Answer in Portuguese, short and actionable.`;
 
     const rows = [];
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential per-campaign revenue attribution query
     for (const camp of campaigns) {
       const filters: any = camp.filters || {};
       const phones: string[] = Array.isArray(filters.phones) ? filters.phones : [];
@@ -1610,6 +1612,7 @@ Answer in Portuguese, short and actionable.`;
       const delay = await this.computeSmartDelay(workspaceId, useSmartTime);
       scheduledAt = delay > 0 ? new Date(Date.now() + delay) : new Date();
       // Enqueue all campaigns
+      // biome-ignore lint/performance/noAwaitInLoops: sequential BullMQ queue.add per campaign
       for (const id of createdIds) {
         // PULSE:OK — queue.add is not a Prisma query; must be sequential per BullMQ contract
         await this.campaignQueue.add(
@@ -1711,6 +1714,7 @@ Answer in Portuguese, short and actionable.`;
       currentHour === bestTime.bestHour ||
       (currentHour >= bestTime.bestHour - 1 && currentHour <= bestTime.bestHour + 1);
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation autopilot processing
     for (const conv of conversations) {
       await this.processConversation(conv, isOptimalTime);
     }
@@ -1744,6 +1748,7 @@ Answer in Portuguese, short and actionable.`;
       return;
     }
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation proactive processing
     for (const conv of stalled) {
       const isHot = true; // Mock score
       if (isHot) {

@@ -2,7 +2,7 @@
 
 import { PulseLoader } from '@/components/kloel/PulseLoader';
 import { Upload, X } from 'lucide-react';
-import { type CSSProperties, type ReactNode, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useId, useRef, useState } from 'react';
 
 type Theme = {
   accentColor?: string;
@@ -79,6 +79,8 @@ export function MediaPreviewBox({
   theme,
   uploading = false,
 }: MediaPreviewBoxProps) {
+  const autoId = useId();
+  const fileInputId = `${autoId}-file`;
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const mergedTheme = { ...defaultTheme, ...theme };
@@ -104,6 +106,7 @@ export function MediaPreviewBox({
     <div>
       {label ? (
         <label
+          htmlFor={fileInputId}
           style={{
             display: 'block',
             fontSize: 11,
@@ -268,6 +271,7 @@ export function MediaPreviewBox({
       ) : null}
 
       <input
+        id={fileInputId}
         aria-label={inputAriaLabel || label || 'Selecionar arquivo'}
         ref={inputRef}
         type="file"

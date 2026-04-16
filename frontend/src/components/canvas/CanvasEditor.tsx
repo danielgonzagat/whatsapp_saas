@@ -5,7 +5,7 @@ import { ELEMENT_CATEGORIES, PRODUCT_TEMPLATES, TEMPLATE_TAGS } from '@/lib/canv
 import { AVAILABLE_FONTS, KloelEditor } from '@/lib/fabric';
 import type { ContextMenuItem } from '@/lib/fabric/ContextMenuManager';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
 import { IC, getIcon } from './CanvasIcons';
 import { EditorTopBar } from './EditorTopBar';
@@ -88,10 +88,13 @@ const accentBtn: React.CSSProperties = {
    CanvasEditor — Fabric.js-based KLOEL Editor
    ═══════════════════════════════════════════ */
 export default function CanvasEditor() {
+  const fid = useId();
   const params = useSearchParams();
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const editorRef = useRef<KloelEditor | null>(null);
+  const resizeWRef = useRef<HTMLInputElement>(null);
+  const resizeHRef = useRef<HTMLInputElement>(null);
 
   /* --- State --- */
   const [saving, setSaving] = useState(false);
@@ -719,10 +722,10 @@ export default function CanvasEditor() {
                 ['#8B5CF6', '#EC4899'],
                 ['#3B82F6', '#06B6D4'],
                 ['#0A0A0C', '#2A2A2E'],
-              ].map(([a, b], i) => (
+              ].map(([a, b]) => (
                 <button
                   type="button"
-                  key={i}
+                  key={`${a}-${b}`}
                   onClick={() => handleSetBackground(a)}
                   style={{
                     width: '100%',
@@ -800,7 +803,7 @@ export default function CanvasEditor() {
                   return (
                     <button
                       type="button"
-                      key={i}
+                      key={`layer-${objName}-${i}`}
                       onClick={() => {
                         if (!editorRef.current) return;
                         editorRef.current.canvas.setActiveObject(obj);
@@ -1019,7 +1022,8 @@ export default function CanvasEditor() {
                     type="number"
                     placeholder="L"
                     defaultValue={w}
-                    id="tool-resize-w"
+                    ref={resizeWRef}
+                    id={`${fid}-resize-w`}
                     style={{
                       width: 60,
                       background: '#0A0A0C',
@@ -1037,7 +1041,8 @@ export default function CanvasEditor() {
                     type="number"
                     placeholder="A"
                     defaultValue={h}
-                    id="tool-resize-h"
+                    ref={resizeHRef}
+                    id={`${fid}-resize-h`}
                     style={{
                       width: 60,
                       background: '#0A0A0C',
@@ -1053,14 +1058,8 @@ export default function CanvasEditor() {
                   <button
                     type="button"
                     onClick={() => {
-                      const nw = Number.parseInt(
-                        (document.getElementById('tool-resize-w') as HTMLInputElement)?.value,
-                        10,
-                      );
-                      const nh = Number.parseInt(
-                        (document.getElementById('tool-resize-h') as HTMLInputElement)?.value,
-                        10,
-                      );
+                      const nw = Number.parseInt(resizeWRef.current?.value ?? '', 10);
+                      const nh = Number.parseInt(resizeHRef.current?.value ?? '', 10);
                       if (nw > 0 && nh > 0) handleResize(nw, nh);
                     }}
                     style={{
@@ -1704,6 +1703,7 @@ export default function CanvasEditor() {
             title="Zoom out"
           >
             <svg
+              aria-hidden="true"
               width={12}
               height={12}
               viewBox="0 0 24 24"
@@ -1742,6 +1742,7 @@ export default function CanvasEditor() {
             title="Zoom in"
           >
             <svg
+              aria-hidden="true"
               width={12}
               height={12}
               viewBox="0 0 24 24"
@@ -1781,11 +1782,11 @@ export default function CanvasEditor() {
         >
           {ctxMenu.items.map((item, i) =>
             item.separator ? (
-              <div key={i} style={{ height: 1, background: '#1C1C1F', margin: '4px 0' }} />
+              <div key={`sep-${i}`} style={{ height: 1, background: '#1C1C1F', margin: '4px 0' }} />
             ) : (
               <button
                 type="button"
-                key={i}
+                key={item.label || `item-${i}`}
                 onClick={() => {
                   if (!item.disabled) {
                     item.action();

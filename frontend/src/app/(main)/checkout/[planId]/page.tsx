@@ -19,7 +19,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useRef, useState, useId } from 'react';
 
 const A_Z0_9_RE = /[^A-Z0-9]/g;
 
@@ -185,11 +185,15 @@ function ColorField({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const colorId = useId();
   return (
     <div style={{ marginBottom: 12 }}>
-      <label style={labelStyle}>{lbl}</label>
+      <label htmlFor={`${colorId}-color`} style={labelStyle}>
+        {lbl}
+      </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <input
+          id={`${colorId}-color`}
           aria-label={`${lbl} (seletor de cor)`}
           type="color"
           value={value || '#000000'}
@@ -236,11 +240,15 @@ function Field({
   multiline?: boolean;
   type?: string;
 }) {
+  const fieldId = useId();
   return (
     <div style={{ marginBottom: 12 }}>
-      <label style={labelStyle}>{lbl}</label>
+      <label htmlFor={`${fieldId}-field`} style={labelStyle}>
+        {lbl}
+      </label>
       {multiline ? (
         <textarea
+          id={`${fieldId}-field`}
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -249,6 +257,7 @@ function Field({
         />
       ) : (
         <input
+          id={`${fieldId}-field`}
           aria-label={lbl}
           type={type || 'text'}
           value={value ?? ''}
@@ -320,7 +329,7 @@ function CheckoutEditorLoadingOverlay({ showContextCard }: { showContextCard: bo
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {[0, 1, 2, 3, 4].map((index) => (
-          <div key={index} style={{ ...sectionStyle, marginBottom: 0 }}>
+          <div key={`checkout-skeleton-${index}`} style={{ ...sectionStyle, marginBottom: 0 }}>
             <LoadingBar width={`${28 + index * 7}%`} height={14} style={{ marginBottom: 16 }} />
             <LoadingBar width="100%" height={36} style={{ marginBottom: 10 }} />
             <LoadingBar width="82%" height={36} />
@@ -388,6 +397,7 @@ type DeviceId = (typeof DEVICES)[number]['id'];
 // ════════════════════════════════════════════
 
 export default function CheckoutEditorPage() {
+  const fid = useId();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1055,14 +1065,14 @@ export default function CheckoutEditorPage() {
               {config.enableTimer && (
                 <>
                   <div style={{ marginBottom: 12 }}>
-                    <label style={labelStyle} htmlFor="tipo-6d1cd9">
+                    <label style={labelStyle} htmlFor={`${fid}-tipo-1`}>
                       Tipo
                     </label>
                     <select
                       value={config.timerType}
                       onChange={(e) => patch({ timerType: e.target.value })}
                       style={{ ...inputStyle, cursor: 'pointer' }}
-                      id="tipo-6d1cd9"
+                      id={`${fid}-tipo-1`}
                     >
                       <option value="countdown">Contagem regressiva</option>
                       <option value="evergreen">Evergreen</option>
@@ -1116,7 +1126,7 @@ export default function CheckoutEditorPage() {
               <h3 style={sectionTitleStyle}>Depoimentos</h3>
               {config.testimonials.map((t, i) => (
                 <div
-                  key={i}
+                  key={t.name}
                   style={{
                     marginBottom: 12,
                     padding: 12,
@@ -1172,7 +1182,7 @@ export default function CheckoutEditorPage() {
                     multiline
                   />
                   <div style={{ marginBottom: 12 }}>
-                    <label style={labelStyle}>Estrelas</label>
+                    <span style={labelStyle}>Estrelas</span>
                     <div style={{ display: 'flex', gap: 4 }}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <button
@@ -1264,7 +1274,7 @@ export default function CheckoutEditorPage() {
                 <>
                   {config.trustBadges.map((b, i) => (
                     <div
-                      key={i}
+                      key={`trust-badge-${i}`}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1693,7 +1703,7 @@ export default function CheckoutEditorPage() {
                     </button>
                   </div>
                   <div style={{ marginBottom: 12 }}>
-                    <label style={labelStyle} htmlFor="tipo-32ab04">
+                    <label style={labelStyle} htmlFor={`${fid}-tipo-2`}>
                       Tipo
                     </label>
                     <select
@@ -1704,7 +1714,7 @@ export default function CheckoutEditorPage() {
                         patch({ pixels: next });
                       }}
                       style={{ ...inputStyle, cursor: 'pointer' }}
-                      id="tipo-32ab04"
+                      id={`${fid}-tipo-2`}
                     >
                       <option value="facebook">Facebook Pixel</option>
                       <option value="google_analytics">Google Analytics</option>

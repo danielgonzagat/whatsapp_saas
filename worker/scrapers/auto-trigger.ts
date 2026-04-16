@@ -20,6 +20,7 @@ export async function triggerFlowForScrapedLeads(
   const flow = await prisma.flow.findFirst({ where: { id: flowId, workspaceId } });
   if (!flow) return;
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const contactId of contactIds) {
     const contact = await prisma.contact.findUnique({ where: { id: contactId } });
     if (!contact?.phone || contact.workspaceId !== workspaceId) continue;

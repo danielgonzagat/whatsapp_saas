@@ -134,6 +134,7 @@ export class GuestChatService implements OnModuleDestroy {
     }
 
     // tokenBudget: caller responsible for pre-flight budget check
+    // biome-ignore lint/performance/noAwaitInLoops: sequential fallback through model list
     for (const model of emergencyModels) {
       try {
         const completion = await chatCompletionWithRetry(this.openai, {

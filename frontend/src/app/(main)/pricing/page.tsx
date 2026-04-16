@@ -324,8 +324,8 @@ export default function PricingPage() {
 
                   {/* Features */}
                   <div className="mt-6 space-y-3">
-                    {plan.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-3">
+                    {plan.features.map((feature) => (
+                      <div key={feature.text} className="flex items-center gap-3">
                         <div
                           className={`w-5 h-5 rounded-full flex items-center justify-center ${
                             feature.included ? '' : 'opacity-40'
@@ -377,7 +377,7 @@ export default function PricingPage() {
               const Icon = benefit.icon;
               return (
                 <div
-                  key={idx}
+                  key={benefit.title}
                   className="p-4 rounded-md text-center"
                   style={{ backgroundColor: colors.background.surface1 }}
                 >

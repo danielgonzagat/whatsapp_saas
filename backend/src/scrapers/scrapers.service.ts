@@ -88,6 +88,7 @@ export class ScrapersService {
 
     let importedCount = 0;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing with external calls
     for (const lead of leads) {
       // PULSE:OK — upsert requires compound unique where per contact phone; cannot batch
       await this.prisma.contact.upsert({

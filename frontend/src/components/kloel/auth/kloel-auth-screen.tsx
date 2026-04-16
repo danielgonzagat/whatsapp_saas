@@ -3,7 +3,7 @@
 import { authApi } from '@/lib/api';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState, useId } from 'react';
 import { useAuth } from './auth-provider';
 
 /* ─── types ─── */
@@ -363,9 +363,9 @@ function TheMachine() {
         { top: 24, right: 24, rotate: '90deg' },
         { bottom: 24, right: 24, rotate: '180deg' },
         { bottom: 24, left: 24, rotate: '270deg' },
-      ].map((pos, i) => (
+      ].map((pos) => (
         <svg
-          key={i}
+          key={pos.rotate}
           width="16"
           height="16"
           viewBox="0 0 16 16"
@@ -486,6 +486,7 @@ function TheMachine() {
    MAIN EXPORT
    ──────────────────────────────────────────────────────────── */
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
+  const fid = useId();
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
   const redirectingRef = useRef(false);
 
@@ -866,7 +867,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                         color: '#6E6E73',
                         marginBottom: 6,
                       }}
-                      htmlFor="nome-936a31"
+                      htmlFor={`${fid}-nome`}
                     >
                       Nome
                     </label>
@@ -879,7 +880,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                       style={inputBase}
                       onFocus={inputFocusHandler}
                       onBlur={inputBlurHandler}
-                      id="nome-936a31"
+                      id={`${fid}-nome`}
                     />
                   </div>
                 )}
@@ -894,7 +895,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                       color: '#6E6E73',
                       marginBottom: 6,
                     }}
-                    htmlFor="e-mail-87206e"
+                    htmlFor={`${fid}-email`}
                   >
                     E-mail
                   </label>
@@ -907,13 +908,14 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                     style={inputBase}
                     onFocus={inputFocusHandler}
                     onBlur={inputBlurHandler}
-                    id="e-mail-87206e"
+                    id={`${fid}-email`}
                   />
                 </div>
 
                 {/* password */}
                 <div>
                   <label
+                    htmlFor={`${fid}-password`}
                     style={{
                       display: 'block',
                       fontFamily: sora,
@@ -926,6 +928,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
+                      id={`${fid}-password`}
                       aria-label="Senha"
                       type={showPassword ? 'text' : 'password'}
                       placeholder={mode === 'login' ? 'Digite sua senha' : 'Crie uma senha'}

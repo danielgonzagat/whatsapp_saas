@@ -32,6 +32,7 @@ export class CartRecoveryService {
       if (toRecover.length === 0) return;
       this.logger.log(`Found ${toRecover.length} abandoned carts to recover`);
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential cart recovery with message sending
       for (const order of toRecover) {
         try {
           if (!order.customerEmail) continue;

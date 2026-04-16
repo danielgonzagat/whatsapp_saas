@@ -168,6 +168,7 @@ export class UploadController {
 
     const results = [];
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential file upload processing
     for (const file of files) {
       if (!file || !Buffer.isBuffer(file.buffer) || typeof file.originalname !== 'string') {
         results.push({

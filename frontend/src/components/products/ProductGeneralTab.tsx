@@ -4,7 +4,7 @@ import { ChipInput, CurrencyInput, ImageUpload, RadioGroup } from '@/components/
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Save } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 import { PRODUCT_CATEGORIES as CATEGORIES } from '@/lib/categories';
@@ -40,6 +40,7 @@ interface ProductData {
 }
 
 export function ProductGeneralTab({ productId }: { productId: string }) {
+  const fid = useId();
   const [data, setData] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -175,7 +176,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           </div>
 
           <div>
-            <label className={labelClass} style={labelStyle} htmlFor="nome-b5c4cd">
+            <label className={labelClass} style={labelStyle} htmlFor={`${fid}-nome`}>
               Nome *
             </label>
             <input
@@ -185,12 +186,12 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               className={inputClass}
               style={inputStyle}
               maxLength={200}
-              id="nome-b5c4cd"
+              id={`${fid}-nome`}
             />
           </div>
 
           <div>
-            <label className={labelClass} style={labelStyle} htmlFor="descricao-58dc52">
+            <label className={labelClass} style={labelStyle} htmlFor={`${fid}-desc`}>
               Descricao
             </label>
             <textarea
@@ -200,12 +201,12 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               style={{ ...inputStyle, resize: 'vertical' as const }}
               rows={4}
               maxLength={5000}
-              id="descricao-58dc52"
+              id={`${fid}-desc`}
             />
           </div>
 
           <div>
-            <label className={labelClass} style={labelStyle} htmlFor="categoria-0376d0">
+            <label className={labelClass} style={labelStyle} htmlFor={`${fid}-cat`}>
               Categoria
             </label>
             <select
@@ -213,7 +214,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               onChange={(e) => update('category', e.target.value)}
               className={inputClass}
               style={inputStyle}
-              id="categoria-0376d0"
+              id={`${fid}-cat`}
             >
               <option value="">Selecione</option>
               {CATEGORIES.map((c) => (
@@ -245,7 +246,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
           {(data.format === 'PHYSICAL' || data.format === 'HYBRID') && (
             <div>
-              <label className={labelClass} style={labelStyle} htmlFor="cep-de-origem-843f1c">
+              <label className={labelClass} style={labelStyle} htmlFor={`${fid}-cep`}>
                 CEP de origem
               </label>
               <input
@@ -255,7 +256,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
                 className={inputClass}
                 style={inputStyle}
                 maxLength={9}
-                id="cep-de-origem-843f1c"
+                id={`${fid}-cep`}
               />
             </div>
           )}
@@ -280,7 +281,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             { key: 'supportEmail', label: 'E-mail de suporte' },
           ].map(({ key, label }) => (
             <div key={key}>
-              <label className={labelClass} style={labelStyle} htmlFor="input-35f29c">
+              <label className={labelClass} style={labelStyle} htmlFor={`${fid}-input`}>
                 {label}
               </label>
               <input
@@ -290,7 +291,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
                 className={inputClass}
                 style={inputStyle}
                 placeholder={key.includes('Email') ? 'suporte@...' : 'https://...'}
-                id="input-35f29c"
+                id={`${fid}-input`}
               />
             </div>
           ))}
@@ -308,11 +309,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           </h3>
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <label
-                className={labelClass}
-                style={labelStyle}
-                htmlFor="tempo-de-garantia-dias-7e6ebd"
-              >
+              <label className={labelClass} style={labelStyle} htmlFor={`${fid}-garantia`}>
                 Tempo de garantia (dias)
               </label>
               <input
@@ -324,11 +321,11 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
                 }
                 className={inputClass}
                 style={inputStyle}
-                id="tempo-de-garantia-dias-7e6ebd"
+                id={`${fid}-garantia`}
               />
             </div>
             <div>
-              <label className={labelClass} style={labelStyle} htmlFor="tipo-de-frete-af1478">
+              <label className={labelClass} style={labelStyle} htmlFor={`${fid}-frete`}>
                 Tipo de frete
               </label>
               <select
@@ -336,7 +333,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
                 onChange={(e) => update('shippingType', e.target.value)}
                 className={inputClass}
                 style={inputStyle}
-                id="tipo-de-frete-af1478"
+                id={`${fid}-frete`}
               >
                 <option value="">Selecione</option>
                 {SHIPPING_TYPES.map((t) => (

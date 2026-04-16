@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     let lastError: unknown;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const baseUrl of getBackendCandidateUrls()) {
       const response = await fetch(`${baseUrl}/auth/anonymous`, {
         method: 'POST',

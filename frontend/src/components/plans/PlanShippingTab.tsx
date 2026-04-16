@@ -3,7 +3,7 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { colors, typography } from '@/lib/design-tokens';
 import { Bot, ChevronDown, ChevronUp, Plus, Sparkles } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 const PACKAGE_TYPES = [
@@ -140,33 +140,42 @@ const CosmosRadioGroup = ({
   onChange: (v: string) => void;
   label: string;
   options: { value: string; label: string }[];
-}) => (
-  <div>
-    <label className="mb-2 block" style={cosmosLabelStyle}>
-      {label}
-    </label>
-    <div className="space-y-2">
-      {options.map((opt) => (
-        <label key={opt.value} className="flex cursor-pointer items-start gap-2.5">
-          <input
-            type="radio"
-            name={label}
-            value={opt.value}
-            checked={value === opt.value}
-            onChange={() => onChange(opt.value)}
-            style={{ accentColor: colors.accent.webb }}
-            className="mt-0.5"
-          />
-          <span className="text-sm font-medium" style={{ color: colors.text.starlight }}>
-            {opt.label}
-          </span>
-        </label>
-      ))}
-    </div>
-  </div>
-);
+}) => {
+  const groupId = useId();
+  return (
+    <fieldset>
+      <legend className="mb-2 block" style={cosmosLabelStyle}>
+        {label}
+      </legend>
+      <div className="space-y-2">
+        {options.map((opt) => (
+          <label
+            key={opt.value}
+            htmlFor={`${groupId}-${opt.value}`}
+            className="flex cursor-pointer items-start gap-2.5"
+          >
+            <input
+              id={`${groupId}-${opt.value}`}
+              type="radio"
+              name={`${groupId}-group`}
+              value={opt.value}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+              style={{ accentColor: colors.accent.webb }}
+              className="mt-0.5"
+            />
+            <span className="text-sm font-medium" style={{ color: colors.text.starlight }}>
+              {opt.label}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+};
 
 export function PlanShippingTab({ planId, productId }: { planId: string; productId: string }) {
+  const fid = useId();
   const [packageType, setPackageType] = useState('');
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
@@ -288,7 +297,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
         {sectionTitle('Embalagem do produto')}
         <div className="grid gap-4 md:grid-cols-5">
           <div className="md:col-span-2">
-            <label style={labelStyle} htmlFor="tipo-de-embalagem-93e6f2">
+            <label style={labelStyle} htmlFor={`${fid}-pkg-type`}>
               Tipo de embalagem *
             </label>
             <select
@@ -296,7 +305,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               onChange={(e) => setPackageType(e.target.value)}
               className={`${selectClass} mt-1.5`}
               style={inputStyle}
-              id="tipo-de-embalagem-93e6f2"
+              id={`${fid}-pkg-type`}
             >
               <option value="">Selecione</option>
               {PACKAGE_TYPES.map((t) => (
@@ -307,7 +316,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             </select>
           </div>
           <div>
-            <label style={labelStyle} htmlFor="largura-cm-0b0909">
+            <label style={labelStyle} htmlFor={`${fid}-width`}>
               Largura (cm)
             </label>
             <input
@@ -317,11 +326,11 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               onChange={(e) => setWidth(e.target.value)}
               className={`${inputClass} mt-1.5`}
               style={inputStyle}
-              id="largura-cm-0b0909"
+              id={`${fid}-width`}
             />
           </div>
           <div>
-            <label style={labelStyle} htmlFor="altura-cm-2df145">
+            <label style={labelStyle} htmlFor={`${fid}-height`}>
               Altura (cm)
             </label>
             <input
@@ -331,11 +340,11 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               onChange={(e) => setHeight(e.target.value)}
               className={`${inputClass} mt-1.5`}
               style={inputStyle}
-              id="altura-cm-2df145"
+              id={`${fid}-height`}
             />
           </div>
           <div>
-            <label style={labelStyle} htmlFor="comprimento-cm-8f78c9">
+            <label style={labelStyle} htmlFor={`${fid}-length`}>
               Comprimento (cm)
             </label>
             <input
@@ -345,13 +354,13 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               onChange={(e) => setLength(e.target.value)}
               className={`${inputClass} mt-1.5`}
               style={inputStyle}
-              id="comprimento-cm-8f78c9"
+              id={`${fid}-length`}
             />
           </div>
         </div>
         <div className="mt-3 flex items-end gap-4">
           <div className="w-40">
-            <label style={labelStyle} htmlFor="peso-kg-9d925c">
+            <label style={labelStyle} htmlFor={`${fid}-weight`}>
               Peso (kg) *
             </label>
             <input
@@ -362,7 +371,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               onChange={(e) => setWeight(e.target.value)}
               className={`${inputClass} mt-1.5`}
               style={inputStyle}
-              id="peso-kg-9d925c"
+              id={`${fid}-weight`}
             />
           </div>
           <button
@@ -401,7 +410,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             />
 
             <div>
-              <label style={labelStyle} htmlFor="prazo-de-despacho-110708">
+              <label style={labelStyle} htmlFor={`${fid}-dispatch`}>
                 Prazo de despacho *
               </label>
               <select
@@ -409,7 +418,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                 onChange={(e) => setDispatchTime(e.target.value)}
                 className={`${selectClass} mt-1.5`}
                 style={inputStyle}
-                id="prazo-de-despacho-110708"
+                id={`${fid}-dispatch`}
               >
                 <option value="1">24 horas</option>
                 <option value="3">1-3 dias úteis</option>
@@ -422,7 +431,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           </div>
           <div className="space-y-4">
             <div>
-              <label style={labelStyle}>Transportadoras *</label>
+              <span style={labelStyle}>Transportadoras *</span>
               <div className="space-y-1.5 mt-1.5">
                 {CARRIERS.map((c) => (
                   <label
@@ -460,7 +469,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             />
             {freightType === 'fixed' && (
               <div>
-                <label style={labelStyle} htmlFor="valor-fixo-r-da7747">
+                <label style={labelStyle} htmlFor={`${fid}-fixed-val`}>
                   Valor fixo (R$)
                 </label>
                 <input
@@ -470,7 +479,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                   onChange={(e) => setFixedFreight(e.target.value)}
                   className={`${inputClass} mt-1.5`}
                   style={inputStyle}
-                  id="valor-fixo-r-da7747"
+                  id={`${fid}-fixed-val`}
                 />
               </div>
             )}
@@ -583,7 +592,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             const isOpen = openFaqs[i] ?? false;
             return (
               <div
-                key={i}
+                key={q}
                 className="rounded-xl overflow-hidden transition-all"
                 style={{
                   background: colors.background.nebula,

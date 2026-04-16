@@ -211,7 +211,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
         {/* URL rows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {links.map((link, index) => (
-            <div key={index}>
+            <div key={link.label}>
               <div
                 style={{
                   fontFamily: "'Sora', sans-serif",

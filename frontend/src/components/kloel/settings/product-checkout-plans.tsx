@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Check, Link, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { SettingsInset, SettingsStatusPill, kloelSettingsClass } from './contract';
 
 export interface CheckoutPlan {
@@ -28,6 +28,7 @@ interface ProductCheckoutPlansProps {
 }
 
 export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPlansProps) {
+  const fid = useId();
   const [showAddPlan, setShowAddPlan] = useState(false);
   const [newPlan, setNewPlan] = useState<Omit<CheckoutPlan, 'id'>>({
     name: '',
@@ -169,13 +170,13 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="defaultPlan"
+                id={`${fid}-defaultPlan`}
                 aria-label="Definir como plano padrão para este produto"
                 checked={newPlan.isDefault}
                 onChange={(e) => setNewPlan({ ...newPlan, isDefault: e.target.checked })}
                 className="h-4 w-4 rounded border-[#222226] bg-[#111113]"
               />
-              <label htmlFor="defaultPlan" className="text-sm text-[#E0DDD8]">
+              <label htmlFor={`${fid}-defaultPlan`} className="text-sm text-[#E0DDD8]">
                 Plano padrão para este produto
               </label>
             </div>

@@ -351,6 +351,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     setMsgs(EMPTY_MESSAGES);
 
     const run = async () => {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
       for (const msg of SALES_FLOW) {
         if (cancelled) return;
         await wait(msg.f === '$' ? 900 : msg.f === 'a' ? 600 : 400);
@@ -609,6 +610,7 @@ export default function ThanosSection() {
       });
 
     const runCycle = async () => {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
       while (alive) {
         setShowReveal(false);
         setShowSales(false);

@@ -1253,6 +1253,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     let processed = 0;
     let skipped = 0;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation processing with reply locks
     for (const [index, conversation] of conversations.entries()) {
       const lastMessage = conversation?.messages?.[0];
       const pendingBatch = await this.buildPendingInboundBatch({
@@ -1364,6 +1365,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         }
 
         let sendFailed = false;
+        // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
         for (const [replyIndex, replyItem] of replyPlan.entries()) {
           // messageLimit: enforced via PlanLimitsService.trackMessageSend
           const sendResult = await this.whatsappService.sendMessage(
@@ -1674,6 +1676,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     let processed = 0;
     let skipped = 0;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation processing with reply locks
     for (const [index, chat] of chats.entries()) {
       const remoteBatch = await this.loadRemotePendingBatch({
         workspaceId,
@@ -1772,6 +1775,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         }
 
         let sendFailed = false;
+        // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
         for (const [replyIndex, replyItem] of replyPlan.entries()) {
           // messageLimit: enforced via PlanLimitsService.trackMessageSend
           const sendResult = await this.whatsappService.sendMessage(

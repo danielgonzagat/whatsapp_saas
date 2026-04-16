@@ -361,6 +361,7 @@ export class WhatsAppCatchupService {
       const since = this.resolveCatchupSince(sessionMeta);
       const processedChatIds = new Set<string>();
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential multi-pass sync with state tracking
       for (let pass = 0; pass < this.maxPasses; pass += 1) {
         const rawChats = await this.providerRegistry.getChats(workspaceId);
         const pendingChats = this.normalizeChats(rawChats)
@@ -407,6 +408,7 @@ export class WhatsAppCatchupService {
           hadOverflow = true;
         }
 
+        // biome-ignore lint/performance/noAwaitInLoops: sequential per-chat processing with import tracking
         for (const chat of chats) {
           processedChatIds.add(chat.id);
           processedChats += 1;
@@ -466,6 +468,7 @@ export class WhatsAppCatchupService {
 
           touchedChats += 1;
 
+          // biome-ignore lint/performance/noAwaitInLoops: sequential message processing preserving order
           for (const message of messages) {
             if (message.fromMe) {
               const persisted = await this.persistHistoricalOutboundMessage(workspaceId, message);
@@ -1056,6 +1059,7 @@ export class WhatsAppCatchupService {
       ? Math.min(this.maxPagesPerChat, this.fallbackPagesPerChat)
       : this.maxPagesPerChat;
 
+    // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
     for (let page = 0; page < maxPages; page += 1) {
       const rawMessages = await this.providerRegistry.getChatMessages(workspaceId, chat.id, {
         limit: this.maxMessagesPerChat,
@@ -1386,6 +1390,7 @@ export class WhatsAppCatchupService {
       orderBy: { updatedAt: 'desc' },
     });
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential contact processing with DB writes
     for (const contact of contacts) {
       const customFields = this.normalizeJsonObject(contact.customFields);
       const storedName = String(contact.name || '').trim();

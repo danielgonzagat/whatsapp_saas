@@ -3,7 +3,7 @@ import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 interface Checkout {
@@ -20,6 +20,7 @@ interface Checkout {
 }
 
 export function ProductCheckoutsTab({ productId }: { productId: string }) {
+  const fid = useId();
   const [items, setItems] = useState<Checkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -248,7 +249,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 <label
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
-                  htmlFor="descricao-cfe253"
+                  htmlFor={`${fid}-desc`}
                 >
                   Descricao *
                 </label>
@@ -256,16 +257,16 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   style={inputStyle}
-                  id="descricao-cfe253"
+                  id={`${fid}-desc`}
                 />
               </div>
               <div>
-                <label
+                <span
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
                 >
                   Formas de pagamento
-                </label>
+                </span>
                 <div className="flex flex-wrap gap-2">
                   {['BOLETO', 'CARTAO', 'PIX', 'RECEBA_E_PAGUE'].map((m) => (
                     <label

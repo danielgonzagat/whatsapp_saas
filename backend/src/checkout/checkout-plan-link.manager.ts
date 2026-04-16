@@ -62,6 +62,7 @@ export class CheckoutPlanLinkManager {
       return normalizedBase;
     }
 
+    // biome-ignore lint/performance/noAwaitInLoops: retry loop for unique slug generation
     for (let attempt = 0; attempt < 25; attempt += 1) {
       const suffix = `${Date.now().toString(36)}${attempt.toString(36)}`.slice(-6);
       const candidate = this.normalizeCheckoutSlug(`${normalizedBase}-${suffix}`);
@@ -215,6 +216,7 @@ export class CheckoutPlanLinkManager {
         });
       }
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential plan processing with external API
       for (const plan of plans) {
         if (existingPlanIds.has(plan.id)) continue;
 
@@ -238,6 +240,7 @@ export class CheckoutPlanLinkManager {
         new Set([...desiredPlanIds, ...existingLinks.map((link) => link.planId)]),
       );
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential plan link invalidation
       for (const planId of affectedPlanIds) {
         const remainingLinks = await tx.checkoutPlanLink.findMany({
           where: { planId },

@@ -143,7 +143,7 @@ export function ContextCapsule({
       }}
     >
       {contextItems.map((item, idx) => (
-        <div key={idx} className="flex items-center gap-2">
+        <div key={`${item.type}-${item.label}`} className="flex items-center gap-2">
           {/* Separator */}
           {idx > 0 && (
             <span className="text-xs" style={{ color: colors.text.muted }}>

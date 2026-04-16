@@ -70,6 +70,7 @@ async function fetchWhatsAppUpstream(
   });
   let lastError: unknown;
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const baseUrl of getBackendCandidateUrls()) {
     const url = `${baseUrl}${upstreamPath}`;
 

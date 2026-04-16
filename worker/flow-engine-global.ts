@@ -337,6 +337,7 @@ export class FlowEngineGlobal {
     const MAX_ITERATIONS = 1000;
     let iterations = 0;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     while (true) {
       iterations++;
       if (iterations > MAX_ITERATIONS) {
@@ -369,6 +370,7 @@ export class FlowEngineGlobal {
         let retryCount = 0;
         const MAX_RETRIES = 3;
 
+        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
         while (true) {
           try {
             result = await this.executeNode(state, node);
@@ -862,6 +864,7 @@ export class FlowEngineGlobal {
         const aiRole =
           readString(node.data, 'aiRole') === 'brain' || enableTools ? 'brain' : 'writer';
 
+        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
         while (iterations < MAX_ITERATIONS) {
           iterations++;
 
@@ -875,6 +878,7 @@ export class FlowEngineGlobal {
           if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
             this.log.info('ai_tool_call', { count: responseMessage.tool_calls.length });
 
+            // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
             for (const toolCall of responseMessage.tool_calls) {
               const functionName = toolCall.function.name;
               let args: Record<string, unknown> = {};
@@ -1118,6 +1122,7 @@ export class FlowEngineGlobal {
           // Ideally we would suspend flow execution and use a webhook/event to resume.
           // But for < 10s generation, polling is acceptable.
           let audioUrl: string | null = null;
+          // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
           for (let i = 0; i < 45; i++) {
             // 45 seconds timeout
             await this.sleep(1000);
@@ -1285,6 +1290,7 @@ export class FlowEngineGlobal {
     let attempt = 0;
     let lastError: unknown;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     while (attempt < MAX_RETRIES) {
       const start = Date.now();
       try {
@@ -1620,6 +1626,7 @@ export class FlowEngineGlobal {
     const now = Date.now();
     const expiredMembers = await this.context.zrangeByScore('timeouts', 0, now);
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const member of expiredMembers) {
       const { user, workspaceId } = this.parseTimeoutMember(member);
       this.log.warn('timeout_detected', { user, workspaceId });

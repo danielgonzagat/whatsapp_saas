@@ -428,6 +428,7 @@ export class WalletService {
       // end so drift is never silently lost (Wave 2 I8).
       const perTxFailures: Array<{ txId: string; error: string }> = [];
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential financial transaction processing
       for (const tx of pendingTxs) {
         try {
           const wallet = walletsById.get(tx.walletId);

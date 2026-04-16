@@ -7,6 +7,7 @@ async function retryFailedJobs() {
   const failed = await queue.getFailed();
   console.log(`Found ${failed.length} failed jobs.`);
 
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const job of failed) {
     console.log(`Retrying job ${job.id}...`);
     await job.retry();

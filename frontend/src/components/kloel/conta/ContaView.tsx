@@ -32,7 +32,7 @@ import { inviteTeamMember, removeTeamMember, revokeTeamInvite } from '@/lib/api/
 import { swrFetcher } from '@/lib/fetcher';
 import { readFileAsDataUrl } from '@/lib/media-upload';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { mutate as globalMutate } from 'swr'; // PULSE:OK — globalMutate used after Meta disconnect; SWR mutate() used in TeamSection for invite/revoke/remove
 import useSWR from 'swr';
 
@@ -698,9 +698,12 @@ function Field({
     onBlurProp?.();
   };
 
+  const fieldId = useId();
+
   return (
     <div style={{ flex: half ? 1 : 'none', width: half ? 'auto' : '100%' }}>
       <label
+        htmlFor={`${fieldId}-input`}
         style={{
           fontSize: 11,
           fontWeight: 600,
@@ -717,6 +720,7 @@ function Field({
       <div style={{ position: 'relative' as const }}>
         {rows ? (
           <textarea
+            id={`${fieldId}-input`}
             aria-label={label}
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -729,6 +733,7 @@ function Field({
           />
         ) : (
           <input
+            id={`${fieldId}-input`}
             aria-label={label}
             type={type}
             value={value}
@@ -1800,6 +1805,7 @@ function DadosBancariosSection({
   profile: KycProfile | null;
   mutate: () => void;
 }) {
+  const fid = useId();
   const { updateBank } = useBankMutations();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -1962,7 +1968,7 @@ function DadosBancariosSection({
         <div style={{ display: 'flex', gap: 14 }}>
           {/* Bank — searchable dropdown */}
           <div ref={bankRef} style={{ flex: 1, position: 'relative' as const }}>
-            <label
+            <span
               style={{
                 fontSize: 11,
                 fontWeight: 600,
@@ -1975,7 +1981,7 @@ function DadosBancariosSection({
               }}
             >
               Banco <span style={{ color: EMBER, fontSize: 8 }}>*</span>
-            </label>
+            </span>
             <div
               onClick={() => setBankDropdownOpen(true)}
               style={{
@@ -2222,7 +2228,7 @@ function DadosBancariosSection({
 
           {/* Bank code — auto-filled, read-only */}
           <div style={{ flex: 1 }}>
-            <label
+            <span
               style={{
                 fontSize: 11,
                 fontWeight: 600,
@@ -2235,7 +2241,7 @@ function DadosBancariosSection({
               }}
             >
               Codigo do banco <span style={{ color: EMBER, fontSize: 8 }}>*</span>
-            </label>
+            </span>
             <div
               style={{
                 width: '100%',
@@ -2350,7 +2356,7 @@ function DadosBancariosSection({
                   marginBottom: 6,
                   fontFamily: SORA,
                 }}
-                htmlFor="tipo-da-chave-c9363f"
+                htmlFor={`${fid}-tipo-chave`}
               >
                 Tipo da chave
               </label>
@@ -2370,7 +2376,7 @@ function DadosBancariosSection({
                   cursor: 'pointer',
                   appearance: 'none' as const,
                 }}
-                id="tipo-da-chave-c9363f"
+                id={`${fid}-tipo-chave`}
               >
                 <option value="">Selecione...</option>
                 <option value="CPF">CPF</option>
@@ -3240,7 +3246,7 @@ function AjudaSection() {
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
             {faqs.map((faq, idx) => (
               <div
-                key={idx}
+                key={faq.q}
                 style={{
                   background: 'var(--app-bg-secondary)',
                   border: '1px solid var(--app-border-primary)',
@@ -3543,6 +3549,7 @@ function MetaConnectSection() {
 // ═══ SECTION: EQUIPE ═══
 
 function TeamSection() {
+  const fid = useId();
   const wsId = useWorkspaceId();
   const { data, isLoading, mutate } = useSWR<TeamApiResponse>(
     wsId ? `${wsId}:/team` : null,
@@ -3658,7 +3665,7 @@ function TeamSection() {
                 marginBottom: 6,
                 fontFamily: SORA,
               }}
-              htmlFor="email-6a8700"
+              htmlFor={`${fid}-email`}
             >
               Email
             </label>
@@ -3672,7 +3679,7 @@ function TeamSection() {
               }}
               placeholder="email@exemplo.com"
               style={inputStyle}
-              id="email-6a8700"
+              id={`${fid}-email`}
             />
           </div>
           <div style={{ flex: 1, minWidth: 140 }}>
@@ -3685,7 +3692,7 @@ function TeamSection() {
                 marginBottom: 6,
                 fontFamily: SORA,
               }}
-              htmlFor="funcao-1d7233"
+              htmlFor={`${fid}-funcao`}
             >
               Funcao
             </label>
@@ -3693,7 +3700,7 @@ function TeamSection() {
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value)}
               style={selectStyle}
-              id="funcao-1d7233"
+              id={`${fid}-funcao`}
             >
               {Object.entries(ROLES).map(([k, v]) => (
                 <option key={k} value={k}>

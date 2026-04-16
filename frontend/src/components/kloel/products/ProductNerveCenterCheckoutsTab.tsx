@@ -3,7 +3,7 @@
 import { useToast } from '@/components/kloel/ToastProvider';
 import { useCheckoutConfig } from '@/hooks/useCheckoutPlans';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import {
   Bg,
@@ -684,7 +684,7 @@ function CheckoutConfigPanel({
             Personalizar
           </h4>
           <div style={{ marginBottom: 12 }}>
-            <label
+            <span
               style={{
                 fontSize: 11,
                 fontWeight: 600,
@@ -694,7 +694,7 @@ function CheckoutConfigPanel({
               }}
             >
               Cor principal
-            </label>
+            </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="color"
@@ -729,7 +729,7 @@ function CheckoutConfigPanel({
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
-            <label
+            <span
               style={{
                 fontSize: 11,
                 fontWeight: 600,
@@ -739,7 +739,7 @@ function CheckoutConfigPanel({
               }}
             >
               Cor fundo
-            </label>
+            </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="color"

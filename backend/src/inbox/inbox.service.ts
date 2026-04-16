@@ -88,6 +88,7 @@ export class InboxService {
   ) {
     const initialLastMessageAt = this.normalizeDate(options?.initialLastMessageAt);
 
+    // biome-ignore lint/performance/noAwaitInLoops: retry loop for upsert race condition
     for (let attempt = 0; attempt < GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS; attempt++) {
       const existing = await client.conversation.findFirst({
         where: { workspaceId, contactId, channel, status: { not: 'CLOSED' } },

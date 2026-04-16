@@ -13,7 +13,7 @@ import { apiFetch } from '@/lib/api';
 import { buildPublicCheckoutEntryUrl, getPrimaryCheckoutLinkForPlan } from '@/lib/checkout-links';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useId } from 'react';
 import { mutate } from 'swr';
 import { ProductNerveCenterAfterPayTab } from './ProductNerveCenterAfterPayTab';
 import { ProductNerveCenterAvalTab } from './ProductNerveCenterAvalTab';
@@ -184,6 +184,7 @@ export default function ProductNerveCenter({
   initialModal,
   initialFocus,
 }: ProductNerveCenterProps) {
+  const fid = useId();
   const router = useRouter();
   const { showToast } = useToast();
   const { isMobile } = useResponsiveViewport();
@@ -990,7 +991,7 @@ export default function ProductNerveCenter({
             }}
           >
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} style={{ padding: '8px 14px' }}>
+              <div key={`tab-skeleton-${index}`} style={{ padding: '8px 14px' }}>
                 <SkeletonBlock width={72} height={10} />
               </div>
             ))}
@@ -1843,7 +1844,7 @@ export default function ProductNerveCenter({
                               textTransform: 'uppercase',
                               letterSpacing: '.08em',
                             }}
-                            htmlFor="cupom-selecionado-e99559"
+                            htmlFor={`${fid}-cupom`}
                           >
                             Cupom selecionado
                           </label>
@@ -1865,7 +1866,7 @@ export default function ProductNerveCenter({
                               fontSize: 13,
                               outline: 'none',
                             }}
-                            id="cupom-selecionado-e99559"
+                            id={`${fid}-cupom`}
                           >
                             {COUPONS.map((coupon) => (
                               <option key={coupon.id} value={coupon.code}>

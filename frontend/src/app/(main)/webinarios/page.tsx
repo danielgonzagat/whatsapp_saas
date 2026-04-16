@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 interface Webinar {
@@ -85,6 +85,7 @@ function toEmbedUrl(url: string): string | null {
 }
 
 export default function WebinariosPage() {
+  const fid = useId();
   const _router = useRouter();
   const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();
   const workspaceId = workspace?.id;
@@ -708,7 +709,7 @@ export default function WebinariosPage() {
               <div>
                 <label
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
-                  htmlFor="titulo-042897"
+                  htmlFor={`${fid}-titulo-create`}
                 >
                   Titulo *
                 </label>
@@ -730,14 +731,14 @@ export default function WebinariosPage() {
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
-                  id="titulo-042897"
+                  id={`${fid}-titulo-create`}
                 />
               </div>
 
               <div>
                 <label
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
-                  htmlFor="url-do-webinario-61dc21"
+                  htmlFor={`${fid}-url-create`}
                 >
                   URL do Webinario *
                 </label>
@@ -759,14 +760,14 @@ export default function WebinariosPage() {
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
-                  id="url-do-webinario-61dc21"
+                  id={`${fid}-url-create`}
                 />
               </div>
 
               <div>
                 <label
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
-                  htmlFor="data-e-hora-e25490"
+                  htmlFor={`${fid}-data-create`}
                 >
                   Data e Hora *
                 </label>
@@ -788,14 +789,14 @@ export default function WebinariosPage() {
                     boxSizing: 'border-box',
                     colorScheme: 'dark',
                   }}
-                  id="data-e-hora-e25490"
+                  id={`${fid}-data-create`}
                 />
               </div>
 
               <div>
                 <label
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
-                  htmlFor="descricao-opcional-6f6910"
+                  htmlFor={`${fid}-desc-create`}
                 >
                   Descricao (opcional)
                 </label>
@@ -817,7 +818,7 @@ export default function WebinariosPage() {
                     resize: 'vertical',
                     boxSizing: 'border-box',
                   }}
-                  id="descricao-opcional-6f6910"
+                  id={`${fid}-desc-create`}
                 />
               </div>
 
@@ -933,7 +934,7 @@ export default function WebinariosPage() {
               <div>
                 <label
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
-                  htmlFor="titulo-e26d24"
+                  htmlFor={`${fid}-titulo-edit`}
                 >
                   Titulo *
                 </label>
@@ -954,14 +955,14 @@ export default function WebinariosPage() {
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
-                  id="titulo-e26d24"
+                  id={`${fid}-titulo-edit`}
                 />
               </div>
 
               <div>
                 <label
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
-                  htmlFor="url-do-webinario-2f7128"
+                  htmlFor={`${fid}-url-edit`}
                 >
                   URL do Webinario *
                 </label>
@@ -982,14 +983,14 @@ export default function WebinariosPage() {
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
-                  id="url-do-webinario-2f7128"
+                  id={`${fid}-url-edit`}
                 />
               </div>
 
               <div>
                 <label
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
-                  htmlFor="data-e-hora-5ea9a8"
+                  htmlFor={`${fid}-data-edit`}
                 >
                   Data e Hora *
                 </label>
@@ -1011,14 +1012,14 @@ export default function WebinariosPage() {
                     boxSizing: 'border-box',
                     colorScheme: 'dark',
                   }}
-                  id="data-e-hora-5ea9a8"
+                  id={`${fid}-data-edit`}
                 />
               </div>
 
               <div>
                 <label
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
-                  htmlFor="descricao-opcional-ff5b54"
+                  htmlFor={`${fid}-desc-edit`}
                 >
                   Descricao (opcional)
                 </label>
@@ -1039,7 +1040,7 @@ export default function WebinariosPage() {
                     resize: 'vertical',
                     boxSizing: 'border-box',
                   }}
-                  id="descricao-opcional-ff5b54"
+                  id={`${fid}-desc-edit`}
                 />
               </div>
 

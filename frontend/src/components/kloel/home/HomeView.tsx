@@ -128,7 +128,7 @@ function Sparkline({
   }, [data, height, width]);
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden>
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
       <polyline
         points={points}
         fill="none"
@@ -161,7 +161,7 @@ function RingMeter({
       width={size}
       height={size}
       style={{ transform: 'rotate(-90deg)', display: 'block', overflow: 'visible' }}
-      aria-hidden
+      aria-hidden="true"
     >
       <circle
         cx={size / 2}

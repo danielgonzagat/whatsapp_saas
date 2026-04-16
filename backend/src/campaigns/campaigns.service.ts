@@ -169,6 +169,7 @@ export class CampaignsService {
     let sent = 0;
     let failed = 0;
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential contact processing with DB writes
     for (const contact of contacts) {
       try {
         // Try email first (always available if Resend configured)
@@ -246,6 +247,7 @@ export class CampaignsService {
     if (!base) throw new NotFoundException('Campaign not found');
     const variantIds: string[] = [];
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential AI variant generation
     for (let i = 0; i < Math.max(1, Math.min(variants, 10)); i++) {
       const mutatedMessage = await this.mutateCopy(base.messageTemplate, i);
       // PULSE:OK — each variant depends on mutateCopy result; sequential creation required

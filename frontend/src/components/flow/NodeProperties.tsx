@@ -1,6 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
+import { useId } from 'react';
 import type { Node } from 'reactflow';
 
 interface NodePropertiesProps {
@@ -10,6 +11,7 @@ interface NodePropertiesProps {
 }
 
 export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps) {
+  const id = useId();
   if (!node) return null;
 
   const handleChange = (field: string, value: any) => {
@@ -22,7 +24,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-6c0e32">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-start-nome`}
+              >
                 Nome
               </label>
               <input
@@ -32,18 +37,21 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Início"
-                id="nome-6c0e32"
+                id={`${id}-start-nome`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="gatilho-0c78bd">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-start-gatilho`}
+              >
                 Gatilho
               </label>
               <select
                 value={node.data.trigger || 'manual'}
                 onChange={(e) => handleChange('trigger', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="gatilho-0c78bd"
+                id={`${id}-start-gatilho`}
               >
                 <option value="manual">Manual</option>
                 <option value="keyword">Palavra-chave</option>
@@ -55,7 +63,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label
                   className="block text-sm font-medium text-gray-700"
-                  htmlFor="palavra-chave-b8cfef"
+                  htmlFor={`${id}-start-keyword`}
                 >
                   Palavra-chave
                 </label>
@@ -66,7 +74,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   onChange={(e) => handleChange('keyword', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="oi, olá, começar"
-                  id="palavra-chave-b8cfef"
+                  id={`${id}-start-keyword`}
                 />
               </div>
             )}
@@ -77,7 +85,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-ad61cf">
+              <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-msg-nome`}>
                 Nome
               </label>
               <input
@@ -87,11 +95,14 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Mensagem de boas-vindas"
-                id="nome-ad61cf"
+                id={`${id}-msg-nome`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="mensagem-31e8a6">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-msg-mensagem`}
+              >
                 Mensagem
               </label>
               <textarea
@@ -99,14 +110,14 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('message', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
                 placeholder="Olá! Como posso ajudá-lo hoje?"
-                id="mensagem-31e8a6"
+                id={`${id}-msg-mensagem`}
               />
               <p className="text-xs text-gray-500">Use {'{{variavel}}'} para inserir variáveis</p>
             </div>
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium text-gray-700"
-                htmlFor="url-da-m-dia-opcional-99f308"
+                htmlFor={`${id}-msg-media`}
               >
                 URL da Mídia (opcional)
               </label>
@@ -117,7 +128,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('mediaUrl', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://..."
-                id="url-da-m-dia-opcional-99f308"
+                id={`${id}-msg-media`}
               />
             </div>
           </>
@@ -127,7 +138,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-72b978">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-input-nome`}
+              >
                 Nome
               </label>
               <input
@@ -136,11 +150,14 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="nome-72b978"
+                id={`${id}-input-nome`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="pergunta-8582b4">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-input-pergunta`}
+              >
                 Pergunta
               </label>
               <textarea
@@ -148,13 +165,13 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('question', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Qual é o seu nome?"
-                id="pergunta-8582b4"
+                id={`${id}-input-pergunta`}
               />
             </div>
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium text-gray-700"
-                htmlFor="salvar-em-vari-vel-f8128a"
+                htmlFor={`${id}-input-varname`}
               >
                 Salvar em variável
               </label>
@@ -165,13 +182,13 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('variableName', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="nome"
-                id="salvar-em-vari-vel-f8128a"
+                id={`${id}-input-varname`}
               />
             </div>
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium text-gray-700"
-                htmlFor="tipo-de-entrada-a9b088"
+                htmlFor={`${id}-input-type`}
               >
                 Tipo de entrada
               </label>
@@ -179,7 +196,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.inputType || 'text'}
                 onChange={(e) => handleChange('inputType', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="tipo-de-entrada-a9b088"
+                id={`${id}-input-type`}
               >
                 <option value="text">Texto</option>
                 <option value="number">Número</option>
@@ -193,7 +210,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label
                   className="block text-sm font-medium text-gray-700"
-                  htmlFor="op-es-uma-por-linha-4b23cd"
+                  htmlFor={`${id}-input-options`}
                 >
                   Opções (uma por linha)
                 </label>
@@ -204,7 +221,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Opção 1&#10;Opção 2&#10;Opção 3"
-                  id="op-es-uma-por-linha-4b23cd"
+                  id={`${id}-input-options`}
                 />
               </div>
             )}
@@ -215,7 +232,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-a522fb">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-cond-nome`}
+              >
                 Nome
               </label>
               <input
@@ -224,11 +244,11 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="nome-a522fb"
+                id={`${id}-cond-nome`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="vari-vel-9dfa33">
+              <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-cond-var`}>
                 Variável
               </label>
               <input
@@ -238,18 +258,18 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('condition', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="resposta"
-                id="vari-vel-9dfa33"
+                id={`${id}-cond-var`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="operador-1bcff5">
+              <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-cond-op`}>
                 Operador
               </label>
               <select
                 value={node.data.operator || 'equals'}
                 onChange={(e) => handleChange('operator', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="operador-1bcff5"
+                id={`${id}-cond-op`}
               >
                 <option value="equals">Igual a</option>
                 <option value="contains">Contém</option>
@@ -261,7 +281,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               </select>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="valor-6600eb">
+              <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-cond-val`}>
                 Valor
               </label>
               <input
@@ -271,7 +291,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('value', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="sim"
-                id="valor-6600eb"
+                id={`${id}-cond-val`}
               />
             </div>
           </>
@@ -281,7 +301,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-520ad2">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-delay-nome`}
+              >
                 Nome
               </label>
               <input
@@ -290,13 +313,13 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="nome-520ad2"
+                id={`${id}-delay-nome`}
               />
             </div>
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium text-gray-700"
-                htmlFor="tipo-de-delay-896e2f"
+                htmlFor={`${id}-delay-type`}
               >
                 Tipo de delay
               </label>
@@ -304,7 +327,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.delayType || 'seconds'}
                 onChange={(e) => handleChange('delayType', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="tipo-de-delay-896e2f"
+                id={`${id}-delay-type`}
               >
                 <option value="seconds">Segundos</option>
                 <option value="minutes">Minutos</option>
@@ -315,7 +338,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             {node.data.delayType !== 'until' ? (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700" htmlFor="valor-a9256c">
+                <label
+                  className="block text-sm font-medium text-gray-700"
+                  htmlFor={`${id}-delay-val`}
+                >
                   Valor
                 </label>
                 <input
@@ -325,12 +351,15 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   onChange={(e) => handleChange('delayValue', Number.parseInt(e.target.value, 10))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="0"
-                  id="valor-a9256c"
+                  id={`${id}-delay-val`}
                 />
               </div>
             ) : (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700" htmlFor="hor-rio-7a56c7">
+                <label
+                  className="block text-sm font-medium text-gray-700"
+                  htmlFor={`${id}-delay-time`}
+                >
                   Horário
                 </label>
                 <input
@@ -339,7 +368,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   value={node.data.untilTime || ''}
                   onChange={(e) => handleChange('untilTime', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  id="hor-rio-7a56c7"
+                  id={`${id}-delay-time`}
                 />
               </div>
             )}
@@ -350,7 +379,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-88ebfe">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-action-nome`}
+              >
                 Nome
               </label>
               <input
@@ -359,13 +391,13 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="nome-88ebfe"
+                id={`${id}-action-nome`}
               />
             </div>
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium text-gray-700"
-                htmlFor="tipo-de-a-o-b48645"
+                htmlFor={`${id}-action-type`}
               >
                 Tipo de ação
               </label>
@@ -373,7 +405,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.actionType || 'tag'}
                 onChange={(e) => handleChange('actionType', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="tipo-de-a-o-b48645"
+                id={`${id}-action-type`}
               >
                 <option value="tag">Adicionar Tag</option>
                 <option value="variable">Definir Variável</option>
@@ -388,7 +420,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label
                   className="block text-sm font-medium text-gray-700"
-                  htmlFor="nome-da-tag-c5de79"
+                  htmlFor={`${id}-action-tag`}
                 >
                   Nome da Tag
                 </label>
@@ -401,7 +433,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="cliente-vip"
-                  id="nome-da-tag-c5de79"
+                  id={`${id}-action-tag`}
                 />
               </div>
             )}
@@ -410,7 +442,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 <div className="space-y-2">
                   <label
                     className="block text-sm font-medium text-gray-700"
-                    htmlFor="url-do-webhook-14837f"
+                    htmlFor={`${id}-action-webhook-url`}
                   >
                     URL do Webhook
                   </label>
@@ -423,13 +455,13 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="https://..."
-                    id="url-do-webhook-14837f"
+                    id={`${id}-action-webhook-url`}
                   />
                 </div>
                 <div className="space-y-2">
                   <label
                     className="block text-sm font-medium text-gray-700"
-                    htmlFor="m-todo-407dc0"
+                    htmlFor={`${id}-action-webhook-method`}
                   >
                     Método
                   </label>
@@ -439,7 +471,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                       handleChange('config', { ...node.data.config, method: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    id="m-todo-407dc0"
+                    id={`${id}-action-webhook-method`}
                   >
                     <option value="GET">GET</option>
                     <option value="POST">POST</option>
@@ -456,7 +488,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-5555c3">
+              <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-ai-nome`}>
                 Nome
               </label>
               <input
@@ -465,18 +497,18 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="nome-5555c3"
+                id={`${id}-ai-nome`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="modelo-42467d">
+              <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-ai-model`}>
                 Modelo
               </label>
               <select
                 value={node.data.aiRole || 'writer'}
                 onChange={(e) => handleChange('aiRole', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="modelo-42467d"
+                id={`${id}-ai-model`}
               >
                 <option value="writer">Responder ao cliente</option>
                 <option value="brain">Pensar / decidir</option>
@@ -485,7 +517,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium text-gray-700"
-                htmlFor="prompt-do-sistema-6bda2b"
+                htmlFor={`${id}-ai-sysprompt`}
               >
                 Prompt do Sistema
               </label>
@@ -494,11 +526,14 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('systemPrompt', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
                 placeholder="Você é um assistente de vendas..."
-                id="prompt-do-sistema-6bda2b"
+                id={`${id}-ai-sysprompt`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="prompt-58b6f0">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-ai-prompt`}
+              >
                 Prompt
               </label>
               <textarea
@@ -506,13 +541,13 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('prompt', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
                 placeholder="Analise a mensagem do cliente: {{mensagem}}"
-                id="prompt-58b6f0"
+                id={`${id}-ai-prompt`}
               />
             </div>
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium text-gray-700"
-                htmlFor="salvar-resposta-em-3b9df1"
+                htmlFor={`${id}-ai-saveto`}
               >
                 Salvar resposta em
               </label>
@@ -523,14 +558,11 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('saveResponseTo', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="resposta_ia"
-                id="salvar-resposta-em-3b9df1"
+                id={`${id}-ai-saveto`}
               />
             </div>
             <div className="space-y-2">
-              <label
-                className="block text-sm font-medium text-gray-700"
-                htmlFor="temperatura-43393b"
-              >
+              <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-ai-temp`}>
                 Temperatura: {node.data.temperature || 0.7}
               </label>
               <input
@@ -542,7 +574,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.temperature || 0.7}
                 onChange={(e) => handleChange('temperature', Number.parseFloat(e.target.value))}
                 className="w-full"
-                id="temperatura-43393b"
+                id={`${id}-ai-temp`}
               />
             </div>
           </>
@@ -552,7 +584,10 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-e47f70">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-wait-nome`}
+              >
                 Nome
               </label>
               <input
@@ -562,11 +597,14 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
                 placeholder="Aguardar Resposta"
-                id="nome-e47f70"
+                id={`${id}-wait-nome`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="timeout-b9940b">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-wait-timeout`}
+              >
                 Timeout
               </label>
               <input
@@ -576,18 +614,21 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('timeoutValue', Number.parseInt(e.target.value, 10))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
                 min="0"
-                id="timeout-b9940b"
+                id={`${id}-wait-timeout`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="unidade-fe9831">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-wait-unit`}
+              >
                 Unidade
               </label>
               <select
                 value={node.data.timeoutUnit || 'minutes'}
                 onChange={(e) => handleChange('timeoutUnit', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
-                id="unidade-fe9831"
+                id={`${id}-wait-unit`}
               >
                 <option value="minutes">Minutos</option>
                 <option value="hours">Horas</option>
@@ -597,7 +638,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium text-gray-700"
-                htmlFor="mensagem-de-fallback-6e260a"
+                htmlFor={`${id}-wait-fallback`}
               >
                 Mensagem de fallback
               </label>
@@ -606,7 +647,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 onChange={(e) => handleChange('fallbackMessage', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500 min-h-[80px]"
                 placeholder="Mensagem enviada quando o timeout expira..."
-                id="mensagem-de-fallback-6e260a"
+                id={`${id}-wait-fallback`}
               />
               <p className="text-xs text-gray-500">
                 Enviada automaticamente quando o tempo limite expira sem resposta
@@ -619,7 +660,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         return (
           <>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="nome-232a2d">
+              <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-end-nome`}>
                 Nome
               </label>
               <input
@@ -628,18 +669,21 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="nome-232a2d"
+                id={`${id}-end-nome`}
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700" htmlFor="a-o-final-edca3f">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`${id}-end-action`}
+              >
                 Ação final
               </label>
               <select
                 value={node.data.endAction || 'complete'}
                 onChange={(e) => handleChange('endAction', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                id="a-o-final-edca3f"
+                id={`${id}-end-action`}
               >
                 <option value="complete">Finalizar conversa</option>
                 <option value="redirect">Redirecionar para outro fluxo</option>
@@ -650,7 +694,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label
                   className="block text-sm font-medium text-gray-700"
-                  htmlFor="mensagem-de-transfer-ncia-c84c73"
+                  htmlFor={`${id}-end-handoff`}
                 >
                   Mensagem de transferência
                 </label>
@@ -659,7 +703,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   onChange={(e) => handleChange('handoffMessage', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Aguarde, vou transferir para um atendente..."
-                  id="mensagem-de-transfer-ncia-c84c73"
+                  id={`${id}-end-handoff`}
                 />
               </div>
             )}

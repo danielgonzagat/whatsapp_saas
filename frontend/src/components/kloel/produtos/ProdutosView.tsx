@@ -15,7 +15,7 @@ import { buildMemberAreaPreviewPath } from '@/lib/member-area-preview';
 import { toSupportedEmbedUrl } from '@/lib/video-embed';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type React from 'react';
-import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 // ── Fonts ──
@@ -318,7 +318,7 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
         width={w}
         height={h}
         viewBox={`0 0 ${w} ${h}`}
-        aria-hidden
+        aria-hidden="true"
         style={{ display: 'block', opacity: 0.6, pointerEvents: 'none' }}
       >
         <polyline
@@ -394,9 +394,9 @@ function LiveFeed({
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {events.map((ev, i) => (
+      {events.map((ev) => (
         <div
-          key={i}
+          key={`${ev.text}-${ev.time}`}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -1432,8 +1432,8 @@ function MeusProdutos({
             value: affiliateCount,
             pct: Math.min(100, affiliateCount * 5),
           },
-        ].map((stage, i) => (
-          <div key={i} style={{ marginBottom: 10 }}>
+        ].map((stage) => (
+          <div key={stage.label} style={{ marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-secondary)' }}>
                 {stage.label}
@@ -1517,9 +1517,9 @@ function MeusProdutos({
             sub: `${memberAreaCount} areas de membros`,
             icon: IC.zap,
           },
-        ].map((s, i) => (
+        ].map((s) => (
           <div
-            key={i}
+            key={s.label}
             style={{
               flex: 1,
               background: BG_CARD,
@@ -1597,6 +1597,7 @@ function AreaMembros({
   mutateAreas: () => void;
   productOptions: DisplayProduct[];
 }) {
+  const fid = useId();
   const {
     createArea,
     updateArea,
@@ -2087,9 +2088,9 @@ function AreaMembros({
             value: String(displayAreas.length),
             sub: `${totalModules} modulos`,
           },
-        ].map((s, i) => (
+        ].map((s) => (
           <div
-            key={i}
+            key={s.label}
             style={{
               flex: 1,
               background: BG_CARD,
@@ -2209,8 +2210,11 @@ function AreaMembros({
             { label: 'Areas com comunidade', value: String(communityEnabled) },
             { label: 'Modulos publicados', value: String(totalModules) },
             { label: 'Aulas publicadas', value: String(totalLessons) },
-          ].map((c, i) => (
-            <div key={i} style={{ padding: '10px 14px', background: BG_ELEVATED, borderRadius: 6 }}>
+          ].map((c) => (
+            <div
+              key={c.label}
+              style={{ padding: '10px 14px', background: BG_ELEVATED, borderRadius: 6 }}
+            >
               <div
                 style={{
                   fontFamily: SORA,
@@ -2306,7 +2310,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
-                  htmlFor="nome-68697e"
+                  htmlFor={`${fid}-nome`}
                 >
                   Nome
                 </label>
@@ -2315,7 +2319,7 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, name: e.target.value }))}
                   placeholder="Nome da area..."
                   style={inputStyle}
-                  id="nome-68697e"
+                  id={`${fid}-nome`}
                 />
               </div>
               <div style={{ width: 160 }}>
@@ -2327,7 +2331,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
-                  htmlFor="tipo-b44eb8"
+                  htmlFor={`${fid}-tipo`}
                 >
                   Tipo
                 </label>
@@ -2335,7 +2339,7 @@ function AreaMembros({
                   value={newArea.type}
                   onChange={(e) => setNewArea((p) => ({ ...p, type: e.target.value }))}
                   style={selectStyle}
-                  id="tipo-b44eb8"
+                  id={`${fid}-tipo`}
                 >
                   <option value="COURSE">Curso</option>
                   <option value="COMMUNITY">Comunidade</option>
@@ -2351,7 +2355,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
-                  htmlFor="produto-vinculado-6e0011"
+                  htmlFor={`${fid}-produto-vinc`}
                 >
                   Produto vinculado
                 </label>
@@ -2359,7 +2363,7 @@ function AreaMembros({
                   value={newArea.productId}
                   onChange={(e) => setNewArea((p) => ({ ...p, productId: e.target.value }))}
                   style={selectStyle}
-                  id="produto-vinculado-6e0011"
+                  id={`${fid}-produto-vinc`}
                 >
                   <option value="">Sem vinculo</option>
                   {productOptions.map((product) => (
@@ -2382,7 +2386,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
-                  htmlFor="slug-8559d0"
+                  htmlFor={`${fid}-slug`}
                 >
                   Slug
                 </label>
@@ -2391,11 +2395,11 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, slug: e.target.value }))}
                   placeholder="minha-area-de-membros"
                   style={inputStyle}
-                  id="slug-8559d0"
+                  id={`${fid}-slug`}
                 />
               </div>
               <div>
-                <label
+                <span
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
@@ -2405,7 +2409,7 @@ function AreaMembros({
                   }}
                 >
                   Cor principal
-                </label>
+                </span>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
                     type="color"
@@ -2440,7 +2444,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
-                  htmlFor="descricao-9b2390"
+                  htmlFor={`${fid}-desc`}
                 >
                   Descricao
                 </label>
@@ -2449,7 +2453,7 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, description: e.target.value }))}
                   placeholder="Resumo da experiencia para o aluno"
                   style={inputStyle}
-                  id="descricao-9b2390"
+                  id={`${fid}-desc`}
                 />
               </div>
               <div>
@@ -2461,7 +2465,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
-                  htmlFor="template-e6a786"
+                  htmlFor={`${fid}-template`}
                 >
                   Template
                 </label>
@@ -2469,7 +2473,7 @@ function AreaMembros({
                   value={newArea.template}
                   onChange={(e) => setNewArea((p) => ({ ...p, template: e.target.value }))}
                   style={selectStyle}
-                  id="template-e6a786"
+                  id={`${fid}-template`}
                 >
                   <option value="academy">Academy</option>
                   <option value="community">Community</option>
@@ -2489,7 +2493,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
-                  htmlFor="logo-da-area-5dfa38"
+                  htmlFor={`${fid}-logo`}
                 >
                   Logo da area
                 </label>
@@ -2498,7 +2502,7 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, logoUrl: e.target.value }))}
                   placeholder="https://..."
                   style={inputStyle}
-                  id="logo-da-area-5dfa38"
+                  id={`${fid}-logo`}
                 />
               </div>
               <div>
@@ -2510,7 +2514,7 @@ function AreaMembros({
                     display: 'block',
                     marginBottom: 4,
                   }}
-                  htmlFor="capa-da-area-77266d"
+                  htmlFor={`${fid}-capa`}
                 >
                   Capa da area
                 </label>
@@ -2519,7 +2523,7 @@ function AreaMembros({
                   onChange={(e) => setNewArea((p) => ({ ...p, coverUrl: e.target.value }))}
                   placeholder="https://..."
                   style={inputStyle}
-                  id="capa-da-area-77266d"
+                  id={`${fid}-capa`}
                 />
               </div>
             </div>
@@ -2960,6 +2964,7 @@ function AreaMembros({
                       title="Gerenciar alunos"
                     >
                       <svg
+                        aria-hidden="true"
                         width={16}
                         height={16}
                         viewBox="0 0 24 24"
@@ -2998,6 +3003,7 @@ function AreaMembros({
                       }}
                     >
                       <svg
+                        aria-hidden="true"
                         width={16}
                         height={16}
                         viewBox="0 0 24 24"
@@ -3861,6 +3867,7 @@ function AreaMembros({
                 }}
               >
                 <svg
+                  aria-hidden="true"
                   width={16}
                   height={16}
                   viewBox="0 0 24 24"
@@ -3957,7 +3964,7 @@ function AreaMembros({
                 >
                   {[0, 1, 2].map((index) => (
                     <div
-                      key={index}
+                      key={`skeleton-row-${index}`}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -4229,6 +4236,7 @@ function AreaMembros({
                           title="Remover aluno"
                         >
                           <svg
+                            aria-hidden="true"
                             width={14}
                             height={14}
                             viewBox="0 0 24 24"
@@ -4487,8 +4495,8 @@ function AfiliarSe({
               { label: 'Vendas', value: fmt(item.sales || 0) },
               { label: 'Avaliacao', value: `${item.rating || 0}/5` },
               { label: 'Temperatura', value: `${item.temperature || 0}` },
-            ].map((d, i) => (
-              <div key={i}>
+            ].map((d) => (
+              <div key={d.label}>
                 <div
                   style={{
                     fontFamily: SORA,
@@ -4659,9 +4667,9 @@ function AfiliarSe({
               Materiais de Divulgacao
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {item.materials.map((mat: string, i: number) => (
+              {item.materials.map((mat: string) => (
                 <span
-                  key={i}
+                  key={mat}
                   style={{
                     fontFamily: MONO,
                     fontSize: 11,
@@ -5059,9 +5067,9 @@ function AfiliarSe({
             value: String(affiliateProducts.length),
             sub: `${savedProducts.length} salvos`,
           },
-        ].map((s, i) => (
+        ].map((s) => (
           <div
-            key={i}
+            key={s.label}
             style={{
               flex: 1,
               background: BG_CARD,

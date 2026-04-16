@@ -90,12 +90,12 @@ function renderMessageText(text: string) {
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
-        <strong key={i} style={{ color: '#E85D30', fontWeight: 600 }}>
+        <strong key={`bold-${part}-${i}`} style={{ color: '#E85D30', fontWeight: 600 }}>
           {part.slice(2, -2)}
         </strong>
       );
     }
-    return <span key={i}>{part}</span>;
+    return <span key={`text-${part}-${i}`}>{part}</span>;
   });
 }
 
@@ -313,6 +313,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
           const decoder = new TextDecoder();
 
+          // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -1179,7 +1180,13 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 }}
                 title="Parar resposta"
               >
-                <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  aria-hidden="true"
+                  width={10}
+                  height={10}
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <rect x="4" y="4" width="16" height="16" rx="2" />
                 </svg>
               </button>

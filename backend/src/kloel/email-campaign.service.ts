@@ -41,6 +41,7 @@ export class EmailCampaignService {
     );
 
     // Rate limit: max 10 emails per second
+    // biome-ignore lint/performance/noAwaitInLoops: sequential email sending with rate limiting
     for (let i = 0; i < recipients.length; i++) {
       const recipient = recipients[i];
       try {

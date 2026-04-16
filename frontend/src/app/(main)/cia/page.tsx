@@ -244,6 +244,7 @@ export default function CiaPage() {
         const decoder = new TextDecoder();
         let buffer = '';
 
+        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
         while (!cancelled) {
           const { value, done } = await reader.read();
           if (done) break;

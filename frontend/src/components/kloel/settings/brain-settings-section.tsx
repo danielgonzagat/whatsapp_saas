@@ -45,7 +45,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { SettingsNotice, kloelSettingsClass } from './contract';
 import { EmergencyModeCard } from './emergency-mode-card';
 import { KloelStatusCard } from './kloel-status-card';
@@ -212,6 +212,8 @@ function normalizeEmergencyMode(value: any): EmergencyModeProfile {
 }
 
 export function BrainSettingsSection() {
+  const fid = useId();
+  const kbFileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const workspaceId = tokenStorage.getWorkspaceId();
   const [company, setCompany] = useState<CompanyProfile>({
@@ -836,7 +838,7 @@ export function BrainSettingsSection() {
           <div className="space-y-2">
             <Label className="text-sm text-gray-700">Diferenciais competitivos</Label>
             {company.differentials.map((diff, i) => (
-              <div key={i} className="flex gap-2">
+              <div key={`differential-${i}`} className="flex gap-2">
                 <Input
                   placeholder={`Diferencial ${i + 1}`}
                   value={diff}
@@ -1055,7 +1057,7 @@ export function BrainSettingsSection() {
             <div className="flex flex-wrap gap-2">
               {personas.map((persona, i) => (
                 <span
-                  key={i}
+                  key={persona}
                   className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
                 >
                   {persona}
@@ -1169,7 +1171,10 @@ export function BrainSettingsSection() {
           {rules.length > 0 && (
             <div className="space-y-2">
               {rules.map((rule, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-xl bg-gray-50 p-3">
+                <div
+                  key={`rule-${i}`}
+                  className="flex items-center gap-3 rounded-xl bg-gray-50 p-3"
+                >
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-700">
                     {i + 1}
                   </span>
@@ -1448,7 +1453,7 @@ export function BrainSettingsSection() {
               }}
               onDragLeave={() => setKbDragOver(false)}
               onDrop={handleKbDrop}
-              onClick={() => document.getElementById('kb-file-input')?.click()}
+              onClick={() => kbFileRef.current?.click()}
               className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-6 text-center ${kbDragOver ? 'border-[#E85D30] bg-[#E85D30]/5' : 'border-gray-200 hover:border-gray-300'}`}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -1463,7 +1468,8 @@ export function BrainSettingsSection() {
               </p>
               <p className="mt-1 text-xs text-gray-400">PDF, TXT, DOCX — max 10MB</p>
               <input
-                id="kb-file-input"
+                ref={kbFileRef}
+                id={`${fid}-kb-file-input`}
                 type="file"
                 aria-label="Selecionar arquivo para base de conhecimento (PDF, TXT, DOCX)"
                 className="hidden"

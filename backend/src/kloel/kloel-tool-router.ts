@@ -89,6 +89,7 @@ export class KloelToolRouter {
       ? input.assistantMessage.tool_calls
       : [];
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential tool call execution with state dependencies
     for (const toolCall of toolCalls) {
       const toolName = toolCall.function?.name || '';
       const callId =

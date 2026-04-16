@@ -12,7 +12,7 @@ import { workspaceApi } from '@/lib/api/workspace';
 import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { uploadGenericMedia } from '@/lib/media-upload';
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, useEffect, useMemo, useRef, useState, useId } from 'react';
 import useSWR from 'swr';
 
 const E = '#E85D30';
@@ -1045,6 +1045,7 @@ export default function WhatsAppExperience({
   connection,
   onConnectionRefresh,
 }: WhatsAppExperienceProps) {
+  const fid = useId();
   const { products } = useProducts();
   const ownedProducts = Array.isArray(products) ? products : [];
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -1997,7 +1998,7 @@ export default function WhatsAppExperience({
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <label
+                  <span
                     style={{
                       fontSize: 12,
                       fontWeight: 600,
@@ -2008,7 +2009,7 @@ export default function WhatsAppExperience({
                     }}
                   >
                     Tom da conversa
-                  </label>
+                  </span>
                   <div
                     className="wa-tone-grid"
                     style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}
@@ -2067,7 +2068,7 @@ export default function WhatsAppExperience({
                       display: 'block',
                       fontFamily: F,
                     }}
-                    htmlFor="desconto-m-ximo-que-a-ia-pode-of-53d849"
+                    htmlFor={`${fid}-desconto`}
                   >
                     Desconto máximo que a IA pode oferecer:{' '}
                     <span style={{ color: E, fontFamily: M }}>{draft.config.maxDiscount}%</span>
@@ -2085,7 +2086,7 @@ export default function WhatsAppExperience({
                       }))
                     }
                     style={{ width: '100%', accentColor: E }}
-                    id="desconto-m-ximo-que-a-ia-pode-of-53d849"
+                    id={`${fid}-desconto`}
                   />
                   <div
                     style={{
@@ -2170,7 +2171,7 @@ export default function WhatsAppExperience({
                         display: 'block',
                         fontFamily: F,
                       }}
-                      htmlFor="tempo-para-follow-up-4e28ea"
+                      htmlFor={`${fid}-followup`}
                     >
                       Tempo para follow-up:{' '}
                       <span style={{ color: E, fontFamily: M }}>{draft.config.followUpHours}h</span>
@@ -2188,7 +2189,7 @@ export default function WhatsAppExperience({
                         }))
                       }
                       style={{ width: '100%', accentColor: E }}
-                      id="tempo-para-follow-up-4e28ea"
+                      id={`${fid}-followup`}
                     />
                   </div>
                 ) : null}
@@ -2203,7 +2204,7 @@ export default function WhatsAppExperience({
                       display: 'block',
                       fontFamily: F,
                     }}
-                    htmlFor="hor-rio-de-atendimento-df60dc"
+                    htmlFor={`${fid}-horario`}
                   >
                     Horário de atendimento
                   </label>
@@ -2222,7 +2223,7 @@ export default function WhatsAppExperience({
                       ...selectInputStyle,
                       fontFamily: M,
                     }}
-                    id="hor-rio-de-atendimento-df60dc"
+                    id={`${fid}-horario`}
                   />
                 </div>
 
@@ -2236,7 +2237,7 @@ export default function WhatsAppExperience({
                       display: 'block',
                       fontFamily: F,
                     }}
-                    htmlFor="suas-instru-es-para-o-kloel-0ad897"
+                    htmlFor={`${fid}-instrucoes`}
                   >
                     Suas instruções para o Kloel
                   </label>
@@ -2256,7 +2257,7 @@ export default function WhatsAppExperience({
                       minHeight: 70,
                       lineHeight: 1.5,
                     }}
-                    id="suas-instru-es-para-o-kloel-0ad897"
+                    id={`${fid}-instrucoes`}
                   />
                 </div>
               </div>

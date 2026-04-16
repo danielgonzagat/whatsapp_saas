@@ -13,7 +13,7 @@ import { sendReportEmail } from '@/lib/api/misc';
 import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -678,9 +678,9 @@ function TableHeader({ cols }: { cols: { l: string; w: string }[] }) {
         borderBottom: `1px solid ${V.b}`,
       }}
     >
-      {cols.map((h, i) => (
+      {cols.map((h) => (
         <span
-          key={i}
+          key={h.l || 'empty'}
           style={{
             fontSize: 8,
             fontWeight: 600,
@@ -764,9 +764,9 @@ function CTooltip({ active, payload, label }: any) {
       <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 4, fontFamily: M }}>
         {label}
       </span>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p: any) => (
         <div
-          key={i}
+          key={p.name}
           style={{ fontSize: 12, fontFamily: M, fontWeight: 600, color: p.color || V.em }}
         >
           {p.name}:{' '}
@@ -1068,6 +1068,7 @@ function VendasTab({
   setPage: React.Dispatch<React.SetStateAction<number>>;
   isMobile: boolean;
 }) {
+  const gid = useId();
   const { data: summary, isLoading: ls } = useReport<any>('vendas/summary', filters);
   const { data: daily, isLoading: ld } = useReport<any[]>('vendas/daily', filters);
   const { data: vendas, isLoading: lv } = useReport<any>('vendas', baseFilters);
@@ -1122,7 +1123,7 @@ function VendasTab({
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={dailyData}>
               <defs>
-                <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={`${gid}-gR`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={V.em} stopOpacity={0.25} />
                   <stop offset="95%" stopColor={V.em} stopOpacity={0} />
                 </linearGradient>
@@ -1147,7 +1148,7 @@ function VendasTab({
                 type="monotone"
                 dataKey="receita"
                 stroke={V.em}
-                fill="url(#gR)"
+                fill={`url(#${gid}-gR)`}
                 strokeWidth={2}
                 dot={false}
                 name="Receita"
@@ -2044,7 +2045,7 @@ function IndicadoresTab({ filters }: { filters: RF }) {
         ) : (
           rows.map((a: any, i: number) => (
             <div
-              key={i}
+              key={a.partnerName || a.id}
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1.8fr .8fr 1fr 1fr',
@@ -2441,8 +2442,8 @@ function OrigemTab({ filters }: { filters: RF }) {
                   stroke={V.void}
                   strokeWidth={2}
                 >
-                  {rows.map((_: any, i: number) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  {rows.map((r: any, i: number) => (
+                    <Cell key={r.source || `cell-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip content={<CTooltip />} />
@@ -2466,7 +2467,7 @@ function OrigemTab({ filters }: { filters: RF }) {
             const perc = totalVendas > 0 ? (o.vendas / totalVendas) * 100 : 0;
             return (
               <div
-                key={i}
+                key={o.source}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1.5fr 0.6fr 1fr 1fr',

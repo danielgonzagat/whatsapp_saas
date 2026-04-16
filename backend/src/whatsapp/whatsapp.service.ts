@@ -737,6 +737,7 @@ export class WhatsappService {
     }
 
     let scheduled = 0;
+    // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
     for (const target of targets) {
       await autopilotQueue.add(
         'score-contact',
@@ -1457,6 +1458,7 @@ export class WhatsappService {
   async optInBulk(workspaceId: string, phones: string[]) {
     const unique = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
     const results: { phone: string; ok: boolean }[] = [];
+    // biome-ignore lint/performance/noAwaitInLoops: sequential contact sync with rate limit protection
     for (const phone of unique) {
       try {
         await this.optInContact(workspaceId, phone);
@@ -1471,6 +1473,7 @@ export class WhatsappService {
   async optOutBulk(workspaceId: string, phones: string[]) {
     const unique = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
     const results: { phone: string; ok: boolean }[] = [];
+    // biome-ignore lint/performance/noAwaitInLoops: sequential contact sync with rate limit protection
     for (const phone of unique) {
       try {
         await this.optOutContact(workspaceId, phone);
@@ -1732,6 +1735,7 @@ export class WhatsappService {
     );
     const deadline = Date.now() + ttlMs;
 
+    // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for session state
     while (Date.now() < deadline) {
       const acquired = await this.redis.set(key, token, 'PX', ttlMs, 'NX');
       if (acquired === 'OK') {
@@ -2266,6 +2270,7 @@ export class WhatsappService {
   ): Promise<void> {
     const candidates = await this.resolveReadChatCandidates(workspaceId, chatIdOrPhone);
 
+    // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution with early return
     for (const candidate of candidates) {
       await this.providerRegistry.readChatMessages(workspaceId, candidate).catch(() => undefined);
     }

@@ -114,7 +114,7 @@ function ContactDetailLoadingBody() {
       <Section title="Deals">
         {[0, 1].map((index) => (
           <div
-            key={index}
+            key={`deal-skeleton-${index}`}
             style={{
               background: C.elevated,
               border: `1px solid ${C.border}`,

@@ -321,7 +321,7 @@ export function ProductIATab({ productId }: { productId: string }) {
           )}
           {objections.map((o, i) => (
             <div
-              key={i}
+              key={`objection-${i}`}
               style={{
                 padding: '8px 0',
                 borderBottom: i < objections.length - 1 ? `1px solid ${V.b}` : 'none',

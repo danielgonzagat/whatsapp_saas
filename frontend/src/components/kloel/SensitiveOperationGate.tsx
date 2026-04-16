@@ -159,9 +159,9 @@ export function SensitiveOperationGate({
         {/* Details */}
         {operation.details && operation.details.length > 0 && (
           <ul className="space-y-1 pl-8">
-            {operation.details.map((detail, idx) => (
+            {operation.details.map((detail) => (
               <li
-                key={idx}
+                key={detail}
                 className="text-sm flex items-center gap-2"
                 style={{ color: colors.text.secondary }}
               >

@@ -1197,6 +1197,7 @@ Mensagem: ${message}`,
 
     // 5. Processar tool calls
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
       for (const toolCall of assistantMessage.tool_calls) {
         if (toolCall.type !== 'function') {
           continue;
@@ -3900,6 +3901,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
       // Criar contatos
       let created = 0;
+      // biome-ignore lint/performance/noAwaitInLoops: sequential per-contact CRM enrichment
       for (const c of contacts) {
         try {
           // PULSE:OK — upsert requires unique compound where per contact; cannot batch
@@ -3960,6 +3962,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
     const productPrice = product?.price || 0;
 
     // Criar fluxo para cada estágio
+    // biome-ignore lint/performance/noAwaitInLoops: sequential stage processing with dependent data
     for (const stage of stages) {
       let flowName = '';
       let trigger = 'manual';

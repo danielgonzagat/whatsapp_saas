@@ -412,11 +412,11 @@ export function AccountSettingsSection() {
             Sessões ativas
           </h5>
           <div className="space-y-2">
-            {sessions.map((session, index) => {
+            {sessions.map((session) => {
               const Icon = session.icon;
               return (
                 <div
-                  key={index}
+                  key={session.device}
                   className={`flex items-center justify-between rounded-md p-3 ${session.current ? 'bg-[var(--app-accent-light)]' : 'bg-[var(--app-bg-secondary)]'}`}
                 >
                   <div className="flex items-center gap-3">
