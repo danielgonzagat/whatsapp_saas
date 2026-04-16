@@ -127,7 +127,7 @@ export class ToolsRegistry {
 
   static async execute(
     name: string,
-    args: any,
+    args: Record<string, unknown>,
     context: { workspaceId: string; user: string },
   ): Promise<string> {
     console.log(`[Tools] Executing ${name} with args:`, args);
@@ -138,30 +138,40 @@ export class ToolsRegistry {
           return new Date().toISOString();
 
         case 'update_contact_field': {
+          const field = typeof args.field === 'string' ? args.field : '';
+          const value = typeof args.value === 'string' ? args.value : String(args.value ?? '');
           // Simple mapping for custom fields vs root fields
-          const updateData: any = {};
-          if (args.field.startsWith('customFields.')) {
-            const key = args.field.split('.')[1];
-            updateData.customFields = { [key]: args.value };
+          const updateData: Record<string, unknown> = {};
+          if (field.startsWith('customFields.')) {
+            const key = field.split('.')[1];
+            updateData.customFields = { [key]: value };
           } else {
-            updateData[args.field] = args.value;
+            updateData[field] = value;
           }
           await CRM.updateContact(context.workspaceId, context.user, updateData);
-          return `Successfully updated ${args.field} to ${args.value}`;
+          return `Successfully updated ${field} to ${value}`;
         }
 
-        case 'add_tag':
-          await CRM.addTag(context.workspaceId, context.user, args.tag);
-          return `Tag ${args.tag} added.`;
+        case 'add_tag': {
+          const tag = typeof args.tag === 'string' ? args.tag : String(args.tag ?? '');
+          await CRM.addTag(context.workspaceId, context.user, tag);
+          return `Tag ${tag} added.`;
+        }
 
         case 'check_availability': {
           // Mock availability logic
-          const day = new Date(args.date).getDay();
+          const dateStr = typeof args.date === 'string' ? args.date : String(args.date ?? '');
+          const day = new Date(dateStr).getDay();
           if (day === 0 || day === 6) return 'No slots available (Weekend).';
           return 'Available slots: 10:00, 14:00, 16:00';
         }
 
-        case 'create_payment_link':
+        case 'create_payment_link': {
+          const productName =
+            typeof args.productName === 'string'
+              ? args.productName
+              : String(args.productName ?? '');
+          const amount = Number(args.amount) || 0;
           if (ToolsRegistry.stripe) {
             try {
               const frontendUrl =
@@ -175,9 +185,9 @@ export class ToolsRegistry {
                     price_data: {
                       currency: 'brl',
                       product_data: {
-                        name: args.productName,
+                        name: productName,
                       },
-                      unit_amount: Math.round(args.amount * 100), // Stripe expects cents
+                      unit_amount: Math.round(amount * 100), // Stripe expects cents
                     },
                     quantity: 1,
                   },
@@ -198,10 +208,13 @@ export class ToolsRegistry {
           } else {
             // Mock Fallback
             const linkId = Math.random().toString(36).substring(7);
-            return `(MOCK) https://checkout.stripe.com/pay/${linkId}?amount=${args.amount}&product=${encodeURIComponent(args.productName)}`;
+            return `(MOCK) https://checkout.stripe.com/pay/${linkId}?amount=${amount}&product=${encodeURIComponent(productName)}`;
           }
+        }
 
         case 'create_crm_deal': {
+          const dealTitle = typeof args.title === 'string' ? args.title : String(args.title ?? '');
+          const dealValue = Number(args.value) || 0;
           const contact = await CRM.getContact(context.workspaceId, context.user);
           if (!contact) return 'Contact not found.';
 
@@ -224,19 +237,21 @@ export class ToolsRegistry {
 
           await prisma.deal.create({
             data: {
-              title: args.title,
-              value: Number(args.value),
+              title: dealTitle,
+              value: dealValue,
               contactId: contact.id,
               stageId: stageId,
               priority: 'MEDIUM',
               status: 'OPEN',
             },
           });
-          return `Deal '${args.title}' created successfully.`;
+          return `Deal '${dealTitle}' created successfully.`;
         }
 
         case 'update_deal_stage': {
-          const stageName = args.stageName.toLowerCase();
+          const stageNameArg =
+            typeof args.stageName === 'string' ? args.stageName : String(args.stageName ?? '');
+          const stageName = stageNameArg.toLowerCase();
           const contact = await CRM.getContact(context.workspaceId, context.user);
           if (!contact) return 'Contact not found.';
 
@@ -247,7 +262,7 @@ export class ToolsRegistry {
 
           const targetStage = stages.find((s) => s.name.toLowerCase().includes(stageName));
           if (!targetStage)
-            return `Stage '${args.stageName}' not found. Available: ${stages.map((s) => s.name).join(', ')}`;
+            return `Stage '${stageNameArg}' not found. Available: ${stages.map((s) => s.name).join(', ')}`;
 
           // Update all open deals for this contact
           const { count } = await prisma.deal.updateMany({

@@ -5,16 +5,136 @@ import { swrFetcher } from '@/lib/fetcher';
 import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
 
+/* ── Shared types ── */
+
+interface DashboardProduct {
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  images?: string[];
+  category?: string;
+  price?: number;
+}
+
+interface DashboardProductInput extends Partial<DashboardProduct> {
+  id?: string;
+  name?: string;
+}
+
+interface CheckoutProductItem {
+  id: string;
+  slug?: string;
+  name: string;
+}
+
+interface CheckoutProductDetail {
+  id: string;
+  checkoutPlans?: CheckoutPlan[];
+  plans?: CheckoutPlan[];
+  checkoutTemplates?: CheckoutTemplate[];
+  checkouts?: CheckoutTemplate[];
+}
+
+interface CheckoutPlan {
+  id: string;
+  name: string;
+  priceInCents?: number;
+  quantity?: number;
+  maxInstallments?: number;
+  freeShipping?: boolean;
+  shippingPrice?: number;
+  [key: string]: unknown;
+}
+
+interface CheckoutTemplate {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface CheckoutProductListResponse {
+  products?: CheckoutProductItem[];
+  data?: CheckoutProductItem[];
+}
+
+interface OrderItem {
+  id: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface OrderListResponse {
+  orders?: OrderItem[];
+  total?: number;
+}
+
+interface CheckoutConfigResponse {
+  id?: string;
+  pixels?: PixelItem[];
+  [key: string]: unknown;
+}
+
+interface PixelItem {
+  id: string;
+  type: string;
+  pixelId: string;
+  accessToken?: string;
+}
+
+interface BumpItem {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface BumpListResponse {
+  bumps?: BumpItem[];
+}
+
+interface UpsellItem {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface UpsellListResponse {
+  upsells?: UpsellItem[];
+}
+
+interface CouponItem {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface CouponListResponse {
+  coupons?: CouponItem[];
+}
+
+interface PlanCreateBody {
+  name: string;
+  priceInCents?: number;
+  quantity?: number;
+  maxInstallments?: number;
+  freeShipping?: boolean;
+  shippingPrice?: number;
+  [key: string]: unknown;
+}
+
 /* ── Ensure a checkout-compatible product exists for the dashboard Product ── */
-async function ensureCheckoutProduct(product: any): Promise<string | null> {
+async function ensureCheckoutProduct(product: DashboardProduct): Promise<string | null> {
   try {
-    const res: any = await apiFetch('/checkout/products');
-    const list = Array.isArray(res) ? res : res?.products || res?.data || [];
-    const found = list.find((p: any) => p.slug === product.slug || p.name === product.name);
+    const res = await apiFetch<CheckoutProductItem[] | CheckoutProductListResponse>(
+      '/checkout/products',
+    );
+    const raw = res.data;
+    const list: CheckoutProductItem[] = Array.isArray(raw)
+      ? raw
+      : (raw as CheckoutProductListResponse)?.products ||
+        (raw as CheckoutProductListResponse)?.data ||
+        [];
+    const found = list.find((p) => p.slug === product.slug || p.name === product.name);
     if (found) return found.id;
 
     // Create checkout product from dashboard product
-    const created: any = await apiFetch('/checkout/products', {
+    const created = await apiFetch<CheckoutProductItem>('/checkout/products', {
       method: 'POST',
       body: {
         name: product.name,
@@ -25,25 +145,25 @@ async function ensureCheckoutProduct(product: any): Promise<string | null> {
         price: product.price || 0,
       },
     });
-    return created?.id || created?.data?.id || null;
+    return created?.data?.id || null;
   } catch {
     return null;
   }
 }
 
 /* ── Plans for a product ── */
-export function useCheckoutPlans(product: any) {
+export function useCheckoutPlans(product: DashboardProductInput | null | undefined) {
   const [checkoutProductId, setCheckoutProductId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (product?.id) {
-      ensureCheckoutProduct(product)
+    if (product?.id && product?.name) {
+      ensureCheckoutProduct(product as DashboardProduct)
         .then(setCheckoutProductId)
         .catch(() => {});
     }
-  }, [product?.id]);
+  }, [product?.id, product?.name]);
 
-  const { data, isLoading, mutate } = useSWR<any>(
+  const { data, isLoading, mutate } = useSWR<CheckoutProductDetail>(
     checkoutProductId ? `/checkout/products/${checkoutProductId}` : null,
     swrFetcher,
     { keepPreviousData: true },
@@ -53,7 +173,7 @@ export function useCheckoutPlans(product: any) {
   const checkouts = data?.checkoutTemplates || data?.checkouts || [];
 
   const createPlan = useCallback(
-    async (body: any) => {
+    async (body: PlanCreateBody) => {
       if (!checkoutProductId) return null;
       const res = await apiFetch(`/checkout/products/${checkoutProductId}/plans`, {
         method: 'POST',
@@ -66,7 +186,7 @@ export function useCheckoutPlans(product: any) {
   );
 
   const updatePlan = useCallback(
-    async (planId: string, body: any) => {
+    async (planId: string, body: Partial<PlanCreateBody>) => {
       const res = await apiFetch(`/checkout/plans/${planId}`, { method: 'PUT', body });
       mutate();
       return res;
@@ -83,7 +203,7 @@ export function useCheckoutPlans(product: any) {
   );
 
   const duplicatePlan = useCallback(
-    async (plan: any) => {
+    async (plan: CheckoutPlan) => {
       if (!checkoutProductId) return null;
       const res = await apiFetch(`/checkout/products/${checkoutProductId}/plans`, {
         method: 'POST',
@@ -103,7 +223,7 @@ export function useCheckoutPlans(product: any) {
   );
 
   const createCheckout = useCallback(
-    async (body: any) => {
+    async (body: Record<string, unknown>) => {
       if (!checkoutProductId) return null;
       const res = await apiFetch(`/checkout/products/${checkoutProductId}/checkouts`, {
         method: 'POST',
@@ -165,15 +285,15 @@ export function useCheckoutPlans(product: any) {
 
 /* ── Order Bumps ── */
 export function useOrderBumps(planId: string | null) {
-  const { data, isLoading, mutate } = useSWR<any>(
+  const { data, isLoading, mutate } = useSWR<BumpItem[] | BumpListResponse>(
     planId ? `/checkout/plans/${planId}/bumps` : null,
     swrFetcher,
     { keepPreviousData: true },
   );
-  const bumps = Array.isArray(data) ? data : data?.bumps || [];
+  const bumps: BumpItem[] = Array.isArray(data) ? data : (data as BumpListResponse)?.bumps || [];
 
   const createBump = useCallback(
-    async (body: any) => {
+    async (body: Record<string, unknown>) => {
       await apiFetch(`/checkout/plans/${planId}/bumps`, { method: 'POST', body });
       mutate();
     },
@@ -181,7 +301,7 @@ export function useOrderBumps(planId: string | null) {
   );
 
   const updateBump = useCallback(
-    async (id: string, body: any) => {
+    async (id: string, body: Record<string, unknown>) => {
       await apiFetch(`/checkout/bumps/${id}`, { method: 'PUT', body });
       mutate();
     },
@@ -201,15 +321,17 @@ export function useOrderBumps(planId: string | null) {
 
 /* ── Upsells ── */
 export function useUpsells(planId: string | null) {
-  const { data, isLoading, mutate } = useSWR<any>(
+  const { data, isLoading, mutate } = useSWR<UpsellItem[] | UpsellListResponse>(
     planId ? `/checkout/plans/${planId}/upsells` : null,
     swrFetcher,
     { keepPreviousData: true },
   );
-  const upsells = Array.isArray(data) ? data : data?.upsells || [];
+  const upsells: UpsellItem[] = Array.isArray(data)
+    ? data
+    : (data as UpsellListResponse)?.upsells || [];
 
   const createUpsell = useCallback(
-    async (body: any) => {
+    async (body: Record<string, unknown>) => {
       await apiFetch(`/checkout/plans/${planId}/upsells`, { method: 'POST', body });
       mutate();
     },
@@ -217,7 +339,7 @@ export function useUpsells(planId: string | null) {
   );
 
   const updateUpsell = useCallback(
-    async (id: string, body: any) => {
+    async (id: string, body: Record<string, unknown>) => {
       await apiFetch(`/checkout/upsells/${id}`, { method: 'PUT', body });
       mutate();
     },
@@ -237,13 +359,19 @@ export function useUpsells(planId: string | null) {
 
 /* ── Coupons (workspace-level) ── */
 export function useCheckoutCoupons() {
-  const { data, isLoading, mutate } = useSWR<any>('/checkout/coupons', swrFetcher, {
-    keepPreviousData: true,
-  });
-  const coupons = Array.isArray(data) ? data : data?.coupons || [];
+  const { data, isLoading, mutate } = useSWR<CouponItem[] | CouponListResponse>(
+    '/checkout/coupons',
+    swrFetcher,
+    {
+      keepPreviousData: true,
+    },
+  );
+  const coupons: CouponItem[] = Array.isArray(data)
+    ? data
+    : (data as CouponListResponse)?.coupons || [];
 
   const createCoupon = useCallback(
-    async (body: any) => {
+    async (body: Record<string, unknown>) => {
       await apiFetch('/checkout/coupons', { method: 'POST', body });
       mutate();
     },
@@ -251,7 +379,7 @@ export function useCheckoutCoupons() {
   );
 
   const updateCoupon = useCallback(
-    async (id: string, body: any) => {
+    async (id: string, body: Record<string, unknown>) => {
       await apiFetch(`/checkout/coupons/${id}`, { method: 'PUT', body });
       mutate();
     },
@@ -272,7 +400,7 @@ export function useCheckoutCoupons() {
 /* ── Checkout Products — update / delete ── */
 export function useCheckoutProduct(productId: string | null) {
   const updateProduct = useCallback(
-    async (body: any) => {
+    async (body: Record<string, unknown>) => {
       if (!productId) return null;
       const res = await apiFetch(`/checkout/products/${productId}`, { method: 'PUT', body });
       return res;
@@ -295,13 +423,15 @@ export function useCheckoutOrders(params?: { status?: string; page?: number; lim
   if (params?.page) qs.set('page', String(params.page));
   if (params?.limit) qs.set('limit', String(params.limit));
   const q = qs.toString();
-  const { data, isLoading, mutate } = useSWR<any>(
+  const { data, isLoading, mutate } = useSWR<OrderItem[] | OrderListResponse>(
     `/checkout/orders${q ? `?${q}` : ''}`,
     swrFetcher,
     { keepPreviousData: true },
   );
-  const orders = Array.isArray(data) ? data : data?.orders || [];
-  const total = data?.total ?? orders.length;
+  const orders: OrderItem[] = Array.isArray(data)
+    ? data
+    : (data as OrderListResponse)?.orders || [];
+  const total = (data as OrderListResponse)?.total ?? orders.length;
 
   const updateOrderStatus = useCallback(
     async (id: string, status: string, extra?: { trackingCode?: string; trackingUrl?: string }) => {
@@ -319,7 +449,7 @@ export function useCheckoutOrders(params?: { status?: string; page?: number; lim
 }
 
 export function useCheckoutOrder(id: string | null) {
-  const { data, isLoading, mutate } = useSWR<any>(
+  const { data, isLoading, mutate } = useSWR<OrderItem>(
     id ? `/checkout/orders/${id}` : null,
     swrFetcher,
     { keepPreviousData: true },
@@ -330,13 +460,13 @@ export function useCheckoutOrder(id: string | null) {
 /* ── Pixels (tied to a checkout configId) ── */
 export function usePixels(planId: string | null) {
   /* Pixels are embedded in the checkout config record */
-  const { data, isLoading, mutate } = useSWR<any>(
+  const { data, isLoading, mutate } = useSWR<CheckoutConfigResponse>(
     planId ? `/checkout/plans/${planId}/config` : null,
     swrFetcher,
     { keepPreviousData: true },
   );
   const configId: string | null = data?.id || null;
-  const pixels = Array.isArray(data?.pixels) ? data.pixels : [];
+  const pixels: PixelItem[] = Array.isArray(data?.pixels) ? data.pixels : [];
 
   const createPixel = useCallback(
     async (body: { type: string; pixelId: string; accessToken?: string }) => {
@@ -373,14 +503,14 @@ export function usePixels(planId: string | null) {
 
 /* ── Checkout Config ── */
 export function useCheckoutConfig(planId: string | null) {
-  const { data, isLoading, mutate } = useSWR<any>(
+  const { data, isLoading, mutate } = useSWR<CheckoutConfigResponse>(
     planId ? `/checkout/plans/${planId}/config` : null,
     swrFetcher,
     { keepPreviousData: true },
   );
 
   const updateConfig = useCallback(
-    async (body: any) => {
+    async (body: Record<string, unknown>) => {
       await apiFetch(`/checkout/plans/${planId}/config`, { method: 'PATCH', body });
       mutate();
     },

@@ -1,7 +1,68 @@
 import { whatsappApiProvider } from './whatsapp-api-provider';
 import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
-function normalizeWorkspace(workspaceOrId: any) {
+/** Minimal workspace shape accepted by the unified provider. */
+export interface WorkspaceOrId {
+  id?: string;
+  workspaceId?: string;
+  whatsappProvider?: string;
+  [key: string]: unknown;
+}
+
+/** Options for sending text messages. */
+export interface SendTextOptions {
+  quotedMessageId?: string;
+  externalId?: string;
+  chatId?: string;
+}
+
+/** Options for sending media messages. */
+export interface SendMediaOptions {
+  quotedMessageId?: string;
+  externalId?: string;
+  chatId?: string;
+}
+
+/** Options for retrieving chat messages. */
+export interface GetChatMessagesOptions {
+  limit?: number;
+  offset?: number;
+  downloadMedia?: boolean;
+}
+
+/** Contact profile shape for upsert operations. */
+export interface ContactProfile {
+  phone: string;
+  name?: string;
+  email?: string;
+  avatarUrl?: string;
+  [key: string]: unknown;
+}
+
+/** Methods that a WhatsApp provider may optionally implement. */
+interface ExtendedProvider {
+  sendText: typeof whatsappApiProvider.sendText;
+  sendMedia: typeof whatsappApiProvider.sendMedia;
+  getStatus?: (workspace: ReturnType<typeof normalizeWorkspace>) => Promise<unknown>;
+  getClientInfo?: (workspace: ReturnType<typeof normalizeWorkspace>) => Promise<unknown>;
+  getChats?: (workspace: ReturnType<typeof normalizeWorkspace>) => Promise<unknown[]>;
+  getChatMessages?: (
+    workspace: ReturnType<typeof normalizeWorkspace>,
+    chatId: string,
+    options?: GetChatMessagesOptions,
+  ) => Promise<unknown[]>;
+  readChatMessages?: (
+    workspace: ReturnType<typeof normalizeWorkspace>,
+    chatId: string,
+  ) => Promise<unknown>;
+  getLidMappings?: (workspace: ReturnType<typeof normalizeWorkspace>) => Promise<unknown[]>;
+  upsertContactProfile?: (
+    workspace: ReturnType<typeof normalizeWorkspace>,
+    contact: ContactProfile,
+  ) => Promise<boolean>;
+}
+
+function normalizeWorkspace(workspaceOrId: string | WorkspaceOrId) {
   const provider = getWhatsAppProviderFromEnv();
   if (typeof workspaceOrId === 'string') {
     return {
@@ -16,84 +77,93 @@ function normalizeWorkspace(workspaceOrId: any) {
   };
 }
 
-function resolveProvider(workspaceOrId: any) {
+function resolveProvider(workspaceOrId: string | WorkspaceOrId) {
   const workspace = normalizeWorkspace(workspaceOrId);
   return {
     workspace,
-    provider: whatsappApiProvider,
+    provider: whatsappApiProvider as ExtendedProvider,
   };
 }
 
 export const unifiedWhatsAppProvider = {
-  async sendText(workspaceOrId: any, to: string, message: string, options?: any) {
+  async sendText(
+    workspaceOrId: string | WorkspaceOrId,
+    to: string,
+    message: string,
+    options?: SendTextOptions,
+  ) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
     return provider.sendText(workspace, to, message, options);
   },
 
   async sendMedia(
-    workspaceOrId: any,
+    workspaceOrId: string | WorkspaceOrId,
     to: string,
     type: 'image' | 'video' | 'audio' | 'document',
     url: string,
     caption?: string,
-    options?: any,
+    options?: SendMediaOptions,
   ) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
     return provider.sendMedia(workspace, to, type, url, caption, options);
   },
 
-  async getStatus(workspaceOrId: any) {
+  async getStatus(workspaceOrId: string | WorkspaceOrId) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getStatus === 'function') {
-      return (provider as any).getStatus(workspace);
+    if (typeof provider.getStatus === 'function') {
+      return provider.getStatus(workspace);
     }
     return null;
   },
 
-  async getClientInfo(workspaceOrId: any) {
+  async getClientInfo(workspaceOrId: string | WorkspaceOrId) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getClientInfo === 'function') {
-      return (provider as any).getClientInfo(workspace);
+    if (typeof provider.getClientInfo === 'function') {
+      return provider.getClientInfo(workspace);
     }
     return null;
   },
 
-  async getChats(workspaceOrId: any) {
+  async getChats(workspaceOrId: string | WorkspaceOrId) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getChats === 'function') {
-      return (provider as any).getChats(workspace);
+    if (typeof provider.getChats === 'function') {
+      return provider.getChats(workspace);
     }
     return [];
   },
 
-  async getChatMessages(workspaceOrId: any, chatId: string, options?: any) {
+  async getChatMessages(
+    workspaceOrId: string | WorkspaceOrId,
+    chatId: string,
+    options?: GetChatMessagesOptions,
+  ) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getChatMessages === 'function') {
-      return (provider as any).getChatMessages(workspace, chatId, options);
+    if (typeof provider.getChatMessages === 'function') {
+      return provider.getChatMessages(workspace, chatId, options);
     }
     return [];
   },
 
-  async readChatMessages(workspaceOrId: any, chatId: string) {
+  async readChatMessages(workspaceOrId: string | WorkspaceOrId, chatId: string) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).readChatMessages === 'function') {
-      return (provider as any).readChatMessages(workspace, chatId);
+    if (typeof provider.readChatMessages === 'function') {
+      return provider.readChatMessages(workspace, chatId);
     }
     return undefined;
   },
 
-  async getLidMappings(workspaceOrId: any) {
+  async getLidMappings(workspaceOrId: string | WorkspaceOrId) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getLidMappings === 'function') {
-      return (provider as any).getLidMappings(workspace);
+    if (typeof provider.getLidMappings === 'function') {
+      return provider.getLidMappings(workspace);
     }
     return [];
   },
 
-  async upsertContactProfile(workspaceOrId: any, contact: any) {
+  async upsertContactProfile(workspaceOrId: string | WorkspaceOrId, contact: ContactProfile) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).upsertContactProfile === 'function') {
-      return (provider as any).upsertContactProfile(workspace, contact);
+    if (typeof provider.upsertContactProfile === 'function') {
+      return provider.upsertContactProfile(workspace, contact);
     }
     return false;
   },

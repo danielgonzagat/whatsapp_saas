@@ -228,6 +228,15 @@ interface ChannelRealData {
   status: string;
 }
 
+interface AIBrainInfo {
+  productsLoaded: number;
+  activeConversations: number;
+  objectionsMapped: number;
+  avgResponseTime: string;
+  status: string;
+  [key: string]: unknown;
+}
+
 interface MarketingConnectStatus {
   meta?: {
     connected?: boolean;
@@ -729,7 +738,13 @@ function EmailTab({
           campaignName: emailSubject.trim(),
         },
       });
-      const data = res.data || res;
+      const data =
+        ((res.data ?? res) as {
+          sent?: number;
+          failed?: number;
+          successCount?: number;
+          failCount?: number;
+        }) || {};
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/marketing'));
       setEmailResult({
         sent: data.sent ?? data.successCount ?? 1,
@@ -1195,8 +1210,24 @@ function InstagramTab({
   connecting,
 }: {
   channelData: ChannelRealData | null;
-  igProfile: any;
-  igInsights: any;
+  igProfile: {
+    username?: string;
+    name?: string;
+    followers?: number;
+    followersCount?: number;
+    followers_count?: number;
+    posts?: number;
+    mediaCount?: number;
+    media_count?: number;
+    bio?: string;
+  } | null;
+  igInsights: {
+    impressions?: number;
+    reach?: number;
+    engagement?: number;
+    follower_count?: number;
+    followersCount?: number;
+  } | null;
   connection?: NonNullable<MarketingConnectStatus['channels']>['instagram'];
   onConnect: (channelKey: 'instagram') => void;
   connecting?: boolean;
@@ -1768,8 +1799,24 @@ function ChannelTab({
   channelData: ChannelRealData | null;
   liveFeed: string[];
   metaConnected?: boolean;
-  igProfile?: any;
-  igInsights?: any;
+  igProfile?: {
+    username?: string;
+    name?: string;
+    followers?: number;
+    followersCount?: number;
+    followers_count?: number;
+    posts?: number;
+    mediaCount?: number;
+    media_count?: number;
+    bio?: string;
+  } | null;
+  igInsights?: {
+    impressions?: number;
+    reach?: number;
+    engagement?: number;
+    follower_count?: number;
+    followersCount?: number;
+  } | null;
   mode?: string;
   workspaceId?: string | null;
   operator?: string | null;
@@ -1817,8 +1864,8 @@ function ChannelTab({
       return (
         <InstagramTab
           channelData={channelData}
-          igProfile={igProfile}
-          igInsights={igInsights}
+          igProfile={igProfile ?? null}
+          igInsights={igInsights ?? null}
           connection={connectionStatus?.channels?.instagram}
           onConnect={(key) => onConnectMeta?.(key)}
           connecting={connectingKey === 'instagram'}
@@ -1949,7 +1996,7 @@ function VisaoGeral({
   switchTab: (id: string) => void;
   channelDataMap: Record<string, ChannelRealData>;
   feedMsgs: string[];
-  realBrain: any;
+  realBrain: AIBrainInfo | null;
   products: { name: string; price: number; sold: number; img: string }[];
 }) {
   const { isMobile } = useResponsiveViewport();
@@ -2255,18 +2302,33 @@ function VisaoGeral({
               </div>
             </div>
           </div>
-          {realBrain?.avgResponseTime && realBrain.avgResponseTime !== '--' && (
-            <div
-              style={{
-                fontFamily: MONO,
-                fontSize: 11,
-                color: 'var(--app-text-secondary)',
-                marginTop: 6,
-              }}
-            >
-              Tempo medio: {realBrain.avgResponseTime}
-            </div>
-          )}
+          {(() => {
+            const avgResponseTime =
+              typeof realBrain?.avgResponseTime === 'number' ||
+              typeof realBrain?.avgResponseTime === 'string'
+                ? realBrain.avgResponseTime
+                : null;
+            const hasValue =
+              (typeof avgResponseTime === 'number' && avgResponseTime > 0) ||
+              (typeof avgResponseTime === 'string' &&
+                avgResponseTime.trim() !== '' &&
+                avgResponseTime !== '--');
+
+            if (!hasValue) return null;
+
+            return (
+              <div
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 11,
+                  color: 'var(--app-text-secondary)',
+                  marginTop: 6,
+                }}
+              >
+                Tempo medio: {String(avgResponseTime)}
+              </div>
+            );
+          })()}
           <NP w={200} h={24} color={EMBER} />
         </div>
 
@@ -2328,7 +2390,7 @@ function ConversationsHub({
   switchTab: (id: string) => void;
   channelDataMap: Record<string, ChannelRealData>;
   feedMsgs: string[];
-  realBrain: any;
+  realBrain: AIBrainInfo | null;
   products: { name: string; price: number; sold: number; img: string }[];
 }) {
   return (
@@ -2385,16 +2447,34 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   );
 
   // ── Meta connection status ──
-  const { data: metaStatus } = useSWR<any>('/meta/auth/status', swrFetcher);
+  const { data: metaStatus } = useSWR<{ connected?: boolean }>('/meta/auth/status', swrFetcher);
   const metaConnected =
     connectionStatus?.meta?.connected === true || metaStatus?.connected === true;
 
   // ── Instagram/Facebook profile data when Meta connected ──
-  const { data: igProfile } = useSWR<any>(
+  interface IgProfileData {
+    username?: string;
+    name?: string;
+    followers?: number;
+    followersCount?: number;
+    followers_count?: number;
+    posts?: number;
+    mediaCount?: number;
+    media_count?: number;
+    bio?: string;
+  }
+  interface IgInsightsData {
+    impressions?: number;
+    reach?: number;
+    engagement?: number;
+    follower_count?: number;
+    followersCount?: number;
+  }
+  const { data: igProfile } = useSWR<IgProfileData>(
     connectionStatus?.channels?.instagram?.connected ? '/meta/instagram/profile' : null,
     swrFetcher,
   );
-  const { data: igInsights } = useSWR<any>(
+  const { data: igInsights } = useSWR<IgInsightsData>(
     connectionStatus?.channels?.instagram?.connected ? '/meta/instagram/insights/account' : null,
     swrFetcher,
   );
@@ -2412,15 +2492,15 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
       setConnectingKey(channelKey);
       try {
         const returnTo = `/marketing/${channelKey}`;
-        const res = await apiFetch(
+        const res = await apiFetch<{ url?: string }>(
           `/meta/auth/url?channel=${encodeURIComponent(channelKey)}&returnTo=${encodeURIComponent(returnTo)}`,
         );
-        const url = String((res as any)?.data?.url || (res as any)?.url || '').trim();
+        const url = String(res?.data?.url || '').trim();
         if (!url) throw new Error('Nao foi possivel iniciar a conexao oficial da Meta.');
         window.location.href = url;
-      } catch (error: any) {
+      } catch (error: unknown) {
         setConnectingKey(null);
-        setConnectionMessage(error?.message || 'Falha ao abrir a Meta.');
+        setConnectionMessage(error instanceof Error ? error.message : 'Falha ao abrir a Meta.');
       }
     },
     [],
@@ -2434,8 +2514,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
       setEmailTestResult(
         'Email ativado com sucesso. Agora voce pode enviar campanhas e testar o provider.',
       );
-    } catch (error: any) {
-      setEmailTestResult(error?.message || 'Falha ao ativar o canal de email.');
+    } catch (error: unknown) {
+      setEmailTestResult(
+        error instanceof Error ? error.message : 'Falha ao ativar o canal de email.',
+      );
     } finally {
       setConnectingKey(null);
     }
@@ -2447,8 +2529,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
       await apiFetch('/marketing/connect/email', { method: 'POST', body: { enabled: false } });
       await mutateConnectionStatus();
       setEmailTestResult('Canal de email desativado para este workspace.');
-    } catch (error: any) {
-      setEmailTestResult(error?.message || 'Falha ao desativar o canal de email.');
+    } catch (error: unknown) {
+      setEmailTestResult(
+        error instanceof Error ? error.message : 'Falha ao desativar o canal de email.',
+      );
     } finally {
       setConnectingKey(null);
     }
@@ -2457,16 +2541,21 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const handleSendEmailTest = useCallback(async () => {
     setEmailTestSending(true);
     try {
-      const res = await apiFetch('/marketing/connect/email/test', {
-        method: 'POST',
-        body: { toEmail: userEmail || undefined },
-      });
-      const payload = (res as any)?.data || res;
+      const res = await apiFetch<{ toEmail?: string; provider?: string }>(
+        '/marketing/connect/email/test',
+        {
+          method: 'POST',
+          body: { toEmail: userEmail || undefined },
+        },
+      );
+      const payload = res?.data;
       setEmailTestResult(
         `Email de teste enviado para ${payload?.toEmail || userEmail || 'seu email'} via ${payload?.provider || 'provider configurado'}.`,
       );
-    } catch (error: any) {
-      setEmailTestResult(error?.message || 'Falha ao enviar email de teste.');
+    } catch (error: unknown) {
+      setEmailTestResult(
+        error instanceof Error ? error.message : 'Falha ao enviar email de teste.',
+      );
     } finally {
       setEmailTestSending(false);
     }
@@ -2494,7 +2583,19 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   // Map raw products to display format (top 3)
   const mappedProducts = useMemo(() => {
     if (!rawProducts || !Array.isArray(rawProducts) || rawProducts.length === 0) return [];
-    return (rawProducts as any[]).slice(0, 3).map((p: any) => ({
+    interface RawProduct {
+      name?: string;
+      title?: string;
+      price?: number;
+      amount?: number;
+      sold?: number;
+      quantitySold?: number;
+      sales?: number;
+      img?: string;
+      emoji?: string;
+      image?: string;
+    }
+    return (rawProducts as RawProduct[]).slice(0, 3).map((p) => ({
       name: p.name || p.title || 'Produto',
       price: p.price ?? p.amount ?? 0,
       sold: p.sold ?? p.quantitySold ?? p.sales ?? 0,
@@ -2515,7 +2616,18 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   // Merge real feed messages
   useEffect(() => {
     if (realFeed?.length > 0) {
-      const mapped = realFeed.map((m: any) => {
+      interface FeedMessage {
+        text?: string;
+        content?: string;
+        from?: string;
+        contactName?: string;
+        channel?: string;
+        isAI?: boolean;
+        direction?: string;
+        time?: string;
+        createdAt?: string;
+      }
+      const mapped = (realFeed as FeedMessage[]).map((m) => {
         const text = m.text || m.content || '';
         const from = m.from || m.contactName || 'Lead';
         const ch = (m.channel || 'WHATSAPP').toLowerCase();

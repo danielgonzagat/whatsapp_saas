@@ -301,6 +301,66 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   ),
 };
 
+interface RawBankAccount {
+  id: string;
+  bankName?: string;
+  bank?: string;
+  name?: string;
+  displayAccount?: string;
+  account?: string;
+  pixKey?: string;
+  accountType?: string;
+  bankCode?: string;
+  agency?: string;
+  isDefault?: boolean;
+}
+
+interface WithdrawalItem {
+  id: string;
+  amount: number;
+  status: string;
+  date: string;
+  method?: string;
+  account?: string;
+  bank?: string;
+  description?: string;
+  requested?: string;
+  createdAt?: string;
+  completed?: string;
+  [key: string]: unknown;
+}
+
+interface AnticipationItem {
+  id: string;
+  amount: number;
+  netAmount?: number;
+  net?: number;
+  fee?: number;
+  feeAmount?: number;
+  feePct?: number;
+  feePercent?: number;
+  original?: number;
+  originalAmount?: number;
+  status: string;
+  createdAt?: string;
+  date?: string;
+  method?: string;
+  installments?: number;
+  [key: string]: unknown;
+}
+
+interface RawTransaction {
+  id: string;
+  type?: string;
+  description?: string;
+  desc?: string;
+  amount: number;
+  status?: string;
+  method?: string;
+  createdAt: string;
+  fee?: number;
+}
+
 /* ═══ DEFAULT (EMPTY) DATA ═══ */
 const BALANCE = { available: 0, pending: 0, blocked: 0, total: 0 };
 const TRANSACTIONS: {
@@ -687,7 +747,7 @@ function WithdrawModal({
   const [selectedBank, setSelectedBank] = useState(0);
   const { accounts: rawAccounts } = useBankAccounts();
 
-  const bankAccounts = rawAccounts.map((a: any) => ({
+  const bankAccounts = (rawAccounts as unknown as RawBankAccount[]).map((a) => ({
     bank: a.bankName || a.bank || a.name || 'Conta',
     acc:
       a.displayAccount ||
@@ -736,8 +796,8 @@ function WithdrawModal({
       mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/wallet'));
       onClose();
       onSuccess?.();
-    } catch (err: any) {
-      setWithdrawError(err.message || 'Erro ao solicitar saque');
+    } catch (err: unknown) {
+      setWithdrawError(err instanceof Error ? err.message : 'Erro ao solicitar saque');
     } finally {
       setWithdrawLoading(false);
     }
@@ -1769,7 +1829,9 @@ function TabExtrato({
             const headers = Object.keys(rows[0]);
             const csv = [
               headers.join(';'),
-              ...rows.map((r) => headers.map((h) => escape((r as any)[h])).join(';')),
+              ...rows.map((r) =>
+                headers.map((h) => escape((r as Record<string, unknown>)[h])).join(';'),
+              ),
             ].join('\n');
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -2135,7 +2197,14 @@ function TabSaques({
 }: {
   available: number;
   onOpenWithdraw: () => void;
-  withdrawals: any[];
+  withdrawals: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    date: string;
+    method?: string;
+    account?: string;
+  }>;
 }) {
   const fid = useId();
   const { accounts, addBankAccount, removeBankAccount } = useBankAccounts();
@@ -2173,8 +2242,8 @@ function TabSaques({
         account: '',
         accountType: 'checking',
       });
-    } catch (err: any) {
-      setAddError(err.message || 'Erro ao adicionar conta');
+    } catch (err: unknown) {
+      setAddError(err instanceof Error ? err.message : 'Erro ao adicionar conta');
     } finally {
       setAddLoading(false);
     }
@@ -2480,7 +2549,7 @@ function TabSaques({
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {accounts.map((a: any) => (
+            {accounts.map((a: RawBankAccount) => (
               <div
                 key={a.id}
                 style={{
@@ -2591,7 +2660,7 @@ function TabSaques({
             </span>
           </div>
         ) : (
-          withdrawals.map((w: any, i: number, arr: any[]) => (
+          withdrawals.map((w: WithdrawalItem, i: number, arr: WithdrawalItem[]) => (
             <div
               key={w.id}
               style={{
@@ -2664,7 +2733,7 @@ function TabAntecipacoes({
 }: {
   pending: number;
   onOpenAntecipate: () => void;
-  anticipations: any[];
+  anticipations: AnticipationItem[];
   antTotals: Record<string, number>;
 }) {
   const antList = anticipations;
@@ -2849,7 +2918,7 @@ function TabAntecipacoes({
             </span>
           </div>
         ) : (
-          antList.map((a: any, i: number) => (
+          antList.map((a: AnticipationItem, i: number) => (
             <div
               key={a.id}
               style={{
@@ -2952,7 +3021,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
 
   const txList =
     realTransactions && realTransactions.length > 0
-      ? realTransactions.map((t: any) => ({
+      ? (realTransactions as RawTransaction[]).map((t) => ({
           id: t.id,
           type: t.type || 'sale',
           desc: t.description || t.desc || '',
@@ -3012,8 +3081,10 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         throw new Error('O Mercado Pago não retornou a URL de autorização.');
       }
       window.location.assign(authUrl);
-    } catch (err: any) {
-      setMercadoPagoError(err?.message || 'Não foi possível iniciar a conexão.');
+    } catch (err: unknown) {
+      setMercadoPagoError(
+        err instanceof Error ? err.message : 'Não foi possível iniciar a conexão.',
+      );
       setMercadoPagoBusy(false);
     }
   }
@@ -3023,8 +3094,10 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
     setMercadoPagoError('');
     try {
       await disconnect();
-    } catch (err: any) {
-      setMercadoPagoError(err?.message || 'Não foi possível desconectar a conta.');
+    } catch (err: unknown) {
+      setMercadoPagoError(
+        err instanceof Error ? err.message : 'Não foi possível desconectar a conta.',
+      );
     } finally {
       setMercadoPagoBusy(false);
     }
@@ -3168,14 +3241,14 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
           <TabSaques
             available={bal.available}
             onOpenWithdraw={() => setShowWithdrawModal(true)}
-            withdrawals={realWithdrawals}
+            withdrawals={realWithdrawals as WithdrawalItem[]}
           />
         )}
         {tab === 'antecipacoes' && (
           <TabAntecipacoes
             pending={bal.pending}
             onOpenAntecipate={() => setShowAntecipateModal(true)}
-            anticipations={realAnticipations}
+            anticipations={realAnticipations as AnticipationItem[]}
             antTotals={realAntTotals}
           />
         )}

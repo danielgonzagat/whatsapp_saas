@@ -41,18 +41,13 @@ function parseLocalePercent(value: string, fallback: number) {
   return Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
 }
 
-function formatPercentInput(value: number | null | undefined, fallback: number) {
+function formatPercentInput(value: unknown, fallback: number) {
   const parsed = Number(value);
   const safe = Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
   return String(safe).replace('.', ',');
 }
 
-function clampIntegerValue(
-  value: number | null | undefined,
-  fallback: number,
-  min: number,
-  max: number,
-) {
+function clampIntegerValue(value: unknown, fallback: number, min: number, max: number) {
   const parsed = Math.round(Number(value));
   return Number.isFinite(parsed) ? clampNumber(parsed, min, max) : fallback;
 }
@@ -1025,15 +1020,19 @@ export function ProductNerveCenterComissaoTab() {
   }, [loadAffiliateSummary]);
 
   /* ── config sub-tab local state ── */
-  const [affEnabled, setAffEnabled] = useState(p.affiliateEnabled ?? false);
-  const [affVisible, setAffVisible] = useState(p.affiliateVisible ?? false);
-  const [affAutoApprove, setAffAutoApprove] = useState(p.affiliateAutoApprove ?? true);
-  const [affAccessData, setAffAccessData] = useState(p.affiliateAccessData ?? true);
-  const [affAccessAbandoned, setAffAccessAbandoned] = useState(p.affiliateAccessAbandoned ?? true);
-  const [affFirstInstallment, setAffFirstInstallment] = useState(
-    p.affiliateFirstInstallment ?? false,
+  const [affEnabled, setAffEnabled] = useState<boolean>(Boolean(p.affiliateEnabled));
+  const [affVisible, setAffVisible] = useState<boolean>(Boolean(p.affiliateVisible));
+  const [affAutoApprove, setAffAutoApprove] = useState<boolean>(p.affiliateAutoApprove !== false);
+  const [affAccessData, setAffAccessData] = useState<boolean>(p.affiliateAccessData !== false);
+  const [affAccessAbandoned, setAffAccessAbandoned] = useState<boolean>(
+    p.affiliateAccessAbandoned !== false,
   );
-  const [comType, setComType] = useState(p.commissionType ?? 'last_click');
+  const [affFirstInstallment, setAffFirstInstallment] = useState<boolean>(
+    Boolean(p.affiliateFirstInstallment),
+  );
+  const [comType, setComType] = useState<string>(
+    typeof p.commissionType === 'string' ? p.commissionType : 'last_click',
+  );
   const [comCookie, setComCookie] = useState(() =>
     clampIntegerValue(p.commissionCookieDays ?? 180, 180, 1, 3650),
   );

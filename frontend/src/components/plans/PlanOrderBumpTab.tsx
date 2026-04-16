@@ -97,6 +97,7 @@ interface BumpFormData {
   compareAtPrice: number;
   checkboxLabel: string;
   description: string;
+  [key: string]: unknown;
 }
 
 const defaultForm: BumpFormData = {

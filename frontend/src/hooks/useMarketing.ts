@@ -36,6 +36,7 @@ interface AIBrainData {
   objectionsMapped: number;
   avgResponseTime: string;
   status: string;
+  [key: string]: unknown;
 }
 
 export function useMarketingStats() {

@@ -2651,7 +2651,7 @@ function MyAffiliateLinks() {
     setSearchLoading(true);
     try {
       const res = await affiliateApi.aiSearch(searchQuery.trim());
-      setSearchResults(res.data?.products || []);
+      setSearchResults(res.data?.results || []);
     } catch {
       setSearchResults([]);
     } finally {

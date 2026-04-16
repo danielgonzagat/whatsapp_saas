@@ -62,6 +62,19 @@ interface MercadoPagoConnectionStatus {
   integrationId?: string | null;
 }
 
+export interface WalletBankAccount {
+  id: string;
+  bankName?: string;
+  bank?: string;
+  name?: string;
+  displayAccount?: string;
+  account?: string;
+  pixKey?: string;
+  accountType?: string;
+  bankCode?: string;
+  agency?: string;
+}
+
 export function useWalletBalance() {
   const wsId = useWorkspaceId();
   const { data, error, isLoading, mutate } = useSWR(
@@ -189,7 +202,7 @@ export function useBankAccounts() {
     { keepPreviousData: true },
   );
   const accounts =
-    ((data as Record<string, unknown>)?.accounts as Array<Record<string, unknown>>) || [];
+    ((data as Record<string, unknown>)?.accounts as unknown as WalletBankAccount[]) || [];
 
   const addBankAccount = async (dto: Record<string, unknown>) => {
     if (!wsId) return null;

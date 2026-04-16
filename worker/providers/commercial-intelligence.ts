@@ -1,4 +1,11 @@
 import { randomUUID } from 'node:crypto';
+import type { PrismaClient, Prisma } from '@prisma/client';
+
+/**
+ * Subset of PrismaClient used by commercial-intelligence persistence functions.
+ * Accepts either a full PrismaClient or a partial stub with the required delegates.
+ */
+type PrismaLike = Pick<PrismaClient, 'kloelMemory' | 'systemInsight'>;
 
 export type DemandLane = 'HOT' | 'WARM' | 'COLD' | 'SLEEP' | 'DEAD';
 export type DemandStrategy = 'PUSH' | 'EDUCATE' | 'NURTURE' | 'WAIT' | 'DROP' | 'RECOVER_PAYMENT';
@@ -497,12 +504,17 @@ export function buildMissionPlan(input: {
   };
 }
 
+/** Coerce a domain object into a Prisma-compatible JSON input value. */
+function toJsonValue<T>(obj: T): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(obj)) as Prisma.InputJsonValue;
+}
+
 async function upsertMemory(
-  prisma: any,
+  prisma: Partial<PrismaLike>,
   input: {
     workspaceId: string;
     key: string;
-    value: any;
+    value: DemandState | MarketSignal | BusinessStateSnapshot | HumanTaskPayload;
     category: string;
     type: string;
     content?: string;
@@ -510,6 +522,9 @@ async function upsertMemory(
   },
 ) {
   if (!prisma?.kloelMemory?.upsert) return null;
+
+  const jsonValue = toJsonValue(input.value);
+  const jsonMetadata = input.metadata ? toJsonValue(input.metadata) : undefined;
 
   return prisma.kloelMemory.upsert({
     where: {
@@ -519,26 +534,26 @@ async function upsertMemory(
       },
     },
     update: {
-      value: input.value,
+      value: jsonValue,
       category: input.category,
       type: input.type,
       content: input.content,
-      metadata: input.metadata,
+      metadata: jsonMetadata,
     },
     create: {
       workspaceId: input.workspaceId,
       key: input.key,
-      value: input.value,
+      value: jsonValue,
       category: input.category,
       type: input.type,
       content: input.content,
-      metadata: input.metadata,
+      metadata: jsonMetadata,
     },
   });
 }
 
 export async function persistDemandState(
-  prisma: any,
+  prisma: Partial<PrismaLike>,
   input: {
     workspaceId: string;
     contactId: string;
@@ -561,7 +576,7 @@ export async function persistDemandState(
 }
 
 export async function persistMarketSignals(
-  prisma: any,
+  prisma: Partial<PrismaLike>,
   input: {
     workspaceId: string;
     signals: MarketSignal[];
@@ -585,7 +600,7 @@ export async function persistMarketSignals(
 }
 
 export async function persistBusinessSnapshot(
-  prisma: any,
+  prisma: Partial<PrismaLike>,
   input: {
     workspaceId: string;
     snapshot: BusinessStateSnapshot;
@@ -606,7 +621,7 @@ export async function persistBusinessSnapshot(
 }
 
 export async function persistHumanTask(
-  prisma: any,
+  prisma: Partial<PrismaLike>,
   input: {
     workspaceId: string;
     task: HumanTaskPayload;
@@ -618,22 +633,22 @@ export async function persistHumanTask(
     data: {
       workspaceId: input.workspaceId,
       key: `human_task:${input.task.contactId || input.task.phone || input.task.id}:${input.task.id}`,
-      value: input.task,
+      value: toJsonValue(input.task),
       category: 'human_task',
       type: input.task.taskType,
       content: input.task.reason,
-      metadata: {
+      metadata: toJsonValue({
         urgency: input.task.urgency,
         businessImpact: input.task.businessImpact,
         contactId: input.task.contactId,
         phone: input.task.phone,
-      },
+      }),
     },
   });
 }
 
 export async function persistSystemInsight(
-  prisma: any,
+  prisma: Partial<PrismaLike>,
   input: {
     workspaceId: string;
     type: string;
@@ -665,7 +680,7 @@ export async function persistSystemInsight(
       title: input.title,
       description: input.description,
       severity: input.severity,
-      metadata: input.metadata,
+      metadata: input.metadata ? toJsonValue(input.metadata) : undefined,
     },
   });
 }

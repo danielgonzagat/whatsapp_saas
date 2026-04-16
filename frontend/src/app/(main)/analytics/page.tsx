@@ -1846,11 +1846,16 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
     setSending(true);
     setResult(null);
     try {
+      const reportFilters = Object.fromEntries(
+        Object.entries(filters)
+          .filter(([, value]) => value !== undefined && value !== null && value !== '')
+          .map(([key, value]) => [key, String(value)]),
+      );
       const res = await sendReportEmail({
         email: email.trim(),
         reportType,
         period: `${filters.startDate},${filters.endDate}`,
-        filters,
+        filters: reportFilters,
       });
       const resObj = res as unknown as Record<string, unknown>;
       if (resObj?.error) throw new Error(String(resObj.error));

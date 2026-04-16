@@ -132,7 +132,7 @@ interface MoneyReport {
   conversions?: number;
   avgTicket?: number;
   revenueByDay?: Record<string, number>;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface RevenueEvent {
@@ -144,7 +144,7 @@ interface RevenueEvent {
   phone?: string;
   reason?: string;
   createdAt: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface AutopilotInsight {
@@ -155,7 +155,7 @@ interface AutopilotInsight {
   severity?: 'info' | 'warning' | 'critical' | 'success';
   recommendation?: string;
   createdAt?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface QueueStats {
@@ -165,14 +165,14 @@ interface QueueStats {
   completed?: number;
   failed?: number;
   paused?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface AutopilotConfigData {
   conversionFlowId?: string | null;
   currencyDefault?: string;
   recoveryTemplateName?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface AutopilotPipeline {
@@ -520,8 +520,12 @@ export default function AutopilotPage() {
         getSystemHealth(),
         getAutopilotMoneyReport(effectiveWorkspaceId),
         getAutopilotRevenueEvents(effectiveWorkspaceId, 20),
-        apiFetch<any>(`/autopilot/insights${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
-        apiFetch<any>(`/autopilot/queue${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
+        apiFetch<AutopilotInsight[] | { data: AutopilotInsight[] }>(
+          `/autopilot/insights${buildQuery({ workspaceId: effectiveWorkspaceId })}`,
+        ),
+        apiFetch<QueueStats | { data: QueueStats }>(
+          `/autopilot/queue${buildQuery({ workspaceId: effectiveWorkspaceId })}`,
+        ),
         getAutopilotConfig(effectiveWorkspaceId, token),
         getAutopilotRuntimeConfig(),
       ]);
@@ -563,38 +567,44 @@ export default function AutopilotPage() {
       }
 
       if (moneyReportResult.status === 'fulfilled') {
-        const mrVal = moneyReportResult.value as any;
-        setMoneyReport((mrVal?.data ?? mrVal) as MoneyReport | null);
+        const mrVal = moneyReportResult.value as unknown as Record<string, unknown> | undefined;
+        setMoneyReport(((mrVal as { data?: MoneyReport })?.data ?? mrVal) as MoneyReport | null);
       } else {
         setMoneyReport(null);
       }
 
       if (revenueEventsResult.status === 'fulfilled') {
-        const reVal = revenueEventsResult.value as any;
-        const eventsData = reVal?.data ?? reVal;
+        const reVal = revenueEventsResult.value as unknown as
+          | Record<string, unknown>
+          | RevenueEvent[]
+          | undefined;
+        const eventsData = Array.isArray(reVal)
+          ? reVal
+          : ((reVal as { data?: RevenueEvent[] })?.data ?? reVal);
         setRevenueEvents(Array.isArray(eventsData) ? (eventsData as RevenueEvent[]) : []);
       } else {
         setRevenueEvents([]);
       }
 
       if (insightsResult.status === 'fulfilled') {
-        const insVal = insightsResult.value as any;
-        const insData = insVal?.data ?? insVal;
+        const insVal = insightsResult.value as unknown as Record<string, unknown> | undefined;
+        const insData = (insVal as { data?: AutopilotInsight[] })?.data ?? insVal;
         setInsights(Array.isArray(insData) ? (insData as AutopilotInsight[]) : []);
       } else {
         setInsights([]);
       }
 
       if (queueStatsResult.status === 'fulfilled') {
-        const qsVal = queueStatsResult.value as any;
-        setQueueStats((qsVal?.data ?? qsVal) as QueueStats | null);
+        const qsVal = queueStatsResult.value as unknown as Record<string, unknown> | undefined;
+        setQueueStats(((qsVal as { data?: QueueStats })?.data ?? qsVal) as QueueStats | null);
       } else {
         setQueueStats(null);
       }
 
       if (configResult.status === 'fulfilled') {
-        const cfgVal = configResult.value as any;
-        const cfgData = (cfgVal?.data ?? cfgVal) as AutopilotConfigData;
+        const cfgVal = configResult.value as unknown as Record<string, unknown> | undefined;
+        const cfgData = ((cfgVal as { data?: AutopilotConfigData })?.data ??
+          cfgVal) as AutopilotConfigData;
         setConfig(cfgData);
         setConfigDraft(cfgData || {});
       } else {
@@ -648,9 +658,9 @@ export default function AutopilotPage() {
       setStatus((prev) => (prev ? { ...prev, enabled: data.enabled } : null));
 
       await fetchAutopilotData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error toggling autopilot:', err);
-      setError(err.message || 'Erro ao alterar status do Autopilot');
+      setError(err instanceof Error ? err.message : 'Erro ao alterar status do Autopilot');
     } finally {
       setIsToggling(false);
     }
@@ -696,9 +706,9 @@ export default function AutopilotPage() {
       });
       setSmokeResult(data as AutopilotSmokeTestResult);
       await fetchAutopilotData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error running autopilot smoke test:', err);
-      setError(err.message || 'Erro ao executar smoke test do Autopilot');
+      setError(err instanceof Error ? err.message : 'Erro ao executar smoke test do Autopilot');
     } finally {
       setIsTesting(false);
     }
@@ -713,9 +723,9 @@ export default function AutopilotPage() {
       setConfig(configDraft);
       setIsEditingConfig(false);
       await fetchAutopilotData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving autopilot config:', err);
-      setError(err.message || 'Erro ao salvar configuração');
+      setError(err instanceof Error ? err.message : 'Erro ao salvar configuração');
     } finally {
       setIsSavingConfig(false);
     }
@@ -733,8 +743,8 @@ export default function AutopilotPage() {
         smartTime: moneyMachineSmartTime,
       });
       setMoneyMachineResult(result);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao executar Money Machine');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao executar Money Machine');
     } finally {
       setIsRunningMoneyMachine(false);
     }
@@ -747,8 +757,8 @@ export default function AutopilotPage() {
       setAskResult(null);
       const result = await askAutopilotInsights(effectiveWorkspaceId, askQuestion.trim());
       setAskResult(result);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao consultar insights da IA');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao consultar insights da IA');
     } finally {
       setIsAsking(false);
     }
@@ -766,8 +776,11 @@ export default function AutopilotPage() {
       });
       setSendResult({ success: true, messageId: result.messageId });
       setSendMessage('');
-    } catch (err: any) {
-      setSendResult({ success: false, error: err.message || 'Erro ao enviar mensagem' });
+    } catch (err: unknown) {
+      setSendResult({
+        success: false,
+        error: err instanceof Error ? err.message : 'Erro ao enviar mensagem',
+      });
     } finally {
       setIsSending(false);
     }

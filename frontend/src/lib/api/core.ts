@@ -44,7 +44,7 @@ export interface WalletTransaction {
 export interface MemoryItem {
   id: string;
   key: string;
-  value: any;
+  value: unknown;
   type: string;
   createdAt: string;
   embedding?: number[];
@@ -65,7 +65,7 @@ export interface Lead {
   lastIntent?: string;
   lastInteraction?: string;
   totalMessages?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -112,9 +112,9 @@ export interface WhatsAppProofEntry {
   objective?: string | null;
   beforeImage?: string | null;
   afterImage?: string | null;
-  action?: any;
-  observation?: any;
-  metadata?: Record<string, any> | null;
+  action?: Record<string, unknown>;
+  observation?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
 }
 
@@ -138,7 +138,7 @@ export interface WhatsAppScreencastTokenResponse {
 // Internal types
 // ============================================
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   status: number;
@@ -147,7 +147,7 @@ interface ApiResponse<T = any> {
 function buildSuccessResponse<T>(payload: T, status: number): ApiResponse<T> {
   if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
     return {
-      ...(payload as Record<string, any>),
+      ...(payload as Record<string, unknown>),
       data: payload,
       status,
     } as ApiResponse<T>;
@@ -395,36 +395,39 @@ function syncBrowserStorageFromCookies(options?: { clearLocalIfMissing?: boolean
   return Boolean(accessToken);
 }
 
-export function resolveWorkspaceFromAuthPayload(payload: any): {
+export function resolveWorkspaceFromAuthPayload(payload: Record<string, unknown> | null): {
   id: string;
   name?: string;
 } | null {
-  const explicitWorkspace = payload?.workspace;
+  const explicitWorkspace = payload?.workspace as { id?: string; name?: string } | undefined;
   if (explicitWorkspace?.id) {
-    return explicitWorkspace;
+    return { id: explicitWorkspace.id, name: explicitWorkspace.name };
   }
 
-  const explicitWorkspaceId = String(payload?.user?.workspaceId || '').trim();
-  const workspaces = Array.isArray(payload?.workspaces) ? payload.workspaces : [];
+  const userObj = payload?.user as Record<string, unknown> | undefined;
+  const explicitWorkspaceId = String(userObj?.workspaceId || '').trim();
+  const workspaces: Array<{ id?: string; name?: string }> = Array.isArray(payload?.workspaces)
+    ? (payload.workspaces as Array<{ id?: string; name?: string }>)
+    : [];
 
   if (explicitWorkspaceId) {
-    const matchedWorkspace = workspaces.find((workspace: any) => {
+    const matchedWorkspace = workspaces.find((workspace) => {
       return String(workspace?.id || '').trim() === explicitWorkspaceId;
     });
 
     if (matchedWorkspace?.id) {
-      return matchedWorkspace;
+      return { id: matchedWorkspace.id, name: matchedWorkspace.name };
     }
 
     return {
       id: explicitWorkspaceId,
-      name: payload?.user?.workspaceName || 'Workspace',
+      name: (userObj?.workspaceName as string) || 'Workspace',
     };
   }
 
   const firstWorkspace = workspaces[0];
   if (firstWorkspace?.id) {
-    return firstWorkspace;
+    return { id: firstWorkspace.id, name: firstWorkspace.name };
   }
 
   return null;
@@ -577,10 +580,10 @@ async function doRefreshAccessToken(): Promise<boolean> {
   }
 }
 
-export async function apiFetch<T = any>(
+export async function apiFetch<T = unknown>(
   endpoint: string,
   options: Omit<RequestInit, 'body'> & {
-    body?: any;
+    body?: unknown;
     params?: Record<string, string | undefined>;
   } = {},
 ): Promise<ApiResponse<T>> {
@@ -625,14 +628,14 @@ export async function apiFetch<T = any>(
   }
 
   // Auto-stringify body if it's an object
-  const body =
+  const body: BodyInit | null | undefined =
     options.body &&
     typeof options.body === 'object' &&
     !(options.body instanceof FormData) &&
     !(options.body instanceof Blob) &&
     !(options.body instanceof ArrayBuffer)
       ? JSON.stringify(options.body)
-      : options.body;
+      : (options.body as BodyInit | null | undefined);
 
   try {
     const res = await fetch(url, {
@@ -679,9 +682,9 @@ export async function apiFetch<T = any>(
     }
 
     return buildSuccessResponse(data, res.status);
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
-      error: err.message || 'Network error',
+      error: err instanceof Error ? err.message : 'Network error',
       status: 0,
     };
   }
@@ -717,21 +720,26 @@ export async function getWalletBalance(workspaceId: string): Promise<WalletBalan
 }
 
 export async function getWalletTransactions(workspaceId: string): Promise<WalletTransaction[]> {
-  const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/transactions`);
+  const res = await apiFetch<WalletTransaction[] | { transactions: WalletTransaction[] }>(
+    `/kloel/wallet/${encodeURIComponent(workspaceId)}/transactions`,
+  );
   if (res.error) throw new Error(res.error);
-  const data = res.data as Record<string, any> | undefined;
+  const data = res.data;
   if (Array.isArray(data)) return data;
-  return data?.transactions || [];
+  return (data as { transactions: WalletTransaction[] })?.transactions || [];
 }
 
 export async function processSale(
   workspaceId: string,
   data: { amount: number; saleId: string; description: string; kloelFeePercent?: number },
-): Promise<any> {
-  const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/process-sale`, {
-    method: 'POST',
-    body: data,
-  });
+): Promise<unknown> {
+  const res = await apiFetch<unknown>(
+    `/kloel/wallet/${encodeURIComponent(workspaceId)}/process-sale`,
+    {
+      method: 'POST',
+      body: data,
+    },
+  );
   if (res.error) throw new Error(res.error);
   return res.data;
 }
@@ -740,8 +748,8 @@ export async function requestWithdrawal(
   workspaceId: string,
   amount: number,
   bankAccount: string,
-): Promise<any> {
-  const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/withdraw`, {
+): Promise<unknown> {
+  const res = await apiFetch<unknown>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/withdraw`, {
     method: 'POST',
     body: { amount, bankAccount },
   });
@@ -749,8 +757,11 @@ export async function requestWithdrawal(
   return res.data;
 }
 
-export async function confirmTransaction(workspaceId: string, transactionId: string): Promise<any> {
-  const res = await apiFetch<any>(
+export async function confirmTransaction(
+  workspaceId: string,
+  transactionId: string,
+): Promise<unknown> {
+  const res = await apiFetch<unknown>(
     `/kloel/wallet/${encodeURIComponent(workspaceId)}/confirm/${encodeURIComponent(transactionId)}`,
     {
       method: 'POST',
@@ -775,14 +786,13 @@ export async function getMemoryStats(
 }
 
 export async function getMemoryList(workspaceId: string): Promise<MemoryItem[]> {
-  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/list`);
+  const res = await apiFetch<{ memories: MemoryItem[] }>(`/kloel/memory/${workspaceId}/list`);
   if (res.error) throw new Error('Failed to fetch memories');
-  const data = res.data as Record<string, any> | undefined;
-  return data?.memories || [];
+  return res.data?.memories || [];
 }
 
-export async function saveProduct(workspaceId: string, product: Product): Promise<any> {
-  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/product`, {
+export async function saveProduct(workspaceId: string, product: Product): Promise<unknown> {
+  const res = await apiFetch<unknown>(`/kloel/memory/${workspaceId}/product`, {
     method: 'POST',
     body: product,
   });
@@ -791,13 +801,12 @@ export async function saveProduct(workspaceId: string, product: Product): Promis
 }
 
 export async function searchMemory(workspaceId: string, query: string): Promise<MemoryItem[]> {
-  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/search`, {
+  const res = await apiFetch<{ memories: MemoryItem[] }>(`/kloel/memory/${workspaceId}/search`, {
     method: 'POST',
     body: { query },
   });
   if (res.error) throw new Error('Failed to search memory');
-  const data = res.data as Record<string, any> | undefined;
-  return data?.memories || [];
+  return res.data?.memories || [];
 }
 
 // ============================================
@@ -817,7 +826,7 @@ export async function getLeads(
     query.toString() ? `?${query.toString()}` : ''
   }`;
 
-  const res = await apiFetch<any>(endpoint);
+  const res = await apiFetch<Lead[] | { leads: Lead[] }>(endpoint);
   if (res.error) throw new Error(res.error);
 
   const data = res.data;
@@ -826,9 +835,9 @@ export async function getLeads(
     data &&
     typeof data === 'object' &&
     'leads' in data &&
-    Array.isArray((data as Record<string, unknown>).leads)
+    Array.isArray((data as { leads: Lead[] }).leads)
   )
-    return (data as Record<string, unknown>).leads as Lead[];
+    return (data as { leads: Lead[] }).leads;
   return [];
 }
 
@@ -837,7 +846,7 @@ export async function getLeads(
 // ============================================
 
 export const api = {
-  async get<T = any>(endpoint: string): Promise<{ data: T }> {
+  async get<T = unknown>(endpoint: string): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
       const res = await fetch(endpoint);
       if (!res.ok) {
@@ -853,7 +862,7 @@ export const api = {
     return { data: res.data as T };
   },
 
-  async post<T = any>(endpoint: string, body?: any): Promise<{ data: T }> {
+  async post<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -876,7 +885,7 @@ export const api = {
     return { data: res.data as T };
   },
 
-  async put<T = any>(endpoint: string, body?: any): Promise<{ data: T }> {
+  async put<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
       const res = await fetch(endpoint, {
         method: 'PUT',
@@ -899,7 +908,7 @@ export const api = {
     return { data: res.data as T };
   },
 
-  async delete<T = any>(endpoint: string): Promise<{ data: T }> {
+  async delete<T = unknown>(endpoint: string): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
       const res = await fetch(endpoint, { method: 'DELETE' });
       if (!res.ok) {

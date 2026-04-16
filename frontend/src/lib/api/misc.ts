@@ -32,10 +32,13 @@ export const smartPaymentApi = {
       installments?: number;
     },
   ) =>
-    apiFetch<any>(`/kloel/payment/${encodeURIComponent(workspaceId)}/negotiate`, {
-      method: 'POST',
-      body: data,
-    }),
+    apiFetch<{ success: boolean; negotiationId?: string }>(
+      `/kloel/payment/${encodeURIComponent(workspaceId)}/negotiate`,
+      {
+        method: 'POST',
+        body: data,
+      },
+    ),
 
   recoveryAnalysis: (workspaceId: string, paymentId: string) =>
     apiFetch<{
@@ -59,7 +62,9 @@ export async function getPaymentsStatus() {
 // ============= FINANCE WEBHOOK RECENT =============
 
 export async function getFinanceWebhookRecent(workspaceId: string, data?: { limit?: number }) {
-  return apiFetch<any>(`/hooks/finance/${encodeURIComponent(workspaceId)}/recent`, {
+  return apiFetch<{
+    events: Array<{ id: string; provider: string; status: string; createdAt: string }>;
+  }>(`/hooks/finance/${encodeURIComponent(workspaceId)}/recent`, {
     method: 'POST',
     body: data || {},
   });
@@ -78,7 +83,7 @@ export async function kycChangePassword(current: string, newPw: string) {
 
 export const checkoutPublicApi = {
   affiliateRedirect: (code: string) =>
-    apiFetch<{ checkoutUrl: string; product?: any }>(
+    apiFetch<{ checkoutUrl: string; product?: { id: string; name: string; slug?: string } }>(
       `/checkout/public/r/${encodeURIComponent(code)}`,
     ),
 
@@ -101,14 +106,16 @@ export async function getAdSpendReport(params?: { startDate?: string; endDate?: 
   if (params?.startDate) qs.set('startDate', params.startDate);
   if (params?.endDate) qs.set('endDate', params.endDate);
   const q = qs.toString();
-  return apiFetch<any>(`/reports/ad-spend${q ? `?${q}` : ''}`);
+  return apiFetch<{ spend: number; impressions: number; clicks: number; cpa: number }>(
+    `/reports/ad-spend${q ? `?${q}` : ''}`,
+  );
 }
 
 export async function sendReportEmail(data: {
   email: string;
   reportType?: string;
   period?: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, string>;
 }) {
   return apiFetch<{ success: boolean; message?: string }>('/reports/send-email', {
     method: 'POST',
@@ -118,13 +125,16 @@ export async function sendReportEmail(data: {
 
 // ============= NOTIFICATIONS =============
 
-export async function registerNotificationDevice(token: string, platform: string): Promise<any> {
-  const res = await apiFetch<any>(`/notifications/register-device`, {
+export async function registerNotificationDevice(
+  token: string,
+  platform: string,
+): Promise<{ deviceId: string }> {
+  const res = await apiFetch<{ deviceId: string }>(`/notifications/register-device`, {
     method: 'POST',
     body: { token, platform },
   });
   if (res.error) throw new Error('Failed to register device');
-  return res.data;
+  return res.data as { deviceId: string };
 }
 
 // ============= METRICS =============
@@ -137,10 +147,18 @@ export async function getMetrics(token?: string): Promise<string> {
   return res.text();
 }
 
-export async function getQueueMetrics(_token?: string): Promise<any> {
-  const res = await apiFetch<any>(`/metrics/queues`);
+export async function getQueueMetrics(
+  _token?: string,
+): Promise<Record<string, { waiting: number; active: number; completed: number; failed: number }>> {
+  const res =
+    await apiFetch<
+      Record<string, { waiting: number; active: number; completed: number; failed: number }>
+    >(`/metrics/queues`);
   if (res.error) throw new Error('Failed to fetch queue metrics');
-  return res.data;
+  return res.data as Record<
+    string,
+    { waiting: number; active: number; completed: number; failed: number }
+  >;
 }
 
 // ============= CALENDAR =============
@@ -347,10 +365,17 @@ export async function listScheduledFollowUps(
 ): Promise<
   Array<{ id: string; phone: string; message: string; scheduledAt: string; status: string }>
 > {
-  const res = await apiFetch<any>(`/followups?workspaceId=${encodeURIComponent(workspaceId)}`);
+  const res = await apiFetch<{
+    followups: Array<{
+      id: string;
+      phone: string;
+      message: string;
+      scheduledAt: string;
+      status: string;
+    }>;
+  }>(`/followups?workspaceId=${encodeURIComponent(workspaceId)}`);
   if (res.error) return [];
-  const data = res.data as Record<string, any> | undefined;
-  return data?.followups || [];
+  return res.data?.followups || [];
 }
 
 export async function cancelFollowUp(
@@ -358,7 +383,7 @@ export async function cancelFollowUp(
   followUpId: string,
   _token?: string,
 ): Promise<{ success: boolean }> {
-  const res = await apiFetch<any>(`/followups/${followUpId}`, {
+  const res = await apiFetch<{ success: boolean }>(`/followups/${followUpId}`, {
     method: 'DELETE',
   });
   mutate((key: string) => typeof key === 'string' && key.startsWith('/followups'));
@@ -396,10 +421,9 @@ export async function listDocuments(
   _workspaceId: string,
   _token?: string,
 ): Promise<DocumentUpload[]> {
-  const res = await apiFetch<any>(`/media/documents`);
+  const res = await apiFetch<{ documents: DocumentUpload[] }>(`/media/documents`);
   if (res.error) return [];
-  const data = res.data as Record<string, any> | undefined;
-  return data?.documents || [];
+  return res.data?.documents || [];
 }
 
 export async function saveObjectionScript(
@@ -408,7 +432,7 @@ export async function saveObjectionScript(
   response: string,
   _token?: string,
 ): Promise<{ success: boolean }> {
-  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/save`, {
+  const res = await apiFetch<{ success: boolean }>(`/kloel/memory/${workspaceId}/save`, {
     method: 'POST',
     body: {
       key: `objection_${Date.now()}`,
@@ -424,10 +448,15 @@ export async function listObjectionScripts(
   workspaceId: string,
   _token?: string,
 ): Promise<Array<{ id: string; objection: string; response: string }>> {
-  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/list?category=objection_script`);
+  interface ObjectionMemory {
+    id: string;
+    value?: { objection?: string; response?: string };
+  }
+  const res = await apiFetch<{ memories: ObjectionMemory[] }>(
+    `/kloel/memory/${workspaceId}/list?category=objection_script`,
+  );
   if (res.error) return [];
-  const data = res.data as Record<string, any> | undefined;
-  return (data?.memories || []).map((m: any) => ({
+  return (res.data?.memories || []).map((m) => ({
     id: m.id,
     objection: m.value?.objection || '',
     response: m.value?.response || '',
@@ -437,66 +466,100 @@ export async function listObjectionScripts(
 // ============= DASHBOARD & MISC =============
 
 export async function getDashboardStats() {
-  return apiFetch<any>('/dashboard/stats');
+  return apiFetch<{ revenue: number; leads: number; messages: number; conversions: number }>(
+    '/dashboard/stats',
+  );
 }
 
 export async function installMarketplaceTemplate(templateId: string) {
-  const res = await apiFetch<any>(`/marketplace/install/${encodeURIComponent(templateId)}`, {
-    method: 'POST',
-  });
+  const res = await apiFetch<{ success: boolean; templateId: string }>(
+    `/marketplace/install/${encodeURIComponent(templateId)}`,
+    {
+      method: 'POST',
+    },
+  );
   mutate((key: string) => typeof key === 'string' && key.startsWith('/marketplace'));
   return res;
 }
 
 export async function getFollowupsApi(workspaceId?: string) {
   const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
-  return apiFetch<any>(`/followups${qs}`);
+  return apiFetch<{
+    followups: Array<{
+      id: string;
+      phone: string;
+      message: string;
+      scheduledAt: string;
+      status: string;
+    }>;
+  }>(`/followups${qs}`);
 }
 
 export async function getFollowupStatsApi(workspaceId?: string) {
   const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
-  return apiFetch<any>(`/followups/stats${qs}`);
+  return apiFetch<{ total: number; pending: number; completed: number; failed: number }>(
+    `/followups/stats${qs}`,
+  );
+}
+
+interface MemberArea {
+  id: string;
+  name: string;
+  description?: string;
+  modules?: MemberAreaModule[];
+}
+
+interface MemberAreaModule {
+  id: string;
+  name: string;
+  lessons?: Array<{ id: string; title: string }>;
 }
 
 export const memberAreaApi = {
-  list: () => apiFetch<any>('/member-areas'),
-  stats: () => apiFetch<any>('/member-areas/stats'),
-  get: (id: string) => apiFetch<any>(`/member-areas/${id}`),
-  create: async (data: any) => {
-    const res = await apiFetch<any>('/member-areas', { method: 'POST', body: data });
+  list: () => apiFetch<MemberArea[]>('/member-areas'),
+  stats: () => apiFetch<{ total: number; active: number; students: number }>('/member-areas/stats'),
+  get: (id: string) => apiFetch<MemberArea>(`/member-areas/${id}`),
+  create: async (data: Record<string, unknown>) => {
+    const res = await apiFetch<MemberArea>('/member-areas', { method: 'POST', body: data });
     mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
     return res;
   },
-  update: async (id: string, data: any) => {
-    const res = await apiFetch<any>(`/member-areas/${id}`, { method: 'PUT', body: data });
+  update: async (id: string, data: Record<string, unknown>) => {
+    const res = await apiFetch<MemberArea>(`/member-areas/${id}`, { method: 'PUT', body: data });
     mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
     return res;
   },
   remove: async (id: string) => {
-    const res = await apiFetch<any>(`/member-areas/${id}`, { method: 'DELETE' });
+    const res = await apiFetch<{ success: boolean }>(`/member-areas/${id}`, { method: 'DELETE' });
     mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
     return res;
   },
-  createModule: async (areaId: string, data: any) => {
-    const res = await apiFetch<any>(`/member-areas/${areaId}/modules`, {
+  createModule: async (areaId: string, data: Record<string, unknown>) => {
+    const res = await apiFetch<MemberAreaModule>(`/member-areas/${areaId}/modules`, {
       method: 'POST',
       body: data,
     });
     mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
     return res;
   },
-  createLesson: async (areaId: string, moduleId: string, data: any) => {
-    const res = await apiFetch<any>(`/member-areas/${areaId}/modules/${moduleId}/lessons`, {
-      method: 'POST',
-      body: data,
-    });
+  createLesson: async (areaId: string, moduleId: string, data: Record<string, unknown>) => {
+    const res = await apiFetch<{ id: string; title: string }>(
+      `/member-areas/${areaId}/modules/${moduleId}/lessons`,
+      {
+        method: 'POST',
+        body: data,
+      },
+    );
     mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
     return res;
   },
   generateStructure: async (areaId: string) => {
-    const res = await apiFetch<any>(`/member-areas/${areaId}/generate-structure`, {
-      method: 'POST',
-    });
+    const res = await apiFetch<{ modules: MemberAreaModule[] }>(
+      `/member-areas/${areaId}/generate-structure`,
+      {
+        method: 'POST',
+      },
+    );
     mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
     return res;
   },
@@ -504,13 +567,23 @@ export const memberAreaApi = {
 
 // ============= MEMBER AREA STUDENTS =============
 
+interface MemberAreaStudent {
+  id: string;
+  name?: string;
+  email?: string;
+  enrolledAt?: string;
+  progress?: number;
+}
+
 export const memberAreaStudentsApi = {
   list: (areaId: string, q?: string) => {
     const qs = q ? `?q=${encodeURIComponent(q)}` : '';
-    return apiFetch<any[]>(`/member-areas/${encodeURIComponent(areaId)}/students${qs}`);
+    return apiFetch<MemberAreaStudent[]>(
+      `/member-areas/${encodeURIComponent(areaId)}/students${qs}`,
+    );
   },
-  update: async (areaId: string, studentId: string, data: Record<string, any>) => {
-    const res = await apiFetch<any>(
+  update: async (areaId: string, studentId: string, data: Record<string, unknown>) => {
+    const res = await apiFetch<MemberAreaStudent>(
       `/member-areas/${encodeURIComponent(areaId)}/students/${encodeURIComponent(studentId)}`,
       {
         method: 'PUT',
@@ -525,9 +598,15 @@ export const memberAreaStudentsApi = {
 // ============= GROWTH =============
 
 export const growthApi = {
-  activateMoneyMachine: () => apiFetch<any>('/growth/money-machine/activate', { method: 'POST' }),
+  activateMoneyMachine: () =>
+    apiFetch<{ success: boolean; processed: number }>('/growth/money-machine/activate', {
+      method: 'POST',
+    }),
 
-  getMoneyMachineReport: () => apiFetch<any>('/growth/money-machine/report'),
+  getMoneyMachineReport: () =>
+    apiFetch<{ processed: number; sent: number; scheduled: number }>(
+      '/growth/money-machine/report',
+    ),
 
   generateWhatsAppQr: (phone: string, message?: string) =>
     apiFetch<{ dataUrl: string; waUrl: string }>('/growth/qr/whatsapp', {
@@ -539,20 +618,20 @@ export const growthApi = {
 // ============= KLOEL MEMORY =============
 
 export const kloelMemoryApi = {
-  save: (_workspaceId: string, key: string, value: any, category?: string, content?: string) =>
-    apiFetch<any>('/kloel/memory/save', {
+  save: (_workspaceId: string, key: string, value: unknown, category?: string, content?: string) =>
+    apiFetch<{ success: boolean }>('/kloel/memory/save', {
       method: 'POST',
       body: { key, value, category, content },
     }),
 
   delete: async (workspaceId: string, key: string) => {
-    const res = await apiFetch<any>(
+    const res = await apiFetch<{ success: boolean }>(
       `/kloel/memory/${encodeURIComponent(workspaceId)}/${encodeURIComponent(key)}`,
       {
         method: 'DELETE',
       },
     );
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/memory'));
+    mutate((k: string) => typeof k === 'string' && k.startsWith('/kloel/memory'));
     return res;
   },
 };
@@ -566,10 +645,10 @@ export async function patchFollowup(
     scheduledAt?: string;
     message?: string;
     notes?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   },
-): Promise<any> {
-  const res = await apiFetch<any>(`/followups/${encodeURIComponent(id)}`, {
+): Promise<unknown> {
+  const res = await apiFetch<unknown>(`/followups/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: data,
   });
@@ -580,13 +659,23 @@ export async function patchFollowup(
 
 // ============= KLOEL FOLLOWUPS =============
 
-export async function getKloelFollowups(contactId?: string): Promise<any[]> {
+interface KloelFollowup {
+  id: string;
+  contactId?: string;
+  message?: string;
+  scheduledAt?: string;
+  status?: string;
+}
+
+export async function getKloelFollowups(contactId?: string): Promise<KloelFollowup[]> {
   const res = contactId
-    ? await apiFetch<any>(`/kloel/followups/${encodeURIComponent(contactId)}`)
-    : await apiFetch<any>('/kloel/followups');
+    ? await apiFetch<KloelFollowup[] | { followups: KloelFollowup[] }>(
+        `/kloel/followups/${encodeURIComponent(contactId)}`,
+      )
+    : await apiFetch<KloelFollowup[] | { followups: KloelFollowup[] }>('/kloel/followups');
   if (res.error) return [];
   const data = res.data;
-  return Array.isArray(data) ? data : ((data as Record<string, any>)?.followups ?? []);
+  return Array.isArray(data) ? data : ((data as { followups: KloelFollowup[] })?.followups ?? []);
 }
 
 // ============= GDPR / LGPD =============
@@ -598,9 +687,12 @@ export const gdprApi = {
     }),
 
   exportData: () =>
-    apiFetch<{ contacts: any[]; messages: any[]; sales: any[]; exportedAt: string }>(
-      '/kloel/data/export',
-    ),
+    apiFetch<{
+      contacts: Array<Record<string, unknown>>;
+      messages: Array<Record<string, unknown>>;
+      sales: Array<Record<string, unknown>>;
+      exportedAt: string;
+    }>('/kloel/data/export'),
 };
 
 // ============= MARKETPLACE =============
@@ -609,16 +701,21 @@ export async function listMarketplaceTemplates(params?: {
   category?: string;
   search?: string;
   limit?: number;
-}): Promise<any[]> {
+}): Promise<Array<Record<string, unknown>>> {
   const qs = new URLSearchParams();
   if (params?.category) qs.set('category', params.category);
   if (params?.search) qs.set('search', params.search);
   if (params?.limit) qs.set('limit', String(params.limit));
   const query = qs.toString();
-  const res = await apiFetch<any>(`/marketplace/templates${query ? `?${query}` : ''}`);
+  interface TemplateListResponse {
+    templates?: Array<Record<string, unknown>>;
+  }
+  const res = await apiFetch<Array<Record<string, unknown>> | TemplateListResponse>(
+    `/marketplace/templates${query ? `?${query}` : ''}`,
+  );
   if (res.error) return [];
-  const data = res.data as Record<string, any> | undefined;
-  return Array.isArray(data) ? data : (data?.templates ?? []);
+  const data = res.data;
+  return Array.isArray(data) ? data : ((data as TemplateListResponse)?.templates ?? []);
 }
 
 // ============= PRODUCT IMPORT =============
@@ -628,38 +725,71 @@ export async function importProducts(data: {
     name: string;
     price?: number;
     description?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   }>;
   source?: string;
-}): Promise<{ imported: number; errors: any[] }> {
-  const res = await apiFetch<any>('/products/import', {
-    method: 'POST',
-    body: data,
-  });
+}): Promise<{ imported: number; errors: Array<{ message: string }> }> {
+  const res = await apiFetch<{ imported: number; errors?: Array<{ message: string }> }>(
+    '/products/import',
+    {
+      method: 'POST',
+      body: data,
+    },
+  );
   if (res.error) throw new Error(res.error);
-  const resp = res.data as Record<string, any> | undefined;
   return {
-    imported: Number(resp?.imported || 0),
-    errors: Array.isArray(resp?.errors) ? resp.errors : [],
+    imported: Number(res.data?.imported || 0),
+    errors: Array.isArray(res.data?.errors) ? res.data.errors : [],
+  };
+}
+
+interface AffiliateProduct {
+  id: string;
+  name: string;
+  price?: number;
+  commission?: number;
+  category?: string;
+}
+
+interface AffiliateLink {
+  id: string;
+  url: string;
+  clicks: number;
+  sales: number;
+  commission: number;
+}
+
+interface AffiliateLinksResponse {
+  links: AffiliateLink[];
+  count: number;
+  totals: {
+    clicks: number;
+    sales: number;
+    revenue: number;
+    commission: number;
   };
 }
 
 export const affiliateApi = {
   marketplace: (params?: Record<string, string>) => {
     const qs = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return apiFetch<any>(`/affiliate/marketplace${qs}`);
+    return apiFetch<{ products: AffiliateProduct[]; total: number }>(`/affiliate/marketplace${qs}`);
   },
-  marketplaceStats: () => apiFetch<any>('/affiliate/marketplace/stats'),
-  categories: () => apiFetch<any>('/affiliate/marketplace/categories'),
-  recommended: () => apiFetch<any>('/affiliate/marketplace/recommended'),
+  marketplaceStats: () =>
+    apiFetch<{ totalProducts: number; totalAffiliates: number }>('/affiliate/marketplace/stats'),
+  categories: () => apiFetch<string[]>('/affiliate/marketplace/categories'),
+  recommended: () => apiFetch<AffiliateProduct[]>('/affiliate/marketplace/recommended'),
   requestAffiliation: async (productId: string) => {
-    const res = await apiFetch<any>(`/affiliate/request/${productId}`, { method: 'POST' });
+    const res = await apiFetch<{ success: boolean; affiliationId?: string }>(
+      `/affiliate/request/${productId}`,
+      { method: 'POST' },
+    );
     mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
     return res;
   },
-  myProducts: () => apiFetch<any>('/affiliate/my-products'),
-  listProduct: async (productId: string, config: any) => {
-    const res = await apiFetch<any>(`/affiliate/list-product/${productId}`, {
+  myProducts: () => apiFetch<AffiliateProduct[]>('/affiliate/my-products'),
+  listProduct: async (productId: string, config: Record<string, unknown>) => {
+    const res = await apiFetch<{ success: boolean }>(`/affiliate/list-product/${productId}`, {
       method: 'POST',
       body: config,
     });
@@ -668,7 +798,7 @@ export const affiliateApi = {
   },
 
   /** GET /affiliate/my-links — links with clicks/sales/commission metrics */
-  myLinks: () => apiFetch<any>('/affiliate/my-links'),
+  myLinks: () => apiFetch<AffiliateLinksResponse>('/affiliate/my-links'),
 
   /** PUT /affiliate/config/:productId — update commission/approval config for a listed product */
   configureProduct: async (
@@ -683,38 +813,51 @@ export const affiliateApi = {
       tags?: string[];
       listed?: boolean;
       thumbnailUrl?: string;
-      promoMaterials?: any;
+      promoMaterials?: Record<string, unknown>;
     },
   ) => {
-    const res = await apiFetch<any>(`/affiliate/config/${encodeURIComponent(productId)}`, {
-      method: 'PUT',
-      body: config,
-    });
+    const res = await apiFetch<{ success: boolean }>(
+      `/affiliate/config/${encodeURIComponent(productId)}`,
+      {
+        method: 'PUT',
+        body: config,
+      },
+    );
     mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
     return res;
   },
 
   /** POST /affiliate/ai-search — search marketplace by keyword */
   aiSearch: (query: string) =>
-    apiFetch<any>('/affiliate/ai-search', { method: 'POST', body: { query } }),
+    apiFetch<{ results: AffiliateProduct[] }>('/affiliate/ai-search', {
+      method: 'POST',
+      body: { query },
+    }),
 
   /** POST /affiliate/suggest — get AI-suggested products based on workspace niche */
-  suggest: () => apiFetch<any>('/affiliate/suggest', { method: 'POST' }),
+  suggest: () =>
+    apiFetch<{ products: AffiliateProduct[] }>('/affiliate/suggest', { method: 'POST' }),
 
   /** POST /affiliate/saved/:productId — bookmark a product */
   saveProduct: async (productId: string) => {
-    const res = await apiFetch<any>(`/affiliate/saved/${encodeURIComponent(productId)}`, {
-      method: 'POST',
-    });
+    const res = await apiFetch<{ success: boolean }>(
+      `/affiliate/saved/${encodeURIComponent(productId)}`,
+      {
+        method: 'POST',
+      },
+    );
     mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
     return res;
   },
 
   /** DELETE /affiliate/saved/:productId — remove bookmark */
   unsaveProduct: async (productId: string) => {
-    const res = await apiFetch<any>(`/affiliate/saved/${encodeURIComponent(productId)}`, {
-      method: 'DELETE',
-    });
+    const res = await apiFetch<{ success: boolean }>(
+      `/affiliate/saved/${encodeURIComponent(productId)}`,
+      {
+        method: 'DELETE',
+      },
+    );
     mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
     return res;
   },
@@ -728,7 +871,7 @@ export const campaignMassSendApi = {
    * Requires ADMIN role.
    */
   start: (workspaceId: string, user: string, numbers: string[], message: string) =>
-    apiFetch<any>('/campaign/start', {
+    apiFetch<{ success: boolean; campaignId?: string }>('/campaign/start', {
       method: 'POST',
       body: { workspaceId, user, numbers, message },
     }),
@@ -767,7 +910,10 @@ export const aiAssistantApi = {
 
 // ============= KNOWLEDGE BASE UPLOAD =============
 
-export async function uploadKnowledgeBase(file: File, kbId?: string): Promise<any> {
+export async function uploadKnowledgeBase(
+  file: File,
+  kbId?: string,
+): Promise<{ id: string; name: string; status: string }> {
   const token = tokenStorage.getToken();
 
   const formData = new FormData();
@@ -813,7 +959,7 @@ export const onboardingApi = {
       completed: boolean;
       messagesCount: number;
       step?: string;
-      data?: Record<string, any>;
+      data?: Record<string, unknown>;
     }>(`/kloel/onboarding/${encodeURIComponent(workspaceId)}/status`),
 };
 
@@ -838,7 +984,7 @@ export const scrapersApi = {
 
   /** POST /scrapers/jobs/:id/import — import scraped results into leads */
   importResults: (jobId: string, workspaceId: string) =>
-    apiFetch<{ imported: number; errors?: any[] }>(
+    apiFetch<{ imported: number; errors?: Array<{ message: string }> }>(
       `/scrapers/jobs/${encodeURIComponent(jobId)}/import`,
       {
         method: 'POST',
@@ -851,14 +997,14 @@ export const scrapersApi = {
 
 export const launchApi = {
   /** POST /launch/launcher — create a new group launcher */
-  createLauncher: (data: { name: string; description?: string; [key: string]: any }) =>
+  createLauncher: (data: { name: string; description?: string; [key: string]: unknown }) =>
     apiFetch<{ id: string; name: string; slug?: string; createdAt: string }>('/launch/launcher', {
       method: 'POST',
       body: data,
     }),
 
   /** POST /launch/launcher/:id/groups — add groups to a launcher */
-  addGroups: (launcherId: string, data: { groupLink: string; [key: string]: any }) =>
+  addGroups: (launcherId: string, data: { groupLink: string; [key: string]: unknown }) =>
     apiFetch<{ id: string; groupLink: string }>(
       `/launch/launcher/${encodeURIComponent(launcherId)}/groups`,
       {
@@ -883,10 +1029,13 @@ export const adRulesApi = {
       active?: boolean;
     },
   ) => {
-    const res = await apiFetch<any>(`/ad-rules/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      body: data,
-    });
+    const res = await apiFetch<{ id: string; name: string; active: boolean }>(
+      `/ad-rules/${encodeURIComponent(id)}`,
+      {
+        method: 'PUT',
+        body: data,
+      },
+    );
     mutate((key: string) => typeof key === 'string' && key.startsWith('/ad-rules'));
     return res;
   },
@@ -910,7 +1059,8 @@ export const partnershipsApi = {
 
 export const kloelLeadsApi = {
   /** GET /kloel/leads/:workspaceId — get workspace leads from KLOEL */
-  list: (workspaceId: string) => apiFetch<any[]>(`/kloel/leads/${encodeURIComponent(workspaceId)}`),
+  list: (workspaceId: string) =>
+    apiFetch<Array<Record<string, unknown>>>(`/kloel/leads/${encodeURIComponent(workspaceId)}`),
 };
 
 // ============= WEBINAR API =============
@@ -927,16 +1077,19 @@ export const webinarApi = {
       productId?: string;
     },
   ) => {
-    const res = await apiFetch<any>(`/webinars/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      body: data,
-    });
+    const res = await apiFetch<{ id: string; title: string }>(
+      `/webinars/${encodeURIComponent(id)}`,
+      {
+        method: 'PUT',
+        body: data,
+      },
+    );
     mutate((key: string) => typeof key === 'string' && key.startsWith('/webinars'));
     return res;
   },
 
   remove: async (id: string) => {
-    const res = await apiFetch<any>(`/webinars/${encodeURIComponent(id)}`, {
+    const res = await apiFetch<{ success: boolean }>(`/webinars/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
     mutate((key: string) => typeof key === 'string' && key.startsWith('/webinars'));
@@ -970,7 +1123,7 @@ export interface VoiceProfile {
   name: string;
   provider?: string;
   voiceId?: string;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
   createdAt?: string;
 }
 
@@ -979,7 +1132,7 @@ export const voiceApi = {
     name: string;
     provider?: string;
     voiceId?: string;
-    settings?: Record<string, any>;
+    settings?: Record<string, unknown>;
   }) =>
     apiFetch<VoiceProfile>('/voice/profiles', {
       method: 'POST',
@@ -1029,7 +1182,7 @@ export const mediaApi = {
 // can rely on try/catch for consistent feedback.
 // ============================================
 
-async function kycMutation<T = any>(
+async function kycMutation<T = unknown>(
   endpoint: string,
   options?: Parameters<typeof apiFetch>[1],
 ): Promise<T> {
@@ -1041,7 +1194,7 @@ async function kycMutation<T = any>(
 export const kycApi = {
   // Profile
   getProfile: () => apiFetch('/api/kyc/profile'),
-  updateProfile: (data: Record<string, any>) =>
+  updateProfile: (data: Record<string, unknown>) =>
     kycMutation('/kyc/profile', { method: 'PUT', body: data }),
   uploadAvatar: async (file: File) => {
     const fd = new FormData();
@@ -1051,7 +1204,7 @@ export const kycApi = {
 
   // Fiscal
   getFiscalData: () => apiFetch('/api/kyc/fiscal'),
-  updateFiscalData: (data: Record<string, any>) =>
+  updateFiscalData: (data: Record<string, unknown>) =>
     kycMutation('/kyc/fiscal', { method: 'PUT', body: data }),
 
   // Documents
@@ -1066,7 +1219,7 @@ export const kycApi = {
 
   // Bank Account
   getBankAccount: () => apiFetch('/api/kyc/bank'),
-  updateBankAccount: (data: Record<string, any>) =>
+  updateBankAccount: (data: Record<string, unknown>) =>
     kycMutation('/kyc/bank', { method: 'PUT', body: data }),
 
   // Security

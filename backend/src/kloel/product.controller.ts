@@ -16,6 +16,8 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import { AuthenticatedRequest } from '../common/interfaces';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateProductDto {
@@ -41,7 +43,7 @@ interface CreateProductDto {
   shippingValue?: number;
   originCep?: string;
   slug?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   idempotencyKey?: string;
 }
 
@@ -67,8 +69,26 @@ interface UpdateProductDto extends Partial<CreateProductDto> {
   afterPayShippingProvider?: string;
 }
 
+interface ProductMetrics {
+  totalSales: number;
+  totalRevenue: number;
+  memberAreasCount: number;
+  studentsCount: number;
+  modulesCount: number;
+  lessonsCount: number;
+  plansCount: number;
+  activePlansCount: number;
+  minPlanPriceInCents: number | null;
+  maxPlanPriceInCents: number | null;
+  affiliateListed: boolean;
+  affiliateCount: number;
+  affiliateSales: number;
+  affiliateRevenue: number;
+  affiliateCommissionPct: number | null;
+}
+
 /**
- * 🛍️ PRODUCT CATALOG CONTROLLER
+ * Product catalog controller.
  *
  * Manages products for each workspace.
  * All endpoints require authentication.
@@ -80,18 +100,25 @@ export class ProductController {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  private serializeProductForResponse(req: any, product: any) {
+  private serializeProductForResponse(
+    req: AuthenticatedRequest,
+    product: Record<string, unknown> | null,
+  ) {
     if (!product) return product;
 
     return {
       ...product,
-      imageUrl: normalizeStorageUrlForRequest(product.imageUrl, req) || null,
+      imageUrl:
+        normalizeStorageUrlForRequest(product.imageUrl as string | null | undefined, req) || null,
     };
   }
 
-  private async buildProductMetrics(workspaceId: string, productIds: string[]) {
+  private async buildProductMetrics(
+    workspaceId: string,
+    productIds: string[],
+  ): Promise<Map<string, ProductMetrics>> {
     if (productIds.length === 0) {
-      return new Map<string, any>();
+      return new Map<string, ProductMetrics>();
     }
 
     const paidStatuses = new Set(['PAID', 'SHIPPED', 'DELIVERED']);
@@ -143,7 +170,7 @@ export class ProductController {
       }),
     ]);
 
-    const metrics = new Map<string, any>();
+    const metrics = new Map<string, ProductMetrics>();
 
     for (const productId of productIds) {
       metrics.set(productId, {
@@ -227,14 +254,14 @@ export class ProductController {
    */
   @Get()
   async listProducts(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Query('category') category?: string,
     @Query('active') active?: string,
     @Query('search') search?: string,
   ) {
     const workspaceId = req.user.workspaceId;
 
-    const where: any = { workspaceId };
+    const where: Record<string, unknown> = { workspaceId };
 
     if (category) {
       where.category = category;
@@ -279,7 +306,7 @@ export class ProductController {
    * Get product stats for the workspace
    */
   @Get('stats')
-  async getProductStats(@Request() req: any) {
+  async getProductStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user.workspaceId;
 
     // I17 — bounded read: same ceiling as listProducts for consistency.
@@ -316,7 +343,7 @@ export class ProductController {
    * Get a single product by ID
    */
   @Get(':id')
-  async getProduct(@Request() req: any, @Param('id') id: string) {
+  async getProduct(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
 
     const product = await this.prisma.product.findFirst({
@@ -342,7 +369,7 @@ export class ProductController {
    */
   // idempotent: retry-safe via unique constraint (idempotencyKey + workspace name check)
   @Post()
-  async createProduct(@Request() req: any, @Body() dto: CreateProductDto) {
+  async createProduct(@Request() req: AuthenticatedRequest, @Body() dto: CreateProductDto) {
     // Accepts optional idempotencyKey via DTO for safe client retry
     const workspaceId = req.user.workspaceId;
 
@@ -380,7 +407,7 @@ export class ProductController {
         shippingValue: dto.shippingValue || null,
         originCep: dto.originCep || null,
         slug: dto.slug,
-        metadata: dto.metadata || {},
+        metadata: (dto.metadata || {}) as Prisma.InputJsonValue,
       },
     });
 
@@ -436,7 +463,11 @@ export class ProductController {
    * Update an existing product
    */
   @Put(':id')
-  async updateProduct(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateProductDto) {
+  async updateProduct(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateProductDto,
+  ) {
     const workspaceId = req.user.workspaceId;
 
     // Verify product belongs to workspace
@@ -493,7 +524,10 @@ export class ProductController {
         ...(normalizedRest.price !== undefined && {
           price: normalizedRest.price || 0,
         }),
-      },
+        ...(normalizedRest.metadata !== undefined && {
+          metadata: normalizedRest.metadata as Prisma.InputJsonValue,
+        }),
+      } as Prisma.ProductUncheckedUpdateInput,
     });
 
     // Sync updated product to KloelMemory so Kloel AI is aware
@@ -546,7 +580,7 @@ export class ProductController {
    * Delete a product
    */
   @Delete(':id')
-  async deleteProduct(@Request() req: any, @Param('id') id: string) {
+  async deleteProduct(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
 
     // Verify product belongs to workspace
@@ -579,7 +613,7 @@ export class ProductController {
    * Get product categories for the workspace
    */
   @Get('categories/list')
-  async getCategories(@Request() req: any) {
+  async getCategories(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user.workspaceId;
 
     const products = await this.prisma.product.findMany({
@@ -598,7 +632,7 @@ export class ProductController {
    */
   @Post('import')
   async importProducts(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Body() dto: { products: CreateProductDto[]; idempotencyKey?: string },
   ) {
     const workspaceId = req.user.workspaceId;
@@ -608,11 +642,17 @@ export class ProductController {
         try {
           // PULSE:OK — import needs per-product error tracking; createMany doesn't return individual results
           const created = await this.prisma.product.create({
-            data: { workspaceId, ...product, price: product.price || 0 },
+            data: {
+              workspaceId,
+              ...product,
+              price: product.price || 0,
+              metadata: (product.metadata || {}) as Prisma.InputJsonValue,
+            },
           });
           return { success: true, product: created };
-        } catch (error) {
-          return { success: false, error: error.message, product };
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'unknown error';
+          return { success: false, error: message, product };
         }
       }),
     );

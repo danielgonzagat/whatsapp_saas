@@ -3,6 +3,34 @@
 import { useCRMMutations, useDeals, usePipelines } from '@/hooks/useCRM';
 import { type DragEvent, type FormEvent, useCallback, useState } from 'react';
 
+interface CRMPipeline {
+  _id?: string;
+  id?: string;
+  name: string;
+  stages?: CRMStage[];
+}
+
+interface CRMStage {
+  _id?: string;
+  id?: string;
+  name: string;
+}
+
+interface CRMDeal {
+  _id?: string;
+  id?: string;
+  title: string;
+  value?: number;
+  priority?: string;
+  stage?: { _id?: string; id?: string; name?: string } | string;
+  contact?: { name?: string; phone?: string };
+  contactName?: string;
+  description?: string;
+  expectedCloseDate?: string;
+  createdAt?: string;
+  notes?: string;
+}
+
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
@@ -153,7 +181,7 @@ export default function CRMPipelineView() {
 
   const [selectedPipeline, setSelectedPipeline] = useState<string>('');
   const [addingStage, setAddingStage] = useState<string | null>(null);
-  const [detailDeal, setDetailDeal] = useState<any>(null);
+  const [detailDeal, setDetailDeal] = useState<CRMDeal | null>(null);
   const [dragDealId, setDragDealId] = useState<string | null>(null);
 
   // deal detail modal state
@@ -172,18 +200,18 @@ export default function CRMPipelineView() {
   const [submitting, setSubmitting] = useState(false);
 
   // resolve selected pipeline
-  const pipeArr: any[] = Array.isArray(pipelines) ? pipelines : [];
-  const pipeId = selectedPipeline || (pipeArr[0] as any)?._id || (pipeArr[0] as any)?.id || '';
+  const pipeArr: CRMPipeline[] = Array.isArray(pipelines) ? (pipelines as CRMPipeline[]) : [];
+  const pipeId = selectedPipeline || pipeArr[0]?._id || pipeArr[0]?.id || '';
 
   const {
     deals,
     isLoading: dlLoading,
     mutate: mutateDeals,
   } = useDeals(pipeId ? { pipeline: pipeId } : undefined);
-  const dealArr: any[] = Array.isArray(deals) ? deals : [];
+  const dealArr: CRMDeal[] = Array.isArray(deals) ? (deals as CRMDeal[]) : [];
 
-  const currentPipeline: any = pipeArr.find((p: any) => (p._id || p.id) === pipeId);
-  const stages: any[] = currentPipeline?.stages || [];
+  const currentPipeline = pipeArr.find((p) => (p._id || p.id) === pipeId);
+  const stages: CRMStage[] = currentPipeline?.stages || [];
   const showPipelineLoading = plLoading;
   const showDealLoading = dlLoading && !dealArr.length;
 
@@ -243,7 +271,7 @@ export default function CRMPipelineView() {
   /* eslint-enable react-hooks/preserve-manual-memoization */
 
   /* ── deal detail handlers ── */
-  const openDetail = useCallback((deal: any) => {
+  const openDetail = useCallback((deal: CRMDeal) => {
     setDetailDeal(deal);
     setDetailEditing(false);
     setConfirmDelete(false);
@@ -265,6 +293,7 @@ export default function CRMPipelineView() {
   const _handleSaveEdit = useCallback(async () => {
     if (!detailDeal || detailSaving) return;
     const did = detailDeal._id || detailDeal.id;
+    if (!did) return;
     setDetailSaving(true);
     try {
       await updateDeal(did, {
@@ -275,7 +304,7 @@ export default function CRMPipelineView() {
       await mutateDeals();
       setDetailEditing(false);
       // Update local detail state to reflect changes
-      setDetailDeal((prev: any) =>
+      setDetailDeal((prev) =>
         prev
           ? {
               ...prev,
@@ -294,6 +323,7 @@ export default function CRMPipelineView() {
   const _handleDeleteDeal = useCallback(async () => {
     if (!detailDeal || detailDeleting) return;
     const did = detailDeal._id || detailDeal.id;
+    if (!did) return;
     setDetailDeleting(true);
     try {
       await deleteDeal(did);
@@ -308,11 +338,15 @@ export default function CRMPipelineView() {
 
   /* ── stage helpers ── */
   function dealsForStage(stageId: string) {
-    return dealArr.filter((d: any) => (d.stage?._id || d.stage?.id || d.stage) === stageId);
+    return dealArr.filter((d) => {
+      const s = d.stage;
+      if (typeof s === 'string') return s === stageId;
+      return (s?._id || s?.id) === stageId;
+    });
   }
 
   function stageTotal(stageId: string) {
-    return dealsForStage(stageId).reduce((sum: number, d: any) => sum + (d.value || 0), 0);
+    return dealsForStage(stageId).reduce((sum: number, d: CRMDeal) => sum + (d.value || 0), 0);
   }
 
   /* ── empty: no pipelines ── */
@@ -371,7 +405,7 @@ export default function CRMPipelineView() {
                   outline: 'none',
                 }}
               >
-                {pipeArr.map((p: any) => (
+                {pipeArr.map((p) => (
                   <option key={p._id || p.id} value={p._id || p.id}>
                     {p.name}
                   </option>
@@ -428,8 +462,8 @@ export default function CRMPipelineView() {
             Este pipeline nao possui etapas.
           </div>
         ) : (
-          stages.map((stage: any) => {
-            const sid = stage._id || stage.id;
+          stages.map((stage) => {
+            const sid = stage._id || stage.id || '';
             const sDeals = dealsForStage(sid);
             const total = stageTotal(sid);
 
@@ -513,9 +547,9 @@ export default function CRMPipelineView() {
                       <DealCardSkeleton />
                     </>
                   ) : (
-                    sDeals.map((deal: any) => {
-                      const did = deal._id || deal.id;
-                      const pr = PRIORITY_CFG[deal.priority] || PRIORITY_CFG.medium;
+                    sDeals.map((deal) => {
+                      const did = deal._id || deal.id || '';
+                      const pr = PRIORITY_CFG[deal.priority || ''] || PRIORITY_CFG.medium;
                       return (
                         <div
                           key={did}
@@ -772,14 +806,20 @@ export default function CRMPipelineView() {
               <DetailRow label="Valor" value={fmtBRL(detailDeal.value || 0)} mono />
               <DetailRow
                 label="Prioridade"
-                value={(PRIORITY_CFG[detailDeal.priority] || PRIORITY_CFG.medium).label}
-                color={(PRIORITY_CFG[detailDeal.priority] || PRIORITY_CFG.medium).color}
+                value={(PRIORITY_CFG[detailDeal.priority || ''] || PRIORITY_CFG.medium).label}
+                color={(PRIORITY_CFG[detailDeal.priority || ''] || PRIORITY_CFG.medium).color}
               />
               <DetailRow
                 label="Etapa"
                 value={
-                  detailDeal.stage?.name ||
-                  stages.find((s: any) => (s._id || s.id) === detailDeal.stage)?.name ||
+                  (typeof detailDeal.stage === 'object' ? detailDeal.stage?.name : undefined) ||
+                  stages.find(
+                    (s) =>
+                      (s._id || s.id) ===
+                      (typeof detailDeal.stage === 'string'
+                        ? detailDeal.stage
+                        : detailDeal.stage?._id || detailDeal.stage?.id),
+                  )?.name ||
                   '-'
                 }
               />

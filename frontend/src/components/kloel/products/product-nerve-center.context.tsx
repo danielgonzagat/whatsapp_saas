@@ -4,39 +4,75 @@ import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.
 import { createContext, useContext } from 'react';
 import type { ProductEditorPlanView } from './product-nerve-center.view-models';
 
+interface ProductData {
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  price?: number;
+  images?: string[];
+  category?: string;
+  [key: string]: unknown;
+}
+
+interface PlanData {
+  id: string;
+  name: string;
+  priceInCents?: number;
+  [key: string]: unknown;
+}
+
+interface CheckoutData {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface CouponData {
+  id: string;
+  code?: string;
+  type?: string;
+  val?: number | string;
+  [key: string]: unknown;
+}
+
+interface BumpData {
+  id: string;
+  [key: string]: unknown;
+}
+
 export interface ProductNerveCenterContextValue {
   // Identity
   productId: string;
 
   // Product data
-  p: any;
+  p: Record<string, unknown> & { name?: string; id?: string };
   refreshProduct: () => Promise<void>;
-  updateProduct: (id: string, body: any) => Promise<any>;
+  updateProduct: (id: string, body: Record<string, unknown>) => Promise<unknown>;
 
   // Plans
-  rawPlans: any[];
+  rawPlans: PlanData[];
   PLANS: ProductEditorPlanView[];
   plansLoading: boolean;
-  updatePlan: (planId: string, data: any) => Promise<any>;
+  updatePlan: (planId: string, data: Record<string, unknown>) => Promise<unknown>;
   deletePlan: (planId: string) => Promise<void>;
-  createPlan: (body: any) => Promise<any>;
-  duplicatePlan: (plan: any) => Promise<any>;
+  createPlan: (body: { name: string; [key: string]: unknown }) => Promise<unknown>;
+  duplicatePlan: (plan: PlanData) => Promise<unknown>;
 
   // Checkouts
-  rawCheckouts: any[];
-  createCheckout: (body: any) => Promise<any>;
-  duplicateCheckout: (id: string) => Promise<any>;
+  rawCheckouts: CheckoutData[];
+  createCheckout: (body: Record<string, unknown>) => Promise<unknown>;
+  duplicateCheckout: (id: string) => Promise<unknown>;
   deleteCheckout: (id: string) => Promise<void>;
-  syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<any>;
+  syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<unknown>;
 
   // Coupons
-  COUPONS: any[];
+  COUPONS: CouponData[];
   couponsLoading: boolean;
-  loadCoupons: () => Promise<any>;
+  loadCoupons: () => Promise<unknown>;
 
   // Order bumps
-  bumps: any[];
-  createBump: (body: any) => Promise<any>;
+  bumps: BumpData[];
+  createBump: (body: { [key: string]: unknown }) => Promise<unknown>;
 
   // Navigation
   openCheckoutEditor: (focus: string, planId?: string | null) => void;

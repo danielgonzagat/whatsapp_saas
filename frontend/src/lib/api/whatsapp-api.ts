@@ -42,11 +42,11 @@ export const whatsappApi = {
 
   getCiaIntelligence: () => {
     return apiFetch<{
-      businessState: any;
-      marketSignals: any[];
-      humanTasks: any[];
-      demandStates: any[];
-      insights: any[];
+      businessState: Record<string, unknown>;
+      marketSignals: Array<Record<string, unknown>>;
+      humanTasks: Array<Record<string, unknown>>;
+      demandStates: Array<Record<string, unknown>>;
+      insights: Array<Record<string, unknown>>;
     }>(`/api/whatsapp-api/cia/intelligence`);
   },
 
@@ -63,8 +63,8 @@ export const whatsappApi = {
       success: boolean;
       message?: string;
       sessionName?: string;
-      status?: any;
-      bootstrap?: any;
+      status?: Record<string, unknown>;
+      bootstrap?: Record<string, unknown>;
     }>(`/api/whatsapp-api/session/claim`, {
       method: 'POST',
       body: { sourceWorkspaceId },
@@ -86,11 +86,11 @@ export const whatsappApi = {
   },
 
   getViewer: () => {
-    return apiFetch<any>(`/api/whatsapp-api/session/view`);
+    return apiFetch<unknown>(`/api/whatsapp-api/session/view`);
   },
 
   takeover: async () => {
-    const res = await apiFetch<any>(`/api/whatsapp-api/session/takeover`, {
+    const res = await apiFetch<unknown>(`/api/whatsapp-api/session/takeover`, {
       method: 'POST',
     });
     invalidateWhatsAppApi();
@@ -98,15 +98,15 @@ export const whatsappApi = {
   },
 
   resumeAgent: async () => {
-    const res = await apiFetch<any>(`/api/whatsapp-api/session/resume-agent`, {
+    const res = await apiFetch<unknown>(`/api/whatsapp-api/session/resume-agent`, {
       method: 'POST',
     });
     invalidateWhatsAppApi();
     return res;
   },
 
-  performViewerAction: async (action: Record<string, any>) => {
-    const res = await apiFetch<any>(`/api/whatsapp-api/session/action`, {
+  performViewerAction: async (action: Record<string, unknown>) => {
+    const res = await apiFetch<unknown>(`/api/whatsapp-api/session/action`, {
       method: 'POST',
       body: { action },
     });
@@ -115,11 +115,11 @@ export const whatsappApi = {
   },
 
   getContacts: () => {
-    return apiFetch<any[]>(`/whatsapp-api/contacts`);
+    return apiFetch<Array<Record<string, unknown>>>(`/whatsapp-api/contacts`);
   },
 
   createContact: async (body: { phone: string; name?: string; email?: string }) => {
-    const res = await apiFetch<any>(`/whatsapp-api/contacts`, {
+    const res = await apiFetch<unknown>(`/whatsapp-api/contacts`, {
       method: 'POST',
       body: body,
     });
@@ -128,14 +128,14 @@ export const whatsappApi = {
   },
 
   getChats: () => {
-    return apiFetch<any[]>(`/api/whatsapp-api/chats`);
+    return apiFetch<Array<Record<string, unknown>>>(`/api/whatsapp-api/chats`);
   },
 
   getChatMessages: (
     chatId: string,
     params?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ) => {
-    return apiFetch<any[]>(
+    return apiFetch<Array<Record<string, unknown>>>(
       `/api/whatsapp-api/chats/${encodeURIComponent(chatId)}/messages${buildQuery({
         limit: params?.limit,
         offset: params?.offset,
@@ -145,19 +145,22 @@ export const whatsappApi = {
   },
 
   setPresence: async (chatId: string, presence: 'typing' | 'paused' | 'seen') => {
-    const res = await apiFetch<any>(`/whatsapp-api/chats/${encodeURIComponent(chatId)}/presence`, {
-      method: 'POST',
-      body: { presence },
-    });
+    const res = await apiFetch<unknown>(
+      `/whatsapp-api/chats/${encodeURIComponent(chatId)}/presence`,
+      {
+        method: 'POST',
+        body: { presence },
+      },
+    );
     return res;
   },
 
   getBacklog: () => {
-    return apiFetch<any>(`/whatsapp-api/backlog`);
+    return apiFetch<unknown>(`/whatsapp-api/backlog`);
   },
 
   syncHistory: async (reason?: string) => {
-    const res = await apiFetch<any>(`/whatsapp-api/sync`, {
+    const res = await apiFetch<unknown>(`/whatsapp-api/sync`, {
       method: 'POST',
       body: { reason },
     });

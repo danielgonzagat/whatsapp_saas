@@ -1271,7 +1271,8 @@ function CriarSite({ mode }: { mode?: string }) {
     setLoadingSites(true);
     apiFetch('/kloel/site/list')
       .then((res) => {
-        if (res.data?.sites) setSavedSites(res.data.sites);
+        const data = res.data as { sites?: Record<string, unknown>[] } | undefined;
+        if (data?.sites) setSavedSites(data.sites);
       })
       .finally(() => setLoadingSites(false));
   }, []);
@@ -1296,8 +1297,9 @@ function CriarSite({ mode }: { mode?: string }) {
       setPhase('ask');
       return;
     }
-    if (res.data?.html) {
-      setGeneratedHtml(res.data.html);
+    const generateData = res.data as { html?: string } | undefined;
+    if (generateData?.html) {
+      setGeneratedHtml(generateData.html);
       setSiteName(prompt.trim().slice(0, 60));
       setPhase('editor');
     } else {
@@ -1325,7 +1327,8 @@ function CriarSite({ mode }: { mode?: string }) {
       });
       if (res.error) setError(res.error);
       else {
-        if (res.data?.site?.id) setSavedSiteId(res.data.site.id);
+        const saveData = res.data as { site?: { id?: string } } | undefined;
+        if (saveData?.site?.id) setSavedSiteId(saveData.site.id);
         invalidateSites();
       }
     }
@@ -1345,13 +1348,14 @@ function CriarSite({ mode }: { mode?: string }) {
         setError(saveRes.error);
         return;
       }
-      if (!saveRes.data?.site?.id) {
+      const saveData = saveRes.data as { site?: { id?: string } } | undefined;
+      if (!saveData?.site?.id) {
         setError('Erro ao salvar site antes de publicar.');
         return;
       }
-      setSavedSiteId(saveRes.data.site.id);
+      setSavedSiteId(saveData.site.id);
       setPublishing(true);
-      const pubRes = await apiFetch(`/kloel/site/${saveRes.data.site.id}/publish`, {
+      const pubRes = await apiFetch(`/kloel/site/${saveData.site.id}/publish`, {
         method: 'POST',
       });
       setPublishing(false);
@@ -1359,7 +1363,8 @@ function CriarSite({ mode }: { mode?: string }) {
         setError(pubRes.error);
         return;
       }
-      if (pubRes.data?.url) setPublishedUrl(pubRes.data.url);
+      const publishData = pubRes.data as { url?: string } | undefined;
+      if (publishData?.url) setPublishedUrl(publishData.url);
     } else {
       setPublishing(true);
       setError('');
@@ -1369,7 +1374,8 @@ function CriarSite({ mode }: { mode?: string }) {
         setError(res.error);
         return;
       }
-      if (res.data?.url) setPublishedUrl(res.data.url);
+      const publishData = res.data as { url?: string } | undefined;
+      if (publishData?.url) setPublishedUrl(publishData.url);
     }
   };
 
@@ -1386,8 +1392,9 @@ function CriarSite({ mode }: { mode?: string }) {
       setError(res.error);
       return;
     }
-    if (res.data?.html) {
-      setGeneratedHtml(res.data.html);
+    const editData = res.data as { html?: string } | undefined;
+    if (editData?.html) {
+      setGeneratedHtml(editData.html);
       setEditPrompt('');
     }
   };
@@ -1863,7 +1870,8 @@ function EditarSite({ mode }: { mode?: string }) {
   useEffect(() => {
     apiFetch('/kloel/site/list')
       .then((res) => {
-        if (res.data?.sites) setSavedSites(res.data.sites);
+        const data = res.data as { sites?: Record<string, unknown>[] } | undefined;
+        if (data?.sites) setSavedSites(data.sites);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -1881,8 +1889,9 @@ function EditarSite({ mode }: { mode?: string }) {
       setError(res.error);
       return;
     }
-    if (res.data?.html) {
-      setSelectedSite({ ...selectedSite, htmlContent: res.data.html });
+    const editData = res.data as { html?: string } | undefined;
+    if (editData?.html) {
+      setSelectedSite({ ...selectedSite, htmlContent: editData.html });
       setEditPrompt('');
     }
   };
@@ -1919,7 +1928,8 @@ function EditarSite({ mode }: { mode?: string }) {
         currentHtml: selectedSite.htmlContent,
       },
     });
-    if (genRes.error || !genRes.data?.html) {
+    const generatedVariantData = genRes.data as { html?: string } | undefined;
+    if (genRes.error || !generatedVariantData?.html) {
       setVariantLoading(false);
       setError(genRes.error || 'Falha ao gerar variante.');
       return;
@@ -1928,14 +1938,15 @@ function EditarSite({ mode }: { mode?: string }) {
     const variantName = `${selectedSite.name || 'Site'} — Variante B`;
     const saveRes = await apiFetch('/kloel/site/save', {
       method: 'POST',
-      body: { name: variantName, htmlContent: genRes.data.html },
+      body: { name: variantName, htmlContent: generatedVariantData.html },
     });
     setVariantLoading(false);
-    if (saveRes.error || !saveRes.data?.site) {
+    const savedVariantData = saveRes.data as { site?: Record<string, unknown> } | undefined;
+    if (saveRes.error || !savedVariantData?.site) {
       setError(saveRes.error || 'Falha ao salvar variante.');
       return;
     }
-    const newSite = saveRes.data.site;
+    const newSite = savedVariantData.site;
     setSavedSites((prev) => [newSite, ...prev]);
     setSelectedSite(newSite);
     setVariantPrompt('');

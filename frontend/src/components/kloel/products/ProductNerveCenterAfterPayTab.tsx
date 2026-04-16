@@ -9,12 +9,14 @@ export function ProductNerveCenterAfterPayTab() {
   const { productId, p, updateProduct, refreshProduct } = useNerveCenterContext();
   const { showToast } = useToast();
 
-  const [apDup, setApDup] = useState(p.afterPayDuplicateAddress ?? false);
-  const [apCharge, setApCharge] = useState(p.afterPayAffiliateCharge ?? false);
+  const [apDup, setApDup] = useState<boolean>(Boolean(p.afterPayDuplicateAddress));
+  const [apCharge, setApCharge] = useState<boolean>(Boolean(p.afterPayAffiliateCharge));
   const [apChargeVal, setApChargeVal] = useState(
     p.afterPayChargeValue ? String(p.afterPayChargeValue) : '',
   );
-  const [apProvider, setApProvider] = useState(p.afterPayShippingProvider ?? '');
+  const [apProvider, setApProvider] = useState<string>(
+    typeof p.afterPayShippingProvider === 'string' ? p.afterPayShippingProvider : '',
+  );
   const [apSaving, setApSaving] = useState(false);
   const [apSaved, setApSaved] = useState(false);
   const handleSaveAP = async () => {

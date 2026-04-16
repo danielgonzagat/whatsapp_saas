@@ -686,10 +686,13 @@ export default function ProductNerveCenter({
       const sourcePlan = ((rawPlans || []) as PlanData[]).find(
         (candidate) => candidate.id === planId,
       );
-      if (!sourcePlan) return;
+      if (!sourcePlan?.name) return;
 
       try {
-        await duplicatePlan(sourcePlan);
+        await duplicatePlan({
+          ...sourcePlan,
+          name: sourcePlan.name,
+        });
         flashActionFeedback(`duplicate-${planId}`);
       } catch (error) {
         console.error(error);

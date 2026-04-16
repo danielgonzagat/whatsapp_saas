@@ -19,6 +19,7 @@ import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ValidateCouponDto } from './dto/product-sub-resources.dto';
 import {
@@ -30,11 +31,26 @@ const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-+|-+$/g;
 
-/** Loose body type — accepts idempotencyKey and any other fields for safe retry. */
-type LooseObject = Record<string, any>;
+function safeStr(v: unknown, fb = ''): string {
+  return typeof v === 'string'
+    ? v
+    : typeof v === 'number' || typeof v === 'boolean'
+      ? String(v)
+      : fb;
+}
 
-function getWorkspaceId(req: any): string {
-  return req.user?.workspaceId || req.workspaceId;
+/** Loose body type — accepts idempotencyKey and any other fields for safe retry.
+ *  Values are narrowed at each consumption site via parseObject/parseNumber/etc.
+ *  Using `unknown` here would cascade 100+ casts through helper functions that
+ *  already perform runtime narrowing, so we keep the structural escape hatch. */
+type LooseObject = Record<string, unknown>;
+type AffiliateCodeClient = Pick<
+  PrismaService,
+  'checkoutProductPlan' | 'checkoutPlanLink' | 'affiliateLink'
+>;
+
+function getWorkspaceId(req: AuthenticatedRequest): string {
+  return req.user?.workspaceId || req.workspaceId || '';
 }
 
 async function ensureWorkspaceProductAccess(
@@ -53,15 +69,15 @@ async function ensureWorkspaceProductAccess(
   return product;
 }
 
-function parseObject(value: any): LooseObject {
+function parseObject(value: unknown): LooseObject {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
   }
 
-  return value;
+  return value as LooseObject;
 }
 
-function parseNumber(value: any) {
+function parseNumber(value: unknown): number | undefined {
   if (value === '' || value === null || value === undefined) {
     return undefined;
   }
@@ -70,7 +86,7 @@ function parseNumber(value: any) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-async function isPublicCheckoutCodeTaken(prisma: PrismaService | any, code: string) {
+async function isPublicCheckoutCodeTaken(prisma: AffiliateCodeClient, code: string) {
   const [plan, checkoutLink, affiliateLink] = await Promise.all([
     prisma.checkoutProductPlan.findFirst({
       where: { referenceCode: code },
@@ -89,7 +105,7 @@ async function isPublicCheckoutCodeTaken(prisma: PrismaService | any, code: stri
   return Boolean(plan || checkoutLink || affiliateLink);
 }
 
-async function generateAffiliatePublicCode(prisma: PrismaService | any) {
+async function generateAffiliatePublicCode(prisma: AffiliateCodeClient) {
   return generateUniquePublicCheckoutCode((candidate) =>
     isPublicCheckoutCodeTaken(prisma, candidate),
   );
@@ -98,22 +114,18 @@ async function generateAffiliatePublicCode(prisma: PrismaService | any) {
 const COMMISSION_ROLE_VALUES = ['COPRODUCER', 'MANAGER', 'AFFILIATE'] as const;
 const PRODUCT_COMMISSION_TYPE_VALUES = ['first_click', 'last_click', 'proportional'] as const;
 
-function normalizeCommissionRole(value: any) {
-  const role = String(value || '')
-    .trim()
-    .toUpperCase();
-  return COMMISSION_ROLE_VALUES.includes(role as any) ? role : null;
+function normalizeCommissionRole(value: unknown): string | null {
+  const role = safeStr(value).trim().toUpperCase();
+  return (COMMISSION_ROLE_VALUES as readonly string[]).includes(role) ? role : null;
 }
 
-function normalizeOptionalEmail(value: any) {
-  const email = String(value || '')
-    .trim()
-    .toLowerCase();
+function normalizeOptionalEmail(value: unknown): string | null {
+  const email = safeStr(value).trim().toLowerCase();
   return email || null;
 }
 
-function normalizeOptionalText(value: any) {
-  const text = String(value || '').trim();
+function normalizeOptionalText(value: unknown): string | null {
+  const text = safeStr(value).trim();
   return text || null;
 }
 
@@ -287,12 +299,13 @@ function buildPlanExtraConfig(body: LooseObject, current: LooseObject) {
 
 function buildPackagingConfig(body: LooseObject, current: LooseObject) {
   const next = { ...current };
+  const rawDimensions = parseObject(body.dimensions);
   const dimensions =
     body.dimensions && typeof body.dimensions === 'object'
       ? removeUndefined({
-          width: parseNumber(body.dimensions.width),
-          height: parseNumber(body.dimensions.height),
-          length: parseNumber(body.dimensions.length),
+          width: parseNumber(rawDimensions.width),
+          height: parseNumber(rawDimensions.height),
+          length: parseNumber(rawDimensions.length),
         })
       : undefined;
 
@@ -321,7 +334,7 @@ function buildShippingConfig(body: LooseObject, current: LooseObject) {
   let freightType = requestedFreightType;
   if (body.freeShipping === true) freightType = 'free';
   if (body.freeShipping === false && freightType === undefined) {
-    freightType = current.freightType === 'free' ? 'calculated' : current.freightType;
+    freightType = current.freightType === 'free' ? 'calculated' : safeStr(current.freightType);
   }
 
   const fixedFreight = parseNumber(body.fixedFreight) ?? parseNumber(body.shippingPrice);
@@ -399,14 +412,14 @@ function serializePlan(plan: LooseObject) {
   const packaging = parseObject(plan.packagingConfig);
   const shipping = parseObject(plan.shippingConfig);
   const freightType = typeof shipping.freightType === 'string' ? shipping.freightType : '';
+  const planName = safeStr(plan.name);
+  const planId = safeStr(plan.id);
 
   return {
     ...plan,
-    slug: slugifyPlan(plan.name, plan.id),
+    slug: slugifyPlan(planName, planId),
     referenceCode:
-      String(plan.referenceCode || '')
-        .trim()
-        .toUpperCase() || plan.id.slice(0, 8).toUpperCase(),
+      safeStr(plan.referenceCode).trim().toUpperCase() || planId.slice(0, 8).toUpperCase(),
     priceInCents: Math.round(Number(plan.price || 0) * 100),
     quantity: plan.itemsPerPlan,
     items: plan.itemsPerPlan,
@@ -521,11 +534,11 @@ function buildCouponData(body: LooseObject) {
   }
 
   return removeUndefined({
-    code: String(body.code).trim().toUpperCase(),
+    code: safeStr(body.code).trim().toUpperCase(),
     discountType,
     discountValue,
     maxUses: parseNumber(body.maxUses),
-    expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+    expiresAt: body.expiresAt ? new Date(safeStr(body.expiresAt)) : undefined,
     active: body.active,
   });
 }
@@ -546,16 +559,20 @@ function serializeReview(review: LooseObject) {
   };
 }
 
-function serializeAffiliateProductForResponse(req: any, product: any) {
+function serializeAffiliateProductForResponse(
+  req: AuthenticatedRequest,
+  product: LooseObject | null,
+) {
   if (!product) return product;
 
   return {
     ...product,
-    thumbnailUrl: normalizeStorageUrlForRequest(product.thumbnailUrl, req) || null,
+    thumbnailUrl:
+      normalizeStorageUrlForRequest(product.thumbnailUrl as string | null | undefined, req) || null,
   };
 }
 
-function toStringList(value: any) {
+function toStringList(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.map((entry) => String(entry || '').trim()).filter(Boolean);
   }
@@ -570,14 +587,14 @@ function toStringList(value: any) {
   return [];
 }
 
-function buildAffiliateLinkUrl(req: any, code: string | null | undefined) {
+function buildAffiliateLinkUrl(req: AuthenticatedRequest, code: string | null | undefined) {
   return buildPayCheckoutUrl(req, code);
 }
 
 function normalizeAffiliatePromoMaterials(product: LooseObject) {
   const materials = new Set<string>();
-  const merchandContent = String(product.merchandContent || '').trim();
-  const affiliateTerms = String(product.affiliateTerms || '').trim();
+  const merchandContent = safeStr(product.merchandContent).trim();
+  const affiliateTerms = safeStr(product.affiliateTerms).trim();
 
   for (const entry of toStringList(product.promoMaterials)) {
     materials.add(entry);
@@ -601,9 +618,9 @@ function buildAffiliateProductData(product: LooseObject) {
     commissionType: 'PERCENTAGE',
     cookieDays: parseNumber(product.commissionCookieDays) ?? 180,
     approvalMode: product.affiliateAutoApprove === false ? 'MANUAL' : 'AUTO',
-    category: product.category ?? null,
+    category: normalizeOptionalText(product.category) ?? '',
     tags: toStringList(product.tags),
-    thumbnailUrl: product.imageUrl ?? null,
+    thumbnailUrl: normalizeOptionalText(product.imageUrl),
     promoMaterials: normalizeAffiliatePromoMaterials(product),
   };
 }
@@ -642,7 +659,11 @@ async function recalculateAffiliateProductCounters(
   });
 }
 
-async function buildAffiliateSummary(prisma: PrismaService, req: any, productId: string) {
+async function buildAffiliateSummary(
+  prisma: PrismaService,
+  req: AuthenticatedRequest,
+  productId: string,
+) {
   const affiliateProduct = await prisma.affiliateProduct.findUnique({
     where: { productId },
     include: {
@@ -752,7 +773,7 @@ function findLinkedCampaignForProductCampaign(
 }
 
 function buildDefaultCampaignMessage(product: LooseObject) {
-  const productName = String(product.name || 'esta oferta').trim();
+  const productName = safeStr(product.name, 'esta oferta').trim();
   return `Olá {{name}}, separei uma oportunidade especial para ${productName}. Responda esta mensagem e eu envio os detalhes e o link certo para você agora.`;
 }
 
@@ -780,8 +801,8 @@ function serializeProductCampaignRecord(
   };
 }
 
-function normalizeAiTone(value: any) {
-  const normalized = String(value || '').trim();
+function normalizeAiTone(value: unknown): string | undefined {
+  const normalized = safeStr(value).trim();
   if (!normalized) return undefined;
 
   const map: Record<string, string> = {
@@ -811,7 +832,7 @@ function normalizeAiTone(value: any) {
   return map[normalized.toLowerCase()] || normalized.toUpperCase();
 }
 
-function normalizeAiObjections(value: any) {
+function normalizeAiObjections(value: unknown): LooseObject[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -819,21 +840,18 @@ function normalizeAiObjections(value: any) {
   return value
     .map((entry, index) => {
       const objection = parseObject(entry);
-      const label = String(
-        objection.label ||
-          objection.id ||
-          objection.q ||
-          objection.question ||
-          `Objeção ${index + 1}`,
+      const label = safeStr(
+        objection.label || objection.id || objection.q || objection.question,
+        `Objeção ${index + 1}`,
       ).trim();
-      const response = String(objection.response || objection.a || objection.answer || '').trim();
+      const response = safeStr(objection.response || objection.a || objection.answer).trim();
 
       if (!label && !response) {
         return null;
       }
 
       return {
-        id: String(objection.id || `objection-${index + 1}`),
+        id: safeStr(objection.id, `objection-${index + 1}`),
         label,
         response,
         q: label,
@@ -1080,7 +1098,7 @@ export class ProductPlanController {
         ...data,
         price: data.price ?? 0,
         itemsPerPlan: data.itemsPerPlan ?? 1,
-      } as any,
+      } as Prisma.ProductPlanUncheckedCreateInput,
     });
 
     return serializePlan(created);
@@ -1102,7 +1120,7 @@ export class ProductPlanController {
 
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
-      data: buildPlanData(body, plan) as any,
+      data: buildPlanData(body, plan) as Prisma.ProductPlanUncheckedUpdateInput,
     });
 
     return serializePlan(updated);
@@ -1165,10 +1183,10 @@ export class ProductCheckoutController {
     const created = await this.prisma.productCheckout.create({
       data: {
         productId,
-        name: data.name || 'Novo checkout',
-        active: data.active ?? true,
-        config: data.config || {},
-      } as any,
+        name: safeStr(data.name, 'Novo checkout'),
+        active: data.active !== false,
+        config: (data.config || {}) as Prisma.InputJsonValue,
+      },
     });
 
     return serializeCheckout(created);
@@ -1190,7 +1208,7 @@ export class ProductCheckoutController {
 
     const updated = await this.prisma.productCheckout.update({
       where: { id: checkoutId },
-      data: buildCheckoutData(body, checkout) as any,
+      data: buildCheckoutData(body, checkout) as Prisma.ProductCheckoutUncheckedUpdateInput,
     });
 
     return serializeCheckout(updated);
@@ -1265,7 +1283,7 @@ export class ProductCouponController {
       data: {
         productId,
         ...payload,
-      } as any,
+      } as Prisma.ProductCouponUncheckedCreateInput,
     });
 
     await syncWorkspaceCheckoutCouponForProduct(
@@ -1307,7 +1325,7 @@ export class ProductCouponController {
 
     const updated = await this.prisma.productCoupon.update({
       where: { id: couponId },
-      data: payload as any,
+      data: payload as Prisma.ProductCouponUncheckedUpdateInput,
     });
 
     if (coupon.code !== updated.code) {
@@ -1425,7 +1443,7 @@ export class ProductUrlController {
         aiLearnStatus: body.aiLearnStatus,
         chatEnabled: body.chatEnabled ?? false,
         chatConfig: body.chatConfig,
-      } as any,
+      } as Prisma.ProductUrlUncheckedCreateInput,
     });
   }
 
@@ -1456,7 +1474,7 @@ export class ProductUrlController {
         aiLearnStatus: body.aiLearnStatus,
         chatEnabled: body.chatEnabled,
         chatConfig: body.chatConfig,
-      }) as any,
+      }) as Prisma.ProductUrlUncheckedUpdateInput,
     });
   }
 
@@ -1541,20 +1559,18 @@ export class ProductCampaignController {
     const linkedFilters = parseObject(linkedCampaign?.filters);
     const nextFilters = {
       ...linkedFilters,
-      ...this.buildCampaignFilters(product.id, productCampaign, body),
-    };
+      ...this.buildCampaignFilters(safeStr(product.id), productCampaign, body),
+    } as Prisma.InputJsonValue;
     const nextMessage =
-      String(body?.messageTemplate || linkedCampaign?.messageTemplate || '').trim() ||
+      safeStr(body?.messageTemplate || linkedCampaign?.messageTemplate).trim() ||
       buildDefaultCampaignMessage(product);
-    const nextStrategy = String(
-      body?.aiStrategy || linkedCampaign?.aiStrategy || 'BALANCED',
-    ).trim();
+    const nextStrategy = safeStr(body?.aiStrategy || linkedCampaign?.aiStrategy, 'BALANCED').trim();
 
     if (linkedCampaign) {
       return this.prisma.campaign.update({
-        where: { id: linkedCampaign.id },
+        where: { id: safeStr(linkedCampaign.id) },
         data: {
-          name: body?.name || productCampaign.name,
+          name: safeStr(body?.name || productCampaign.name),
           messageTemplate: nextMessage,
           filters: nextFilters,
           aiStrategy: nextStrategy,
@@ -1563,7 +1579,7 @@ export class ProductCampaignController {
     }
 
     return this.campaignsService.create(workspaceId, {
-      name: body?.name || productCampaign.name,
+      name: safeStr(body?.name || productCampaign.name),
       messageTemplate: nextMessage,
       filters: nextFilters,
       aiStrategy: nextStrategy,
@@ -1599,15 +1615,15 @@ export class ProductCampaignController {
   ) {
     const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
-    if (!String(body.name || '').trim()) {
+    if (!safeStr(body.name).trim()) {
       throw new BadRequestException('Nome da campanha é obrigatório');
     }
 
     const createdProductCampaign = await this.prisma.productCampaign.create({
       data: {
         productId,
-        name: String(body.name).trim(),
-        pixelId: body.pixelId ? String(body.pixelId).trim() : null,
+        name: safeStr(body.name).trim(),
+        pixelId: body.pixelId ? safeStr(body.pixelId).trim() : null,
       },
     });
 
@@ -1638,9 +1654,9 @@ export class ProductCampaignController {
     const updatedProductCampaign = await this.prisma.productCampaign.update({
       where: { id: campaignId },
       data: removeUndefined({
-        name: body.name ? String(body.name).trim() : undefined,
-        pixelId: body.pixelId !== undefined ? String(body.pixelId || '').trim() || null : undefined,
-      }) as any,
+        name: body.name ? safeStr(body.name).trim() : undefined,
+        pixelId: body.pixelId !== undefined ? safeStr(body.pixelId).trim() || null : undefined,
+      }) as Prisma.ProductCampaignUncheckedUpdateInput,
     });
 
     const linkedCampaign = await this.ensureLinkedCampaign(
@@ -1702,7 +1718,7 @@ export class ProductCampaignController {
       throw new NotFoundException('Campanha operacional não encontrada');
     }
 
-    return this.campaignsService.pause(getWorkspaceId(req), linkedCampaign.id);
+    return this.campaignsService.pause(getWorkspaceId(req), safeStr(linkedCampaign.id));
   }
 
   @Delete(':campaignId')
@@ -1733,7 +1749,7 @@ export class ProductCampaignController {
 
     if (linkedCampaign) {
       await this.prisma.campaign.delete({
-        where: { id: linkedCampaign.id },
+        where: { id: safeStr(linkedCampaign.id) },
       });
     }
 
@@ -1772,8 +1788,8 @@ export class ProductAIConfigController {
 
     const saved = await this.prisma.productAIConfig.upsert({
       where: { productId },
-      update: normalized,
-      create: { productId, ...normalized },
+      update: normalized as Prisma.InputJsonValue as Prisma.ProductAIConfigUncheckedUpdateInput,
+      create: { productId, ...normalized } as Prisma.ProductAIConfigUncheckedCreateInput,
     });
 
     return serializeProductAiConfig(saved);
@@ -1827,8 +1843,8 @@ export class ProductReviewController {
         rating,
         comment,
         authorName,
-        verified: body.verified ?? false,
-      } as any,
+        verified: (body.verified ?? false) as boolean,
+      },
     });
 
     return serializeReview(created);
@@ -1892,7 +1908,7 @@ export class ProductCommissionController {
       data: {
         productId,
         ...payload,
-      } as any,
+      } as Prisma.ProductCommissionUncheckedCreateInput,
     });
   }
 
@@ -1910,12 +1926,12 @@ export class ProductCommissionController {
     });
     if (!commission) throw new NotFoundException('Comissão não encontrada');
 
-    const payload = buildCommissionPayload(body, commission as any);
+    const payload = buildCommissionPayload(body, commission as LooseObject);
     await ensureNoDuplicateCommission(this.prisma, productId, payload, commissionId);
 
     return this.prisma.productCommission.update({
       where: { id: commissionId },
-      data: payload as any,
+      data: payload as Prisma.ProductCommissionUncheckedUpdateInput,
     });
   }
 
@@ -1981,10 +1997,10 @@ export class ProductAffiliateController {
     }
 
     const commissionType =
-      body.commissionType !== undefined ? String(body.commissionType || '').trim() : undefined;
+      body.commissionType !== undefined ? safeStr(body.commissionType).trim() : undefined;
     if (
       commissionType !== undefined &&
-      !PRODUCT_COMMISSION_TYPE_VALUES.includes(commissionType as any)
+      !(PRODUCT_COMMISSION_TYPE_VALUES as readonly string[]).includes(commissionType)
     ) {
       throw new BadRequestException('Tipo de comissionamento é inválido');
     }
@@ -2046,7 +2062,7 @@ export class ProductAffiliateController {
 
     const updatedProduct = await this.prisma.product.update({
       where: { id: productId },
-      data: productPayload as any,
+      data: productPayload as Prisma.ProductUncheckedUpdateInput,
     });
 
     const existingAffiliateProduct = await this.prisma.affiliateProduct.findUnique({

@@ -3,6 +3,70 @@ import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
 const PATTERN_RE = /\/+$/;
 
+/** Workspace shape accepted by api-provider methods. */
+interface WorkspaceOrId {
+  id?: string;
+  workspaceId?: string;
+  whatsappProvider?: string;
+  [key: string]: unknown;
+}
+
+/** Options for sending text messages. */
+interface SendTextOptions {
+  quotedMessageId?: string;
+  externalId?: string;
+  chatId?: string;
+}
+
+/** Options for sending media messages. */
+interface SendMediaOptions {
+  quotedMessageId?: string;
+  externalId?: string;
+  chatId?: string;
+}
+
+/** Options for retrieving chat messages. */
+interface GetChatMessagesOptions {
+  limit?: number;
+  offset?: number;
+  downloadMedia?: boolean;
+}
+
+/** Shape returned by the send-text and send-media endpoints. */
+interface SendResult {
+  success?: boolean;
+  messageId?: string;
+  [key: string]: unknown;
+}
+
+/** Shape returned by the status endpoint. */
+interface StatusResult {
+  connected?: boolean;
+  phoneNumber?: string;
+  [key: string]: unknown;
+}
+
+/** Shape of a chat object returned by the chats endpoint. */
+interface ChatEntry {
+  id: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+/** Shape of a message object returned by the messages endpoint. */
+interface MessageEntry {
+  id: string;
+  body?: string;
+  timestamp?: number;
+  [key: string]: unknown;
+}
+
+/** Shape returned by the read endpoint. */
+interface ReadResult {
+  success?: boolean;
+  [key: string]: unknown;
+}
+
 function getBackendUrl(): string {
   const configured =
     process.env.BACKEND_URL || process.env.API_URL || process.env.SERVICE_BASE_URL || '';
@@ -24,7 +88,7 @@ function getInternalHeaders(extra?: Record<string, string>) {
   };
 }
 
-function normalizeWorkspace(workspaceOrId: any) {
+function normalizeWorkspace(workspaceOrId: string | WorkspaceOrId) {
   const provider = getWhatsAppProviderFromEnv();
   if (typeof workspaceOrId === 'string') {
     return {
@@ -64,10 +128,15 @@ async function request<T>(
 export const whatsappApiProvider = {
   name: 'meta-cloud',
 
-  async sendText(workspaceOrId: any, to: string, message: string, options?: any) {
+  async sendText(
+    workspaceOrId: string | WorkspaceOrId,
+    to: string,
+    message: string,
+    options?: SendTextOptions,
+  ) {
     const workspace = normalizeWorkspace(workspaceOrId);
     const startedAt = Date.now();
-    const result = await request<any>('POST', '/internal/whatsapp-runtime/send-text', {
+    const result = await request<SendResult>('POST', '/internal/whatsapp-runtime/send-text', {
       workspaceId: workspace.id,
       to,
       message,
@@ -79,16 +148,16 @@ export const whatsappApiProvider = {
   },
 
   async sendMedia(
-    workspaceOrId: any,
+    workspaceOrId: string | WorkspaceOrId,
     to: string,
     type: 'image' | 'video' | 'audio' | 'document',
     url: string,
     caption?: string,
-    options?: any,
+    options?: SendMediaOptions,
   ) {
     const workspace = normalizeWorkspace(workspaceOrId);
     const startedAt = Date.now();
-    const result = await request<any>('POST', '/internal/whatsapp-runtime/send-media', {
+    const result = await request<SendResult>('POST', '/internal/whatsapp-runtime/send-media', {
       workspaceId: workspace.id,
       to,
       mediaUrl: url,
@@ -101,27 +170,31 @@ export const whatsappApiProvider = {
     return result;
   },
 
-  async getStatus(workspaceOrId: any) {
+  async getStatus(workspaceOrId: string | WorkspaceOrId) {
     const workspace = normalizeWorkspace(workspaceOrId);
-    return request<any>(
+    return request<StatusResult>(
       'GET',
       `/internal/whatsapp-runtime/status?workspaceId=${encodeURIComponent(workspace.id)}`,
     );
   },
 
-  async getClientInfo(workspaceOrId: any) {
+  async getClientInfo(workspaceOrId: string | WorkspaceOrId) {
     return this.getStatus(workspaceOrId);
   },
 
-  async getChats(workspaceOrId: any) {
+  async getChats(workspaceOrId: string | WorkspaceOrId) {
     const workspace = normalizeWorkspace(workspaceOrId);
-    return request<any[]>(
+    return request<ChatEntry[]>(
       'GET',
       `/internal/whatsapp-runtime/chats?workspaceId=${encodeURIComponent(workspace.id)}`,
     );
   },
 
-  async getChatMessages(workspaceOrId: any, chatId: string, options?: any) {
+  async getChatMessages(
+    workspaceOrId: string | WorkspaceOrId,
+    chatId: string,
+    options?: GetChatMessagesOptions,
+  ) {
     const workspace = normalizeWorkspace(workspaceOrId);
     const query = new URLSearchParams({
       workspaceId: workspace.id,
@@ -129,12 +202,15 @@ export const whatsappApiProvider = {
       limit: String(options?.limit || 100),
       offset: String(options?.offset || 0),
     });
-    return request<any[]>('GET', `/internal/whatsapp-runtime/messages?${query.toString()}`);
+    return request<MessageEntry[]>(
+      'GET',
+      `/internal/whatsapp-runtime/messages?${query.toString()}`,
+    );
   },
 
-  async readChatMessages(workspaceOrId: any, chatId: string) {
+  async readChatMessages(workspaceOrId: string | WorkspaceOrId, chatId: string) {
     const workspace = normalizeWorkspace(workspaceOrId);
-    return request<any>('POST', '/internal/whatsapp-runtime/read', {
+    return request<ReadResult>('POST', '/internal/whatsapp-runtime/read', {
       workspaceId: workspace.id,
       chatId,
     });

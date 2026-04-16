@@ -34,6 +34,14 @@ const WHITESPACE_G_RE = /\s+/g;
 const PATTERN_RE = /[?!.;,]+$/g;
 const D_RE = /\D/g;
 
+function safeStr(v: unknown, fb = ''): string {
+  return typeof v === 'string'
+    ? v
+    : typeof v === 'number' || typeof v === 'boolean'
+      ? String(v)
+      : fb;
+}
+
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
 const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i;
@@ -844,11 +852,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
       select: { providerSettings: true },
     });
     const settings = asProviderSettings(workspace?.providerSettings);
-    const autonomy = (settings.autonomy || {}) as Record<string, any>;
-    const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
-    const autonomyMode = String(autonomy.mode || '')
-      .trim()
-      .toUpperCase();
+    const autonomy = (settings.autonomy || {}) as Record<string, unknown>;
+    const runtime = (settings.ciaRuntime || {}) as Record<string, unknown>;
+    const autonomyMode = safeStr(autonomy.mode).trim().toUpperCase();
     const triggeredBy = options?.triggeredBy || 'runtime_maintenance';
     const staleRuntimeReset = await this.resetStaleRuntimeRunIfNeeded(
       workspaceId,
@@ -856,9 +862,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       triggeredBy,
     );
     const effectiveRuntime = staleRuntimeReset ? staleRuntimeReset : runtime;
-    const effectiveRuntimeState = String(effectiveRuntime.state || '')
-      .trim()
-      .toUpperCase();
+    const effectiveRuntimeState = safeStr(effectiveRuntime.state).trim().toUpperCase();
 
     if (autonomy.autoBootstrapOnConnected === false) {
       return { action: 'skipped', reason: 'auto_bootstrap_disabled' };
@@ -881,7 +885,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     if (
       ['EXECUTING_BACKLOG', 'EXECUTING_IMMEDIATELY'].includes(effectiveRuntimeState) ||
-      String(effectiveRuntime.currentRunId || '').trim()
+      safeStr(effectiveRuntime.currentRunId).trim()
     ) {
       return { action: 'skipped', reason: 'run_in_progress' };
     }
@@ -995,24 +999,21 @@ export class CiaRuntimeService implements OnModuleDestroy {
       })) || [];
 
     return conversations
-      .map((conversation: any) => ({
+      .map((conversation) => ({
         ...conversation,
         operational: buildConversationOperationalState(conversation),
       }))
-      .filter((conversation: any) => conversation.operational.pending);
+      .filter((conversation) => conversation.operational.pending);
   }
 
-  private countPendingMessagesFromConversations(conversations: any[]): number {
-    return conversations.reduce(
-      (sum, conversation) =>
+  private countPendingMessagesFromConversations(conversations: Record<string, unknown>[]): number {
+    return conversations.reduce((sum, conversation) => {
+      const operational = conversation.operational as Record<string, unknown> | undefined;
+      return (
         sum +
-        Math.max(
-          1,
-          Number(conversation.pendingMessages || conversation.operational?.pendingMessages || 0) ||
-            0,
-        ),
-      0,
-    );
+        Math.max(1, Number(conversation.pendingMessages || operational?.pendingMessages || 0) || 0)
+      );
+    }, 0);
   }
 
   private selectRemotePendingChats(chats: WahaChatSummary[]): WahaChatSummary[] {
@@ -1224,7 +1225,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     workspaceId: string,
     runId: string,
     mode: BacklogMode,
-    conversations: any[],
+    conversations: Record<string, unknown>[],
   ) {
     if (!conversations.length) {
       await this.updateAutonomyRunStatus(workspaceId, runId, 'COMPLETED');
@@ -1255,21 +1256,21 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation processing with reply locks
     for (const [index, conversation] of conversations.entries()) {
-      const lastMessage = conversation?.messages?.[0];
+      const messages = conversation.messages as Record<string, unknown>[] | undefined;
+      const contact = conversation.contact as Record<string, unknown> | undefined;
+      const lastMessage = messages?.[0];
       const pendingBatch = await this.buildPendingInboundBatch({
         workspaceId,
-        contactId: conversation?.contactId || null,
-        phone: conversation?.contact?.phone || null,
-        fallbackMessageContent: lastMessage?.content || null,
-        fallbackQuotedMessageId: lastMessage?.externalId || null,
+        contactId: safeStr(conversation.contactId) || null,
+        phone: safeStr(contact?.phone) || null,
+        fallbackMessageContent: safeStr(lastMessage?.content) || null,
+        fallbackQuotedMessageId: safeStr(lastMessage?.externalId) || null,
       });
-      const messageContent = String(
-        pendingBatch?.aggregatedMessage || lastMessage?.content || '',
+      const messageContent = safeStr(
+        pendingBatch?.aggregatedMessage || lastMessage?.content,
       ).trim();
-      const messageDirection = String(lastMessage?.direction || '')
-        .trim()
-        .toUpperCase();
-      const phone = String(conversation?.contact?.phone || '').trim();
+      const messageDirection = safeStr(lastMessage?.direction).trim().toUpperCase();
+      const phone = safeStr(contact?.phone).trim();
 
       if (!phone || !messageContent || messageDirection !== 'INBOUND') {
         skipped += 1;
@@ -1281,10 +1282,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
         workspaceId,
         runId,
         phase: 'backlog_inline_contact',
-        message: `Respondendo inline ${conversation?.contact?.name || phone} (${index + 1}/${conversations.length}).`,
+        message: `Respondendo inline ${safeStr(contact?.name, phone)} (${index + 1}/${conversations.length}).`,
         meta: {
-          conversationId: conversation?.id || null,
-          contactId: conversation?.contactId || null,
+          conversationId: conversation.id || null,
+          contactId: conversation.contactId || null,
           phone,
           backlogIndex: index + 1,
           backlogTotal: conversations.length,
@@ -1293,12 +1294,12 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
       const replyLockKey = this.getSharedReplyLockKey(
         workspaceId,
-        conversation?.contactId || null,
+        safeStr(conversation.contactId) || null,
         phone,
       );
       const replyReserved = await this.redisSetNx(
         replyLockKey,
-        `${runId}:${conversation?.id || conversation?.contactId || index}`,
+        `${runId}:${safeStr(conversation.id || conversation.contactId, String(index))}`,
         CIA_SHARED_REPLY_LOCK_MS,
       );
       if (!replyReserved) {
@@ -1310,7 +1311,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       try {
         const result = await this.unifiedAgent.processIncomingMessage({
           workspaceId,
-          contactId: conversation?.contactId || undefined,
+          contactId: safeStr(conversation.contactId) || undefined,
           phone,
           message: messageContent,
           channel: 'whatsapp',
@@ -1319,7 +1320,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             deliveryMode: this.isRecentLiveBatch(pendingBatch?.messages || [])
               ? 'reactive'
               : 'proactive',
-            conversationId: conversation?.id || null,
+            conversationId: safeStr(conversation.id) || null,
             runId,
             backlogIndex: index + 1,
             backlogTotal: conversations.length,
@@ -1345,7 +1346,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             ? shouldMirrorReplies
               ? await this.unifiedAgent.buildQuotedReplyPlan({
                   workspaceId,
-                  contactId: conversation?.contactId || undefined,
+                  contactId: safeStr(conversation.contactId) || undefined,
                   phone,
                   draftReply: reply,
                   customerMessages: pendingBatch.messages,
@@ -1373,7 +1374,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             phone,
             replyItem.text,
             {
-              externalId: `cia-inline:${runId}:${conversation?.id || conversation?.contactId || index}:${replyIndex + 1}`,
+              externalId: `cia-inline:${runId}:${safeStr(conversation.id || conversation.contactId, String(index))}:${replyIndex + 1}`,
               quotedMessageId: replyItem.quotedMessageId,
               complianceMode: shouldMirrorReplies ? 'reactive' : 'proactive',
               forceDirect: true,
@@ -1453,12 +1454,16 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return normalizePhoneFromChatId(chatId);
   }
 
-  private extractRemoteSenderName(payload: any, fallbackName?: string | null): string | null {
-    const candidates = [
+  private extractRemoteSenderName(
+    payload: Record<string, unknown> | null | undefined,
+    fallbackName?: string | null,
+  ): string | null {
+    const data = payload?._data as Record<string, unknown> | undefined;
+    const candidates: unknown[] = [
       fallbackName,
-      payload?._data?.pushName,
+      data?.pushName,
       payload?.pushName,
-      payload?._data?.notifyName,
+      data?.notifyName,
       payload?.notifyName,
       payload?.senderName,
       payload?.author,
@@ -1528,7 +1533,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     shouldMirrorReplies: boolean;
   } | null> {
     const sessionKey = await this.resolveActiveSessionKey(params.workspaceId);
-    const rawMessages: any = await this.providerRegistry.getChatMessages(
+    const rawMessages: unknown = await this.providerRegistry.getChatMessages(
       sessionKey,
       params.chat.id,
       {
@@ -1538,28 +1543,39 @@ export class CiaRuntimeService implements OnModuleDestroy {
       },
     );
 
+    const rawObj = rawMessages as Record<string, unknown> | unknown[] | null;
     const normalizedMessages = (
-      Array.isArray(rawMessages)
-        ? rawMessages
-        : Array.isArray(rawMessages?.messages)
-          ? rawMessages.messages
-          : Array.isArray(rawMessages?.items)
-            ? rawMessages.items
-            : Array.isArray(rawMessages?.data)
-              ? rawMessages.data
+      Array.isArray(rawObj)
+        ? rawObj
+        : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.messages)
+          ? (rawObj.messages as unknown[])
+          : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.items)
+            ? (rawObj.items as unknown[])
+            : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.data)
+              ? (rawObj.data as unknown[])
               : []
     )
-      .map((message: any) => ({
-        externalId: String(
-          message?.id?._serialized || message?.id?.id || message?.key?.id || message?.id || '',
-        ).trim(),
-        fromMe: message?.fromMe === true || message?.id?.fromMe === true,
-        content: String(message?.body || message?.text?.body || '').trim(),
-        createdAt: this.normalizeRemoteTimestamp(
-          message?.timestamp || message?.t || message?.createdAt || null,
-        ),
-        raw: message,
-      }))
+      .map((message: unknown) => {
+        const msg = (message && typeof message === 'object' ? message : {}) as Record<
+          string,
+          unknown
+        >;
+        const msgId = msg.id as Record<string, unknown> | string | undefined;
+        const msgKey = msg.key as Record<string, unknown> | undefined;
+        const msgText = msg.text as Record<string, unknown> | undefined;
+        const idSerialized = typeof msgId === 'object' && msgId ? msgId._serialized : undefined;
+        const idId = typeof msgId === 'object' && msgId ? msgId.id : undefined;
+        const keyId = msgKey ? msgKey.id : undefined;
+        return {
+          externalId: safeStr(idSerialized || idId || keyId || msg.id).trim(),
+          fromMe: msg.fromMe === true || (typeof msgId === 'object' && msgId?.fromMe === true),
+          content: safeStr(msg.body || msgText?.body).trim(),
+          createdAt: this.normalizeRemoteTimestamp(
+            (msg.timestamp || msg.t || msg.createdAt || null) as string | number | null,
+          ),
+          raw: msg,
+        };
+      })
       .filter((message) => message.externalId && message.content);
 
     if (!normalizedMessages.length) {
@@ -1840,9 +1856,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return { processed, skipped, message };
   }
 
-  private hasOutboundAction(
-    actions: Array<{ tool?: string; result?: Record<string, any> }> = [],
-  ): boolean {
+  private hasOutboundAction(actions: Array<{ tool?: string; result?: unknown }> = []): boolean {
     const outboundTools = new Set([
       'send_message',
       'send_product_info',
@@ -1857,12 +1871,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
       if (!outboundTools.has(String(action?.tool || ''))) {
         return false;
       }
-
-      return (
-        action?.result?.sent === true ||
-        action?.result?.success === true ||
-        action?.result?.messageId
-      );
+      const result = action?.result as Record<string, unknown> | undefined;
+      return result?.sent === true || result?.success === true || result?.messageId;
     });
   }
 
@@ -1928,68 +1938,85 @@ export class CiaRuntimeService implements OnModuleDestroy {
     await this.redis.del(key).catch(() => undefined);
   }
 
-  private normalizeChats(raw: any): WahaChatSummary[] {
-    const candidates = Array.isArray(raw)
-      ? raw
-      : Array.isArray(raw?.chats)
-        ? raw.chats
-        : Array.isArray(raw?.items)
-          ? raw.items
-          : Array.isArray(raw?.data)
-            ? raw.data
+  private normalizeChats(raw: unknown): WahaChatSummary[] {
+    const rawObj = raw as Record<string, unknown> | unknown[] | null;
+    const candidates: unknown[] = Array.isArray(rawObj)
+      ? rawObj
+      : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.chats)
+        ? (rawObj.chats as unknown[])
+        : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.items)
+          ? (rawObj.items as unknown[])
+          : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.data)
+            ? (rawObj.data as unknown[])
             : [];
 
     return candidates
-      .map((chat: any) => {
+      .map((chatRaw: unknown) => {
+        const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<
+          string,
+          unknown
+        >;
+        const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
+        const lastMessage = chat.lastMessage as Record<string, unknown> | null | undefined;
+        const lastMsgData = lastMessage?._data as Record<string, unknown> | undefined;
+        const lastMsgId = lastMessage?.id as Record<string, unknown> | undefined;
+        const chatChat = chat._chat as Record<string, unknown> | undefined;
         const activityTimestamp = this.resolveChatTimestamp([
-          chat?.lastMessage?.timestamp,
-          chat?.lastMessage?._data?.messageTimestamp,
-          chat?._chat?.conversationTimestamp,
-          chat?._chat?.lastMessageRecvTimestamp,
-          chat?.conversationTimestamp,
-          chat?.lastMessageRecvTimestamp,
-          chat?.lastMessageSentTimestamp,
-          chat?.lastMessageTimestamp,
-          chat?.timestamp,
-          chat?.t,
-          chat?.createdAt,
-          chat?.last_time,
+          lastMessage?.timestamp,
+          lastMsgData?.messageTimestamp,
+          chatChat?.conversationTimestamp,
+          chatChat?.lastMessageRecvTimestamp,
+          chat.conversationTimestamp,
+          chat.lastMessageRecvTimestamp,
+          chat.lastMessageSentTimestamp,
+          chat.lastMessageTimestamp,
+          chat.timestamp,
+          chat.t,
+          chat.createdAt,
+          chat.last_time,
         ]);
 
         const lastMessageTimestamp = this.resolveChatTimestamp([
-          chat?.lastMessage?.timestamp,
-          chat?.lastMessage?._data?.messageTimestamp,
-          chat?._chat?.conversationTimestamp,
-          chat?._chat?.lastMessageRecvTimestamp,
-          chat?.lastMessageRecvTimestamp,
-          chat?.lastMessageSentTimestamp,
-          chat?.lastMessageTimestamp,
-          chat?.conversationTimestamp,
-          chat?.timestamp,
-          chat?.t,
-          chat?.createdAt,
-          chat?.last_time,
+          lastMessage?.timestamp,
+          lastMsgData?.messageTimestamp,
+          chatChat?.conversationTimestamp,
+          chatChat?.lastMessageRecvTimestamp,
+          chat.lastMessageRecvTimestamp,
+          chat.lastMessageSentTimestamp,
+          chat.lastMessageTimestamp,
+          chat.conversationTimestamp,
+          chat.timestamp,
+          chat.t,
+          chat.createdAt,
+          chat.last_time,
         ]);
 
+        const lastMsgDataId = lastMsgData?.id as Record<string, unknown> | undefined;
+
         return {
-          id: chat?.id?._serialized || chat?.id || chat?.chatId || chat?.wid || '',
-          unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
+          id:
+            (typeof chatIdObj === 'object' && chatIdObj ? chatIdObj._serialized : undefined) ||
+            chat.id ||
+            chat.chatId ||
+            chat.wid ||
+            '',
+          unreadCount: Number(chat.unreadCount || chat.unread || 0) || 0,
           timestamp: activityTimestamp,
           lastMessageTimestamp,
           lastMessageRecvTimestamp: this.resolveChatTimestamp([
-            chat?.lastMessageRecvTimestamp,
-            chat?._chat?.lastMessageRecvTimestamp,
-            chat?.conversationTimestamp,
+            chat.lastMessageRecvTimestamp,
+            chatChat?.lastMessageRecvTimestamp,
+            chat.conversationTimestamp,
           ]),
           lastMessageFromMe:
-            typeof chat?.lastMessage?.fromMe === 'boolean'
-              ? chat.lastMessage.fromMe
-              : typeof chat?.lastMessage?._data?.id?.fromMe === 'boolean'
-                ? chat.lastMessage._data.id.fromMe
-                : typeof chat?.lastMessage?.id?.fromMe === 'boolean'
-                  ? chat.lastMessage.id.fromMe
+            typeof lastMessage?.fromMe === 'boolean'
+              ? lastMessage.fromMe
+              : typeof lastMsgDataId?.fromMe === 'boolean'
+                ? lastMsgDataId.fromMe
+                : typeof lastMsgId?.fromMe === 'boolean'
+                  ? lastMsgId.fromMe
                   : null,
-        };
+        } as WahaChatSummary;
       })
       .filter((chat) => !!chat.id);
   }
@@ -2016,7 +2043,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return 0;
   }
 
-  private async persistRuntimeSnapshot(workspaceId: string, update: Record<string, any>) {
+  private async persistRuntimeSnapshot(workspaceId: string, update: Record<string, unknown>) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -2042,16 +2069,16 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
   private async resetStaleRuntimeRunIfNeeded(
     workspaceId: string,
-    runtime: Record<string, any>,
+    runtime: Record<string, unknown>,
     reason: string,
-  ): Promise<Record<string, any> | null> {
-    const currentRunId = String(runtime.currentRunId || '').trim();
+  ): Promise<Record<string, unknown> | null> {
+    const currentRunId = safeStr(runtime.currentRunId).trim();
     if (!currentRunId) {
       return null;
     }
 
-    const startedAtRaw = String(
-      runtime.lastProgressAt || runtime.startedAt || runtime.updatedAt || '',
+    const startedAtRaw = safeStr(
+      runtime.lastProgressAt || runtime.startedAt || runtime.updatedAt,
     ).trim();
     const startedAt = startedAtRaw ? new Date(startedAtRaw) : null;
     if (!startedAt || Number.isNaN(startedAt.getTime())) {
@@ -2161,9 +2188,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     input: {
       mode: WorkspaceAutonomyMode;
       reason: string;
-      autopilot?: Record<string, any>;
-      runtime?: Record<string, any>;
-      autonomy?: Record<string, any>;
+      autopilot?: Record<string, unknown>;
+      runtime?: Record<string, unknown>;
+      autonomy?: Record<string, unknown>;
     },
   ) {
     const workspace = await this.prisma.workspace.findUnique({
@@ -2215,7 +2242,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     runId: string,
     workspaceId: string,
     mode: WorkspaceAutonomyMode,
-    meta?: Record<string, any>,
+    meta?: Record<string, unknown>,
   ) {
     try {
       await this.prisma.autonomyRun.create({
@@ -2224,7 +2251,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           workspaceId,
           mode,
           status: 'RUNNING',
-          meta,
+          meta: meta as import('@prisma/client').Prisma.InputJsonValue,
         },
       });
     } catch {
