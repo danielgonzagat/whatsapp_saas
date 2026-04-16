@@ -91,6 +91,7 @@ interface ReportRowFields {
   receita?: number;
   comissao?: number;
   partnerName?: string;
+  partnerEmail?: string;
   source?: string;
   order?: {
     totalInCents?: number;
@@ -102,12 +103,57 @@ interface ReportRowFields {
   refundedAt?: string;
   _count?: number;
   orderNumber?: string;
+  customerName?: string;
   customerEmail?: string;
   plan?: { name?: string; product?: { name?: string } };
+  totalSales?: number;
+  totalRevenue?: number;
+  totalCommission?: number;
+  amount?: number;
+  nextBillingAt?: string;
 }
 
- 
-type ReportRow = ReportRowFields & Record<string, any>;  
+type ReportRow = ReportRowFields & Record<string, unknown>;
+
+// ── Response shapes for useReport ──
+interface PaginatedReport {
+  data: ReportRow[];
+  total: number;
+}
+
+interface VendasSummary {
+  totalRevenue: number;
+  totalCount: number;
+  ticketMedio: number;
+  conversao: number;
+  paidCount: number;
+  totalCommission: number;
+}
+
+interface ChurnResponse {
+  total: number;
+  monthly: ReportRow[];
+}
+
+interface AssinaturasResponse {
+  data: ReportRow[];
+  total: number;
+  summary: SubscriptionSummaryRow[];
+}
+
+interface MetricasResponse {
+  byMethod: Record<string, number>;
+  totalSales: number;
+  conversao: number;
+  roas: string;
+  totalAdSpend: number;
+}
+
+interface ChargebackResponse {
+  data: ReportRow[];
+  total: number;
+  monthly: ReportRow[];
+}
 
 interface SubscriptionSummaryRow {
   status: string;
@@ -128,7 +174,7 @@ function buildUrl(ep: string, f: RF = {}) {
   return `/reports/${ep}${qs ? `?${qs}` : ''}`;
 }
 const swrOpts = { keepPreviousData: true, revalidateOnFocus: false };
-function useReport<T = any>(ep: string, f: RF = {}) {
+function useReport<T = unknown>(ep: string, f: RF = {}) {
   return useSWR<T>(buildUrl(ep, f), swrFetcher, swrOpts);
 }
 
@@ -1125,9 +1171,9 @@ function VendasTab({
 }) {
   const gid = useId();
 
-  const { data: summary, isLoading: ls } = useReport<ReportRow>('vendas/summary', filters);
+  const { data: summary, isLoading: ls } = useReport<VendasSummary>('vendas/summary', filters);
   const { data: daily, isLoading: ld } = useReport<ReportRow[]>('vendas/daily', filters);
-  const { data: vendas, isLoading: lv } = useReport<ReportRow>('vendas', baseFilters);
+  const { data: vendas, isLoading: lv } = useReport<PaginatedReport>('vendas', baseFilters);
   const rows = vendas?.data || [];
   const dailyData = Array.isArray(daily) ? daily : [];
 
@@ -1355,7 +1401,7 @@ function AfterPayTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<ReportRow>('afterpay', baseFilters);
+  const { data, isLoading } = useReport<PaginatedReport>('afterpay', baseFilters);
   const rows = data?.data || [];
   const aReceberTotal = rows.reduce((acc: number, r: ReportRow) => acc + (r.totalInCents || 0), 0);
   const atrasadasCount = rows.filter(
@@ -1510,7 +1556,7 @@ function AfterPayTab({
 
 // ── CHURN TAB ──
 function ChurnTab({ filters }: { filters: RF }) {
-  const { data, isLoading } = useReport<ReportRow>('churn', filters);
+  const { data, isLoading } = useReport<ChurnResponse>('churn', filters);
   const monthly = data?.monthly || [];
   return (
     <>
@@ -1575,7 +1621,7 @@ function AbandonosTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<ReportRow>('abandonos', baseFilters);
+  const { data, isLoading } = useReport<PaginatedReport>('abandonos', baseFilters);
   const rows = data?.data || [];
   return (
     <>
@@ -2151,7 +2197,7 @@ function AssinaturasTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<ReportRow>('assinaturas', baseFilters);
+  const { data, isLoading } = useReport<AssinaturasResponse>('assinaturas', baseFilters);
   const rows = data?.data || [];
   const summary = data?.summary || [];
   const activeCount =
@@ -2340,7 +2386,7 @@ function RecusaTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<ReportRow>('recusa', baseFilters);
+  const { data, isLoading } = useReport<PaginatedReport>('recusa', baseFilters);
   const rows = data?.data || [];
   return (
     <>
@@ -2605,7 +2651,7 @@ function OrigemTab({ filters }: { filters: RF }) {
 
 // ── MÉTRICAS TAB ──
 function MetricasTab({ filters }: { filters: RF }) {
-  const { data, isLoading } = useReport<ReportRow>('metricas', filters);
+  const { data, isLoading } = useReport<MetricasResponse>('metricas', filters);
   const methods = data?.byMethod || {};
   const total = data?.totalSales || 0;
   return (
@@ -2708,7 +2754,7 @@ function EstornosTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<ReportRow>('estornos', baseFilters);
+  const { data, isLoading } = useReport<PaginatedReport>('estornos', baseFilters);
   const rows = data?.data || [];
   const valorEstornado = rows.reduce(
     (acc: number, r: ReportRow) => acc + (Number(r.totalInCents) || 0),
@@ -2870,7 +2916,7 @@ function ChargebackTab({
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const { data, isLoading } = useReport<ReportRow>('chargeback', baseFilters);
+  const { data, isLoading } = useReport<ChargebackResponse>('chargeback', baseFilters);
   const rows = data?.data || [];
   const totalChargebackValue = rows.reduce(
     (acc: number, c: ReportRow) => acc + (Number(c.order?.totalInCents) || 0),
