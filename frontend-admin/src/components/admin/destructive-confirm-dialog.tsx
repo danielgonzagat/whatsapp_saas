@@ -14,24 +14,6 @@ import {
 import { AdminApiClientError } from '@/lib/api/admin-errors';
 
 type Phase = 'reason' | 'challenge' | 'success' | 'failed';
-
-/**
- * SP-8 two-phase destructive confirm dialog. The component is UI
- * for the DestructiveIntent endpoints — create → confirm → show
- * result — and is intended to be mounted as a modal by any admin
- * page that needs to execute a destructive action.
- *
- * Flow:
- *   1. Caller opens dialog with a pending intent kind + targetId.
- *   2. Operator types the reason and clicks "Criar intent".
- *   3. Backend returns challenge + intentId; dialog moves to
- *      phase 'challenge'.
- *   4. Operator types the 6-char challenge and clicks "Confirmar".
- *   5. Backend executes the handler; dialog shows success or fail.
- *
- * The component never executes anything itself — every side effect
- * routes through DestructiveIntentService (I-ADMIN-D6).
- */
 export interface DestructiveConfirmDialogProps {
   open: boolean;
   onClose(): void;
@@ -142,7 +124,6 @@ export function DestructiveConfirmDialog({
       <Card className="w-full max-w-lg">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge variant="warning">SP-8</Badge>
             <Badge variant="ember">{intent.kind}</Badge>
           </div>
           <CardTitle className="text-sm">{intent.title}</CardTitle>

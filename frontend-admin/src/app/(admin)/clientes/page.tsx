@@ -1,102 +1,249 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import useSWR from 'swr';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MetricNumber } from '@/components/ui/metric-number';
-import { Skeleton } from '@/components/ui/skeleton';
-import { adminAccountsApi, type ListAccountsResponse } from '@/lib/api/admin-accounts-api';
+import {
+  AdminEmptyState,
+  AdminHeroSplit,
+  AdminMetricGrid,
+  AdminPage,
+  AdminPageIntro,
+  AdminSectionHeader,
+  AdminSurface,
+} from '@/components/admin/admin-monitor-ui';
+import {
+  adminAccountsApi,
+  type AdminAccountKycStatus,
+  type ListAccountsResponse,
+} from '@/lib/api/admin-accounts-api';
 import { AdminApiClientError } from '@/lib/api/admin-errors';
 
-/**
- * SP-12 Clientes — per-client configuration. Custom fee tables require
- * SP-9 (platform_fees + client_custom_fees models). Until those land,
- * this page shows the same workspace roster as /contas annotated with
- * "Sem override" and points to the future editor.
- */
+const KYC_OPTIONS: Array<{ value: '' | AdminAccountKycStatus; label: string }> = [
+  { value: '', label: 'Todos os clientes' },
+  { value: 'pending', label: 'KYC pendente' },
+  { value: 'submitted', label: 'KYC enviado' },
+  { value: 'approved', label: 'KYC aprovado' },
+  { value: 'rejected', label: 'KYC rejeitado' },
+];
+
+function formatDate(value: string | null): string {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleDateString('pt-BR');
+  } catch {
+    return value;
+  }
+}
+
 export default function ClientesPage() {
-  const { data, error, isLoading } = useSWR<ListAccountsResponse>('admin/accounts?limit=25', () =>
-    adminAccountsApi.list({ take: 25 }),
+  const [search, setSearch] = useState('');
+  const [kycStatus, setKycStatus] = useState<'' | AdminAccountKycStatus>('');
+
+  const { data, error } = useSWR<ListAccountsResponse>(
+    ['admin/accounts/clientes', search, kycStatus],
+    () =>
+      adminAccountsApi.list({
+        search: search || undefined,
+        kycStatus: kycStatus || undefined,
+        take: 60,
+      }),
   );
 
+  const items = data?.items ?? [];
+  const totalGmv = items.reduce((sum, row) => sum + row.gmvLast30dInCents, 0);
+  const activeClients = items.filter((row) => row.gmvLast30dInCents > 0).length;
+  const pendingKyc = items.filter(
+    (row) => row.kycStatus === 'pending' || row.kycStatus === 'submitted',
+  ).length;
+  const newClients = items.filter((row) => {
+    const createdAt = new Date(row.createdAt).getTime();
+    return Date.now() - createdAt <= 30 * 24 * 60 * 60 * 1000;
+  }).length;
+
   return (
-    <section className="flex flex-1 flex-col gap-6 px-6 py-8 pb-24">
-      <header className="flex flex-col gap-2">
-        <Badge variant="ember" className="w-fit">
-          SP-12
-        </Badge>
-        <h1 className="text-2xl font-semibold">Clientes</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Configuração individual de clientes (produtores) — taxas customizadas, limites de plano,
-          health score e comunicação direta. Overrides de taxa dependem de SP-9 (
-          <code>platform_fees</code> + <code>client_custom_fees</code>) e do editor de fees em
-          SP-11.
-        </p>
-      </header>
+    <AdminPage>
+      <AdminPageIntro
+        eyebrow="CLIENTES"
+        title="Clientes"
+        description="Visão operacional dos produtores com foco em atividade, KYC e expansão da base."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link href="/contas">Abrir módulo de contas</Link>
+          </Button>
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Clientes mais recentes</CardTitle>
-          <CardDescription>Últimas workspaces criadas.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {isLoading ? (
-            <Skeleton className="h-20 w-full" />
-          ) : error ? (
-            <p className="text-sm text-red-400">
-              {error instanceof AdminApiClientError ? error.message : 'Erro ao carregar clientes.'}
-            </p>
-          ) : !data || data.items.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Nenhum cliente cadastrado ainda.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border overflow-hidden rounded-sm border border-border">
-              {data.items.map((row) => (
-                <li
-                  key={row.workspaceId}
-                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium text-foreground">{row.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {row.ownerName ?? '—'} • {row.ownerEmail ?? '—'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="default">Sem override</Badge>
-                    <MetricNumber
-                      value={row.gmvLast30dInCents}
-                      kind="currency-brl"
-                      className="text-xs"
-                    />
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/contas">Ver em Contas</Link>
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <AdminHeroSplit
+        label="GMV 30 dias dos clientes"
+        value={totalGmv}
+        description="Volume agregado das contas carregadas na lista atual. Use a busca para focar em produtores específicos."
+        compactCards={[
+          {
+            label: 'Clientes ativos',
+            value: activeClients,
+            kind: 'integer',
+            note: 'Com vendas nos últimos 30 dias',
+          },
+          {
+            label: 'KYC pendente',
+            value: pendingKyc,
+            kind: 'integer',
+            note: 'Fila operacional imediata',
+          },
+          {
+            label: 'Novos clientes',
+            value: newClients,
+            kind: 'integer',
+            note: 'Criados nos últimos 30 dias',
+          },
+          {
+            label: 'Overrides de taxa',
+            value: null,
+            kind: 'integer',
+            note: 'Dados sendo coletados',
+          },
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">O que vem em SP-12 completo</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2 text-xs text-muted-foreground">
-          <p>• Taxa de cartão custom por cliente (R$ ou %)</p>
-          <p>• Taxa de PIX e boleto custom por cliente</p>
-          <p>• Taxa de saque custom</p>
-          <p>• Motivo obrigatório + validade (temporária ou permanente)</p>
-          <p>• Upgrade/downgrade de plano com limites (GMV mensal, produtos, afiliados)</p>
-          <p>• Health score automático (trend de vendas + CB rate + engajamento)</p>
-          <p>• Notas internas e histórico de comunicação</p>
-        </CardContent>
-      </Card>
-    </section>
+      <AdminMetricGrid
+        items={[
+          {
+            label: 'Total de clientes',
+            value: items.length,
+            kind: 'integer',
+            detail: 'Base filtrada atual',
+          },
+          {
+            label: 'Produtos publicados',
+            value: items.reduce((sum, row) => sum + row.productCount, 0),
+            kind: 'integer',
+            detail: 'Soma dos catálogos carregados',
+          },
+          {
+            label: 'Com venda recente',
+            value: items.filter((row) => row.lastSaleAt).length,
+            kind: 'integer',
+            detail: 'Última venda registrada',
+          },
+          {
+            label: 'Health score',
+            value: null,
+            kind: 'integer',
+            detail: 'Dados sendo coletados',
+          },
+        ]}
+      />
+
+      <AdminSurface className="px-5 py-5 lg:px-6">
+        <AdminSectionHeader
+          title="Filtros"
+          description="Encontre rapidamente um produtor e refine a leitura por status de KYC."
+        />
+        <div className="flex flex-col gap-3 lg:flex-row">
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar produtor, workspace ou email"
+            className="h-10 flex-1 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none placeholder:text-[var(--app-text-placeholder)]"
+          />
+          <select
+            value={kycStatus}
+            onChange={(event) => setKycStatus(event.target.value as '' | AdminAccountKycStatus)}
+            className="h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none"
+          >
+            {KYC_OPTIONS.map((option) => (
+              <option key={option.label} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </AdminSurface>
+
+      <AdminSurface className="px-5 py-5 lg:px-6">
+        <AdminSectionHeader
+          title="Base de clientes"
+          description="Leitura consolidada para operação, relacionamento e priorização comercial."
+        />
+        {error ? (
+          <p className="text-sm text-red-400">
+            {error instanceof AdminApiClientError ? error.message : 'Erro ao carregar clientes.'}
+          </p>
+        ) : items.length === 0 ? (
+          <AdminEmptyState
+            title="Nenhum cliente encontrado"
+            description="Ajuste os filtros ou aguarde novas contas para preencher a superfície."
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-md border border-[var(--app-border-primary)]">
+            <table className="w-full min-w-[980px] text-left text-[13px]">
+              <thead className="bg-[var(--app-bg-secondary)] text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                <tr>
+                  <th className="px-4 py-3">Cliente</th>
+                  <th className="px-4 py-3">Contato</th>
+                  <th className="px-4 py-3">KYC</th>
+                  <th className="px-4 py-3 text-right">Produtos</th>
+                  <th className="px-4 py-3 text-right">GMV 30d</th>
+                  <th className="px-4 py-3">Última venda</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--app-border-primary)]">
+                {items.map((row) => (
+                  <tr key={row.workspaceId} className="bg-[var(--app-bg-card)]">
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[var(--app-text-primary)]">
+                          {row.name}
+                        </span>
+                        <span className="text-[11px] text-[var(--app-text-secondary)]">
+                          desde {formatDate(row.createdAt)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="text-[var(--app-text-primary)]">
+                          {row.ownerName ?? '—'}
+                        </span>
+                        <span className="text-[11px] text-[var(--app-text-secondary)]">
+                          {row.ownerEmail ?? '—'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--app-text-secondary)]">
+                        {row.kycStatus}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-[var(--app-text-primary)]">
+                      {row.productCount}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <MetricNumber
+                        value={row.gmvLast30dInCents}
+                        kind="currency-brl"
+                        className="text-[13px] font-semibold text-[var(--app-text-primary)]"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                      {formatDate(row.lastSaleAt)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/contas/${row.workspaceId}`}>Abrir conta</Link>
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </AdminSurface>
+    </AdminPage>
   );
 }

@@ -32,7 +32,12 @@ export function AuthScreenChrome({
       >
         <header className="mb-8 flex flex-col items-center gap-3 text-center">
           <img src="/kloel-mushroom-animated.svg" alt="Kloel" className="h-12 w-12" aria-hidden />
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">Kloel Admin</h1>
+          <div className="flex flex-col items-center gap-1">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Kloel</h1>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+              Admin
+            </span>
+          </div>
           <div className="h-px w-16 bg-border" />
           <p className="text-sm font-medium text-foreground">{title}</p>
           {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}

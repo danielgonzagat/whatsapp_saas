@@ -10,6 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  AdminMetricGrid,
+  AdminPage,
+  AdminPageIntro,
+  AdminSectionHeader,
+  AdminSurface,
+} from '@/components/admin/admin-monitor-ui';
+import {
   adminIamApi,
   type AdminUserPermission,
   type AdminUserRecord,
@@ -84,22 +91,45 @@ export default function ConfiguracoesPage() {
   );
 
   if (!admin || admin.role !== 'OWNER') return null;
+  const userList = users ?? [];
 
   return (
-    <section className="flex flex-1 flex-col gap-6 px-6 py-8 pb-24">
-      <header className="flex items-end justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <Badge variant="ember" className="w-fit">
-            SP-11
-          </Badge>
-          <h1 className="text-2xl font-semibold">Configurações — IAM</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Criar e revisar contas administrativas. Gateways, taxas globais, feature flags e
-            webhooks chegam em SP-11 completo.
-          </p>
-        </div>
-        <Button onClick={() => setShowCreate(true)}>Novo administrador</Button>
-      </header>
+    <AdminPage>
+      <AdminPageIntro
+        eyebrow="IAM"
+        title="Configurações"
+        description="Gestão de administradores, perfis de acesso e permissões granulares da operação."
+        actions={<Button onClick={() => setShowCreate(true)}>Novo administrador</Button>}
+      />
+
+      <AdminMetricGrid
+        items={[
+          {
+            label: 'Administradores',
+            value: userList.length,
+            kind: 'integer',
+            detail: 'Base cadastrada',
+          },
+          {
+            label: 'Owners',
+            value: userList.filter((user) => user.role === 'OWNER').length,
+            kind: 'integer',
+            detail: 'Acesso total',
+          },
+          {
+            label: 'MFA ativo',
+            value: userList.filter((user) => user.mfaEnabled).length,
+            kind: 'integer',
+            detail: 'Proteção já habilitada',
+          },
+          {
+            label: 'Setup pendente',
+            value: userList.filter((user) => user.mfaPendingSetup).length,
+            kind: 'integer',
+            detail: 'Precisam concluir segurança',
+          },
+        ]}
+      />
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Card>
@@ -203,19 +233,23 @@ export default function ConfiguracoesPage() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Próximos itens desta seção</CardTitle>
-          <CardDescription>Tech debt explícito — evolui em SP-11 completo.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2 text-xs text-muted-foreground">
-          <p>• Suspender / reativar / desativar administradores</p>
-          <p>• Configurar gateways (Asaas, Mercado Pago, Stripe)</p>
-          <p>• Taxas globais da plataforma</p>
-          <p>• Feature flags e rollout gradual</p>
-          <p>• Webhooks + domínios customizados</p>
-        </CardContent>
-      </Card>
+      <AdminSurface className="px-5 py-5 lg:px-6">
+        <AdminSectionHeader
+          title="Governança de acesso"
+          description="Somente contas OWNER alteram papéis e permissões. Toda modificação reflete no controle operacional imediatamente."
+        />
+        <div className="grid gap-3 text-[13px] text-[var(--app-text-secondary)] lg:grid-cols-3">
+          <div className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3">
+            Permissões são definidas por módulo e ação para reduzir acesso excessivo.
+          </div>
+          <div className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3">
+            Managers e staff seguem a matriz granular; owners mantêm acesso total.
+          </div>
+          <div className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3">
+            Use a tabela para revisar MFA, último login e distribuição de responsabilidades.
+          </div>
+        </div>
+      </AdminSurface>
 
       {showCreate ? (
         <CreateUserDialog
@@ -226,7 +260,7 @@ export default function ConfiguracoesPage() {
           }}
         />
       ) : null}
-    </section>
+    </AdminPage>
   );
 }
 

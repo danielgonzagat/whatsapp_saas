@@ -38,6 +38,8 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     adminSessionStorage.registerRefreshFn(async (rawRefresh) => {
       try {
         const session = await adminAuthApi.refresh(rawRefresh);
@@ -53,8 +55,38 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     });
-    setAdminState(adminSessionStorage.getAdmin());
-    setIsBooting(false);
+
+    const storedAdmin = adminSessionStorage.getAdmin();
+
+    async function hydrate() {
+      if (!storedAdmin) {
+        if (!cancelled) {
+          setAdminState(null);
+          setIsBooting(false);
+        }
+        return;
+      }
+
+      try {
+        const token = await adminSessionStorage.getAccessToken();
+        if (!token) {
+          adminSessionStorage.clear();
+        }
+      } catch {
+        adminSessionStorage.clear();
+      }
+
+      if (cancelled) return;
+
+      setAdminState(adminSessionStorage.getAdmin());
+      setIsBooting(false);
+    }
+
+    void hydrate();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const value = useMemo<AdminSessionContextValue>(
