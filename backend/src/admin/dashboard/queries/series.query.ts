@@ -7,6 +7,12 @@ export interface GmvDailyPoint {
   count: number;
 }
 
+export interface RevenueDailyPoint {
+  date: string; // YYYY-MM-DD (UTC)
+  revenueInCents: number;
+  count: number;
+}
+
 /**
  * Daily GMV series for the line chart. Uses a raw SQL `date_trunc('day')`
  * aggregation because Prisma's groupBy doesn't support truncation natively.
@@ -40,6 +46,31 @@ export async function queryGmvDailySeries(
   return rows.map((row) => ({
     date: new Date(row.day).toISOString().slice(0, 10),
     gmvInCents: Number(row.gmv ?? 0),
+    count: Number(row.count ?? 0),
+  }));
+}
+
+export async function queryRevenueKloelDailySeries(
+  prisma: PrismaService,
+  from: Date,
+  to: Date,
+): Promise<RevenueDailyPoint[]> {
+  type Row = { day: Date; revenue: bigint | number | null; count: bigint | number };
+  const rows = await prisma.$queryRaw<Row[]>(Prisma.sql`
+    SELECT
+      date_trunc('day', "created_at") AS day,
+      SUM("amount_in_cents")::bigint AS revenue,
+      COUNT(*)::bigint AS count
+    FROM "platform_wallet_ledger"
+    WHERE "kind" = 'PLATFORM_FEE_CREDIT'
+      AND "created_at" BETWEEN ${from} AND ${to}
+    GROUP BY day
+    ORDER BY day ASC
+  `);
+
+  return rows.map((row) => ({
+    date: new Date(row.day).toISOString().slice(0, 10),
+    revenueInCents: Number(row.revenue ?? 0),
     count: Number(row.count ?? 0),
   }));
 }
