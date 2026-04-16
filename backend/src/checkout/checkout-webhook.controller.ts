@@ -14,6 +14,7 @@ import type { PaymentResponse as MercadoPagoPaymentResponse } from 'mercadopago/
 import { Public } from '../auth/public.decorator';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
 import { PlatformWalletService } from '../platform-wallet/platform-wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,10 +22,34 @@ import { calculatePhysicalOrderUnitCount } from './checkout-order-pricing.util';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { verifyMercadoPagoWebhookSignature } from './mercado-pago-webhook-signature.util';
 
+// Prisma deep-include return types — derived from the shared include constant below
+// using Prisma.CheckoutPaymentGetPayload so the types stay in sync with the query.
+
+const WEBHOOK_PAYMENT_INCLUDE = {
+  order: {
+    include: {
+      plan: {
+        include: {
+          product: true,
+          checkoutConfig: { include: { pixels: true } },
+        },
+      },
+    },
+  },
+} as const;
+
+type WebhookCheckoutPayment = Prisma.CheckoutPaymentGetPayload<{
+  include: typeof WEBHOOK_PAYMENT_INCLUDE;
+}>;
+
+type WebhookOrder = WebhookCheckoutPayment['order'];
+
+type WebhookProduct = NonNullable<NonNullable<WebhookOrder>['plan']>['product'];
+
 type PaymentConfirmationContext = {
   provider: 'asaas' | 'mercadopago';
   externalId: string;
-  rawPayload: any;
+  rawPayload: unknown;
   paymentMethod?: string | null;
   baseAmount?: number;
   chargedAmount?: number;
@@ -100,23 +125,41 @@ function firstQueryValue(value: unknown): string | undefined {
   return undefined;
 }
 
-function resolveMercadoPagoNotification(body: any, req: any): MercadoPagoNotification {
-  const queryDataId =
-    firstQueryValue(req?.query?.['data.id']) || firstQueryValue(req?.query?.data?.id);
-  const queryId = firstQueryValue(req?.query?.id);
-  const topic = String(
-    firstQueryValue(req?.query?.topic) ||
-      firstQueryValue(req?.query?.type) ||
-      body?.type ||
-      body?.topic ||
-      '',
+function optionalText(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    return normalized || undefined;
+  }
+
+  if (typeof value === 'number') {
+    return String(value);
+  }
+
+  return undefined;
+}
+
+function resolveMercadoPagoNotification(
+  body: Record<string, unknown>,
+  req: Record<string, unknown>,
+): MercadoPagoNotification {
+  const query = (req?.query as Record<string, unknown>) || {};
+  const queryData = (query?.data as Record<string, unknown>) || {};
+  const bodyData = (body?.data as Record<string, unknown>) || {};
+  const queryDataId = firstQueryValue(query?.['data.id']) || firstQueryValue(queryData?.id);
+  const queryId = firstQueryValue(query?.id);
+  const topic = (
+    firstQueryValue(query?.topic) ||
+    firstQueryValue(query?.type) ||
+    optionalText(body?.type) ||
+    optionalText(body?.topic) ||
+    ''
   ).toLowerCase();
-  const action = String(body?.action || '').toLowerCase();
+  const action = (optionalText(body?.action) || '').toLowerCase();
   const resourceId =
     queryDataId ||
     queryId ||
-    body?.data?.id ||
-    body?.id ||
+    optionalText(bodyData?.id) ||
+    optionalText(body?.id) ||
     (typeof body?.resource === 'string' ? body.resource.split('/').pop() : undefined) ||
     null;
 
@@ -124,7 +167,7 @@ function resolveMercadoPagoNotification(body: any, req: any): MercadoPagoNotific
     topic,
     action,
     resourceId: resourceId ? String(resourceId) : null,
-    signatureDataId: queryDataId || body?.data?.id || body?.id || null,
+    signatureDataId: (queryDataId || bodyData?.id || body?.id || null) as string | null,
   };
 }
 
@@ -151,8 +194,8 @@ export class CheckoutWebhookController {
   @Throttle({ default: { limit: 200, ttl: 60000 } })
   async handleAsaasWebhook(
     @Headers('asaas-access-token') accessToken: string,
-    @Body() body: any,
-    @Req() req: any,
+    @Body() body: Record<string, unknown>,
+    @Req() req: Record<string, unknown>,
   ) {
     // Signature verification — reject unauthorized webhooks
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
@@ -163,28 +206,17 @@ export class CheckoutWebhookController {
       throw new ForbiddenException('Invalid webhook token');
     }
 
-    const { event, payment } = body;
-    this.logger.log(`Checkout Asaas webhook: ${event} for payment ${payment?.id}`);
+    const event = typeof body.event === 'string' ? body.event : '';
+    const payment = (body.payment || {}) as Record<string, string | undefined>;
+    const paymentId = optionalText(payment.id);
+    this.logger.log(`Checkout Asaas webhook: ${event} for payment ${paymentId || 'unknown'}`);
 
-    if (!payment?.id) return { received: true };
-
-    const paymentInclude = {
-      order: {
-        include: {
-          plan: {
-            include: {
-              product: true,
-              checkoutConfig: { include: { pixels: true } },
-            },
-          },
-        },
-      },
-    };
+    if (!paymentId) return { received: true };
 
     // Try finding by externalId first, then by record ID, then by externalReference
     let checkoutPayment = await this.prisma.checkoutPayment.findFirst({
-      where: { externalId: payment.id },
-      include: paymentInclude,
+      where: { externalId: paymentId },
+      include: WEBHOOK_PAYMENT_INCLUDE,
     });
 
     if (!checkoutPayment && payment.externalReference) {
@@ -192,13 +224,13 @@ export class CheckoutWebhookController {
         where: {
           OR: [{ id: payment.externalReference }, { orderId: payment.externalReference }],
         },
-        include: paymentInclude,
+        include: WEBHOOK_PAYMENT_INCLUDE,
       });
     }
 
     if (!checkoutPayment) {
       this.logger.warn(
-        `CheckoutPayment not found for externalId: ${payment.id}, ref: ${payment.externalReference}`,
+        `CheckoutPayment not found for externalId: ${paymentId}, ref: ${payment.externalReference}`,
       );
       return { received: true };
     }
@@ -214,7 +246,7 @@ export class CheckoutWebhookController {
     const expectedStatus = idempotencyMap[event];
     if (expectedStatus && checkoutPayment?.status === expectedStatus) {
       this.logger.log(
-        `Webhook ${event} for payment ${payment.id} already processed (status: ${checkoutPayment.status}). Skipping.`,
+        `Webhook ${event} for payment ${paymentId} already processed (status: ${checkoutPayment.status}). Skipping.`,
       );
       return { received: true, duplicate: true };
     }
@@ -239,11 +271,11 @@ export class CheckoutWebhookController {
       !validatePaymentTransition(currentStatus, newStatus, {
         paymentId: checkoutPayment.id,
         provider: 'asaas',
-        externalId: payment.id,
+        externalId: paymentId,
       })
     ) {
       this.logger.warn(
-        `Checkout webhook rejected by state machine: ${currentStatus} -> ${newStatus} for payment ${payment.id}`,
+        `Checkout webhook rejected by state machine: ${currentStatus} -> ${newStatus} for payment ${paymentId}`,
       );
       return { received: true, rejected: true, reason: 'invalid_transition' };
     }
@@ -257,9 +289,9 @@ export class CheckoutWebhookController {
       if (newStatus === 'APPROVED') {
         await this.handlePaymentConfirmed(checkoutPayment, order, product, workspaceId, {
           provider: 'asaas',
-          externalId: payment.id,
+          externalId: paymentId,
           rawPayload: payment,
-          paymentMethod: payment.billingType || order?.paymentMethod || null,
+          paymentMethod: optionalText(payment.billingType) || order?.paymentMethod || null,
         });
       }
 
@@ -267,7 +299,7 @@ export class CheckoutWebhookController {
       if (newStatus === 'REFUNDED' || newStatus === 'CHARGEBACK') {
         await this.handleRefundOrChargeback(checkoutPayment, order, workspaceId, newStatus, {
           provider: 'asaas',
-          externalId: payment.id,
+          externalId: paymentId,
           rawPayload: payment,
         });
       }
@@ -298,12 +330,12 @@ export class CheckoutWebhookController {
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Webhook must never fail — always return 200
       this.logger.error(
-        `Error processing checkout webhook event=${event} paymentId=${payment?.id}: ${errInstanceofError?.message}`,
+        `Error processing checkout webhook event=${event} paymentId=${paymentId}: ${errInstanceofError?.message}`,
         errInstanceofError?.stack,
       );
       this.financialAlert.webhookProcessingFailed(errInstanceofError, {
         provider: 'asaas',
-        externalId: payment?.id,
+        externalId: paymentId,
         eventType: event,
       });
     }
@@ -315,7 +347,10 @@ export class CheckoutWebhookController {
   @Post('mercado-pago')
   @HttpCode(200)
   @Throttle({ default: { limit: 200, ttl: 60000 } })
-  async handleMercadoPagoWebhook(@Body() body: any, @Req() req: any) {
+  async handleMercadoPagoWebhook(
+    @Body() body: Record<string, unknown>,
+    @Req() req: Record<string, unknown>,
+  ) {
     return this.processMercadoPagoNotification(body, req, { allowUnsignedLegacyIpn: false });
   }
 
@@ -323,19 +358,23 @@ export class CheckoutWebhookController {
   @Post('mercado-pago/ipn')
   @HttpCode(200)
   @Throttle({ default: { limit: 200, ttl: 60000 } })
-  async handleMercadoPagoIpn(@Body() body: any, @Req() req: any) {
+  async handleMercadoPagoIpn(
+    @Body() body: Record<string, unknown>,
+    @Req() req: Record<string, unknown>,
+  ) {
     return this.processMercadoPagoNotification(body, req, { allowUnsignedLegacyIpn: true });
   }
 
   private async processMercadoPagoNotification(
-    body: any,
-    req: any,
+    body: Record<string, unknown>,
+    req: Record<string, unknown>,
     options: { allowUnsignedLegacyIpn: boolean },
   ) {
     const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET?.trim() || '';
     const notification = resolveMercadoPagoNotification(body, req);
-    const signatureHeader = req?.headers?.['x-signature'];
-    const requestIdHeader = req?.headers?.['x-request-id'];
+    const reqHeaders = (req?.headers as Record<string, unknown>) || {};
+    const signatureHeader = reqHeaders['x-signature'] as string | undefined;
+    const requestIdHeader = reqHeaders['x-request-id'] as string | undefined;
 
     if (webhookSecret && signatureHeader) {
       const signatureCheck = verifyMercadoPagoWebhookSignature({
@@ -375,28 +414,18 @@ export class CheckoutWebhookController {
       return { received: true };
     }
 
-    const paymentInclude = {
-      order: {
-        include: {
-          plan: {
-            include: {
-              product: true,
-              checkoutConfig: { include: { pixels: true } },
-            },
-          },
-        },
-      },
-    };
-
     let checkoutPayment = await this.prisma.checkoutPayment.findFirst({
       where: { externalId: String(notification.resourceId) },
-      include: paymentInclude,
+      include: WEBHOOK_PAYMENT_INCLUDE,
     });
     let resourceId = String(notification.resourceId);
 
     let workspaceId = checkoutPayment?.order?.workspaceId;
     if (!workspaceId) {
-      workspaceId = await this.mercadoPago.findWorkspaceIdByMercadoPagoUserId(body?.user_id);
+      const mercadoPagoUserId = firstQueryValue(body?.user_id);
+      if (mercadoPagoUserId) {
+        workspaceId = await this.mercadoPago.findWorkspaceIdByMercadoPagoUserId(mercadoPagoUserId);
+      }
     }
 
     if (!workspaceId) {
@@ -428,7 +457,7 @@ export class CheckoutWebhookController {
                 { id: mercadoPagoOrder.external_reference },
               ],
             },
-            include: paymentInclude,
+            include: WEBHOOK_PAYMENT_INCLUDE,
           });
         }
 
@@ -457,7 +486,7 @@ export class CheckoutWebhookController {
         where: {
           OR: [{ orderId: payment.external_reference }, { id: payment.external_reference }],
         },
-        include: paymentInclude,
+        include: WEBHOOK_PAYMENT_INCLUDE,
       });
     }
 
@@ -494,24 +523,30 @@ export class CheckoutWebhookController {
     const product = order?.plan?.product;
     const orderMetadata =
       order?.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
-        ? (order.metadata as Record<string, any>)
+        ? (order.metadata as Record<string, unknown>)
         : {};
-    const baseAmount = centsToAmount(orderMetadata.baseTotalInCents || order?.totalInCents || 0);
+    const baseAmount = centsToAmount(
+      Number(orderMetadata.baseTotalInCents || order?.totalInCents || 0),
+    );
     const chargedAmount = Number(
       payment.transaction_amount ||
-        centsToAmount(orderMetadata.chargedTotalInCents || order?.totalInCents || 0),
+        centsToAmount(Number(orderMetadata.chargedTotalInCents || order?.totalInCents || 0)),
     );
     const gatewayFeeAmount = sumMercadoPagoFees(payment);
-    const platformFeeAmount = centsToAmount(orderMetadata.platformFeeInCents || 0);
-    const installmentInterestAmount = centsToAmount(orderMetadata.installmentInterestInCents || 0);
-    const affiliateCommissionAmount = centsToAmount(orderMetadata.affiliateCommissionInCents || 0);
+    const platformFeeAmount = centsToAmount(Number(orderMetadata.platformFeeInCents || 0));
+    const installmentInterestAmount = centsToAmount(
+      Number(orderMetadata.installmentInterestInCents || 0),
+    );
+    const affiliateCommissionAmount = centsToAmount(
+      Number(orderMetadata.affiliateCommissionInCents || 0),
+    );
     const platformNetRevenueAmount = Math.max(
       0,
       platformFeeAmount + installmentInterestAmount - gatewayFeeAmount,
     );
     const producerNetAmount =
       orderMetadata.producerNetInCents != null
-        ? centsToAmount(orderMetadata.producerNetInCents)
+        ? centsToAmount(Number(orderMetadata.producerNetInCents))
         : Math.max(0, baseAmount - platformFeeAmount - affiliateCommissionAmount);
 
     try {
@@ -529,7 +564,7 @@ export class CheckoutWebhookController {
           platformFeeAmount,
           platformNetRevenueAmount,
           installmentInterestAmount,
-          affiliateLinkId: orderMetadata.affiliateLinkId || null,
+          affiliateLinkId: (orderMetadata.affiliateLinkId as string) || null,
           affiliateCommissionAmount,
         });
       } else if (mappedStatus === 'REFUNDED' || mappedStatus === 'CHARGEBACK') {
@@ -555,7 +590,7 @@ export class CheckoutWebhookController {
               where: { id: checkoutPayment.id },
               data: {
                 status: mappedStatus,
-                webhookData: JSON.parse(JSON.stringify(payment)),
+                webhookData: toPrismaJsonValue(payment),
               },
             });
             await tx.checkoutOrder.updateMany({
@@ -588,9 +623,9 @@ export class CheckoutWebhookController {
 
   // ── PAYMENT CONFIRMED ─────────────────────────────────────────────
   private async handlePaymentConfirmed(
-    checkoutPayment: any,
-    order: any,
-    product: any,
+    checkoutPayment: WebhookCheckoutPayment,
+    order: WebhookOrder,
+    product: WebhookProduct,
     workspaceId: string | undefined,
     context: PaymentConfirmationContext,
   ) {
@@ -602,12 +637,12 @@ export class CheckoutWebhookController {
     const affiliateCommissionAmount = Number(context.affiliateCommissionAmount || 0);
     const productName: string = product?.name || order?.plan?.name || 'Checkout';
 
-    await this.prisma.$transaction(async (tx: any) => {
+    await this.prisma.$transaction(async (tx) => {
       // isolationLevel: ReadCommitted
       // 1. Update CheckoutPayment status → APPROVED (=PAID)
       await tx.checkoutPayment.update({
         where: { id: checkoutPayment.id },
-        data: { status: 'APPROVED', webhookData: context.rawPayload },
+        data: { status: 'APPROVED', webhookData: toPrismaJsonValue(context.rawPayload) },
       });
 
       // 2. Update CheckoutOrder status → PAID, set paidAt
@@ -771,10 +806,15 @@ export class CheckoutWebhookController {
       // 6. If the product is physical, create PhysicalOrder with status PROCESSING
       if (workspaceId && product?.format === 'PHYSICAL') {
         try {
-          const shippingAddress = order?.shippingAddress || {};
+          const shippingAddress =
+            order?.shippingAddress &&
+            typeof order.shippingAddress === 'object' &&
+            !Array.isArray(order.shippingAddress)
+              ? (order.shippingAddress as Record<string, unknown>)
+              : ({} as Record<string, unknown>);
           const orderMetadata =
             order?.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
-              ? (order.metadata as Record<string, any>)
+              ? (order.metadata as Record<string, unknown>)
               : {};
           await tx.physicalOrder.create({
             data: {
@@ -792,12 +832,18 @@ export class CheckoutWebhookController {
               status: 'PROCESSING',
               shippingMethod: order?.shippingMethod || null,
               shippingCost: order?.shippingPrice ? order.shippingPrice / 100 : null,
-              addressStreet: shippingAddress.street || shippingAddress.address || null,
-              addressCity: shippingAddress.city || null,
-              addressState: shippingAddress.state || null,
+              addressStreet:
+                optionalText(shippingAddress.street) ||
+                optionalText(shippingAddress.address) ||
+                null,
+              addressCity: optionalText(shippingAddress.city) || null,
+              addressState: optionalText(shippingAddress.state) || null,
               addressZip:
-                shippingAddress.zip || shippingAddress.zipCode || shippingAddress.cep || null,
-              addressCountry: shippingAddress.country || 'BR',
+                optionalText(shippingAddress.zip) ||
+                optionalText(shippingAddress.zipCode) ||
+                optionalText(shippingAddress.cep) ||
+                null,
+              addressCountry: optionalText(shippingAddress.country) || 'BR',
               paymentMethod: context.paymentMethod || order?.paymentMethod || null,
               paymentStatus: 'PAID',
               saleId: context.externalId,
@@ -845,14 +891,14 @@ export class CheckoutWebhookController {
 
   // ── REFUND / CHARGEBACK ───────────────────────────────────────────
   private async handleRefundOrChargeback(
-    checkoutPayment: any,
-    order: any,
+    checkoutPayment: WebhookCheckoutPayment,
+    order: WebhookOrder,
     workspaceId: string | undefined,
     newStatus: 'REFUNDED' | 'CHARGEBACK',
     context: {
       provider: 'asaas' | 'mercadopago';
       externalId: string;
-      rawPayload: any;
+      rawPayload: unknown;
       baseAmount?: number;
       chargedAmount?: number;
       producerNetAmount?: number;
@@ -865,18 +911,20 @@ export class CheckoutWebhookController {
     const producerNetAmount = Number(context.producerNetAmount ?? baseAmount);
     const orderMetadata =
       order?.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
-        ? (order.metadata as Record<string, any>)
+        ? (order.metadata as Record<string, unknown>)
         : {};
-    const affiliateCommissionAmount = centsToAmount(orderMetadata.affiliateCommissionInCents || 0);
+    const affiliateCommissionAmount = centsToAmount(
+      Number(orderMetadata.affiliateCommissionInCents || 0),
+    );
     const isRefund = newStatus === 'REFUNDED';
     const txType = isRefund ? 'refund' : 'chargeback';
 
-    await this.prisma.$transaction(async (tx: any) => {
+    await this.prisma.$transaction(async (tx) => {
       // isolationLevel: ReadCommitted
       // 1. Update CheckoutPayment status
       await tx.checkoutPayment.update({
         where: { id: checkoutPayment.id },
-        data: { status: newStatus, webhookData: context.rawPayload },
+        data: { status: newStatus, webhookData: toPrismaJsonValue(context.rawPayload) },
       });
 
       // 2. Update CheckoutOrder status
@@ -958,7 +1006,7 @@ export class CheckoutWebhookController {
       if (orderMetadata.affiliateLinkId && affiliateCommissionAmount > 0) {
         try {
           await tx.affiliateLink.update({
-            where: { id: orderMetadata.affiliateLinkId },
+            where: { id: orderMetadata.affiliateLinkId as string },
             data: {
               sales: { decrement: 1 },
               revenue: { decrement: baseAmount },

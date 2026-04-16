@@ -73,15 +73,19 @@ export class MarketingController {
     return { provider: providerConfig.provider };
   }
 
-  private getWhatsAppSessionSnapshot(providerSettings: Record<string, any>) {
+  private getWhatsAppSessionSnapshot(providerSettings: Record<string, unknown>) {
     const snapshot =
       providerSettings?.whatsappApiSession &&
       typeof providerSettings.whatsappApiSession === 'object'
-        ? (providerSettings.whatsappApiSession as Record<string, any>)
+        ? (providerSettings.whatsappApiSession as Record<string, unknown>)
         : {};
-    const snapshotStatus = String(snapshot.rawStatus || snapshot.status || '')
-      .trim()
-      .toLowerCase();
+    const rawSnapshotStatus =
+      typeof snapshot.rawStatus === 'string'
+        ? snapshot.rawStatus
+        : typeof snapshot.status === 'string'
+          ? snapshot.status
+          : '';
+    const snapshotStatus = rawSnapshotStatus.trim().toLowerCase();
     const snapshotConnected = snapshotStatus === 'connected' || snapshotStatus === 'working';
 
     return {
@@ -99,10 +103,15 @@ export class MarketingController {
     return raw
       .filter((item) => item && typeof item === 'object')
       .map((item) => {
-        const product = item as Record<string, any>;
+        const product = item as Record<string, unknown>;
         return {
-          id: String(product.id || product.productId || '').trim(),
-          name: String(product.name || 'Produto').trim() || 'Produto',
+          id: (typeof product.id === 'string'
+            ? product.id
+            : typeof product.productId === 'string'
+              ? product.productId
+              : ''
+          ).trim(),
+          name: (typeof product.name === 'string' ? product.name.trim() : '') || 'Produto',
           price: Number(product.price || 0) || 0,
           type: product.type === 'affiliate' ? 'affiliate' : 'own',
           affiliateComm:
@@ -147,17 +156,19 @@ export class MarketingController {
       this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
     ]);
 
-    const providerSettings = (workspace?.providerSettings as Record<string, any>) || {};
-    const emailSettings = ((providerSettings.email || {}) as Record<string, any>) || {
+    const providerSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const emailSettings = ((providerSettings.email || {}) as Record<string, unknown>) || {
       enabled: false,
     };
     const emailProvider = this.getEmailProviderSnapshot();
-    const safeWhatsApp = (whatsappStatus || {}) as Record<string, any>;
+    const safeWhatsApp = (whatsappStatus || {}) as Record<string, unknown>;
     const { snapshot, snapshotStatus, snapshotConnected } =
       this.getWhatsAppSessionSnapshot(providerSettings);
-    const liveStatus = String(safeWhatsApp.status || snapshotStatus || 'DISCONNECTED')
-      .trim()
-      .toLowerCase();
+    const rawLiveStatus =
+      typeof safeWhatsApp.status === 'string'
+        ? safeWhatsApp.status
+        : snapshotStatus || 'DISCONNECTED';
+    const liveStatus = rawLiveStatus.trim().toLowerCase();
     const whatsappConnected = Boolean(safeWhatsApp.connected) || snapshotConnected;
     const whatsappStatusValue =
       providerType === 'whatsapp-api'
@@ -259,22 +270,22 @@ export class MarketingController {
   }
 
   @Get('connect/status')
-  async getConnectStatus(@Request() req: any) {
+  async getConnectStatus(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
     return this.getConnectionStatus(workspaceId);
   }
 
   @Get('whatsapp/summary')
-  async getWhatsAppSummary(@Request() req: any) {
+  async getWhatsAppSummary(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const providerSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const providerSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
     const setup =
       providerSettings?.whatsappSetup && typeof providerSettings.whatsappSetup === 'object'
-        ? (providerSettings.whatsappSetup as Record<string, any>)
+        ? (providerSettings.whatsappSetup as Record<string, unknown>)
         : {};
     const selectedProducts = this.normalizeWhatsAppSelectedProducts(setup.selectedProducts);
     const productNames = [
@@ -306,22 +317,31 @@ export class MarketingController {
 
     return {
       configured: selectedProducts.length > 0,
-      sessionName: String(setup.sessionName || workspaceId),
+      sessionName: typeof setup.sessionName === 'string' ? setup.sessionName : workspaceId,
       configuredAt: setup.configuredAt || null,
       activatedAt: setup.activatedAt || null,
       arsenalCount: Array.isArray(setup.arsenal) ? setup.arsenal.length : 0,
-      tone:
-        setup?.config && typeof setup.config === 'object' && typeof setup.config.tone === 'string'
-          ? setup.config.tone
-          : null,
-      maxDiscount:
-        setup?.config && typeof setup.config === 'object'
-          ? Number(setup.config.maxDiscount || 0) || 0
-          : 0,
-      followUpEnabled:
-        setup?.config && typeof setup.config === 'object'
-          ? Boolean(setup.config.followUpEnabled)
-          : false,
+      tone: (() => {
+        const cfg =
+          setup?.config && typeof setup.config === 'object'
+            ? (setup.config as Record<string, unknown>)
+            : null;
+        return cfg && typeof cfg.tone === 'string' ? cfg.tone : null;
+      })(),
+      maxDiscount: (() => {
+        const cfg =
+          setup?.config && typeof setup.config === 'object'
+            ? (setup.config as Record<string, unknown>)
+            : null;
+        return cfg ? Number(cfg.maxDiscount || 0) || 0 : 0;
+      })(),
+      followUpEnabled: (() => {
+        const cfg =
+          setup?.config && typeof setup.config === 'object'
+            ? (setup.config as Record<string, unknown>)
+            : null;
+        return cfg ? Boolean(cfg.followUpEnabled) : false;
+      })(),
       selectedProducts: selectedProducts.map((product) => {
         const performance = salesMap.get(product.name) || { salesCount: 0, revenue: 0 };
         return {
@@ -334,13 +354,16 @@ export class MarketingController {
   }
 
   @Post('connect/email')
-  async connectEmail(@Request() req: any, @Body() body: { enabled?: boolean } = {}) {
+  async connectEmail(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Body() body: { enabled?: boolean } = {},
+  ) {
     const workspaceId = req.user.workspaceId;
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
     const nextEnabled = body.enabled !== false;
 
     await this.prisma.workspace.update({
@@ -349,7 +372,7 @@ export class MarketingController {
         providerSettings: {
           ...currentSettings,
           email: {
-            ...((currentSettings.email || {}) as Record<string, any>),
+            ...((currentSettings.email || {}) as Record<string, unknown>),
             enabled: nextEnabled,
           },
         },
@@ -360,7 +383,10 @@ export class MarketingController {
   }
 
   @Post('connect/email/test')
-  async sendEmailTest(@Request() req: any, @Body() body: { toEmail?: string } = {}) {
+  async sendEmailTest(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Body() body: { toEmail?: string } = {},
+  ) {
     const workspaceId = req.user.workspaceId;
     const toEmail = String(body.toEmail || req.user?.email || '').trim();
     if (!toEmail) {
@@ -385,7 +411,7 @@ export class MarketingController {
    * Aggregate stats: totalMessages, totalLeads, totalSales, totalRevenue
    */
   @Get('stats')
-  async getStats(@Request() req: any) {
+  async getStats(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
 
     const [totalMessages, totalLeads] = await Promise.all([
@@ -419,7 +445,7 @@ export class MarketingController {
    * Channel status — for each channel, count messages and derive status
    */
   @Get('channels')
-  async getChannels(@Request() req: any) {
+  async getChannels(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
 
     // Batch: count conversations (leads) per channel
@@ -479,7 +505,7 @@ export class MarketingController {
    * Live feed — last 30 messages ordered by createdAt desc
    */
   @Get('live-feed')
-  async getLiveFeed(@Request() req: any) {
+  async getLiveFeed(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
 
     const messages = await this.prisma.message.findMany({
@@ -510,7 +536,10 @@ export class MarketingController {
    * Stats for a specific channel
    */
   @Get('channel/:channel/stats')
-  async getChannelStats(@Request() req: any, @Param('channel') channel: string) {
+  async getChannelStats(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Param('channel') channel: string,
+  ) {
     const workspaceId = req.user.workspaceId;
     const channelUpper = channel.toUpperCase();
 
@@ -573,7 +602,7 @@ export class MarketingController {
    * AI Brain status — products loaded, active conversations, response time
    */
   @Get('ai-brain')
-  async getAiBrain(@Request() req: any) {
+  async getAiBrain(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
     const periodStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // last 7 days
 
@@ -654,7 +683,7 @@ export class MarketingController {
    */
   @Post('email/send')
   async sendEmailCampaign(
-    @Request() req: any,
+    @Request() req: { user: { workspaceId: string; email?: string } },
     @Body()
     body: {
       subject: string;
@@ -664,7 +693,6 @@ export class MarketingController {
     },
   ) {
     void req.user?.workspaceId;
-    void req.workspaceId;
     // Since this controller doesn't inject EmailCampaignService, we use a simpler approach
     // Just validate and forward - the actual sending uses the same Resend/SendGrid infra
     const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';

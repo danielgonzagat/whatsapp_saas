@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import OpenAI from 'openai';
+import { Prisma } from '@prisma/client';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { createRedisClient } from '../common/redis/redis.util';
@@ -21,12 +22,37 @@ import { autopilotQueue, flowQueue } from '../queue/queue';
 
 const D_RE = /\D/g;
 
+/** Lightweight shape used by legacy autopilot cycle methods. */
+interface AutopilotConversation {
+  id: string;
+  workspaceId: string;
+  contact: {
+    id: string;
+    phone: string;
+    name?: string | null;
+    tags?: Array<{ name: string }>;
+    customFields?: Prisma.JsonValue;
+    workspace?: Record<string, unknown>;
+  };
+  contactId?: string;
+  messages: Array<{ direction: string; content: string | null; createdAt: Date }>;
+  workspace?: Record<string, unknown>;
+}
+
+/** Analysis result from the OpenAI conversation analysis */
+interface ConversationAnalysis {
+  intent?: string;
+  sentiment?: string;
+  buyingSignal?: boolean;
+  stage?: string;
+}
+
 @Injectable()
 export class AutopilotService {
   private readonly logger = new Logger(AutopilotService.name);
   private openai: OpenAI | null;
   private campaignQueue: Queue;
-  private readonly redisClient: any;
+  private readonly redisClient: ReturnType<typeof createRedisClient>;
 
   constructor(
     private prisma: PrismaService,
@@ -52,6 +78,14 @@ export class AutopilotService {
 
   private isLegacyExecutionEnabled() {
     return process.env.ENABLE_LEGACY_BACKEND_AUTOPILOT === 'true';
+  }
+
+  private readRecord(value: unknown): Record<string, unknown> {
+    return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+  }
+
+  private readOptionalText(value: unknown): string | null {
+    return typeof value === 'string' && value.trim().length > 0 ? value : null;
   }
 
   async getPipelineStatus(workspaceId: string) {
@@ -132,17 +166,19 @@ export class AutopilotService {
       }),
     ]);
 
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const sessionStatus = settings?.whatsappApiSession?.status || 'unknown';
+    const settings = this.readRecord(workspace?.providerSettings);
+    const autopilotSettings = this.readRecord(settings.autopilot);
+    const sessionStatusRaw = this.readRecord(settings.whatsappApiSession).status;
+    const sessionStatus = typeof sessionStatusRaw === 'string' ? sessionStatusRaw : 'unknown';
 
     return {
       workspaceId,
       workspaceName: workspace?.name || null,
       windowHours: 24,
       autonomy: {
-        autopilotEnabled: settings?.autopilot?.enabled === true,
+        autopilotEnabled: autopilotSettings.enabled === true,
         whatsappStatus: sessionStatus,
-        connected: ['connected', 'working'].includes(String(sessionStatus).toLowerCase()),
+        connected: ['connected', 'working'].includes(sessionStatus.toLowerCase()),
       },
       messages: {
         received: inboundReceived,
@@ -235,19 +271,19 @@ export class AutopilotService {
     );
 
     const startedAt = Date.now();
-    let result: any = null;
+    let result: Record<string, unknown> | null = null;
     // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for async result
     while (Date.now() - startedAt < waitMs) {
       const current = await this.redisClient.get(smokeKey);
       if (current) {
         try {
-          result = JSON.parse(current);
+          result = this.readRecord(JSON.parse(current));
         } catch {
           /* invalid JSON in Redis */
         }
         if (
           ['completed', 'failed', 'skipped', 'disabled', 'billing_suspended'].includes(
-            result.status,
+            typeof result.status === 'string' ? result.status : '',
           )
         ) {
           break;
@@ -257,7 +293,12 @@ export class AutopilotService {
     }
 
     // Clean up smoke test key after result is consumed — cache.invalidate
-    if (result && ['completed', 'failed', 'skipped'].includes(result.status)) {
+    if (
+      result &&
+      ['completed', 'failed', 'skipped'].includes(
+        typeof result.status === 'string' ? result.status : '',
+      )
+    ) {
       await this.redisClient.del(smokeKey).catch(() => {});
     }
 
@@ -279,16 +320,16 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
+    const settings = this.readRecord(workspace?.providerSettings);
 
     if (enabled) {
       await this.ensureBillingAllowsAutopilot(workspaceId, settings);
       this.ensureWhatsAppConnectedOrThrow(settings);
     }
 
-    const autopilotCfg = { ...(settings.autopilot || {}), enabled };
+    const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}), enabled };
     const autonomy = {
-      ...(settings.autonomy || {}),
+      ...((settings.autonomy as Record<string, unknown>) || {}),
       mode: enabled ? 'LIVE' : 'OFF',
       reactiveEnabled: enabled,
       proactiveEnabled: false,
@@ -302,13 +343,16 @@ export class AutopilotService {
           ...settings,
           autopilot: autopilotCfg,
           autonomy,
-        },
+        } as unknown as Prisma.InputJsonValue,
       },
     });
     return { workspaceId, enabled };
   }
 
-  private async ensureBillingAllowsAutopilot(workspaceId: string, settings: any) {
+  private async ensureBillingAllowsAutopilot(
+    workspaceId: string,
+    settings: Record<string, unknown>,
+  ) {
     const suspended = (settings?.billingSuspended ?? false) === true;
     if (suspended) {
       // Loga evento para rastreabilidade
@@ -331,8 +375,10 @@ export class AutopilotService {
             details: { reason: 'billing_suspended' },
           },
         });
-      } catch (err) {
-        this.logger.warn(`Failed to log billing suspension event: ${err?.message}`);
+      } catch (err: unknown) {
+        this.logger.warn(
+          `Failed to log billing suspension event: ${err instanceof Error ? err.message : 'unknown error'}`,
+        );
       }
       throw new ForbiddenException('Autopilot suspenso: regularize cobrança para reativar.');
     }
@@ -355,13 +401,13 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (ws?.providerSettings as Record<string, any>) || {};
+    const settings = (ws?.providerSettings as Record<string, unknown>) || {};
     await this.ensureBillingAllowsAutopilot(workspaceId, settings);
   }
 
-  private ensureWhatsAppConnectedOrThrow(settings: any) {
+  private ensureWhatsAppConnectedOrThrow(settings: Record<string, unknown>) {
     const missing: string[] = [];
-    const status = settings?.whatsappApiSession?.status;
+    const status = (settings?.whatsappApiSession as Record<string, unknown>)?.status;
     if (status !== 'connected') missing.push('whatsappApiSession.status=connected');
 
     if (missing.length) {
@@ -383,8 +429,8 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const autopilotCfg = { ...(settings.autopilot || {}) };
+    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}) };
     if (payload.conversionFlowId !== undefined) {
       autopilotCfg.conversionFlowId = payload.conversionFlowId;
     }
@@ -396,7 +442,12 @@ export class AutopilotService {
     }
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: { ...settings, autopilot: autopilotCfg } },
+      data: {
+        providerSettings: {
+          ...settings,
+          autopilot: autopilotCfg,
+        } as unknown as Prisma.InputJsonValue,
+      },
     });
     return { workspaceId, autopilot: autopilotCfg };
   }
@@ -406,17 +457,18 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
+    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
     const billingSuspended = settings.billingSuspended === true;
-    const autonomyMode = String(settings?.autonomy?.mode || '').toUpperCase();
+    const rawAutonomyMode = (settings?.autonomy as Record<string, unknown>)?.mode;
+    const autonomyMode = (typeof rawAutonomyMode === 'string' ? rawAutonomyMode : '').toUpperCase();
     return {
       workspaceId,
       enabled:
         autonomyMode === 'LIVE' ||
         autonomyMode === 'BACKLOG' ||
         autonomyMode === 'FULL' ||
-        !!settings.autopilot?.enabled,
-      autonomy: settings.autonomy || null,
+        !!(settings.autopilot as Record<string, unknown>)?.enabled,
+      autonomy: (settings.autonomy as Record<string, unknown>) || null,
       billingSuspended,
     };
   }
@@ -426,8 +478,8 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    return { workspaceId, autopilot: settings.autopilot || {} };
+    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    return { workspaceId, autopilot: (settings.autopilot as Record<string, unknown>) || {} };
   }
 
   /**
@@ -438,8 +490,8 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const enabled = !!settings.autopilot?.enabled;
+    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const enabled = !!(settings.autopilot as Record<string, unknown>)?.enabled;
     const billingSuspended = settings.billingSuspended === true;
 
     const now = Date.now();
@@ -499,7 +551,7 @@ export class AutopilotService {
 
       if (ev.status === 'scheduled') {
         scheduledCount += 1;
-        const cf = (ev.meta as Record<string, any>)?.nextRetryAt || null;
+        const cf = this.readOptionalText(this.readRecord(ev.meta).nextRetryAt);
         if (cf && (!nextRetryAt || new Date(cf).getTime() < new Date(nextRetryAt).getTime())) {
           nextRetryAt = cf;
         }
@@ -510,7 +562,7 @@ export class AutopilotService {
         if (!lastConversionAt || tsConv > new Date(lastConversionAt).getTime()) {
           lastConversionAt = ev.createdAt.toISOString();
         }
-        const amt = (ev.meta as Record<string, any>)?.amount;
+        const amt = (ev.meta as Record<string, unknown>)?.amount;
         if (amt && !isNaN(Number(amt))) {
           conversionsAmountLast7d += Number(amt);
         }
@@ -599,7 +651,12 @@ export class AutopilotService {
     let repliedContacts = 0;
     let totalReplies = 0;
     const replyDelays: number[] = [];
-    const samples: any[] = [];
+    const samples: Array<{
+      contactId: string;
+      contact: string;
+      replyAt: Date;
+      delayMinutes: number;
+    }> = [];
     let conversions = conversionEvents.length;
 
     // Batch: fetch all inbound messages for all contacted IDs at once
@@ -853,16 +910,13 @@ Answer in Portuguese, short and actionable.`;
     // Conversões registradas
     let conversions = 0;
     try {
-      const client = this.prisma as Record<string, any>;
-      if (client.autopilotEvent) {
-        conversions = await client.autopilotEvent.count({
-          where: {
-            workspaceId,
-            action: 'CONVERSION',
-            createdAt: { gte: since },
-          },
-        });
-      }
+      conversions = await this.prisma.autopilotEvent.count({
+        where: {
+          workspaceId,
+          action: 'CONVERSION',
+          createdAt: { gte: since },
+        },
+      });
     } catch {
       // optional table
     }
@@ -871,8 +925,8 @@ Answer in Portuguese, short and actionable.`;
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential per-campaign revenue attribution query
     for (const camp of campaigns) {
-      const filters: any = camp.filters || {};
-      const phones: string[] = Array.isArray(filters.phones) ? filters.phones : [];
+      const filters = (camp.filters as Record<string, unknown>) || {};
+      const phones: string[] = Array.isArray(filters.phones) ? (filters.phones as string[]) : [];
       let revenue = 0;
       let deals = 0;
 
@@ -927,7 +981,10 @@ Answer in Portuguese, short and actionable.`;
           select: { meta: true },
         });
         if (evs.length) {
-          revenue += evs.reduce((acc, e: any) => acc + (Number(e.meta?.value) || 0), 0);
+          revenue += evs.reduce(
+            (acc, e) => acc + (Number((e.meta as Record<string, unknown>)?.value) || 0),
+            0,
+          );
           deals += evs.length;
         }
       }
@@ -978,34 +1035,37 @@ Answer in Portuguese, short and actionable.`;
   async getRevenueEvents(workspaceId: string, limit = 20) {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const max = Math.min(Math.max(limit, 5), 200);
-    const events: any[] = [];
+    const events: Array<{
+      at: Date;
+      campaignId: string;
+      value: number;
+      action: string;
+      source: string;
+    }> = [];
 
     try {
-      const client = this.prisma as Record<string, any>;
-      if (client.autopilotEvent) {
-        const ev = await client.autopilotEvent.findMany({
-          where: {
-            workspaceId,
-            action: { in: ['DEAL_WON', 'DEAL_WON_STAGE', 'CONVERSION'] },
-            createdAt: { gte: since },
-          },
-          orderBy: { createdAt: 'desc' },
-          take: max,
-          select: { createdAt: true, meta: true, action: true },
-        });
-        events.push(
-          ...ev.map((e: any) => {
-            const meta: any = e.meta || {};
-            return {
-              at: e.createdAt,
-              campaignId: meta.campaignId || '',
-              value: Number(meta.value || 0),
-              action: e.action,
-              source: meta.source || '',
-            };
-          }),
-        );
-      }
+      const ev = await this.prisma.autopilotEvent.findMany({
+        where: {
+          workspaceId,
+          action: { in: ['DEAL_WON', 'DEAL_WON_STAGE', 'CONVERSION'] },
+          createdAt: { gte: since },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: max,
+        select: { createdAt: true, meta: true, action: true },
+      });
+      events.push(
+        ...ev.map((e) => {
+          const meta = (e.meta as Record<string, unknown>) || {};
+          return {
+            at: e.createdAt,
+            campaignId: typeof meta.campaignId === 'string' ? meta.campaignId : '',
+            value: Number(meta.value || 0),
+            action: e.action,
+            source: typeof meta.source === 'string' ? meta.source : '',
+          };
+        }),
+      );
     } catch {
       // optional table
     }
@@ -1075,9 +1135,10 @@ Answer in Portuguese, short and actionable.`;
 
     return events.map((l) => {
       const contact = l.contactId ? map.get(l.contactId) : null;
-      const nextRetryAt =
-        (contact?.customFields as Record<string, any>)?.autopilotNextRetryAt || null;
-      const meta = l.meta as Record<string, any>;
+      const nextRetryAt = this.readOptionalText(
+        this.readRecord(contact?.customFields).autopilotNextRetryAt,
+      );
+      const meta = this.readRecord(l.meta);
       return {
         createdAt: l.createdAt,
         contact: contact?.name || contact?.phone || l.contactId,
@@ -1139,8 +1200,9 @@ Answer in Portuguese, short and actionable.`;
       where: { id: contactId, workspaceId },
       select: { customFields: true },
     });
-    const cf: any = contact?.customFields || {};
-    const nextRetryAt = cf.autopilotNextRetryAt ? new Date(cf.autopilotNextRetryAt).getTime() : 0;
+    const cf = this.readRecord(contact?.customFields);
+    const nextRetryAtValue = this.readOptionalText(cf.autopilotNextRetryAt);
+    const nextRetryAt = nextRetryAtValue ? new Date(nextRetryAtValue).getTime() : 0;
     if (nextRetryAt && nextRetryAt > now) {
       return {
         queued: false,
@@ -1165,7 +1227,7 @@ Answer in Portuguese, short and actionable.`;
         where: { id: contactId, workspaceId },
         data: {
           customFields: {
-            ...((cf || {}) as Record<string, unknown>),
+            ...(cf || {}),
             autopilotNextRetryAt: nextRetry,
           },
         },
@@ -1205,7 +1267,7 @@ Answer in Portuguese, short and actionable.`;
           where: { id: contactId, workspaceId },
           data: {
             customFields: {
-              ...((cf || {}) as Record<string, unknown>),
+              ...(cf || {}),
               autopilotNextRetryAt: nextRetry,
             },
           },
@@ -1236,7 +1298,7 @@ Answer in Portuguese, short and actionable.`;
       where: { id: contactId, workspaceId },
       data: {
         customFields: {
-          ...((cf || {}) as Record<string, unknown>),
+          ...(cf || {}),
           autopilotNextRetryAt: null,
         },
       },
@@ -1252,21 +1314,21 @@ Answer in Portuguese, short and actionable.`;
     contactId?: string;
     phone?: string;
     reason?: string;
-    meta?: Record<string, any>;
+    meta?: Record<string, unknown>;
   }) {
     await this.ensureNotSuspended(input.workspaceId);
     const { workspaceId, contactId, phone, reason, meta } = input;
     let contactIdResolved = contactId;
 
     // Idempotência por orderId (se disponível)
-    const orderId = meta?.orderId;
+    const orderId = this.readOptionalText(meta?.orderId);
     if (orderId) {
       try {
         const existing = await this.prisma.autopilotEvent.findFirst({
           where: {
             workspaceId,
             action: 'CONVERSION',
-            meta: { path: ['orderId'], equals: orderId },
+            meta: { path: ['orderId'], equals: orderId as Prisma.InputJsonValue },
           },
           select: { id: true, contactId: true },
         });
@@ -1299,7 +1361,7 @@ Answer in Portuguese, short and actionable.`;
         action: 'CONVERSION',
         status: 'executed',
         reason: reason || 'webhook_conversion',
-        meta: meta || {},
+        meta: (meta || {}) as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -1320,8 +1382,8 @@ Answer in Portuguese, short and actionable.`;
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
     });
-    const settings: any = ws?.providerSettings || {};
-    const flowId = settings?.autopilot?.conversionFlowId;
+    const settings = this.readRecord(ws?.providerSettings);
+    const flowId = this.readRecord(settings.autopilot).conversionFlowId;
     if (flowId && (contactIdResolved || contactPhone)) {
       await flowQueue.add('run-flow', {
         workspaceId,
@@ -1371,8 +1433,8 @@ Answer in Portuguese, short and actionable.`;
       select: { providerSettings: true },
     });
 
-    const settings: any = ws?.providerSettings || {};
-    const postPurchaseFlowId = settings?.autopilot?.postPurchaseFlowId;
+    const settings = this.readRecord(ws?.providerSettings);
+    const postPurchaseFlowId = this.readRecord(settings.autopilot).postPurchaseFlowId;
 
     // Se tem fluxo configurado, executa
     if (postPurchaseFlowId) {
@@ -1387,7 +1449,9 @@ Answer in Portuguese, short and actionable.`;
         },
       });
 
-      this.logger.log(`[PostPurchase] Flow ${postPurchaseFlowId} triggered for ${contact.phone}`);
+      this.logger.log(
+        `[PostPurchase] Flow ${typeof postPurchaseFlowId === 'string' ? postPurchaseFlowId : 'unknown'} triggered for ${contact.phone}`,
+      );
       return { triggered: true, flowId: postPurchaseFlowId };
     }
 
@@ -1757,7 +1821,7 @@ Answer in Portuguese, short and actionable.`;
     }
   }
 
-  private async processConversation(conv: any, isOptimalTime: boolean) {
+  private async processConversation(conv: AutopilotConversation, isOptimalTime: boolean) {
     const lastMsg = conv.messages[0];
     if (!lastMsg || lastMsg.direction === 'OUTBOUND') return;
 
@@ -1769,7 +1833,9 @@ Answer in Portuguese, short and actionable.`;
     }
   }
 
-  private async analyzeContext(messages: any[]) {
+  private async analyzeContext(
+    messages: AutopilotConversation['messages'],
+  ): Promise<ConversationAnalysis> {
     if (!this.openai) return { intent: 'unknown', sentiment: 'neutral', buyingSignal: false };
 
     const history = messages
@@ -1795,7 +1861,7 @@ Answer in Portuguese, short and actionable.`;
       response_format: { type: 'json_object' },
     });
 
-    let analysisResult: any = {
+    let analysisResult: ConversationAnalysis = {
       intent: 'unknown',
       sentiment: 'neutral',
       buyingSignal: false,
@@ -1810,7 +1876,7 @@ Answer in Portuguese, short and actionable.`;
 
   private decideAction(
     analysis: { intent?: string; sentiment?: string; buyingSignal?: boolean; stage?: string },
-    _conv: Record<string, unknown>,
+    _conv: AutopilotConversation,
     isOptimalTime: boolean,
   ): string {
     const { intent, sentiment, buyingSignal, stage } = analysis;
@@ -1841,13 +1907,17 @@ Answer in Portuguese, short and actionable.`;
     return 'ai_chat';
   }
 
-  private async executeAction(action: string, conv: any, analysis?: any) {
+  private async executeAction(
+    action: string,
+    conv: AutopilotConversation,
+    analysis?: ConversationAnalysis,
+  ) {
     this.logger.log(`[Autopilot] Executing ${action} for ${conv.id}`);
 
     const compliance = await this.ensureCompliance(conv.workspaceId, conv.contact, conv.messages);
     if (!compliance.allowed) {
       this.logger.warn(
-        `[Autopilot] Skip compliance for ${conv.contact?.id || conv.contactId}: ${compliance.reason}`,
+        `[Autopilot] Skip compliance for ${conv.contact?.id || conv.contactId || 'unknown'}: ${compliance.reason}`,
       );
       try {
         await this.prisma.autopilotEvent.create({
@@ -1901,7 +1971,9 @@ Answer in Portuguese, short and actionable.`;
         // personal URL. The previous inline string shipped
         // cal.com/danielpenin to every customer's leads.
         responseText = renderTemplate('SEND_CALENDAR', {
-          calendarLink: conv?.workspace?.providerSettings?.calendarLink || undefined,
+          calendarLink:
+            (this.readRecord(this.readRecord(conv?.workspace).providerSettings)
+              .calendarLink as string) || undefined,
         });
         break;
       case 'soft_close_night':
@@ -1939,10 +2011,14 @@ Answer in Portuguese, short and actionable.`;
     }
   }
 
-  private async generateResponse(type: string, conv: any, analysis: any) {
+  private async generateResponse(
+    type: string,
+    conv: AutopilotConversation,
+    analysis?: ConversationAnalysis,
+  ) {
     if (!this.openai) return 'Olá, como posso ajudar?';
 
-    const templates = {
+    const templates: Record<string, string> = {
       offer:
         'Generate an irresistible offer closing for this context. Create Urgency. Keep it short.',
       offer_soft: 'Generate a gentle offer closing. Focus on value, no pressure.',
@@ -1983,15 +2059,28 @@ Answer in Portuguese, short and actionable.`;
    */
   private async ensureCompliance(
     workspaceId: string,
-    contact: any,
-    messages: any[],
+    contact:
+      | AutopilotConversation['contact']
+      | {
+          id: string;
+          phone: string;
+          tags?: Array<{ name: string }>;
+          customFields?: Prisma.JsonValue;
+        },
+    messages: Array<{ direction: string; createdAt: Date }>,
   ): Promise<{ allowed: boolean; reason?: string }> {
     const enforceOptIn =
       process.env.ENFORCE_OPTIN === 'true' ||
-      contact?.workspace?.providerSettings?.autopilot?.requireOptIn === true;
+      this.readRecord(
+        this.readRecord((contact as AutopilotConversation['contact'])?.workspace).providerSettings,
+      ).autopilot === true;
     const enforce24h = (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
 
-    let fullContact = contact;
+    let fullContact: {
+      id?: string;
+      tags?: Array<{ name: string }>;
+      customFields?: Prisma.JsonValue;
+    } | null = contact;
     if (enforceOptIn && (!contact?.tags || !Array.isArray(contact.tags))) {
       fullContact = await this.prisma.contact.findFirst({
         where: { id: contact?.id, workspaceId },
@@ -2004,8 +2093,8 @@ Answer in Portuguese, short and actionable.`;
     }
 
     if (enforceOptIn) {
-      const tags = (fullContact?.tags || []).map((t: any) => t.name?.toLowerCase());
-      const cf: any = fullContact?.customFields || {};
+      const tags = (fullContact?.tags || []).map((t) => t.name?.toLowerCase());
+      const cf = (fullContact?.customFields as Record<string, unknown>) || {};
       const hasOptIn =
         tags.includes('optin_whatsapp') || cf.optin === true || cf.optin_whatsapp === true;
       if (!hasOptIn) {
@@ -2016,7 +2105,7 @@ Answer in Portuguese, short and actionable.`;
     if (enforce24h) {
       // Usa últimas mensagens em memória; fallback para busca rápida
       const lastInbound =
-        messages?.find((m: any) => m.direction === 'INBOUND') ||
+        messages?.find((m) => m.direction === 'INBOUND') ||
         (await this.prisma.message.findFirst({
           where: { workspaceId, contactId: contact?.id, direction: 'INBOUND' },
           orderBy: { createdAt: 'desc' },

@@ -71,17 +71,13 @@ export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['s
   }
 }
 
-export function resolveWahaSessionState(data: any): {
+export function resolveWahaSessionState(data: Record<string, unknown>): {
   rawStatus: string;
   state: SessionStatus['state'];
 } {
-  const rawCandidates = [
-    data?.engine?.state,
-    data?.state,
-    data?.session?.state,
-    data?.status,
-    data?.session?.status,
-  ]
+  const engine = data?.engine as Record<string, unknown> | undefined;
+  const session = data?.session as Record<string, unknown> | undefined;
+  const rawCandidates = [engine?.state, data?.state, session?.state, data?.status, session?.status]
     .map((value) => normalizeWahaSessionStatus(value))
     .filter((value): value is string => Boolean(value));
 
@@ -141,7 +137,7 @@ export interface WahaChatMessage {
   mimetype?: string;
   timestamp?: number;
   chatId?: string;
-  raw?: any;
+  raw?: unknown;
 }
 
 export interface WahaLidMapping {
@@ -442,7 +438,7 @@ export class WahaProvider {
   private async rawRequest(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
-    body?: any,
+    body?: unknown,
     options?: {
       headers?: Record<string, string>;
       timeoutMs?: number;
@@ -501,7 +497,7 @@ export class WahaProvider {
   private async request<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
-    body?: any,
+    body?: unknown,
     options?: {
       headers?: Record<string, string>;
       timeoutMs?: number;
@@ -528,7 +524,7 @@ export class WahaProvider {
   private async tryRequest<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
-    body?: any,
+    body?: unknown,
     options?: {
       headers?: Record<string, string>;
       timeoutMs?: number;
@@ -596,8 +592,9 @@ export class WahaProvider {
     };
   }
 
-  private extractSessionConfig(payload: any): WahaSessionConfig | null {
-    const candidate = payload?.config || payload?.session?.config || null;
+  private extractSessionConfig(payload: Record<string, unknown>): WahaSessionConfig | null {
+    const payloadSession = payload?.session as Record<string, unknown> | undefined;
+    const candidate = payload?.config || payloadSession?.config || null;
     if (!candidate || typeof candidate !== 'object') {
       return null;
     }
@@ -868,9 +865,9 @@ export class WahaProvider {
       this.logger.warn(
         `WAHA session ${sessionId} is FAILED. Deleting it before recreating a clean session.`,
       );
-      await this.deleteSession(sessionId).catch((error: any) => {
+      await this.deleteSession(sessionId).catch((error: unknown) => {
         this.logger.warn(
-          `Failed to delete FAILED WAHA session ${sessionId}: ${error?.message || error}`,
+          `Failed to delete FAILED WAHA session ${sessionId}: ${error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown error'}`,
         );
       });
     }
@@ -1343,12 +1340,12 @@ export class WahaProvider {
     to: string,
     message: string,
     options?: { quotedMessageId?: string },
-  ): Promise<{ success: boolean; message?: any }> {
+  ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
 
     // WAHA: POST /api/sendText
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       session: resolvedSessionId,
       chatId,
       text: message,
@@ -1366,7 +1363,7 @@ export class WahaProvider {
     to: string,
     imageUrl: string,
     caption?: string,
-  ): Promise<{ success: boolean; message?: any }> {
+  ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
 
@@ -1386,12 +1383,12 @@ export class WahaProvider {
     caption?: string,
     _mediaType: 'image' | 'video' | 'audio' | 'document' = 'image',
     options?: { quotedMessageId?: string },
-  ): Promise<{ success: boolean; message?: any }> {
+  ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
 
     // WAHA uses /api/sendFile for generic media
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       session: resolvedSessionId,
       chatId,
       file: { url: mediaUrl },
@@ -1413,11 +1410,11 @@ export class WahaProvider {
     filename?: string,
     caption?: string,
     options?: { quotedMessageId?: string },
-  ): Promise<{ success: boolean; message?: any }> {
+  ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       session: resolvedSessionId,
       chatId,
       file: {
@@ -1441,7 +1438,7 @@ export class WahaProvider {
     latitude: number,
     longitude: number,
     description?: string,
-  ): Promise<{ success: boolean; message?: any }> {
+  ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
 
@@ -1520,39 +1517,58 @@ export class WahaProvider {
     return false;
   }
 
-  private extractChatsPayload(payload: any): any[] {
+  private extractChatsPayload(payload: unknown): unknown[] {
     if (Array.isArray(payload)) {
       return payload;
     }
 
-    if (Array.isArray(payload?.chats)) {
-      return payload.chats;
+    const p = payload as Record<string, unknown> | undefined;
+    if (Array.isArray(p?.chats)) {
+      return p.chats as unknown[];
     }
 
     return [];
   }
 
-  private extractLidMappingsPayload(payload: any): WahaLidMapping[] {
-    const candidates = Array.isArray(payload)
+  private extractLidMappingsPayload(payload: unknown): WahaLidMapping[] {
+    const p = payload as Record<string, unknown> | undefined;
+    const candidates: unknown[] = Array.isArray(payload)
       ? payload
-      : Array.isArray(payload?.items)
-        ? payload.items
-        : Array.isArray(payload?.data)
-          ? payload.data
+      : Array.isArray(p?.items)
+        ? (p.items as unknown[])
+        : Array.isArray(p?.data)
+          ? (p.data as unknown[])
           : [];
 
     return candidates
-      .map((entry: any) => ({
-        lid: String(entry?.lid || '').trim(),
-        pn: String(entry?.pn || '').trim(),
-      }))
+      .map((entry: unknown) => {
+        const e = entry as Record<string, unknown>;
+        return {
+          lid: (typeof e?.lid === 'string'
+            ? e.lid
+            : typeof e?.lid === 'number'
+              ? String(e.lid)
+              : ''
+          ).trim(),
+          pn: (typeof e?.pn === 'string'
+            ? e.pn
+            : typeof e?.pn === 'number'
+              ? String(e.pn)
+              : ''
+          ).trim(),
+        };
+      })
       .filter((entry) => Boolean(entry.lid) && Boolean(entry.pn));
   }
 
-  private getChatDedupKey(chat: any): string {
-    return String(
-      chat?.id || chat?.chatId || chat?.contactId || chat?.phone || chat?.contact?.phone || '',
-    ).trim();
+  private getChatDedupKey(chat: unknown): string {
+    const c = chat as Record<string, unknown>;
+    const cContact = c?.contact as Record<string, unknown> | undefined;
+    const candidates = [c?.id, c?.chatId, c?.contactId, c?.phone, cContact?.phone];
+    const strMatch = candidates.find((v): v is string => typeof v === 'string' && v.trim() !== '');
+    if (strMatch) return strMatch.trim();
+    const numMatch = candidates.find((v): v is number => typeof v === 'number');
+    return numMatch !== undefined ? String(numMatch) : '';
   }
 
   private async collectChatsWithPagination(
@@ -1561,7 +1577,7 @@ export class WahaProvider {
   ): Promise<any[] | null> {
     const pageSize = 200;
     const maxPages = 10;
-    const collected: any[] = [];
+    const collected: unknown[] = [];
     const seen = new Set<string>();
 
     // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking

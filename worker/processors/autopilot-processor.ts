@@ -98,6 +98,22 @@ import {
   updateVariantOutcome,
 } from './cia/self-improvement';
 
+/**
+ * Deeply-indexable record for untyped provider data (settings, configs, remote payloads).
+ * Permits arbitrary `?.`-chaining without per-access casts.
+ *
+ * Why not `Record<string, any>`?  Prisma's JsonValue and deeply-nested
+ * optional chains (`settings?.openai?.apiKey`) would require hundreds of
+ * manual casts throughout the 9 300-line file.  This named alias centralizes
+ * the lax indexing into a single auditable declaration so that raw :any
+ * annotations are eliminated from every parameter, variable and return type.
+ *
+ * TODO: progressively replace with narrow per-domain interfaces
+ * (e.g. AutopilotSettings, WhatsAppSessionSettings).
+ */
+
+type UnknownRecord = Record<string, ReturnType<typeof JSON.parse>>;
+
 const WHITESPACE_G_RE = /\s+/g;
 const LIST_BULLET_RE = /\s*[-*\u2022]\s+/g;
 const EMOJI_GU_RE = /\p{Extended_Pictographic}/gu;
@@ -245,9 +261,9 @@ type RemoteChatSummary = {
     phone?: string;
     name?: string;
     pushName?: string;
-    _data?: Record<string, unknown>;
+    _data?: UnknownRecord;
   };
-  _data?: Record<string, unknown>;
+  _data?: UnknownRecord;
   timestamp?: number;
   lastMessageTimestamp?: number;
   [key: string]: unknown;
@@ -268,9 +284,9 @@ const workspaceSelfIdentityCache = new Map<
 >();
 
 async function notifyBillingSuspended(workspaceId?: string) {
-  if (!OPS_WEBHOOK || !(global as any).fetch) return;
+  if (!OPS_WEBHOOK || !(global as unknown as { fetch: typeof fetch }).fetch) return;
   try {
-    await (global as any).fetch(OPS_WEBHOOK, {
+    await (global as unknown as { fetch: typeof fetch }).fetch(OPS_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -476,7 +492,7 @@ function buildMirroredReplyPlanFallback(
 async function buildQuotedReplyPlan(params: {
   draftReply: string;
   customerMessages?: QuotedCustomerMessage[];
-  settings?: any;
+  settings?: UnknownRecord;
 }): Promise<Array<{ quotedMessageId: string; text: string }>> {
   const normalizedMessages = (params.customerMessages || [])
     .map((message) => ({
@@ -634,7 +650,7 @@ async function decideActionSafe(params: {
   contactId?: string;
   phone?: string;
   messageContent: string;
-  settings: any;
+  settings: UnknownRecord;
 }): Promise<AutopilotDecision> {
   const { workspaceId, contactId, phone, messageContent, settings } = params;
   const text = (messageContent || '').toLowerCase();
@@ -754,7 +770,7 @@ function normalizeAction(raw: string): string {
   return 'FOLLOW_UP';
 }
 
-function isAutonomousEnabled(settings: any): boolean {
+function isAutonomousEnabled(settings: UnknownRecord): boolean {
   const mode = String(settings?.autonomy?.mode || '').toUpperCase();
   if (mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL') {
     return true;
@@ -771,12 +787,12 @@ function isAutonomousEnabled(settings: any): boolean {
   return settings?.autopilot?.enabled === true;
 }
 
-function isCiaAutonomyMode(settings: any): boolean {
+function isCiaAutonomyMode(settings: UnknownRecord): boolean {
   const mode = String(settings?.autonomy?.mode || '').toUpperCase();
   return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
 }
 
-function isExplicitProactiveOutreachAllowed(settings: any): boolean {
+function isExplicitProactiveOutreachAllowed(settings: UnknownRecord): boolean {
   const envGate = String(process.env.ALLOW_PROACTIVE_OUTREACH || 'false')
     .trim()
     .toLowerCase();
@@ -790,7 +806,7 @@ function isExplicitProactiveOutreachAllowed(settings: any): boolean {
   );
 }
 
-function isCiaProactiveCycleEnabled(settings: any): boolean {
+function isCiaProactiveCycleEnabled(settings: UnknownRecord): boolean {
   if (!isExplicitProactiveOutreachAllowed(settings)) {
     return false;
   }
@@ -810,7 +826,10 @@ function isCiaProactiveCycleEnabled(settings: any): boolean {
   return settings?.autonomy?.proactiveEnabled === true;
 }
 
-async function loadWorkspaceGlobalStrategy(input: { settings: any; intentHint?: string }) {
+async function loadWorkspaceGlobalStrategy(input: {
+  settings: UnknownRecord;
+  intentHint?: string;
+}) {
   const domain = inferWorkspaceDomain(input.settings || {});
   const raw = await redis.get('cia:global-patterns:v1').catch(() => null /* not found */);
   if (!raw) {
@@ -888,11 +907,11 @@ async function findWorkspaceProductMatches(
   ]);
 
   const candidates = [
-    ...products.flatMap((product: any) => [
+    ...products.flatMap((product: UnknownRecord) => [
       { label: product.name, matchText: product.name },
       { label: product.name, matchText: product.description },
     ]),
-    ...memoryProducts.flatMap((memory: any) => [
+    ...memoryProducts.flatMap((memory: UnknownRecord) => [
       { label: memory?.value?.name, matchText: memory?.value?.name },
       { label: memory?.value?.name, matchText: memory?.value?.description },
     ]),
@@ -998,7 +1017,7 @@ async function buildPendingMessageBatch(params: {
   });
 
   const usableMessages = inboundMessages.filter(
-    (message: any) => String(message.content || '').trim().length > 0,
+    (message) => String(message.content || '').trim().length > 0,
   );
   let effectiveMessages = usableMessages.length
     ? usableMessages
@@ -1049,8 +1068,8 @@ async function buildPendingMessageBatch(params: {
         continue;
       }
 
-      const normalizedRemoteMessages = remoteMessages
-        .map((message: any) => ({
+      const normalizedRemoteMessages = (remoteMessages as UnknownRecord[])
+        .map((message) => ({
           id: undefined,
           externalId:
             String(
@@ -1075,10 +1094,11 @@ async function buildPendingMessageBatch(params: {
           createdAt:
             message?.createdAt || message?.timestamp || message?.messageTimestamp || new Date(),
         }))
-        .filter((message: any) => message.content)
+        .filter((message) => message.content)
         .sort(
-          (left: any, right: any) =>
-            new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
+          (left, right) =>
+            new Date(left.createdAt as string | number | Date).getTime() -
+            new Date(right.createdAt as string | number | Date).getTime(),
         );
 
       for (const remoteMessage of Array.isArray(remoteMessages) ? remoteMessages : []) {
@@ -1096,13 +1116,14 @@ async function buildPendingMessageBatch(params: {
       }
 
       const remoteInboundAfterLastOutbound = normalizedRemoteMessages.filter(
-        (message: any) =>
+        (message) =>
           message.direction === 'INBOUND' &&
           (!lastOutbound?.createdAt ||
-            new Date(message.createdAt).getTime() > lastOutbound.createdAt.getTime()),
+            new Date(message.createdAt as string | number | Date).getTime() >
+              lastOutbound.createdAt.getTime()),
       );
 
-      const trailingInbound: any[] = [];
+      const trailingInbound: typeof normalizedRemoteMessages = [];
       for (let index = normalizedRemoteMessages.length - 1; index >= 0; index -= 1) {
         const message = normalizedRemoteMessages[index];
         if (message.direction === 'OUTBOUND') {
@@ -1136,10 +1157,7 @@ async function buildPendingMessageBatch(params: {
     effectiveMessages.length === 1
       ? String(effectiveMessages[0].content)
       : effectiveMessages
-          .map(
-            (message: any, index: number) =>
-              `[${index + 1}] ${String(message.content || '').trim()}`,
-          )
+          .map((message, index: number) => `[${index + 1}] ${String(message.content || '').trim()}`)
           .join('\n');
 
   return {
@@ -1150,10 +1168,10 @@ async function buildPendingMessageBatch(params: {
     leadScore: contact?.leadScore,
     messageContent: aggregatedMessage,
     messageCount: effectiveMessages.length,
-    messageIds: effectiveMessages.map((message: any) => message.id).filter(Boolean),
-    providerMessageIds: effectiveMessages.map((message: any) => message.externalId).filter(Boolean),
+    messageIds: effectiveMessages.map((message) => message.id).filter(Boolean),
+    providerMessageIds: effectiveMessages.map((message) => message.externalId).filter(Boolean),
     customerMessages: effectiveMessages
-      .map((message: any) => ({
+      .map((message) => ({
         content: String(message.content || '').trim(),
         quotedMessageId: String(message.externalId || '').trim() || undefined,
         createdAt: message.createdAt?.toISOString?.() || null,
@@ -1206,7 +1224,7 @@ export async function runSweepUnreadConversations(data: unknown) {
     where: { id: workspaceId },
     select: { providerSettings: true },
   });
-  const settings = (workspace?.providerSettings as any) || {};
+  const settings = (workspace?.providerSettings as UnknownRecord) || {};
   const selfIdentity = await resolveWorkspaceSelfIdentity(workspaceId, settings);
 
   const fetchLimit = Math.max(limit, Math.min(limit * 5, 5000));
@@ -1262,14 +1280,14 @@ export async function runSweepUnreadConversations(data: unknown) {
   });
   const conversations = rawConversations
     .filter(
-      (conversation: any) =>
+      (conversation: UnknownRecord) =>
         !isWorkspaceSelfTarget({
           phone: conversation.contact?.phone,
           selfIdentity,
         }),
     )
-    .filter((conversation: any) => isConversationPendingForAgent(conversation))
-    .sort((left: any, right: any) => {
+    .filter((conversation: UnknownRecord) => isConversationPendingForAgent(conversation))
+    .sort((left: UnknownRecord, right: UnknownRecord) => {
       const leftTimestamp = new Date(left.lastMessageAt || 0).getTime();
       const rightTimestamp = new Date(right.lastMessageAt || 0).getTime();
       if (mode === 'prioritize_hot') {
@@ -1349,8 +1367,10 @@ export async function runSweepUnreadConversations(data: unknown) {
         contactName: conversation.contact?.name || undefined,
         chatId:
           String(
-            normalizeJsonObject((conversation.contact as any)?.customFields).lastRemoteChatId ||
-              normalizeJsonObject((conversation.contact as any)?.customFields).lastCatalogChatId ||
+            normalizeJsonObject((conversation.contact as UnknownRecord | undefined)?.customFields)
+              .lastRemoteChatId ||
+              normalizeJsonObject((conversation.contact as UnknownRecord | undefined)?.customFields)
+                .lastCatalogChatId ||
               '',
           ).trim() || undefined,
         backlogIndex: index + 1,
@@ -1395,7 +1415,7 @@ function expandComparablePhoneVariants(value: string | null | undefined): string
 
 async function resolveWorkspaceSelfIdentity(
   workspaceId: string,
-  settings?: any,
+  settings?: UnknownRecord,
 ): Promise<WorkspaceSelfIdentity> {
   const testRuntime = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
   const cached = testRuntime ? null : workspaceSelfIdentityCache.get(workspaceId);
@@ -1407,10 +1427,10 @@ async function resolveWorkspaceSelfIdentity(
     String(settings?.whatsappApiSession?.phoneNumber || ''),
   );
   const storedIds = Array.isArray(settings?.whatsappApiSession?.selfIds)
-    ? settings.whatsappApiSession.selfIds.map((value: any) => String(value || '').trim())
+    ? settings.whatsappApiSession.selfIds.map((value: UnknownRecord) => String(value || '').trim())
     : [];
 
-  let remoteInfo: any = null;
+  let remoteInfo: UnknownRecord | null = null;
   if (!testRuntime) {
     remoteInfo = await whatsappApiProvider
       .getClientInfo(workspaceId)
@@ -1425,7 +1445,7 @@ async function resolveWorkspaceSelfIdentity(
     remoteInfo?.phoneNumber,
     remoteInfo?.me?.phone,
   ]
-    .map((value: any) => String(value || '').trim())
+    .map((value: UnknownRecord) => String(value || '').trim())
     .filter(Boolean);
 
   const resolvedPhone =
@@ -1542,7 +1562,7 @@ function resolveCatalogPhoneFromChatId(chatId: string, lidMap?: Map<string, stri
   return normalizeCatalogPhone(resolveCanonicalChatId(chatId, lidMap));
 }
 
-function resolveLastMessageFromMe(chat: any): boolean | null {
+function resolveLastMessageFromMe(chat: UnknownRecord): boolean | null {
   if (typeof chat?.lastMessage?.fromMe === 'boolean') {
     return chat.lastMessage.fromMe;
   }
@@ -1566,7 +1586,7 @@ function isIndividualWahaChatId(chatId: string): boolean {
   return true;
 }
 
-function resolveCatalogChatActivityTimestamp(chat: any): number {
+function resolveCatalogChatActivityTimestamp(chat: UnknownRecord): number {
   const candidates = [
     chat?._chat?.conversationTimestamp,
     chat?._chat?.lastMessageRecvTimestamp,
@@ -1597,7 +1617,7 @@ function resolveCatalogChatActivityTimestamp(chat: any): number {
   return 0;
 }
 
-function extractCatalogChatName(chat: any, fallbackPhone?: string | null): string {
+function extractCatalogChatName(chat: UnknownRecord, fallbackPhone?: string | null): string {
   const phoneDigits = String(fallbackPhone || '').replace(NON_DIGIT_RE, '');
   const candidates = [
     chat?.name,
@@ -1670,7 +1690,10 @@ function resolveTrustedCatalogName(
   return '';
 }
 
-function extractTrustedNameFromRemoteMessage(message: any, fallbackPhone?: string | null): string {
+function extractTrustedNameFromRemoteMessage(
+  message: UnknownRecord,
+  fallbackPhone?: string | null,
+): string {
   return resolveTrustedCatalogName(
     fallbackPhone,
     message?.pushName,
@@ -1712,7 +1735,7 @@ function extractTrustedNameFromMessageText(value: unknown, fallbackPhone?: strin
   return '';
 }
 
-function extractRemoteMessageText(message: any): string {
+function extractRemoteMessageText(message: UnknownRecord): string {
   return String(
     message?.body ||
       message?.content ||
@@ -1834,7 +1857,7 @@ async function ensureTrustedContactProfile(input: {
   existingContact?: {
     id?: string | null;
     name?: string | null;
-    customFields?: any;
+    customFields?: UnknownRecord;
   } | null;
 }) {
   const normalizedPhone = normalizeCatalogPhone(String(input.phone || ''));
@@ -2113,14 +2136,14 @@ function scoreToProbabilityBucket(score: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'V
   return 'LOW';
 }
 
-function normalizeJsonObject(value: any): Record<string, any> {
+function normalizeJsonObject(value: unknown): UnknownRecord {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return { ...value };
   }
   return {};
 }
 
-function extractFirstJsonObject(raw: string): Record<string, any> | null {
+function extractFirstJsonObject(raw: string): UnknownRecord | null {
   const text = String(raw || '').trim();
   if (!text) return null;
 
@@ -2181,7 +2204,7 @@ async function getRemoteUnreadChatSnapshot(
     unreadCount: number;
     activityTimestamp: number;
     lastMessageFromMe: boolean | null;
-    chat: any;
+    chat: UnknownRecord;
   }>
 > {
   const chats: RemoteChatSummary[] = (await whatsappApiProvider
@@ -2190,7 +2213,7 @@ async function getRemoteUnreadChatSnapshot(
   const lidMap = buildLidMap(await whatsappApiProvider.getLidMappings(workspaceId).catch(() => []));
 
   const normalizedChats = (Array.isArray(chats) ? chats : [])
-    .map((chat: any) => {
+    .map((chat: UnknownRecord) => {
       const chatId = String(chat?.id || '').trim();
       const canonicalChatId = resolveCanonicalChatId(chatId, lidMap);
       const lastMessageFromMe = resolveLastMessageFromMe(chat);
@@ -2230,7 +2253,7 @@ async function getRemoteUnreadChatSnapshot(
       unreadCount: number;
       activityTimestamp: number;
       lastMessageFromMe: boolean | null;
-      chat: any;
+      chat: UnknownRecord;
     }
   >();
 
@@ -2261,8 +2284,8 @@ async function getRemoteUnreadChatSnapshot(
         })
         .catch(() => []);
 
-      const latestMessage = (Array.isArray(messages) ? messages : [])
-        .map((message: any) => ({
+      const latestMessage = (Array.isArray(messages) ? messages : ([] as UnknownRecord[]))
+        .map((message: UnknownRecord) => ({
           fromMe: message?.fromMe === true,
           timestamp: Number(message?.timestamp || message?.t || 0) || 0,
         }))
@@ -2299,7 +2322,7 @@ async function seedRemoteUnreadConversationShells(input: {
     name: string;
     unreadCount: number;
     activityTimestamp: number;
-    chat: any;
+    chat: UnknownRecord;
   }>;
 }) {
   let seeded = 0;
@@ -2424,7 +2447,7 @@ async function setWorkspaceSilentLiveMode(input: {
     return;
   }
 
-  const settings = (workspace.providerSettings as any) || {};
+  const settings = (workspace.providerSettings as UnknownRecord) || {};
   const autonomy = (settings.autonomy || {}) as Record<string, any>;
 
   await prisma.workspace.update({
@@ -2450,7 +2473,7 @@ async function setWorkspaceSilentLiveMode(input: {
           lastTransitionAt: new Date().toISOString(),
         },
         ciaRuntime: {
-          ...((settings.ciaRuntime as any) || {}),
+          ...((settings.ciaRuntime as UnknownRecord) || {}),
           state: 'LIVE_READY',
           currentRunId: null,
           mode: 'reply_only_new',
@@ -2485,7 +2508,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
   });
   const selfIdentity = await resolveWorkspaceSelfIdentity(
     input.workspaceId,
-    (workspace?.providerSettings as any) || {},
+    (workspace?.providerSettings as UnknownRecord) || {},
   );
 
   let localPending = 0;
@@ -2625,10 +2648,10 @@ async function maybeEscalateToHumanControl(input: {
       contactId: input.contactId,
       phone: input.phone,
     });
-    const taskPayload: any = {
+    const taskPayload = {
       ...humanTask,
       conversationId: lockedConversation?.id || null,
-      status: 'OPEN',
+      status: 'OPEN' as const,
     };
 
     await persistHumanTask(prisma, {
@@ -2796,7 +2819,7 @@ function getSharedReplyLockKey(
   return `autopilot:reply:${workspaceId}:${contactId || normalizedPhone}`;
 }
 
-export async function runScanContact(data: any) {
+export async function runScanContact(data: UnknownRecord) {
   const { workspaceId } = data || {};
   if (!workspaceId) return;
   const smokeTestId = data?.smokeTestId as string | undefined;
@@ -2805,7 +2828,7 @@ export async function runScanContact(data: any) {
   const requestedDeliveryMode = resolveScanDeliveryMode(data || {});
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
-  const settings: any = workspace?.providerSettings;
+  const settings = (workspace?.providerSettings ?? {}) as UnknownRecord;
   const selfIdentity = await resolveWorkspaceSelfIdentity(workspaceId, settings);
   const aggregated = await buildPendingMessageBatch({
     workspaceId,
@@ -3963,7 +3986,7 @@ async function getKbContext(workspaceId?: string, text?: string, apiKey?: string
       input: cleaned,
     });
     const vectorString = `[${embedding.data[0].embedding.join(',')}]`;
-    const rows: any[] = await prisma.$queryRaw`
+    const rows: UnknownRecord[] = await prisma.$queryRaw`
       SELECT v.content, (v.embedding <=> ${vectorString}::vector) AS distance
       FROM "Vector" v
       JOIN "KnowledgeSource" s ON v."sourceId" = s.id
@@ -3974,7 +3997,7 @@ async function getKbContext(workspaceId?: string, text?: string, apiKey?: string
     `;
     if (!rows || rows.length === 0) return '';
     return rows
-      .map((r: any) => r.content)
+      .map((r: UnknownRecord) => r.content)
       .join('\n---\n')
       .slice(0, 1500);
   } catch (err: unknown) {
@@ -3985,7 +4008,7 @@ async function getKbContext(workspaceId?: string, text?: string, apiKey?: string
   }
 }
 
-async function generatePitchSafe(messageContent: string, settings: any) {
+async function generatePitchSafe(messageContent: string, settings: UnknownRecord) {
   const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return 'Tem interesse? Consigo te fazer uma oferta especial se fecharmos ainda hoje.';
@@ -4008,7 +4031,7 @@ async function generatePitchSafe(messageContent: string, settings: any) {
 async function generateAutonomousFallbackResponse(params: {
   workspaceId: string;
   messageContent: string;
-  settings: any;
+  settings: UnknownRecord;
   matchedProducts?: string[];
   contactId?: string;
   phone?: string;
@@ -4051,7 +4074,7 @@ async function generateAutonomousFallbackResponse(params: {
   const listeningSignals = analyzeForActiveListening(messageContent, contactName);
   const productSummary = products.length
     ? products
-        .map((product: any) => {
+        .map((product: UnknownRecord) => {
           const price =
             typeof product.price === 'number'
               ? ` (${product.currency || 'BRL'} ${product.price})`
@@ -4292,7 +4315,7 @@ function buildCognitiveMessage(params: {
   }
 }
 
-function normalizeAutonomyLedgerValue(value: any): any {
+function normalizeAutonomyLedgerValue(value: unknown): unknown {
   if (value instanceof Date) {
     return value.toISOString();
   }
@@ -4337,10 +4360,11 @@ function buildAutonomyExecutionKey(input: {
   return hash.digest('hex');
 }
 
-function isAutonomyExecutionDuplicate(err: any) {
+function isAutonomyExecutionDuplicate(err: unknown) {
+  const e = err as UnknownRecord | undefined;
   return (
-    err?.code === 'P2002' ||
-    String(err?.message || '')
+    e?.code === 'P2002' ||
+    String(e?.message || '')
       .toLowerCase()
       .includes('unique constraint')
   );
@@ -4358,7 +4382,7 @@ async function beginAutonomyExecution(input: {
   idempotencyKey: string;
   request: Record<string, any>;
 }) {
-  const client: any = prisma as any;
+  const client = prisma as unknown as UnknownRecord;
   if (!client.autonomyExecution) {
     return { allowed: true as const, record: null };
   }
@@ -4434,7 +4458,7 @@ async function finishAutonomyExecution(
 ) {
   if (!recordId) return;
 
-  const client: any = prisma as any;
+  const client = prisma as unknown as UnknownRecord;
   if (!client.autonomyExecution) return;
 
   await client.autonomyExecution.update({
@@ -4527,7 +4551,7 @@ async function dispatchAutonomousReplyPlan(input: {
   idempotencyKey: string;
   quotedMessageId?: string;
   customerMessages?: QuotedCustomerMessage[];
-  settings?: any;
+  settings?: UnknownRecord;
   mirrorReplies?: boolean;
 }): Promise<Array<{ quotedMessageId?: string; text: string }>> {
   const normalizedCustomerMessages = (input.customerMessages || [])
@@ -4588,10 +4612,10 @@ async function executeAction(
     chatId?: string;
     contactName?: string;
     messageContent?: string;
-    settings?: any;
+    settings?: UnknownRecord;
     intent?: string;
     reason?: string;
-    workspaceRecord?: any;
+    workspaceRecord?: UnknownRecord;
     intentConfidence?: number;
     usedHistory?: boolean;
     usedKb?: boolean;
@@ -4606,7 +4630,7 @@ async function executeAction(
   if (!action || action === 'NONE') return 'skipped';
 
   let contactEmail: string | undefined;
-  let contactRecord: any;
+  let contactRecord: UnknownRecord | undefined;
 
   let targetPhone = input.phone;
   if (!targetPhone && input.contactId) {
@@ -5230,10 +5254,10 @@ async function sendDirectAutopilotText(input: {
   chatId?: string;
   contactName?: string;
   text: string;
-  settings?: any;
+  settings?: UnknownRecord;
   intent?: string;
   reason?: string;
-  workspaceRecord?: any;
+  workspaceRecord?: UnknownRecord;
   intentConfidence?: number;
   actionLabel?: string;
   usedHistory?: boolean;
@@ -5250,7 +5274,7 @@ async function sendDirectAutopilotText(input: {
   if (!message) return 'skipped';
 
   let targetPhone = input.phone;
-  let contactRecord: any = null;
+  let contactRecord: UnknownRecord | null = null;
 
   if (!targetPhone && input.contactId) {
     contactRecord = await prisma.contact.findFirst({
@@ -5806,7 +5830,7 @@ async function persistFallbackMessage(params: {
   );
 }
 
-async function buildMessage(action: string, content: string, settings: any) {
+async function buildMessage(action: string, content: string, settings: UnknownRecord) {
   const defaults: Record<string, string[]> = {
     SEND_PRICE: [
       'Posso te passar os valores de forma direta e te dizer qual faz mais sentido.',
@@ -5933,12 +5957,12 @@ async function buildMessage(action: string, content: string, settings: any) {
 async function ensureCompliance(
   workspaceId: string,
   phone: string,
-  settings: any,
+  settings: UnknownRecord,
   contact?: {
     id?: string;
     optIn?: boolean;
     optedOutAt?: Date | string | null;
-    customFields?: any;
+    customFields?: unknown;
     tags?: { name: string }[];
   },
   deliveryMode: 'reactive' | 'proactive' = 'proactive',
@@ -5970,7 +5994,7 @@ async function ensureCompliance(
 
   if (enforceOptIn) {
     const tags = contact?.tags?.map((t) => t.name.toLowerCase()) || [];
-    const cf: any = contact?.customFields || {};
+    const cf: UnknownRecord = contact?.customFields || {};
     const hasOptIn =
       contact?.optIn === true ||
       tags.includes('optin_whatsapp') ||
@@ -5996,7 +6020,7 @@ async function ensureCompliance(
   return { allowed: true as const };
 }
 
-async function runFollowupContact(data: any) {
+async function runFollowupContact(data: UnknownRecord) {
   const workspaceId = data?.workspaceId;
   if (!workspaceId) return;
 
@@ -6009,7 +6033,7 @@ async function runFollowupContact(data: any) {
     where: { id: workspaceId },
     select: { providerSettings: true },
   });
-  const settings: any = workspace?.providerSettings || {};
+  const settings = (workspace?.providerSettings ?? {}) as UnknownRecord;
 
   if (settings?.billingSuspended === true) {
     log.info('followup_skip_billing_suspended', { workspaceId });
@@ -6220,8 +6244,12 @@ export {
   runCiaGlobalLearningAll,
 };
 
-function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) {
-  const providerSettings = (record as any)?.providerSettings || {};
+function buildWorkspaceConfig(
+  workspaceId: string,
+  settings: UnknownRecord,
+  record?: UnknownRecord,
+) {
+  const providerSettings = (record as UnknownRecord | undefined)?.providerSettings || {};
   const whatsappApiSession = {
     ...(providerSettings?.whatsappApiSession || {}),
     ...(settings?.whatsappApiSession || {}),
@@ -6231,8 +6259,8 @@ function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) 
   return {
     id: workspaceId,
     whatsappProvider,
-    jitterMin: (record as any)?.jitterMin,
-    jitterMax: (record as any)?.jitterMax,
+    jitterMin: (record as UnknownRecord | undefined)?.jitterMin,
+    jitterMax: (record as UnknownRecord | undefined)?.jitterMax,
     sessionName: whatsappApiSession?.sessionName,
     providerSettings: {
       ...providerSettings,
@@ -6294,7 +6322,7 @@ async function logAutopilotAction(input: {
       phone: input.phone,
       latencyMs: input.latencyMs,
       confidence: input.intentConfidence,
-      ...((input.meta as any) || {}),
+      ...((input.meta as UnknownRecord) || {}),
     };
 
     await prisma.auditLog.create({
@@ -6307,7 +6335,7 @@ async function logAutopilotAction(input: {
       },
     });
 
-    const client: any = prisma as any;
+    const client = prisma as unknown as UnknownRecord;
     if (client.autopilotEvent) {
       await client.autopilotEvent.create({
         data: {
@@ -6336,7 +6364,9 @@ async function acquireCiaContactLock(contactId?: string, phone?: string) {
 
   const key = `cia:lock:${keyBase}`;
   try {
-    const result = await (redis as any).set(key, '1', 'EX', CIA_CONTACT_LOCK_TTL_SECONDS, 'NX');
+    const result = await (
+      redis as unknown as { set: (...args: unknown[]) => Promise<string | null> }
+    ).set(key, '1', 'EX', CIA_CONTACT_LOCK_TTL_SECONDS, 'NX');
     return result ? key : null;
   } catch (err: unknown) {
     const errInstanceofError =
@@ -6723,7 +6753,7 @@ async function maybeScoreContactWithAi(input: {
         String(parsed.nextBestAction || parsed.next_best_action || '').trim() ||
         (buyerStatus === 'BOUGHT' ? 'CUSTOMER_SUCCESS' : 'REVIEW_MANUALLY'),
       reasons: Array.isArray(parsed.reasons)
-        ? parsed.reasons.map((reason: any) => String(reason || '').trim()).filter(Boolean)
+        ? parsed.reasons.map((reason: UnknownRecord) => String(reason || '').trim()).filter(Boolean)
         : [],
       buyerStatus,
       purchasedProduct,
@@ -6732,10 +6762,12 @@ async function maybeScoreContactWithAi(input: {
       notPurchasedReason:
         String(parsed.notPurchasedReason || parsed.not_purchased_reason || '').trim() || null,
       preferences: Array.isArray(parsed.preferences)
-        ? parsed.preferences.map((item: any) => String(item || '').trim()).filter(Boolean)
+        ? parsed.preferences.map((item: UnknownRecord) => String(item || '').trim()).filter(Boolean)
         : [],
       importantDetails: Array.isArray(parsed.importantDetails)
-        ? parsed.importantDetails.map((item: any) => String(item || '').trim()).filter(Boolean)
+        ? parsed.importantDetails
+            .map((item: UnknownRecord) => String(item || '').trim())
+            .filter(Boolean)
         : [],
       demographics: {
         gender:
@@ -6976,7 +7008,7 @@ function inferHeuristicDemographics(text: string): {
   };
 }
 
-async function runCatalogContacts(data: any) {
+async function runCatalogContacts(data: UnknownRecord) {
   const workspaceId = String(data?.workspaceId || '').trim();
   if (!workspaceId) {
     return { cataloged: 0, scoredQueued: 0, reason: 'workspace_missing' };
@@ -6986,7 +7018,7 @@ async function runCatalogContacts(data: any) {
     where: { id: workspaceId },
     select: { providerSettings: true },
   });
-  const settings = (workspace?.providerSettings as any) || {};
+  const settings = (workspace?.providerSettings as UnknownRecord) || {};
   const selfIdentity = await resolveWorkspaceSelfIdentity(workspaceId, settings);
   const remotePendingBeforeCatalog = await getRemoteUnreadChatSnapshot(
     workspaceId,
@@ -7038,7 +7070,7 @@ async function runCatalogContacts(data: any) {
     .getChats(workspaceId)
     .catch((): RemoteChatSummary[] => [])) as RemoteChatSummary[];
   const lidMap = buildLidMap(await whatsappApiProvider.getLidMappings(workspaceId).catch(() => []));
-  const eligibleChatMap = new Map<string, any>();
+  const eligibleChatMap = new Map<string, UnknownRecord>();
   for (const chat of Array.isArray(chats) ? chats : []) {
     const chatId = String(chat?.id || '').trim();
     if (!isIndividualWahaChatId(chatId)) {
@@ -7072,7 +7104,10 @@ async function runCatalogContacts(data: any) {
   }
 
   const eligibleChats = Array.from(eligibleChatMap.values())
-    .sort((left: any, right: any) => right.activityTimestamp - left.activityTimestamp)
+    .sort(
+      (left: UnknownRecord, right: UnknownRecord) =>
+        right.activityTimestamp - left.activityTimestamp,
+    )
     .slice(0, CIA_CONTACT_CATALOG_MAX_CHATS);
 
   let cataloged = 0;
@@ -7283,7 +7318,7 @@ async function runCatalogContacts(data: any) {
   return { cataloged, scoredQueued, days };
 }
 
-async function runScoreContact(data: any) {
+async function runScoreContact(data: UnknownRecord) {
   const workspaceId = String(data?.workspaceId || '').trim();
   const contactId = String(data?.contactId || '').trim();
   if (!workspaceId || !contactId) {
@@ -7332,14 +7367,14 @@ async function runScoreContact(data: any) {
   }
 
   let messages = [...(contact.messages || [])]
-    .map((message: any) => ({
+    .map((message) => ({
       direction: String(message.direction || '').toUpperCase(),
       content: String(message.content || '').trim(),
       createdAt: message.createdAt,
     }))
-    .filter((message: any) => message.content)
+    .filter((message) => message.content)
     .sort(
-      (left: any, right: any) =>
+      (left: UnknownRecord, right: UnknownRecord) =>
         new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
     );
 
@@ -7353,7 +7388,7 @@ async function runScoreContact(data: any) {
       .catch(() => []);
     if (remoteMessages.length) {
       messages = remoteMessages
-        .map((message: any) => ({
+        .map((message) => ({
           direction:
             message?.fromMe === true ||
             message?.key?.fromMe === true ||
@@ -7366,19 +7401,21 @@ async function runScoreContact(data: any) {
               ? new Date(resolveCatalogChatActivityTimestamp(message))
               : new Date(),
         }))
-        .filter((message: any) => message.content)
+        .filter((message) => message.content)
         .sort(
-          (left: any, right: any) =>
+          (left: UnknownRecord, right: UnknownRecord) =>
             new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
         );
     }
   }
 
   const history = messages
-    .map((message: any) => `[${message.direction}] ${String(message.content || '').slice(0, 500)}`)
+    .map((message) => `[${message.direction}] ${String(message.content || '').slice(0, 500)}`)
     .join('\n');
   const unreadCount = Number(contact.conversations?.[0]?.unreadCount || 0) || 0;
-  const latestWonDeal = Array.isArray((contact as any).deals) ? (contact as any).deals[0] : null;
+  const latestWonDeal = Array.isArray((contact as unknown as { deals?: UnknownRecord[] }).deals)
+    ? (contact as unknown as { deals?: UnknownRecord[] }).deals[0]
+    : null;
   const heuristic = buildHeuristicCatalogScore({
     joinedText: history,
     messages,
@@ -7605,9 +7642,9 @@ async function refreshOpportunityUniverse(workspaceId: string) {
 
   const seedState = buildCiaWorkspaceStateFromSeed({
     workspaceId,
-    conversations: conversations.map((conversation: any) => {
+    conversations: conversations.map((conversation: UnknownRecord) => {
       const lastInbound =
-        conversation.messages.find((message: any) => message.direction === 'INBOUND') ||
+        conversation.messages.find((message) => message.direction === 'INBOUND') ||
         conversation.messages[0];
       const pending = isConversationPendingForAgent(conversation);
 
@@ -7627,7 +7664,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
   });
 
   const conversationMap = new Map(
-    conversations.map((conversation: any) => [conversation.id, conversation]),
+    conversations.map((conversation: UnknownRecord) => [conversation.id, conversation]),
   );
   const rankings: Array<Record<string, any>> = [];
 
@@ -7639,7 +7676,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
     }
 
     const joinedText = (conversation.messages || [])
-      .map((message: any) => String(message.content || ''))
+      .map((message) => String(message.content || ''))
       .join('\n');
     const classification = classifyOpportunityCandidate({
       candidate,
@@ -7887,7 +7924,7 @@ async function persistCiaCycleProof(input: {
 }
 
 async function listCanonicalWorkItems(workspaceId: string) {
-  const client: any = prisma as any;
+  const client = prisma as unknown as UnknownRecord;
   if (!client?.agentWorkItem?.findMany) {
     return [];
   }
@@ -7909,7 +7946,7 @@ async function persistAccountProofSnapshot(input: {
   workItemUniverse: Array<Record<string, any>>;
   tacticUniverse: Array<Record<string, any>>;
 }) {
-  const client: any = prisma as any;
+  const client = prisma as unknown as UnknownRecord;
   if (!client?.accountProofSnapshot?.create) {
     return null;
   }
@@ -7918,10 +7955,10 @@ async function persistAccountProofSnapshot(input: {
     ? input.exhaustionReport.details.classifications
     : [];
   const blockedActions = classifications.filter(
-    (item: any) => item?.disposition === 'DEFERRED_BY_RULE',
+    (item: UnknownRecord) => item?.disposition === 'DEFERRED_BY_RULE',
   );
   const deferredActions = classifications.filter(
-    (item: any) => item?.disposition === 'DEFERRED_BY_CYCLE_BUDGET',
+    (item: UnknownRecord) => item?.disposition === 'DEFERRED_BY_CYCLE_BUDGET',
   );
 
   return client.accountProofSnapshot.create({
@@ -7972,14 +8009,14 @@ async function createConversationProofSnapshotDraft(input: {
   tacticUniverse?: Array<Record<string, any>>;
   selectedAction?: Record<string, any> | null;
 }) {
-  const client: any = prisma as any;
+  const client = prisma as unknown as UnknownRecord;
   if (!client?.conversationProofSnapshot?.create) {
     return null;
   }
 
   const selectedTacticData =
     (input.tacticUniverse || []).find(
-      (item: any) => String(item?.tactic || '') === String(input.selectedTactic || ''),
+      (item: UnknownRecord) => String(item?.tactic || '') === String(input.selectedTactic || ''),
     ) || null;
 
   return client.conversationProofSnapshot.create({
@@ -8017,7 +8054,7 @@ async function finalizeConversationProofSnapshot(
   },
 ) {
   if (!recordId) return null;
-  const client: any = prisma as any;
+  const client = prisma as unknown as UnknownRecord;
   if (!client?.conversationProofSnapshot?.update) {
     return null;
   }
@@ -8041,7 +8078,7 @@ async function runCiaCycleAll() {
 
   // biome-ignore lint/performance/noAwaitInLoops: sequential workspace processing
   for (const workspace of workspaces) {
-    const settings: any = workspace.providerSettings || {};
+    const settings = (workspace.providerSettings ?? {}) as UnknownRecord;
     if (settings?.billingSuspended === true) {
       continue;
     }
@@ -8050,7 +8087,7 @@ async function runCiaCycleAll() {
   }
 }
 
-async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
+async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: UnknownRecord) {
   const settings = presetSettings
     ? presetSettings
     : ((
@@ -8058,7 +8095,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
           where: { id: workspaceId },
           select: { providerSettings: true },
         })
-      )?.providerSettings as any);
+      )?.providerSettings as UnknownRecord);
 
   if (settings?.billingSuspended === true || !isCiaAutonomyMode(settings)) {
     return {
@@ -8097,10 +8134,13 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     workspaceId,
     signals: state.marketSignals,
   });
-  const opportunityRefresh = await refreshOpportunityUniverse(workspaceId).catch((error: any) => ({
-    refreshed: false as const,
-    reason: error?.message || 'opportunity_refresh_failed',
-  }));
+  const opportunityRefresh = await refreshOpportunityUniverse(workspaceId).catch(
+    (error: unknown) => ({
+      refreshed: false as const,
+      reason:
+        (error instanceof Error ? error.message : String(error)) || 'opportunity_refresh_failed',
+    }),
+  );
 
   const globalStrategy = await loadWorkspaceGlobalStrategy({
     settings,
@@ -8388,7 +8428,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
   };
 }
 
-async function runCiaAction(data: any) {
+async function runCiaAction(data: UnknownRecord) {
   const workspaceId = data?.workspaceId;
   if (!workspaceId) return { outcome: 'SKIPPED', reason: 'missing_workspace' };
 
@@ -8416,7 +8456,7 @@ async function runCiaAction(data: any) {
     where: { id: workspaceId },
     select: { providerSettings: true },
   });
-  const settings: any = workspace?.providerSettings || {};
+  const settings = (workspace?.providerSettings ?? {}) as UnknownRecord;
 
   try {
     await publishAgentEvent({
@@ -8762,7 +8802,7 @@ async function runCiaSelfImproveAll() {
 
   // biome-ignore lint/performance/noAwaitInLoops: sequential workspace processing
   for (const workspace of workspaces) {
-    const settings: any = workspace.providerSettings || {};
+    const settings = (workspace.providerSettings ?? {}) as UnknownRecord;
     if (!isAutonomousEnabled(settings)) continue;
     await runCiaSelfImproveWorkspace(workspace.id);
   }
@@ -8794,7 +8834,7 @@ async function runCiaGlobalLearningAll() {
     take: 500,
   });
 
-  const enabledWorkspaces = workspaces.filter((workspace: any) =>
+  const enabledWorkspaces = workspaces.filter((workspace: UnknownRecord) =>
     isAutonomousEnabled(workspace.providerSettings || {}),
   );
   const signals: NonNullable<ReturnType<typeof anonymizeDecisionLog>>[] = [];
@@ -8867,7 +8907,7 @@ async function runCycleAll() {
   });
   // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const ws of workspaces) {
-    const settings: any = ws.providerSettings || {};
+    const settings = (ws.providerSettings ?? {}) as UnknownRecord;
     if (settings?.billingSuspended === true) {
       log.info('autopilot_cycle_skip_billing', { workspaceId: ws.id });
       await notifyBillingSuspended(ws.id);
@@ -8888,7 +8928,7 @@ async function runCycleAll() {
   }
 }
 
-async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
+async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRecord) {
   const settings = presetSettings
     ? presetSettings
     : ((
@@ -8896,7 +8936,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
           where: { id: workspaceId },
           select: { providerSettings: true },
         })
-      )?.providerSettings as any);
+      )?.providerSettings as UnknownRecord);
   if (settings?.billingSuspended === true) {
     log.info('autopilot_cycle_skip_billing', { workspaceId });
     await notifyBillingSuspended(workspaceId);
@@ -8956,12 +8996,12 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
   const limited = convs.slice(0, Math.max(1, CYCLE_LIMIT));
   const enriched = limited
     .map((conv) => {
-      const lastInbound = conv.messages.find((m: any) => m.direction === 'INBOUND');
+      const lastInbound = conv.messages.find((m: UnknownRecord) => m.direction === 'INBOUND');
       const lastMessage = conv.messages[0];
       const demandState = computeDemandState({
         lastMessageAt: conv.lastMessageAt,
         unreadCount: conv.unreadCount,
-        leadScore: (conv.contact as any)?.leadScore || 0,
+        leadScore: (conv.contact as UnknownRecord | undefined)?.leadScore || 0,
         lastMessageText: lastInbound?.content || lastMessage?.content || '',
       });
 
@@ -8975,7 +9015,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
     .sort((a, b) => b.demandState.attentionScore - a.demandState.attentionScore);
 
   const marketSignals = extractMarketSignals(
-    enriched.flatMap(({ conv }) => conv.messages.map((message: any) => message.content)),
+    enriched.flatMap(({ conv }) => conv.messages.map((message) => message.content)),
   );
   const hotLeadCount = enriched.filter((item) => item.demandState.lane === 'HOT').length;
   const pendingPaymentCount = enriched.filter(({ lastInbound, lastMessage }) => {
@@ -8999,10 +9039,10 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
     .catch(() => []);
 
   const approvedSalesCount = recentExecuted.filter(
-    (event: any) => event?.meta?.saleApproved === true,
+    (event: UnknownRecord) => event?.meta?.saleApproved === true,
   ).length;
   const approvedSalesAmount = recentExecuted
-    .map((event: any) => Number(event?.meta?.amount || 0) || 0)
+    .map((event: UnknownRecord) => Number(event?.meta?.amount || 0) || 0)
     .reduce((sum, amount) => sum + amount, 0);
 
   const snapshot = buildBusinessStateSnapshot({
@@ -9180,8 +9220,8 @@ async function sendAudioResponse(
   phone: string,
   chatId: string | undefined,
   text: string,
-  settings: any,
-  workspaceCfg: any,
+  settings: UnknownRecord,
+  workspaceCfg: UnknownRecord,
   quotedMessageId?: string,
 ): Promise<boolean> {
   try {
@@ -9213,7 +9253,7 @@ async function sendAudioResponse(
     const openai = new OpenAI({ apiKey });
     const response = await openai.audio.speech.create({
       model: 'tts-1',
-      voice: voiceId as any,
+      voice: voiceId as string,
       input: text,
       speed: ttsSpeed,
       response_format: 'opus',
@@ -9256,10 +9296,17 @@ async function sendAudioResponse(
     }
 
     // Enviar como áudio/voice note via WhatsAppEngine.sendMedia
-    await WhatsAppEngine.sendMedia(workspaceCfg, phone, 'audio', audioUrl, undefined, {
-      quotedMessageId,
-      chatId,
-    });
+    await WhatsAppEngine.sendMedia(
+      workspaceCfg as { id: string; [key: string]: unknown },
+      phone,
+      'audio',
+      audioUrl,
+      undefined,
+      {
+        quotedMessageId,
+        chatId,
+      },
+    );
 
     // Limpar arquivo após envio (opcional - manter para retry em caso de falha)
     // Para limpeza automática, implementar job de garbage collection

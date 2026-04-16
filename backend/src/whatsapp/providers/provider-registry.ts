@@ -51,6 +51,10 @@ export class WhatsAppProviderRegistry {
     this.logger.log(`WhatsApp provider default: ${this.defaultProvider}`);
   }
 
+  private readRecord(value: unknown): Record<string, unknown> {
+    return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+  }
+
   private isWahaMode(): boolean {
     return this.defaultProvider === 'whatsapp-api' && !!this.wahaProvider;
   }
@@ -272,9 +276,10 @@ export class WhatsAppProviderRegistry {
               options.mediaType || 'image',
             )
           : await this.wahaProvider.sendMessage(workspaceId, to, message);
+        const messageRecord = this.readRecord(this.readRecord(result).message);
         return {
-          success: Boolean(result?.success),
-          messageId: result?.message?.id || undefined,
+          success: Boolean(this.readRecord(result).success),
+          messageId: typeof messageRecord.id === 'string' ? messageRecord.id : undefined,
         };
       }
 

@@ -91,7 +91,7 @@ export class CheckoutService {
   }
 
   private buildClonedCheckoutConfigInput(
-    config: any | null | undefined,
+    config: Record<string, unknown> | null | undefined,
     fallbackBrandName: string,
   ): Omit<Prisma.CheckoutConfigUncheckedCreateInput, 'planId'> {
     if (!config) {
@@ -110,7 +110,10 @@ export class CheckoutService {
     return {
       ...this.buildDefaultCheckoutConfigInput(fallbackBrandName),
       ...rest,
-      brandName: rest.brandName || fallbackBrandName || 'Checkout',
+      brandName:
+        (typeof rest.brandName === 'string' && rest.brandName.trim().length > 0
+          ? rest.brandName
+          : fallbackBrandName) || 'Checkout',
     };
   }
 
@@ -214,7 +217,7 @@ export class CheckoutService {
 
         if (createdConfig?.id) {
           await tx.checkoutPixel.createMany({
-            data: freshPlan.checkoutConfig.pixels.map((pixel: any) => ({
+            data: freshPlan.checkoutConfig.pixels.map((pixel) => ({
               checkoutConfigId: createdConfig.id,
               type: pixel.type,
               pixelId: pixel.pixelId,
@@ -272,13 +275,13 @@ export class CheckoutService {
       name: string;
       slug?: string;
       description?: string;
-      images?: any;
+      images?: Prisma.InputJsonValue;
       weight?: number;
-      dimensions?: any;
+      dimensions?: Prisma.InputJsonValue;
       sku?: string;
       stock?: number;
       category?: string;
-      status?: any;
+      status?: string;
       price?: number;
     },
   ) {
@@ -376,8 +379,8 @@ export class CheckoutService {
     const checkoutNodes = await this.planLinkManager.ensurePlansReferenceCodes(
       product.checkoutPlans,
     );
-    const checkoutPlans = checkoutNodes.filter((entry: any) => entry.kind === 'PLAN');
-    const checkoutTemplates = checkoutNodes.filter((entry: any) => entry.kind === 'CHECKOUT');
+    const checkoutPlans = checkoutNodes.filter((entry) => entry.kind === 'PLAN');
+    const checkoutTemplates = checkoutNodes.filter((entry) => entry.kind === 'CHECKOUT');
     return {
       ...product,
       checkoutPlans,
@@ -562,7 +565,7 @@ export class CheckoutService {
 
       if (createdConfig?.id) {
         await this.prisma.checkoutPixel.createMany({
-          data: checkout.checkoutConfig.pixels.map((pixel: any) => ({
+          data: checkout.checkoutConfig.pixels.map((pixel) => ({
             checkoutConfigId: createdConfig.id,
             type: pixel.type,
             pixelId: pixel.pixelId,
@@ -691,7 +694,7 @@ export class CheckoutService {
       : config.plan;
     const primaryLinkedCheckout =
       normalizedPlan?.kind === 'CHECKOUT'
-        ? normalizedPlan.checkoutLinks?.find((link: any) => link.isPrimary) ||
+        ? normalizedPlan.checkoutLinks?.find((link) => link.isPrimary) ||
           normalizedPlan.checkoutLinks?.[0] ||
           null
         : null;
@@ -703,7 +706,7 @@ export class CheckoutService {
       slug: primaryLinkedCheckout?.slug || normalizedPlan?.slug || null,
       publicLinks:
         normalizedPlan?.kind === 'CHECKOUT'
-          ? (normalizedPlan.checkoutLinks || []).map((link: any) => ({
+          ? (normalizedPlan.checkoutLinks || []).map((link) => ({
               id: link.id,
               slug: link.slug,
               referenceCode: link.referenceCode,
@@ -1190,7 +1193,7 @@ export class CheckoutService {
       acceptBtnText?: string;
       declineBtnText?: string;
       timerSeconds?: number;
-      chargeType?: any;
+      chargeType?: 'ONE_CLICK' | 'NEW_PAYMENT';
       sortOrder?: number;
     },
   ) {
@@ -1246,14 +1249,14 @@ export class CheckoutService {
     workspaceId: string,
     data: {
       code: string;
-      discountType: any;
+      discountType: 'PERCENTAGE' | 'FIXED';
       discountValue: number;
       minOrderValue?: number;
       maxUses?: number;
       maxUsesPerUser?: number;
       startsAt?: Date;
       expiresAt?: Date;
-      appliesTo?: any;
+      appliesTo?: Prisma.InputJsonValue;
     },
   ) {
     const validDiscountTypes = ['PERCENTAGE', 'FIXED'];
@@ -1365,7 +1368,14 @@ export class CheckoutService {
   async createPixel(
     checkoutConfigId: string,
     data: {
-      type: any;
+      type:
+        | 'FACEBOOK'
+        | 'GOOGLE_ADS'
+        | 'GOOGLE_ANALYTICS'
+        | 'TIKTOK'
+        | 'KWAI'
+        | 'TABOOLA'
+        | 'CUSTOM';
       pixelId: string;
       accessToken?: string;
       trackPageView?: boolean;
@@ -1804,7 +1814,7 @@ export class CheckoutService {
 
     // Idempotent: orderId is used as idempotencyKey inside CheckoutPaymentService.
     // On retry, existingRecord with same externalReference prevents double-charge.
-    let paymentData: any = null;
+    let paymentData: Record<string, unknown> | null = null;
     try {
       paymentData = await this.paymentService.processPayment({
         orderId: order.id,
@@ -1899,8 +1909,8 @@ export class CheckoutService {
   ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
-    const where: any = { workspaceId };
-    if (filters?.status) where.status = filters.status;
+    const where: Prisma.CheckoutOrderWhereInput = { workspaceId };
+    if (filters?.status) where.status = filters.status as CheckoutOrderStatusValue;
 
     const [orders, total] = await this.prisma.$transaction([
       this.prisma.checkoutOrder.findMany({

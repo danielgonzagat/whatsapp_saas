@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -364,7 +365,7 @@ export class WhatsappService {
       orderBy: { createdAt: 'asc' },
     });
 
-    return localMessages.map((message: any) => {
+    return localMessages.map((message) => {
       const timestamp = message.createdAt?.getTime?.() || 0;
       return {
         id: message.id,
@@ -373,7 +374,7 @@ export class WhatsappService {
         body: message.content || '',
         direction: message.direction,
         fromMe: message.direction === 'OUTBOUND',
-        type: String(message.type || 'TEXT').toLowerCase(),
+        type: String(message.mediaUrl ? 'MEDIA' : 'TEXT').toLowerCase(),
         hasMedia: !!message.mediaUrl,
         mediaUrl: message.mediaUrl || null,
         mimetype: null,
@@ -717,8 +718,8 @@ export class WhatsappService {
           phone: contact.phone,
           contactName: contact.name || contact.phone,
           chatId:
-            this.normalizeJsonObject(contact.customFields).lastRemoteChatId ||
-            this.normalizeJsonObject(contact.customFields).lastResolvedChatId ||
+            this.readText(this.normalizeJsonObject(contact.customFields).lastRemoteChatId) ||
+            this.readText(this.normalizeJsonObject(contact.customFields).lastResolvedChatId) ||
             `${contact.phone}@c.us`,
         },
       ];
@@ -773,9 +774,9 @@ export class WhatsappService {
     const limit = Math.max(1, Math.min(2000, Number(options?.limit || 500) || 500));
     const catchup = await this.catchupService
       .runCatchupNow(workspaceId, reason)
-      .catch((error: any) => ({
+      .catch((error: unknown) => ({
         scheduled: false,
-        reason: String(error?.message || 'catchup_failed'),
+        reason: String(error instanceof Error ? error.message : 'catchup_failed'),
       }));
     const run = await this.ciaRuntime.startBacklogRun(
       workspaceId,
@@ -923,13 +924,13 @@ export class WhatsappService {
     return value.endsWith('@c.us') || value.endsWith('@s.whatsapp.net');
   }
 
-  private normalizeJsonObject(value: any): Record<string, any> {
+  private normalizeJsonObject(value: unknown): Record<string, unknown> {
     if (!value) return {};
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value);
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          return parsed;
+          return parsed as Record<string, unknown>;
         }
       } catch {
         return {};
@@ -937,17 +938,17 @@ export class WhatsappService {
       return {};
     }
     if (typeof value === 'object' && !Array.isArray(value)) {
-      return value;
+      return value as Record<string, unknown>;
     }
     return {};
   }
 
-  private normalizeDateValue(value: any) {
+  private normalizeDateValue(value: unknown) {
     const timestamp = this.resolveTimestamp({ createdAt: value });
     return this.toIsoTimestamp(timestamp);
   }
 
-  private normalizeProbabilityScore(score: any, bucket?: string | null) {
+  private normalizeProbabilityScore(score: unknown, bucket?: string | null) {
     const numeric = Number(score);
     if (Number.isFinite(numeric)) {
       return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
@@ -1008,7 +1009,7 @@ export class WhatsappService {
     }
 
     return (contacts || [])
-      .map((contact: any) => {
+      .map((contact) => {
         const customFields = this.normalizeJsonObject(contact.customFields);
         const relatedConversations = (conversationsByContact.get(contact.id) || [])
           .slice()
@@ -1026,15 +1027,14 @@ export class WhatsappService {
         const catalogedAt = this.normalizeDateValue(customFields.catalogedAt);
         const lastScoredAt = this.normalizeDateValue(customFields.lastScoredAt);
         const whatsappSavedAt = this.normalizeDateValue(customFields.whatsappSavedAt);
-        const remotePushName = customFields.remotePushName
-          ? String(customFields.remotePushName)
-          : null;
-        const lastRemoteChatId = customFields.lastRemoteChatId
-          ? String(customFields.lastRemoteChatId)
-          : null;
-        const lastResolvedChatId = customFields.lastResolvedChatId
-          ? String(customFields.lastResolvedChatId)
-          : null;
+        const remotePushName =
+          typeof customFields.remotePushName === 'string' ? customFields.remotePushName : null;
+        const lastRemoteChatId =
+          typeof customFields.lastRemoteChatId === 'string' ? customFields.lastRemoteChatId : null;
+        const lastResolvedChatId =
+          typeof customFields.lastResolvedChatId === 'string'
+            ? customFields.lastResolvedChatId
+            : null;
         const purchaseProbabilityScore = this.normalizeProbabilityScore(
           customFields.purchaseProbabilityScore,
           contact.purchaseProbability,
@@ -1051,34 +1051,38 @@ export class WhatsappService {
         );
         const probabilityReasons = Array.isArray(customFields.probabilityReasons)
           ? customFields.probabilityReasons
-              .map((reason: any) => String(reason || '').trim())
+              .map((reason: unknown) => (typeof reason === 'string' ? reason : '').trim())
               .filter(Boolean)
           : [];
         const preferences = Array.isArray(customFields.preferences)
-          ? customFields.preferences.map((item: any) => String(item || '').trim()).filter(Boolean)
+          ? customFields.preferences
+              .map((item: unknown) => (typeof item === 'string' ? item : '').trim())
+              .filter(Boolean)
           : [];
         const importantDetails = Array.isArray(customFields.importantDetails)
           ? customFields.importantDetails
-              .map((item: any) => String(item || '').trim())
+              .map((item: unknown) => (typeof item === 'string' ? item : '').trim())
               .filter(Boolean)
           : [];
+        const demographicsFields = this.normalizeJsonObject(customFields.demographics);
         const demographics =
-          customFields.demographics &&
-          typeof customFields.demographics === 'object' &&
-          !Array.isArray(customFields.demographics)
+          Object.keys(demographicsFields).length > 0
             ? {
-                gender: customFields.demographics.gender
-                  ? String(customFields.demographics.gender)
-                  : 'UNKNOWN',
-                ageRange: customFields.demographics.ageRange
-                  ? String(customFields.demographics.ageRange)
-                  : 'UNKNOWN',
-                location: customFields.demographics.location
-                  ? String(customFields.demographics.location)
-                  : 'UNKNOWN',
+                gender:
+                  typeof demographicsFields.gender === 'string'
+                    ? demographicsFields.gender
+                    : 'UNKNOWN',
+                ageRange:
+                  typeof demographicsFields.ageRange === 'string'
+                    ? demographicsFields.ageRange
+                    : 'UNKNOWN',
+                location:
+                  typeof demographicsFields.location === 'string'
+                    ? demographicsFields.location
+                    : 'UNKNOWN',
                 confidence: Math.max(
                   0,
-                  Math.min(1, Number(customFields.demographics.confidence || 0) || 0),
+                  Math.min(1, Number(demographicsFields.confidence || 0) || 0),
                 ),
               }
             : {
@@ -1087,14 +1091,12 @@ export class WhatsappService {
                 location: 'UNKNOWN',
                 confidence: 0,
               };
-        const buyerStatus = ['BOUGHT', 'NOT_BOUGHT', 'UNKNOWN'].includes(
-          String(customFields.buyerStatus || '')
-            .trim()
-            .toUpperCase(),
-        )
-          ? String(customFields.buyerStatus || '')
-              .trim()
-              .toUpperCase()
+        const rawBuyerStatus =
+          typeof customFields.buyerStatus === 'string'
+            ? customFields.buyerStatus.trim().toUpperCase()
+            : '';
+        const buyerStatus = ['BOUGHT', 'NOT_BOUGHT', 'UNKNOWN'].includes(rawBuyerStatus)
+          ? rawBuyerStatus
           : 'UNKNOWN';
         const cataloged =
           !!catalogedAt ||
@@ -1122,22 +1124,26 @@ export class WhatsappService {
           purchaseProbabilityScore,
           purchaseProbabilityPercent,
           buyerStatus,
-          purchasedProduct: customFields.purchasedProduct
-            ? String(customFields.purchasedProduct)
-            : null,
+          purchasedProduct:
+            typeof customFields.purchasedProduct === 'string'
+              ? customFields.purchasedProduct
+              : null,
           purchaseValue: Number.isFinite(Number(customFields.purchaseValue))
             ? Number(customFields.purchaseValue)
             : null,
-          purchaseReason: customFields.purchaseReason ? String(customFields.purchaseReason) : null,
-          notPurchasedReason: customFields.notPurchasedReason
-            ? String(customFields.notPurchasedReason)
-            : null,
+          purchaseReason:
+            typeof customFields.purchaseReason === 'string' ? customFields.purchaseReason : null,
+          notPurchasedReason:
+            typeof customFields.notPurchasedReason === 'string'
+              ? customFields.notPurchasedReason
+              : null,
           nextBestAction: contact.nextBestAction || null,
           aiSummary: contact.aiSummary || null,
-          fullSummary: customFields.fullSummary
-            ? String(customFields.fullSummary)
-            : contact.aiSummary || null,
-          intent: customFields.intent ? String(customFields.intent) : null,
+          fullSummary:
+            typeof customFields.fullSummary === 'string'
+              ? customFields.fullSummary
+              : contact.aiSummary || null,
+          intent: typeof customFields.intent === 'string' ? customFields.intent : null,
           remotePushName,
           demographics,
           preferences,
@@ -1185,12 +1191,14 @@ export class WhatsappService {
       .map(({ latestRelevantTimestamp: _latestRelevantTimestamp, ...entry }) => entry);
   }
 
-  private isAutonomousEnabled(settings: any): boolean {
-    const mode = this.readText(settings?.autonomy?.mode).toUpperCase();
+  private isAutonomousEnabled(settings: Record<string, unknown>): boolean {
+    const autonomy = this.normalizeJsonObject(settings.autonomy);
+    const autopilot = this.normalizeJsonObject(settings.autopilot);
+    const mode = this.readText(autonomy.mode).toUpperCase();
     if (mode) {
       return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
     }
-    return settings?.autopilot?.enabled === true;
+    return autopilot.enabled === true;
   }
 
   // ============================================================
@@ -1539,7 +1547,7 @@ export class WhatsappService {
       if (!contact) {
         throw new ForbiddenException('Contato sem opt-in para WhatsApp');
       }
-      const cf: any = contact.customFields || {};
+      const cf = (contact.customFields as Record<string, unknown>) || {};
       const hasOptIn =
         contact.optIn === true || // New field takes priority
         contact.tags.some((t) => t.name === 'optin_whatsapp') ||
@@ -1573,7 +1581,7 @@ export class WhatsappService {
   async sendTemplate(
     workspaceId: string,
     to: string,
-    template: { name: string; language: string; components?: any[] },
+    template: { name: string; language: string; components?: unknown[] },
   ) {
     this.logger.log(
       `[SERVICE] sendTemplate(workspace=${workspaceId}, to=${to}, template=${template.name})`,
@@ -2015,35 +2023,44 @@ export class WhatsappService {
     await this.providerRegistry.disconnect(workspaceId);
   }
 
-  private normalizeContacts(raw: any) {
-    const candidates = Array.isArray(raw)
+  private normalizeContacts(raw: unknown) {
+    const r = raw as Record<string, unknown> | undefined;
+    const candidates: unknown[] = Array.isArray(raw)
       ? raw
-      : Array.isArray(raw?.contacts)
-        ? raw.contacts
-        : Array.isArray(raw?.items)
-          ? raw.items
-          : Array.isArray(raw?.data)
-            ? raw.data
+      : Array.isArray(r?.contacts)
+        ? (r.contacts as unknown[])
+        : Array.isArray(r?.items)
+          ? (r.items as unknown[])
+          : Array.isArray(r?.data)
+            ? (r.data as unknown[])
             : [];
 
     return candidates
-      .map((contact: any) => {
-        const rawId = String(
-          contact?.id?._serialized ||
-            contact?.id ||
-            contact?.wid?._serialized ||
-            contact?.wid ||
-            contact?.chatId ||
-            '',
-        ).trim();
+      .map((contact: unknown) => {
+        const c = contact as Record<string, unknown>;
+        const cId = c?.id as Record<string, unknown> | string | undefined;
+        const cWid = c?.wid as Record<string, unknown> | string | undefined;
+        const rawIdCandidates = [
+          typeof cId === 'object' ? cId?._serialized : undefined,
+          c?.id,
+          typeof cWid === 'object' ? cWid?._serialized : undefined,
+          c?.wid,
+          c?.chatId,
+        ];
+        const rawId = this.readText(
+          rawIdCandidates.find((v) => typeof v === 'string' && v.trim()) ?? '',
+        );
+        const phoneCandidates = [
+          c?.phone,
+          c?.number,
+          typeof cId === 'object' ? cId?.user : undefined,
+          typeof cWid === 'object' ? cWid?.user : undefined,
+        ];
+        const phoneCandidate = phoneCandidates.find((v) => typeof v === 'string' && v.trim());
         const phone = this.normalizeNumber(
-          String(
-            contact?.phone ||
-              contact?.number ||
-              contact?.id?.user ||
-              contact?.wid?.user ||
-              this.providerRegistry.extractPhoneFromChatId(rawId),
-          ),
+          typeof phoneCandidate === 'string'
+            ? phoneCandidate
+            : this.providerRegistry.extractPhoneFromChatId(rawId),
         );
 
         if (!phone) {
@@ -2056,15 +2073,15 @@ export class WhatsappService {
           name:
             this.resolveTrustedContactName(
               phone,
-              contact?.pushName,
-              contact?.pushname,
-              contact?.name,
-              contact?.shortName,
+              c?.pushName,
+              c?.pushname,
+              c?.name,
+              c?.shortName,
             ) || null,
-          pushName: this.isPlaceholderContactName(contact?.pushName || contact?.pushname, phone)
+          pushName: this.isPlaceholderContactName(c?.pushName || c?.pushname, phone)
             ? null
-            : contact?.pushName || contact?.pushname || null,
-          shortName: contact?.shortName || null,
+            : c?.pushName || c?.pushname || null,
+          shortName: c?.shortName || null,
           email: null,
           localContactId: null,
           source: 'provider',
@@ -2076,24 +2093,38 @@ export class WhatsappService {
       .filter(Boolean);
   }
 
-  private normalizeChats(raw: any) {
-    const candidates = Array.isArray(raw)
+  private normalizeChats(raw: unknown) {
+    const r = raw as Record<string, unknown> | undefined;
+    const candidates: unknown[] = Array.isArray(raw)
       ? raw
-      : Array.isArray(raw?.chats)
-        ? raw.chats
-        : Array.isArray(raw?.items)
-          ? raw.items
-          : Array.isArray(raw?.data)
-            ? raw.data
+      : Array.isArray(r?.chats)
+        ? (r.chats as unknown[])
+        : Array.isArray(r?.items)
+          ? (r.items as unknown[])
+          : Array.isArray(r?.data)
+            ? (r.data as unknown[])
             : [];
 
     return candidates
-      .map((chat: any) => {
-        const rawId = String(
-          chat?.id?._serialized || chat?.id || chat?.chatId || chat?.wid || '',
-        ).trim();
+      .map((chatRaw: unknown) => {
+        const chat = chatRaw as Record<string, unknown>;
+        const chatId = chat?.id as Record<string, unknown> | string | undefined;
+        const chatContact = chat?.contact as Record<string, unknown> | undefined;
+        const chatLastMessage = chat?.lastMessage as Record<string, unknown> | undefined;
+        const chatLastMessageData = chatLastMessage?._data as Record<string, unknown> | undefined;
+        const chatIdCandidates = [
+          typeof chatId === 'object' ? chatId?._serialized : undefined,
+          chat?.id,
+          chat?.chatId,
+          chat?.wid,
+        ];
+        const rawId = this.readText(
+          chatIdCandidates.find((v) => typeof v === 'string' && v.trim()) ?? '',
+        );
         const phone = this.normalizeNumber(
-          String(chat?.phone || this.providerRegistry.extractPhoneFromChatId(rawId)),
+          typeof chat?.phone === 'string'
+            ? chat.phone
+            : this.providerRegistry.extractPhoneFromChatId(rawId),
         );
         const timestamp = this.resolveTimestamp(chat);
 
@@ -2109,14 +2140,14 @@ export class WhatsappService {
               phone,
               chat?.name,
               chat?.pushName,
-              chat?.contact?.name,
-              chat?.contact?.pushName,
-              chat?.lastMessage?._data?.verifiedBizName,
+              chatContact?.name,
+              chatContact?.pushName,
+              chatLastMessageData?.verifiedBizName,
             ) || null,
           unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
           pending:
             (Number(chat?.unreadCount || chat?.unread || 0) || 0) > 0 ||
-            chat?.lastMessage?.fromMe === false,
+            chatLastMessage?.fromMe === false,
           timestamp,
           lastMessageAt: this.toIsoTimestamp(timestamp),
           conversationId: null,
@@ -2127,27 +2158,39 @@ export class WhatsappService {
       .filter(Boolean);
   }
 
-  private normalizeMessages(raw: any, fallbackChatId: string) {
+  private normalizeMessages(raw: unknown, fallbackChatId: string) {
+    const r = raw as Record<string, unknown> | undefined;
     const candidates = Array.isArray(raw)
       ? raw
-      : Array.isArray(raw?.messages)
-        ? raw.messages
-        : Array.isArray(raw?.items)
-          ? raw.items
-          : Array.isArray(raw?.data)
-            ? raw.data
+      : Array.isArray(r?.messages)
+        ? (r.messages as unknown[])
+        : Array.isArray(r?.items)
+          ? (r.items as unknown[])
+          : Array.isArray(r?.data)
+            ? (r.data as unknown[])
             : [];
 
     return candidates
-      .map((message: any) => {
-        const id = String(
-          message?.id?._serialized || message?.id?.id || message?.key?.id || message?.id || '',
-        ).trim();
-        const chatId = String(
-          message?.chatId || message?.from || message?.to || fallbackChatId,
-        ).trim();
+      .map((msgRaw: unknown) => {
+        const message = msgRaw as Record<string, unknown>;
+        const mId = message?.id as Record<string, unknown> | string | undefined;
+        const mKey = message?.key as Record<string, unknown> | undefined;
+        const mText = message?.text as Record<string, unknown> | undefined;
+        const mMedia = message?.media as Record<string, unknown> | undefined;
+        const idCandidates = [
+          typeof mId === 'object' ? (mId?._serialized ?? mId?.id) : undefined,
+          mKey?.id,
+          message?.id,
+        ];
+        const id = this.readText(idCandidates.find((v) => typeof v === 'string' && v.trim()) ?? '');
+        const chatIdCandidates = [message?.chatId, message?.from, message?.to];
+        const chatId = this.readText(
+          chatIdCandidates.find((v) => typeof v === 'string' && v.trim()) ?? fallbackChatId,
+        );
         const phone = this.normalizeNumber(
-          String(message?.phone || this.providerRegistry.extractPhoneFromChatId(chatId)),
+          typeof message?.phone === 'string'
+            ? message.phone
+            : this.providerRegistry.extractPhoneFromChatId(chatId),
         );
         const timestamp = this.resolveTimestamp(message);
 
@@ -2159,13 +2202,13 @@ export class WhatsappService {
           id,
           chatId,
           phone,
-          body: message?.body || message?.text?.body || '',
+          body: message?.body || mText?.body || '',
           direction: message?.fromMe === true ? 'OUTBOUND' : 'INBOUND',
           fromMe: message?.fromMe === true,
-          type: String(message?.type || 'chat').toLowerCase(),
+          type: (typeof message?.type === 'string' ? message.type : 'chat').toLowerCase(),
           hasMedia: message?.hasMedia === true,
-          mediaUrl: message?.mediaUrl || message?.media?.url || null,
-          mimetype: message?.mimetype || message?.media?.mimetype || null,
+          mediaUrl: message?.mediaUrl || mMedia?.url || null,
+          mimetype: message?.mimetype || mMedia?.mimetype || null,
           timestamp,
           isoTimestamp: this.toIsoTimestamp(timestamp),
           source: 'provider',
@@ -2174,19 +2217,23 @@ export class WhatsappService {
       .filter(Boolean);
   }
 
-  private resolveTimestamp(value: any): number {
+  private resolveTimestamp(value: unknown): number {
+    const v = value as Record<string, unknown> | undefined;
+    const vChat = v?._chat as Record<string, unknown> | undefined;
+    const vLastMessage = v?.lastMessage as Record<string, unknown> | undefined;
+    const vLastMessageData = vLastMessage?._data as Record<string, unknown> | undefined;
     const candidates = [
-      value?._chat?.conversationTimestamp,
-      value?._chat?.lastMessageRecvTimestamp,
-      value?.conversationTimestamp,
-      value?.lastMessageRecvTimestamp,
-      value?.lastMessage?.timestamp,
-      value?.lastMessage?._data?.messageTimestamp,
-      value?.timestamp,
-      value?.t,
-      value?.createdAt,
-      value?.lastMessageTimestamp,
-      value?.last_time,
+      vChat?.conversationTimestamp,
+      vChat?.lastMessageRecvTimestamp,
+      v?.conversationTimestamp,
+      v?.lastMessageRecvTimestamp,
+      vLastMessage?.timestamp,
+      vLastMessageData?.messageTimestamp,
+      v?.timestamp,
+      v?.t,
+      v?.createdAt,
+      v?.lastMessageTimestamp,
+      v?.last_time,
     ];
 
     for (const candidate of candidates) {
@@ -2313,7 +2360,7 @@ export class WhatsappService {
   /**
    * Verifica se o workspace possui credenciais mínimas para o provedor ativo.
    */
-  private validateWorkspaceProvider(workspace: any): string[] {
+  private validateWorkspaceProvider(workspace: Record<string, unknown>): string[] {
     const missing: string[] = [];
     const provider = workspace?.whatsappProvider || 'meta-cloud';
 
@@ -2326,7 +2373,7 @@ export class WhatsappService {
 
   private async collectMessagingRuntimeIssues(
     workspaceId: string,
-    workspace: any,
+    workspace: Record<string, unknown>,
     options?: {
       requireInboundWebhook?: boolean;
     },
@@ -2389,10 +2436,16 @@ export class WhatsappService {
 
   async addMonitoredGroup(
     workspaceId: string,
-    data: { jid: string; name?: string; inviteLink?: string; settings?: any },
+    data: { jid: string; name?: string; inviteLink?: string; settings?: Record<string, unknown> },
   ) {
     return this.prisma.monitoredGroup.create({
-      data: { workspaceId, ...data },
+      data: {
+        jid: data.jid,
+        name: data.name,
+        inviteLink: data.inviteLink,
+        settings: (data.settings || {}) as unknown as Prisma.InputJsonValue,
+        workspace: { connect: { id: workspaceId } },
+      },
     });
   }
 
