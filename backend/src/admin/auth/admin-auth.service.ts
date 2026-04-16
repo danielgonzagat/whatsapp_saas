@@ -191,11 +191,37 @@ export class AdminAuthService {
 
   async setupMfa(admin: AuthenticatedAdmin): Promise<MfaSetupPayload> {
     if (admin.scope !== 'mfa_setup') throw adminErrors.invalidToken();
-    const { encryptedSecret, otpauthUrl, qrDataUrl } = await this.mfa.createSetup(admin.email);
-    await this.prisma.adminUser.update({
+
+    // If the user already has a pending MFA secret (from a previous
+    // setup call that they're still in the middle of), reuse it.
+    // Otherwise the frontend re-mount (React Strict Mode, refresh,
+    // network retry) would generate a fresh secret and overwrite
+    // the one they just scanned into their authenticator.
+    const existing = await this.prisma.adminUser.findUnique({
       where: { id: admin.id },
-      data: { mfaSecret: encryptedSecret, mfaEnabled: false, mfaPendingSetup: true },
+      select: { mfaSecret: true, mfaEnabled: true, mfaPendingSetup: true },
     });
+
+    let encryptedSecret: string;
+    let otpauthUrl: string;
+    let qrDataUrl: string;
+
+    if (existing && existing.mfaSecret && existing.mfaPendingSetup && !existing.mfaEnabled) {
+      const resumed = await this.mfa.resumeSetup(admin.email, existing.mfaSecret);
+      encryptedSecret = resumed.encryptedSecret;
+      otpauthUrl = resumed.otpauthUrl;
+      qrDataUrl = resumed.qrDataUrl;
+    } else {
+      const fresh = await this.mfa.createSetup(admin.email);
+      encryptedSecret = fresh.encryptedSecret;
+      otpauthUrl = fresh.otpauthUrl;
+      qrDataUrl = fresh.qrDataUrl;
+      await this.prisma.adminUser.update({
+        where: { id: admin.id },
+        data: { mfaSecret: encryptedSecret, mfaEnabled: false, mfaPendingSetup: true },
+      });
+    }
+
     await this.audit.append({
       adminUserId: admin.id,
       action: 'admin.auth.mfa.setup_started',
