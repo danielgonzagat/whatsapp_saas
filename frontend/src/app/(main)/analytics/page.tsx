@@ -35,6 +35,9 @@ import useSWR from 'swr';
 const PATTERN_RE = /"/g;
 
 // ═══════════════════════════════════════════════════════════
+// REPORT DATA TYPES
+// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // DESIGN SYSTEM — TERMINATOR
 // ═══════════════════════════════════════════════════════════
 const S = "var(--font-sora), 'Sora', sans-serif";
@@ -71,6 +74,46 @@ interface RF {
   paymentMethod?: string;
   page?: number;
   perPage?: number;
+}
+
+// Row types used by report tabs
+interface ReportRow {
+  id?: string;
+  status?: string;
+  totalInCents?: number;
+  paymentMethod?: string;
+  createdAt?: string;
+  buyerName?: string;
+  buyerEmail?: string;
+  productName?: string;
+  planName?: string;
+  vendas?: number;
+  receita?: number;
+  comissao?: number;
+  partnerName?: string;
+  source?: string;
+  order?: {
+    totalInCents?: number;
+    customerName?: string;
+    orderNumber?: string;
+    customerEmail?: string;
+    plan?: { name?: string; product?: { name?: string } };
+  };
+  refundedAt?: string;
+  _count?: number;
+   
+  [key: string]: any;
+}
+
+interface SubscriptionSummaryRow {
+  status: string;
+  _count: number;
+}
+
+interface TooltipPayloadEntry {
+  name: string;
+  value: number;
+  color?: string;
 }
 function buildUrl(ep: string, f: RF = {}) {
   const p = new URLSearchParams();
@@ -749,7 +792,15 @@ function Pagination({
   );
 }
 
-function CTooltip({ active, payload, label }: any) {
+function CTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadEntry[];
+  label?: string;
+}) {
   if (!active || !payload?.length) return null;
   return (
     <div
@@ -764,7 +815,7 @@ function CTooltip({ active, payload, label }: any) {
       <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 4, fontFamily: M }}>
         {label}
       </span>
-      {payload.map((p: any) => (
+      {payload.map((p: TooltipPayloadEntry) => (
         <div
           key={p.name}
           style={{ fontSize: 12, fontFamily: M, fontWeight: 600, color: p.color || V.em }}
@@ -1236,9 +1287,9 @@ function VendasTab({
             Nenhuma operação no período
           </div>
         ) : (
-          rows.map((s: any, i: number) => {
-            const st = stMap[s.status] || { c: V.bl, l: s.status };
-            const FI = formIcon[s.paymentMethod] || IC.card;
+          rows.map((s: ReportRow, i: number) => {
+            const st = stMap[s.status ?? ''] || { c: V.bl, l: s.status };
+            const FI = formIcon[s.paymentMethod ?? ''] || IC.card;
             return (
               <div
                 key={s.id}
@@ -1301,12 +1352,12 @@ function AfterPayTab({
 }) {
   const { data, isLoading } = useReport<any>('afterpay', baseFilters);
   const rows = data?.data || [];
-  const aReceberTotal = rows.reduce((acc: number, r: any) => acc + (r.totalInCents || 0), 0);
+  const aReceberTotal = rows.reduce((acc: number, r: ReportRow) => acc + (r.totalInCents || 0), 0);
   const atrasadasCount = rows.filter(
-    (r: any) => r.status === 'PAST_DUE' || r.status === 'OVERDUE',
+    (r: ReportRow) => r.status === 'PAST_DUE' || r.status === 'OVERDUE',
   ).length;
   const quitadosCount = rows.filter(
-    (r: any) => r.status === 'PAID' || r.status === 'DELIVERED',
+    (r: ReportRow) => r.status === 'PAID' || r.status === 'DELIVERED',
   ).length;
   return (
     <>
@@ -1407,8 +1458,8 @@ function AfterPayTab({
         ) : rows.length === 0 ? (
           <EmptyState message="Nenhum parcelamento encontrado" />
         ) : (
-          rows.map((a: any, i: number) => {
-            const st = stMap[a.status] || { c: V.t3, l: a.status };
+          rows.map((a: ReportRow, i: number) => {
+            const st = stMap[a.status ?? ''] || { c: V.t3, l: a.status };
             return (
               <div
                 key={a.id}
@@ -1552,7 +1603,7 @@ function AbandonosTab({
             Nenhum abandono no período
           </div>
         ) : (
-          rows.map((a: any, i: number) => (
+          rows.map((a: ReportRow, i: number) => (
             <div
               key={a.id}
               style={{
@@ -1752,8 +1803,11 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
       });
       if ((res as any)?.error) throw new Error((res as any).error);
       setResult({ ok: true, message: `Relatório enviado para ${email.trim()}` });
-    } catch (error: any) {
-      setResult({ ok: false, message: error?.message || 'Falha ao enviar relatório.' });
+    } catch (error: unknown) {
+      setResult({
+        ok: false,
+        message: error instanceof Error ? error.message : 'Falha ao enviar relatório.',
+      });
     } finally {
       setSending(false);
     }
@@ -1980,7 +2034,7 @@ function AfiliadosTab({ filters }: { filters: RF }) {
         ) : rows.length === 0 ? (
           <EmptyState message="Nenhum afiliado encontrado" />
         ) : (
-          rows.map((a: any, i: number) => (
+          rows.map((a: ReportRow, i: number) => (
             <div
               key={a.id || i}
               style={{
@@ -2012,7 +2066,7 @@ function AfiliadosTab({ filters }: { filters: RF }) {
               <span style={{ fontFamily: M, fontSize: 12, fontWeight: 700, color: V.em }}>
                 {R$((a.totalCommission || 0) * 100)}
               </span>
-              <StatusDot color={(stMap[a.status] || { c: V.t3 }).c} />
+              <StatusDot color={(stMap[a.status ?? ''] || { c: V.t3 }).c} />
             </div>
           ))
         )}
@@ -2043,7 +2097,7 @@ function IndicadoresTab({ filters }: { filters: RF }) {
         ) : rows.length === 0 ? (
           <EmptyState message="Nenhum indicador encontrado" />
         ) : (
-          rows.map((a: any, i: number) => (
+          rows.map((a: ReportRow, i: number) => (
             <div
               key={a.partnerName || a.id}
               style={{
@@ -2094,12 +2148,15 @@ function AssinaturasTab({
   const { data, isLoading } = useReport<any>('assinaturas', baseFilters);
   const rows = data?.data || [];
   const summary = data?.summary || [];
-  const activeCount = summary.find((s: any) => s.status === 'ACTIVE')?._count || 0;
-  const cancelledCount = summary.find((s: any) => s.status === 'CANCELLED')?._count || 0;
-  const pastDueCount = summary.find((s: any) => s.status === 'PAST_DUE')?._count || 0;
+  const activeCount =
+    summary.find((s: SubscriptionSummaryRow) => s.status === 'ACTIVE')?._count || 0;
+  const cancelledCount =
+    summary.find((s: SubscriptionSummaryRow) => s.status === 'CANCELLED')?._count || 0;
+  const pastDueCount =
+    summary.find((s: SubscriptionSummaryRow) => s.status === 'PAST_DUE')?._count || 0;
   const othersCount = summary
-    .filter((s: any) => !['ACTIVE', 'CANCELLED', 'PAST_DUE'].includes(s.status))
-    .reduce((acc: number, s: any) => acc + (s._count || 0), 0);
+    .filter((s: SubscriptionSummaryRow) => !['ACTIVE', 'CANCELLED', 'PAST_DUE'].includes(s.status))
+    .reduce((acc: number, s: SubscriptionSummaryRow) => acc + (s._count || 0), 0);
   return (
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -2173,8 +2230,8 @@ function AssinaturasTab({
         ) : rows.length === 0 ? (
           <EmptyState message="Nenhuma assinatura encontrada" />
         ) : (
-          rows.map((s: any, i: number) => {
-            const st = stMap[s.status] || { c: V.t3, l: s.status };
+          rows.map((s: ReportRow, i: number) => {
+            const st = stMap[s.status ?? ''] || { c: V.t3, l: s.status };
             return (
               <div
                 key={s.id}
@@ -2308,7 +2365,7 @@ function RecusaTab({
         ) : rows.length === 0 ? (
           <EmptyState message="Nenhuma recusa no período" />
         ) : (
-          rows.map((r: any, i: number) => (
+          rows.map((r: ReportRow, i: number) => (
             <div
               key={r.id || i}
               style={{
@@ -2355,7 +2412,7 @@ function OrigemTab({ filters }: { filters: RF }) {
   const { data, isLoading } = useReport<any[]>('origem', filters);
   const rows = Array.isArray(data) ? data : [];
   const PIE_COLORS = [V.em, V.bl, V.p, V.g2, V.y, V.cy, V.pk, V.r, V.t3];
-  const totalVendas = rows.reduce((s: number, r: any) => s + (r.vendas || 0), 0);
+  const totalVendas = rows.reduce((s: number, r: ReportRow) => s + (Number(r.vendas) || 0), 0);
   return (
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
@@ -2390,7 +2447,7 @@ function OrigemTab({ filters }: { filters: RF }) {
             </span>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart
-                data={rows.map((d: any) => ({
+                data={rows.map((d: ReportRow) => ({
                   name:
                     (d.source || '').length > 16 ? `${(d.source || '').slice(0, 14)}...` : d.source,
                   vendas: d.vendas,
@@ -2433,7 +2490,7 @@ function OrigemTab({ filters }: { filters: RF }) {
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
-                  data={rows.map((d: any) => ({ name: d.source, value: d.vendas }))}
+                  data={rows.map((d: ReportRow) => ({ name: d.source, value: d.vendas }))}
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
@@ -2442,7 +2499,7 @@ function OrigemTab({ filters }: { filters: RF }) {
                   stroke={V.void}
                   strokeWidth={2}
                 >
-                  {rows.map((r: any, i: number) => (
+                  {rows.map((r: ReportRow, i: number) => (
                     <Cell key={r.source || `cell-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                   ))}
                 </Pie>
@@ -2463,8 +2520,8 @@ function OrigemTab({ filters }: { filters: RF }) {
               { l: '% Total', w: '1fr' },
             ]}
           />
-          {rows.map((o: any, i: number) => {
-            const perc = totalVendas > 0 ? (o.vendas / totalVendas) * 100 : 0;
+          {rows.map((o: ReportRow, i: number) => {
+            const perc = totalVendas > 0 ? ((o.vendas ?? 0) / totalVendas) * 100 : 0;
             return (
               <div
                 key={o.source}
@@ -2494,7 +2551,7 @@ function OrigemTab({ filters }: { filters: RF }) {
                   <span style={{ fontSize: 12, color: V.t, fontWeight: 500 }}>{o.source}</span>
                 </div>
                 <span style={{ fontFamily: M, fontSize: 12, color: V.bl, fontWeight: 600 }}>
-                  {Fmt(o.vendas)}
+                  {Fmt(o.vendas ?? 0)}
                 </span>
                 <span style={{ fontFamily: M, fontSize: 11, color: V.t2 }}>
                   {R$(o.receita || 0)}
@@ -2647,12 +2704,15 @@ function EstornosTab({
 }) {
   const { data, isLoading } = useReport<any>('estornos', baseFilters);
   const rows = data?.data || [];
-  const valorEstornado = rows.reduce((acc: number, r: any) => acc + (r.totalInCents || 0), 0);
+  const valorEstornado = rows.reduce(
+    (acc: number, r: ReportRow) => acc + (Number(r.totalInCents) || 0),
+    0,
+  );
   const processandoCount = rows.filter(
-    (r: any) => r.status === 'PROCESSING' || r.status === 'PENDING',
+    (r: ReportRow) => r.status === 'PROCESSING' || r.status === 'PENDING',
   ).length;
   const negadosCount = rows.filter(
-    (r: any) => r.status === 'DECLINED' || r.status === 'DENIED',
+    (r: ReportRow) => r.status === 'DECLINED' || r.status === 'DENIED',
   ).length;
   return (
     <>
@@ -2752,7 +2812,7 @@ function EstornosTab({
         ) : rows.length === 0 ? (
           <EmptyState message="Nenhum estorno no período" />
         ) : (
-          rows.map((e: any, i: number) => (
+          rows.map((e: ReportRow, i: number) => (
             <div
               key={e.id}
               style={{
@@ -2783,7 +2843,7 @@ function EstornosTab({
                 {R$(e.totalInCents || 0)}
               </span>
               <span style={{ fontFamily: M, fontSize: 10, color: V.t2 }}>
-                {e.refundedAt ? new Date(e.refundedAt).toLocaleDateString('pt-BR') : '—'}
+                {e.refundedAt ? new Date(String(e.refundedAt)).toLocaleDateString('pt-BR') : '—'}
               </span>
             </div>
           ))
@@ -2807,10 +2867,12 @@ function ChargebackTab({
   const { data, isLoading } = useReport<any>('chargeback', baseFilters);
   const rows = data?.data || [];
   const totalChargebackValue = rows.reduce(
-    (acc: number, c: any) => acc + (c.order?.totalInCents || 0),
+    (acc: number, c: ReportRow) => acc + (Number(c.order?.totalInCents) || 0),
     0,
   );
-  const ganhos = rows.filter((c: any) => c.status === 'WON' || c.status === 'RESOLVED').length;
+  const ganhos = rows.filter(
+    (c: ReportRow) => c.status === 'WON' || c.status === 'RESOLVED',
+  ).length;
   const taxaMedia =
     rows.length > 0 ? (totalChargebackValue / rows.length / 100).toFixed(2) : '0.00';
   const monthly = data?.monthly || [];
@@ -2923,7 +2985,7 @@ function ChargebackTab({
         ) : rows.length === 0 ? (
           <EmptyState message="Nenhum chargeback encontrado" />
         ) : (
-          rows.map((c: any, i: number) => (
+          rows.map((c: ReportRow, i: number) => (
             <div
               key={c.id || i}
               style={{
@@ -3282,19 +3344,19 @@ export default function KloelRelatorio() {
       if (!ep) return;
       const url = buildUrl(ep, { ...filters, perPage: 1000 });
       swrFetcher(url)
-        .then((data: any) => {
-          const rows = Array.isArray(data)
-            ? data
+        .then((data: unknown) => {
+          const rows: ReportRow[] = Array.isArray(data)
+            ? (data as ReportRow[])
             : ep === 'nps'
-              ? data?.responses || []
-              : data?.data || [];
+              ? ((data as Record<string, unknown>)?.responses as ReportRow[]) || []
+              : ((data as Record<string, unknown>)?.data as ReportRow[]) || [];
           if (rows.length === 0) {
             return;
           }
           const headers = Object.keys(rows[0]);
           const csv = [
             headers.join(','),
-            ...rows.map((row: any) =>
+            ...rows.map((row: ReportRow) =>
               headers
                 .map((h) => {
                   const val = row[h];

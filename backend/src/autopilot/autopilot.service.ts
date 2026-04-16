@@ -1808,7 +1808,11 @@ Answer in Portuguese, short and actionable.`;
     return analysisResult;
   }
 
-  private decideAction(analysis: any, _conv: any, isOptimalTime: boolean): string {
+  private decideAction(
+    analysis: { intent?: string; sentiment?: string; buyingSignal?: boolean; stage?: string },
+    _conv: Record<string, unknown>,
+    isOptimalTime: boolean,
+  ): string {
     const { intent, sentiment, buyingSignal, stage } = analysis;
     const hour = new Date().getHours();
     const isNight = hour > 22 || hour < 7;
