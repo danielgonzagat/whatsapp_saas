@@ -54,6 +54,7 @@ import {
   unwrapApiPayload,
 } from './product-nerve-center.shared';
 import {
+  type ProductEditorPlanView,
   mapProductEditorCheckouts,
   mapProductEditorPlans,
 } from './product-nerve-center.view-models';
@@ -113,7 +114,7 @@ const parsePercentValue = (value: string, fallback = 1) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const formatPlanRangeLabel = (plans: any[]) => {
+const formatPlanRangeLabel = (plans: Array<{ priceInCents?: number }>) => {
   const values = (plans || [])
     .map((plan) => Number(plan?.priceInCents || 0))
     .filter((value) => value > 0)
@@ -124,7 +125,7 @@ const formatPlanRangeLabel = (plans: any[]) => {
   return `${R$(values[0])} ate ${R$(values[values.length - 1])}`;
 };
 
-const buildPlanSelectionPriceLabel = (plan: any) => {
+const buildPlanSelectionPriceLabel = (plan: { priceInCents?: number }) => {
   const cents = Math.max(0, Math.round(Number(plan?.priceInCents || 0)));
   return R$(cents);
 };
@@ -162,6 +163,85 @@ const usePrefersReducedMotion = () => {
 /* ═══════════════════════════════════════════════════
    PROPS
    ═══════════════════════════════════════════════════ */
+interface ProductData {
+  name?: string;
+  description?: string;
+  category?: string;
+  price?: number;
+  imageUrl?: string;
+  format?: string;
+  active?: boolean;
+  tags?: string | string[];
+  slug?: string;
+  warrantyDays?: number;
+  salesPageUrl?: string;
+  thankyouUrl?: string;
+  thankyouPixUrl?: string;
+  thankyouBoletoUrl?: string;
+  reclameAquiUrl?: string;
+  supportEmail?: string;
+  [key: string]: unknown;
+}
+
+interface PlanData {
+  id: string;
+  name?: string;
+  priceInCents?: number;
+  quantity?: number;
+  maxInstallments?: number;
+  sales?: number;
+  checkoutConfig?: Record<string, unknown>;
+  compareAtPrice?: number;
+  shippingPrice?: number;
+  freeShipping?: boolean;
+  [key: string]: unknown;
+}
+
+interface CheckoutData {
+  id: string;
+  checkoutLinks?: Array<{
+    planId?: string;
+    plan?: { id?: string };
+    isActive?: boolean;
+    slug?: string;
+    referenceCode?: string;
+  }>;
+  [key: string]: unknown;
+}
+
+interface CouponData {
+  id: string;
+  code?: string;
+  discountType?: string;
+  discountValue?: number;
+  usedCount?: number;
+  maxUses?: number;
+  active?: boolean;
+  expiresAt?: string;
+}
+
+interface BumpData {
+  id: string;
+  title?: string;
+  productName?: string;
+  description?: string;
+  priceInCents?: number;
+  compareAtPrice?: number;
+  active?: boolean;
+}
+
+interface CheckoutProductData {
+  id: string;
+  name?: string;
+  slug?: string;
+  description?: string;
+  images?: string[];
+  imageUrl?: string;
+  category?: string;
+  price?: number;
+  plans?: PlanData[];
+}
+
 interface ProductNerveCenterProps {
   productId: string;
   onBack: () => void;
@@ -198,7 +278,7 @@ export default function ProductNerveCenter({
   /* ── data hooks ── */
   const { product: rawProduct, isLoading: prodLoading, mutate: mutateProd } = useProduct(productId);
   const { products: workspaceProductsRaw } = useProducts();
-  const p: any = rawProduct || {};
+  const p = (rawProduct || {}) as ProductData;
   const { updateProduct } = useProductMutations();
   const {
     plans: rawPlans,
@@ -213,7 +293,9 @@ export default function ProductNerveCenter({
     deleteCheckout,
     syncCheckoutLinks,
   } = useCheckoutPlans(rawProduct);
-  const [workspaceCheckoutProducts, setWorkspaceCheckoutProducts] = useState<any[]>([]);
+  const [workspaceCheckoutProducts, setWorkspaceCheckoutProducts] = useState<CheckoutProductData[]>(
+    [],
+  );
   const [workspaceCheckoutProductsLoading, setWorkspaceCheckoutProductsLoading] = useState(false);
 
   /* ── navigation state ── */
@@ -306,10 +388,10 @@ export default function ProductNerveCenter({
   );
 
   /* ── URLs state ── */
-  const [urls, setUrls] = useState<any[]>([]);
+  const [urls, setUrls] = useState<Array<Record<string, unknown>>>([]);
   const [_urlsLoading, setUrlsLoading] = useState(false);
 
-  const [coupons, setCoupons] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<CouponData[]>([]);
   const [couponsLoading, setCouponsLoading] = useState(false);
 
   /* ── Order bumps for selected plan ── */
@@ -377,8 +459,8 @@ export default function ProductNerveCenter({
     if (!productId) return;
     setWorkspaceCheckoutProductsLoading(true);
     apiFetch('/checkout/products')
-      .then((response: any) => {
-        const data = unwrapApiPayload<any[]>(response);
+      .then((response: unknown) => {
+        const data = unwrapApiPayload<CheckoutProductData[]>(response);
         setWorkspaceCheckoutProducts(Array.isArray(data) ? data : []);
       })
       .catch(() => setWorkspaceCheckoutProducts([]))
@@ -390,9 +472,15 @@ export default function ProductNerveCenter({
     if (tab === 'urls' && productId) {
       setUrlsLoading(true);
       apiFetch(`/products/${productId}/urls`)
-        .then((res: any) => {
-          const d = res?.data ?? res;
-          setUrls(Array.isArray(d) ? d : d?.urls || []);
+        .then((res) => {
+          const d = (res?.data ?? res) as
+            | { urls?: Record<string, unknown>[] }
+            | Record<string, unknown>[];
+          setUrls(
+            Array.isArray(d)
+              ? (d as Record<string, unknown>[])
+              : (d as { urls?: Record<string, unknown>[] })?.urls || [],
+          );
         })
         .catch(() => setUrls([]))
         .finally(() => setUrlsLoading(false));
@@ -403,8 +491,8 @@ export default function ProductNerveCenter({
     if (!productId) return Promise.resolve([]);
     setCouponsLoading(true);
     return apiFetch(`/products/${productId}/coupons`)
-      .then((res: any) => {
-        const data = unwrapApiPayload<any[]>(res);
+      .then((res: unknown) => {
+        const data = unwrapApiPayload<CouponData[]>(res);
         const nextCoupons = Array.isArray(data) ? data : [];
         setCoupons(nextCoupons);
         return nextCoupons;
@@ -432,7 +520,7 @@ export default function ProductNerveCenter({
   const CKS = useMemo(() => mapProductEditorCheckouts(rawCheckouts), [rawCheckouts]);
 
   /* ── Mapped coupons ── */
-  const COUPONS = coupons.map((c: any) => ({
+  const COUPONS = coupons.map((c) => ({
     id: c.id,
     code: c.code || '',
     type: c.discountType === 'FIXED' ? 'R$' : '%',
@@ -452,9 +540,9 @@ export default function ProductNerveCenter({
 
   /* ── Plan detail state sync (lifted from PlanDetail) ── */
   const selectedPlanObj = selPlan ? PLANS.find((p) => p.id === selPlan) : null;
-  const currentPlanRaw: any = selPlan
-    ? (rawPlans || []).find((c: any) => c.id === selPlan) || {}
-    : {};
+  const currentPlanRaw: PlanData = selPlan
+    ? ((rawPlans || []) as PlanData[]).find((c) => c.id === selPlan) || ({} as PlanData)
+    : ({} as PlanData);
 
   useEffect(() => {
     if (!selectedPlanObj) return;
@@ -555,7 +643,7 @@ export default function ProductNerveCenter({
     );
     const currentCategory = String(p.category || '').toLowerCase();
 
-    return ((workspaceProductsRaw as any[]) || [])
+    return ((workspaceProductsRaw as ProductData[]) || [])
       .filter((candidate) => candidate?.id && candidate.id !== productId)
       .map((candidate) => {
         const candidateTags = String(
@@ -595,7 +683,9 @@ export default function ProductNerveCenter({
 
   const handleDuplicatePlan = useCallback(
     async (planId: string) => {
-      const sourcePlan = (rawPlans || []).find((candidate: any) => candidate.id === planId);
+      const sourcePlan = ((rawPlans || []) as PlanData[]).find(
+        (candidate) => candidate.id === planId,
+      );
       if (!sourcePlan) return;
 
       try {
@@ -746,13 +836,13 @@ export default function ProductNerveCenter({
     const parsedPriceInCents = Math.max(0, Math.round(newPlanPriceCents));
     const quantity = Math.max(1, Math.round(Number(newPlanQty || 1)));
     const maxInstallments = Math.min(12, Math.max(1, Math.round(Number(newPlanInst || 12))));
-    const res: any = await createPlan({
+    const res = (await createPlan({
       name: newPlanName,
       priceInCents: parsedPriceInCents > 0 ? parsedPriceInCents : getFallbackPlanPriceInCents(),
       quantity,
       maxInstallments,
       brandName: editName || p.name || newPlanName,
-    });
+    })) as { id?: string; data?: { id?: string } } | null;
     const createdPlanId = res?.id || res?.data?.id || null;
     if (createdPlanId) {
       setSelPlan(createdPlanId);
@@ -811,7 +901,7 @@ export default function ProductNerveCenter({
       (product) => product.id === newBumpProductId,
     );
     const selectedBumpPlan = (selectedCheckoutProduct?.plans || []).find(
-      (plan: any) => plan.id === newBumpPlanId,
+      (plan) => plan.id === newBumpPlanId,
     );
     if (!selectedCheckoutProduct || !selectedBumpPlan) return;
     try {
@@ -851,7 +941,7 @@ export default function ProductNerveCenter({
   const primaryPlan = PLANS[0] || null;
   const primaryPlanId = primaryPlan?.id || null;
   const primaryCheckoutConfig =
-    (rawPlans || []).find((pl: any) => pl.id === primaryPlanId)?.checkoutConfig || {};
+    ((rawPlans || []) as PlanData[]).find((pl) => pl.id === primaryPlanId)?.checkoutConfig || {};
 
   const openCheckoutEditor = useCallback(
     (focus: string, planId?: string | null) => {
@@ -863,10 +953,10 @@ export default function ProductNerveCenter({
       }
 
       const linkedCheckoutId =
-        (rawCheckouts || []).find((checkoutCandidate: any) =>
+        ((rawCheckouts || []) as CheckoutData[]).find((checkoutCandidate) =>
           Array.isArray(checkoutCandidate?.checkoutLinks)
             ? checkoutCandidate.checkoutLinks.some(
-                (link: any) =>
+                (link) =>
                   (link?.planId === targetPlanId || link?.plan?.id === targetPlanId) &&
                   link?.isActive !== false,
               )
@@ -924,7 +1014,7 @@ export default function ProductNerveCenter({
   );
   const orderBumpPlanOptions = useMemo(() => {
     if (!selectedBumpProduct) return [];
-    return (selectedBumpProduct.plans || []).filter((plan: any) => plan.id !== selPlan);
+    return (selectedBumpProduct.plans || []).filter((plan) => plan.id !== selPlan);
   }, [selectedBumpProduct, selPlan]);
 
   /* ═══════════════════════════════════════════════════
@@ -1009,7 +1099,7 @@ export default function ProductNerveCenter({
      HEADER
      ═══════════════════════════════════════════════════ */
   function renderHeader() {
-    const totalSales = PLANS.reduce((s: number, pl: any) => s + (pl.sales || 0), 0);
+    const totalSales = PLANS.reduce((s: number, pl) => s + (pl.sales || 0), 0);
     return (
       <div style={{ marginBottom: 24 }}>
         <div
@@ -1283,7 +1373,7 @@ export default function ProductNerveCenter({
   /* ═══════════════════════════════════════════════════
      PLAN DETAIL — render function (pure, no hooks — state lives in parent)
      ═══════════════════════════════════════════════════ */
-  function renderPlanDetailContent(plan: any) {
+  function renderPlanDetailContent(plan: ProductEditorPlanView) {
     const primaryPlanCheckoutLink = getPrimaryCheckoutLinkForPlan(plan);
     const planPublicCheckoutUrl = primaryPlanCheckoutLink
       ? buildPublicCheckoutEntryUrl(
@@ -1298,7 +1388,7 @@ export default function ProductNerveCenter({
       { k: 'afiliacao', l: 'Afiliação' },
       { k: 'bump', l: 'Order Bump' },
     ];
-    const realBumps = (bumps || []).map((b: any) => ({
+    const realBumps = ((bumps || []) as BumpData[]).map((b) => ({
       id: b.id,
       name: b.title || b.productName || 'Order Bump',
       desc: b.description || '',
@@ -2167,7 +2257,7 @@ export default function ProductNerveCenter({
                 </Bt>
               </div>
               {realBumps.length > 0 ? (
-                realBumps.map((b: any) => (
+                realBumps.map((b) => (
                   <div
                     key={b.id}
                     style={{
@@ -2408,13 +2498,13 @@ export default function ProductNerveCenter({
   const handleNewCheckout = async () => {
     try {
       const checkoutName = `Checkout ${(rawCheckouts || []).length + 1}`;
-      const res: any = await createCheckout({
+      const res = (await createCheckout({
         name: checkoutName,
         priceInCents: getFallbackPlanPriceInCents(),
         quantity: 1,
         maxInstallments: 12,
         brandName: editName || p.name || checkoutName,
-      });
+      })) as { id?: string; data?: { id?: string } } | null;
       const createdPlanId = res?.id || res?.data?.id || null;
       if (!createdPlanId) throw new Error('Nenhum checkout foi criado');
       setTab('checkouts');
@@ -2787,10 +2877,11 @@ export default function ProductNerveCenter({
                     </span>
                   </div>
                   <div style={{ display: 'grid', gap: 10 }}>
-                    {orderBumpPlanOptions.map((plan: any) => {
+                    {orderBumpPlanOptions.map((plan) => {
                       const active = plan.id === newBumpPlanId;
-                      const image =
-                        plan.checkoutConfig?.productImage || selectedBumpProduct.coverImage || '';
+                      const image = String(
+                        plan.checkoutConfig?.productImage || selectedBumpProduct.coverImage || '',
+                      );
                       return (
                         <button
                           key={plan.id}

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { KloelLead, Prisma } from '@prisma/client';
 import { Response } from 'express';
 import type { ImageGenerateParamsNonStreaming, ImagesResponse } from 'openai/resources/images';
 import OpenAI from 'openai';
@@ -147,6 +147,180 @@ type WorkspaceProductContextInput = Parameters<
 >[0];
 type UnknownRecord = Record<string, unknown>;
 
+/** Generic tool result shape returned by all tool* methods. */
+interface ToolResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+}
+
+// ── Tool Argument Interfaces ──
+
+interface ToolSaveProductArgs extends UnknownRecord {
+  name: string;
+  price: number;
+  description?: string;
+}
+
+interface ToolDeleteProductArgs extends UnknownRecord {
+  productId?: string;
+  productName?: string;
+}
+
+interface ToolToggleAutopilotArgs extends UnknownRecord {
+  enabled: boolean;
+}
+
+interface ToolSetBrandVoiceArgs extends UnknownRecord {
+  tone: string;
+  personality?: string;
+}
+
+interface ToolRememberUserInfoArgs extends UnknownRecord {
+  key: string;
+  value: string;
+}
+
+interface ToolSearchWebArgs extends UnknownRecord {
+  query: string;
+}
+
+interface ToolCreateFlowArgs extends UnknownRecord {
+  name: string;
+  trigger: string;
+  actions?: string[];
+}
+
+interface ToolDashboardSummaryArgs extends UnknownRecord {
+  period?: 'today' | 'week' | 'month';
+}
+
+interface ToolSendWhatsAppMessageArgs extends UnknownRecord {
+  phone: string;
+  message: string;
+}
+
+interface ToolPaginationArgs extends UnknownRecord {
+  limit?: number;
+}
+
+interface ToolCreateWhatsAppContactArgs extends UnknownRecord {
+  phone: string;
+  name?: string;
+  email?: string;
+}
+
+interface ToolGetWhatsAppMessagesArgs extends UnknownRecord {
+  chatId?: string;
+  phone?: string;
+  limit?: number;
+  offset?: number;
+}
+
+interface ToolSetWhatsAppPresenceArgs extends UnknownRecord {
+  chatId?: string;
+  phone?: string;
+  presence?: 'typing' | 'paused' | 'seen';
+}
+
+interface ToolSyncWhatsAppHistoryArgs extends UnknownRecord {
+  reason?: string;
+}
+
+interface ToolListLeadsArgs extends UnknownRecord {
+  limit?: number;
+  status?: string;
+}
+
+interface ToolGetLeadDetailsArgs extends UnknownRecord {
+  phone?: string;
+  leadId?: string;
+}
+
+interface ToolSaveBusinessInfoArgs extends UnknownRecord {
+  businessName?: string;
+  description?: string;
+  segment?: string;
+}
+
+interface ToolSetBusinessHoursArgs extends UnknownRecord {
+  weekdayStart?: string;
+  weekdayEnd?: string;
+  saturdayStart?: string;
+  saturdayEnd?: string;
+  workOnSunday?: boolean;
+}
+
+interface ToolCreateCampaignArgs extends UnknownRecord {
+  name: string;
+  message: string;
+  targetAudience?: string;
+}
+
+interface ToolSendAudioArgs extends UnknownRecord {
+  phone: string;
+  text: string;
+  voice?: string;
+}
+
+interface ToolSendDocumentArgs extends UnknownRecord {
+  phone: string;
+  documentName?: string;
+  url?: string;
+  caption?: string;
+}
+
+interface ToolTranscribeAudioArgs extends UnknownRecord {
+  audioUrl?: string;
+  audioBase64?: string;
+  language?: string;
+}
+
+interface ToolUpdateBillingInfoArgs extends UnknownRecord {
+  returnUrl?: string;
+}
+
+interface ToolChangePlanArgs extends UnknownRecord {
+  newPlan: string;
+  immediate?: boolean;
+}
+
+// ── Followup list item shape ──
+export interface FollowupListItem {
+  id: string;
+  key: string;
+  phone?: unknown;
+  contactId?: unknown;
+  message: unknown;
+  scheduledFor?: unknown;
+  delayMinutes?: unknown;
+  status: unknown;
+  createdAt: Date;
+  executedAt?: unknown;
+}
+
+// ── History item shape ──
+interface HistoryItem {
+  id: string;
+  role: string;
+  content: string;
+  timestamp: Date;
+}
+
+// ── OpenAI Responses API extended source (when include web_search_call.action.sources) ──
+interface WebSearchSource {
+  title?: string;
+  name?: string;
+  url?: string;
+}
+
+interface WebSearchOutputItem {
+  action?: {
+    sources?: WebSearchSource[];
+  };
+}
+
 const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
 const KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED = 'client_disconnected';
 const KLOEL_SEARCH_WEB_MODEL = resolveKloelCapabilityModel('search_web');
@@ -167,6 +341,13 @@ function toAssistantCompletionMessage(
     content: typeof message?.content === 'string' ? message.content : '',
     tool_calls: Array.isArray(message?.tool_calls) ? message.tool_calls : undefined,
   };
+}
+
+/** Safely coerce unknown values to string — avoids no-base-to-string */
+function safeStr(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return fallback;
 }
 
 function asUnknownRecord(value: unknown): UnknownRecord | null {
@@ -2101,16 +2282,16 @@ export class KloelService {
 
     const providerSettings =
       workspace?.providerSettings && typeof workspace.providerSettings === 'object'
-        ? (workspace.providerSettings as Record<string, any>)
+        ? (workspace.providerSettings as Record<string, unknown>)
         : {};
     const autopilotSettings =
       providerSettings.autopilot && typeof providerSettings.autopilot === 'object'
-        ? (providerSettings.autopilot as Record<string, any>)
+        ? (providerSettings.autopilot as Record<string, unknown>)
         : {};
     const whatsappConnected =
       providerSettings.whatsappConnected === true ||
-      providerSettings.whatsapp?.connected === true ||
-      providerSettings.connection?.status === 'connected' ||
+      asUnknownRecord(providerSettings.whatsapp)?.connected === true ||
+      asUnknownRecord(providerSettings.connection)?.status === 'connected' ||
       providerSettings.status === 'connected';
 
     const resolvedUserName = this.contextFormatter.sanitizeUserNameForAssistant(
@@ -2126,7 +2307,7 @@ export class KloelService {
       `Autopilot ativo: ${autopilotSettings.enabled === true ? 'Sim' : 'Não'}`,
       `Conversas registradas: ${threadCount}`,
       this.contextFormatter.buildAgentProfileContext(
-        agent as Record<string, any> | null | undefined,
+        agent as Record<string, unknown> | null | undefined,
       ),
       `Quando fizer sentido, trate o usuário pelo primeiro nome "${resolvedUserName}" de forma natural ao longo da conversa.`,
       companyContext ? `Contexto adicional enviado pelo frontend:\n${companyContext}` : null,
@@ -2266,18 +2447,18 @@ export class KloelService {
         },
       ],
       include: ['web_search_call.action.sources'],
-    } as any);
+    });
 
-    const outputText = String((response as any)?.output_text || '').trim();
-    const rawSources = Array.isArray((response as any)?.output)
-      ? (response as any).output.flatMap((item: any) =>
+    const outputText = String(response.output_text || '').trim();
+    const rawSources = Array.isArray(response.output)
+      ? (response.output as WebSearchOutputItem[]).flatMap((item) =>
           Array.isArray(item?.action?.sources) ? item.action.sources : [],
         )
       : [];
 
     const seen = new Set<string>();
     const sources = rawSources
-      .map((source: any) => ({
+      .map((source: WebSearchSource) => ({
         title: String(source?.title || source?.name || source?.url || '').trim(),
         url: String(source?.url || '').trim(),
       }))
@@ -2991,51 +3172,57 @@ export class KloelService {
   private async executeTool(
     workspaceId: string,
     toolName: string,
-    args: any,
+    args: UnknownRecord,
     userId?: string,
-  ): Promise<any> {
+  ): Promise<ToolResult> {
     this.logger.log(`Executando ferramenta: ${toolName}`, args);
 
     try {
       switch (toolName) {
         case 'save_product':
-          return await this.toolSaveProduct(workspaceId, args);
+          return await this.toolSaveProduct(workspaceId, args as ToolSaveProductArgs);
 
         case 'list_products':
           return await this.toolListProducts(workspaceId);
 
         case 'delete_product':
-          return await this.toolDeleteProduct(workspaceId, args);
+          return await this.toolDeleteProduct(workspaceId, args as ToolDeleteProductArgs);
 
         case 'toggle_autopilot':
-          return await this.toolToggleAutopilot(workspaceId, args);
+          return await this.toolToggleAutopilot(workspaceId, args as ToolToggleAutopilotArgs);
 
         case 'set_brand_voice':
-          return await this.toolSetBrandVoice(workspaceId, args);
+          return await this.toolSetBrandVoice(workspaceId, args as ToolSetBrandVoiceArgs);
 
         case 'remember_user_info':
-          return await this.toolRememberUserInfo(workspaceId, args, userId);
+          return await this.toolRememberUserInfo(
+            workspaceId,
+            args as ToolRememberUserInfoArgs,
+            userId,
+          );
 
         case 'search_web':
-          return await this.toolSearchWeb(workspaceId, args);
+          return await this.toolSearchWeb(workspaceId, args as ToolSearchWebArgs);
 
         case 'create_flow':
-          return await this.toolCreateFlow(workspaceId, args);
+          return await this.toolCreateFlow(workspaceId, args as ToolCreateFlowArgs);
 
         case 'list_flows':
           return await this.toolListFlows(workspaceId);
 
         case 'get_dashboard_summary':
-          return await this.toolGetDashboardSummary(workspaceId, args);
+          return await this.toolGetDashboardSummary(workspaceId, args as ToolDashboardSummaryArgs);
 
-        case 'create_payment_link':
-          return await this.smartPaymentService.createSmartPayment({
+        case 'create_payment_link': {
+          const paymentResult = await this.smartPaymentService.createSmartPayment({
             workspaceId,
-            amount: args.amount,
-            productName: args.description,
-            customerName: args.customerName || 'Cliente',
+            amount: Number(args.amount) || 0,
+            productName: typeof args.description === 'string' ? args.description : '',
+            customerName: typeof args.customerName === 'string' ? args.customerName : 'Cliente',
             phone: '',
           });
+          return { success: true, ...paymentResult };
+        }
 
         case 'connect_whatsapp':
           return await this.toolConnectWhatsapp(workspaceId);
@@ -3044,66 +3231,81 @@ export class KloelService {
           return await this.toolGetWhatsAppStatus(workspaceId);
 
         case 'send_whatsapp_message':
-          return await this.toolSendWhatsAppMessage(workspaceId, args);
+          return await this.toolSendWhatsAppMessage(
+            workspaceId,
+            args as ToolSendWhatsAppMessageArgs,
+          );
 
         case 'list_whatsapp_contacts':
-          return await this.toolListWhatsAppContacts(workspaceId, args);
+          return await this.toolListWhatsAppContacts(workspaceId, args as ToolPaginationArgs);
 
         case 'create_whatsapp_contact':
-          return await this.toolCreateWhatsAppContact(workspaceId, args);
+          return await this.toolCreateWhatsAppContact(
+            workspaceId,
+            args as ToolCreateWhatsAppContactArgs,
+          );
 
         case 'list_whatsapp_chats':
-          return await this.toolListWhatsAppChats(workspaceId, args);
+          return await this.toolListWhatsAppChats(workspaceId, args as ToolPaginationArgs);
 
         case 'get_whatsapp_messages':
-          return await this.toolGetWhatsAppMessages(workspaceId, args);
+          return await this.toolGetWhatsAppMessages(
+            workspaceId,
+            args as ToolGetWhatsAppMessagesArgs,
+          );
 
         case 'get_whatsapp_backlog':
           return await this.toolGetWhatsAppBacklog(workspaceId);
 
         case 'set_whatsapp_presence':
-          return await this.toolSetWhatsAppPresence(workspaceId, args);
+          return await this.toolSetWhatsAppPresence(
+            workspaceId,
+            args as ToolSetWhatsAppPresenceArgs,
+          );
 
         case 'sync_whatsapp_history':
-          return await this.toolSyncWhatsAppHistory(workspaceId, args);
+          return await this.toolSyncWhatsAppHistory(
+            workspaceId,
+            args as ToolSyncWhatsAppHistoryArgs,
+          );
 
         case 'list_leads':
-          return await this.toolListLeads(workspaceId, args);
+          return await this.toolListLeads(workspaceId, args as ToolListLeadsArgs);
 
         case 'get_lead_details':
-          return await this.toolGetLeadDetails(workspaceId, args);
+          return await this.toolGetLeadDetails(workspaceId, args as ToolGetLeadDetailsArgs);
 
         case 'save_business_info':
-          return await this.toolSaveBusinessInfo(workspaceId, args);
+          return await this.toolSaveBusinessInfo(workspaceId, args as ToolSaveBusinessInfoArgs);
 
         case 'set_business_hours':
-          return await this.toolSetBusinessHours(workspaceId, args);
+          return await this.toolSetBusinessHours(workspaceId, args as ToolSetBusinessHoursArgs);
 
         case 'create_campaign':
-          return await this.toolCreateCampaign(workspaceId, args);
+          return await this.toolCreateCampaign(workspaceId, args as ToolCreateCampaignArgs);
 
         // === MÍDIA (AUDIO/DOCUMENTO/VOZ) ===
         case 'send_audio':
-          return await this.toolSendAudio(workspaceId, args);
+          return await this.toolSendAudio(workspaceId, args as ToolSendAudioArgs);
 
         case 'send_document':
-          return await this.toolSendDocument(workspaceId, args);
+          return await this.toolSendDocument(workspaceId, args as ToolSendDocumentArgs);
 
         case 'send_voice_note':
-          return await this.toolSendVoiceNote(workspaceId, args);
+          return await this.toolSendVoiceNote(workspaceId, args as ToolSendAudioArgs);
 
         case 'transcribe_audio':
-          return await this.toolTranscribeAudio(workspaceId, args);
+          return await this.toolTranscribeAudio(workspaceId, args as ToolTranscribeAudioArgs);
 
         // === BILLING ===
         case 'update_billing_info':
-          return await this.toolUpdateBillingInfo(workspaceId, args);
+          return await this.toolUpdateBillingInfo(workspaceId, args as ToolUpdateBillingInfoArgs);
 
         case 'get_billing_status':
           return await this.toolGetBillingStatus(workspaceId);
 
         case 'change_plan':
-          return await this.toolChangePlan(workspaceId, args);
+          return await this.toolChangePlan(workspaceId, args as ToolChangePlanArgs);
 
         default:
           return {
@@ -3124,7 +3326,10 @@ export class KloelService {
   /**
    * 📦 Cadastrar produto
    */
-  private async toolSaveProduct(workspaceId: string, args: any): Promise<any> {
+  private async toolSaveProduct(
+    workspaceId: string,
+    args: ToolSaveProductArgs,
+  ): Promise<ToolResult> {
     const product = await this.prisma.product.create({
       data: {
         workspaceId,
@@ -3144,7 +3349,7 @@ export class KloelService {
   /**
    * 📋 Listar produtos
    */
-  private async toolListProducts(workspaceId: string): Promise<any> {
+  private async toolListProducts(workspaceId: string): Promise<ToolResult> {
     const products = filterLegacyProducts(
       await this.prisma.product.findMany({
         where: { workspaceId, active: true },
@@ -3175,10 +3380,13 @@ export class KloelService {
   /**
    * 🗑️ Deletar produto
    */
-  private async toolDeleteProduct(workspaceId: string, args: any): Promise<any> {
+  private async toolDeleteProduct(
+    workspaceId: string,
+    args: ToolDeleteProductArgs,
+  ): Promise<ToolResult> {
     const { productId, productName } = args;
 
-    const where: any = { workspaceId };
+    const where: Prisma.ProductWhereInput = { workspaceId };
     if (productId) where.id = productId;
     else if (productName) where.name = { contains: productName, mode: 'insensitive' };
 
@@ -3202,13 +3410,16 @@ export class KloelService {
   /**
    * 🤖 Toggle Autopilot
    */
-  private async toolToggleAutopilot(workspaceId: string, args: any): Promise<any> {
+  private async toolToggleAutopilot(
+    workspaceId: string,
+    args: ToolToggleAutopilotArgs,
+  ): Promise<ToolResult> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
 
-    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
 
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
@@ -3242,7 +3453,10 @@ export class KloelService {
   /**
    * 🎭 Definir tom de voz
    */
-  private async toolSetBrandVoice(workspaceId: string, args: any): Promise<any> {
+  private async toolSetBrandVoice(
+    workspaceId: string,
+    args: ToolSetBrandVoiceArgs,
+  ): Promise<ToolResult> {
     await this.prisma.kloelMemory.upsert({
       where: {
         workspaceId_key: {
@@ -3281,9 +3495,9 @@ export class KloelService {
 
   private async toolRememberUserInfo(
     workspaceId: string,
-    args: any,
+    args: ToolRememberUserInfoArgs,
     userId?: string,
-  ): Promise<any> {
+  ): Promise<ToolResult> {
     const normalizedKey = String(args?.key || '')
       .trim()
       .toLowerCase()
@@ -3311,10 +3525,10 @@ export class KloelService {
 
     const currentValue =
       existing?.value && typeof existing.value === 'object'
-        ? (existing.value as Record<string, any>)
+        ? (existing.value as Record<string, Prisma.JsonValue>)
         : {};
 
-    const nextValue = {
+    const nextValue: Record<string, Prisma.JsonValue> = {
       ...currentValue,
       [normalizedKey]: value,
       updatedAt: new Date().toISOString(),
@@ -3334,7 +3548,7 @@ export class KloelService {
         type: 'user_profile',
         content: Object.entries(nextValue)
           .filter(([key]) => !['updatedAt', 'userId'].includes(key))
-          .map(([key, current]) => `${key}: ${String(current)}`)
+          .map(([key, current]) => key + ': ' + safeStr(current))
           .join('\n'),
         metadata: {
           ...((existing?.metadata as Record<string, unknown>) || {}),
@@ -3350,7 +3564,7 @@ export class KloelService {
         type: 'user_profile',
         content: Object.entries(nextValue)
           .filter(([key]) => !['updatedAt', 'userId'].includes(key))
-          .map(([key, current]) => `${key}: ${String(current)}`)
+          .map(([key, current]) => key + ': ' + safeStr(current))
           .join('\n'),
         metadata: {
           userId: userId || null,
@@ -3365,7 +3579,7 @@ export class KloelService {
     };
   }
 
-  private async toolSearchWeb(workspaceId: string, args: any): Promise<any> {
+  private async toolSearchWeb(workspaceId: string, args: ToolSearchWebArgs): Promise<ToolResult> {
     const query = String(args?.query || '').trim();
     if (!query) {
       return { success: false, error: 'missing_query' };
@@ -3402,7 +3616,7 @@ export class KloelService {
   /**
    * ⚡ Criar fluxo simples
    */
-  private async toolCreateFlow(workspaceId: string, args: any): Promise<any> {
+  private async toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
     // Criar um fluxo básico com nó de mensagem
     const nodes = [
       {
@@ -3442,7 +3656,10 @@ export class KloelService {
   /**
    * 📊 Resumo do dashboard
    */
-  private async toolGetDashboardSummary(workspaceId: string, args: any): Promise<any> {
+  private async toolGetDashboardSummary(
+    workspaceId: string,
+    args: ToolDashboardSummaryArgs,
+  ): Promise<ToolResult> {
     const period = args.period || 'today';
     let dateFilter: Date;
 
@@ -3482,7 +3699,7 @@ export class KloelService {
   /**
    * 📋 Lista fluxos de automação
    */
-  private async toolListFlows(workspaceId: string): Promise<any> {
+  private async toolListFlows(workspaceId: string): Promise<ToolResult> {
     const flows = await this.prisma.flow.findMany({
       where: { workspaceId },
       select: {
@@ -3511,7 +3728,7 @@ export class KloelService {
   /**
    * 📱 Conectar WhatsApp (Gera QR Code)
    */
-  private async toolConnectWhatsapp(workspaceId: string): Promise<any> {
+  private async toolConnectWhatsapp(workspaceId: string): Promise<ToolResult> {
     try {
       const result = await this.providerRegistry.startSession(workspaceId);
 
@@ -3551,7 +3768,7 @@ export class KloelService {
   /**
    * 📱 Status do WhatsApp
    */
-  private async toolGetWhatsAppStatus(workspaceId: string): Promise<any> {
+  private async toolGetWhatsAppStatus(workspaceId: string): Promise<ToolResult> {
     const connStatus = await this.providerRegistry.getSessionStatus(workspaceId);
     const connected = connStatus?.connected === true;
 
@@ -3580,7 +3797,10 @@ export class KloelService {
   /**
    * 💬 Enviar mensagem WhatsApp
    */
-  private async toolSendWhatsAppMessage(workspaceId: string, args: any): Promise<any> {
+  private async toolSendWhatsAppMessage(
+    workspaceId: string,
+    args: ToolSendWhatsAppMessageArgs,
+  ): Promise<ToolResult> {
     const { phone, message } = args;
 
     // Normalizar telefone
@@ -3653,7 +3873,10 @@ export class KloelService {
   /**
    * 👥 Lista contatos operacionais do WhatsApp/CRM
    */
-  private async toolListWhatsAppContacts(workspaceId: string, args: any): Promise<any> {
+  private async toolListWhatsAppContacts(
+    workspaceId: string,
+    args: ToolPaginationArgs,
+  ): Promise<ToolResult> {
     const limit = Math.max(1, Math.min(200, Number(args?.limit || 50) || 50));
     const contacts = await this.whatsappService.listContacts(workspaceId);
     const sliced = contacts.slice(0, limit);
@@ -3672,7 +3895,10 @@ export class KloelService {
   /**
    * ➕ Cria/atualiza contato operacional
    */
-  private async toolCreateWhatsAppContact(workspaceId: string, args: any): Promise<any> {
+  private async toolCreateWhatsAppContact(
+    workspaceId: string,
+    args: ToolCreateWhatsAppContactArgs,
+  ): Promise<ToolResult> {
     const contact = await this.whatsappService.createContact(workspaceId, {
       phone: args?.phone,
       name: args?.name,
@@ -3689,7 +3915,10 @@ export class KloelService {
   /**
    * 💬 Lista chats reais do WhatsApp
    */
-  private async toolListWhatsAppChats(workspaceId: string, args: any): Promise<any> {
+  private async toolListWhatsAppChats(
+    workspaceId: string,
+    args: ToolPaginationArgs,
+  ): Promise<ToolResult> {
     const limit = Math.max(1, Math.min(200, Number(args?.limit || 50) || 50));
     const chats = await this.whatsappService.listChats(workspaceId);
     const sliced = chats.slice(0, limit);
@@ -3711,7 +3940,10 @@ export class KloelService {
   /**
    * 🕘 Lê histórico completo de uma conversa
    */
-  private async toolGetWhatsAppMessages(workspaceId: string, args: any): Promise<any> {
+  private async toolGetWhatsAppMessages(
+    workspaceId: string,
+    args: ToolGetWhatsAppMessagesArgs,
+  ): Promise<ToolResult> {
     const chatId = String(args?.chatId || args?.phone || '').trim();
     if (!chatId) {
       return {
@@ -3740,7 +3972,7 @@ export class KloelService {
   /**
    * 📊 Conta backlog real do WhatsApp
    */
-  private async toolGetWhatsAppBacklog(workspaceId: string): Promise<any> {
+  private async toolGetWhatsAppBacklog(workspaceId: string): Promise<ToolResult> {
     const backlog = await this.whatsappService.getBacklog(workspaceId);
     return {
       success: true,
@@ -3754,7 +3986,10 @@ export class KloelService {
   /**
    * 👁️ Presença operacional no WhatsApp
    */
-  private async toolSetWhatsAppPresence(workspaceId: string, args: any): Promise<any> {
+  private async toolSetWhatsAppPresence(
+    workspaceId: string,
+    args: ToolSetWhatsAppPresenceArgs,
+  ): Promise<ToolResult> {
     const chatId = String(args?.chatId || args?.phone || '').trim();
     const presence = String(args?.presence || '').trim() as 'typing' | 'paused' | 'seen';
 
@@ -3777,7 +4012,10 @@ export class KloelService {
   /**
    * 🔄 Dispara sincronização ativa do WhatsApp
    */
-  private async toolSyncWhatsAppHistory(workspaceId: string, args: any): Promise<any> {
+  private async toolSyncWhatsAppHistory(
+    workspaceId: string,
+    args: ToolSyncWhatsAppHistoryArgs,
+  ): Promise<ToolResult> {
     const sync = await this.whatsappService.triggerSync(
       workspaceId,
       args?.reason || 'kloel_tool_sync',
@@ -3794,10 +4032,10 @@ export class KloelService {
   /**
    * 👥 Listar leads
    */
-  private async toolListLeads(workspaceId: string, args: any): Promise<any> {
+  private async toolListLeads(workspaceId: string, args: ToolListLeadsArgs): Promise<ToolResult> {
     const { limit = 10, status } = args;
 
-    const where: any = { workspaceId };
+    const where: Prisma.ContactWhereInput = { workspaceId };
     // Filtrar por score ao invés de status (Contact não tem campo status)
     if (status === 'qualified' || status === 'hot') {
       where.leadScore = { gte: 70 };
@@ -3838,7 +4076,10 @@ export class KloelService {
   /**
    * 👤 Detalhes do lead
    */
-  private async toolGetLeadDetails(workspaceId: string, args: any): Promise<any> {
+  private async toolGetLeadDetails(
+    workspaceId: string,
+    args: ToolGetLeadDetailsArgs,
+  ): Promise<ToolResult> {
     const { phone, leadId } = args;
 
     const contactInclude = {
@@ -3892,18 +4133,20 @@ export class KloelService {
   /**
    * 🏢 Salvar info do negócio
    */
-  private async toolSaveBusinessInfo(workspaceId: string, args: any): Promise<any> {
+  private async toolSaveBusinessInfo(
+    workspaceId: string,
+    args: ToolSaveBusinessInfoArgs,
+  ): Promise<ToolResult> {
     const { businessName, description, segment } = args;
 
-    const updateData: any = {};
+    const updateData: Prisma.WorkspaceUpdateInput = {};
     if (businessName) updateData.name = businessName;
-    if (segment) updateData.segment = segment;
 
     if (description || segment) {
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
       });
-      const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+      const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
       updateData.providerSettings = {
         ...currentSettings,
         businessDescription: description,
@@ -3925,12 +4168,15 @@ export class KloelService {
   /**
    * 🕐 Definir horário de funcionamento
    */
-  private async toolSetBusinessHours(workspaceId: string, args: any): Promise<any> {
+  private async toolSetBusinessHours(
+    workspaceId: string,
+    args: ToolSetBusinessHoursArgs,
+  ): Promise<ToolResult> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
     });
 
-    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
     const businessHours = {
       weekday: {
         start: args.weekdayStart || '09:00',
@@ -3960,11 +4206,14 @@ export class KloelService {
   /**
    * 📢 Criar campanha
    */
-  private async toolCreateCampaign(workspaceId: string, args: any): Promise<any> {
+  private async toolCreateCampaign(
+    workspaceId: string,
+    args: ToolCreateCampaignArgs,
+  ): Promise<ToolResult> {
     const { name, message, targetAudience } = args;
 
     // Buscar contatos baseado no público-alvo
-    const contactFilter: any = { workspaceId };
+    const contactFilter: Prisma.ContactWhereInput = { workspaceId };
     if (targetAudience === 'leads_quentes') {
       contactFilter.leadScore = { gte: 70 };
     } else if (targetAudience === 'novos') {
@@ -4008,7 +4257,7 @@ export class KloelService {
   /**
    * 🔊 Gera e envia áudio via TTS
    */
-  private async toolSendAudio(workspaceId: string, args: any): Promise<any> {
+  private async toolSendAudio(workspaceId: string, args: ToolSendAudioArgs): Promise<ToolResult> {
     const { phone, text, voice = 'nova' } = args;
 
     if (!phone || !text) {
@@ -4048,7 +4297,10 @@ export class KloelService {
   /**
    * 📄 Envia documento/PDF
    */
-  private async toolSendDocument(workspaceId: string, args: any): Promise<any> {
+  private async toolSendDocument(
+    workspaceId: string,
+    args: ToolSendDocumentArgs,
+  ): Promise<ToolResult> {
     const { phone, documentName, url, caption } = args;
 
     if (!phone) {
@@ -4067,7 +4319,7 @@ export class KloelService {
             name: { contains: documentName, mode: 'insensitive' },
           },
         });
-        documentUrl = (doc as any)?.url || doc?.filePath;
+        documentUrl = doc?.filePath;
       }
 
       if (!documentUrl) {
@@ -4101,7 +4353,10 @@ export class KloelService {
   /**
    * 🎤 Envia nota de voz (voice note)
    */
-  private async toolSendVoiceNote(workspaceId: string, args: any): Promise<any> {
+  private async toolSendVoiceNote(
+    workspaceId: string,
+    args: ToolSendAudioArgs,
+  ): Promise<ToolResult> {
     // Voice note é essencialmente um áudio curto
     return this.toolSendAudio(workspaceId, args);
   }
@@ -4109,7 +4364,10 @@ export class KloelService {
   /**
    * 🎧 Transcreve áudio para texto
    */
-  private async toolTranscribeAudio(workspaceId: string, args: any): Promise<any> {
+  private async toolTranscribeAudio(
+    workspaceId: string,
+    args: ToolTranscribeAudioArgs,
+  ): Promise<ToolResult> {
     const { audioUrl, audioBase64, language = 'pt' } = args;
 
     try {
@@ -4143,7 +4401,10 @@ export class KloelService {
   /**
    * 💳 Atualiza informações de cobrança
    */
-  private async toolUpdateBillingInfo(workspaceId: string, args: any): Promise<any> {
+  private async toolUpdateBillingInfo(
+    workspaceId: string,
+    args: ToolUpdateBillingInfoArgs,
+  ): Promise<ToolResult> {
     const { returnUrl } = args;
 
     try {
@@ -4186,15 +4447,16 @@ export class KloelService {
   /**
    * 📊 Retorna status de cobrança
    */
-  private async toolGetBillingStatus(workspaceId: string): Promise<any> {
+  private async toolGetBillingStatus(workspaceId: string): Promise<ToolResult> {
     try {
-      const workspace: any = await (this.prisma.workspace as any).findUnique({
+      const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: {
-          plan: true,
           stripeCustomerId: true,
-          stripeSubscriptionId: true,
           providerSettings: true,
+          subscription: {
+            select: { plan: true, stripeId: true },
+          },
         },
       });
 
@@ -4202,17 +4464,19 @@ export class KloelService {
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings: any = workspace.providerSettings || {};
+      const settings = (workspace.providerSettings as Record<string, unknown>) || {};
+      const plan = String(workspace.subscription?.plan || 'FREE');
+      const subscriptionId = workspace.subscription?.stripeId || null;
 
       return {
         success: true,
-        plan: workspace.plan || 'FREE',
+        plan,
         status: settings.billingSuspended ? 'SUSPENDED' : 'ACTIVE',
         hasPaymentMethod: !!workspace.stripeCustomerId,
-        subscriptionId: workspace.stripeSubscriptionId,
+        subscriptionId,
         message: settings.billingSuspended
           ? 'Cobrança suspensa. Regularize para continuar usando.'
-          : `Plano ${workspace.plan || 'FREE'} ativo`,
+          : `Plano ${plan} ativo`,
       };
     } catch (error: unknown) {
       const errorInstanceofError =
@@ -4227,7 +4491,7 @@ export class KloelService {
   /**
    * 🔄 Altera plano (upgrade/downgrade)
    */
-  private async toolChangePlan(workspaceId: string, args: any): Promise<any> {
+  private async toolChangePlan(workspaceId: string, args: ToolChangePlanArgs): Promise<ToolResult> {
     const { newPlan, immediate: _immediate = true } = args;
 
     if (!newPlan) {
@@ -4246,16 +4510,20 @@ export class KloelService {
     }
 
     try {
-      const workspace: any = await (this.prisma.workspace as any).findUnique({
+      const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
-        select: { plan: true, stripeSubscriptionId: true },
+        select: {
+          subscription: {
+            select: { plan: true, stripeId: true },
+          },
+        },
       });
 
-      const currentPlan = workspace?.plan || 'FREE';
+      const currentPlan = workspace?.subscription?.plan || 'FREE';
       const targetPlan = newPlan.toUpperCase();
 
       // Se tem subscription Stripe, redirecionar para portal
-      if (workspace?.stripeSubscriptionId) {
+      if (workspace?.subscription?.stripeId) {
         return {
           success: true,
           requiresAction: true,
@@ -4275,10 +4543,16 @@ export class KloelService {
         };
       }
 
-      // Atualizar no banco (downgrade para free)
-      await (this.prisma.workspace as any).update({
-        where: { id: workspaceId },
-        data: { plan: targetPlan },
+      // Atualizar no banco (downgrade para free) via subscription upsert
+      await this.prisma.subscription.upsert({
+        where: { workspaceId },
+        update: { plan: targetPlan },
+        create: {
+          workspaceId,
+          plan: targetPlan,
+          status: 'ACTIVE',
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
       });
 
       return {
@@ -4948,16 +5222,16 @@ export class KloelService {
       const products = filterLegacyProducts(Array.isArray(rawProducts) ? rawProducts : []);
       const providerSettings =
         workspace?.providerSettings && typeof workspace.providerSettings === 'object'
-          ? (workspace.providerSettings as Record<string, any>)
+          ? (workspace.providerSettings as Record<string, unknown>)
           : {};
       const branding =
         workspace?.branding && typeof workspace.branding === 'object'
-          ? (workspace.branding as Record<string, any>)
+          ? (workspace.branding as Record<string, unknown>)
           : {};
-      const verifiedBusinessDescription = String(providerSettings.businessDescription || '').trim();
-      const verifiedBusinessSegment = String(providerSettings.businessSegment || '').trim();
+      const verifiedBusinessDescription = safeStr(providerSettings.businessDescription).trim();
+      const verifiedBusinessSegment = safeStr(providerSettings.businessSegment).trim();
       const businessHours = this.contextFormatter.buildWorkspaceBusinessHoursContext(
-        providerSettings.businessHours as Record<string, any> | undefined,
+        providerSettings.businessHours as Record<string, unknown> | undefined,
       );
 
       const affiliateProductIds = new Set<string>();
@@ -5003,10 +5277,8 @@ export class KloelService {
           const link = affiliateLinkMap.get(affiliateProductId);
           const affiliateProduct = (request?.affiliateProduct ||
             link?.affiliateProduct ||
-            {}) as Record<string, any>;
-          const linkedProduct = affiliateCatalogProductMap.get(
-            String(affiliateProduct.productId || ''),
-          );
+            {}) as Record<string, unknown>;
+          const linkedProduct = affiliateCatalogProductMap.get(safeStr(affiliateProduct.productId));
           if (linkedProduct?.name && isLegacyProductName(linkedProduct.name)) {
             return null;
           }
@@ -5015,7 +5287,7 @@ export class KloelService {
             productName:
               linkedProduct?.name ||
               this.contextFormatter.truncatePromptText(
-                String(affiliateProduct.productId || 'Produto afiliado'),
+                safeStr(affiliateProduct.productId, 'Produto afiliado'),
                 48,
               ),
             description: linkedProduct?.description,
@@ -5036,18 +5308,18 @@ export class KloelService {
             linkCommissionEarned: link?.commissionEarned,
           };
         })
-        .filter(Boolean) as Array<Record<string, any>>;
+        .filter(Boolean) as Array<Record<string, unknown>>;
 
       const contextParts: string[] = [];
 
       const accountConfigParts = [
         workspace?.customDomain ? `- Domínio customizado: ${workspace.customDomain}` : null,
-        branding?.primaryColor ? `- Cor principal: ${branding.primaryColor}` : null,
+        branding?.primaryColor ? `- Cor principal: ${safeStr(branding.primaryColor)}` : null,
         branding?.logoUrl ? '- Logo configurada: sim' : null,
         businessHours ? `- Horário comercial: ${businessHours}` : null,
       ].filter(Boolean);
       const integrationsBlock = this.contextFormatter.buildWorkspaceIntegrationContext(
-        integrations as Array<Record<string, any>>,
+        integrations as Array<Record<string, unknown>>,
       );
       if (accountConfigParts.length > 0 || integrationsBlock) {
         contextParts.push(
@@ -5074,8 +5346,8 @@ export class KloelService {
       }
 
       const billingContext = this.contextFormatter.buildWorkspaceBillingContext({
-        subscription: subscription as Record<string, any> | null | undefined,
-        invoices: invoices as Array<Record<string, any>>,
+        subscription: subscription as Record<string, unknown> | null | undefined,
+        invoices: invoices as Array<Record<string, unknown>>,
         providerSettings,
         stripeCustomerId: workspace?.stripeCustomerId,
       });
@@ -5084,7 +5356,7 @@ export class KloelService {
       }
 
       const externalLinksContext = this.contextFormatter.buildWorkspaceExternalPaymentLinkContext(
-        externalPaymentLinks as Array<Record<string, any>>,
+        externalPaymentLinks as Array<Record<string, unknown>>,
       );
       if (externalLinksContext) {
         contextParts.push(`LINKS EXTERNOS DE VENDA:\n${externalLinksContext}`);
@@ -5116,7 +5388,7 @@ export class KloelService {
       }
 
       const affiliatePartnerContext = this.contextFormatter.buildWorkspaceAffiliatePartnerContext(
-        affiliatePartners as Array<Record<string, any>>,
+        affiliatePartners as Array<Record<string, unknown>>,
       );
       if (affiliatePartnerContext) {
         contextParts.push(
@@ -5126,13 +5398,13 @@ export class KloelService {
 
       const customerSubscriptionContext =
         this.contextFormatter.buildWorkspaceCustomerSubscriptionContext(
-          customerSubscriptions as Array<Record<string, any>>,
+          customerSubscriptions as Array<Record<string, unknown>>,
         );
       const physicalOrderContext = this.contextFormatter.buildWorkspacePhysicalOrderContext(
-        physicalOrders as Array<Record<string, any>>,
+        physicalOrders as Array<Record<string, unknown>>,
       );
       const paymentContext = this.contextFormatter.buildWorkspacePaymentContext(
-        payments as Array<Record<string, any>>,
+        payments as Array<Record<string, unknown>>,
       );
       if (customerSubscriptionContext || physicalOrderContext || paymentContext) {
         contextParts.push(
@@ -5194,7 +5466,7 @@ export class KloelService {
   /**
    * 📜 Public API to get history
    */
-  async getHistory(workspaceId: string): Promise<any[]> {
+  async getHistory(workspaceId: string): Promise<HistoryItem[]> {
     if (!workspaceId) return [];
     try {
       const messages = await this.prisma.kloelMessage.findMany({
@@ -5221,7 +5493,7 @@ export class KloelService {
     workspaceId: string,
     type: string,
     content: string,
-    metadata?: any,
+    metadata?: Prisma.InputJsonValue,
   ): Promise<void> {
     await this.conversationStore.saveMemory(workspaceId, type, content, metadata);
   }
@@ -5297,14 +5569,14 @@ ${pdfContent}`;
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
       });
-      const providerSettings = (workspace?.providerSettings ?? {}) as Record<string, any>;
-      const autonomyMode = String(providerSettings?.autonomy?.mode || '').toUpperCase();
+      const providerSettings = (workspace?.providerSettings ?? {}) as Record<string, unknown>;
+      const autonomyMode = safeStr(asUnknownRecord(providerSettings.autonomy)?.mode).toUpperCase();
       const autopilotEnabled =
         autonomyMode === 'LIVE' ||
         autonomyMode === 'BACKLOG' ||
         autonomyMode === 'FULL' ||
-        providerSettings?.autopilot?.enabled === true ||
-        providerSettings?.autopilotEnabled === true;
+        asUnknownRecord(providerSettings.autopilot)?.enabled === true ||
+        providerSettings.autopilotEnabled === true;
 
       // 2) Buscar/criar lead e registrar mensagem inbound
       const lead = await this.getOrCreateLead(workspaceId, normalizedPhone || senderPhone);
@@ -5411,7 +5683,7 @@ ${pdfContent}`;
   /**
    * 📋 Buscar ou criar lead pelo telefone
    */
-  private async getOrCreateLead(workspaceId: string, phone: string): Promise<any> {
+  private async getOrCreateLead(workspaceId: string, phone: string): Promise<KloelLead> {
     let lead = await this.prisma.kloelLead.findFirst({
       where: { workspaceId, phone },
     });
@@ -5444,7 +5716,7 @@ ${pdfContent}`;
         select: { role: true, content: true },
       });
 
-      return messages.map((m: any) => ({
+      return messages.map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
       }));
@@ -5485,7 +5757,7 @@ ${pdfContent}`;
       const buyIntent = this.detectBuyIntent(userMessage);
 
       // Atualizar score e stage
-      const updateData: any = {
+      const updateData: Prisma.KloelLeadUpdateManyMutationInput = {
         lastMessage: userMessage,
         lastIntent: buyIntent,
         updatedAt: new Date(),
@@ -5549,8 +5821,12 @@ ${pdfContent}`;
         pixQrCode: result.pixQrCode,
         message: result.suggestedMessage,
       };
-    } catch (error) {
-      this.logger.error(`Erro ao gerar pagamento para lead: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao gerar pagamento para lead: ${errorInstanceofError.message}`);
       return null;
     }
   }
@@ -5620,13 +5896,13 @@ ${pdfContent}`;
       const lowerMessage = message.toLowerCase();
 
       for (const product of products) {
-        const productData: any = product.value;
-        const productName = (productData.name || '').toLowerCase();
+        const productData = product.value as Record<string, unknown>;
+        const productName = safeStr(productData.name).toLowerCase();
 
         if (productName && lowerMessage.includes(productName)) {
           return {
-            name: productData.name,
-            price: productData.price || 0,
+            name: safeStr(productData.name),
+            price: Number(productData.price) || 0,
           };
         }
       }
@@ -5727,7 +6003,7 @@ ${pdfContent}`;
   async listFollowups(workspaceId: string, contactId?: string) {
     try {
       // Buscar da tabela KloelMemory onde category = 'followups'
-      const whereClause: any = {
+      const whereClause: Prisma.KloelMemoryWhereInput = {
         workspaceId,
         category: 'followups',
       };
@@ -5756,18 +6032,21 @@ ${pdfContent}`;
       // Formatar resposta
       return {
         total: followups.length,
-        followups: followups.map((f: any) => ({
-          id: f.id,
-          key: f.key,
-          phone: f.metadata?.phone,
-          contactId: f.metadata?.contactId,
-          message: f.metadata?.message || f.value,
-          scheduledFor: f.metadata?.scheduledFor,
-          delayMinutes: f.metadata?.delayMinutes,
-          status: f.metadata?.status || 'pending',
-          createdAt: f.createdAt,
-          executedAt: f.metadata?.executedAt,
-        })),
+        followups: followups.map((f): FollowupListItem => {
+          const meta = (f.metadata as Record<string, unknown>) || {};
+          return {
+            id: f.id,
+            key: f.key,
+            phone: meta.phone,
+            contactId: meta.contactId,
+            message: meta.message || f.value,
+            scheduledFor: meta.scheduledFor,
+            delayMinutes: meta.delayMinutes,
+            status: meta.status || 'pending',
+            createdAt: f.createdAt,
+            executedAt: meta.executedAt,
+          };
+        }),
       };
     } catch (error: unknown) {
       const errorInstanceofError =
@@ -5803,13 +6082,20 @@ ${pdfContent}`;
     workspaceId: string,
     data: {
       name: string;
+      role?: string;
+      basePrompt?: string;
       description?: string;
       systemPrompt?: string;
       temperature?: number;
     },
   ) {
-    return (this.prisma.persona as any).create({
-      data: { workspaceId, ...data },
+    return this.prisma.persona.create({
+      data: {
+        workspaceId,
+        name: data.name,
+        role: data.role || 'SALES',
+        basePrompt: data.basePrompt || data.systemPrompt || '',
+      },
     });
   }
 
@@ -5835,7 +6121,7 @@ ${pdfContent}`;
 
   async createIntegration(
     workspaceId: string,
-    data: { type: string; name: string; credentials: any },
+    data: { type: string; name: string; credentials: Prisma.InputJsonValue },
   ) {
     return this.prisma.integration.create({
       data: { workspaceId, ...data },

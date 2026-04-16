@@ -26,6 +26,112 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { startTransition, useEffect, useRef, useState, useId } from 'react';
 import { mutate } from 'swr';
 
+/* ── Local view types ── */
+interface SaleItem {
+  id: string;
+  leadId?: string;
+  leadPhone?: string;
+  customerName?: string;
+  productName?: string;
+  amount: number;
+  status: string;
+  paymentMethod?: string;
+  createdAt?: string;
+}
+
+interface SubscriptionItem {
+  id: string;
+  customerName?: string;
+  planName?: string;
+  amount: number;
+  status: string;
+  totalPaid?: number;
+  startedAt?: string;
+  nextBillingAt?: string;
+}
+
+interface OrderItem {
+  id: string;
+  customerName?: string;
+  productName?: string;
+  amount: number;
+  status: string;
+  trackingCode?: string;
+  addressCity?: string;
+  addressState?: string;
+  createdAt?: string;
+}
+
+interface SalesStatsData {
+  totalRevenue?: number;
+  revenueTrend?: number;
+  totalTransactions?: number;
+  totalPending?: number;
+  pendingCount?: number;
+  avgTicket?: number;
+}
+
+interface SubStatsData {
+  mrr?: number;
+  activeCount?: number;
+  churnRate?: number;
+  avgLtv?: number;
+  arr?: number;
+  lifecycle?: Record<string, number>;
+}
+
+interface OrderStatsData {
+  total?: number;
+  processing?: number;
+  shipped?: number;
+  delivered?: number;
+}
+
+interface OrderPipelineData {
+  processing?: number;
+  shipped?: number;
+  delivered?: number;
+  returned?: number;
+}
+
+interface OrderAlertItem {
+  id: string;
+  message: string;
+  type?: string;
+  severity?: string;
+}
+
+interface PipelineStage {
+  id: string;
+  name?: string;
+  color?: string;
+  deals?: PipelineDeal[];
+}
+
+interface PipelineDeal {
+  id: string;
+  value?: number;
+}
+
+interface DetailItemData {
+  id: string;
+  amount?: number;
+  paymentMethod?: string;
+  createdAt?: string;
+  startedAt?: string;
+  nextBillingAt?: string;
+  totalPaid?: number;
+  trackingCode?: string;
+  addressCity?: string;
+  addressState?: string;
+  status?: string;
+  customerName?: string;
+  customerEmail?: string;
+  leadPhone?: string;
+  productName?: string;
+  planName?: string;
+}
+
 const T_RE = /[:T]/g;
 const PATTERN_RE = /"/g;
 
@@ -419,9 +525,9 @@ function SmartPaymentModal({
         dueDate: form.dueDate || undefined,
       });
       if (res.error) throw new Error(res.error);
-      setResult(res.data as any);
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao criar cobranca');
+      setResult(res.data ?? null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erro ao criar cobranca');
     } finally {
       setLoading(false);
     }
@@ -734,7 +840,7 @@ function SmartPaymentModal({
                   </span>
                   <input
                     aria-label={label}
-                    value={(form as any)[key]}
+                    value={form[key as keyof typeof form]}
                     onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
                     style={{
@@ -898,9 +1004,9 @@ function DetailModal({
 }: {
   detailId: string | null;
   detailType: 'sale' | 'sub' | 'order';
-  sales: any[];
-  subscriptions: any[];
-  orders: any[];
+  sales: SaleItem[];
+  subscriptions: SubscriptionItem[];
+  orders: OrderItem[];
   onClose: () => void;
   onRefund: (id: string) => void;
   onPauseSub: (id: string) => void;
@@ -915,14 +1021,15 @@ function DetailModal({
   const { sale: freshSale } = useSaleDetail(detailId && detailType === 'sale' ? detailId : null);
 
   if (!detailId) return null;
-  const cached: any =
+  const cached: DetailItemData | undefined =
     detailType === 'sale'
-      ? sales.find((s: any) => s.id === detailId)
+      ? sales.find((s) => s.id === detailId)
       : detailType === 'sub'
-        ? subscriptions.find((s: any) => s.id === detailId)
-        : orders.find((o: any) => o.id === detailId);
+        ? subscriptions.find((s) => s.id === detailId)
+        : orders.find((o) => o.id === detailId);
   // For sales, prefer fresh server data; fall back to cached list entry
-  const item: any = detailType === 'sale' && freshSale ? freshSale : cached;
+  const item: DetailItemData | undefined =
+    detailType === 'sale' && freshSale ? (freshSale as DetailItemData) : cached;
   if (!item) return null;
 
   return (
@@ -1025,7 +1132,7 @@ function DetailModal({
               </span>
             </div>
             <Badge
-              status={item.status}
+              status={item.status || ''}
               config={
                 detailType === 'order'
                   ? ORDER_STATUS
@@ -1045,23 +1152,28 @@ function DetailModal({
               marginBottom: 16,
             }}
           >
-            {[
-              { l: 'Valor', v: fmtBRL(item.amount), c: '#E85D30' },
-              item.paymentMethod && { l: 'Metodo', v: item.paymentMethod },
-              { l: 'Data', v: fmtDate(item.createdAt || item.startedAt || new Date()) },
-              detailType === 'sub' &&
-                item.nextBillingAt && { l: 'Proxima cobranca', v: fmtDate(item.nextBillingAt) },
-              detailType === 'sub' && { l: 'LTV', v: fmtBRL(item.totalPaid || 0), c: '#E85D30' },
-              detailType === 'order' && { l: 'Rastreamento', v: item.trackingCode || 'Aguardando' },
-              detailType === 'order' &&
-                item.addressState && {
-                  l: 'Destino',
-                  v: `${item.addressCity || ''}, ${item.addressState}`,
+            {(
+              [
+                { l: 'Valor', v: fmtBRL(item.amount || 0), c: '#E85D30' },
+                item.paymentMethod && { l: 'Metodo', v: item.paymentMethod },
+                { l: 'Data', v: fmtDate(item.createdAt || item.startedAt || new Date()) },
+                detailType === 'sub' &&
+                  item.nextBillingAt && { l: 'Proxima cobranca', v: fmtDate(item.nextBillingAt) },
+                detailType === 'sub' && { l: 'LTV', v: fmtBRL(item.totalPaid || 0), c: '#E85D30' },
+                detailType === 'order' && {
+                  l: 'Rastreamento',
+                  v: item.trackingCode || 'Aguardando',
                 },
-              { l: 'ID', v: item.id },
-            ]
-              .filter(Boolean)
-              .map((r: any, i, arr) => (
+                detailType === 'order' &&
+                  item.addressState && {
+                    l: 'Destino',
+                    v: `${item.addressCity || ''}, ${item.addressState}`,
+                  },
+                { l: 'ID', v: item.id },
+              ] as (false | { l: string; v: string | number; c?: string })[]
+            )
+              .filter((x): x is { l: string; v: string | number; c?: string } => Boolean(x))
+              .map((r, i, arr) => (
                 <div
                   key={r.l}
                   style={{
@@ -1450,13 +1562,13 @@ function GestaoVendas({
   sales,
   onOpenDetail,
 }: {
-  salesStats: any;
+  salesStats: SalesStatsData;
   chart: number[];
   search: string;
   onSearchChange: (v: string) => void;
   filterStatus: string;
   onFilterStatusChange: (v: string) => void;
-  sales: any[];
+  sales: SaleItem[];
   onOpenDetail: (id: string, type: 'sale' | 'sub' | 'order') => void;
 }) {
   const { isMobile } = useResponsiveViewport();
@@ -1646,7 +1758,7 @@ function GestaoVendas({
             </span>
           </div>
         ) : (
-          sales.map((s: any, i: number) =>
+          sales.map((s, i: number) =>
             isMobile ? (
               <button
                 type="button"
@@ -1717,7 +1829,7 @@ function GestaoVendas({
                   </div>
                   <Badge status={s.status} config={SALE_STATUS} />
                   <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)' }}>
-                    {fmtDate(s.createdAt)}
+                    {fmtDate(s.createdAt || new Date())}
                   </span>
                 </div>
               </button>
@@ -1809,7 +1921,7 @@ function GestaoVendas({
                 <span
                   style={{ fontSize: 11, color: 'var(--app-text-tertiary)', alignSelf: 'center' }}
                 >
-                  {fmtDate(s.createdAt)}
+                  {fmtDate(s.createdAt || new Date())}
                 </span>
               </div>
             ),
@@ -1825,8 +1937,8 @@ function GestaoAssinaturas({
   subscriptions,
   onOpenDetail,
 }: {
-  subStats: any;
-  subscriptions: any[];
+  subStats: SubStatsData;
+  subscriptions: SubscriptionItem[];
   onOpenDetail: (id: string, type: 'sale' | 'sub' | 'order') => void;
 }) {
   const st = subStats;
@@ -1959,7 +2071,7 @@ function GestaoAssinaturas({
             </span>
           </div>
         ) : (
-          subscriptions.map((s: any, i: number) => (
+          subscriptions.map((s, i: number) => (
             <div
               key={s.id}
               onClick={() => onOpenDetail(s.id, 'sub')}
@@ -1999,7 +2111,7 @@ function GestaoAssinaturas({
                   {s.customerName}
                 </span>
                 <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
-                  Desde {fmtDate(s.startedAt)}
+                  Desde {fmtDate(s.startedAt || new Date())}
                 </span>
               </div>
               <span
@@ -2056,9 +2168,9 @@ function GestaoFisicos({
   orders,
   onOpenDetail,
 }: {
-  orderStats: any;
-  pipeline: any;
-  orders: any[];
+  orderStats: OrderStatsData;
+  pipeline: OrderPipelineData;
+  orders: OrderItem[];
   onOpenDetail: (id: string, type: 'sale' | 'sub' | 'order') => void;
 }) {
   const st = orderStats;
@@ -2191,7 +2303,7 @@ function GestaoFisicos({
             </span>
           </div>
         ) : (
-          orders.map((o: any, i: number) => (
+          orders.map((o, i: number) => (
             <div
               key={o.id}
               onClick={() => onOpenDetail(o.id, 'order')}
@@ -2230,7 +2342,7 @@ function GestaoFisicos({
                   {o.customerName}
                 </span>
                 <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
-                  {fmtDate(o.createdAt)}
+                  {fmtDate(o.createdAt || new Date())}
                 </span>
               </div>
               <span
@@ -2618,9 +2730,9 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       <DetailModal
         detailId={detailId}
         detailType={detailType}
-        sales={sales}
-        subscriptions={subscriptions}
-        orders={orders}
+        sales={sales as SaleItem[]}
+        subscriptions={subscriptions as SubscriptionItem[]}
+        orders={orders as OrderItem[]}
         onClose={() => setDetailId(null)}
         onRefund={handleRefund}
         onPauseSub={handlePauseSub}
@@ -2687,7 +2799,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                 let filename = '';
                 if (tab === 'vendas') {
                   filename = `vendas-${now}.csv`;
-                  rows = sales.map((s: any) => ({
+                  rows = (sales as SaleItem[]).map((s) => ({
                     id: s.id,
                     cliente: s.leadPhone || s.customerName || '',
                     produto: s.productName || '',
@@ -2698,7 +2810,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                   }));
                 } else if (tab === 'assinaturas') {
                   filename = `assinaturas-${now}.csv`;
-                  rows = subscriptions.map((s: any) => ({
+                  rows = (subscriptions as SubscriptionItem[]).map((s) => ({
                     id: s.id,
                     cliente: s.customerName || '',
                     plano: s.planName || '',
@@ -2708,7 +2820,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                   }));
                 } else {
                   filename = `pedidos-${now}.csv`;
-                  rows = orders.map((o: any) => ({
+                  rows = (orders as OrderItem[]).map((o) => ({
                     id: o.id,
                     cliente: o.customerName || '',
                     produto: o.productName || '',
@@ -2809,7 +2921,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               Atualizar
             </button>
           </div>
-          {orderAlerts.slice(0, 3).map((alert: any) => (
+          {orderAlerts.slice(0, 3).map((alert) => (
             <div
               key={alert.id}
               style={{
@@ -2861,28 +2973,28 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       <div style={{ maxWidth: 1240, margin: '0 auto' }}>
         {tab === 'vendas' && (
           <GestaoVendas
-            salesStats={salesStats}
+            salesStats={salesStats as SalesStatsData}
             chart={chart}
             search={search}
             onSearchChange={setSearch}
             filterStatus={filterStatus}
             onFilterStatusChange={setFilterStatus}
-            sales={sales}
+            sales={sales as SaleItem[]}
             onOpenDetail={openDetail}
           />
         )}
         {tab === 'assinaturas' && (
           <GestaoAssinaturas
-            subStats={subStats}
-            subscriptions={subscriptions}
+            subStats={subStats as SubStatsData}
+            subscriptions={subscriptions as SubscriptionItem[]}
             onOpenDetail={openDetail}
           />
         )}
         {tab === 'fisicos' && (
           <GestaoFisicos
-            orderStats={orderStats}
-            pipeline={pipeline}
-            orders={orders}
+            orderStats={orderStats as OrderStatsData}
+            pipeline={pipeline as OrderPipelineData}
+            orders={orders as OrderItem[]}
             onOpenDetail={openDetail}
           />
         )}
@@ -2894,9 +3006,9 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               <div
                 style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' as const }}
               >
-                {salesStages.map((stage: any) => {
-                  const deals: any[] = stage.deals || [];
-                  const totalValue = deals.reduce((sum: number, d: any) => sum + (d.value || 0), 0);
+                {salesStages.map((stage: PipelineStage) => {
+                  const deals: PipelineDeal[] = stage.deals || [];
+                  const totalValue = deals.reduce((sum: number, d) => sum + (d.value || 0), 0);
                   return (
                     <div
                       key={stage.id}

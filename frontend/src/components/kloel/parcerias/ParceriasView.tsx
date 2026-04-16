@@ -27,6 +27,7 @@ interface Agent {
   email?: string;
   status?: string;
   role?: string;
+  lastActive?: string;
 }
 
 interface Invite {
@@ -43,6 +44,37 @@ interface Affiliate {
   status?: string;
   revenue?: number;
   commission?: number;
+  temperature?: number;
+  totalSales?: number;
+  products?: string[];
+  joined?: string;
+  monthlyPerformance?: number[];
+}
+
+interface AffiliatePerformance {
+  totalSales?: number;
+  totalRevenue?: number;
+  commission?: number;
+  monthlyPerformance?: number[];
+}
+
+interface AffiliateLink {
+  id: string;
+  affiliateProduct?: { productId?: string };
+  url?: string;
+  code?: string;
+  clicks?: number;
+  sales?: number;
+  revenue?: number;
+  commission?: number;
+  commissionEarned?: number;
+}
+
+interface AffiliateSuggestion {
+  id: string;
+  productId?: string;
+  commissionPct?: number;
+  category?: string;
 }
 
 interface PartnerContact {
@@ -51,6 +83,9 @@ interface PartnerContact {
   unread?: number;
   lastMessage?: string;
   avatar?: string;
+  type?: string;
+  online?: boolean;
+  time?: string;
 }
 
 interface PartnerMessage {
@@ -58,6 +93,9 @@ interface PartnerMessage {
   text?: string;
   sender?: string;
   createdAt?: string;
+  content?: string;
+  time?: string;
+  isMe?: boolean;
 }
 
 /* ═══════════════════════════════════════════════
@@ -467,9 +505,9 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
   const [tab, setTab] = useState(defaultTab);
   const [search, setSearch] = useState('');
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [selectedChat, setSelectedChat] = useState<PartnerContact | null>(null);
   const [chatInput, setChatInput] = useState('');
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<PartnerMessage[]>([]);
   const [filterType, setFilterType] = useState('todos');
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -865,14 +903,14 @@ function AffiliateDetailModal({
   onChat,
   onRevoke,
 }: {
-  affiliate: any;
+  affiliate: Affiliate;
   onClose: () => void;
   onChat: () => void;
   onRevoke: () => void;
 }) {
   const router = useRouter();
-  const a = affiliate || {};
-  const [perfData, setPerfData] = useState<any>(null);
+  const a = affiliate || ({} as Affiliate);
+  const [perfData, setPerfData] = useState<AffiliatePerformance | null>(null);
   const [perfLoading, setPerfLoading] = useState(false);
 
   useEffect(() => {
@@ -909,8 +947,7 @@ function AffiliateDetailModal({
   ];
 
   // Performance chart — use real data from performance endpoint or fall back to empty
-  const chartData =
-    perfData?.monthlyPerformance || (a as any).monthlyPerformance || new Array(12).fill(0);
+  const chartData = perfData?.monthlyPerformance || a.monthlyPerformance || new Array(12).fill(0);
   const chartMax = Math.max(...chartData, 1);
 
   const handleCopyLink = () => {
@@ -1148,7 +1185,7 @@ function AffiliateDetailModal({
               padding: '12px 14px',
             }}
           >
-            {chartData.map((v: any, i: number) => (
+            {chartData.map((v: number, i: number) => (
               <div
                 key={`chart-bar-${i}`}
                 style={{
@@ -1402,11 +1439,11 @@ function TabColaboradores({
   const displayAgents = agents as Agent[];
 
   const total = stats?.total || displayAgents.length;
-  const online = stats?.online || displayAgents.filter((a: any) => a.status === 'online').length;
+  const online = stats?.online || displayAgents.filter((a) => a.status === 'online').length;
   const pendingInvites = stats?.pendingInvites || (invites as Invite[]).length || 0;
-  const rolesUsed = [...new Set(displayAgents.map((a: any) => a.role))].length;
+  const rolesUsed = [...new Set(displayAgents.map((a) => a.role))].length;
 
-  const filtered = displayAgents.filter((c: any) => {
+  const filtered = displayAgents.filter((c) => {
     if (!search) return true;
     const term = search.toLowerCase();
     return (
@@ -1694,7 +1731,7 @@ function TabColaboradores({
 
       {/* Collaborators list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {filtered.map((c: any) => {
+        {filtered.map((c) => {
           const roleConf = ROLES.find((r) => r.value === c.role) || ROLES[ROLES.length - 1];
           return (
             <div
@@ -1902,27 +1939,27 @@ function TabAfiliados({
 
   const activeAffiliates =
     affStats?.activeAffiliates ||
-    displayAffiliates.filter((a: any) => a.status === 'active' && a.type === 'affiliate').length;
+    displayAffiliates.filter((a) => a.status === 'active' && a.type === 'affiliate').length;
   const producers =
-    affStats?.producers || displayAffiliates.filter((a: any) => a.type === 'producer').length;
+    affStats?.producers || displayAffiliates.filter((a) => a.type === 'producer').length;
   const totalRevenue =
     affStats?.totalRevenue ||
-    displayAffiliates.reduce((sum: number, a: any) => sum + (a.revenue || 0), 0);
+    displayAffiliates.reduce((sum: number, a) => sum + (a.revenue || 0), 0);
   const totalCommissions =
     affStats?.totalCommissions ||
     displayAffiliates.reduce(
-      (sum: number, a: any) => sum + ((a.revenue || 0) * (a.commission || 0)) / 100,
+      (sum: number, a) => sum + ((a.revenue || 0) * (a.commission || 0)) / 100,
       0,
     );
   const topPartner =
     affStats?.topPartner ||
-    displayAffiliates.reduce(
-      (top: any, a: any) => (!top || (a.revenue || 0) > (top.revenue || 0) ? a : top),
+    displayAffiliates.reduce<Affiliate | null>(
+      (top, a) => (!top || (a.revenue || 0) > (top.revenue || 0) ? a : top),
       null,
     )?.name ||
     null;
 
-  const filtered = displayAffiliates.filter((a: any) => {
+  const filtered = displayAffiliates.filter((a) => {
     if (filterType !== 'todos' && a.type !== filterType) return false;
     if (search) {
       const term = search.toLowerCase();
@@ -1941,7 +1978,7 @@ function TabAfiliados({
     { value: 'producer', label: 'Produtores' },
   ];
 
-  const detailAffiliate = detailId ? displayAffiliates.find((a: any) => a.id === detailId) : null;
+  const detailAffiliate = detailId ? displayAffiliates.find((a) => a.id === detailId) : null;
 
   const handleRevoke = async (id: string) => {
     try {
@@ -2349,10 +2386,10 @@ function TabAfiliados({
 
       {/* Affiliates list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {filtered.map((a: any) => (
+        {filtered.map((a) => (
           <div
             key={a.id || a.email}
-            onClick={() => setDetailId(a.id)}
+            onClick={() => setDetailId(a.id || null)}
             style={{
               display: 'grid',
               gridTemplateColumns: '46px 1fr 90px 70px 110px 90px 60px 100px',
@@ -2588,13 +2625,13 @@ function MyAffiliateLinks() {
   );
 
   const [suggestLoading, setSuggestLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<AffiliateSuggestion[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [searchResults, setSearchResults] = useState<AffiliateSuggestion[] | null>(null);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
 
-  const links: any[] = linksData?.links || [];
+  const links: AffiliateLink[] = linksData?.links || [];
   const totals = linksData?.totals || { clicks: 0, sales: 0, revenue: 0, commission: 0 };
 
   const handleSuggest = async () => {
@@ -2696,7 +2733,7 @@ function MyAffiliateLinks() {
         </div>
       ) : links.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-          {links.map((link: any) => (
+          {links.map((link) => (
             <div
               key={link.id}
               style={{
@@ -2854,7 +2891,7 @@ function MyAffiliateLinks() {
           </button>
           {suggestions.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {suggestions.map((p: any) => (
+              {suggestions.map((p) => (
                 <div
                   key={p.id}
                   style={{
@@ -2977,7 +3014,7 @@ function MyAffiliateLinks() {
           {searchResults !== null &&
             (searchResults.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {searchResults.map((p: any) => (
+                {searchResults.map((p) => (
                   <div
                     key={p.id}
                     style={{
@@ -3057,12 +3094,12 @@ function TabChat({
   search,
   setSearch,
 }: {
-  selectedChat: any;
-  setSelectedChat: (c: any) => void;
+  selectedChat: PartnerContact | null;
+  setSelectedChat: (c: PartnerContact | null) => void;
   chatInput: string;
   setChatInput: (s: string) => void;
-  messages: any[];
-  setMessages: (m: any[]) => void;
+  messages: PartnerMessage[];
+  setMessages: (m: PartnerMessage[]) => void;
   search: string;
   setSearch: (s: string) => void;
 }) {
@@ -3071,16 +3108,16 @@ function TabChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const displayContacts = contacts as PartnerContact[];
-  const displayMessages: any[] =
+  const displayMessages: PartnerMessage[] =
     (realMsgs as PartnerMessage[]).length > 0 ? (realMsgs as PartnerMessage[]) : messages;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages.length]);
 
-  const handleSelectContact = async (contact: any) => {
+  const handleSelectContact = async (contact: PartnerContact) => {
     setSelectedChat(contact);
-    if (contact.unread > 0) {
+    if ((contact.unread || 0) > 0) {
       try {
         await markPartnerAsRead(contact.id);
         mutateContacts();
@@ -3118,12 +3155,12 @@ function TabChat({
     }
   };
 
-  const filteredContacts = displayContacts.filter((c: any) => {
+  const filteredContacts = displayContacts.filter((c) => {
     if (!search) return true;
     return (c.name || '').toLowerCase().includes(search.toLowerCase());
   });
 
-  const totalUnread = displayContacts.reduce((sum: number, c: any) => sum + (c.unread || 0), 0);
+  const totalUnread = displayContacts.reduce((sum: number, c) => sum + (c.unread || 0), 0);
 
   return (
     <div
@@ -3215,7 +3252,7 @@ function TabChat({
 
         {/* Contact List */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          {filteredContacts.map((contact: any) => {
+          {filteredContacts.map((contact) => {
             const isSelected = selectedChat?.id === contact.id;
             return (
               <div
@@ -3331,7 +3368,7 @@ function TabChat({
                     >
                       {contact.lastMessage}
                     </span>
-                    {contact.unread > 0 && (
+                    {(contact.unread || 0) > 0 && (
                       <span
                         style={{
                           minWidth: 18,
@@ -3488,7 +3525,7 @@ function TabChat({
                   </p>
                 </div>
               )}
-              {displayMessages.map((msg: any) => (
+              {displayMessages.map((msg) => (
                 <div
                   key={msg.id}
                   style={{ display: 'flex', justifyContent: msg.isMe ? 'flex-end' : 'flex-start' }}

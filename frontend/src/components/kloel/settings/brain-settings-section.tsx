@@ -159,55 +159,64 @@ function parseCurrency(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function normalizeCompanyProfile(value: any): CompanyProfile {
-  const differentials = Array.isArray(value?.differentials)
-    ? value.differentials.filter((entry: unknown) => typeof entry === 'string')
+function normalizeCompanyProfile(value: unknown): CompanyProfile {
+  const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
+  const differentials = Array.isArray(obj.differentials)
+    ? obj.differentials.filter((entry: unknown) => typeof entry === 'string')
     : [];
 
   return {
-    name: typeof value?.name === 'string' ? value.name : '',
-    sector: typeof value?.sector === 'string' ? value.sector : '',
-    description: typeof value?.description === 'string' ? value.description : '',
-    mission: typeof value?.mission === 'string' ? value.mission : '',
-    differentials: differentials.length > 0 ? differentials : [''],
+    name: typeof obj.name === 'string' ? obj.name : '',
+    sector: typeof obj.sector === 'string' ? obj.sector : '',
+    description: typeof obj.description === 'string' ? obj.description : '',
+    mission: typeof obj.mission === 'string' ? obj.mission : '',
+    differentials: (differentials as string[]).length > 0 ? (differentials as string[]) : [''],
   };
 }
 
-function normalizeVoiceToneProfile(value: any): VoiceToneProfile {
+function normalizeVoiceToneProfile(value: unknown): VoiceToneProfile {
+  const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
   return {
-    style: typeof value?.style === 'string' ? value.style : '',
-    customInstructions:
-      typeof value?.customInstructions === 'string' ? value.customInstructions : '',
-    useProfessional: value?.useProfessional !== false,
-    useFriendly: value?.useFriendly === true,
-    usePersuasive: value?.usePersuasive === true,
+    style: typeof obj.style === 'string' ? obj.style : '',
+    customInstructions: typeof obj.customInstructions === 'string' ? obj.customInstructions : '',
+    useProfessional: obj.useProfessional !== false,
+    useFriendly: obj.useFriendly === true,
+    usePersuasive: obj.usePersuasive === true,
   };
 }
 
-function normalizeFaqs(value: any): FaqItem[] {
+function normalizeFaqs(value: unknown): FaqItem[] {
   if (!Array.isArray(value)) return [];
   return value
-    .map((faq: any, index: number) => ({
-      id: typeof faq?.id === 'string' ? faq.id : `faq-${index + 1}`,
-      question: typeof faq?.question === 'string' ? faq.question : '',
-      answer: typeof faq?.answer === 'string' ? faq.answer : '',
-    }))
+    .map((entry: unknown, index: number) => {
+      const faq = (typeof entry === 'object' && entry !== null ? entry : {}) as Record<
+        string,
+        unknown
+      >;
+      return {
+        id: typeof faq.id === 'string' ? faq.id : `faq-${index + 1}`,
+        question: typeof faq.question === 'string' ? faq.question : '',
+        answer: typeof faq.answer === 'string' ? faq.answer : '',
+      };
+    })
     .filter((faq) => faq.question || faq.answer);
 }
 
-function normalizeOpeningMessage(value: any): OpeningMessageProfile {
+function normalizeOpeningMessage(value: unknown): OpeningMessageProfile {
+  const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
   return {
-    message: typeof value?.message === 'string' ? value.message : '',
-    useEmojis: value?.useEmojis !== false,
-    isFormal: value?.isFormal === true,
-    isFriendly: value?.isFriendly !== false,
+    message: typeof obj.message === 'string' ? obj.message : '',
+    useEmojis: obj.useEmojis !== false,
+    isFormal: obj.isFormal === true,
+    isFriendly: obj.isFriendly !== false,
   };
 }
 
-function normalizeEmergencyMode(value: any): EmergencyModeProfile {
+function normalizeEmergencyMode(value: unknown): EmergencyModeProfile {
+  const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
   return {
-    emergencyAction: typeof value?.emergencyAction === 'string' ? value.emergencyAction : '',
-    fixedMessage: typeof value?.fixedMessage === 'string' ? value.fixedMessage : '',
+    emergencyAction: typeof obj.emergencyAction === 'string' ? obj.emergencyAction : '',
+    fixedMessage: typeof obj.fixedMessage === 'string' ? obj.fixedMessage : '',
   };
 }
 
@@ -337,8 +346,10 @@ export function BrainSettingsSection() {
       setFaqs(normalizeFaqs(profile.faqs));
       setOpeningMessage(normalizeOpeningMessage(profile.openingMessage));
       setEmergencyMode(normalizeEmergencyMode(profile.emergencyMode));
-    } catch (error: any) {
-      setProfileError(error?.message || 'Nao foi possivel carregar o perfil do Kloel.');
+    } catch (error: unknown) {
+      setProfileError(
+        error instanceof Error ? error.message : 'Nao foi possivel carregar o perfil do Kloel.',
+      );
     } finally {
       setProfileLoading(false);
     }
@@ -387,8 +398,10 @@ export function BrainSettingsSection() {
           },
         });
         setProfileSuccess(successMessage);
-      } catch (error: any) {
-        setProfileError(error?.message || 'Nao foi possivel salvar o perfil do Kloel.');
+      } catch (error: unknown) {
+        setProfileError(
+          error instanceof Error ? error.message : 'Nao foi possivel salvar o perfil do Kloel.',
+        );
       } finally {
         setProfileSaving(false);
       }
@@ -419,8 +432,10 @@ export function BrainSettingsSection() {
         currencyDefault: String(config?.autopilot?.currencyDefault || ''),
         recoveryTemplateName: String(config?.autopilot?.recoveryTemplateName || ''),
       });
-    } catch (error: any) {
-      setAutopilotError(error?.message || 'Nao foi possivel carregar a autonomia.');
+    } catch (error: unknown) {
+      setAutopilotError(
+        error instanceof Error ? error.message : 'Nao foi possivel carregar a autonomia.',
+      );
     }
   }, [workspaceId]);
 
@@ -434,8 +449,10 @@ export function BrainSettingsSection() {
         await toggleAutopilot(workspaceId, enabled);
         setAutopilotEnabled(enabled);
         setAutopilotSuccess(enabled ? 'Autonomia ativada.' : 'Autonomia pausada.');
-      } catch (error: any) {
-        setAutopilotError(error?.message || 'Nao foi possivel alternar a autonomia.');
+      } catch (error: unknown) {
+        setAutopilotError(
+          error instanceof Error ? error.message : 'Nao foi possivel alternar a autonomia.',
+        );
       } finally {
         setAutopilotSaving(false);
       }
@@ -455,8 +472,12 @@ export function BrainSettingsSection() {
         recoveryTemplateName: autopilotConfig.recoveryTemplateName || null,
       });
       setAutopilotSuccess('Configuracao operacional do autopilot salva.');
-    } catch (error: any) {
-      setAutopilotError(error?.message || 'Nao foi possivel salvar a configuracao do autopilot.');
+    } catch (error: unknown) {
+      setAutopilotError(
+        error instanceof Error
+          ? error.message
+          : 'Nao foi possivel salvar a configuracao do autopilot.',
+      );
     } finally {
       setAutopilotSaving(false);
     }
@@ -487,8 +508,12 @@ export function BrainSettingsSection() {
       } else {
         setKnowledgeSources([]);
       }
-    } catch (error: any) {
-      setKnowledgeError(error?.message || 'Nao foi possivel carregar a base de conhecimento.');
+    } catch (error: unknown) {
+      setKnowledgeError(
+        error instanceof Error
+          ? error.message
+          : 'Nao foi possivel carregar a base de conhecimento.',
+      );
     } finally {
       setKnowledgeLoading(false);
     }
@@ -506,8 +531,8 @@ export function BrainSettingsSection() {
       setNewKnowledgeBaseName('');
       setSelectedKnowledgeBaseId(created?.id || '');
       await hydrateKnowledgeBase();
-    } catch (error: any) {
-      setKnowledgeError(error?.message || 'Nao foi possivel criar a base.');
+    } catch (error: unknown) {
+      setKnowledgeError(error instanceof Error ? error.message : 'Nao foi possivel criar a base.');
       setKnowledgeLoading(false);
     }
   }, [hydrateKnowledgeBase, newKnowledgeBaseName, workspaceId]);
@@ -525,8 +550,10 @@ export function BrainSettingsSection() {
       setKnowledgeSuccess('Fonte de conhecimento enviada para ingestao.');
       setKnowledgeSourceContent('');
       await hydrateKnowledgeBase();
-    } catch (error: any) {
-      setKnowledgeError(error?.message || 'Nao foi possivel adicionar a fonte.');
+    } catch (error: unknown) {
+      setKnowledgeError(
+        error instanceof Error ? error.message : 'Nao foi possivel adicionar a fonte.',
+      );
       setKnowledgeLoading(false);
     }
   }, [
@@ -550,24 +577,32 @@ export function BrainSettingsSection() {
       const productResponse = await productApi.list();
 
       const nextProducts = (productResponse.data?.products || []).map((product) => {
+        const extended = product as typeof product & {
+          activePlansCount?: number;
+          memberAreasCount?: number;
+          totalSales?: number;
+          totalRevenue?: number;
+        };
         return {
-          id: product.id,
-          name: product.name,
-          type: product.category || 'Produto',
-          price: formatCurrency(product.price),
-          description: product.description || '',
-          active: product.active !== false,
+          id: extended.id,
+          name: extended.name,
+          type: extended.category || 'Produto',
+          price: formatCurrency(extended.price),
+          description: extended.description || '',
+          active: extended.active !== false,
           files: 0,
-          activePlansCount: Number((product as any).activePlansCount || 0),
-          memberAreasCount: Number((product as any).memberAreasCount || 0),
-          totalSales: Number((product as any).totalSales || 0),
-          totalRevenue: Number((product as any).totalRevenue || 0),
+          activePlansCount: Number(extended.activePlansCount || 0),
+          memberAreasCount: Number(extended.memberAreasCount || 0),
+          totalSales: Number(extended.totalSales || 0),
+          totalRevenue: Number(extended.totalRevenue || 0),
         } satisfies Product;
       });
 
       setProducts(nextProducts);
-    } catch (error: any) {
-      setCatalogError(error?.message || 'Nao foi possivel carregar o catalogo do Kloel.');
+    } catch (error: unknown) {
+      setCatalogError(
+        error instanceof Error ? error.message : 'Nao foi possivel carregar o catalogo do Kloel.',
+      );
     } finally {
       setCatalogLoading(false);
     }
@@ -608,8 +643,8 @@ export function BrainSettingsSection() {
       setShowAddProduct(false);
       setCatalogSuccess(`Produto ${newProduct.name} criado com sucesso.`);
       await hydrateCatalog();
-    } catch (error: any) {
-      setCatalogError(error?.message || 'Nao foi possivel criar o produto.');
+    } catch (error: unknown) {
+      setCatalogError(error instanceof Error ? error.message : 'Nao foi possivel criar o produto.');
     } finally {
       setCatalogLoading(false);
     }
@@ -649,8 +684,10 @@ export function BrainSettingsSection() {
       await productApi.remove(productId);
       setCatalogSuccess(`Produto ${product.name} removido.`);
       await hydrateCatalog();
-    } catch (error: any) {
-      setCatalogError(error?.message || 'Nao foi possivel remover o produto.');
+    } catch (error: unknown) {
+      setCatalogError(
+        error instanceof Error ? error.message : 'Nao foi possivel remover o produto.',
+      );
     } finally {
       setCatalogLoading(false);
     }
@@ -669,8 +706,8 @@ export function BrainSettingsSection() {
       setKbUploadSuccess(`Arquivo ${file.name} enviado com sucesso.`);
       setKbUploadFile(null);
       await hydrateKnowledgeBase();
-    } catch (e: any) {
-      setKbUploadError(e?.message || 'Erro ao fazer upload do arquivo.');
+    } catch (e: unknown) {
+      setKbUploadError(e instanceof Error ? e.message : 'Erro ao fazer upload do arquivo.');
     } finally {
       setKbUploading(false);
     }
@@ -694,26 +731,42 @@ export function BrainSettingsSection() {
     setAiToolError('');
     setAiToolResult('');
     try {
-      let res: any;
+      type AiToolData = {
+        sentiment?: string;
+        score?: number;
+        label?: string;
+        summary?: string;
+        suggestion?: string;
+        pitch?: string;
+      };
+      let data: AiToolData | undefined;
+      let error: string | undefined;
       const wsId = workspaceId || '';
       // For tools that need workspaceId/conversationId, we use the text as the conversationId for testing
       if (tool === 'analyzeSentiment') {
-        res = await aiAssistantApi.analyzeSentiment(aiToolInput.trim());
+        const res = await aiAssistantApi.analyzeSentiment(aiToolInput.trim());
+        error = res.error;
+        data = res.data as AiToolData | undefined;
       } else if (tool === 'summarize') {
-        res = await aiAssistantApi.summarize(aiToolInput.trim());
+        const res = await aiAssistantApi.summarize(aiToolInput.trim());
+        error = res.error;
+        data = res.data as AiToolData | undefined;
       } else if (tool === 'suggest') {
-        res = await aiAssistantApi.suggest(wsId, aiToolInput.trim());
+        const res = await aiAssistantApi.suggest(wsId, aiToolInput.trim());
+        error = res.error;
+        data = res.data as AiToolData | undefined;
       } else {
-        res = await aiAssistantApi.pitch(wsId, aiToolInput.trim());
+        const res = await aiAssistantApi.pitch(wsId, aiToolInput.trim());
+        error = res.error;
+        data = res.data as AiToolData | undefined;
       }
-      if (res.error) throw new Error(res.error);
-      const d = res.data as Record<string, any> | undefined;
-      const output = d?.sentiment
-        ? `${d.sentiment} (score: ${d.score ?? '—'}, label: ${d.label ?? '—'})`
-        : d?.summary || d?.suggestion || d?.pitch || JSON.stringify(d, null, 2);
+      if (error) throw new Error(error);
+      const output = data?.sentiment
+        ? `${data.sentiment} (score: ${data.score ?? '\u2014'}, label: ${data.label ?? '\u2014'})`
+        : data?.summary || data?.suggestion || data?.pitch || JSON.stringify(data, null, 2);
       setAiToolResult(`[${label}]\n${output}`);
-    } catch (e: any) {
-      setAiToolError(e?.message || `Erro ao executar ${label}`);
+    } catch (e: unknown) {
+      setAiToolError(e instanceof Error ? e.message : `Erro ao executar ${label}`);
     } finally {
       setAiToolLoading(false);
     }
