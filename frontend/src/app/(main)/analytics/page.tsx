@@ -101,6 +101,7 @@ interface ReportRow {
   };
   refundedAt?: string;
   _count?: number;
+  // Index signature for dynamic report fields
    
   [key: string]: any;
 }
@@ -1120,6 +1121,7 @@ function VendasTab({
   isMobile: boolean;
 }) {
   const gid = useId();
+   
   const { data: summary, isLoading: ls } = useReport<any>('vendas/summary', filters);
   const { data: daily, isLoading: ld } = useReport<any[]>('vendas/daily', filters);
   const { data: vendas, isLoading: lv } = useReport<any>('vendas', baseFilters);
