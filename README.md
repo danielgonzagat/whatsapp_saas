@@ -162,12 +162,12 @@ cd worker && npm run start:watch
 
 ### 5. Acessar
 
-| Servico       | URL                          |
-| ------------- | ---------------------------- |
-| Frontend      | http://localhost:3000        |
-| Backend       | http://localhost:3001        |
-| Swagger       | http://localhost:3001/api    |
-| Worker health | http://localhost:3003/health |
+| Servico       | URL                            |
+| ------------- | ------------------------------ |
+| Frontend      | <http://localhost:3000>        |
+| Backend       | <http://localhost:3001>        |
+| Swagger       | <http://localhost:3001/api>    |
+| Worker health | <http://localhost:3003/health> |
 
 ## Scripts
 
