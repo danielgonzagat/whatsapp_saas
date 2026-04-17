@@ -1,7 +1,9 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable } from '@nestjs/common';
+import { OrderStatus } from '@prisma/client';
 import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import {
   computeAverageResponseTimeSeconds,
   computeOperationalHealth,
@@ -23,7 +25,7 @@ export class DashboardService {
       select: { providerSettings: true },
     });
     const billingSuspended =
-      ((workspace?.providerSettings as Record<string, any>)?.billingSuspended ?? false) === true;
+      asProviderSettings(workspace?.providerSettings).billingSuspended === true;
 
     // 1. Basic Counts
     const [totalContacts, totalCampaigns, totalFlows] = await Promise.all([
@@ -140,7 +142,11 @@ export class DashboardService {
   ) {
     const range = resolveDashboardHomeRange(input);
     const snapshotNow = new Date();
-    const paidStatuses = ['PAID', 'SHIPPED', 'DELIVERED'];
+    const paidStatuses: OrderStatus[] = [
+      OrderStatus.PAID,
+      OrderStatus.SHIPPED,
+      OrderStatus.DELIVERED,
+    ];
     const startOfToday = new Date(snapshotNow);
     startOfToday.setHours(0, 0, 0, 0);
     const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
@@ -173,7 +179,7 @@ export class DashboardService {
       this.prisma.checkoutOrder.findMany({
         where: {
           workspaceId,
-          status: { in: paidStatuses as any[] },
+          status: { in: paidStatuses },
           createdAt: { gte: range.start, lte: range.end },
         },
         select: {
@@ -202,7 +208,7 @@ export class DashboardService {
       this.prisma.checkoutOrder.findMany({
         where: {
           workspaceId,
-          status: { in: paidStatuses as any[] },
+          status: { in: paidStatuses },
           createdAt: { gte: range.previousStart, lte: range.previousEnd },
         },
         select: {
@@ -226,7 +232,7 @@ export class DashboardService {
       this.prisma.checkoutOrder.aggregate({
         where: {
           workspaceId,
-          status: { in: paidStatuses as any[] },
+          status: { in: paidStatuses },
           createdAt: { gte: startOfMonth, lte: snapshotNow },
         },
         _sum: { totalInCents: true },
@@ -234,7 +240,7 @@ export class DashboardService {
       this.prisma.checkoutOrder.aggregate({
         where: {
           workspaceId,
-          status: { in: paidStatuses as any[] },
+          status: { in: paidStatuses },
           createdAt: { gte: startOfPreviousMonth, lte: endOfPreviousMonth },
         },
         _sum: { totalInCents: true },
@@ -242,7 +248,7 @@ export class DashboardService {
       this.prisma.checkoutOrder.aggregate({
         where: {
           workspaceId,
-          status: { in: paidStatuses as any[] },
+          status: { in: paidStatuses },
           createdAt: { gte: startOfToday, lte: snapshotNow },
         },
         _sum: { totalInCents: true },
@@ -250,7 +256,7 @@ export class DashboardService {
       this.prisma.checkoutOrder.aggregate({
         where: {
           workspaceId,
-          status: { in: paidStatuses as any[] },
+          status: { in: paidStatuses },
           createdAt: { gte: startOfYesterday, lte: endOfYesterday },
         },
         _sum: { totalInCents: true },
