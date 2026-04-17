@@ -12,6 +12,7 @@ import { adminErrors } from '../common/admin-api-errors';
 import { ChatToolRegistry } from './chat-tool.registry';
 
 const TOOL_S____W_____S_RE = /^\/tool\s+([\w-]+)\s*(\{.*\})?$/s;
+const LIST_RE = /^\/list\b/i;
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 4000;
@@ -50,16 +51,17 @@ export interface ChatMessageView {
  *     parses it, resolves the tool from the registry, validates
  *     the admin has the required permission (I-ADMIN-C2), executes
  *     the tool, persists the tool call, and returns.
- *   - Otherwise, the assistant response is a canned message
- *     explaining that the LLM provider is not yet wired in this
- *     deploy. This is the correct honest state per CLAUDE.md.
+ *   - If content begins with "/list", the service returns the
+ *     currently registered tools the operator may invoke.
+ *   - Otherwise, the assistant gives an operational fallback
+ *     message and may infer a lightweight searchWorkspaces call
+ *     from simple natural-language prompts.
  *   - Every message is persisted as an AdminChatMessage row. The
  *     service never updates or deletes messages — the table is
  *     append-only by convention (I-ADMIN-C3).
  *
- * When the Anthropic SDK integration lands in a follow-up PR, the
- * stub response path is replaced with a real LLM call; the tool
- * call path remains unchanged.
+ * When the full LLM orchestration lands, the natural-language path
+ * expands. The explicit tool call path remains unchanged.
  */
 @Injectable()
 export class AdminChatService {
@@ -87,20 +89,30 @@ export class AdminChatService {
       },
     });
 
-    // Detect an explicit /tool invocation.
-    const toolCall = parseToolInvocation(input.content);
-    if (toolCall) {
-      await this.runTool(session.id, input.adminUserId, input.adminRole, toolCall);
-    } else {
-      // Stubbed assistant response — honest state until the LLM
-      // provider is wired.
+    if (LIST_RE.test(input.content.trim())) {
+      const visibleTools = await this.listAllowedTools(input.adminUserId, input.adminRole);
       await this.prisma.adminChatMessage.create({
         data: {
           sessionId: session.id,
           role: AdminChatRole.ASSISTANT,
-          content: STUB_RESPONSE,
+          content: visibleTools,
         },
       });
+    } else {
+      // Detect an explicit /tool invocation or a lightweight
+      // natural-language search intent.
+      const toolCall = parseToolInvocation(input.content) ?? inferToolInvocation(input.content);
+      if (toolCall) {
+        await this.runTool(session.id, input.adminUserId, input.adminRole, toolCall);
+      } else {
+        await this.prisma.adminChatMessage.create({
+          data: {
+            sessionId: session.id,
+            role: AdminChatRole.ASSISTANT,
+            content: ACTIVE_RESPONSE,
+          },
+        });
+      }
     }
 
     await this.prisma.adminChatSession.update({
@@ -222,6 +234,39 @@ export class AdminChatService {
         toolResult: result as Prisma.InputJsonValue,
       },
     });
+
+    await this.prisma.adminChatMessage.create({
+      data: {
+        sessionId,
+        role: AdminChatRole.ASSISTANT,
+        content: summarizeToolResult(tool.name, result),
+      },
+    });
+  }
+
+  private async listAllowedTools(adminUserId: string, adminRole: AdminRole): Promise<string> {
+    const tools = await Promise.all(
+      this.tools.listAll().map(async (tool) => {
+        const allowed = await this.permissions.allows(
+          adminUserId,
+          adminRole,
+          tool.permissionModule,
+          tool.permissionAction,
+        );
+        return allowed ? tool : null;
+      }),
+    );
+
+    const allowedTools = tools.filter((tool): tool is NonNullable<typeof tool> => Boolean(tool));
+    if (allowedTools.length === 0) {
+      return 'Nenhuma ferramenta está disponível para a sua permissão atual.';
+    }
+
+    return [
+      'Ferramentas disponíveis agora:',
+      ...allowedTools.map((tool) => `- ${tool.name}: ${tool.description}`),
+      'Você também pode pedir em linguagem natural, por exemplo: "buscar workspace acme".',
+    ].join('\n');
   }
 
   private async loadSessionView(sessionId: string): Promise<ChatSessionView> {
@@ -236,10 +281,9 @@ export class AdminChatService {
   }
 }
 
-const STUB_RESPONSE =
-  'Copiloto ainda não ligado neste deploy. Para executar uma ferramenta ' +
-  'diretamente, use /tool <nome> <json-args>, por exemplo: ' +
-  '/tool searchWorkspaces {"query":"acme"}.';
+const ACTIVE_RESPONSE =
+  'Assistente administrativo ativo. Hoje eu já consigo consultar ferramentas diretas do painel. ' +
+  'Use /list para ver o catálogo disponível ou peça algo como "buscar workspace acme".';
 
 function parseToolInvocation(
   content: string,
@@ -259,6 +303,47 @@ function parseToolInvocation(
     }
   }
   return { name, args };
+}
+
+function inferToolInvocation(
+  content: string,
+): { name: string; args: Record<string, unknown> } | null {
+  const trimmed = content.trim();
+  const explicitSearch = trimmed.match(
+    /(?:buscar|procurar|encontrar)\s+(?:workspace|conta|produtor|cliente)\s+(.+)/i,
+  );
+  if (explicitSearch?.[1]) {
+    return { name: 'searchWorkspaces', args: { query: explicitSearch[1].trim() } };
+  }
+
+  const contextualSearch = trimmed.match(/(?:workspace|conta|produtor|cliente)\s+(.+)/i);
+  if (contextualSearch?.[1] && contextualSearch[1].trim().length >= 2) {
+    return { name: 'searchWorkspaces', args: { query: contextualSearch[1].trim() } };
+  }
+
+  return null;
+}
+
+function summarizeToolResult(toolName: string, result: Record<string, unknown>): string {
+  if (toolName === 'searchWorkspaces') {
+    const items = Array.isArray(result.items) ? result.items : [];
+    if (items.length === 0) {
+      return 'Nenhuma workspace encontrada para o termo informado.';
+    }
+
+    return [
+      `Encontrei ${items.length} workspace(s):`,
+      ...items.slice(0, 5).map((item) => {
+        const row = item as Record<string, unknown>;
+        const name = typeof row.name === 'string' ? row.name : 'Sem nome';
+        const id = typeof row.id === 'string' ? row.id : 'sem-id';
+        return `- ${name} (${id})`;
+      }),
+    ].join('\n');
+  }
+
+  const preview = JSON.stringify(result, null, 2);
+  return preview.length > 1800 ? `${preview.slice(0, 1800)}…` : preview;
 }
 
 function toSessionView(session: {

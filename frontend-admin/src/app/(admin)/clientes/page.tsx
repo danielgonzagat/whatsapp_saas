@@ -15,13 +15,13 @@ import {
   AdminSurface,
 } from '@/components/admin/admin-monitor-ui';
 import {
-  adminAccountsApi,
-  type AdminAccountKycStatus,
-  type ListAccountsResponse,
-} from '@/lib/api/admin-accounts-api';
+  adminClientsApi,
+  type AdminClientKycStatus,
+  type ListClientsResponse,
+} from '@/lib/api/admin-clients-api';
 import { AdminApiClientError } from '@/lib/api/admin-errors';
 
-const KYC_OPTIONS: Array<{ value: '' | AdminAccountKycStatus; label: string }> = [
+const KYC_OPTIONS: Array<{ value: '' | AdminClientKycStatus; label: string }> = [
   { value: '', label: 'Todos os clientes' },
   { value: 'pending', label: 'KYC pendente' },
   { value: 'submitted', label: 'KYC enviado' },
@@ -40,16 +40,14 @@ function formatDate(value: string | null): string {
 
 export default function ClientesPage() {
   const [search, setSearch] = useState('');
-  const [kycStatus, setKycStatus] = useState<'' | AdminAccountKycStatus>('');
+  const [kycStatus, setKycStatus] = useState<'' | AdminClientKycStatus>('');
 
-  const { data, error } = useSWR<ListAccountsResponse>(
-    ['admin/accounts/clientes', search, kycStatus],
-    () =>
-      adminAccountsApi.list({
-        search: search || undefined,
-        kycStatus: kycStatus || undefined,
-        take: 60,
-      }),
+  const { data, error } = useSWR<ListClientsResponse>(['admin/clients', search, kycStatus], () =>
+    adminClientsApi.list({
+      search: search || undefined,
+      kycStatus: kycStatus || undefined,
+      take: 60,
+    }),
   );
 
   const items = data?.items ?? [];
@@ -62,6 +60,22 @@ export default function ClientesPage() {
     const createdAt = new Date(row.createdAt).getTime();
     return Date.now() - createdAt <= 30 * 24 * 60 * 60 * 1000;
   }).length;
+  const customDomains = items.filter((row) => Boolean(row.customDomain)).length;
+  const enterpriseClients = items.filter(
+    (row) => (row.plan || '').toUpperCase() === 'ENTERPRISE',
+  ).length;
+  const healthScore =
+    items.length > 0
+      ? Math.round(
+          items.reduce((sum, row) => {
+            let score = 35;
+            if (row.gmvLast30dInCents > 0) score += 35;
+            if (row.lastSaleAt) score += 15;
+            if (row.kycStatus === 'approved') score += 15;
+            return sum + Math.min(score, 100);
+          }, 0) / items.length,
+        )
+      : 0;
 
   return (
     <AdminPage>
@@ -100,10 +114,10 @@ export default function ClientesPage() {
             note: 'Criados nos últimos 30 dias',
           },
           {
-            label: 'Overrides de taxa',
-            value: null,
+            label: 'Domínio próprio',
+            value: customDomains,
             kind: 'integer',
-            note: 'Dados sendo coletados',
+            note: 'Clientes com operação em domínio próprio',
           },
         ]}
       />
@@ -130,9 +144,15 @@ export default function ClientesPage() {
           },
           {
             label: 'Health score',
-            value: null,
+            value: healthScore,
             kind: 'integer',
-            detail: 'Dados sendo coletados',
+            detail: 'Saúde média da carteira filtrada',
+          },
+          {
+            label: 'Clientes enterprise',
+            value: enterpriseClients,
+            kind: 'integer',
+            detail: 'Plano enterprise ativo na carteira filtrada',
           },
         ]}
       />
@@ -151,7 +171,7 @@ export default function ClientesPage() {
           />
           <select
             value={kycStatus}
-            onChange={(event) => setKycStatus(event.target.value as '' | AdminAccountKycStatus)}
+            onChange={(event) => setKycStatus(event.target.value as '' | AdminClientKycStatus)}
             className="h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none"
           >
             {KYC_OPTIONS.map((option) => (
@@ -187,6 +207,8 @@ export default function ClientesPage() {
                   <th className="px-4 py-3">KYC</th>
                   <th className="px-4 py-3 text-right">Produtos</th>
                   <th className="px-4 py-3 text-right">GMV 30d</th>
+                  <th className="px-4 py-3 text-right">Crescimento</th>
+                  <th className="px-4 py-3">Plano</th>
                   <th className="px-4 py-3">Última venda</th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -228,6 +250,16 @@ export default function ClientesPage() {
                         kind="currency-brl"
                         className="text-[13px] font-semibold text-[var(--app-text-primary)]"
                       />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <MetricNumber
+                        value={row.growthRate ?? null}
+                        kind="percentage"
+                        className="text-[13px] font-semibold text-[var(--app-text-primary)]"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                      {row.plan ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-[var(--app-text-secondary)]">
                       {formatDate(row.lastSaleAt)}

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { queryGmvInCents } from './queries/gmv.query';
 import { queryRevenueKloelInCents } from './queries/revenue.query';
@@ -41,11 +42,6 @@ export interface KpiRateValue {
   deltaPct: number | null;
 }
 
-export interface KpiUnavailable {
-  value: null;
-  unavailableReason: string;
-}
-
 export interface HomeResponse {
   range: {
     from: string;
@@ -71,8 +67,10 @@ export interface HomeResponse {
     totalProducers: { value: number };
     revenueKloel: KpiMoneyValue;
     revenueKloelRate: KpiRateValue;
-    mrrProjected: KpiUnavailable;
-    churnRate: KpiUnavailable;
+    mrrProjected: KpiMoneyValue;
+    churnRate: KpiRateValue;
+    conversations: KpiNumberValue;
+    responseTimeMinutes: KpiNumberValue;
   };
   breakdowns: {
     byGateway: GatewayBreakdownRow[];
@@ -92,6 +90,10 @@ interface Snapshot {
   approvedCount: number;
   tx: TransactionCounts;
   producers: ProducerCounts;
+  mrrProjectedInCents: number;
+  churnRate: number | null;
+  conversationCount: number;
+  responseTimeMinutes: number | null;
 }
 
 function deltaPct(curr: number, prev: number | null): number | null {
@@ -119,6 +121,17 @@ function computeAverageTicket(gmvInCents: number, approvedCount: number): number
   return Math.round(gmvInCents / approvedCount);
 }
 
+function normalizeRecurringAmountToMonthlyCents(amount: number, interval: string): number {
+  const cents = Math.round(amount * 100);
+  const normalized = interval.toUpperCase();
+  if (normalized === 'YEARLY' || normalized === 'ANNUAL') return Math.round(cents / 12);
+  if (normalized === 'WEEKLY') return Math.round(cents * 4.345);
+  if (normalized === 'DAILY') return Math.round(cents * 30.4375);
+  if (normalized === 'QUARTERLY') return Math.round(cents / 3);
+  if (normalized === 'SEMIANNUAL') return Math.round(cents / 6);
+  return cents;
+}
+
 @Injectable()
 export class AdminDashboardService {
   constructor(private readonly prisma: PrismaService) {}
@@ -135,8 +148,14 @@ export class AdminDashboardService {
       ? await this.snapshot(range.previous.from, range.previous.to)
       : null;
 
-    const [byGateway, byMethod, gmvDaily, previousGmvDaily, revenueKloelDaily, previousRevenueKloelDaily] =
-      await Promise.all([
+    const [
+      byGateway,
+      byMethod,
+      gmvDaily,
+      previousGmvDaily,
+      revenueKloelDaily,
+      previousRevenueKloelDaily,
+    ] = await Promise.all([
       queryGatewayBreakdown(this.prisma, range.from, range.to),
       queryMethodBreakdown(this.prisma, range.from, range.to),
       queryGmvDailySeries(this.prisma, range.from, range.to),
@@ -163,13 +182,113 @@ export class AdminDashboardService {
   }
 
   private async snapshot(from: Date, to: Date): Promise<Snapshot> {
-    const [{ gmvInCents, approvedCount }, revenueKloelInCents, tx, producers] = await Promise.all([
+    const [
+      { gmvInCents, approvedCount },
+      revenueKloelInCents,
+      tx,
+      producers,
+      recurring,
+      messaging,
+    ] = await Promise.all([
       queryGmvInCents(this.prisma, from, to),
       queryRevenueKloelInCents(this.prisma, from, to),
       queryTransactionCounts(this.prisma, from, to),
       queryProducers(this.prisma, from, to),
+      this.queryRecurringMetrics(from, to),
+      this.queryMessagingMetrics(from, to),
     ]);
-    return { gmvInCents, revenueKloelInCents, approvedCount, tx, producers };
+    return {
+      gmvInCents,
+      revenueKloelInCents,
+      approvedCount,
+      tx,
+      producers,
+      mrrProjectedInCents: recurring.mrrProjectedInCents,
+      churnRate: recurring.churnRate,
+      conversationCount: messaging.conversationCount,
+      responseTimeMinutes: messaging.responseTimeMinutes,
+    };
+  }
+
+  private async queryRecurringMetrics(
+    from: Date,
+    to: Date,
+  ): Promise<{ mrrProjectedInCents: number; churnRate: number | null }> {
+    const subscriptions = await this.prisma.customerSubscription.findMany({
+      where: { startedAt: { lte: to } },
+      select: {
+        amount: true,
+        interval: true,
+        status: true,
+        startedAt: true,
+        cancelledAt: true,
+      },
+    });
+
+    const activeSubscriptions = subscriptions.filter((row) => {
+      const status = row.status.toUpperCase();
+      const activeStatus = status === 'ACTIVE' || status === 'TRIALING';
+      const notCanceledYet = !row.cancelledAt || row.cancelledAt > to;
+      return activeStatus && row.startedAt <= to && notCanceledYet;
+    });
+
+    const baseAtStart = subscriptions.filter((row) => {
+      return row.startedAt < from && (!row.cancelledAt || row.cancelledAt > from);
+    }).length;
+
+    const canceledInRange = subscriptions.filter((row) => {
+      return row.cancelledAt && row.cancelledAt >= from && row.cancelledAt <= to;
+    }).length;
+
+    return {
+      mrrProjectedInCents: activeSubscriptions.reduce(
+        (sum, row) => sum + normalizeRecurringAmountToMonthlyCents(row.amount, row.interval),
+        0,
+      ),
+      churnRate: baseAtStart > 0 ? canceledInRange / baseAtStart : null,
+    };
+  }
+
+  private async queryMessagingMetrics(
+    from: Date,
+    to: Date,
+  ): Promise<{ conversationCount: number; responseTimeMinutes: number | null }> {
+    const [conversationCount, responseRows] = await Promise.all([
+      this.prisma.conversation.count({
+        where: {
+          lastMessageAt: { gte: from, lte: to },
+        },
+      }),
+      this.prisma.$queryRaw<Array<{ avg_minutes: number | string | null }>>(Prisma.sql`
+        WITH inbound AS (
+          SELECT "conversationId", MIN("createdAt") AS "firstInbound"
+          FROM "Message"
+          WHERE "conversationId" IS NOT NULL
+            AND "direction" = 'INBOUND'
+            AND "createdAt" >= ${from}
+            AND "createdAt" <= ${to}
+          GROUP BY "conversationId"
+        ),
+        outbound AS (
+          SELECT m."conversationId", MIN(m."createdAt") AS "firstOutbound"
+          FROM "Message" m
+          INNER JOIN inbound i ON i."conversationId" = m."conversationId"
+          WHERE m."direction" = 'OUTBOUND'
+            AND m."createdAt" >= i."firstInbound"
+          GROUP BY m."conversationId"
+        )
+        SELECT AVG(EXTRACT(EPOCH FROM (o."firstOutbound" - i."firstInbound")) / 60.0) AS avg_minutes
+        FROM inbound i
+        INNER JOIN outbound o ON o."conversationId" = i."conversationId"
+      `),
+    ]);
+
+    const rawAverage = responseRows[0]?.avg_minutes;
+    return {
+      conversationCount,
+      responseTimeMinutes:
+        rawAverage === null || rawAverage === undefined ? null : Math.round(Number(rawAverage)),
+    };
   }
 
   private shape(
@@ -260,11 +379,26 @@ export class AdminDashboardService {
               ? null
               : deltaPct(currRevenueRate, prevRevenueRate),
         },
-        mrrProjected: {
-          value: null,
-          unavailableReason: 'subscription_aggregation_not_ready',
+        mrrProjected: makeMoneyKpi(
+          current.mrrProjectedInCents,
+          previous?.mrrProjectedInCents ?? null,
+        ),
+        churnRate: {
+          value: current.churnRate,
+          previous: previous?.churnRate ?? null,
+          deltaPct:
+            current.churnRate === null || previous?.churnRate === null
+              ? null
+              : deltaPct(current.churnRate, previous.churnRate),
         },
-        churnRate: { value: null, unavailableReason: 'cohort_definition_pending' },
+        conversations: makeNumberKpi(
+          current.conversationCount,
+          previous?.conversationCount ?? null,
+        ),
+        responseTimeMinutes: makeNumberKpi(
+          current.responseTimeMinutes ?? 0,
+          previous?.responseTimeMinutes ?? null,
+        ),
       },
       breakdowns: { byGateway, byMethod },
       series: {

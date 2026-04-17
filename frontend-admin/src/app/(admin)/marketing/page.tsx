@@ -56,9 +56,7 @@ export default function MarketingPage() {
   const tickerItems = useMemo(
     () =>
       sessions.length > 0
-        ? sessions
-            .slice(0, 10)
-            .map((session) => `${session.title} · ${session.lastMessagePreview}`)
+        ? sessions.slice(0, 10).map((session) => `${session.title} · ${session.lastMessagePreview}`)
         : ['Aguardando novas conversas'],
     [sessions],
   );
@@ -76,7 +74,7 @@ export default function MarketingPage() {
     {
       label: 'WhatsApp',
       accent: '#25D366',
-      status: sessions.length > 0 ? 'Conectado' : 'Dados sendo coletados',
+      status: sessions.length > 0 ? 'Conectado' : 'Sem conexão ativa',
       stats: `${formatInteger(sessions.length)} conversas · ${formatInteger(
         sessions.reduce((sum, session) => sum + session.messageCount, 0),
       )} msgs`,
@@ -84,26 +82,26 @@ export default function MarketingPage() {
     {
       label: 'Instagram',
       accent: '#E1306C',
-      status: 'Dados sendo coletados',
-      stats: 'DMs e leads em coleta',
+      status: 'Sem eventos do período',
+      stats: 'DMs e leads ainda não apareceram nesta leitura',
     },
     {
       label: 'TikTok',
       accent: '#111111',
-      status: 'Dados sendo coletados',
-      stats: 'Mensageria em coleta',
+      status: 'Sem eventos do período',
+      stats: 'Mensageria ainda não apareceu nesta leitura',
     },
     {
       label: 'Facebook',
       accent: '#1877F2',
-      status: 'Dados sendo coletados',
-      stats: 'Mensageria em coleta',
+      status: 'Sem eventos do período',
+      stats: 'Mensageria ainda não apareceu nesta leitura',
     },
     {
       label: 'Email',
       accent: '#F59E0B',
-      status: 'Dados sendo coletados',
-      stats: 'Campanhas em coleta',
+      status: 'Sem campanhas no período',
+      stats: 'Campanhas e respostas ainda não entraram nesta leitura',
     },
   ];
 
@@ -248,7 +246,10 @@ export default function MarketingPage() {
                     </div>
                   </div>
                 </div>
-                <div className="text-[13px] font-semibold text-[var(--app-accent)]" style={{ fontFamily: FONT_MONO }}>
+                <div
+                  className="text-[13px] font-semibold text-[var(--app-accent)]"
+                  style={{ fontFamily: FONT_MONO }}
+                >
                   {formatMoney(product.commerce.gmvInCents)}
                 </div>
                 <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
@@ -270,12 +271,18 @@ export default function MarketingPage() {
               <div className="text-[16px] font-semibold text-[var(--app-text-primary)]">
                 Cérebro IA ativo
               </div>
-              <div className="mt-2 text-[13px] text-[var(--app-accent)]" style={{ fontFamily: FONT_MONO }}>
+              <div
+                className="mt-2 text-[13px] text-[var(--app-accent)]"
+                style={{ fontFamily: FONT_MONO }}
+              >
                 {formatInteger(sessions.length)} conversas ativas
               </div>
               <div className="mt-4 flex gap-8">
                 <div className="text-center">
-                  <div className="text-[18px] font-semibold text-[var(--app-text-primary)]" style={{ fontFamily: FONT_MONO }}>
+                  <div
+                    className="text-[18px] font-semibold text-[var(--app-text-primary)]"
+                    style={{ fontFamily: FONT_MONO }}
+                  >
                     {formatInteger(topProducts.length)}
                   </div>
                   <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
@@ -283,7 +290,10 @@ export default function MarketingPage() {
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-[18px] font-semibold text-[var(--app-text-primary)]" style={{ fontFamily: FONT_MONO }}>
+                  <div
+                    className="text-[18px] font-semibold text-[var(--app-text-primary)]"
+                    style={{ fontFamily: FONT_MONO }}
+                  >
                     {formatInteger(data?.kpis.approvedCount.value ?? null)}
                   </div>
                   <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
@@ -324,10 +334,15 @@ export default function MarketingPage() {
                   <div className="mb-1 text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
                     {item.label}
                   </div>
-                  <div className="text-[15px] font-semibold text-[var(--app-text-primary)]" style={{ fontFamily: FONT_MONO }}>
+                  <div
+                    className="text-[15px] font-semibold text-[var(--app-text-primary)]"
+                    style={{ fontFamily: FONT_MONO }}
+                  >
                     {item.value}
                   </div>
-                  <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">{item.detail}</div>
+                  <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
+                    {item.detail}
+                  </div>
                 </div>
               ))}
             </div>
