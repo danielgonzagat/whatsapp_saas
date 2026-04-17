@@ -1,6 +1,7 @@
 import { BadRequestException, Controller, Logger, Post, Req, UseGuards } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -20,8 +21,8 @@ export class DataDeleteController {
 
   @Post('delete')
   @UseGuards(JwtAuthGuard)
-  async deleteData(@Req() req: any) {
-    const userId = req.user?.sub || req.user?.userId;
+  async deleteData(@Req() req: AuthenticatedRequest) {
+    const userId = req.user?.sub;
     const workspaceId = req.user?.workspaceId;
 
     if (!userId) {

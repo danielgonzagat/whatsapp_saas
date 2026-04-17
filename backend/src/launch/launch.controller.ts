@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AddGroupDto, CreateLauncherDto } from './dto/create-launcher.dto';
 import { LaunchService } from './launch.service';
 
@@ -28,7 +29,7 @@ export class LaunchController {
   @Get('launchers')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all launchers for the workspace' })
-  async listLaunchers(@Req() req: any) {
+  async listLaunchers(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
     return this.launchService.listLaunchers(workspaceId);
   }
@@ -37,7 +38,7 @@ export class LaunchController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new group launcher' })
   async createLauncher(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body() body: CreateLauncherDto & { workspaceId?: string },
   ) {
     const { workspaceId, ...data } = body;
@@ -49,7 +50,7 @@ export class LaunchController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a group to a launcher' })
   async addGroup(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: AddGroupDto & { workspaceId?: string },
   ) {

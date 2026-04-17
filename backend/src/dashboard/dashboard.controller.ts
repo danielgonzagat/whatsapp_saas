@@ -2,6 +2,7 @@ import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { DashboardService } from './dashboard.service';
 
@@ -11,14 +12,14 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('stats')
-  async getStats(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async getStats(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.dashboardService.getStats(effectiveWorkspaceId);
   }
 
   @Get('home')
   async getHome(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId: string,
     @Query('period') period?: string,
     @Query('startDate') startDate?: string,

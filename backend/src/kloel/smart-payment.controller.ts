@@ -17,6 +17,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('smart-payment')
@@ -86,7 +87,7 @@ export class SmartPaymentController {
     description: 'Gera link de pagamento com mensagem personalizada baseada no contexto',
   })
   async createSmartPayment(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body()
     body: {
@@ -122,7 +123,7 @@ export class SmartPaymentController {
     description: 'Analisa pedido do cliente e decide se aplica desconto',
   })
   async negotiatePayment(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body()
     body: {
@@ -154,7 +155,7 @@ export class SmartPaymentController {
     description: 'Sugere ação para pagamentos pendentes',
   })
   analyzeRecovery(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('paymentId') paymentId: string,
     @Query('daysPending') daysPending: string,
@@ -179,7 +180,7 @@ export class SmartPaymentController {
     description: 'Webhook para quando pagamento é confirmado',
   })
   async processConfirmation(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body()
     body: {

@@ -4,6 +4,7 @@ import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MassSendService } from './mass-send.service';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 @Controller('campaign')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -14,7 +15,7 @@ export class MassSendController {
   @Post('start')
   @Roles('ADMIN')
   async startCampaign(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body('workspaceId') workspaceId: string,
     @Body('user') user: string,
     @Body('numbers') numbers: string[],

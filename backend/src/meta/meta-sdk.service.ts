@@ -6,9 +6,9 @@ import { validateExternalUrl } from '../common/utils/url-validator';
 import { normalizeMetaGraphPath } from './meta-input.util';
 
 export interface GraphApiResponse {
-  data?: any;
+  data?: unknown;
   error?: { message: string; type: string; code: number };
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 @Injectable()
@@ -151,9 +151,9 @@ export class MetaSdkService {
       }
 
       return {
-        access_token: res.access_token,
-        token_type: res.token_type || 'bearer',
-        expires_in: res.expires_in,
+        access_token: typeof res.access_token === 'string' ? res.access_token : '',
+        token_type: typeof res.token_type === 'string' ? res.token_type : 'bearer',
+        expires_in: typeof res.expires_in === 'number' ? res.expires_in : undefined,
       };
     } catch (err: unknown) {
       const errInstanceofError =

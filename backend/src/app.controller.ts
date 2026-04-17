@@ -3,6 +3,7 @@ import { AppService } from './app.service';
 import { Public } from './auth/public.decorator';
 import { safeCompareStrings } from './common/utils/crypto-compare.util';
 import { PrismaService } from './prisma/prisma.service';
+import { AuthenticatedRequest } from './common/interfaces/authenticated-request.interface';
 
 @Controller()
 export class AppController {
@@ -36,7 +37,7 @@ export class AppController {
    */
   @Public()
   @Get('diag-db')
-  async diagnostic(@Req() req: any) {
+  async diagnostic(@Req() req: AuthenticatedRequest) {
     const expected = process.env.DIAG_TOKEN;
     if (process.env.NODE_ENV === 'production' && !expected) {
       throw new UnauthorizedException('DIAG_TOKEN not configured');
@@ -71,10 +72,10 @@ export class AppController {
       results.tables.agents = await this.prisma.agent.count();
       results.tables.contacts = await this.prisma.contact.count();
       results.tables.conversations = await this.prisma.conversation.count();
-    } catch (error: any) {
+    } catch (error: unknown) {
       results.database = 'error';
-      results.error = error.message;
-      results.stack = error.stack?.split('\n').slice(0, 5);
+      results.error = error instanceof Error ? error.message : 'unknown error';
+      results.stack = error instanceof Error ? error.stack?.split('\n').slice(0, 5) : undefined;
     }
 
     return results;

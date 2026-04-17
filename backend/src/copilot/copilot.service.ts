@@ -63,8 +63,13 @@ export class CopilotService {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
     });
-    const settings: any = ws?.providerSettings || {};
-    const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
+    const settings = (ws?.providerSettings || {}) as Record<string, unknown>;
+    const openaiSettings = (
+      typeof settings?.openai === 'object' && settings.openai ? settings.openai : {}
+    ) as Record<string, unknown>;
+    const apiKey =
+      (typeof openaiSettings.apiKey === 'string' ? openaiSettings.apiKey : '') ||
+      process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       return {
@@ -93,8 +98,10 @@ export class CopilotService {
         .catch(() => {});
       const suggestion = completion.choices[0]?.message?.content || '';
       return { suggestion };
-    } catch (error: any) {
-      this.logger.warn(`Copilot suggest error: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Copilot suggest error: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
       return {
         suggestion:
           'Estou aqui para ajudar! Quer que eu envie um resumo da oferta, um preço ou marque um horário rápido?',
@@ -146,8 +153,13 @@ export class CopilotService {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
     });
-    const settings: any = ws?.providerSettings || {};
-    const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
+    const settings = (ws?.providerSettings || {}) as Record<string, unknown>;
+    const openaiSettings = (
+      typeof settings?.openai === 'object' && settings.openai ? settings.openai : {}
+    ) as Record<string, unknown>;
+    const apiKey =
+      (typeof openaiSettings.apiKey === 'string' ? openaiSettings.apiKey : '') ||
+      process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       return {
@@ -201,8 +213,10 @@ Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 
         suggestions: parsed.suggestions || [],
         context,
       };
-    } catch (error: any) {
-      this.logger.warn(`Copilot suggestMultiple error: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Copilot suggestMultiple error: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
       return {
         suggestions: [
           'Estou aqui para ajudar! Posso tirar suas dúvidas.',

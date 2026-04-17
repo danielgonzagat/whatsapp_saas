@@ -299,9 +299,10 @@ export class WhatsAppProviderRegistry {
         success: Boolean(result?.success),
         messageId: result?.message?.id || undefined,
       };
-    } catch (error: any) {
-      this.logger.error(`Send failed: ${error?.message || error}`);
-      return { success: false, error: error?.message || 'send_failed' };
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`Send failed: ${msg}`);
+      return { success: false, error: msg || 'send_failed' };
     }
   }
 

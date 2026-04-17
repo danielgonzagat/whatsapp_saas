@@ -84,7 +84,10 @@ export class PipelineService {
     return updated;
   }
 
-  async createDeal(workspaceId: string, data: any) {
+  async createDeal(
+    workspaceId: string,
+    data: { title?: string; value?: number; contactId?: string },
+  ) {
     // Find first stage of default pipeline
     const pipeline = await this.getPipeline(workspaceId);
     const firstStage = pipeline.stages[0];
@@ -97,12 +100,13 @@ export class PipelineService {
       if (!contact || contact.workspaceId !== workspaceId) {
         throw new ForbiddenException('Contato não pertence a este workspace');
       }
-      const cf: any = contact.customFields || {};
-      const sourceCampaignId = cf.lastCampaignId || undefined;
+      const cf = (contact.customFields || {}) as Record<string, unknown>;
+      const sourceCampaignId =
+        typeof cf.lastCampaignId === 'string' ? cf.lastCampaignId : undefined;
 
       return this.prisma.deal.create({
         data: {
-          title: data.title,
+          title: data.title || '',
           value: data.value || 0,
           contactId: data.contactId,
           stageId: firstStage.id,
@@ -113,7 +117,7 @@ export class PipelineService {
 
     return this.prisma.deal.create({
       data: {
-        title: data.title,
+        title: data.title || '',
         value: data.value || 0,
         contactId: data.contactId,
         stageId: firstStage.id,

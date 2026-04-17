@@ -1,12 +1,21 @@
 import { ForbiddenException, Logger, UnauthorizedException } from '@nestjs/common';
 
+interface TokenUser {
+  workspaceId?: string;
+  sub?: string;
+  email?: string;
+}
+
 /**
  * Assegura que o usuário autenticado tem acesso ao workspace solicitado.
  * - Se não houver user → Unauthorized
  * - Se workspaceId for passado e diferente do do token → Forbidden
  * - Caso contrário, retorna o workspaceId efetivo (do token)
  */
-export function assertWorkspaceAccess(requested: string | undefined, user: any): string {
+export function assertWorkspaceAccess(
+  requested: string | undefined,
+  user: TokenUser | undefined | null,
+): string {
   const optional = process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV !== 'production';
   if (process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV === 'production') {
     Logger.warn(
@@ -42,9 +51,17 @@ export function assertWorkspaceAccess(requested: string | undefined, user: any):
  * - Tenta explicit > params > body > query
  * - Exige token válido (req.user)
  */
-export function resolveWorkspaceId(req: any, explicit?: string): string {
+export function resolveWorkspaceId(
+  req: {
+    user?: TokenUser | null;
+    params?: Record<string, unknown>;
+    body?: Record<string, unknown>;
+    query?: Record<string, unknown>;
+  },
+  explicit?: string,
+): string {
   const candidate =
     explicit ?? req?.params?.workspaceId ?? req?.body?.workspaceId ?? req?.query?.workspaceId;
 
-  return assertWorkspaceAccess(candidate, req?.user);
+  return assertWorkspaceAccess(typeof candidate === 'string' ? candidate : undefined, req?.user);
 }

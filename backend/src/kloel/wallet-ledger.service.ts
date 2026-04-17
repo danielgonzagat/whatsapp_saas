@@ -105,5 +105,7 @@ export type WalletLedgerReason =
   | 'withdrawal_debit'
   | 'reconcile_settle_credit'
   | 'reconcile_settle_debit'
+  | 'refund_debit'
+  | 'chargeback_debit'
   | 'manual_adjustment_credit'
   | 'manual_adjustment_debit';

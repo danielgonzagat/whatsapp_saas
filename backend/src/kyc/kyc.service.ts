@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
+import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
 import { StorageService } from '../common/storage/storage.service';
@@ -13,6 +14,13 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+
+interface UploadedFile {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  size: number;
+}
 
 @Injectable()
 export class KycService {
@@ -49,7 +57,7 @@ export class KycService {
   }
 
   async updateProfile(agentId: string, dto: UpdateProfileDto) {
-    const data: any = { ...dto };
+    const data: Prisma.AgentUpdateInput = { ...dto };
     if (dto.birthDate) data.birthDate = new Date(dto.birthDate);
 
     // If agent was rejected, reset to pending so they can re-submit
@@ -65,7 +73,7 @@ export class KycService {
     return this.prisma.agent.update({ where: { id: agentId }, data });
   }
 
-  async uploadAvatar(agentId: string, file: any) {
+  async uploadAvatar(agentId: string, file: UploadedFile) {
     if (!file) throw new BadRequestException('No file provided');
     if (file.size > 5 * 1024 * 1024) throw new BadRequestException('File too large (max 5MB)');
 
@@ -123,7 +131,7 @@ export class KycService {
     });
   }
 
-  async uploadDocument(agentId: string, workspaceId: string, type: string, file: any) {
+  async uploadDocument(agentId: string, workspaceId: string, type: string, file: UploadedFile) {
     const allowedTypes = [
       'DOCUMENT_FRONT',
       'DOCUMENT_BACK',

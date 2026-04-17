@@ -34,7 +34,7 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      const payload: any = this.jwt.verify(token);
+      const payload = this.jwt.verify(token);
       const workspaceId = (client.handshake.query.workspaceId as string) || payload.workspaceId;
 
       if (!workspaceId || (payload.workspaceId && payload.workspaceId !== workspaceId)) {
@@ -70,7 +70,7 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // Método helper para enviar eventos para o workspace
-  emitToWorkspace(workspaceId: string, event: string, data: any) {
+  emitToWorkspace(workspaceId: string, event: string, data: unknown) {
     this.server.to(`workspace:${workspaceId}`).emit(event, data);
   }
 

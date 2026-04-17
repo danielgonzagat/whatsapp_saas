@@ -4,9 +4,9 @@ import type { Redis } from 'ioredis';
 import { InboxGateway } from './inbox.gateway';
 
 type WsEvent =
-  | { type: 'message:new'; workspaceId: string; message: any }
-  | { type: 'conversation:update'; workspaceId: string; conversation: any }
-  | { type: 'message:status'; workspaceId: string; payload: any };
+  | { type: 'message:new'; workspaceId: string; message: unknown }
+  | { type: 'conversation:update'; workspaceId: string; conversation: unknown }
+  | { type: 'message:status'; workspaceId: string; payload: unknown };
 
 /**
  * Escuta eventos publicados no Redis (gerados pelos workers) e retransmite via WebSocket.

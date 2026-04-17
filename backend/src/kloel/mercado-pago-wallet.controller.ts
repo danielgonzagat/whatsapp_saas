@@ -12,10 +12,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MercadoPagoService } from './mercado-pago.service';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 function buildMercadoPagoFailureRedirect(reason: string) {
   const raw = process.env.FRONTEND_URL?.trim();
@@ -57,7 +59,7 @@ export class MercadoPagoWalletController {
   connect(
     @Param('workspaceId') workspaceId: string,
     @Body() body: { returnUrl?: string } | undefined,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.mercadoPagoService.getAuthorizationUrl(workspaceId, req, body?.returnUrl);
   }
@@ -75,8 +77,8 @@ export class MercadoPagoWalletController {
   async callback(
     @Query('code') code: string | undefined,
     @Query('state') state: string | undefined,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
   ) {
     try {
       const result = await this.mercadoPagoService.handleOAuthCallback(

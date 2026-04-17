@@ -14,6 +14,7 @@ import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
@@ -109,7 +110,7 @@ export class MetaAuthController {
   @Get('url')
   @UseGuards(WorkspaceGuard)
   getAuthUrl(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('channel') channel?: string,
     @Query('returnTo') returnTo?: string,
   ) {
@@ -202,15 +203,26 @@ export class MetaAuthController {
       let instagramAccountId: string | null = null;
       let instagramUsername: string | null = null;
 
-      if (pagesRes.data && pagesRes.data.length > 0) {
-        const page = pagesRes.data[0]; // Use first page
-        pageId = page.id;
-        pageName = page.name;
-        pageAccessToken = page.access_token;
+      const pages = Array.isArray(pagesRes.data) ? pagesRes.data : [];
+      if (pages.length > 0) {
+        const page = pages[0] as Record<string, unknown>; // Use first page
+        pageId = typeof page.id === 'string' ? page.id : null;
+        pageName = typeof page.name === 'string' ? page.name : null;
+        pageAccessToken = typeof page.access_token === 'string' ? page.access_token : null;
 
-        if (page.instagram_business_account) {
-          instagramAccountId = page.instagram_business_account.id;
-          instagramUsername = page.instagram_business_account.username || null;
+        const instagramBusinessAccount =
+          page.instagram_business_account &&
+          typeof page.instagram_business_account === 'object' &&
+          !Array.isArray(page.instagram_business_account)
+            ? (page.instagram_business_account as Record<string, unknown>)
+            : null;
+        if (instagramBusinessAccount) {
+          instagramAccountId =
+            typeof instagramBusinessAccount.id === 'string' ? instagramBusinessAccount.id : null;
+          instagramUsername =
+            typeof instagramBusinessAccount.username === 'string'
+              ? instagramBusinessAccount.username
+              : null;
         }
       }
 
@@ -222,8 +234,10 @@ export class MetaAuthController {
       );
 
       let adAccountId: string | null = null;
-      if (adAccountsRes.data && adAccountsRes.data.length > 0) {
-        adAccountId = adAccountsRes.data[0].id;
+      const adAccounts = Array.isArray(adAccountsRes.data) ? adAccountsRes.data : [];
+      if (adAccounts.length > 0) {
+        const firstAdAccount = adAccounts[0] as Record<string, unknown>;
+        adAccountId = typeof firstAdAccount.id === 'string' ? firstAdAccount.id : null;
       }
 
       // 4b. Discover WhatsApp Business assets for Embedded Signup / Cloud API
@@ -289,7 +303,7 @@ export class MetaAuthController {
 
   @Post('disconnect')
   @UseGuards(WorkspaceGuard)
-  async disconnect(@Req() req: any) {
+  async disconnect(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
 
     const connection = await this.prisma.metaConnection.findUnique({
@@ -322,7 +336,7 @@ export class MetaAuthController {
 
   @Get('status')
   @UseGuards(WorkspaceGuard)
-  async getStatus(@Req() req: any) {
+  async getStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
 
     const connection = await this.prisma.metaConnection.findUnique({

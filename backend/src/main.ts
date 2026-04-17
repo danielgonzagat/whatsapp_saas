@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
 import * as cookieParser from 'cookie-parser';
+import { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
@@ -210,7 +211,7 @@ async function bootstrap() {
 
   // Middleware para setar CORS em TODAS as respostas (incluindo SSE)
   // O NestJS enableCors não cobre rotas que usam @Res()
-  app.use((req: any, res: any, next: any) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
     if (isAllowedOrigin(origin)) {
       if (origin) {

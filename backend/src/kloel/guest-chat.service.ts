@@ -127,9 +127,9 @@ export class GuestChatService implements OnModuleDestroy {
       this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, primaryModel);
 
       return completion.choices[0]?.message?.content?.trim() || this.unavailableMessage;
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.warn(
-        `Guest writer fallback failed (${error?.message || 'unknown_error'}). Trying emergency model chain.`,
+        `Guest writer fallback failed (${error instanceof Error ? error.message : 'unknown_error'}). Trying emergency model chain.`,
       );
     }
 
@@ -148,9 +148,9 @@ export class GuestChatService implements OnModuleDestroy {
         if (reply) {
           return reply;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         this.logger.warn(
-          `Guest emergency model ${model} failed (${error?.message || 'unknown_error'}).`,
+          `Guest emergency model ${model} failed (${error instanceof Error ? error.message : 'unknown_error'}).`,
         );
       }
     }
@@ -213,8 +213,11 @@ export class GuestChatService implements OnModuleDestroy {
       // Enviar done
       res.write(`data: [DONE]\n\n`);
       res.end();
-    } catch (error: any) {
-      this.logger.error(`Guest chat error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Guest chat error: ${error instanceof Error ? error.message : 'unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       this.writeStreamChunk(res, {
         content: this.unavailableMessage,
         chunk: this.unavailableMessage,
@@ -250,8 +253,11 @@ export class GuestChatService implements OnModuleDestroy {
       this.logger.log(`Guest chat sync reply: ${reply.substring(0, 100)}...`);
 
       return reply;
-    } catch (error: any) {
-      this.logger.error(`Guest chat sync error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Guest chat sync error: ${error instanceof Error ? error.message : 'unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return this.unavailableMessage;
     }
   }

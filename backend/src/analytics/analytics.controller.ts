@@ -5,6 +5,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AdvancedAnalyticsService } from './advanced-analytics.service';
 import { AnalyticsService } from './analytics.service';
 import { SmartTimeService } from './smart-time/smart-time.service';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 function parseDateRange(startDate?: string, endDate?: string) {
   const end = endDate ? new Date(endDate) : new Date();
@@ -28,13 +29,13 @@ export class AnalyticsController {
   ) {}
 
   @Get('smart-time')
-  async getSmartTime(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async getSmartTime(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.smartTimeService.getBestTime(effectiveWorkspaceId);
   }
 
   @Get('stats')
-  async getStats(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async getStats(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.analyticsService.getDashboardStats(effectiveWorkspaceId);
   }

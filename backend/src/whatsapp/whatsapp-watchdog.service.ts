@@ -539,8 +539,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
     if (runOnStartup) {
       this.startupSweepTimer = setTimeout(() => {
-        void this.runHealthCheck().catch((error: any) => {
-          this.logger.warn(`Startup watchdog sweep failed: ${error?.message || error}`);
+        void this.runHealthCheck().catch((error: unknown) => {
+          this.logger.warn(
+            `Startup watchdog sweep failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+          );
         });
       }, 5_000);
     }
@@ -615,8 +617,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(`❌ Health check cycle failed: ${errorInstanceofError.message}`);
     } finally {
-      await this.releaseLock(this.healthCheckLockKey, lockToken).catch((error: any) => {
-        this.logger.warn(`Failed to release watchdog cycle lock: ${error?.message || error}`);
+      await this.releaseLock(this.healthCheckLockKey, lockToken).catch((error: unknown) => {
+        this.logger.warn(
+          `Failed to release watchdog cycle lock: ${error instanceof Error ? error.message : 'unknown error'}`,
+        );
       });
     }
   }
@@ -815,9 +819,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       );
       return false;
     } finally {
-      await this.releaseLock(reconnectLockKey, reconnectLockToken).catch((error: any) => {
+      await this.releaseLock(reconnectLockKey, reconnectLockToken).catch((error: unknown) => {
         this.logger.warn(
-          `Failed to release reconnect lock for ${workspaceName || workspaceId}: ${error?.message || error}`,
+          `Failed to release reconnect lock for ${workspaceName || workspaceId}: ${error instanceof Error ? error.message : 'unknown error'}`,
         );
       });
     }

@@ -135,7 +135,16 @@ export class AuthService {
     }
   }
 
-  private async issueTokens(agent: any, extra?: { isNewUser?: boolean }) {
+  private async issueTokens(
+    agent: {
+      id: string;
+      email: string;
+      workspaceId: string;
+      name?: string | null;
+      role?: string | null;
+    },
+    extra?: { isNewUser?: boolean },
+  ) {
     try {
       // Hardening multi-tenant: não emitir tokens com workspace inválido.
       if (!agent?.workspaceId) {
@@ -557,7 +566,17 @@ export class AuthService {
     const finalName = (typeof name === 'string' && name.trim()) || deriveName(normalizedEmail);
 
     try {
-      let agent: any | null = null;
+      let agent: {
+        id: string;
+        email: string;
+        workspaceId: string;
+        name?: string | null;
+        role?: string | null;
+        provider?: string | null;
+        providerId?: string | null;
+        avatarUrl?: string | null;
+        emailVerified?: boolean | null;
+      } | null = null;
       try {
         agent = await this.prisma.agent.findFirst({
           where: {

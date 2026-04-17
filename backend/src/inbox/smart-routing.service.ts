@@ -15,7 +15,11 @@ export class SmartRoutingService {
   /**
    * Main entry point to route a conversation
    */
-  async routeConversation(workspaceId: string, conversationId: string, context: any = {}) {
+  async routeConversation(
+    workspaceId: string,
+    conversationId: string,
+    context: Record<string, unknown> = {},
+  ) {
     this.logger.log(`Routing conversation ${conversationId} in workspace ${workspaceId}`);
 
     // 1. Check explicit Routing Rules first
@@ -90,7 +94,7 @@ export class SmartRoutingService {
     this.logger.log(`Assigned conversation ${conversationId} to agent ${selectedAgent.email}`);
   }
 
-  private async checkRoutingRules(workspaceId: string, context: any) {
+  private async checkRoutingRules(workspaceId: string, context: Record<string, unknown>) {
     // Fetch active rules
     const rules = await this.prisma.routingRule.findMany({
       where: { workspaceId, isActive: true },
@@ -107,14 +111,16 @@ export class SmartRoutingService {
     });
 
     for (const rule of rules) {
+      const messageBody = typeof context.messageBody === 'string' ? context.messageBody : '';
+
       // Check Channel
       if (rule.channel && rule.channel !== context.channel) continue;
 
       // Check Keyword
       if (
         rule.keyword &&
-        context.messageBody &&
-        !context.messageBody.toLowerCase().includes(rule.keyword.toLowerCase())
+        messageBody &&
+        !messageBody.toLowerCase().includes(rule.keyword.toLowerCase())
       )
         continue;
 
@@ -127,7 +133,18 @@ export class SmartRoutingService {
     return null;
   }
 
-  private async applyRule(conversationId: string, rule: any) {
+  private async applyRule(
+    conversationId: string,
+    rule: {
+      id: string;
+      channel?: string | null;
+      keyword?: string | null;
+      queueId?: string | null;
+      targetId?: string | null;
+      name?: string;
+      actionType?: string;
+    },
+  ) {
     this.logger.log(`Applying rule ${rule.name} to conversation ${conversationId}`);
 
     if (rule.actionType === 'ASSIGN_TO_QUEUE' && rule.targetId) {

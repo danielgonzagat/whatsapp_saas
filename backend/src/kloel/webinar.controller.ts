@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateWebinarDto } from './dto/update-webinar.dto';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('webinars')
@@ -27,7 +28,7 @@ export class WebinarController {
   ) {}
 
   @Get()
-  async list(@Request() req: any) {
+  async list(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { webinars: [], count: 0 };
     const webinars = await this.prisma.webinar.findMany({
@@ -39,7 +40,7 @@ export class WebinarController {
 
   @Post()
   async create(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Body()
     body: {
       title: string;
@@ -67,7 +68,11 @@ export class WebinarController {
 
   @Put(':id')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async update(@Request() req: any, @Param('id') id: string, @Body() body: UpdateWebinarDto) {
+  async update(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() body: UpdateWebinarDto,
+  ) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.webinar.findFirst({
       where: { id, workspaceId },
@@ -82,7 +87,7 @@ export class WebinarController {
   }
 
   @Delete(':id')
-  async remove(@Request() req: any, @Param('id') id: string) {
+  async remove(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.webinar.findFirst({
       where: { id, workspaceId },

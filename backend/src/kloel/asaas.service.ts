@@ -624,7 +624,7 @@ export class AsaasService implements OnModuleInit {
         // Wrap sale + wallet balance updates in prisma.$transaction to prevent
         // partial state when one succeeds and the other fails (double-spend guard).
         const updatedSales = await this.prisma
-          .$transaction(async (tx: any) => {
+          .$transaction(async (tx: typeof this.prisma) => {
             // 1. Atualizar status da venda
             const salesResult = await tx.kloelSale
               .updateMany({
@@ -642,7 +642,7 @@ export class AsaasService implements OnModuleInit {
             // 2. Update wallet balance
             await tx.kloelWalletTransaction
               .updateMany({
-                where: { externalId: payment.id },
+                where: { reference: payment.id },
                 data: { status: 'confirmed' },
               })
               .catch(() => {
@@ -651,8 +651,10 @@ export class AsaasService implements OnModuleInit {
 
             return salesResult;
           })
-          .catch((txErr: any) => {
-            this.logger.error(`Transaction failed for webhook ${event}: ${txErr?.message}`);
+          .catch((txErr: unknown) => {
+            this.logger.error(
+              `Transaction failed for webhook ${event}: ${txErr instanceof Error ? txErr.message : 'unknown error'}`,
+            );
             return { count: 0 };
           });
 
@@ -669,7 +671,12 @@ export class AsaasService implements OnModuleInit {
             where: { externalPaymentId: payment.id },
             data: { status: 'overdue' },
           })
-          .catch((err: any) => this.logger.warn('Failed to update sale to overdue', err.message));
+          .catch((err: unknown) =>
+            this.logger.warn(
+              'Failed to update sale to overdue',
+              err instanceof Error ? err.message : 'unknown error',
+            ),
+          );
         break;
 
       case 'PAYMENT_REFUNDED':
@@ -678,7 +685,12 @@ export class AsaasService implements OnModuleInit {
             where: { externalPaymentId: payment.id },
             data: { status: 'refunded' },
           })
-          .catch((err: any) => this.logger.warn('Failed to update sale to refunded', err.message));
+          .catch((err: unknown) =>
+            this.logger.warn(
+              'Failed to update sale to refunded',
+              err instanceof Error ? err.message : 'unknown error',
+            ),
+          );
         break;
     }
   }

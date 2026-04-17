@@ -11,7 +11,7 @@ interface NormalizedMessage {
   fromName?: string;
   content: string;
   attachments?: MessageAttachment[];
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface MessageAttachment {
@@ -238,7 +238,7 @@ export class OmnichannelService {
    * Processa webhook do Instagram - implementação completa
    * Suporta texto, imagens, vídeos, stories replies e reactions
    */
-  async processInstagramWebhook(workspaceId: string, payload: any) {
+  async processInstagramWebhook(workspaceId: string, payload: Record<string, unknown>) {
     this.logger.log('[OMNI] Processing Instagram webhook', {
       workspaceId,
       hasPayload: !!payload,

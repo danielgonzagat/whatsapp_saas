@@ -3,6 +3,7 @@ import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CopilotService } from './copilot.service';
 
 @Controller('copilot')
@@ -12,7 +13,7 @@ export class CopilotController {
 
   @Post('suggest')
   async suggest(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       workspaceId?: string;
@@ -32,7 +33,7 @@ export class CopilotController {
    */
   @Post('suggest-multiple')
   async suggestMultiple(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       workspaceId?: string;

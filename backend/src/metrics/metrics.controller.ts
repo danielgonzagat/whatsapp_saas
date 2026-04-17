@@ -1,5 +1,5 @@
 import { Controller, Get, Req, Res, UnauthorizedException } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,7 +16,7 @@ export class MetricsController {
 
   @Public()
   @Get()
-  async getMetrics(@Req() req: any, @Res() res: Response) {
+  async getMetrics(@Req() req: Request, @Res() res: Response) {
     this.validateAccess(req);
     const queueStatus = await this.queueHealth.getQueuesStatus();
     this.metrics.updateQueueMetrics(queueStatus);
@@ -39,7 +39,7 @@ export class MetricsController {
 
   @Public()
   @Get('queues')
-  async getQueues(@Req() req: any) {
+  async getQueues(@Req() req: Request) {
     this.validateAccess(req);
     return this.queueHealth.getQueuesStatus();
   }
@@ -47,7 +47,7 @@ export class MetricsController {
   /**
    * Protege métricas se METRICS_TOKEN estiver configurado.
    */
-  private validateAccess(req: any) {
+  private validateAccess(req: Request) {
     const expected = process.env.METRICS_TOKEN;
     if (!expected) {
       if (process.env.NODE_ENV === 'production') {

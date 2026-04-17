@@ -59,9 +59,9 @@ export class WhatsAppApiController {
 
     const [status, configDiagnostics, clientInfo, operationalIntelligence] = await Promise.all([
       this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
-      this.whatsappApi.getSessionConfigDiagnostics(sessionName).catch((error: any) => ({
+      this.whatsappApi.getSessionConfigDiagnostics(sessionName).catch((error: unknown) => ({
         available: false,
-        error: String(error?.message || error || 'unknown_error'),
+        error: error instanceof Error ? error.message : 'unknown_error',
       })),
       this.whatsappApi.getClientInfo(sessionName).catch(() => null),
       this.ciaRuntime.getOperationalIntelligence(workspaceId).catch(() => null),
@@ -239,7 +239,7 @@ export class WhatsAppApiController {
   @Get('agent/stream')
   streamAgent(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
-    const safeWrite = (data: any) => {
+    const safeWrite = (data: unknown) => {
       try {
         res.write(`data: ${JSON.stringify(data)}\n\n`);
       } catch {
@@ -306,7 +306,7 @@ export class WhatsAppApiController {
   @Get('live')
   async streamLive(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
-    const safeWrite = (data: any) => {
+    const safeWrite = (data: unknown) => {
       try {
         res.write(`data: ${JSON.stringify(data)}\n\n`);
       } catch {
@@ -808,7 +808,7 @@ export class WhatsAppApiController {
     };
   }
 
-  private readNumberQuery(value: any, fallback: number, min: number, max: number) {
+  private readNumberQuery(value: unknown, fallback: number, min: number, max: number) {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) {
       return fallback;
@@ -816,14 +816,12 @@ export class WhatsAppApiController {
     return Math.min(max, Math.max(min, parsed));
   }
 
-  private readBooleanQuery(value: any, fallback = false) {
+  private readBooleanQuery(value: unknown, fallback = false) {
     if (typeof value === 'boolean') {
       return value;
     }
 
-    const normalized = String(value ?? '')
-      .trim()
-      .toLowerCase();
+    const normalized = (typeof value === 'string' ? value : '').trim().toLowerCase();
     if (!normalized) {
       return fallback;
     }

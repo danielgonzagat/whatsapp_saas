@@ -15,18 +15,34 @@ export class LaunchService {
     });
   }
 
-  async createLauncher(workspaceId: string, data: any) {
+  async createLauncher(
+    workspaceId: string,
+    data: { name: string; slug?: string; [k: string]: unknown },
+  ) {
     return this.prisma.groupLauncher.create({
       data: {
         ...data,
         workspaceId,
         status: 'ACTIVE',
         slug: data.slug || data.name.toLowerCase().replace(PATTERN_RE, '-'),
-      },
+      } as Parameters<typeof this.prisma.groupLauncher.create>[0]['data'],
     });
   }
 
-  async addGroup(workspaceId: string, launcherId: string, data: any) {
+  async addGroup(
+    workspaceId: string,
+    launcherId: string,
+    data: {
+      name?: string;
+      inviteLink?: string;
+      groupLink?: string;
+      groupId?: string;
+      role?: string;
+      capacity?: number;
+      current?: number;
+      isActive?: boolean;
+    },
+  ) {
     const launcher = await this.prisma.groupLauncher.findUnique({
       where: { id: launcherId },
       select: { id: true, workspaceId: true },
@@ -40,10 +56,19 @@ export class LaunchService {
       throw new ForbiddenException('Launcher não pertence a este workspace');
     }
 
+    const inviteLink = data.inviteLink || data.groupLink || data.groupId;
+    if (!inviteLink) {
+      throw new NotFoundException('Invite link do grupo é obrigatório');
+    }
+
     return this.prisma.launchGroup.create({
       data: {
-        ...data,
-        launcherId,
+        name: data.name || data.role || 'Grupo do lançamento',
+        inviteLink,
+        capacity: data.capacity,
+        current: data.current,
+        isActive: data.isActive,
+        launcher: { connect: { id: launcherId } },
       },
     });
   }

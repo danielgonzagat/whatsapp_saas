@@ -19,6 +19,7 @@ import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PaymentService } from './payment.service';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 @Controller('kloel/payments')
 @UseGuards(ThrottlerGuard)
@@ -57,7 +58,7 @@ export class PaymentController {
   @Post('create/:workspaceId')
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // Máximo 10 criações de pagamento por minuto
   async createPayment(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body()
     body: {
@@ -86,7 +87,7 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('report/:workspaceId')
   async salesReport(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Query('period') period: string = 'week',
   ) {

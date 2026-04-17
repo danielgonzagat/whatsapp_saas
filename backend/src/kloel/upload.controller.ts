@@ -21,6 +21,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
 import { MemoryService } from './memory.service';
 import { PdfProcessorService } from './pdf-processor.service';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
 const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/;
@@ -101,7 +102,7 @@ export class UploadController {
       }),
     )
     file: UploadedFileType,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     if (!file) {
       throw new BadRequestException('Nenhum arquivo enviado');
@@ -159,7 +160,10 @@ export class UploadController {
       },
     }),
   )
-  async uploadMultipleFiles(@UploadedFiles() files: UploadedFileType[], @Req() req: any) {
+  async uploadMultipleFiles(
+    @UploadedFiles() files: UploadedFileType[],
+    @Req() req: AuthenticatedRequest,
+  ) {
     if (!Array.isArray(files) || files.length === 0) {
       throw new BadRequestException('Nenhum arquivo enviado');
     }

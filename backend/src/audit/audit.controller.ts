@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AuditService } from './audit.service';
 
 @ApiTags('Audit')
@@ -15,7 +16,7 @@ export class AuditController {
   @Get()
   @ApiOperation({ summary: 'Get audit logs for the workspace' })
   async getLogs(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId: string,
     @Query('limit') limit: string,
     @Query('offset') offset: string,

@@ -79,8 +79,10 @@ export class FollowUpService {
         );
 
         await this.markSent(followUp.workspaceId, followUp.id);
-      } catch (error: any) {
-        this.logger.warn(`Failed to dispatch follow-up ${followUp.id}: ${error?.message || error}`);
+      } catch (error: unknown) {
+        this.logger.warn(
+          `Failed to dispatch follow-up ${followUp.id}: ${error instanceof Error ? error.message : 'unknown error'}`,
+        );
       }
     }
   }
@@ -89,7 +91,7 @@ export class FollowUpService {
    * Lista follow-ups de um workspace.
    */
   async list(workspaceId: string, status?: string) {
-    const where: any = { workspaceId };
+    const where: { workspaceId: string; status?: string } = { workspaceId };
     if (status) {
       where.status = status;
     }
@@ -145,7 +147,7 @@ export class FollowUpService {
       throw new NotFoundException('Follow-up não encontrado');
     }
 
-    const data: any = {};
+    const data: { scheduledFor?: Date; message?: string; status?: string; reason?: string } = {};
     if (dto.scheduledFor) {
       data.scheduledFor =
         typeof dto.scheduledFor === 'string' ? new Date(dto.scheduledFor) : dto.scheduledFor;

@@ -44,10 +44,12 @@ export class IdempotencyInterceptor implements NestInterceptor {
           this.redis
             .set(cacheKey, JSON.stringify({ statusCode: response.statusCode, body }), 'EX', ttl)
             .then(() => body)
-            .catch((err: any) => {
+            .catch((err: unknown) => {
               // Never fail the request because the cache write failed, but
               // log loudly — this is a degraded state.
-              this.logger.warn(`Idempotency cache store failed: ${err?.message}`);
+              this.logger.warn(
+                `Idempotency cache store failed: ${err instanceof Error ? err.message : 'unknown'}`,
+              );
               return body;
             }),
         ),
@@ -55,8 +57,10 @@ export class IdempotencyInterceptor implements NestInterceptor {
       catchError((err) => {
         // Invariant I1: on handler error, clear the placeholder so a crashed
         // request does not block subsequent requests for the full TTL.
-        this.redis.del(cacheKey).catch((delErr: any) => {
-          this.logger.warn(`Idempotency placeholder cleanup failed: ${delErr?.message}`);
+        this.redis.del(cacheKey).catch((delErr: unknown) => {
+          this.logger.warn(
+            `Idempotency placeholder cleanup failed: ${delErr instanceof Error ? delErr.message : 'unknown'}`,
+          );
         });
         return throwError(() => err);
       }),

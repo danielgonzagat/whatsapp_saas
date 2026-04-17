@@ -1,5 +1,12 @@
 const PATTERN_RE = /\/+$/;
-function readHeader(req: any, name: string) {
+
+type MinimalRequest = {
+  get?: (name: string) => string | undefined;
+  headers?: Record<string, string | string[] | undefined>;
+  protocol?: string;
+};
+
+function readHeader(req: MinimalRequest, name: string) {
   if (!req) return '';
 
   if (typeof req.get === 'function') {
@@ -18,7 +25,7 @@ function readHeader(req: any, name: string) {
   return String(headerValue || '');
 }
 
-export function getRequestOrigin(req: any) {
+export function getRequestOrigin(req: MinimalRequest | undefined | null) {
   const forwardedProto = readHeader(req, 'x-forwarded-proto').split(',')[0].trim();
   const forwardedHost = readHeader(req, 'x-forwarded-host').split(',')[0].trim();
   const directHost = readHeader(req, 'host').trim();
@@ -40,7 +47,10 @@ export function getRequestOrigin(req: any) {
   return '';
 }
 
-export function normalizeStorageUrlForRequest(rawUrl: string | null | undefined, req: any) {
+export function normalizeStorageUrlForRequest(
+  rawUrl: string | null | undefined,
+  req: MinimalRequest | undefined | null,
+) {
   if (!rawUrl) {
     return rawUrl || '';
   }

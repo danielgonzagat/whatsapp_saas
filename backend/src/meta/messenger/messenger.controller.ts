@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/comm
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MessengerService } from './messenger.service';
 
@@ -13,7 +14,7 @@ export class MessengerController {
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('send')
   async sendMessage(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       pageId: string;
@@ -46,7 +47,7 @@ export class MessengerController {
 
   @Get('conversations')
   async getConversations(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('pageId') pageId: string,
     @Query('pageAccessToken') pageAccessToken: string,
   ) {

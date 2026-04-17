@@ -31,6 +31,12 @@ const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp)$/i;
 const IMAGE___JPEG_PNG_GIF_WE_RE = /^image\/(jpeg|png|gif|webp)$/;
 const JPG_JPEG_PNG_GIF_WEBP_RE_2 = /\.(jpg|jpeg|png|gif|webp|pdf)$/i;
 const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf)$/;
+type UploadedKycFile = {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  size: number;
+};
 
 @Controller('kyc')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -70,7 +76,7 @@ export class KycController {
         ],
       }),
     )
-    file: any,
+    file: UploadedKycFile,
   ) {
     return this.kycService.uploadAvatar(req.user.sub, file);
   }
@@ -117,7 +123,7 @@ export class KycController {
         ],
       }),
     )
-    file: any,
+    file: UploadedKycFile,
     @Body() body: KycDocumentTypeDto,
   ) {
     return this.kycService.uploadDocument(req.user.sub, req.user.workspaceId, body.type, file);

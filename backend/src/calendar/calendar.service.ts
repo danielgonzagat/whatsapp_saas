@@ -2,6 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
+interface AppointmentRecord {
+  id: string;
+  title?: string;
+  description?: string | null;
+  startAt?: Date | null;
+  endAt?: Date | null;
+  location?: string | null;
+  meetingUrl?: string | null;
+  status?: string;
+  [key: string]: unknown;
+}
+
 export interface CalendarEvent {
   id?: string;
   summary: string;
@@ -33,8 +45,18 @@ interface CalendarConfig {
 export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
 
-  private getAppointmentModel(): any | null {
-    const model = (this.prisma as Record<string, any>)?.appointment;
+  private getAppointmentModel(): {
+    create?: (...args: unknown[]) => Promise<AppointmentRecord>;
+    findMany?: (...args: unknown[]) => Promise<AppointmentRecord[]>;
+    update?: (...args: unknown[]) => Promise<AppointmentRecord>;
+  } | null {
+    const model = (this.prisma as unknown as Record<string, unknown>)?.appointment as
+      | {
+          create?: (...args: unknown[]) => Promise<AppointmentRecord>;
+          findMany?: (...args: unknown[]) => Promise<AppointmentRecord[]>;
+          update?: (...args: unknown[]) => Promise<AppointmentRecord>;
+        }
+      | undefined;
     return model ?? null;
   }
 

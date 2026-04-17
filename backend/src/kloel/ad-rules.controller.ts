@@ -15,6 +15,7 @@ import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 @Controller('ad-rules')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -26,7 +27,7 @@ export class AdRulesController {
   ) {}
 
   @Get()
-  async list(@Request() req: any) {
+  async list(@Request() req: AuthenticatedRequest) {
     try {
       const workspaceId = req.user.workspaceId;
       return await this.prisma.adRule.findMany({
@@ -41,7 +42,7 @@ export class AdRulesController {
 
   @Post()
   async create(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Body()
     dto: {
       name: string;
@@ -67,7 +68,7 @@ export class AdRulesController {
 
   @Put(':id')
   async update(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body()
     dto: {
@@ -88,7 +89,7 @@ export class AdRulesController {
   }
 
   @Delete(':id')
-  async remove(@Request() req: any, @Param('id') id: string) {
+  async remove(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
     const rule = await this.prisma.adRule.findFirst({
       where: { id, workspaceId },
@@ -106,7 +107,7 @@ export class AdRulesController {
   }
 
   @Post(':id/toggle')
-  async toggle(@Request() req: any, @Param('id') id: string) {
+  async toggle(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
     const rule = await this.prisma.adRule.findFirst({
       where: { id, workspaceId },

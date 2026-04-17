@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CreateVoiceProfileDto } from './dto/create-voice-profile.dto';
 import { GenerateAudioDto } from './dto/generate-audio.dto';
 import { VoiceService } from './voice.service';
@@ -29,7 +30,7 @@ export class VoiceController {
   @ApiOperation({ summary: 'Create a voice profile' })
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @Roles('ADMIN')
-  async createProfile(@Req() req: any, @Body() body: CreateVoiceProfileDto) {
+  async createProfile(@Req() req: AuthenticatedRequest, @Body() body: CreateVoiceProfileDto) {
     const effectiveWorkspaceId = resolveWorkspaceId(req);
     return this.voiceService.createVoiceProfile(effectiveWorkspaceId, body);
   }
@@ -37,7 +38,7 @@ export class VoiceController {
   @Get('profiles')
   @ApiOperation({ summary: 'List voice profiles' })
   @Roles('ADMIN', 'AGENT')
-  async getProfiles(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async getProfiles(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.voiceService.getProfiles(effectiveWorkspaceId);
   }
@@ -46,7 +47,7 @@ export class VoiceController {
   @ApiOperation({ summary: 'Generate audio from text' })
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @Roles('ADMIN', 'AGENT')
-  async generate(@Req() req: any, @Body() body: GenerateAudioDto) {
+  async generate(@Req() req: AuthenticatedRequest, @Body() body: GenerateAudioDto) {
     const effectiveWorkspaceId = resolveWorkspaceId(req);
     return this.voiceService.generateAudio(effectiveWorkspaceId, body);
   }

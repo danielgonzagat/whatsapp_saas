@@ -5,7 +5,7 @@ import { MetaSdkService } from '../meta-sdk.service';
 export class MetaAdsService {
   constructor(private readonly metaSdk: MetaSdkService) {}
 
-  async getCampaigns(adAccountId: string, accessToken: string, params?: any) {
+  async getCampaigns(adAccountId: string, accessToken: string, params?: Record<string, unknown>) {
     const fields = 'id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time';
     return this.metaSdk.graphApiGet(
       `act_${adAccountId}/campaigns`,
