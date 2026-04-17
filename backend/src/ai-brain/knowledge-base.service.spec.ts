@@ -7,6 +7,7 @@ import { AuditService } from '../audit/audit.service';
 
 describe('KnowledgeBaseService', () => {
   let service: KnowledgeBaseService;
+  let htmlToText: (html: string) => string;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -50,6 +51,7 @@ describe('KnowledgeBaseService', () => {
     }).compile();
 
     service = module.get<KnowledgeBaseService>(KnowledgeBaseService);
+    htmlToText = Reflect.get(service as object, 'htmlToText') as (html: string) => string;
   });
 
   it('should be defined', () => {
@@ -60,7 +62,7 @@ describe('KnowledgeBaseService', () => {
     it('should extract visible text and preserve natural spacing', () => {
       const text =
         '<p>Hello world.</p><div>This is a test.</div><article>Another sentence here.</article>';
-      const plainText = (service as any).htmlToText(text);
+      const plainText = htmlToText.call(service, text);
 
       expect(plainText).toBe('Hello world. This is a test. Another sentence here.');
     });
@@ -68,7 +70,7 @@ describe('KnowledgeBaseService', () => {
     it('should ignore script/style tags while flattening markup', () => {
       const text =
         '<div>Visible copy</div><script>window.secret = true;</script><style>body{display:none}</style><span>More text</span>';
-      const plainText = (service as any).htmlToText(text);
+      const plainText = htmlToText.call(service, text);
 
       expect(plainText).toBe('Visible copy More text');
     });

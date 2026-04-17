@@ -182,14 +182,14 @@
 
 /* ═══ COOKIE THEME TOKENS — global because cookie UI lives outside the app shell ═══ */
 :root {
-  --cookie-bg-primary: #fff;
-  --cookie-bg-surface: #fff;
+  --cookie-bg-primary: #ffffff;
+  --cookie-bg-surface: #ffffff;
   --cookie-bg-elevated: #f5f5f7;
   --cookie-border: #e0e0e2;
   --cookie-text-primary: #0a0a0c;
   --cookie-text-secondary: #6b6b70;
   --cookie-text-tertiary: #9b9ba0;
-  --cookie-text-on-accent: #fff;
+  --cookie-text-on-accent: #ffffff;
   --cookie-accent: #e85d30;
   --cookie-accent-hover: #d4522a;
   --cookie-accent-light: rgb(232 93 48 / 8%);
@@ -221,15 +221,15 @@
 
 /* ═══ APP THEME TOKENS — authenticated app only ═══ */
 .kloel-app-theme-root {
-  --app-bg-primary: #fff;
+  --app-bg-primary: #ffffff;
   --app-bg-secondary: #f5f5f7;
   --app-bg-tertiary: #eaeaec;
-  --app-bg-elevated: #fff;
+  --app-bg-elevated: #ffffff;
   --app-bg-hover: #f0f0f2;
   --app-bg-active: #e8e8ea;
   --app-bg-sidebar: #f8f8fa;
-  --app-bg-input: #fff;
-  --app-bg-card: #fff;
+  --app-bg-input: #ffffff;
+  --app-bg-card: #ffffff;
   --app-bg-overlay: rgb(9 11 18 / 36%);
   --app-border-primary: #e0e0e2;
   --app-border-secondary: #d0d0d2;
@@ -239,8 +239,8 @@
   --app-text-primary: #0a0a0c;
   --app-text-secondary: #6b6b70;
   --app-text-tertiary: #9b9ba0;
-  --app-text-inverse: #fff;
-  --app-text-on-accent: #fff;
+  --app-text-inverse: #ffffff;
+  --app-text-on-accent: #ffffff;
   --app-text-placeholder: #adadb0;
   --app-accent: #e85d30;
   --app-accent-hover: #d4522a;
