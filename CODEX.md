@@ -1,8 +1,8 @@
-# CODEX.md — AI CLI Behavioral Guidelines (Karpathy Principles)
+# CODEX.md — AI CLI Behavioral Standard
 
-> Read by: OpenAI Codex CLI, GitHub Copilot CLI, and any AI agent operating in this repo.
+> Read by: OpenAI Codex CLI, GitHub Copilot CLI, Gemini CLI, and any AI agent in this repo.
 > For Claude Code: see CLAUDE.md. These principles apply IN ADDITION to CLAUDE.md.
-> Derived from Andrej Karpathy's observations on LLM coding pitfalls.
+> Sources: Karpathy principles, obra/superpowers, affaan-m/everything-claude-code.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
@@ -110,3 +110,90 @@ After ANY code change, verify builds:
 - Use conventional commits: `fix(scope): message`, `feat(scope): message`
 - Run `npm run lint` before committing
 - Pre-commit hooks (Husky + lint-staged) must pass — never use `--no-verify`
+
+---
+
+## 5. Research Before Writing (everything-claude-code)
+
+**Search for existing solutions before writing new code.**
+
+- Search GitHub (`gh search code`) for implementations before writing from scratch
+- Check npm/package registries for battle-tested libraries before hand-rolling
+- Prefer adopting proven approaches over writing net-new code
+- Use official docs (Context7, vendor docs) to confirm API behavior
+
+## 6. Test-Driven Development (superpowers + everything-claude-code)
+
+**Write tests first. Always.**
+
+Mandatory workflow for features and bug fixes:
+
+1. Write test first (RED) — it should FAIL
+2. Write minimal implementation (GREEN) — make it pass
+3. Refactor (IMPROVE) — clean up while tests stay green
+4. Verify coverage — target 80%+
+
+Test structure: Arrange-Act-Assert (AAA) pattern.
+
+## 7. Immutability (everything-claude-code)
+
+**Create new objects, never mutate existing ones.**
+
+- Return new copies with changes, don't modify in-place
+- Prevents hidden side effects and enables safe concurrency
+- Especially critical in React state and Redux
+
+## 8. TypeScript Strictness (everything-claude-code)
+
+**No `any`. Ever.**
+
+- Use `unknown` for external/untrusted input, then narrow safely
+- Use generics when type depends on caller
+- Use `instanceof`, `typeof`, or type guards to narrow
+- Exported functions MUST have explicit parameter and return types
+- Let TypeScript infer obvious local variable types
+
+## 9. File Organization (everything-claude-code)
+
+**Many small files > few large files.**
+
+- 200-400 lines typical, 800 max
+- High cohesion, low coupling
+- Organize by feature/domain, not by type
+- Extract utilities from large modules
+
+## 10. Security Checklist (everything-claude-code)
+
+Before ANY commit:
+
+- No hardcoded secrets (API keys, passwords, tokens)
+- All user inputs validated at system boundaries
+- SQL injection prevention (parameterized queries / Prisma)
+- XSS prevention (sanitized HTML, no raw innerHTML)
+- Rate limiting on public endpoints
+- Error messages don't leak sensitive data
+- Timing-safe comparisons for secrets (`crypto.timingSafeEqual`)
+- Path traversal prevention for file operations
+
+## 11. Web Performance (everything-claude-code)
+
+Core Web Vitals targets:
+
+- LCP < 2.5s, INP < 200ms, CLS < 0.1
+- JS budget: < 300kb gzipped per app page
+- Images: explicit width/height, lazy loading below fold
+- Fonts: max 2 families, `font-display: swap`
+- Dynamic import for heavy libraries
+
+## 12. Verification Before Completion (superpowers)
+
+**Never claim work is done without evidence.**
+
+Before saying "done", "fixed", or "complete":
+
+1. Run the relevant build command and show output
+2. Run tests and show pass/fail
+3. Verify the specific success criteria defined at start
+4. Check for regressions in related features
+
+"It should work" is not evidence. Show the output.
