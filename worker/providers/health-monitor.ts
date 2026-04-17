@@ -28,7 +28,11 @@ export class HealthMonitor {
   /**
    * Report current status of an instance.
    */
-  static async reportStatus(workspaceId: string, status: InstanceStatus, meta: any = {}) {
+  static async reportStatus(
+    workspaceId: string,
+    status: InstanceStatus,
+    meta: Record<string, unknown> = {},
+  ) {
     const key = `${HealthMonitor.KEY_PREFIX}:${workspaceId}`;
     const data = {
       status,
@@ -84,7 +88,7 @@ export class HealthMonitor {
    * Publica um alerta simples em um canal Redis.
    * Pode ser consumido pelo backend para notificar UI/ops.
    */
-  static async pushAlert(workspaceId: string, kind: string, meta: any = {}) {
+  static async pushAlert(workspaceId: string, kind: string, meta: Record<string, unknown> = {}) {
     const payload = {
       workspaceId,
       kind,

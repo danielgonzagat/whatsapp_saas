@@ -1,5 +1,17 @@
 const DEFAULT_TIMEZONE = 'America/Sao_Paulo';
 
+interface TimezoneHolder {
+  timezone?: string | null;
+}
+
+interface WorkspaceSettings {
+  timezone?: string | null;
+  businessInfo?: TimezoneHolder | null;
+  profile?: TimezoneHolder | null;
+  preferences?: TimezoneHolder | null;
+  autopilot?: TimezoneHolder | null;
+}
+
 function safeTimezone(value?: string | null): string {
   const candidate = String(value || '').trim();
   if (!candidate) return DEFAULT_TIMEZONE;
@@ -15,7 +27,7 @@ function safeTimezone(value?: string | null): string {
   }
 }
 
-export function resolveWorkspaceTimezone(settings?: any): string {
+export function resolveWorkspaceTimezone(settings?: WorkspaceSettings | null): string {
   return safeTimezone(
     settings?.timezone ||
       settings?.businessInfo?.timezone ||
@@ -25,7 +37,10 @@ export function resolveWorkspaceTimezone(settings?: any): string {
   );
 }
 
-export function getWorkspaceLocalHour(settings?: any, now: Date = new Date()): number {
+export function getWorkspaceLocalHour(
+  settings?: WorkspaceSettings | null,
+  now: Date = new Date(),
+): number {
   const timezone = resolveWorkspaceTimezone(settings);
   return Number(
     new Intl.DateTimeFormat('en-US', {
@@ -37,7 +52,7 @@ export function getWorkspaceLocalHour(settings?: any, now: Date = new Date()): n
 }
 
 export function isWithinWorkspaceWindow(input: {
-  settings?: any;
+  settings?: WorkspaceSettings | null;
   startHour: number;
   endHour: number;
   now?: Date;
@@ -50,7 +65,7 @@ export function isWithinWorkspaceWindow(input: {
 }
 
 export function getDelayUntilWorkspaceWindowOpens(input: {
-  settings?: any;
+  settings?: WorkspaceSettings | null;
   startHour: number;
   endHour: number;
   now?: Date;

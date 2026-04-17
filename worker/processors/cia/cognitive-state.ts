@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import type { DemandState } from '../../providers/commercial-intelligence';
 import * as RX from './cognitive-state-patterns';
 
@@ -74,7 +75,7 @@ export interface RecordDecisionOutcomeInput {
   outcome: string;
   reward?: number;
   message?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonObject;
 }
 
 const BUYING_HINTS = [
@@ -597,7 +598,7 @@ function buildStateKey(input: {
 }
 
 export async function loadCustomerCognitiveState(
-  prisma: any,
+  prisma: PrismaClient,
   input: {
     workspaceId: string;
     conversationId?: string | null;
@@ -622,7 +623,7 @@ export async function loadCustomerCognitiveState(
 }
 
 export async function persistCustomerCognitiveState(
-  prisma: any,
+  prisma: PrismaClient,
   input: {
     workspaceId: string;
     conversationId?: string | null;
@@ -759,7 +760,10 @@ export async function persistCustomerCognitiveState(
   return normalizedState;
 }
 
-export async function recordDecisionOutcome(prisma: any, input: RecordDecisionOutcomeInput) {
+export async function recordDecisionOutcome(
+  prisma: PrismaClient,
+  input: RecordDecisionOutcomeInput,
+) {
   if (!prisma?.kloelMemory?.create) return null;
 
   return prisma.kloelMemory.create({

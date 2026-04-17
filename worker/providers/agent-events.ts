@@ -195,9 +195,8 @@ export async function finishBacklogRunTask(input: {
 
   if (next.finished >= next.total) {
     try {
-      const client: any = prisma as any;
-      if (client.autonomyRun) {
-        await client.autonomyRun.update({
+      if (prisma.autonomyRun) {
+        await prisma.autonomyRun.update({
           where: { id: input.runId },
           data: {
             status: next.failed > 0 ? 'FAILED' : 'COMPLETED',

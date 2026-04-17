@@ -8841,7 +8841,9 @@ async function runCiaGlobalLearningAll() {
 
   // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const workspace of enabledWorkspaces) {
-    const domain = inferWorkspaceDomain(workspace.providerSettings || {});
+    const domain = inferWorkspaceDomain(
+      (workspace.providerSettings || {}) as Record<string, unknown>,
+    );
     const logs = await prisma.kloelMemory
       .findMany({
         where: {
@@ -8867,7 +8869,9 @@ async function runCiaGlobalLearningAll() {
 
   // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const workspace of enabledWorkspaces) {
-    const domain = inferWorkspaceDomain(workspace.providerSettings || {});
+    const domain = inferWorkspaceDomain(
+      (workspace.providerSettings || {}) as Record<string, unknown>,
+    );
     const topPattern = patterns.find((pattern) => pattern.domain === domain);
     if (!topPattern) continue;
 

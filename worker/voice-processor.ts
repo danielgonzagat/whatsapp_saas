@@ -81,7 +81,7 @@ async function handleGenerateAudio(job: Job) {
 
     const response = await openai.audio.speech.create({
       model: 'tts-1',
-      voice: ttsVoice as any,
+      voice: ttsVoice,
       input: text,
       speed: ttsSpeed,
       response_format: 'opus',
@@ -196,8 +196,11 @@ async function handleTranscription(job: Job) {
     }
 
     return { success: true, transcription: transcribedText };
-  } catch (err: any) {
-    console.error(`❌ Transcription failed for ${phone}:`, err?.message || err);
+  } catch (err: unknown) {
+    console.error(
+      `❌ Transcription failed for ${phone}:`,
+      err instanceof Error ? err.message : err,
+    );
     throw err;
   }
 }

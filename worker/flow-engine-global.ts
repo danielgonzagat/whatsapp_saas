@@ -144,7 +144,7 @@ export class FlowEngineGlobal {
     this.context = new ContextStore('flow-context');
 
     // Worker central — consome jobs de execução
-    this.queue.on('job', (job) => this.run(job));
+    this.queue.on<{ user: string; workspaceId?: string }>('job', (job) => this.run(job));
 
     // Monitor de Timeouts (World Class Reliability)
     this.timeoutChecker = setInterval(() => this.checkTimeouts(), 5000);
@@ -696,7 +696,12 @@ export class FlowEngineGlobal {
         const attribute = readString(node.data, 'attribute');
         const value = node.data?.value;
         if (action === 'setAttribute' && attribute) {
-          await CRM.setAttribute(state.workspaceId, state.user, attribute, value);
+          await CRM.setAttribute(
+            state.workspaceId,
+            state.user,
+            attribute,
+            (value ?? null) as import('@prisma/client').Prisma.InputJsonValue | null,
+          );
           state.variables[attribute] = value;
         } else if (action === 'getAttribute' && attribute) {
           const val = await CRM.getAttribute(state.workspaceId, state.user, attribute);
@@ -785,12 +790,7 @@ export class FlowEngineGlobal {
         // 2. Build Message History (Memory)
         // Mensagens suportam shapes diferentes (user/assistant/tool). Usamos o tipo
         // público de `AIProvider.generateChatResponse` para não perder segurança de tipos.
-        type AIMessage = {
-          role: 'system' | 'user' | 'assistant' | 'tool';
-          content: string | null;
-          tool_calls?: unknown[];
-          tool_call_id?: string;
-        };
+        type AIMessage = import('openai/resources/chat/completions').ChatCompletionMessageParam;
         let messages: AIMessage[] = [{ role: 'system', content: finalSystemPrompt }];
 
         // 2.1 Inject Semantic Memory (Long Term Facts)
@@ -880,6 +880,7 @@ export class FlowEngineGlobal {
 
             // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
             for (const toolCall of responseMessage.tool_calls) {
+              if (!('function' in toolCall) || !toolCall.function) continue;
               const functionName = toolCall.function.name;
               let args: Record<string, unknown> = {};
               try {

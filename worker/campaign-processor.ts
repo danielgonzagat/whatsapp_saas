@@ -48,15 +48,19 @@ export const campaignWorker = new Worker(
       });
 
       // 2. Fetch Audience (supports tags and explicit phones)
-      const filters = campaign.filters as any;
-      const where: any = { workspaceId };
-      if (filters?.tags && filters.tags.length > 0) {
+      const filters = (campaign.filters || {}) as Record<string, unknown>;
+      const where: {
+        workspaceId: string;
+        tags?: { some: { name: { in: string[] } } };
+        phone?: { in: string[] };
+      } = { workspaceId };
+      if (Array.isArray(filters?.tags) && filters.tags.length > 0) {
         where.tags = {
-          some: { name: { in: filters.tags } },
+          some: { name: { in: filters.tags as string[] } },
         };
       }
-      if (filters?.phones && Array.isArray(filters.phones) && filters.phones.length > 0) {
-        where.phone = { in: filters.phones };
+      if (Array.isArray(filters?.phones) && filters.phones.length > 0) {
+        where.phone = { in: filters.phones as string[] };
       }
 
       const contacts = await prisma.contact.findMany({
@@ -106,7 +110,7 @@ export const campaignWorker = new Worker(
         // biome-ignore lint/performance/noAwaitInLoops: sequential per-contact processing
         for (const contact of contacts) {
           if (!contact.id) continue;
-          const cf: any = contact.customFields || {};
+          const cf = (contact.customFields || {}) as Record<string, unknown>;
           await prisma.contact.updateMany({
             where: { id: contact.id, workspaceId },
             data: { customFields: { ...cf, lastCampaignId: campaignId } },
@@ -144,7 +148,7 @@ export const campaignWorker = new Worker(
         // biome-ignore lint/performance/noAwaitInLoops: sequential per-contact processing
         for (const contact of contacts) {
           if (!contact.id) continue;
-          const cf: any = contact.customFields || {};
+          const cf = (contact.customFields || {}) as Record<string, unknown>;
           await prisma.contact.updateMany({
             where: { id: contact.id, workspaceId },
             data: { customFields: { ...cf, lastCampaignId: campaignId } },
@@ -169,7 +173,7 @@ export const campaignWorker = new Worker(
       console.error(`❌ Campaign ${campaignId} failed:`, err);
       await prisma.campaign.updateMany({
         where: { id: campaignId, workspaceId },
-        data: { status: 'CANCELLED' as any },
+        data: { status: 'CANCELLED' },
       });
       throw err;
     }

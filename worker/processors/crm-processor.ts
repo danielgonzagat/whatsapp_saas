@@ -27,8 +27,11 @@ export const ghostCloserWorker = new Worker(
         default:
           log.warn('unknown_job', { name: job.name });
       }
-    } catch (err: any) {
-      log.error('job_failed', { jobId: job.id, error: err.message });
+    } catch (err: unknown) {
+      log.error('job_failed', {
+        jobId: job.id,
+        error: err instanceof Error ? err.message : 'unknown error',
+      });
       throw err;
     }
   },

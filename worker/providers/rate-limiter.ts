@@ -117,7 +117,11 @@ export class RateLimiter {
     return { plan, limit };
   }
 
-  private static async publishAlert(workspaceId: string, type: string, data: any) {
+  private static async publishAlert(
+    workspaceId: string,
+    type: string,
+    data: Record<string, unknown>,
+  ) {
     try {
       await redisClient.publish(
         `alerts:${workspaceId}`,

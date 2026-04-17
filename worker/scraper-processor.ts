@@ -1,4 +1,5 @@
 import { type Job, Worker } from 'bullmq';
+import type { Prisma } from '@prisma/client';
 import { prisma } from './db';
 import { connection } from './queue';
 import { triggerFlowForScrapedLeads } from './scrapers/auto-trigger';
@@ -25,7 +26,14 @@ export const scraperWorker = new Worker(
         data: {},
       });
 
-      let leads: any[] = [];
+      interface ScrapedLeadNormalized {
+        phone: string;
+        name: string;
+        category: string;
+        address: string;
+        metadata: Prisma.InputJsonObject;
+      }
+      let leads: ScrapedLeadNormalized[] = [];
 
       if (type === 'MAPS') {
         console.log(`[SCRAPER] Launching Real Browser for Maps query: "${query}"`);
@@ -38,7 +46,7 @@ export const scraperWorker = new Worker(
           name: l.name,
           category: l.category,
           address: l.address,
-          metadata: { source: 'Google Maps', raw: l },
+          metadata: { source: 'Google Maps', raw: { ...l } },
         }));
       } else if (type === 'INSTAGRAM') {
         console.log(`[SCRAPER] Launching Real Browser for Instagram query: "${query}"`);
@@ -113,12 +121,15 @@ export const scraperWorker = new Worker(
         // Importar para CRM (Contato + Deal)
         const contact = await prisma.contact.upsert({
           where: { workspaceId_phone: { workspaceId, phone: scraped.phone } },
-          update: { name: scraped.name, customFields: scraped.metadata || {} },
+          update: {
+            name: scraped.name,
+            customFields: (scraped.metadata as Prisma.InputJsonValue) || {},
+          },
           create: {
             workspaceId,
             phone: scraped.phone,
             name: scraped.name,
-            customFields: scraped.metadata || {},
+            customFields: (scraped.metadata as Prisma.InputJsonValue) || {},
           },
         });
         importedContacts.push(contact.id);

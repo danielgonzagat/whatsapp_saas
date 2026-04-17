@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 const enableQueryLogs = process.env.PRISMA_QUERY_LOGS === 'true';
 
@@ -7,9 +7,9 @@ export const prisma = new PrismaClient({
 });
 
 if (enableQueryLogs) {
-  prisma.$on('query', (event: any) => {
-    if (event?.duration > 1000) {
-      console.warn(`[PRISMA] slow query ${event.duration}ms: ${event.query?.slice(0, 240)}`);
+  prisma.$on('query', (event: Prisma.QueryEvent) => {
+    if (event.duration > 1000) {
+      console.warn(`[PRISMA] slow query ${event.duration}ms: ${event.query.slice(0, 240)}`);
     }
   });
 }

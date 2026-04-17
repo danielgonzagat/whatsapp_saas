@@ -59,48 +59,66 @@ function inferVariantFamily(variantKey?: string | null) {
   return normalized === 'generic' ? null : normalized;
 }
 
-export function inferWorkspaceDomain(providerSettings?: any): string {
+export function inferWorkspaceDomain(providerSettings?: Record<string, unknown> | null): string {
+  const bInfo = (
+    providerSettings?.businessInfo && typeof providerSettings.businessInfo === 'object'
+      ? providerSettings.businessInfo
+      : null
+  ) as Record<string, unknown> | null;
+  const biz = (
+    providerSettings?.business && typeof providerSettings.business === 'object'
+      ? providerSettings.business
+      : null
+  ) as Record<string, unknown> | null;
+  const onb = (
+    providerSettings?.onboarding && typeof providerSettings.onboarding === 'object'
+      ? providerSettings.onboarding
+      : null
+  ) as Record<string, unknown> | null;
   const direct =
     providerSettings?.businessSegment ||
     providerSettings?.segment ||
     providerSettings?.businessType ||
-    providerSettings?.businessInfo?.segment ||
-    providerSettings?.businessInfo?.businessType ||
-    providerSettings?.business?.segment ||
-    providerSettings?.onboarding?.segment;
+    bInfo?.segment ||
+    bInfo?.businessType ||
+    biz?.segment ||
+    onb?.segment;
 
-  return normalizeToken(direct || 'generic');
+  return normalizeToken(String(direct || 'generic'));
 }
 
 export function anonymizeDecisionLog(input: {
   domain: string;
   log: {
     createdAt?: string | Date;
-    value?: any;
-    metadata?: any;
+    value?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
   };
 }): GlobalLearningSignal | null {
-  const value = (input.log?.value || {}) as Record<string, any>;
-  const metadata = (input.log?.metadata || {}) as Record<string, any>;
-  const intent = normalizeToken(value.intent || metadata.intent || 'generic');
+  const value = (input.log?.value || {}) as Record<string, unknown>;
+  const metadata = (input.log?.metadata || {}) as Record<string, unknown>;
+  const valueMeta = (
+    value.metadata && typeof value.metadata === 'object' ? value.metadata : {}
+  ) as Record<string, unknown>;
+  const intent = normalizeToken(String(value.intent || metadata.intent || 'generic'));
   if (!intent) return null;
 
   const message = String(value.message || '');
   const messageLength = message.length;
   const createdAt = input.log?.createdAt ? new Date(input.log.createdAt) : new Date();
   const hour = Number.isFinite(createdAt.getUTCHours()) ? createdAt.getUTCHours() : 0;
-  const revenue = Number(value.metadata?.revenue || metadata.revenue || value.revenue || 0) || 0;
+  const revenue = Number(valueMeta.revenue || metadata.revenue || value.revenue || 0) || 0;
   const priority = Number(value.priority || metadata.priority || 0) || 0;
 
   return {
-    domain: normalizeToken(input.domain),
+    domain: normalizeToken(String(input.domain)),
     intent,
-    outcome: normalizeToken(value.outcome || metadata.outcome || 'unknown'),
+    outcome: normalizeToken(String(value.outcome || metadata.outcome || 'unknown')),
     hour,
     messageLength,
     lengthBucket: toLengthBucket(messageLength),
     hasPriceMention: R___PRECO_PRE_O_VALOR_PI_RE.test(message),
-    variantFamily: inferVariantFamily(value.variantKey || metadata.variantKey),
+    variantFamily: inferVariantFamily(String(value.variantKey || metadata.variantKey || '')),
     priorityBucket: toPriorityBucket(priority),
     revenue,
   };
@@ -222,7 +240,7 @@ export function buildGlobalStrategy(input: {
 }
 
 export async function persistGlobalPatterns(
-  redisClient: { set?: (...args: any[]) => Promise<any> } | null | undefined,
+  redisClient: { set?: (key: string, value: string) => Promise<string | null> } | null | undefined,
   patterns: GlobalLearningPattern[],
 ) {
   if (!redisClient?.set) return null;

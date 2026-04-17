@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Prisma, PrismaClient } from '@prisma/client';
 
 export type VariantFamily = 'followup' | 'payment_recovery';
 export type VariantOutcome = 'SENT' | 'REPLIED' | 'SOLD' | 'FAILED' | 'SKIPPED' | 'DISPATCHED';
@@ -99,7 +100,7 @@ function toLengthBucket(length: number): 'short' | 'medium' | 'long' {
 }
 
 export async function pickVariant(
-  prisma: any,
+  prisma: PrismaClient,
   workspaceId: string,
   family: VariantFamily,
   strategy?: VariantSelectionStrategy | null,
@@ -185,7 +186,7 @@ export async function pickVariant(
 }
 
 export async function recordDecisionLog(
-  prisma: any,
+  prisma: PrismaClient,
   input: {
     workspaceId: string;
     contactId?: string;
@@ -195,7 +196,7 @@ export async function recordDecisionLog(
     message?: string;
     outcome: VariantOutcome;
     priority?: number;
-    metadata?: Record<string, unknown>;
+    metadata?: Prisma.InputJsonObject;
   },
 ) {
   if (!prisma?.kloelMemory?.create) return null;
@@ -226,7 +227,7 @@ export async function recordDecisionLog(
 }
 
 export async function updateVariantOutcome(
-  prisma: any,
+  prisma: PrismaClient,
   input: {
     workspaceId: string;
     family: VariantFamily;
@@ -271,7 +272,7 @@ export async function updateVariantOutcome(
       },
     },
     update: {
-      value: next,
+      value: next as unknown as Prisma.InputJsonObject,
       content: next.text,
       metadata: {
         outcome: input.outcome,
@@ -281,7 +282,7 @@ export async function updateVariantOutcome(
     create: {
       workspaceId: input.workspaceId,
       key,
-      value: next,
+      value: next as unknown as Prisma.InputJsonObject,
       category: 'cia_variant',
       type: input.family,
       content: next.text,
@@ -296,7 +297,7 @@ export async function updateVariantOutcome(
 }
 
 export async function computeLearningSnapshot(
-  prisma: any,
+  prisma: PrismaClient,
   workspaceId: string,
 ): Promise<LearningSnapshot> {
   const logs = prisma?.kloelMemory?.findMany
@@ -318,9 +319,10 @@ export async function computeLearningSnapshot(
   let failedCount = 0;
 
   for (const item of logs || []) {
-    const value = (item?.value || {}) as any;
-    const outcome = String(value?.outcome || item?.metadata?.outcome || '');
-    const variantKey = String(value?.variantKey || item?.metadata?.variantKey || '');
+    const value = (item?.value || {}) as Record<string, unknown>;
+    const itemMeta = (item?.metadata || {}) as Record<string, unknown>;
+    const outcome = String(value?.outcome || itemMeta?.outcome || '');
+    const variantKey = String(value?.variantKey || itemMeta?.variantKey || '');
 
     if (outcome === 'SOLD') soldCount += 1;
     if (outcome === 'SENT' || outcome === 'REPLIED' || outcome === 'SOLD') {

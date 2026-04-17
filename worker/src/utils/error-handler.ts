@@ -3,14 +3,14 @@ export class WorkerError extends Error {
     public message: string,
     public code: string,
     public retryable = true,
-    public metadata: any = {},
+    public metadata: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = 'WorkerError';
   }
 }
 
-export const handleError = (error: any, jobName: string) => {
+export const handleError = (error: unknown, jobName: string) => {
   console.error(`[${jobName}] Error:`, error);
 
   if (error instanceof WorkerError) {
@@ -25,7 +25,7 @@ export const handleError = (error: any, jobName: string) => {
 
   return {
     success: false,
-    error: error.message || 'Unknown error',
+    error: error instanceof Error ? error.message : 'Unknown error',
     code: 'UNKNOWN_ERROR',
     retryable: true,
   };

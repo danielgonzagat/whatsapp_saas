@@ -1,4 +1,19 @@
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../db';
+
+interface ContactInput {
+  phone: string;
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  customFields?: Prisma.InputJsonObject;
+}
+
+interface ContactSaveVars {
+  name?: string | null;
+  email?: string | null;
+  customFields?: Prisma.InputJsonValue;
+}
 
 /**
  * CRM PROVIDER (WORKER-SIDE)
@@ -6,7 +21,7 @@ import { prisma } from '../db';
  * Algumas operações usam workspace "default" por enquanto.
  */
 export const CRM = {
-  async addContact(workspaceId: string, contact: any) {
+  async addContact(workspaceId: string, contact: ContactInput) {
     console.log('CRM add', contact);
     return prisma.contact.upsert({
       where: {
@@ -15,7 +30,12 @@ export const CRM = {
           phone: contact.phone,
         },
       },
-      update: contact,
+      update: {
+        name: contact.name,
+        email: contact.email,
+        avatarUrl: contact.avatarUrl,
+        customFields: contact.customFields ?? {},
+      },
       create: {
         workspace: { connect: { id: workspaceId } },
         phone: contact.phone,
@@ -27,7 +47,7 @@ export const CRM = {
     });
   },
 
-  async updateContact(workspaceId: string, phone: string, data: any) {
+  async updateContact(workspaceId: string, phone: string, data: Prisma.ContactUpdateInput) {
     console.log('CRM update', phone, data);
     return prisma.contact.update({
       where: {
@@ -124,13 +144,21 @@ export const CRM = {
     });
   },
 
-  async setAttribute(workspaceId: string, phone: string, key: string, value: any) {
+  async setAttribute(
+    workspaceId: string,
+    phone: string,
+    key: string,
+    value: Prisma.InputJsonValue | null,
+  ) {
     const contact = await prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
     });
     if (!contact) return;
 
-    const custom = (contact.customFields as any) || {};
+    const custom = ((contact.customFields as Prisma.InputJsonObject) || {}) as Record<
+      string,
+      Prisma.InputJsonValue | null
+    >;
     custom[key] = value;
 
     await prisma.contact.update({
@@ -141,7 +169,7 @@ export const CRM = {
         },
       },
       data: {
-        customFields: custom,
+        customFields: custom as Prisma.InputJsonObject,
       },
     });
   },
@@ -151,11 +179,11 @@ export const CRM = {
       where: { workspaceId_phone: { workspaceId, phone } },
     });
     if (!contact) return null;
-    const custom = (contact.customFields as any) || {};
+    const custom = (contact.customFields as Prisma.InputJsonObject) || {};
     return custom[key] ?? null;
   },
 
-  async saveContact(workspaceId: string, phone: string, vars: any) {
+  async saveContact(workspaceId: string, phone: string, vars: ContactSaveVars) {
     const contact = await prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
     });
@@ -171,7 +199,7 @@ export const CRM = {
       data: {
         name: vars.name ?? contact.name,
         email: vars.email ?? contact.email,
-        customFields: vars.customFields ?? contact.customFields,
+        customFields: vars.customFields ?? (contact.customFields as Prisma.InputJsonValue) ?? {},
       },
     });
   },

@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
@@ -11,7 +12,7 @@ export interface ScrapedLead {
   phone: string;
   address: string;
   category: string;
-  metadata?: any;
+  metadata?: Prisma.InputJsonObject;
 }
 
 export async function scrapeInstagram(query: string, limit = 5): Promise<ScrapedLead[]> {

@@ -25,8 +25,8 @@ interface UnifiedAgentResult {
   response: string;
   actions: Array<{
     tool: string;
-    args: Record<string, any>;
-    result?: any;
+    args: Record<string, unknown>;
+    result?: unknown;
   }>;
   model: string;
 }
@@ -40,7 +40,7 @@ export async function processWithUnifiedAgent(params: {
   contactId?: string;
   phone: string;
   message: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }): Promise<UnifiedAgentResult | null> {
   const { workspaceId, contactId, phone, message, context } = params;
   const backendUrl = resolveBackendUrl();
@@ -117,21 +117,24 @@ export async function processWithUnifiedAgent(params: {
 export function shouldUseUnifiedAgent(params: {
   messageContent: string;
   leadScore?: number;
-  settings?: any;
+  settings?: Record<string, unknown> | null;
 }): boolean {
   const { messageContent, leadScore, settings } = params;
+  const autopilot = (
+    settings?.autopilot && typeof settings.autopilot === 'object' ? settings.autopilot : null
+  ) as Record<string, unknown> | null;
 
   // Se explicitamente desabilitado
-  if (settings?.autopilot?.useUnifiedAgent === false) {
+  if (autopilot?.useUnifiedAgent === false) {
     return false;
   }
 
   // Se explicitamente habilitado
-  if (settings?.autopilot?.useUnifiedAgent === true) {
+  if (autopilot?.useUnifiedAgent === true) {
     return true;
   }
 
-  const mode = String(settings?.autopilot?.agentMode || '')
+  const mode = String(autopilot?.agentMode || '')
     .trim()
     .toLowerCase();
   if (mode === 'fallback_only' || mode === 'local_only') {
@@ -308,7 +311,7 @@ export function extractTextResponse(result: UnifiedAgentResult): string {
 
   // Se tem ação send_message, extrai o texto
   const sendMessage = result.actions.find((a) => a.tool === 'send_message');
-  if (sendMessage?.args?.message) {
+  if (sendMessage?.args?.message && typeof sendMessage.args.message === 'string') {
     return sendMessage.args.message;
   }
 

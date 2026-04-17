@@ -1,13 +1,19 @@
 import { ContextStore } from '../context-store';
 import { HealthMonitor } from './health-monitor';
 
+interface AntiBanWorkspace {
+  id: string;
+  jitterMin?: number | null;
+  jitterMax?: number | null;
+}
+
 const store = new ContextStore('antiban');
 
 export const AntiBan = {
   /**
    * Delay humano baseado em jitter por workspace
    */
-  async humanDelay(workspace: any) {
+  async humanDelay(workspace: AntiBanWorkspace) {
     const min = workspace?.jitterMin ?? 2000; // Increased default for safety
     const max = workspace?.jitterMax ?? 5000;
 
@@ -34,7 +40,7 @@ export const AntiBan = {
   /**
    * Burst detection → mais de X mensagens em 1 minuto
    */
-  async burstProtector(workspace: any) {
+  async burstProtector(workspace: AntiBanWorkspace) {
     const workspaceId = workspace.id;
     const key = `burst:${workspaceId}`;
     const now = Date.now();
@@ -78,7 +84,7 @@ export const AntiBan = {
   /**
    * Chamado antes de QUALQUER envio
    */
-  async apply(workspace: any) {
+  async apply(workspace: AntiBanWorkspace) {
     await this.humanDelay(workspace);
     await this.burstProtector(workspace);
     await this.nightMode(workspace);

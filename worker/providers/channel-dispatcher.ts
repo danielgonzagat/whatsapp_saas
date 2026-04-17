@@ -48,9 +48,19 @@ export async function sendEmail(to: string, subject: string, text: string) {
   });
 }
 
-export function channelEnabled(settings: any, channel: 'email'): boolean {
+export function channelEnabled(
+  settings: Record<string, unknown> | null | undefined,
+  channel: 'email',
+): boolean {
   const cfg = settings?.[channel];
-  if (cfg && typeof cfg.enabled === 'boolean') return cfg.enabled;
+  if (
+    cfg &&
+    typeof cfg === 'object' &&
+    cfg !== null &&
+    'enabled' in cfg &&
+    typeof (cfg as Record<string, unknown>).enabled === 'boolean'
+  )
+    return (cfg as Record<string, unknown>).enabled as boolean;
   return false;
 }
 

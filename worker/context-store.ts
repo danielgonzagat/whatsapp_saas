@@ -81,7 +81,7 @@ export class ContextStore {
     }
   }
 
-  async set(key: string, value: any, ttlSeconds?: number) {
+  async set(key: string, value: unknown, ttlSeconds?: number) {
     const str = JSON.stringify(value);
     if (ttlSeconds && ttlSeconds > 0) {
       await redis.set(this.k(key), str, 'EX', ttlSeconds);
@@ -114,7 +114,7 @@ export class ContextStore {
     await redis.zremrangebyscore(this.k(key), min, max);
   }
 
-  async publish(channel: string, message: any) {
+  async publish(channel: string, message: unknown) {
     await redis.publish(channel, JSON.stringify(message));
   }
 }

@@ -130,7 +130,12 @@ function attachDlq(queue: BullQueue) {
   const events = getQueueEvents(queue.name);
   events.on('failed', (event) => {
     void (async () => {
-      const { jobId, failedReason, attemptsMade } = event as any;
+      const { jobId, failedReason, attemptsMade } = event as {
+        jobId: string;
+        failedReason: string;
+        attemptsMade: number;
+        prev?: string;
+      };
       try {
         const job = await queue.getJob(jobId);
         if (!job) return;
@@ -240,12 +245,8 @@ async function notifyOps(input: {
   const webhookType = classifyWebhook(webhook);
   const isSlack = webhookType === 'slack';
   const isTeams = webhookType === 'teams';
-  const fetchFn = (global as any).fetch as
-    | undefined
-    | ((
-        input: string,
-        init?: { method?: string; headers?: Record<string, string>; body?: string },
-      ) => Promise<any>);
+  const fetchFn: typeof globalThis.fetch | undefined =
+    typeof globalThis.fetch === 'function' ? globalThis.fetch : undefined;
   if (!fetchFn) return;
 
   try {
@@ -337,11 +338,11 @@ export class Queue {
     console.log(`📦 [Queue] Criada fila "${name}" com conexão Redis configurada`);
   }
 
-  async push(data: any, opts?: any) {
+  async push<T extends Record<string, unknown>>(data: T, opts?: Record<string, unknown>) {
     return this.queue.add('default', data, opts);
   }
 
-  on(event: 'job', callback: (job: any) => Promise<void>) {
+  on<T>(event: 'job', callback: (job: T) => Promise<void>) {
     if (event === 'job') {
       this.worker = new Worker(
         this.name,
