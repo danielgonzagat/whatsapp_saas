@@ -11,7 +11,7 @@ export class WorkerError extends Error {
 }
 
 export const handleError = (error: unknown, jobName: string) => {
-  console.error(`[${jobName}] Error:`, error);
+  console.error('[%s] Error: %O', jobName, error);
 
   if (error instanceof WorkerError) {
     // Log structured error

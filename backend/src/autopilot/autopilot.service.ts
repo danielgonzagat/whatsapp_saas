@@ -860,7 +860,7 @@ Top intents: ${Object.entries(insights.intents || {})
 You are an assistant that summarizes Autopilot performance for a WhatsApp SaaS.
 Metrics (7d):
 ${summary}
-Timeline (counts per day, optional): ${JSON.stringify(timeline)}
+Timeline (counts per day, optional): ${JSON.stringify(timeline, Object.keys(timeline ?? {}).sort())}
 Question: "${question}"
 Answer in Portuguese, short and actionable.`;
 

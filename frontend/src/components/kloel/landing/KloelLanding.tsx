@@ -72,9 +72,9 @@ function HeroLoop() {
     flash: false,
   });
   const [resurrected, setResurrected] = useState(false);
-  const noiseRef = useRef<any>(null);
-  const gxRef = useRef<any>(false);
-  const m = useRef<any>(true);
+  const noiseRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const gxRef = useRef<boolean>(false);
+  const m = useRef<boolean>(true);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
@@ -411,7 +411,7 @@ function HeroLoop() {
 function MultiChannel() {
   const prefersReducedMotion = usePrefersReducedMotion();
   const [msgs, setMsgs] = useState({ wa: [], ig: [], em: [] });
-  const ref = useRef<any>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   const [go, setGo] = useState(false);
   const flow = [
     { ch: 'wa', f: 'lead', n: 'Marina C.', text: 'Vi o anuncio, quanto custa?', t: '09:02' },
@@ -621,9 +621,9 @@ function MultiChannel() {
   );
 }
 
-function Reveal({ children, delay = 0 }: { children: any; delay?: number }) {
+function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const ref = useRef<any>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   const [v, setV] = useState(false);
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -861,7 +861,7 @@ export default function KloelLanding() {
   const fid = useId();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [email, setEmail] = useState('');
-  const [faq, setFaq] = useState<any>(null);
+  const [faq, setFaq] = useState<number | null>(null);
   const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
   return (
     <div

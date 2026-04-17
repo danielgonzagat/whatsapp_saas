@@ -12,6 +12,7 @@ import { workspaceApi } from '@/lib/api/workspace';
 import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { uploadGenericMedia } from '@/lib/media-upload';
+import Image from 'next/image';
 import { type ChangeEvent, useEffect, useMemo, useRef, useState, useId } from 'react';
 import useSWR from 'swr';
 
@@ -51,6 +52,10 @@ const TONE_OPTIONS = [
 type ProductKind = 'own' | 'affiliate';
 type ToneMode = (typeof TONE_OPTIONS)[number][0];
 type MediaTypeValue = (typeof MEDIA_TYPES)[number]['value'];
+
+function isToneMode(value: unknown): value is ToneMode {
+  return typeof value === 'string' && TONE_OPTIONS.some(([option]) => option === value);
+}
 
 interface SelectableProduct {
   id: string;
@@ -112,7 +117,7 @@ interface WhatsAppSummaryResponse {
 }
 
 interface WorkspaceSettingsResponse {
-  providerSettings?: Record<string, any>;
+  providerSettings?: Record<string, unknown>;
 }
 
 interface MarketingWhatsAppConnection {
@@ -146,6 +151,18 @@ interface WhatsAppExperienceProps {
 
 const SESSION_EXPIRED_MESSAGE =
   'Sua sessão expirou. Recarregue a página e faça login novamente para continuar acompanhando o WhatsApp.';
+
+function getErrorMessage(error: unknown, fallback = 'Erro desconhecido') {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
+}
 
 function getErrorStatus(error: unknown) {
   if (
@@ -224,12 +241,12 @@ function resolveWorkingHours(raw: unknown) {
 
 function normalizeSetup(raw: unknown, workspaceId: string): WhatsAppSetupState {
   const fallback = buildDefaultSetup(workspaceId);
-  const value = raw && typeof raw === 'object' ? (raw as Record<string, any>) : {};
+  const value = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const selectedProducts = Array.isArray(value.selectedProducts)
     ? value.selectedProducts
         .filter((item) => item && typeof item === 'object')
         .map((item) => {
-          const product = item as Record<string, any>;
+          const product = item as Record<string, unknown>;
           return {
             id: String(product.id || product.productId || ''),
             name: toStringValue(product.name, 'Produto'),
@@ -256,7 +273,7 @@ function normalizeSetup(raw: unknown, workspaceId: string): WhatsAppSetupState {
     ? value.arsenal
         .filter((item) => item && typeof item === 'object')
         .map((item) => {
-          const media = item as Record<string, any>;
+          const media = item as Record<string, unknown>;
           return {
             id: String(media.id || crypto.randomUUID()),
             fileName: toStringValue(media.fileName, 'arquivo'),
@@ -272,7 +289,10 @@ function normalizeSetup(raw: unknown, workspaceId: string): WhatsAppSetupState {
         })
     : [];
 
-  const config = value.config && typeof value.config === 'object' ? value.config : {};
+  const config =
+    value.config && typeof value.config === 'object'
+      ? (value.config as Record<string, unknown>)
+      : ({} as Record<string, unknown>);
 
   return {
     version: toNumber(value.version, 1),
@@ -280,9 +300,7 @@ function normalizeSetup(raw: unknown, workspaceId: string): WhatsAppSetupState {
     selectedProducts,
     arsenal,
     config: {
-      tone: TONE_OPTIONS.some(([option]) => option === config.tone)
-        ? config.tone
-        : fallback.config.tone,
+      tone: isToneMode(config.tone) ? config.tone : fallback.config.tone,
       maxDiscount: Math.min(50, Math.max(0, toNumber(config.maxDiscount, 10))),
       followUp:
         typeof config.followUp === 'boolean'
@@ -313,7 +331,7 @@ function serializeSetup(setup: WhatsAppSetupState) {
   };
 }
 
-function resolveProductImage(product: Record<string, any>) {
+function resolveProductImage(product: Record<string, unknown>) {
   if (typeof product.imageUrl === 'string' && product.imageUrl.trim()) {
     return product.imageUrl;
   }
@@ -328,7 +346,7 @@ function resolveProductImage(product: Record<string, any>) {
 
 function normalizeOwnedProduct(raw: unknown): SelectableProduct | null {
   if (!raw || typeof raw !== 'object') return null;
-  const product = raw as Record<string, any>;
+  const product = raw as Record<string, unknown>;
   const status = String(product.status || '').toUpperCase();
   if (status && status !== 'APPROVED') return null;
   if (product.active === false) return null;
@@ -347,14 +365,18 @@ function normalizeOwnedProduct(raw: unknown): SelectableProduct | null {
 }
 
 function normalizeAffiliateProducts(raw: unknown): SelectableProduct[] {
-  const payload = raw && typeof raw === 'object' ? (raw as Record<string, any>) : {};
+  const payload = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const items = Array.isArray(payload.products) ? payload.products : [];
 
   return items
     .map<SelectableProduct | null>((item) => {
       if (!item || typeof item !== 'object') return null;
-      const request = item as Record<string, any>;
-      const affiliateProduct = request.affiliateProduct || {};
+      const request = item as Record<string, unknown>;
+      const affiliateProduct = (
+        request.affiliateProduct && typeof request.affiliateProduct === 'object'
+          ? request.affiliateProduct
+          : {}
+      ) as Record<string, unknown>;
       if (request.status !== 'APPROVED' && affiliateProduct.isApproved !== true) {
         return null;
       }
@@ -492,10 +514,13 @@ export function QRCodePane({
         }}
       >
         {qrCode ? (
-          <img
+          <Image
             src={qrCode}
             alt="QR Code do WhatsApp"
-            style={{ width: 196, height: 196, objectFit: 'contain' }}
+            width={196}
+            height={196}
+            style={{ objectFit: 'contain' }}
+            unoptimized
           />
         ) : (
           <svg viewBox="0 0 250 250" width="196" height="196" aria-hidden="true">
@@ -623,6 +648,8 @@ function ProductCard({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onToggle}
       style={{
         background: selected ? `${E}10` : C,
@@ -639,7 +666,7 @@ function ProductCard({
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
+          onToggle();
         }
       }}
     >
@@ -657,9 +684,11 @@ function ProductCard({
         }}
       >
         {product.imageUrl ? (
-          <img
+          <Image
             src={product.imageUrl}
             alt={product.name}
+            width={40}
+            height={40}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
@@ -748,9 +777,11 @@ function MediaItem({
           }}
         >
           {item.url && item.mimeType?.startsWith('image/') ? (
-            <img
+            <Image
               src={item.url}
               alt={item.fileName}
+              width={48}
+              height={48}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
@@ -893,9 +924,11 @@ function ProductPerformanceCard({ product }: { product: SummaryProductCard }) {
           }}
         >
           {product.imageUrl ? (
-            <img
+            <Image
               src={product.imageUrl}
               alt={product.name}
+              width={40}
+              height={40}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
@@ -978,9 +1011,9 @@ function FeedCard({ liveFeed }: { liveFeed: string[] }) {
         Feed de mensagens ao vivo
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {items.slice(0, 18).map((message, index) => (
+        {items.slice(0, 18).map((message) => (
           <div
-            key={`${message}-${index}`}
+            key={message}
             style={{
               background: U,
               border: `1px solid ${B}`,
@@ -1105,7 +1138,7 @@ export default function WhatsAppExperience({
     typeof settingsData.providerSettings === 'object' &&
     settingsData.providerSettings.whatsappApiSession &&
     typeof settingsData.providerSettings.whatsappApiSession === 'object'
-      ? (settingsData.providerSettings.whatsappApiSession as Record<string, any>)
+      ? (settingsData.providerSettings.whatsappApiSession as Record<string, unknown>)
       : {};
   const providerToken = String(
     liveStatus?.provider ||
@@ -1153,15 +1186,19 @@ export default function WhatsAppExperience({
           snapshotStatus ||
           'disconnected',
       ).toLowerCase(),
-      phoneNumber:
+      phoneNumber: String(
         liveStatus?.phone || sessionSnapshot.phoneNumber || connection?.phoneNumber || '',
-      pushName: liveStatus?.pushName || sessionSnapshot.pushName || connection?.pushName || '',
-      phoneNumberId:
+      ),
+      pushName: String(
+        liveStatus?.pushName || sessionSnapshot.pushName || connection?.pushName || '',
+      ),
+      phoneNumberId: String(
         liveStatus?.phoneNumberId ||
-        sessionSnapshot.phoneNumberId ||
-        connection?.phoneNumberId ||
-        '',
-      degradedReason: liveStatus?.degradedReason || connection?.degradedReason || '',
+          sessionSnapshot.phoneNumberId ||
+          connection?.phoneNumberId ||
+          '',
+      ),
+      degradedReason: String(liveStatus?.degradedReason || connection?.degradedReason || ''),
     };
   }, [connection, effectiveProvider, isWahaProvider, liveStatus, sessionSnapshot]);
 
@@ -1173,6 +1210,16 @@ export default function WhatsAppExperience({
     }
   }, [effectiveConnection.connected]);
 
+  const requestQrCodeRef = useRef<
+    (opts?: {
+      silent?: boolean;
+    }) => Promise<{
+      qrCode: string | null;
+      connected: boolean;
+      status?: string;
+      message?: string;
+    } | null>
+  >(async () => null);
   const requestQrCode = async ({
     silent = false,
   }: {
@@ -1195,12 +1242,12 @@ export default function WhatsAppExperience({
       }
 
       return qr;
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (getErrorStatus(err) === 401) {
         setSessionExpired(true);
         setError(SESSION_EXPIRED_MESSAGE);
       } else if (!silent) {
-        setError(err?.message || 'Não foi possível carregar o QR Code.');
+        setError(getErrorMessage(err, 'Não foi possível carregar o QR Code.'));
       }
 
       return null;
@@ -1208,6 +1255,7 @@ export default function WhatsAppExperience({
       qrRequestInFlightRef.current = false;
     }
   };
+  requestQrCodeRef.current = requestQrCode;
 
   const selectableProducts = useMemo(() => {
     const own = ownedProducts
@@ -1305,7 +1353,7 @@ export default function WhatsAppExperience({
 
       try {
         await initiateWhatsAppConnection(workspaceId);
-        void requestQrCode({ silent: true });
+        void requestQrCodeRef.current({ silent: true });
         try {
           await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
         } catch (err) {
@@ -1316,13 +1364,13 @@ export default function WhatsAppExperience({
           }
           throw err;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (getErrorStatus(err) === 401) {
           setSessionExpired(true);
           setError(SESSION_EXPIRED_MESSAGE);
           return;
         }
-        setError(err?.message || 'Não foi possível iniciar a sessão do WhatsApp.');
+        setError(getErrorMessage(err, 'Não foi possível iniciar a sessão do WhatsApp.'));
       } finally {
         setBusyKey(null);
       }
@@ -1370,7 +1418,7 @@ export default function WhatsAppExperience({
 
       if (!qrRequestInFlightRef.current) {
         void (async () => {
-          const qr = await requestQrCode({ silent: true });
+          const qr = await requestQrCodeRef.current({ silent: true });
           if (!qr?.qrCode && !qr?.connected && pollCountRef.current % 6 === 0) {
             autoStartRef.current = false;
           }
@@ -1390,7 +1438,6 @@ export default function WhatsAppExperience({
     sessionExpired,
     showWizard,
     step,
-    workspaceId,
   ]);
 
   useEffect(() => {
@@ -1441,8 +1488,9 @@ export default function WhatsAppExperience({
       ...(extraPatch || {}),
     });
 
-    if ((response as any)?.error) {
-      throw new Error((response as any).error);
+    const resp = response as unknown as Record<string, unknown> | undefined;
+    if (resp?.error) {
+      throw new Error(String(resp.error));
     }
 
     await Promise.all([
@@ -1476,13 +1524,13 @@ export default function WhatsAppExperience({
         }
         throw err;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (getErrorStatus(err) === 401) {
         setSessionExpired(true);
         setError(SESSION_EXPIRED_MESSAGE);
         return;
       }
-      setError(err?.message || 'Não foi possível atualizar o QR Code.');
+      setError(getErrorMessage(err, 'Não foi possível atualizar o QR Code.'));
     } finally {
       setBusyKey(null);
     }
@@ -1521,8 +1569,8 @@ export default function WhatsAppExperience({
       await persistSetup(nextDraft);
       setDraft(nextDraft);
       setStep(2);
-    } catch (err: any) {
-      setError(err?.message || 'Não foi possível salvar os produtos selecionados.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Não foi possível salvar os produtos selecionados.'));
     } finally {
       setBusyKey(null);
     }
@@ -1564,8 +1612,8 @@ export default function WhatsAppExperience({
         arsenal: [...current.arsenal, ...uploaded],
         updatedAt: nowIso(),
       }));
-    } catch (err: any) {
-      setError(err?.message || 'Falha ao enviar as mídias do arsenal.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Falha ao enviar as mídias do arsenal.'));
     } finally {
       setUploadingCount((count) => Math.max(0, count - files.length));
     }
@@ -1594,8 +1642,8 @@ export default function WhatsAppExperience({
       await persistSetup(nextDraft);
       setDraft(nextDraft);
       setStep(3);
-    } catch (err: any) {
-      setError(err?.message || 'Não foi possível salvar o arsenal.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Não foi possível salvar o arsenal.'));
     } finally {
       setBusyKey(null);
     }
@@ -1633,16 +1681,26 @@ export default function WhatsAppExperience({
       });
       setDraft(nextDraft);
       setActivated(true);
-    } catch (err: any) {
-      setError(err?.message || 'Não foi possível salvar e ativar a IA.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Não foi possível salvar e ativar a IA.'));
     } finally {
       setBusyKey(null);
     }
   };
 
-  const profileName = effectiveConnection.pushName || operator || 'Aguardando perfil';
+  const profileName =
+    typeof effectiveConnection.pushName === 'string' && effectiveConnection.pushName.trim()
+      ? effectiveConnection.pushName
+      : typeof operator === 'string' && operator.trim()
+        ? operator
+        : 'Aguardando perfil';
   const connectedPhone =
-    effectiveConnection.phoneNumber || effectiveConnection.phoneNumberId || 'Aguardando número';
+    typeof effectiveConnection.phoneNumber === 'string' && effectiveConnection.phoneNumber.trim()
+      ? effectiveConnection.phoneNumber
+      : typeof effectiveConnection.phoneNumberId === 'string' &&
+          effectiveConnection.phoneNumberId.trim()
+        ? effectiveConnection.phoneNumberId
+        : 'Aguardando número';
   const statusLabel = effectiveConnection.connected
     ? 'Ativo'
     : effectiveConnection.status === 'connection_incomplete'
@@ -2017,6 +2075,8 @@ export default function WhatsAppExperience({
                     {TONE_OPTIONS.map(([value, label, description]) => (
                       <div
                         key={value}
+                        role="button"
+                        tabIndex={0}
                         onClick={() =>
                           setDraft((current) => ({
                             ...current,
@@ -2035,7 +2095,11 @@ export default function WhatsAppExperience({
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            (e.currentTarget as HTMLElement).click();
+                            setDraft((current) => ({
+                              ...current,
+                              config: { ...current.config, tone: value },
+                              updatedAt: nowIso(),
+                            }));
                           }
                         }}
                       >
@@ -2122,6 +2186,9 @@ export default function WhatsAppExperience({
                     </div>
                   </div>
                   <div
+                    role="switch"
+                    tabIndex={0}
+                    aria-checked={draft.config.followUp}
                     onClick={() =>
                       setDraft((current) => ({
                         ...current,
@@ -2141,7 +2208,11 @@ export default function WhatsAppExperience({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        (e.currentTarget as HTMLElement).click();
+                        setDraft((current) => ({
+                          ...current,
+                          config: { ...current.config, followUp: !current.config.followUp },
+                          updatedAt: nowIso(),
+                        }));
                       }
                     }}
                   >

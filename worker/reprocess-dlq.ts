@@ -21,15 +21,14 @@ async function main() {
   // biome-ignore lint/performance/noAwaitInLoops: sequential job processing
   for (const job of jobs) {
     try {
-      const data = job.data as any;
-      const name = data?.jobName || 'default';
+      const data = job.data as Record<string, unknown>;
+      const name = typeof data?.jobName === 'string' ? data.jobName : 'default';
       const payload = data?.data ?? data;
-      const opts = data?.opts || {};
+      const opts = (data?.opts || {}) as Record<string, unknown>;
 
       await target.add(name, payload, {
-        ...opts,
         attempts: Math.max(Number(opts?.attempts || 0), attempts),
-        backoff: opts?.backoff || {
+        backoff: (opts?.backoff as { type: string; delay: number }) || {
           type: 'exponential',
           delay: backoffDelay,
         },

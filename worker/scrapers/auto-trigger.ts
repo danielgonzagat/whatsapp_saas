@@ -8,16 +8,19 @@ import { flowQueue } from '../queue';
 export async function triggerFlowForScrapedLeads(
   workspaceId: string,
   contactIds: string[],
-  flowId?: string,
+  inputFlowId?: string,
 ) {
-  if (!flowId) {
+  let resolvedFlowId = inputFlowId;
+  if (!resolvedFlowId) {
     const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
-    flowId = (ws?.providerSettings as any)?.scraper?.flowId;
+    const settings = ws?.providerSettings as Record<string, unknown> | null;
+    const scraper = settings?.scraper as Record<string, unknown> | undefined;
+    resolvedFlowId = typeof scraper?.flowId === 'string' ? scraper.flowId : undefined;
   }
-  if (!flowId || !contactIds.length) return;
+  if (!resolvedFlowId || !contactIds.length) return;
 
   // Garante que o flow pertence ao workspace
-  const flow = await prisma.flow.findFirst({ where: { id: flowId, workspaceId } });
+  const flow = await prisma.flow.findFirst({ where: { id: resolvedFlowId, workspaceId } });
   if (!flow) return;
 
   // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
@@ -26,7 +29,7 @@ export async function triggerFlowForScrapedLeads(
     if (!contact?.phone || contact.workspaceId !== workspaceId) continue;
 
     await flowQueue.add('run-flow', {
-      flowId,
+      flowId: resolvedFlowId,
       user: contact.phone,
       flow: null, // engine vai carregar do DB
       startNode: null, // engine usa start do fluxo salvo

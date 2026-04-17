@@ -44,7 +44,7 @@ export const billingApi = {
   },
 
   getPaymentMethods: () => {
-    return apiFetch<{ paymentMethods: any[] }>(`/billing/payment-methods`);
+    return apiFetch<{ paymentMethods: Array<Record<string, unknown>> }>(`/billing/payment-methods`);
   },
 
   createSetupIntent: (returnUrl?: string) => {

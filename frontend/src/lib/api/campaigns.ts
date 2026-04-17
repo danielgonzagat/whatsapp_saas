@@ -16,22 +16,27 @@ export interface Campaign {
   scheduledAt?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
-  stats?: Record<string, any>;
+  stats?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
   parentId?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
-  const res = await apiFetch<any>(`/campaigns?workspaceId=${encodeURIComponent(workspaceId)}`);
+  const res = await apiFetch<Campaign[] | { campaigns: Campaign[] }>(
+    `/campaigns?workspaceId=${encodeURIComponent(workspaceId)}`,
+  );
   if (res.error) throw new Error(res.error);
-  const data = res.data as Record<string, any> | undefined;
+  const data = res.data;
   if (Array.isArray(data)) return data;
-  return data?.campaigns || [];
+  return (data as { campaigns: Campaign[] } | undefined)?.campaigns || [];
 }
 
-export async function createCampaign(workspaceId: string, payload: any): Promise<Campaign> {
+export async function createCampaign(
+  workspaceId: string,
+  payload: Record<string, unknown>,
+): Promise<Campaign> {
   const res = await apiFetch<Campaign>(`/campaigns`, {
     method: 'POST',
     body: { workspaceId, ...payload },
@@ -45,11 +50,14 @@ export async function launchCampaign(
   workspaceId: string,
   campaignId: string,
   opts?: { smartTime?: boolean },
-): Promise<any> {
-  const res = await apiFetch<any>(`/campaigns/${encodeURIComponent(campaignId)}/launch`, {
-    method: 'POST',
-    body: { workspaceId, smartTime: !!opts?.smartTime },
-  });
+): Promise<unknown> {
+  const res = await apiFetch<Record<string, unknown>>(
+    `/campaigns/${encodeURIComponent(campaignId)}/launch`,
+    {
+      method: 'POST',
+      body: { workspaceId, smartTime: Boolean(opts?.smartTime) },
+    },
+  );
   if (res.error) throw new Error(res.error);
   invalidateCampaigns();
   return res.data;
@@ -75,11 +83,14 @@ export async function createCampaignVariants(
 export async function evaluateCampaignDarwin(
   workspaceId: string,
   campaignId: string,
-): Promise<any> {
-  const res = await apiFetch<any>(`/campaigns/${encodeURIComponent(campaignId)}/darwin/evaluate`, {
-    method: 'POST',
-    body: { workspaceId },
-  });
+): Promise<unknown> {
+  const res = await apiFetch<Record<string, unknown>>(
+    `/campaigns/${encodeURIComponent(campaignId)}/darwin/evaluate`,
+    {
+      method: 'POST',
+      body: { workspaceId },
+    },
+  );
   if (res.error) throw new Error(res.error);
   invalidateCampaigns();
   return res.data;

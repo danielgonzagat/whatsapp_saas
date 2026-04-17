@@ -44,26 +44,24 @@ const planConfig: Record<
   },
 };
 
-export class PlanLimitsProvider {
-  private static async getPlan(workspaceId: string): Promise<Plan> {
-    const subscription = await prisma.subscription.findUnique({
-      where: { workspaceId },
-      select: { plan: true, status: true },
-    });
+async function getPlan(workspaceId: string): Promise<Plan> {
+  const subscription = await prisma.subscription.findUnique({
+    where: { workspaceId },
+    select: { plan: true, status: true },
+  });
 
-    if (!subscription || subscription.status !== 'ACTIVE') return 'FREE';
-    const plan = subscription.plan?.toUpperCase() as Plan;
-    return planConfig[plan] ? plan : 'FREE';
-  }
+  if (!subscription || subscription.status !== 'ACTIVE') return 'FREE';
+  const plan = subscription.plan?.toUpperCase() as Plan;
+  return planConfig[plan] ? plan : 'FREE';
+}
 
+export const PlanLimitsProvider = {
   /**
    * Verifica se pode enviar mensagem (limite mensal)
    * Retorna true se permitido, false se bloqueado.
    */
-  static async checkMessageLimit(
-    workspaceId: string,
-  ): Promise<{ allowed: boolean; reason?: string }> {
-    const plan = await PlanLimitsProvider.getPlan(workspaceId);
+  async checkMessageLimit(workspaceId: string): Promise<{ allowed: boolean; reason?: string }> {
+    const plan = await getPlan(workspaceId);
     const cfg = planConfig[plan];
 
     // Se não tem limite (null), permite
@@ -96,12 +94,12 @@ export class PlanLimitsProvider {
 
     planLimitCounter.labels({ workspaceId, type: 'messages', result: 'allow', plan }).inc();
     return { allowed: true };
-  }
+  },
 
   /**
    * Verifica se a assinatura está ativa para execução de fluxos
    */
-  static async checkSubscriptionStatus(
+  async checkSubscriptionStatus(
     workspaceId: string,
   ): Promise<{ active: boolean; reason?: string }> {
     const workspace = await prisma.workspace.findUnique({
@@ -109,7 +107,8 @@ export class PlanLimitsProvider {
       select: { providerSettings: true },
     });
     const billingSuspended =
-      ((workspace?.providerSettings as any)?.billingSuspended ?? false) === true;
+      ((workspace?.providerSettings as Record<string, unknown> | null)?.billingSuspended ??
+        false) === true;
     if (billingSuspended) {
       planLimitCounter
         .labels({ workspaceId, type: 'subscription', result: 'block', plan: 'BILLING_SUSPENDED' })
@@ -143,15 +142,13 @@ export class PlanLimitsProvider {
       })
       .inc();
     return { active: true };
-  }
+  },
 
   /**
    * Limite de execuções de fluxo por minuto (proteção contra abuso).
    */
-  static async checkFlowRunRate(
-    workspaceId: string,
-  ): Promise<{ allowed: boolean; reason?: string }> {
-    const plan = await PlanLimitsProvider.getPlan(workspaceId);
+  async checkFlowRunRate(workspaceId: string): Promise<{ allowed: boolean; reason?: string }> {
+    const plan = await getPlan(workspaceId);
     const cfg = planConfig[plan];
     if (!cfg.flowRunsPerMinute) {
       return { allowed: true };
@@ -170,5 +167,5 @@ export class PlanLimitsProvider {
 
     planLimitCounter.labels({ workspaceId, type: 'flow_runs', result: 'allow', plan }).inc();
     return { allowed: true };
-  }
-}
+  },
+};

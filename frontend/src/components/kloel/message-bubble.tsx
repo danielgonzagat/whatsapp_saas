@@ -24,6 +24,12 @@ const CHAT_THEME = {
   iconTraceColor: KLOEL_THEME.textPrimary,
 } as const;
 
+function readMetaRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
 interface MessageBubbleProps {
   message: Message;
   onQuickAction?: (actionId: string, label: string) => void;
@@ -52,9 +58,10 @@ export function MessageBubble({
   const isUser = message.role === 'user';
   const isToolEvent = message.eventType === 'tool_call' || message.eventType === 'tool_result';
   const quickActions = Array.isArray(message.meta?.quickActions) ? message.meta.quickActions : [];
+  const feedbackObj = message.meta?.feedback as { type?: string } | undefined;
   const feedbackType =
-    message.meta?.feedback?.type === 'positive' || message.meta?.feedback?.type === 'negative'
-      ? (message.meta.feedback.type as 'positive' | 'negative')
+    feedbackObj?.type === 'positive' || feedbackObj?.type === 'negative'
+      ? (feedbackObj.type as 'positive' | 'negative')
       : null;
   const [isHovered, setIsHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

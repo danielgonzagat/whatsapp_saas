@@ -427,10 +427,11 @@ export function BrainSettingsSection() {
       ]);
 
       setAutopilotEnabled(Boolean(status?.enabled));
+      const autopilotCfg = (config?.autopilot ?? config) as Record<string, unknown> | undefined;
       setAutopilotConfig({
-        conversionFlowId: String(config?.autopilot?.conversionFlowId || ''),
-        currencyDefault: String(config?.autopilot?.currencyDefault || ''),
-        recoveryTemplateName: String(config?.autopilot?.recoveryTemplateName || ''),
+        conversionFlowId: String(autopilotCfg?.conversionFlowId || ''),
+        currencyDefault: String(autopilotCfg?.currencyDefault || ''),
+        recoveryTemplateName: String(autopilotCfg?.recoveryTemplateName || ''),
       });
     } catch (error: unknown) {
       setAutopilotError(

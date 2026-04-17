@@ -1,6 +1,6 @@
 import { apiFetch, buildQuery } from './core';
 
-export type DashboardHomePeriod = 'today' | '7d' | '30d' | '90d' | 'custom';
+export type DashboardHomePeriod = 'today' | '30d' | 'custom';
 
 export interface DashboardHomeProduct {
   id: string;

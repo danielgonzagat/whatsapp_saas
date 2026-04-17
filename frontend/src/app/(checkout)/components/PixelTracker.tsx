@@ -4,6 +4,37 @@ import type { CookieConsentPreferences } from '@/components/kloel/cookies/cookie
 import type { PixelConfig } from '@/lib/public-checkout-contract';
 import { useEffect, useRef } from 'react';
 
+/* ─── Window globals for third-party pixel SDKs ────────────────────────────── */
+
+type PixelFn = (...args: unknown[]) => void;
+
+interface PixelWindow {
+  fbq?: PixelFn & {
+    callMethod?: PixelFn;
+    queue?: unknown[][];
+    push?: PixelFn;
+    loaded?: boolean;
+    version?: string;
+  };
+  _fbq?: PixelFn;
+  gtag?: PixelFn;
+  dataLayer?: unknown[];
+  ttq?: PixelFn & {
+    methods?: string[];
+    setAndDefer?: (target: Record<string, unknown>, method: string) => void;
+    instance?: (id: string) => unknown[];
+    load?: (id: string) => void;
+    page?: () => void;
+    track?: (event: string, params?: Record<string, unknown>) => void;
+    _i?: Record<string, unknown[]>;
+  };
+  TiktokAnalyticsObject?: string;
+}
+
+function getPixelWindow(): PixelWindow {
+  return window as unknown as PixelWindow;
+}
+
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
 export type PixelEvent = 'PageView' | 'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase';
@@ -63,30 +94,37 @@ function shouldTrack(pixel: PixelConfig, event: PixelEvent): boolean {
 
 function ensureFacebookPixel(pixelId: string): void {
   if (typeof window === 'undefined') return;
-  if ((window as any).fbq) return;
-  const f = window as any;
-  const n: any = (f.fbq = (...args: any[]) => {
-    if (n.callMethod) {
-      n.callMethod(...args);
-    } else {
-      n.queue.push(args);
-    }
-  });
-  if (!f._fbq) f._fbq = n;
+  const pw = getPixelWindow();
+  if (pw.fbq) return;
+  const n: PixelFn & {
+    callMethod?: PixelFn;
+    queue?: unknown[][];
+    push?: PixelFn;
+    loaded?: boolean;
+    version?: string;
+  } = Object.assign(
+    (...args: unknown[]) => {
+      if (n.callMethod) {
+        n.callMethod(...args);
+      } else {
+        n.queue?.push(args);
+      }
+    },
+    { queue: [] as unknown[][], loaded: true, version: '2.0' } as const,
+  );
+  pw.fbq = n;
+  if (!pw._fbq) pw._fbq = n;
   n.push = n;
-  n.loaded = true;
-  n.version = '2.0';
-  n.queue = [];
   const s = document.createElement('script');
   s.async = true;
   s.src = 'https://connect.facebook.net/en_US/fbevents.js';
   document.head.appendChild(s);
-  (window as any).fbq('init', pixelId);
+  pw.fbq('init', pixelId);
 }
 
-function fireFacebook(pixelId: string, event: PixelEvent, params?: Record<string, any>): void {
+function fireFacebook(pixelId: string, event: PixelEvent, params?: Record<string, unknown>): void {
   ensureFacebookPixel(pixelId);
-  const fbq = (window as any).fbq;
+  const fbq = getPixelWindow().fbq;
   if (!fbq) return;
   if (event === 'PageView') {
     fbq('track', 'PageView');
@@ -101,22 +139,23 @@ function fireFacebook(pixelId: string, event: PixelEvent, params?: Record<string
 
 function ensureGtag(pixelId: string): void {
   if (typeof window === 'undefined') return;
-  if ((window as any).gtag) return;
+  const pw = getPixelWindow();
+  if (pw.gtag) return;
   const s = document.createElement('script');
   s.async = true;
   s.src = `https://www.googletagmanager.com/gtag/js?id=${pixelId}`;
   document.head.appendChild(s);
-  (window as any).dataLayer = (window as any).dataLayer || [];
-  (window as any).gtag = (...args: any[]) => {
-    (window as any).dataLayer.push(args);
+  pw.dataLayer = pw.dataLayer || [];
+  pw.gtag = (...args: unknown[]) => {
+    pw.dataLayer?.push(args);
   };
-  (window as any).gtag('js', new Date());
-  (window as any).gtag('config', pixelId);
+  pw.gtag('js', new Date());
+  pw.gtag('config', pixelId);
 }
 
-function fireGoogle(pixelId: string, event: PixelEvent, params?: Record<string, any>): void {
+function fireGoogle(pixelId: string, event: PixelEvent, params?: Record<string, unknown>): void {
   ensureGtag(pixelId);
-  const gtag = (window as any).gtag;
+  const gtag = getPixelWindow().gtag;
   if (!gtag) return;
   const eventMap: Record<PixelEvent, string> = {
     PageView: 'page_view',
@@ -129,10 +168,10 @@ function fireGoogle(pixelId: string, event: PixelEvent, params?: Record<string, 
 
 function ensureTikTok(pixelId: string): void {
   if (typeof window === 'undefined') return;
-  if ((window as any).ttq) return;
-  const t = ((window as any).TiktokAnalyticsObject = 'ttq');
-  const ttq = ((window as any)[t] = (window as any)[t] || []);
-  ttq.methods = [
+  const pw = getPixelWindow();
+  if (pw.ttq) return;
+  pw.TiktokAnalyticsObject = 'ttq';
+  const methods = [
     'page',
     'track',
     'identify',
@@ -147,32 +186,46 @@ function ensureTikTok(pixelId: string): void {
     'enableCookie',
     'disableCookie',
   ];
-  ttq.setAndDefer = (t: any, e: string) => {
-    t[e] = (...args: any[]) => {
-      t.push([e, ...args]);
+  type TikTokQueue = unknown[] & {
+    methods: string[];
+    _i: Record<string, unknown[]>;
+    setAndDefer?: (target: Record<string, unknown>, method: string) => void;
+    instance?: (id: string) => unknown[];
+    load?: (id: string) => void;
+    page?: () => void;
+  };
+  const ttqObj: TikTokQueue = Object.assign([], {
+    methods,
+    _i: {} as Record<string, unknown[]>,
+  });
+  const setAndDefer = (target: Record<string, unknown>, method: string) => {
+    target[method] = (...args: unknown[]) => {
+      (target as unknown as unknown[]).push([method, ...args]);
     };
   };
-  for (const m of ttq.methods) ttq.setAndDefer(ttq, m);
-  ttq.instance = (id: string) => {
-    const inst = ttq._i[id] || [];
-    for (const m of ttq.methods) ttq.setAndDefer(inst, m);
+  ttqObj.setAndDefer = setAndDefer;
+  for (const m of methods) setAndDefer(ttqObj as unknown as Record<string, unknown>, m);
+  ttqObj.instance = (id: string) => {
+    const store = ttqObj._i as Record<string, unknown[]>;
+    const inst = store[id] || [];
+    for (const m of methods) setAndDefer(inst as unknown as Record<string, unknown>, m);
     return inst;
   };
-  ttq.load = (id: string) => {
+  ttqObj.load = (id: string) => {
     const s = document.createElement('script');
     s.type = 'text/javascript';
     s.async = true;
     s.src = `https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${id}&lib=ttq`;
     document.head.appendChild(s);
   };
-  ttq._i = ttq._i || {};
-  ttq.load(pixelId);
-  ttq.page();
+  pw.ttq = ttqObj as unknown as PixelWindow['ttq'];
+  (ttqObj.load as (id: string) => void)(pixelId);
+  (ttqObj.page as () => void)();
 }
 
-function fireTikTok(pixelId: string, event: PixelEvent, params?: Record<string, any>): void {
+function fireTikTok(pixelId: string, event: PixelEvent, params?: Record<string, unknown>): void {
   ensureTikTok(pixelId);
-  const ttq = (window as any).ttq;
+  const ttq = getPixelWindow().ttq;
   if (!ttq) return;
   const eventMap: Record<PixelEvent, string> = {
     PageView: 'ViewContent',
@@ -181,9 +234,9 @@ function fireTikTok(pixelId: string, event: PixelEvent, params?: Record<string, 
     Purchase: 'CompletePayment',
   };
   if (event === 'PageView') {
-    ttq.page();
+    ttq.page?.();
   } else {
-    ttq.track(eventMap[event], params);
+    ttq.track?.(eventMap[event], params);
   }
 }
 
@@ -205,7 +258,7 @@ export default function PixelTracker({
     if (!consent) return;
     firedRef.current = true;
 
-    const params: Record<string, any> = {};
+    const params: Record<string, unknown> = {};
     if (value != null) params.value = value / 100;
     if (currency) params.currency = currency;
     if (orderId) params.order_id = orderId;

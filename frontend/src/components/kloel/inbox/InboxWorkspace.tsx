@@ -24,6 +24,18 @@ import { mutate } from 'swr';
 
 const D_RE = /\D/g;
 
+function extractErrorMessage(err: unknown, fallback: string) {
+  if (
+    err &&
+    typeof err === 'object' &&
+    'message' in err &&
+    typeof (err as { message?: unknown }).message === 'string'
+  ) {
+    return (err as { message: string }).message;
+  }
+  return fallback;
+}
+
 type ChannelFilter = 'all' | 'whatsapp' | 'email' | 'instagram';
 type StatusFilter = 'open' | 'closed' | 'all';
 
@@ -165,8 +177,8 @@ export function InboxWorkspace({
     try {
       await assignConversation(selectedConversationId, user.id);
       await refreshConversations();
-    } catch (err: any) {
-      setError(err?.message || 'Falha ao assumir conversa');
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, 'Falha ao assumir conversa'));
     } finally {
       setAssigning(false);
     }
@@ -179,8 +191,8 @@ export function InboxWorkspace({
     try {
       await assignConversation(selectedConversationId, '');
       await refreshConversations();
-    } catch (err: any) {
-      setError(err?.message || 'Falha ao devolver para IA');
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, 'Falha ao devolver para IA'));
     } finally {
       setAssigning(false);
     }
@@ -192,8 +204,8 @@ export function InboxWorkspace({
     try {
       const data = await getConversationMessages(conversationId);
       setMessages(Array.isArray(data) ? data : []);
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao carregar mensagens');
+    } catch (e: unknown) {
+      setError(extractErrorMessage(e, 'Falha ao carregar mensagens'));
     } finally {
       setLoadingMessages(false);
     }
@@ -215,8 +227,8 @@ export function InboxWorkspace({
       setReplyText('');
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/inbox'));
       await loadMessages(selectedConversationId);
-    } catch (err: any) {
-      setError(err?.message || 'Falha ao enviar mensagem');
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, 'Falha ao enviar mensagem'));
     } finally {
       setSending(false);
     }
@@ -242,8 +254,8 @@ export function InboxWorkspace({
       } else if (!selectedConversationId && next[0]?.id) {
         setSelectedConversationId(next[0].id);
       }
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao carregar conversas');
+    } catch (e: unknown) {
+      setError(extractErrorMessage(e, 'Falha ao carregar conversas'));
     } finally {
       setLoadingConversations(false);
     }
@@ -271,21 +283,28 @@ export function InboxWorkspace({
     try {
       await closeConversation(selectedConversationId);
       await refreshConversations();
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao fechar conversa');
+    } catch (e: unknown) {
+      setError(extractErrorMessage(e, 'Falha ao fechar conversa'));
     }
   };
 
+  const refreshConversationsRef = useRef(refreshConversations);
+  refreshConversationsRef.current = refreshConversations;
+  const refreshAgentsRef = useRef(refreshAgents);
+  refreshAgentsRef.current = refreshAgents;
+  const loadMessagesRef = useRef(loadMessages);
+  loadMessagesRef.current = loadMessages;
+
   useEffect(() => {
     if (!isLoading && isAuthenticated && workspaceId) {
-      refreshConversations();
-      refreshAgents();
+      refreshConversationsRef.current();
+      refreshAgentsRef.current();
     }
   }, [isLoading, isAuthenticated, workspaceId]);
 
   useEffect(() => {
     if (!selectedConversationId) return;
-    loadMessages(selectedConversationId);
+    loadMessagesRef.current(selectedConversationId);
   }, [selectedConversationId]);
 
   useEffect(() => {
@@ -296,7 +315,7 @@ export function InboxWorkspace({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages.length]);
 
   const selectedIdRef = useRef(selectedConversationId);
   selectedIdRef.current = selectedConversationId;
@@ -304,14 +323,22 @@ export function InboxWorkspace({
   useEffect(() => {
     if (!isConnected || !workspaceId) return;
 
-    const unsubNewMsg = subscribe('message:new', (payload: any) => {
+    const unsubNewMsg = subscribe('message:new', (payload: Record<string, unknown>) => {
       refreshConversations();
-      const newMsg = payload.message || payload;
-      const convId = payload.conversationId ?? newMsg.conversationId;
-      if (convId && convId === selectedIdRef.current && newMsg?.id) {
+      const nestedMessage =
+        payload.message && typeof payload.message === 'object' && !Array.isArray(payload.message)
+          ? (payload.message as Record<string, unknown>)
+          : null;
+      const newMsg = nestedMessage ?? payload;
+      const convId =
+        (typeof payload.conversationId === 'string' ? payload.conversationId : undefined) ??
+        (typeof newMsg.conversationId === 'string' ? newMsg.conversationId : undefined);
+      const messageId = typeof newMsg.id === 'string' ? newMsg.id : undefined;
+      if (convId && convId === selectedIdRef.current && messageId) {
+        const typedMsg: Message = newMsg as unknown as Message;
         setMessages((prev) => {
-          if (prev.some((m) => m.id === newMsg.id)) return prev;
-          return [...prev, newMsg];
+          if (prev.some((m) => m.id === messageId)) return prev;
+          return [...prev, typedMsg];
         });
       }
     });
@@ -742,8 +769,8 @@ export function InboxWorkspace({
                       try {
                         await assignConversation(selectedConversationId, e.target.value);
                         await refreshConversations();
-                      } catch (err: any) {
-                        setError(err?.message || 'Falha ao atribuir agente');
+                      } catch (err: unknown) {
+                        setError(extractErrorMessage(err, 'Falha ao atribuir agente'));
                       } finally {
                         setAssigning(false);
                       }

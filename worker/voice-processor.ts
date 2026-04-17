@@ -10,7 +10,9 @@ import { validateUrl } from './utils/ssrf-protection';
 
 const PATTERN_RE = /\/+$/;
 
-const UPLOAD_DIR = path.join(__dirname, '../backend/public/audio');
+// SECURITY: UPLOAD_DIR is derived from __dirname (server binary location), not user input.
+// All file writes within this directory use safePath() to guard against path traversal.
+const UPLOAD_DIR = path.resolve(__dirname, '../backend/public/audio');
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }

@@ -22,18 +22,18 @@ type ProviderStat = {
 // Lightweight provider health tracker used by the WhatsApp drivers.
 const providerStats: Record<string, ProviderStat> = {};
 
-export class HealthMonitor {
-  private static KEY_PREFIX = 'health:instance';
+const KEY_PREFIX = 'health:instance';
 
+export const HealthMonitor = {
   /**
    * Report current status of an instance.
    */
-  static async reportStatus(
+  async reportStatus(
     workspaceId: string,
     status: InstanceStatus,
     meta: Record<string, unknown> = {},
   ) {
-    const key = `${HealthMonitor.KEY_PREFIX}:${workspaceId}`;
+    const key = `${KEY_PREFIX}:${workspaceId}`;
     const data = {
       status,
       lastCheck: Date.now(),
@@ -47,12 +47,12 @@ export class HealthMonitor {
     if (status === 'BANNED') {
       await redis.publish('events:ban', JSON.stringify({ workspaceId, timestamp: Date.now() }));
     }
-  }
+  },
 
   /**
    * Get health score (0-100) based on recent message success rate.
    */
-  static async updateMetrics(workspaceId: string, success: boolean, latency: number) {
+  async updateMetrics(workspaceId: string, success: boolean, latency: number) {
     const key = `metrics:${workspaceId}`;
     // Use Redis lists to store last 50 events for rolling window calculation
     const event = success ? `1:${latency}` : `0:${latency}`;
@@ -61,9 +61,9 @@ export class HealthMonitor {
 
     // Set expiry
     await redis.expire(key, 3600); // 1 hour metrics
-  }
+  },
 
-  static async getHealth(workspaceId: string): Promise<{ score: number; avgLatency: number }> {
+  async getHealth(workspaceId: string): Promise<{ score: number; avgLatency: number }> {
     const key = `metrics:${workspaceId}`;
     const events = await redis.lrange(key, 0, -1);
 
@@ -82,13 +82,13 @@ export class HealthMonitor {
       score: Math.round((successCount / events.length) * 100),
       avgLatency: Math.round(totalLatency / events.length),
     };
-  }
+  },
 
   /**
    * Publica um alerta simples em um canal Redis.
    * Pode ser consumido pelo backend para notificar UI/ops.
    */
-  static async pushAlert(workspaceId: string, kind: string, meta: Record<string, unknown> = {}) {
+  async pushAlert(workspaceId: string, kind: string, meta: Record<string, unknown> = {}) {
     const payload = {
       workspaceId,
       kind,
@@ -96,8 +96,8 @@ export class HealthMonitor {
       ts: Date.now(),
     };
     await redis.publish('alerts', JSON.stringify(payload));
-  }
-}
+  },
+};
 
 /**
  * Compatibility helper used by the provider drivers.

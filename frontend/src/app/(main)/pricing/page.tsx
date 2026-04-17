@@ -154,14 +154,22 @@ export default function PricingPage() {
       const result = await createCheckoutSession(workspaceId, backendPlan, email, token);
 
       if (result.url) {
-        // Redirect to the Kloel-hosted billing checkout
-        window.location.href = result.url;
+        // Validate the redirect URL is same-origin or a known Kloel domain
+        const target = new URL(result.url, window.location.origin);
+        const isKloelDomain =
+          target.origin === window.location.origin ||
+          target.hostname.endsWith('.kloel.com') ||
+          target.hostname === 'kloel.com';
+        if (!isKloelDomain) {
+          throw new Error('Redirecionamento bloqueado: destino externo desconhecido.');
+        }
+        window.location.href = target.href;
       } else {
         throw new Error('No checkout URL returned');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error selecting plan:', err);
-      setError(err.message || 'Falha ao criar sessão de pagamento');
+      setError(err instanceof Error ? err.message : 'Falha ao criar sessão de pagamento');
       // Fallback: redirect to chat with upgrade request
       router.push(buildPlanDashboardHref(plan));
     } finally {
@@ -373,7 +381,7 @@ export default function PricingPage() {
           </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {BENEFITS.map((benefit, idx) => {
+            {BENEFITS.map((benefit) => {
               const Icon = benefit.icon;
               return (
                 <div

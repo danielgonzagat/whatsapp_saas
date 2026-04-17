@@ -56,7 +56,7 @@ function parseDateLike(value?: unknown): Date | null {
   }
 
   if (typeof value === 'object') {
-    const candidate = value as Record<string, any>;
+    const candidate = value as Record<string, unknown>;
     if (typeof candidate._seconds === 'number' && typeof candidate._nanoseconds === 'number') {
       return parseDateLike(candidate._seconds * 1000);
     }
@@ -92,7 +92,7 @@ function extractPreviewText(value: unknown): string {
       .trim();
   }
   if (typeof value === 'object') {
-    const candidate = value as Record<string, any>;
+    const candidate = value as Record<string, unknown>;
     return (
       extractPreviewText(candidate.text) ||
       extractPreviewText(candidate.body) ||
@@ -101,7 +101,7 @@ function extractPreviewText(value: unknown): string {
       extractPreviewText(candidate.message) ||
       extractPreviewText(candidate.lastMessage) ||
       extractPreviewText(candidate.lastMessagePreview) ||
-      extractPreviewText(candidate._data?.body) ||
+      extractPreviewText((candidate._data as Record<string, unknown>)?.body) ||
       ''
     ).trim();
   }
@@ -118,28 +118,32 @@ function formatClock(value?: string | number | Date | null) {
   });
 }
 
-function normalizeChats(payload: any): ChatPreview[] {
-  const rows = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.chats)
-      ? payload.chats
+function normalizeChats(payload: unknown): ChatPreview[] {
+  const p = payload as Record<string, unknown> | unknown[];
+  const rows = Array.isArray(p)
+    ? p
+    : Array.isArray((p as Record<string, unknown>)?.chats)
+      ? ((p as Record<string, unknown>).chats as unknown[])
       : [];
 
-  return rows
-    .map((chat: any) => ({
+  return (rows as Record<string, unknown>[])
+    .map((chat: Record<string, unknown>) => ({
       id: String(chat?.id || chat?.chatId || chat?.contactId || ''),
       title:
         String(
-          chat?.contact?.name ||
-            chat?.contact?.pushName ||
+          (chat?.contact as Record<string, unknown>)?.name ||
+            (chat?.contact as Record<string, unknown>)?.pushName ||
             chat?.name ||
             chat?.contactName ||
             chat?.phone ||
-            chat?.contact?.phone ||
+            (chat?.contact as Record<string, unknown>)?.phone ||
             'Contato',
         ) || 'Contato',
       subtitle: extractPreviewText(
-        chat?.lastMessagePreview || chat?.lastMessage || chat?.lastMessageText || chat?._data?.body,
+        chat?.lastMessagePreview ||
+          chat?.lastMessage ||
+          chat?.lastMessageText ||
+          (chat?._data as Record<string, unknown>)?.body,
       ),
       lastMessageAt: toIsoDateLike(
         chat?.lastMessageAt || chat?.updatedAt || chat?.ts || chat?.timestamp || chat?.lastMessage,
@@ -196,14 +200,17 @@ class WhatsAppConsoleErrorBoundary extends React.Component<
   }
 }
 
-function normalizeMessages(payload: any): InboxMessage[] {
-  const rows = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.messages)
-      ? payload.messages
+function normalizeMessages(payload: unknown): InboxMessage[] {
+  const p = payload as Record<string, unknown> | unknown[];
+  const rows = Array.isArray(p)
+    ? p
+    : Array.isArray((p as Record<string, unknown>)?.messages)
+      ? ((p as Record<string, unknown>).messages as unknown[])
       : [];
 
-  const normalizedRows: Array<{ directionValue: string; raw: any }> = rows.map((message: any) => ({
+  const normalizedRows: Array<{ directionValue: string; raw: Record<string, unknown> }> = (
+    rows as Record<string, unknown>[]
+  ).map((message: Record<string, unknown>) => ({
     directionValue: String(
       message?.direction || (message?.fromMe ? 'OUTBOUND' : 'INBOUND'),
     ).toUpperCase(),
@@ -212,7 +219,13 @@ function normalizeMessages(payload: any): InboxMessage[] {
 
   const result: InboxMessage[] = normalizedRows
     .map(
-      ({ directionValue, raw }: { directionValue: string; raw: any }): InboxMessage => ({
+      ({
+        directionValue,
+        raw,
+      }: {
+        directionValue: string;
+        raw: Record<string, unknown>;
+      }): InboxMessage => ({
         id: String(raw?.id || raw?.messageId || `${raw?.createdAt || Date.now()}`),
         content: extractPreviewText(
           raw?.content ||
@@ -220,12 +233,12 @@ function normalizeMessages(payload: any): InboxMessage[] {
             raw?.body ||
             raw?.caption ||
             raw?.message ||
-            raw?._data?.body,
+            (raw?._data as Record<string, unknown>)?.body,
         ),
         direction: directionValue === 'OUTBOUND' ? 'OUTBOUND' : 'INBOUND',
-        type: raw?.type || 'text',
-        status: raw?.status,
-        mediaUrl: raw?.mediaUrl || null,
+        type: (raw?.type as string) || 'text',
+        status: raw?.status as string | undefined,
+        mediaUrl: (raw?.mediaUrl as string | null) || null,
         createdAt:
           toIsoDateLike(raw?.createdAt || raw?.timestamp || raw?.ts) || new Date().toISOString(),
       }),
@@ -420,7 +433,7 @@ function WhatsAppConsoleInner({
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
-  }, [messages, activities]);
+  }, [messages.length, activities.length]);
 
   useEffect(() => {
     if (!isOpen || !connected) return;

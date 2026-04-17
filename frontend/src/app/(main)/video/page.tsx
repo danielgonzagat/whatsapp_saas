@@ -154,7 +154,10 @@ export default function VideoPage() {
   const [activeTab, setActiveTab] = useState<Tab>('jobs');
 
   // Video jobs
-  const { data, error, isLoading, mutate } = useSWR<any>('/video/jobs', swrFetcher);
+  const { data, error, isLoading, mutate } = useSWR<VideoJob[] | { jobs: VideoJob[] }>(
+    '/video/jobs',
+    swrFetcher,
+  );
   const jobs: VideoJob[] = Array.isArray(data) ? data : data?.jobs || [];
 
   // Create video job
@@ -172,13 +175,16 @@ export default function VideoPage() {
     try {
       const res = await videoApi.create(createUrl.trim(), createPrompt.trim());
       if (res.error) throw new Error(res.error);
-      setCreateSuccess(`Job criado: ${(res.data as any)?.id || 'ok'}`);
+      const resData = res.data as Record<string, unknown> | null;
+      setCreateSuccess(
+        `Job criado: ${resData && typeof resData === 'object' && 'id' in resData ? resData.id : 'ok'}`,
+      );
       setCreateUrl('');
       setCreatePrompt('');
       mutate();
       setActiveTab('jobs');
-    } catch (e: any) {
-      setCreateError(e?.message || 'Erro ao criar job');
+    } catch (e: unknown) {
+      setCreateError(e instanceof Error ? e.message : 'Erro ao criar job');
     } finally {
       setCreating(false);
     }
@@ -219,10 +225,12 @@ export default function VideoPage() {
       const workspaceId = tokenStorage.getWorkspaceId() ?? undefined;
       const res = await voiceApi.listProfiles(workspaceId);
       if (res.error) throw new Error(res.error);
-      const d = res.data as any;
-      setVoiceProfiles(Array.isArray(d) ? d : (d?.profiles ?? []));
-    } catch (e: any) {
-      setVoiceError(e?.message || 'Erro ao carregar perfis');
+      const d = res.data as VoiceProfile[] | { profiles: VoiceProfile[] } | null;
+      setVoiceProfiles(
+        Array.isArray(d) ? d : ((d && 'profiles' in d ? d.profiles : undefined) ?? []),
+      );
+    } catch (e: unknown) {
+      setVoiceError(e instanceof Error ? e.message : 'Erro ao carregar perfis');
     } finally {
       setVoiceLoading(false);
     }
@@ -245,8 +253,8 @@ export default function VideoPage() {
       setNewVoiceName('');
       setNewVoiceId('');
       await loadVoiceProfiles();
-    } catch (e: any) {
-      setVoiceError(e?.message || 'Erro ao criar perfil');
+    } catch (e: unknown) {
+      setVoiceError(e instanceof Error ? e.message : 'Erro ao criar perfil');
     } finally {
       setCreatingVoice(false);
     }
@@ -263,10 +271,14 @@ export default function VideoPage() {
         voiceProfileId: genProfileId || undefined,
       });
       if (res.error) throw new Error(res.error);
-      const d = res.data as any;
-      setGenResult(d?.audioUrl || 'Audio gerado (sem URL)');
-    } catch (e: any) {
-      setGenError(e?.message || 'Erro ao gerar audio');
+      const d = res.data as Record<string, unknown> | null;
+      setGenResult(
+        (d && typeof d === 'object' && 'audioUrl' in d && typeof d.audioUrl === 'string'
+          ? d.audioUrl
+          : null) || 'Audio gerado (sem URL)',
+      );
+    } catch (e: unknown) {
+      setGenError(e instanceof Error ? e.message : 'Erro ao gerar audio');
     } finally {
       setGenerating(false);
     }
@@ -293,11 +305,11 @@ export default function VideoPage() {
         type: mediaType,
       });
       if (res.error) throw new Error(res.error);
-      const d = res.data as any;
-      setMediaJobId(d?.id || null);
-      setMediaStatus(d?.status || 'PENDING');
-    } catch (e: any) {
-      setMediaError(e?.message || 'Erro ao processar midia');
+      const d = res.data as Record<string, unknown> | null;
+      setMediaJobId(d && typeof d.id === 'string' ? d.id : null);
+      setMediaStatus(d && typeof d.status === 'string' ? d.status : 'PENDING');
+    } catch (e: unknown) {
+      setMediaError(e instanceof Error ? e.message : 'Erro ao processar midia');
     } finally {
       setProcessingMedia(false);
     }
@@ -308,10 +320,10 @@ export default function VideoPage() {
     try {
       const res = await mediaApi.getJob(mediaJobId);
       if (res.error) throw new Error(res.error);
-      const d = res.data as any;
-      setMediaStatus(d?.status || mediaStatus);
-    } catch (e: any) {
-      setMediaError(e?.message || 'Erro ao verificar job');
+      const d = res.data as Record<string, unknown> | null;
+      setMediaStatus((d && typeof d.status === 'string' ? d.status : null) || mediaStatus);
+    } catch (e: unknown) {
+      setMediaError(e instanceof Error ? e.message : 'Erro ao verificar job');
     }
   }, [mediaJobId, mediaStatus]);
 

@@ -164,7 +164,9 @@ function attachDlq(queue: BullQueue) {
         const errInstanceofError =
           err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         console.error(
-          `[DLQ] Falha ao mover job ${jobId} da fila ${queue.name}:`,
+          '[DLQ] Falha ao mover job %s da fila %s: %s',
+          jobId,
+          queue.name,
           errInstanceofError?.message || err,
         );
       }
@@ -293,7 +295,8 @@ async function notifyOps(input: {
     const errInstanceofError =
       err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     console.warn(
-      `[DLQ] Falha ao notificar webhook (${webhook}):`,
+      '[DLQ] Falha ao notificar webhook (%s): %s',
+      webhook,
       errInstanceofError?.message || err,
     );
   }

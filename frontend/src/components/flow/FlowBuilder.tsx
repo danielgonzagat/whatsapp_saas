@@ -46,7 +46,7 @@ const nodeTypes = {
 
 // Default data for each node type
 const getDefaultData = (type: string) => {
-  const defaults: Record<string, any> = {
+  const defaults: Record<string, Record<string, unknown>> = {
     start: { label: 'Início', trigger: 'manual' },
     message: { label: 'Mensagem', message: '' },
     input: { label: 'Entrada', question: '', variableName: '', inputType: 'text' },
@@ -165,13 +165,13 @@ export default function FlowBuilder({
   );
 
   // Handle node selection
-  const onNodeClick = useCallback((_: any, node: Node) => {
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
   }, []);
 
   // Handle node update from properties panel
   const handleNodeUpdate = useCallback(
-    (nodeId: string, newData: any) => {
+    (nodeId: string, newData: Record<string, unknown>) => {
       setNodes((nds) =>
         nds.map((node) => (node.id === nodeId ? { ...node, data: newData } : node)),
       );

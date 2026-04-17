@@ -16,8 +16,9 @@ import {
   is,
 } from './product-nerve-center.shared';
 
-function unwrapApiPayload<T>(res: any): T {
-  return res?.data ?? res;
+function unwrapApiPayload<T>(res: unknown): T {
+  const r = res as Record<string, any> | undefined;
+  return (r?.data ?? res) as T;
 }
 
 const R$ = formatBrlCents;
@@ -26,12 +27,12 @@ export function ProductNerveCenterCampanhasTab({
   recommendedProducts,
   productName,
 }: {
-  recommendedProducts: any[];
+  recommendedProducts: Array<Record<string, any>>;
   productName: string;
 }) {
   const { productId, router, initialFocus } = useNerveCenterContext();
   const { showToast } = useToast();
-  const [camps, setCamps] = useState<any[]>([]);
+  const [camps, setCamps] = useState<Array<Record<string, any>>>([]);
   const [campsLoading, setCampsLoading] = useState(true);
   const [showCampForm, setShowCampForm] = useState(false);
   const [campName, setCampName] = useState('');
@@ -41,8 +42,8 @@ export function ProductNerveCenterCampanhasTab({
   const loadCampaigns = useCallback(() => {
     setCampsLoading(true);
     return apiFetch(`/products/${productId}/campaigns`)
-      .then((r: any) => {
-        const d = unwrapApiPayload<any[]>(r);
+      .then((r: unknown) => {
+        const d = unwrapApiPayload<Array<Record<string, any>>>(r);
         setCamps(Array.isArray(d) ? d : []);
       })
       .catch(() => setCamps([]))
@@ -54,7 +55,7 @@ export function ProductNerveCenterCampanhasTab({
   const handleCreateCamp = async () => {
     if (!campName.trim()) return;
     try {
-      const res: any = await apiFetch(`/products/${productId}/campaigns`, {
+      const res = await apiFetch(`/products/${productId}/campaigns`, {
         method: 'POST',
         body: {
           name: campName.trim(),
@@ -62,7 +63,7 @@ export function ProductNerveCenterCampanhasTab({
           messageTemplate: campMessage.trim() || undefined,
         },
       });
-      const created = unwrapApiPayload<any>(res);
+      const created = unwrapApiPayload<Record<string, any>>(res);
       setCamps((prev) => [created, ...prev]);
       setCampName('');
       setCampPixel('');
@@ -114,7 +115,7 @@ export function ProductNerveCenterCampanhasTab({
       await unwrapApiPayload(
         await apiFetch(`/products/${productId}/campaigns/${id}`, { method: 'DELETE' }),
       );
-      setCamps((prev) => prev.filter((c: any) => c.id !== id));
+      setCamps((prev) => prev.filter((c: Record<string, any>) => c.id !== id));
       showToast('Campanha removida', 'success');
     } catch (e) {
       console.error(e);
@@ -157,7 +158,7 @@ export function ProductNerveCenterCampanhasTab({
               gap: 10,
             }}
           >
-            {recommendedProducts.map((candidate: any) => (
+            {recommendedProducts.map((candidate: Record<string, any>) => (
               <div
                 key={candidate.id}
                 style={{
@@ -310,7 +311,7 @@ export function ProductNerveCenterCampanhasTab({
               </span>
             ))}
           </div>
-          {camps.map((c: any, i: number) => (
+          {camps.map((c: Record<string, any>, i: number) => (
             <div
               key={c.id}
               style={{

@@ -130,7 +130,7 @@ export class ToolsRegistry {
     args: Record<string, unknown>,
     context: { workspaceId: string; user: string },
   ): Promise<string> {
-    console.log(`[Tools] Executing ${name} with args:`, args);
+    console.log('[Tools] Executing %s with args: %O', name, args);
 
     try {
       switch (name) {

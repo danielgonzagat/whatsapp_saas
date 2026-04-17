@@ -428,7 +428,7 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
             if (!url) return null;
             return (
               <a
-                key={`${url}_${index}`}
+                key={url}
                 href={url}
                 target="_blank"
                 rel="noreferrer"
@@ -523,7 +523,7 @@ function MessageBlock({
 
   useEffect(() => {
     setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0));
-  }, [message.id, latestVersionId]);
+  }, [assistantVersions.length]);
 
   if (message.role === 'user') {
     return (
@@ -983,7 +983,7 @@ export default function KloelDashboard() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages, isThinking, streamingMessageId]);
+  }, [messages.length, isThinking]);
 
   useEffect(() => {
     if (!isReplyInFlight) {
@@ -996,7 +996,7 @@ export default function KloelDashboard() {
     }, SLOW_HINT_DELAY_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isReplyInFlight, streamingMessageId]);
+  }, [isReplyInFlight]);
 
   useEffect(() => {
     return () => {

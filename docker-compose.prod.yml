@@ -198,6 +198,10 @@ services:
   certbot:
     image: certbot/certbot
     container_name: whatsapp_saas_certbot
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/log/letsencrypt
     security_opt:
       - 'no-new-privileges:true'
     volumes:

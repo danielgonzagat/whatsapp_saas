@@ -452,12 +452,13 @@ export class ConversationalOnboardingService {
         responseText = finalResponse.choices[0].message.content || '';
 
         // Processar mais tool calls se houver (recursivamente simplificado)
-        if (finalResponse.choices[0].message.tool_calls) {
+        const toolCalls = finalResponse.choices[0].message.tool_calls;
+        if (toolCalls) {
           // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
-          for (const toolCall of finalResponse.choices[0].message.tool_calls) {
+          for (const toolCall of toolCalls) {
             if (!('function' in toolCall)) continue;
-            const functionName = toolCall.function.name;
-            const args = JSON.parse(toolCall.function.arguments);
+            const functionName: string = toolCall.function.name;
+            const args: Record<string, unknown> = JSON.parse(toolCall.function.arguments);
             await this.executeToolCall(workspaceId, functionName, args);
           }
         }

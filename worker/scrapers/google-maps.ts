@@ -170,7 +170,7 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
         }
       } catch (err) {
         // PULSE:OK — Per-item scraping error non-critical; other items still collected
-        console.error(`[MAPS] Error processing item ${i}:`, err);
+        console.error('[MAPS] Error processing item %d: %O', i, err);
       }
     }
 

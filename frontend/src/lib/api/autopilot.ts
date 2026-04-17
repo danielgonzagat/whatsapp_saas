@@ -6,18 +6,18 @@ import { apiFetch, authHeaders, buildQuery } from './core';
 const invalidateAutopilot = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/autopilot'));
 
-export type AutopilotStatus = Record<string, any>;
-export type AutopilotStats = Record<string, any>;
-export type AutopilotImpact = Record<string, any>;
-export type AutopilotPipeline = Record<string, any>;
-export type SystemHealth = Record<string, any>;
-export type AutopilotSmokeTest = Record<string, any>;
+export type AutopilotStatus = Record<string, unknown>;
+export type AutopilotStats = Record<string, unknown>;
+export type AutopilotImpact = Record<string, unknown>;
+export type AutopilotPipeline = Record<string, unknown>;
+export type SystemHealth = Record<string, unknown>;
+export type AutopilotSmokeTest = Record<string, unknown>;
 
 export interface AutopilotConfig {
   conversionFlowId?: string | null;
   currencyDefault?: string;
   recoveryTemplateName?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface AutopilotAction {
@@ -66,14 +66,14 @@ export async function updateAutopilotConfig(
   workspaceId: string,
   config: AutopilotConfig,
   _token?: string,
-): Promise<any> {
-  const res = await apiFetch<any>(`/autopilot/config`, {
+): Promise<AutopilotConfig> {
+  const res = await apiFetch<AutopilotConfig>(`/autopilot/config`, {
     method: 'POST',
     body: { workspaceId, ...config },
   });
   if (res.error) throw new Error('Failed to update autopilot config');
   invalidateAutopilot();
-  return res.data;
+  return res.data as AutopilotConfig;
 }
 
 export async function getAutopilotStats(
@@ -167,14 +167,14 @@ export async function retryAutopilotContact(
   workspaceId: string,
   contactId: string,
   _token?: string,
-): Promise<any> {
-  const res = await apiFetch<any>(`/autopilot/retry`, {
+): Promise<Record<string, unknown>> {
+  const res = await apiFetch<Record<string, unknown>>(`/autopilot/retry`, {
     method: 'POST',
     body: { workspaceId, contactId },
   });
   if (res.error) throw new Error('Failed to retry autopilot contact');
   invalidateAutopilot();
-  return res.data;
+  return res.data as Record<string, unknown>;
 }
 
 export async function markAutopilotConversion(params: {
@@ -182,10 +182,10 @@ export async function markAutopilotConversion(params: {
   contactId?: string;
   phone?: string;
   reason?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
   token?: string;
-}): Promise<any> {
-  const res = await apiFetch<any>(`/autopilot/conversion`, {
+}): Promise<Record<string, unknown>> {
+  const res = await apiFetch<Record<string, unknown>>(`/autopilot/conversion`, {
     method: 'POST',
     body: {
       workspaceId: params.workspaceId,
@@ -197,7 +197,7 @@ export async function markAutopilotConversion(params: {
   });
   if (res.error) throw new Error('Failed to mark conversion');
   invalidateAutopilot();
-  return res.data;
+  return res.data as Record<string, unknown>;
 }
 
 export async function runAutopilot(params: {
@@ -207,8 +207,8 @@ export async function runAutopilot(params: {
   message?: string;
   forceLocal?: boolean;
   token?: string;
-}): Promise<any> {
-  const res = await apiFetch<any>(`/autopilot/run`, {
+}): Promise<Record<string, unknown>> {
+  const res = await apiFetch<Record<string, unknown>>(`/autopilot/run`, {
     method: 'POST',
     body: {
       workspaceId: params.workspaceId,
@@ -220,21 +220,23 @@ export async function runAutopilot(params: {
   });
   if (res.error) throw new Error('Failed to run autopilot');
   invalidateAutopilot();
-  return res.data;
+  return res.data as Record<string, unknown>;
 }
 
 export async function getAutopilotMoneyReport(workspaceId: string) {
-  return apiFetch<any>(`/autopilot/money-report?workspaceId=${encodeURIComponent(workspaceId)}`);
+  return apiFetch<Record<string, unknown>>(
+    `/autopilot/money-report?workspaceId=${encodeURIComponent(workspaceId)}`,
+  );
 }
 
 export async function getAutopilotRevenueEvents(workspaceId: string, limit = 20) {
-  return apiFetch<any>(
+  return apiFetch<Record<string, unknown>>(
     `/autopilot/revenue-events?workspaceId=${encodeURIComponent(workspaceId)}&limit=${limit}`,
   );
 }
 
 export async function getAutopilotNextBestAction(workspaceId: string, contactId: string) {
-  return apiFetch<any>(
+  return apiFetch<Record<string, unknown>>(
     `/autopilot/next-best-action?workspaceId=${encodeURIComponent(workspaceId)}&contactId=${encodeURIComponent(contactId)}`,
   );
 }
@@ -245,7 +247,7 @@ export interface MoneyMachineResult {
   scheduled?: number;
   skipped?: number;
   errors?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export async function activateMoneyMachine(params: {
@@ -271,7 +273,7 @@ export async function activateMoneyMachine(params: {
 export interface AskInsightsResult {
   answer?: string;
   question?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export async function askAutopilotInsights(
@@ -289,7 +291,7 @@ export async function askAutopilotInsights(
 export interface SendDirectResult {
   success?: boolean;
   messageId?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export async function sendAutopilotDirectMessage(params: {
@@ -314,7 +316,7 @@ export interface RuntimeConfig {
   maxRetries?: number;
   retryDelayMs?: number;
   windowHours?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export async function getAutopilotRuntimeConfig(): Promise<RuntimeConfig> {

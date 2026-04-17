@@ -264,12 +264,12 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
   try {
     const response = await fetch(url, {
       method,
-      headers: {
-        ...headers,
+      headers: (() => {
         // Remove headers que podem vazar informações
-        'X-Forwarded-For': undefined as any,
-        'X-Real-IP': undefined as any,
-      },
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { 'X-Forwarded-For': _xff, 'X-Real-IP': _xri, ...safeHeaders } = headers;
+        return safeHeaders;
+      })(),
       body: body || undefined,
       signal: controller.signal,
       redirect: 'manual', // Não segue redirects automaticamente

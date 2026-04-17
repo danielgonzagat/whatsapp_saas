@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { escapeHtml } from '../common/utils/html-escape.util';
 
 /**
  * Serviço de envio de emails para autenticação
@@ -182,7 +183,7 @@ export class EmailService {
           <div class="logo">KLOEL</div>
           <h1>Redefinir sua senha</h1>
           <p>Recebemos uma solicitação para redefinir a senha da sua conta. Clique no botão abaixo para criar uma nova senha:</p>
-          <a href="${resetUrl}" class="button">Redefinir Senha</a>
+          <a href="${escapeHtml(resetUrl)}" class="button">Redefinir Senha</a>
           <p style="margin-top: 24px; font-size: 14px;">Este link expira em 1 hora. Se você não solicitou esta alteração, ignore este email.</p>
           <div class="footer">
             <p>KLOEL - Inteligência Comercial Autônoma</p>
@@ -214,7 +215,7 @@ export class EmailService {
           <div class="logo">KLOEL</div>
           <h1>Verifique seu email</h1>
           <p>Bem-vindo ao KLOEL! Por favor, confirme seu endereço de email clicando no botão abaixo:</p>
-          <a href="${verifyUrl}" class="button">Verificar Email</a>
+          <a href="${escapeHtml(verifyUrl)}" class="button">Verificar Email</a>
           <p style="margin-top: 24px; font-size: 14px;">Este link expira em 24 horas.</p>
           <div class="footer">
             <p>KLOEL - Inteligência Comercial Autônoma</p>
@@ -249,8 +250,8 @@ export class EmailService {
         <div class="container">
           <div class="logo">KLOEL</div>
           <h1>Convite para equipe</h1>
-          <p><strong>${inviterName}</strong> te convidou para fazer parte da equipe <strong>${workspaceName}</strong> no KLOEL.</p>
-          <a href="${inviteUrl}" class="button">Aceitar Convite</a>
+          <p><strong>${escapeHtml(inviterName)}</strong> te convidou para fazer parte da equipe <strong>${escapeHtml(workspaceName)}</strong> no KLOEL.</p>
+          <a href="${escapeHtml(inviteUrl)}" class="button">Aceitar Convite</a>
           <p style="margin-top: 24px; font-size: 14px;">Este convite expira em 7 dias.</p>
           <div class="footer">
             <p>KLOEL - Inteligência Comercial Autônoma</p>

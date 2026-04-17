@@ -931,6 +931,7 @@ function WithdrawModal({
                 value={withdrawAmount}
                 onChange={(e) => onWithdrawAmountChange(e.target.value)}
                 placeholder="0,00"
+                // biome-ignore lint/a11y/noAutofocus: intentional for primary input
                 autoFocus
                 style={{
                   flex: 1,
@@ -1521,10 +1522,11 @@ function TabSaldo({
           >
             {hasRevenue ? (
               revenueWeek.map((v, i) => {
+                const dayKeys = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
                 const max = Math.max(...revenueWeek);
                 return (
                   <div
-                    key={`rev-bar-${i}`}
+                    key={`rev-bar-${dayKeys[i]}`}
                     style={{
                       flex: 1,
                       display: 'flex',
@@ -1575,27 +1577,30 @@ function TabSaldo({
                     Nenhuma receita ainda
                   </span>
                 </div>
-                {revenueWeek.map((_, i) => (
-                  <div
-                    key={`empty-bar-${i}`}
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 4,
-                    }}
-                  >
+                {revenueWeek.map((_, i) => {
+                  const dayKeys = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+                  return (
                     <div
+                      key={`empty-bar-${dayKeys[i]}`}
                       style={{
-                        width: '100%',
-                        height: 2,
-                        background: 'var(--app-bg-secondary)',
-                        borderRadius: '3px 3px 0 0',
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4,
                       }}
-                    />
-                  </div>
-                ))}
+                    >
+                      <div
+                        style={{
+                          width: '100%',
+                          height: 2,
+                          background: 'var(--app-bg-secondary)',
+                          borderRadius: '3px 3px 0 0',
+                        }}
+                      />
+                    </div>
+                  );
+                })}
               </>
             )}
           </div>
@@ -3169,9 +3174,9 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
             marginBottom: 24,
           }}
         >
-          {Array.from({ length: 4 }).map((_, i) => (
+          {['saldo', 'receita', 'saques', 'pendente'].map((cardKey) => (
             <div
-              key={`skeleton-card-${i}`}
+              key={`skeleton-card-${cardKey}`}
               style={{
                 background: 'var(--app-bg-card)',
                 border: '1px solid var(--app-border-primary)',

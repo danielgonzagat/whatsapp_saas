@@ -26,10 +26,13 @@ import {
 const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
 function sanitizeHtml(html: string): string {
   if (!DOMPurify) return html;
-  return (DOMPurify as any).sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
-    ALLOWED_ATTR: ['href', 'target'],
-  });
+  return (DOMPurify as { sanitize: (html: string, opts: Record<string, any>) => string }).sanitize(
+    html,
+    {
+      ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
+      ALLOWED_ATTR: ['href', 'target'],
+    },
+  );
 }
 
 function clampNumber(value: number, min: number, max: number) {
@@ -52,12 +55,52 @@ function clampIntegerValue(value: unknown, fallback: number, min: number, max: n
   return Number.isFinite(parsed) ? clampNumber(parsed, min, max) : fallback;
 }
 
+/* ── Data shapes for affiliate / coproduction records ── */
+interface AffiliateRequestRecord {
+  id: string;
+  affiliateName?: string;
+  affiliateEmail?: string;
+  createdAt?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface AffiliateLinkRecord {
+  id: string;
+  affiliateName?: string;
+  affiliateEmail?: string;
+  active?: boolean;
+  clicks?: number;
+  sales?: number;
+  code?: string;
+  slug?: string;
+  url?: string;
+  [key: string]: unknown;
+}
+
+interface AffiliateStatsRecord {
+  requests?: number;
+  pendingRequests?: number;
+  activeLinks?: number;
+  commission?: number;
+  [key: string]: unknown;
+}
+
+interface CoproducerRecord {
+  id: string;
+  agentName?: string;
+  agentEmail?: string;
+  role?: string;
+  percentage?: number;
+  [key: string]: unknown;
+}
+
 /* ── Shared prop types for sub-tabs ── */
 interface SubTabProps {
   productId: string;
-  p: any;
+  p: Record<string, any>;
   refreshProduct: () => Promise<void>;
-  setAffiliateSummary: (v: any) => void;
+  setAffiliateSummary: (v: Record<string, any> | null) => void;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -71,15 +114,17 @@ function AfiliadosSubTab({
   copied,
   cp,
 }: SubTabProps & {
-  affiliateSummary: any;
+  affiliateSummary: Record<string, any> | null;
   affiliateLoading: boolean;
   copied: string | null;
   cp: (text: string, id: string) => void;
 }) {
-  const stats = affiliateSummary?.stats || {};
-  const requests = affiliateSummary?.requests || [];
-  const links = affiliateSummary?.links || [];
-  const affiliateProduct = affiliateSummary?.affiliateProduct;
+  const stats = (affiliateSummary?.stats || {}) as AffiliateStatsRecord;
+  const requests = (affiliateSummary?.requests || []) as AffiliateRequestRecord[];
+  const links = (affiliateSummary?.links || []) as AffiliateLinkRecord[];
+  const affiliateProduct = affiliateSummary?.affiliateProduct as
+    | { listed?: boolean; approvalMode?: string; commissionPct?: number; cookieDays?: number }
+    | undefined;
   const [requestActionId, setRequestActionId] = useState<string | null>(null);
   const [linkActionId, setLinkActionId] = useState<string | null>(null);
 
@@ -209,10 +254,10 @@ function AfiliadosSubTab({
                     letterSpacing: '.06em',
                   }}
                 >
-                  {label}
+                  {String(label)}
                 </div>
                 <div style={{ fontFamily: M, fontSize: 18, fontWeight: 700, color: V.t }}>
-                  {value}
+                  {String(value)}
                 </div>
               </div>
             ))}
@@ -228,9 +273,9 @@ function AfiliadosSubTab({
               {requests.length === 0 ? (
                 <div style={{ fontSize: 12, color: V.t3 }}>Nenhuma solicitação recebida ainda.</div>
               ) : (
-                requests.slice(0, 6).map((request: any) => (
+                requests.slice(0, 6).map((request: Record<string, any>) => (
                   <div
-                    key={request.id}
+                    key={String(request.id)}
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -241,12 +286,12 @@ function AfiliadosSubTab({
                   >
                     <div>
                       <div style={{ fontSize: 12, color: V.t, fontWeight: 600 }}>
-                        {request.affiliateName || request.affiliateEmail || 'Afiliado'}
+                        {String(request.affiliateName || request.affiliateEmail || 'Afiliado')}
                       </div>
                       <div style={{ fontSize: 10, color: V.t3 }}>
-                        {request.affiliateEmail || 'Sem email'}
+                        {String(request.affiliateEmail || 'Sem email')}
                         {request.createdAt
-                          ? ` · ${new Date(request.createdAt).toLocaleDateString('pt-BR')}`
+                          ? ` · ${new Date(String(request.createdAt)).toLocaleDateString('pt-BR')}`
                           : ''}
                       </div>
                     </div>
@@ -268,13 +313,13 @@ function AfiliadosSubTab({
                               : V.y
                         }
                       >
-                        {request.status || 'PENDING'}
+                        {String(request.status || 'PENDING')}
                       </Bg>
                       {request.status === 'PENDING' && (
                         <>
                           <Bt
                             primary
-                            onClick={() => handleRequestAction(request.id, 'approve')}
+                            onClick={() => handleRequestAction(String(request.id), 'approve')}
                             style={{ padding: '4px 8px' }}
                           >
                             {requestActionId === `approve-${request.id}`
@@ -282,7 +327,7 @@ function AfiliadosSubTab({
                               : 'Aprovar'}
                           </Bt>
                           <Bt
-                            onClick={() => handleRequestAction(request.id, 'reject')}
+                            onClick={() => handleRequestAction(String(request.id), 'reject')}
                             style={{ padding: '4px 8px', color: V.r }}
                           >
                             {requestActionId === `reject-${request.id}`
@@ -303,9 +348,9 @@ function AfiliadosSubTab({
               {links.length === 0 ? (
                 <div style={{ fontSize: 12, color: V.t3 }}>Nenhum link ativo gerado ainda.</div>
               ) : (
-                links.slice(0, 6).map((link: any) => (
+                links.slice(0, 6).map((link: Record<string, any>) => (
                   <div
-                    key={link.id}
+                    key={String(link.id)}
                     style={{ padding: '10px 0', borderBottom: `1px solid ${V.b}` }}
                   >
                     <div
@@ -317,12 +362,12 @@ function AfiliadosSubTab({
                       }}
                     >
                       <div style={{ fontSize: 12, color: V.t, fontWeight: 600 }}>
-                        {link.affiliateName || link.affiliateEmail || 'Afiliado'}
+                        {String(link.affiliateName || link.affiliateEmail || 'Afiliado')}
                       </div>
                       <Bg color={link.active ? V.g : V.t3}>{link.active ? 'ATIVO' : 'OFF'}</Bg>
                     </div>
                     <div style={{ fontSize: 10, color: V.t3, marginTop: 4 }}>
-                      Cliques {link.clicks || 0} · Vendas {link.sales || 0}
+                      Cliques {String(link.clicks || 0)} · Vendas {String(link.sales || 0)}
                     </div>
                     <div
                       style={{
@@ -343,7 +388,7 @@ function AfiliadosSubTab({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {link.code || link.slug || link.id}
+                        {String(link.code || link.slug || link.id)}
                       </span>
                       <div
                         style={{
@@ -354,13 +399,13 @@ function AfiliadosSubTab({
                         }}
                       >
                         <Bt
-                          onClick={() => cp(link.url || link.code || '', `aff-${link.id}`)}
+                          onClick={() => cp(String(link.url || link.code || ''), `aff-${link.id}`)}
                           style={{ padding: '4px 8px' }}
                         >
                           {copied === `aff-${link.id}` ? 'Copiado' : 'Copiar'}
                         </Bt>
                         <Bt
-                          onClick={() => handleLinkToggle(link.id, !link.active)}
+                          onClick={() => handleLinkToggle(String(link.id), !link.active)}
                           style={{ padding: '4px 8px' }}
                         >
                           {linkActionId === link.id
@@ -390,7 +435,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
   const [merchan, setMerchan] = useState(p.merchandContent || '');
   const [mSaving, setMSaving] = useState(false);
   const [mSaved, setMSaved] = useState(false);
-  const edRef = useRef<any>(null);
+  const edRef = useRef<HTMLDivElement | null>(null);
   const handleSaveMerchan = async () => {
     setMSaving(true);
     try {
@@ -477,7 +522,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
           ref={edRef}
           contentEditable
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(merchan) }}
-          onInput={(e) => setMerchan((e.target as any).innerHTML)}
+          onInput={(e) => setMerchan((e.target as HTMLElement).innerHTML)}
           style={{ minHeight: 140, color: V.t2, fontSize: 13, outline: 'none', fontFamily: S }}
           suppressContentEditableWarning
         />
@@ -509,7 +554,7 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
   const [terms, setTerms] = useState(p.affiliateTerms || '');
   const [tSaving, setTSaving] = useState(false);
   const [tSaved, setTSaved] = useState(false);
-  const edRef = useRef<any>(null);
+  const edRef = useRef<HTMLDivElement | null>(null);
   const handleSaveTerms = async () => {
     setTSaving(true);
     try {
@@ -597,7 +642,7 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
           ref={edRef}
           contentEditable
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(terms) }}
-          onInput={(e) => setTerms((e.target as any).innerHTML)}
+          onInput={(e) => setTerms((e.target as HTMLElement).innerHTML)}
           style={{ minHeight: 140, color: V.t2, fontSize: 13, outline: 'none', fontFamily: S }}
           suppressContentEditableWarning
         />
@@ -631,11 +676,11 @@ function CoprodSubTab({
 }: {
   productId: string;
   initialFocus?: string;
-  router: any;
+  router: ReturnType<typeof import('next/navigation').useRouter>;
 }) {
   const fid = useId();
   const { showToast } = useToast();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -647,12 +692,12 @@ function CoprodSubTab({
   const [creating, setCreating] = useState(false);
 
   const fetchCommissions = () => {
-    apiFetch<any>(`/products/${productId}/commissions`)
+    apiFetch<Record<string, any>>(`/products/${productId}/commissions`)
       .then((r) => {
-        const d = unwrapApiPayload<any[]>(r);
+        const d = unwrapApiPayload<Record<string, any>[]>(r);
         setItems(
-          (Array.isArray(d) ? d : []).filter((c: any) =>
-            ['COPRODUCER', 'MANAGER'].includes(c.role),
+          (Array.isArray(d) ? d : []).filter((c: Record<string, any>) =>
+            ['COPRODUCER', 'MANAGER'].includes(c.role as string),
           ),
         );
       })
@@ -899,7 +944,7 @@ function CoprodSubTab({
           <span style={{ color: V.t3, fontSize: 13 }}>Nenhum parceiro cadastrado</span>
         </div>
       ) : (
-        items.map((c: any) => (
+        items.map((c: Record<string, any>) => (
           <div
             key={c.id}
             style={{
@@ -994,7 +1039,7 @@ export function ProductNerveCenterComissaoTab() {
   const { showToast } = useToast();
 
   /* ── affiliate state (moved from parent) ── */
-  const [affiliateSummary, setAffiliateSummary] = useState<any | null>(null);
+  const [affiliateSummary, setAffiliateSummary] = useState<Record<string, any> | null>(null);
   const [affiliateLoading, setAffiliateLoading] = useState(false);
 
   /* ── comSub state (moved from parent) ── */
@@ -1007,8 +1052,8 @@ export function ProductNerveCenterComissaoTab() {
     if (!productId) return;
     setAffiliateLoading(true);
     apiFetch(`/products/${productId}/affiliates`)
-      .then((res: any) => {
-        const data = unwrapApiPayload<any>(res);
+      .then((res: unknown) => {
+        const data = unwrapApiPayload<Record<string, any>>(res);
         setAffiliateSummary(data || null);
       })
       .catch(() => setAffiliateSummary(null))

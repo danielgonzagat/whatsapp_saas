@@ -355,6 +355,8 @@ function PaymentOption({
 }) {
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
       style={{
         border: `1px solid ${selected ? theme.accent : theme.cardBorder}`,
@@ -367,7 +369,7 @@ function PaymentOption({
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
+          onClick();
         }
       }}
     >

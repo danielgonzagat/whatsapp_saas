@@ -92,13 +92,13 @@ Retorne JSON:
   ) {
     const pdfId = sourceName.replace(A_Z_A_Z0_9_RE, '_');
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential product embedding with AI calls
     const products = (analysis.products || []) as Array<{
       name: string;
       description: string;
       price?: number;
       benefits?: string[];
     }>;
+    // biome-ignore lint/performance/noAwaitInLoops: sequential product embedding with AI calls
     for (let i = 0; i < products.length; i++) {
       const product = products[i];
       await this.memoryService.saveProduct(workspaceId, `${pdfId}_product_${i}`, {
@@ -129,11 +129,11 @@ Retorne JSON:
       );
     }
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential objection embedding with AI calls
     const objections = (analysis.objections || []) as Array<{
       objection: string;
       response: string;
     }>;
+    // biome-ignore lint/performance/noAwaitInLoops: sequential objection embedding with AI calls
     for (let i = 0; i < objections.length; i++) {
       const obj = objections[i];
       await this.memoryService.saveMemory(

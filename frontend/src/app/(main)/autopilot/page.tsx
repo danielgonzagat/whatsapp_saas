@@ -531,17 +531,19 @@ export default function AutopilotPage() {
       ]);
 
       const statusData: AutopilotStatus | null =
-        statusResult.status === 'fulfilled' ? (statusResult.value as AutopilotStatus) : null;
+        statusResult.status === 'fulfilled'
+          ? (statusResult.value as unknown as AutopilotStatus)
+          : null;
       setStatus(statusData);
 
       if (statsResult.status === 'fulfilled') {
-        setStats((statsResult.value as AutopilotStats) || null);
+        setStats((statsResult.value as unknown as AutopilotStats) || null);
       } else {
         setStats(null);
       }
 
       if (impactResult.status === 'fulfilled') {
-        setImpact((impactResult.value as AutopilotImpact) || null);
+        setImpact((impactResult.value as unknown as AutopilotImpact) || null);
       } else {
         setImpact(null);
       }
@@ -555,13 +557,13 @@ export default function AutopilotPage() {
       }
 
       if (pipelineResult.status === 'fulfilled') {
-        setPipeline((pipelineResult.value as AutopilotPipeline) || null);
+        setPipeline((pipelineResult.value as unknown as AutopilotPipeline) || null);
       } else {
         setPipeline(null);
       }
 
       if (systemHealthResult.status === 'fulfilled') {
-        setSystemHealth((systemHealthResult.value as SystemHealth) || null);
+        setSystemHealth((systemHealthResult.value as unknown as SystemHealth) || null);
       } else {
         setSystemHealth(null);
       }
@@ -655,7 +657,7 @@ export default function AutopilotPage() {
       setError(null);
       const data = await toggleAutopilot(effectiveWorkspaceId, !status.enabled, token);
 
-      setStatus((prev) => (prev ? { ...prev, enabled: data.enabled } : null));
+      setStatus((prev) => (prev ? { ...prev, enabled: Boolean(data.enabled) } : null));
 
       await fetchAutopilotData();
     } catch (err: unknown) {
@@ -704,7 +706,7 @@ export default function AutopilotPage() {
         waitMs: 12000,
         token,
       });
-      setSmokeResult(data as AutopilotSmokeTestResult);
+      setSmokeResult(data as unknown as AutopilotSmokeTestResult);
       await fetchAutopilotData();
     } catch (err: unknown) {
       console.error('Error running autopilot smoke test:', err);

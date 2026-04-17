@@ -1201,9 +1201,9 @@ function Hospedagem() {
       <Card>
         <SectionLabel>Uptime (30 dias)</SectionLabel>
         <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 40 }}>
-          {Array.from({ length: 30 }, (_, i) => (
+          {Array.from({ length: 30 }, (_, i) => `day-${i + 1}`).map((dayKey) => (
             <div
-              key={`uptime-day-${i}`}
+              key={`uptime-${dayKey}`}
               style={{ flex: 1, height: 40, background: '#10B981', borderRadius: 2, opacity: 0.3 }}
             />
           ))}
@@ -1242,7 +1242,7 @@ function CriarSite({ mode }: { mode?: string }) {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState('');
-  const [savedSites, setSavedSites] = useState<any[]>([]);
+  const [savedSites, setSavedSites] = useState<Record<string, any>[]>([]);
   const [loadingSites, setLoadingSites] = useState(false);
   const [editPrompt, setEditPrompt] = useState('');
   const [editLoading, setEditLoading] = useState(false);
@@ -1271,7 +1271,7 @@ function CriarSite({ mode }: { mode?: string }) {
     setLoadingSites(true);
     apiFetch('/kloel/site/list')
       .then((res) => {
-        const data = res.data as { sites?: Record<string, unknown>[] } | undefined;
+        const data = res.data as { sites?: Record<string, any>[] } | undefined;
         if (data?.sites) setSavedSites(data.sites);
       })
       .finally(() => setLoadingSites(false));
@@ -1279,9 +1279,12 @@ function CriarSite({ mode }: { mode?: string }) {
 
   const productList = useMemo(() => {
     if (!rawProducts || !Array.isArray(rawProducts)) return [];
-    return (rawProducts as any[])
+    return (rawProducts as Record<string, any>[])
       .slice(0, 6)
-      .map((p: any) => ({ name: p.name || p.title || 'Produto', price: p.price ?? 0 }));
+      .map((p: Record<string, any>) => ({
+        name: (p.name as string) || (p.title as string) || 'Produto',
+        price: (p.price as number) ?? 0,
+      }));
   }, [rawProducts]);
 
   const handleGenerate = async () => {
@@ -1399,7 +1402,7 @@ function CriarSite({ mode }: { mode?: string }) {
     }
   };
 
-  const loadSavedSite = (site: any) => {
+  const loadSavedSite = (site: Record<string, any>) => {
     setGeneratedHtml(site.htmlContent || '');
     setSavedSiteId(site.id);
     setSiteName(site.name || '');
@@ -1853,7 +1856,7 @@ function CriarSite({ mode }: { mode?: string }) {
 function EditarSite({ mode }: { mode?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [savedSites, setSavedSites] = useState<any[]>([]);
+  const [savedSites, setSavedSites] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSite, setSelectedSite] = useState<any | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
@@ -1870,7 +1873,7 @@ function EditarSite({ mode }: { mode?: string }) {
   useEffect(() => {
     apiFetch('/kloel/site/list')
       .then((res) => {
-        const data = res.data as { sites?: Record<string, unknown>[] } | undefined;
+        const data = res.data as { sites?: Record<string, any>[] } | undefined;
         if (data?.sites) setSavedSites(data.sites);
       })
       .finally(() => setLoading(false));
@@ -1941,7 +1944,7 @@ function EditarSite({ mode }: { mode?: string }) {
       body: { name: variantName, htmlContent: generatedVariantData.html },
     });
     setVariantLoading(false);
-    const savedVariantData = saveRes.data as { site?: Record<string, unknown> } | undefined;
+    const savedVariantData = saveRes.data as { site?: Record<string, any> } | undefined;
     if (saveRes.error || !savedVariantData?.site) {
       setError(saveRes.error || 'Falha ao salvar variante.');
       return;
@@ -2182,11 +2185,13 @@ function EditarSite({ mode }: { mode?: string }) {
 function Apps() {
   // Apps loaded from backend when site app store is connected
   const [installedApps] = useState<
-    Array<{ name: string; icon: any; status: string; desc: string }>
+    Array<{ name: string; icon: (s: number) => React.ReactElement; status: string; desc: string }>
   >([]);
 
   // Available apps catalog — will be loaded from marketplace when connected
-  const [availableApps] = useState<Array<{ name: string; icon: any; desc: string }>>([]);
+  const [availableApps] = useState<
+    Array<{ name: string; icon: (s: number) => React.ReactElement; desc: string }>
+  >([]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

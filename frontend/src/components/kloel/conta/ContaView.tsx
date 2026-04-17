@@ -1901,7 +1901,7 @@ function DadosBancariosSection({
         holderDocument: autoHolderDoc || prev.holderDocument,
       }));
     }
-  }, [bankAccount, fiscal, profile, autoHolderName, autoHolderDoc]);
+  }, [bankAccount, autoHolderName, autoHolderDoc]);
 
   const set = (k: string, v: string) => setForm((prev) => ({ ...prev, [k]: v }));
 
@@ -2087,6 +2087,7 @@ function DadosBancariosSection({
                       value={bankSearch}
                       onChange={(e) => setBankSearch(e.target.value)}
                       placeholder="Buscar banco ou codigo..."
+                      // biome-ignore lint/a11y/noAutofocus: intentional for primary input
                       autoFocus
                       style={{
                         flex: 1,

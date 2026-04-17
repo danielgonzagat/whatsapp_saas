@@ -102,7 +102,7 @@ free_port_if_requested() {
   fi
 
   echo "Liberando porta ${port} (kill: ${pids})..."
-  kill $pids 2>/dev/null || true
+  echo "${pids}" | xargs kill 2>/dev/null || true
   sleep 1
   if port_in_use "$port"; then
     echo "Não foi possível liberar a porta ${port}." >&2
@@ -117,13 +117,15 @@ wait_http() {
   local max_secs="${3:-60}"
 
   echo "Aguardando ${name} em ${url}..."
-  local start="$(date +%s)"
+  local start
+  start="$(date +%s)"
   while true; do
     if curl -sf "$url" >/dev/null 2>&1; then
       echo "✓ ${name} OK"
       return 0
     fi
-    local now="$(date +%s)"
+    local now
+    now="$(date +%s)"
     if (( now - start >= max_secs )); then
       echo "Timeout aguardando ${name} (${max_secs}s): ${url}" >&2
       return 1
@@ -134,7 +136,8 @@ wait_http() {
 
 wait_postgres() {
   local max_secs="${1:-60}"
-  local start="$(date +%s)"
+  local start
+  start="$(date +%s)"
 
   echo "Aguardando Postgres ficar pronto..."
   while true; do
@@ -145,7 +148,8 @@ wait_postgres() {
       return 0
     fi
 
-    local now="$(date +%s)"
+    local now
+    now="$(date +%s)"
     if (( now - start >= max_secs )); then
       echo "Timeout aguardando Postgres (${max_secs}s)" >&2
       docker logs --tail 200 whatsapp_saas_db >&2 || true
@@ -158,7 +162,8 @@ wait_postgres() {
 
 wait_redis() {
   local max_secs="${1:-60}"
-  local start="$(date +%s)"
+  local start
+  start="$(date +%s)"
 
   echo "Aguardando Redis ficar pronto..."
   while true; do
@@ -167,7 +172,8 @@ wait_redis() {
       return 0
     fi
 
-    local now="$(date +%s)"
+    local now
+    now="$(date +%s)"
     if (( now - start >= max_secs )); then
       echo "Timeout aguardando Redis (${max_secs}s)" >&2
       docker logs --tail 200 whatsapp_saas_redis >&2 || true

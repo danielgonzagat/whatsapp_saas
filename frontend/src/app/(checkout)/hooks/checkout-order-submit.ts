@@ -169,10 +169,15 @@ function readNestedString(value: Record<string, unknown> | null, path: string[])
   return typeof candidate === 'string' ? candidate : '';
 }
 
+/** Blocked property names to prevent prototype pollution */
+const BLOCKED_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
+
 function readNestedValue(value: Record<string, unknown> | null, path: string[]) {
   let current: unknown = value;
   for (const segment of path) {
     if (!isRecord(current)) return undefined;
+    if (BLOCKED_SEGMENTS.has(segment)) return undefined;
+    if (!Object.prototype.hasOwnProperty.call(current, segment)) return undefined;
     current = current[segment];
   }
   return current;

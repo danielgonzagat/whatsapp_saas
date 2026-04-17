@@ -4,10 +4,11 @@ export const dynamic = 'force-dynamic';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { type Conversation, listConversations, listFlowExecutions } from '@/lib/api';
+import type { FlowExecutionSummary } from '@/lib/api/flows';
 import { BarChart3, GitBranch, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 function formatTime(value?: string) {
   if (!value) return '';
@@ -37,9 +38,9 @@ export default function FunnelsPage() {
   const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>('ALL');
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [executions, setExecutions] = useState<any[]>([]);
+  const [executions, setExecutions] = useState<FlowExecutionSummary[]>([]);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     if (!workspaceId) return;
     setError(null);
     setLoading(true);
@@ -50,18 +51,18 @@ export default function FunnelsPage() {
       ]);
       setConversations(Array.isArray(convs) ? convs : []);
       setExecutions(Array.isArray(execs) ? execs : []);
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao carregar funis');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Falha ao carregar funis');
     } finally {
       setLoading(false);
     }
-  };
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && workspaceId) {
       refresh();
     }
-  }, [isLoading, isAuthenticated, workspaceId]);
+  }, [isLoading, isAuthenticated, workspaceId, refresh]);
 
   const filteredConversations = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -310,7 +311,6 @@ export default function FunnelsPage() {
                 <div className="divide-y divide-[#222226]">
                   {executions.map((exec) => {
                     const flowName = exec.flow?.name || 'Fluxo';
-                    const flowId = exec.flow?.id || exec.flowId;
                     const status = exec.status || '';
                     const contact = exec.contact?.name || exec.contact?.phone || 'Contato';
 
@@ -318,9 +318,7 @@ export default function FunnelsPage() {
                       <button
                         type="button"
                         key={exec.id}
-                        onClick={() =>
-                          router.push(flowId ? `/flow?id=${encodeURIComponent(flowId)}` : '/flow')
-                        }
+                        onClick={() => router.push('/flow')}
                         className="w-full px-5 py-4 text-left transition-colors hover:bg-[#19191C]"
                       >
                         <div className="flex items-start justify-between gap-3">

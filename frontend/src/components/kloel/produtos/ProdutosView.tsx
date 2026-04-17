@@ -1670,7 +1670,15 @@ function AreaMembros({
         ? `/member-areas/${areaId}/students?q=${encodeURIComponent(q)}`
         : `/member-areas/${areaId}/students`;
       const res = await apiFetch(url);
-      setStudents(Array.isArray(res) ? res : (res as any)?.students || []);
+      const resData =
+        res.data && typeof res.data === 'object' ? (res.data as Record<string, unknown>) : null;
+      setStudents(
+        Array.isArray(resData)
+          ? resData
+          : Array.isArray(resData?.students)
+            ? (resData.students as typeof students)
+            : [],
+      );
     } catch {
       setStudents([]);
     }
@@ -2550,7 +2558,7 @@ function AreaMembros({
                 >
                   <input
                     type="checkbox"
-                    checked={(newArea as any)[toggle.key]}
+                    checked={(newArea as Record<string, unknown>)[toggle.key] as boolean}
                     onChange={(e) =>
                       setNewArea((prev) => ({ ...prev, [toggle.key]: e.target.checked }))
                     }
@@ -2675,6 +2683,7 @@ function AreaMembros({
                         value={editAreaData.name}
                         onChange={(e) => setEditAreaData((p) => ({ ...p, name: e.target.value }))}
                         style={{ ...inputStyle, flex: 1 }}
+                        // biome-ignore lint/a11y/noAutofocus: intentional for primary input
                         autoFocus
                       />
                       <select
@@ -2824,7 +2833,9 @@ function AreaMembros({
                         >
                           <input
                             type="checkbox"
-                            checked={(editAreaData as any)[toggle.key]}
+                            checked={
+                              (editAreaData as Record<string, unknown>)[toggle.key] as boolean
+                            }
                             onChange={(e) =>
                               setEditAreaData((prev) => ({
                                 ...prev,
@@ -3321,6 +3332,7 @@ function AreaMembros({
                                   value={editModuleData.name}
                                   onChange={(e) => setEditModuleData({ name: e.target.value })}
                                   style={{ ...inputStyle, flex: 1, fontSize: 11 }}
+                                  // biome-ignore lint/a11y/noAutofocus: intentional for primary input
                                   autoFocus
                                 />
                                 <button
@@ -3413,6 +3425,7 @@ function AreaMembros({
                                       }
                                       placeholder="Nome da aula"
                                       style={{ ...inputStyle, fontSize: 11 }}
+                                      // biome-ignore lint/a11y/noAutofocus: intentional for primary input
                                       autoFocus
                                     />
                                     <input
@@ -3593,6 +3606,7 @@ function AreaMembros({
                                   }
                                   placeholder="Nome da aula"
                                   style={{ ...inputStyle, fontSize: 11 }}
+                                  // biome-ignore lint/a11y/noAutofocus: intentional for primary input
                                   autoFocus
                                 />
                                 <input
@@ -3721,6 +3735,7 @@ function AreaMembros({
                           onChange={(e) => setNewModule({ name: e.target.value })}
                           placeholder="Nome do modulo"
                           style={{ ...inputStyle, flex: 1, fontSize: 11 }}
+                          // biome-ignore lint/a11y/noAutofocus: intentional for primary input
                           autoFocus
                         />
                         <button
@@ -5466,32 +5481,15 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
           affiliateApi.myProducts(),
         ]);
 
-      setMarketplace(
-        Array.isArray((marketplaceResponse as any)?.data?.products)
-          ? (marketplaceResponse as any).data.products
-          : Array.isArray((marketplaceResponse as any)?.products)
-            ? (marketplaceResponse as any).products
-            : [],
-      );
-      setMarketplaceStats((statsResponse as any)?.data || statsResponse || {});
-      setAffiliateLinks(
-        Array.isArray((linksResponse as any)?.data?.links)
-          ? (linksResponse as any).data.links
-          : Array.isArray((linksResponse as any)?.links)
-            ? (linksResponse as any).links
-            : [],
-      );
-      setAffiliateTotals(
-        (linksResponse as any)?.data?.totals ||
-          (linksResponse as any)?.totals || { clicks: 0, sales: 0, revenue: 0, commission: 0 },
-      );
-      setAffiliateProducts(
-        Array.isArray((productsResponse as any)?.data?.products)
-          ? (productsResponse as any).data.products
-          : Array.isArray((productsResponse as any)?.products)
-            ? (productsResponse as any).products
-            : [],
-      );
+      const mktData = marketplaceResponse.data;
+      setMarketplace(Array.isArray(mktData?.products) ? mktData.products : []);
+      const sData = statsResponse.data;
+      setMarketplaceStats(sData ?? {});
+      const lnkData = linksResponse.data;
+      setAffiliateLinks(Array.isArray(lnkData?.links) ? lnkData.links : []);
+      setAffiliateTotals(lnkData?.totals ?? { clicks: 0, sales: 0, revenue: 0, commission: 0 });
+      const prdData = productsResponse.data;
+      setAffiliateProducts(Array.isArray(prdData) ? prdData : []);
     } catch {
       setMarketplace([]);
       setMarketplaceStats({});

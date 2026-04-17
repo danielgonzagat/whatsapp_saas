@@ -17,7 +17,7 @@ export interface CrmContact {
   email?: string | null;
   notes?: string | null;
   tags?: CrmContactTag[];
-  customFields?: Record<string, any> | null;
+  customFields?: Record<string, unknown> | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -184,7 +184,7 @@ export interface NeuroAnalysis {
   buyingIntent?: string;
   riskLevel?: string;
   summary?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface NeuroNextBestAction {
@@ -193,7 +193,7 @@ export interface NeuroNextBestAction {
   reason?: string;
   priority?: number;
   suggestedMessage?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface NeuroCluster {
@@ -201,13 +201,13 @@ export interface NeuroCluster {
   name?: string;
   size?: number;
   avgScore?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface NeuroSimulationResult {
   transcript?: string[];
   outcome?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const neuroCrmApi = {
@@ -264,9 +264,12 @@ export const segmentationApi = {
     if (!workspaceId) {
       throw new Error('missing_workspaceId');
     }
-    return apiFetch<any>(`/segmentation/${encodeURIComponent(workspaceId)}/auto-segment`, {
-      method: 'POST',
-    });
+    return apiFetch<Record<string, unknown>>(
+      `/segmentation/${encodeURIComponent(workspaceId)}/auto-segment`,
+      {
+        method: 'POST',
+      },
+    );
   },
 
   querySegment: (criteria: {
@@ -295,7 +298,7 @@ export const segmentationApi = {
     if (!workspaceId) {
       throw new Error('missing_workspaceId');
     }
-    return apiFetch<{ score: number; contactId: string; [key: string]: any }>(
+    return apiFetch<{ score: number; contactId: string; [key: string]: unknown }>(
       `/segmentation/${encodeURIComponent(workspaceId)}/contact/${encodeURIComponent(contactId)}/score`,
     );
   },

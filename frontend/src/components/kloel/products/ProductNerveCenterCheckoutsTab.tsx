@@ -26,14 +26,14 @@ interface ProductNerveCenterCheckoutsTabProps {
   ckEdit: string | null;
   setCkEdit: (value: string | null) => void;
   checkouts: ProductEditorCheckoutView[];
-  rawCheckouts: any[];
-  rawPlans: any[];
+  rawCheckouts: Record<string, any>[];
+  rawPlans: Record<string, any>[];
   copied: string | null;
   onDuplicateCheckout: (checkoutId: string) => void | Promise<void>;
   onDeleteCheckout: (checkoutId: string) => void | Promise<void>;
   onCreateCheckout: () => void | Promise<void>;
-  syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<any>;
-  updatePlan: (planId: string, payload: Record<string, any>) => Promise<any>;
+  syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<unknown>;
+  updatePlan: (planId: string, payload: Record<string, any>) => Promise<unknown>;
 }
 
 export function ProductNerveCenterCheckoutsTab({
@@ -419,11 +419,11 @@ function CheckoutConfigPanel({
   updatePlan,
 }: {
   ckEdit: string;
-  rawCheckouts: any[];
-  rawPlans: any[];
+  rawCheckouts: Record<string, any>[];
+  rawPlans: Record<string, any>[];
   setCkEdit: (value: string | null) => void;
-  syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<any>;
-  updatePlan: (planId: string, payload: Record<string, any>) => Promise<any>;
+  syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<unknown>;
+  updatePlan: (planId: string, payload: Record<string, any>) => Promise<unknown>;
 }) {
   const { isMobile } = useResponsiveViewport();
   const { COUPONS } = useNerveCenterContext();
@@ -433,7 +433,8 @@ function CheckoutConfigPanel({
     updateConfig: saveCkCfg,
     isLoading: ckLoading,
   } = useCheckoutConfig(ckEdit);
-  const [ckLocal, setCkLocal] = useState<any>({});
+  // biome-ignore lint/suspicious/noExplicitAny: checkout config has dynamic fields from API
+  const [ckLocal, setCkLocal] = useState<Record<string, any>>({});
   const [ckSaving, setCkSaving] = useState(false);
   const [ckSaved, setCkSaved] = useState(false);
   const [linkedPlanIds, setLinkedPlanIds] = useState<string[]>([]);
@@ -448,7 +449,13 @@ function CheckoutConfigPanel({
   useEffect(() => {
     const nextPlanIds = Array.isArray(checkoutForCk?.checkoutLinks)
       ? checkoutForCk.checkoutLinks
-          .map((link: any) => String(link?.planId || link?.plan?.id || '').trim())
+          .map((link: Record<string, any>) =>
+            String(
+              (link as Record<string, any>)?.planId ||
+                ((link as Record<string, any>)?.plan as Record<string, any>)?.id ||
+                '',
+            ).trim(),
+          )
           .filter((value: string): value is string => Boolean(value))
       : [];
     const uniquePlanIds = Array.from(new Set(nextPlanIds)) as string[];
@@ -456,13 +463,13 @@ function CheckoutConfigPanel({
     setOriginalLinkedPlanIds(uniquePlanIds);
   }, [checkoutForCk]);
 
-  const patch = (key: string, value: any) =>
-    setCkLocal((current: any) => ({ ...current, [key]: value }));
+  const patch = (key: string, value: unknown) =>
+    setCkLocal((current: Record<string, any>) => ({ ...current, [key]: value }));
   const selectedPlans = rawPlans.filter((planCandidate) =>
-    linkedPlanIds.includes(planCandidate.id),
+    linkedPlanIds.includes(String(planCandidate.id)),
   );
   const availablePlans = rawPlans.filter(
-    (planCandidate) => !linkedPlanIds.includes(planCandidate.id),
+    (planCandidate) => !linkedPlanIds.includes(String(planCandidate.id)),
   );
   const currentConfigSignature = JSON.stringify({
     brandName: ckLocal.brandName || '',
@@ -538,7 +545,7 @@ function CheckoutConfigPanel({
           ← Checkouts
         </Bt>
         <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-          Configurações — {checkoutForCk?.name || 'Checkout'}
+          Configurações — {String(checkoutForCk?.name || 'Checkout')}
         </span>
       </div>
       {ckLoading ? (
@@ -801,11 +808,11 @@ function CheckoutConfigPanel({
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
               {selectedPlans.map((planCandidate) => (
                 <button
-                  key={planCandidate.id}
+                  key={String(planCandidate.id)}
                   type="button"
                   onClick={() =>
                     setLinkedPlanIds((current) =>
-                      current.filter((candidateId) => candidateId !== planCandidate.id),
+                      current.filter((candidateId) => candidateId !== String(planCandidate.id)),
                     )
                   }
                   style={{
@@ -821,9 +828,9 @@ function CheckoutConfigPanel({
                     fontWeight: 600,
                   }}
                 >
-                  <span>{planCandidate.name}</span>
+                  <span>{String(planCandidate.name)}</span>
                   <span style={{ color: V.em, fontFamily: M }}>
-                    {formatBrlCents(planCandidate.priceInCents || 0)}
+                    {formatBrlCents(Number(planCandidate.priceInCents || 0))}
                   </span>
                   <span style={{ color: V.t3 }}>×</span>
                 </button>

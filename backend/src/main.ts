@@ -181,47 +181,61 @@ async function bootstrap() {
   // not user input. The regex is compiled once at startup and never rebuilt
   // from request data, so ReDoS from untrusted input is not applicable here.
   // The try/catch below guards against malformed patterns from misconfiguration.
+  // SECURITY: CORS_ALLOWED_ORIGIN_REGEX is a server-admin-controlled env var,
+  // not user input. Patterns are compiled once at startup. A length cap and
+  // basic validation guard against misconfiguration / ReDoS from overly
+  // complex patterns.
+  const MAX_REGEX_PATTERN_LENGTH = 200;
   const extraRegex = process.env.CORS_ALLOWED_ORIGIN_REGEX;
   if (extraRegex) {
     for (const r of extraRegex.split(',')) {
       const trimmed = r.trim();
-      if (trimmed) {
+      if (trimmed && trimmed.length <= MAX_REGEX_PATTERN_LENGTH) {
         try {
-          allowedOriginsRegex.push(new RegExp(trimmed));
+          const re = new RegExp(trimmed); // nosemgrep: non-literal-regexp — trusted server config
+          allowedOriginsRegex.push(re);
         } catch {
-          console.warn(`[CORS] Invalid regex pattern ignored: ${trimmed}`);
+          console.warn('[CORS] Invalid regex pattern ignored: %s', trimmed);
         }
+      } else if (trimmed) {
+        console.warn('[CORS] Regex pattern too long, ignored (%d chars)', trimmed.length);
       }
     }
   }
 
-  function isAllowedOrigin(origin: string | undefined): boolean {
-    // Requisições sem header Origin não são CORS no sentido do browser.
-    // Isso inclui webhooks, health checks, polling interno e tráfego server-to-server.
-    // Bloquear/logar esses casos em produção só gera ruído operacional.
-    if (!origin) return true;
-    if (allowedOriginsExact.has(origin)) return true;
+  /**
+   * SECURITY: CORS origin validation against an allowlist.
+   * Returns the matched origin string from the allowlist (not the raw header)
+   * to prevent header injection. Returns null if not allowed.
+   */
+  function matchAllowedOrigin(origin: string | undefined): string | null {
+    // Requests without Origin header are not browser CORS requests.
+    // This includes webhooks, health checks, internal polling, and server-to-server traffic.
+    if (!origin) return null;
+    if (allowedOriginsExact.has(origin)) return origin;
     for (const re of allowedOriginsRegex) {
-      if (re.test(origin)) return true;
+      if (re.test(origin)) return origin;
     }
-    // Em dev, aceitar qualquer origin
-    if (process.env.NODE_ENV !== 'production') return true;
-    return false;
+    // In dev, accept any origin
+    if (process.env.NODE_ENV !== 'production') return origin;
+    return null;
   }
 
-  // Middleware para setar CORS em TODAS as respostas (incluindo SSE)
-  // O NestJS enableCors não cobre rotas que usam @Res()
+  // CORS middleware for ALL responses (including SSE).
+  // NestJS enableCors does not cover routes that use @Res().
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const origin = req.headers.origin;
-    if (isAllowedOrigin(origin)) {
-      if (origin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-      }
-    } else {
-      // Origin não permitido em produção — loga e bloqueia preflight
-      console.warn(`[CORS] Blocked origin: ${origin} on ${req.method} ${req.path}`);
-      if (req.method === 'OPTIONS') {
-        return res.status(403).end();
+    const rawOrigin = req.headers.origin;
+    // If there is no Origin header, this is not a CORS request — skip origin setting.
+    if (rawOrigin) {
+      const matched = matchAllowedOrigin(rawOrigin);
+      if (matched) {
+        res.setHeader('Access-Control-Allow-Origin', matched);
+      } else {
+        // Disallowed origin in production — log and block preflight
+        console.warn('[CORS] Blocked origin: %s on %s %s', rawOrigin, req.method, req.path);
+        if (req.method === 'OPTIONS') {
+          return res.status(403).end();
+        }
       }
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
@@ -248,7 +262,7 @@ async function bootstrap() {
   // CORS global - origens permitidas (produção + dev)
   app.enableCors({
     origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
-      cb(null, isAllowedOrigin(origin));
+      cb(null, matchAllowedOrigin(origin) !== null || !origin);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: [

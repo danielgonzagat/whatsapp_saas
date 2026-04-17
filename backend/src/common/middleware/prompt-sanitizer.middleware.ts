@@ -56,10 +56,18 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     next();
   }
 
+  /** Property names that must never be accessed via bracket notation. */
+  private static readonly BLOCKED_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
+
   private sanitizeObject(obj: Record<string, unknown>, path: string): void {
     if (!obj || typeof obj !== 'object') return;
 
+    // Object.keys() returns own enumerable properties only — safe from prototype chain.
+    // The BLOCKED_PROPS guard adds defense-in-depth against prototype pollution.
     for (const key of Object.keys(obj)) {
+      if (PromptSanitizerMiddleware.BLOCKED_PROPS.has(key)) continue;
+      if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+
       const value = obj[key];
 
       if (typeof value === 'string') {

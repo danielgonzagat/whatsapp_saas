@@ -6,17 +6,17 @@ import {
 } from './home-aggregation.util';
 
 describe('home-aggregation util', () => {
-  it('builds a stable 7-day range with aligned previous period', () => {
+  it('builds a stable 30-day range with aligned previous period', () => {
     const now = new Date('2026-04-09T12:00:00.000Z');
-    const range = resolveDashboardHomeRange({ period: '7d', now });
+    const range = resolveDashboardHomeRange({ period: '30d', now });
 
-    expect(range.period).toBe('7d');
-    expect(range.buckets).toHaveLength(7);
-    expect(range.previousBuckets).toHaveLength(7);
+    expect(range.period).toBe('30d');
+    expect(range.buckets).toHaveLength(6);
+    expect(range.previousBuckets).toHaveLength(6);
     expect(range.start.getFullYear()).toBe(2026);
     expect(range.start.getMonth()).toBe(3);
-    expect(range.start.getDate()).toBe(3);
-    expect(range.label).toBe('Últimos 7 dias');
+    expect(range.start.getDate()).toBe(11);
+    expect(range.label).toBe('Últimos 30 dias');
   });
 
   it('falls back safely when custom dates are inverted', () => {
@@ -34,7 +34,7 @@ describe('home-aggregation util', () => {
 
   it('sums values by the generated buckets', () => {
     const range = resolveDashboardHomeRange({
-      period: '7d',
+      period: '30d',
       now: new Date('2026-04-09T12:00:00.000Z'),
     });
 

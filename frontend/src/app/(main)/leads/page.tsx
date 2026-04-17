@@ -99,8 +99,8 @@ export default function LeadsPage() {
       if (!selectedLeadId && normalized[0]?.id) {
         setSelectedLeadId(normalized[0].id);
       }
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao carregar leads');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Falha ao carregar leads');
     } finally {
       setLoadingLeads(false);
     }

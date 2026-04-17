@@ -163,7 +163,7 @@ export function resolveDashboardHomeRange(input?: {
   now?: Date;
 }): DashboardHomeRange {
   const now = isValidDate(input?.now) ? input.now : new Date();
-  const requestedPeriod = String(input?.period || '7d').toLowerCase();
+  const requestedPeriod = String(input?.period || '30d').toLowerCase();
   const period: DashboardHomePeriod =
     requestedPeriod === 'today' ||
     requestedPeriod === '7d' ||
@@ -171,7 +171,7 @@ export function resolveDashboardHomeRange(input?: {
     requestedPeriod === '90d' ||
     requestedPeriod === 'custom'
       ? requestedPeriod
-      : '7d';
+      : '30d';
 
   let start: Date;
   let end: Date;
@@ -182,7 +182,7 @@ export function resolveDashboardHomeRange(input?: {
       end = now;
       break;
     case '7d':
-      start = startOfDay(addDays(now, -6));
+      start = startOfDay(addDays(now, -29));
       end = now;
       break;
     case '30d':

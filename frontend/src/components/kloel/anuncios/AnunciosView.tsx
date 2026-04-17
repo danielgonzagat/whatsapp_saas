@@ -281,8 +281,10 @@ function NP({
 // ── Ticker (animated counter) ──
 function Ticker({ value, prefix = '' }: { value: number; prefix?: string }) {
   const [display, setDisplay] = useState(0);
+  const displayRef = useRef(display);
+  displayRef.current = display;
   useEffect(() => {
-    const current = display;
+    const current = displayRef.current;
     const diff = value - current;
     if (Math.abs(diff) < 1) {
       setDisplay(value);
@@ -340,8 +342,10 @@ function WarRoom({
   onGoToTab: (id: string) => void;
   metaAccessToken?: string;
 }) {
-  const { data: rulesData } = useSWR<any[]>('/ad-rules', swrFetcher, { keepPreviousData: true });
-  const adRules = (rulesData || []).map((r: any) => ({
+  const { data: rulesData } = useSWR<Record<string, any>[]>('/ad-rules', swrFetcher, {
+    keepPreviousData: true,
+  });
+  const adRules = (rulesData || []).map((r: Record<string, any>) => ({
     id: r.id,
     condition: r.condition,
     action: r.action,
@@ -2028,10 +2032,14 @@ function TrackingTab({ focus }: { focus?: string }) {
 // ── RulesTab — CONNECTED TO /ad-rules backend via SWR ──
 function RulesTab() {
   const fid = useId();
-  const { data: rulesData, mutate: mutateRules } = useSWR<any[]>('/ad-rules', swrFetcher, {
-    keepPreviousData: true,
-  });
-  const rules: Rule[] = (rulesData || []).map((r: any) => ({
+  const { data: rulesData, mutate: mutateRules } = useSWR<Record<string, any>[]>(
+    '/ad-rules',
+    swrFetcher,
+    {
+      keepPreviousData: true,
+    },
+  );
+  const rules: Rule[] = (rulesData || []).map((r: Record<string, any>) => ({
     id: r.id,
     condition: r.condition,
     action: r.action,
@@ -2655,14 +2663,14 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   }, [requestedFocus, tab]);
 
   // ── Meta connection & real ad data ──
-  const { data: metaStatus } = useSWR<any>('/meta/auth/status', swrFetcher);
+  const { data: metaStatus } = useSWR<Record<string, any>>('/meta/auth/status', swrFetcher);
   const metaConnected = metaStatus?.connected === true;
 
-  const { data: metaInsights } = useSWR<any>(
+  const { data: metaInsights } = useSWR<Record<string, any>>(
     metaConnected ? '/meta/ads/insights/account' : null,
     swrFetcher,
   );
-  const { data: metaCampaigns } = useSWR<any>(
+  const { data: metaCampaigns } = useSWR<Record<string, any>>(
     metaConnected ? '/meta/ads/campaigns' : null,
     swrFetcher,
   );
@@ -2685,7 +2693,8 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
           revenue:
             Number.parseFloat(
               d?.action_values?.find?.(
-                (a: any) => a.action_type === 'offsite_conversion.fb_pixel_purchase',
+                (a: Record<string, any>) =>
+                  a.action_type === 'offsite_conversion.fb_pixel_purchase',
               )?.value ||
                 d?.purchase_roas?.[0]?.value ||
                 '0',
@@ -2716,7 +2725,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   useEffect(() => {
     if (metaConnected && metaCampaigns && Array.isArray(metaCampaigns.data || metaCampaigns)) {
       const raw = metaCampaigns.data || metaCampaigns;
-      CAMPAIGNS = raw.map((c: any) => ({
+      CAMPAIGNS = raw.map((c: Record<string, any>) => ({
         id: c.id,
         platform: 'meta' as const,
         name: c.name || `Campaign ${c.id}`,
@@ -2727,7 +2736,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
         spend: Number.parseFloat(c.spend || c.insights?.data?.[0]?.spend || '0'),
         revenue: Number.parseFloat(
           c.insights?.data?.[0]?.action_values?.find?.(
-            (a: any) => a.action_type === 'offsite_conversion.fb_pixel_purchase',
+            (a: Record<string, any>) => a.action_type === 'offsite_conversion.fb_pixel_purchase',
           )?.value || '0',
         ),
         roas: Number.parseFloat(c.insights?.data?.[0]?.purchase_roas?.[0]?.value || '0'),

@@ -412,7 +412,7 @@ export default function NewProductPage() {
 
     setSaving(true);
     try {
-      const body: Record<string, any> = {
+      const body: Record<string, unknown> = {
         workspaceId,
         name: form.name.trim(),
         description: form.description,
@@ -448,16 +448,23 @@ export default function NewProductPage() {
         body.carriers = form.carriers;
       }
 
-      const res = await apiFetch<any>('/products', { method: 'POST', body });
+      const res = await apiFetch<Record<string, unknown>>('/products', { method: 'POST', body });
 
       if (res.error) {
         showToast(res.error, 'error');
         return;
       }
 
-      const responsePayload = res.data ?? null;
-      const createdProduct = responsePayload?.product || responsePayload || null;
-      const createdProductId = createdProduct?.id;
+      const responsePayload = (res.data ?? null) as Record<string, unknown> | null;
+      const productField =
+        responsePayload && typeof responsePayload === 'object' && 'product' in responsePayload
+          ? (responsePayload.product as Record<string, unknown> | null)
+          : null;
+      const createdProduct = productField || responsePayload || null;
+      const createdProductId =
+        createdProduct && typeof createdProduct === 'object' && 'id' in createdProduct
+          ? (createdProduct.id as string)
+          : undefined;
 
       await mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       clearLocalPreview();
@@ -469,9 +476,12 @@ export default function NewProductPage() {
       }
 
       router.push('/products');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao salvar produto', error);
-      showToast(error?.message || 'Nao foi possivel salvar o produto.', 'error');
+      showToast(
+        error instanceof Error ? error.message : 'Nao foi possivel salvar o produto.',
+        'error',
+      );
     } finally {
       setSaving(false);
     }

@@ -66,15 +66,16 @@ async function checkInactivity(workspaceId: string) {
   // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing
   for (const lead of leads) {
     // Check if we already nudged recently (custom field or tag)
-    const hasNudged = (lead.customFields as any)?.last_nudge_at;
-    if (hasNudged && new Date(hasNudged) > twoHoursAgo) continue;
+    const hasNudged = (lead.customFields as Record<string, unknown> | null)?.last_nudge_at;
+    if (hasNudged && new Date(String(hasNudged)) > twoHoursAgo) continue;
 
     log.info('ghost_closer_trigger', { phone: lead.phone });
 
     // Trigger Nudge Flow
     // Ideally, we should have a configured "Nudge Flow ID" in workspace settings
     const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
-    const nudgeFlowId = (workspace?.providerSettings as any)?.nudgeFlowId;
+    const nudgeFlowId = (workspace?.providerSettings as Record<string, unknown> | null)
+      ?.nudgeFlowId as string | undefined;
 
     if (nudgeFlowId) {
       const flow = await prisma.flow.findFirst({
@@ -84,7 +85,20 @@ async function checkInactivity(workspaceId: string) {
         // Start flow
         await engine.startFlow(
           lead.phone,
-          engine.parseFlowDefinition(flow.id, flow.nodes as any, flow.edges as any, workspaceId),
+          engine.parseFlowDefinition(
+            flow.id,
+            flow.nodes as unknown as Array<{
+              id: string;
+              type: string;
+              data?: Record<string, unknown>;
+            }>,
+            flow.edges as unknown as Array<{
+              source: string;
+              target: string;
+              sourceHandle?: string | null;
+            }>,
+            workspaceId,
+          ),
         );
 
         // Update last nudge scoped by workspace so no accidental tenant cross.

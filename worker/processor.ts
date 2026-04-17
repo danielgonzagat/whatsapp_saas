@@ -109,7 +109,9 @@ async function sendFallbackEmail(
         return true;
       }
     } catch (e) {
-      log.warn('fallback_email_resend_error', { error: (e as any).message });
+      log.warn('fallback_email_resend_error', {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   }
 
@@ -135,7 +137,9 @@ async function sendFallbackEmail(
         return true;
       }
     } catch (e) {
-      log.warn('fallback_email_sendgrid_error', { error: (e as any).message });
+      log.warn('fallback_email_sendgrid_error', {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   }
 
@@ -460,9 +464,11 @@ async function handleScheduledFollowup(job: Job) {
 
     // Update autopilot event status
     try {
-      const prismaAny = prisma as any;
-      if (prismaAny.autopilotEvent) {
-        await prismaAny.autopilotEvent.updateMany({
+      const prismaClient = prisma as unknown as Record<string, unknown>;
+      if (prismaClient.autopilotEvent) {
+        await (
+          prismaClient.autopilotEvent as { updateMany: (args: unknown) => Promise<unknown> }
+        ).updateMany({
           where: {
             workspaceId,
             contactId: contactId || undefined,
@@ -590,7 +596,9 @@ async function handleSendMessage(job: Job) {
         conversationId = conv.id;
       }
     } catch (prepErr) {
-      log.warn('send_prepare_persist_failed', { error: (prepErr as any)?.message });
+      log.warn('send_prepare_persist_failed', {
+        error: prepErr instanceof Error ? prepErr.message : String(prepErr),
+      });
     }
 
     let res: Awaited<ReturnType<typeof WhatsAppEngine.sendText>> | undefined;
@@ -693,7 +701,9 @@ async function handleSendMessage(job: Job) {
           }),
         );
       } catch (dbErr) {
-        log.warn('send_persist_failed', { error: (dbErr as any)?.message });
+        log.warn('send_persist_failed', {
+          error: dbErr instanceof Error ? dbErr.message : String(dbErr),
+        });
       }
     }
 
@@ -713,7 +723,8 @@ async function handleSendMessage(job: Job) {
     const latency = Date.now() - start;
     const maxAttempts = typeof job.opts?.attempts === 'number' ? job.opts.attempts : 1;
     const finalFailure =
-      job.attemptsMade + 1 >= maxAttempts || (err as any)?.message === 'session_expired';
+      job.attemptsMade + 1 >= maxAttempts ||
+      (err instanceof Error ? err.message : String(err)) === 'session_expired';
 
     // Health Check Failure
     await HealthMonitor.updateMetrics(workspace.id, false, latency);
@@ -733,12 +744,14 @@ async function handleSendMessage(job: Job) {
             type: mediaType ? mediaType.toUpperCase() : template?.name ? 'TEMPLATE' : 'TEXT',
             mediaUrl: mediaUrl || undefined,
             status: 'FAILED',
-            errorCode: (err as any)?.message,
+            errorCode: err instanceof Error ? err.message : String(err),
             externalId: undefined,
           },
         });
       } catch (dbErr) {
-        log.warn('send_persist_failed_errorpath', { error: (dbErr as any)?.message });
+        log.warn('send_persist_failed_errorpath', {
+          error: dbErr instanceof Error ? dbErr.message : String(dbErr),
+        });
       }
 
       try {
@@ -751,17 +764,19 @@ async function handleSendMessage(job: Job) {
               conversationId,
               contactId,
               status: 'FAILED',
-              errorCode: (err as any)?.message,
+              errorCode: err instanceof Error ? err.message : String(err),
             },
           }),
         );
       } catch (pubErr) {
-        log.warn('ws_publish_failed_errorpath', { error: (pubErr as any)?.message });
+        log.warn('ws_publish_failed_errorpath', {
+          error: pubErr instanceof Error ? pubErr.message : String(pubErr),
+        });
       }
     }
 
     // Erros de sessão expirada (24h) não valem retry
-    if ((err as any)?.message === 'session_expired') {
+    if ((err instanceof Error ? err.message : String(err)) === 'session_expired') {
       return { error: true, reason: 'session_expired', skipped: true };
     }
 
@@ -815,7 +830,10 @@ export const flowWorker = SHOULD_EXECUTE
               return null;
           }
         } catch (err) {
-          log.error('job_error', { jobId: job.id, error: (err as any)?.message });
+          log.error('job_error', {
+            jobId: job.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
           throw err;
         } finally {
           const duration = Number(process.hrtime.bigint() - start) / 1e9;
@@ -854,8 +872,16 @@ flowWorker?.on('failed', (job: Job | undefined, err: Error) => {
   };
   jobCounter.inc({ ...labels, status: 'failed' });
 
-  const workspaceId =
-    (job?.data as any)?.workspace?.id || (job?.data as any)?.workspaceId || 'global';
+  const workspaceId = (() => {
+    const d = job?.data as Record<string, unknown> | undefined;
+    const ws = d?.workspace;
+    if (ws && typeof ws === 'object' && !Array.isArray(ws)) {
+      const wsId = (ws as Record<string, unknown>).id;
+      if (typeof wsId === 'string') return wsId;
+    }
+    if (typeof d?.workspaceId === 'string') return d.workspaceId;
+    return 'global';
+  })();
   const payload = {
     type: 'job_failed',
     workspaceId,

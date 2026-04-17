@@ -12,7 +12,11 @@ export async function processFactExtraction(job: Job) {
   try {
     const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
     const apiKey =
-      (workspace?.providerSettings as any)?.openai?.apiKey || process.env.OPENAI_API_KEY;
+      ((
+        (workspace?.providerSettings as Record<string, unknown> | null)?.openai as
+          | Record<string, unknown>
+          | undefined
+      )?.apiKey as string | undefined) || process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       log.warn('missing_api_key', { workspaceId });

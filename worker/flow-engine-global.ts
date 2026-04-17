@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { type FlowExecutionStatus, Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 import { ContextStore } from './context-store';
 import { prisma } from './db';
@@ -132,6 +132,16 @@ const varAsString = (v: unknown, fallback = ''): string => {
   return fallback;
 };
 
+// Safely extract a nested string from a JSON-like object (e.g. providerSettings.openai.apiKey)
+const nestedString = (obj: unknown, ...keys: string[]): string | undefined => {
+  let current: unknown = obj;
+  for (const k of keys) {
+    if (!current || typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[k];
+  }
+  return typeof current === 'string' ? current : undefined;
+};
+
 export class FlowEngineGlobal {
   private static instance: FlowEngineGlobal;
   private queue: Queue;
@@ -213,10 +223,13 @@ export class FlowEngineGlobal {
       });
 
       if (existingExec?.state && typeof existingExec.state === 'object') {
-        state.variables = { ...(existingExec.state as any), ...state.variables };
+        state.variables = {
+          ...(existingExec.state as Record<string, unknown>),
+          ...state.variables,
+        };
       }
 
-      state.logs = (existingExec?.logs as any[]) || [];
+      state.logs = (existingExec?.logs as PersistedFlowLogEntry[]) || [];
       // Se já havia nó atual, retoma dele; caso contrário usa startNode
       state.nodeId = existingExec?.currentNodeId || flow.startNode;
 
@@ -383,13 +396,13 @@ export class FlowEngineGlobal {
             this.log.warn('node_retry', {
               nodeId: node.id,
               attempt: retryCount,
-              error: (nodeErr as any).message,
+              error: nodeErr instanceof Error ? nodeErr.message : String(nodeErr),
             });
             await this.appendLog(state, {
               event: 'retry',
               nodeId: node.id,
               attempt: retryCount,
-              message: (nodeErr as any).message,
+              message: nodeErr instanceof Error ? nodeErr.message : String(nodeErr),
             });
             await this.sleep(1000 * 2 ** retryCount); // Exponential Backoff
           }
@@ -413,19 +426,19 @@ export class FlowEngineGlobal {
         }
 
         // NEXT NODE
-        state.nodeId = result!;
+        state.nodeId = result ?? state.nodeId;
         await this.markStatus(state, 'RUNNING');
         await this.context.set(this.key(state.user, state.workspaceId), state);
       } catch (err) {
         this.log.error('node_error', {
           nodeId: node.id,
           user: state.user,
-          error: (err as any)?.message,
+          error: err instanceof Error ? err.message : String(err),
         });
         await this.appendLog(state, {
           event: 'error',
           nodeId: node.id,
-          message: (err as any)?.message,
+          message: err instanceof Error ? err.message : String(err),
         });
 
         // try/catch interno do fluxo
@@ -435,7 +448,10 @@ export class FlowEngineGlobal {
           continue;
         }
 
-        await this.failExecution(state, (err as any)?.message || 'Erro no fluxo');
+        await this.failExecution(
+          state,
+          (err instanceof Error ? err.message : String(err)) || 'Erro no fluxo',
+        );
         return;
       }
     }
@@ -486,7 +502,7 @@ export class FlowEngineGlobal {
             // PULSE:OK — Redis lpop failure is non-critical; flow waits for next message delivery
             this.log.error('waitnode_lpop_error', {
               user: state.user,
-              error: (err as any)?.message,
+              error: err instanceof Error ? err.message : String(err),
             });
           }
         }
@@ -503,7 +519,7 @@ export class FlowEngineGlobal {
               : keywords.some((k: string) => raw.toLowerCase().includes(k));
 
           // CONSUME the message so next wait node doesn't see it
-          delete state.variables.last_user_message;
+          state.variables.last_user_message = undefined;
 
           state.waitingForResponse = false;
           state.timeoutAt = undefined;
@@ -534,13 +550,13 @@ export class FlowEngineGlobal {
             // PULSE:OK — Redis lpop failure is non-critical; flow waits for next message delivery
             this.log.error('waitresponse_lpop_error', {
               user: state.user,
-              error: (err as any)?.message,
+              error: err instanceof Error ? err.message : String(err),
             });
           }
         }
 
         if (state.variables.last_user_message) {
-          delete state.variables.last_user_message;
+          state.variables.last_user_message = undefined;
           state.waitingForResponse = false;
           state.timeoutAt = undefined;
           return node.next ?? 'END';
@@ -557,7 +573,7 @@ export class FlowEngineGlobal {
 
       case 'condition': {
         const val = this.evaluate(readString(node.data, 'expression'), state.variables);
-        return val ? node.yes! : node.no!;
+        return val ? node.yes || 'END' : node.no || 'END';
       }
 
       case 'conditionNode': {
@@ -569,10 +585,10 @@ export class FlowEngineGlobal {
         let result = false;
         switch (operator) {
           case '==':
-            result = actualValue == expectedValue;
+            result = String(actualValue) === String(expectedValue);
             break;
           case '!=':
-            result = actualValue != expectedValue;
+            result = String(actualValue) !== String(expectedValue);
             break;
           case '>':
             result = Number(actualValue) > Number(expectedValue);
@@ -584,13 +600,13 @@ export class FlowEngineGlobal {
             result = String(actualValue || '').includes(String(expectedValue));
             break;
           default:
-            result = actualValue == expectedValue;
+            result = String(actualValue) === String(expectedValue);
         }
         return result ? node.yes || node.next || 'END' : node.no || node.next || 'END';
       }
 
       case 'subflow': {
-        state.stack!.push({ flowId: state.flowId, nodeId: node.next! });
+        (state.stack ?? []).push({ flowId: state.flowId, nodeId: node.next || 'END' });
         const targetFlow = readString(node.data, 'targetFlow');
         const targetNode = readString(node.data, 'targetNode');
         state.flowId = targetFlow;
@@ -599,7 +615,7 @@ export class FlowEngineGlobal {
       }
 
       case 'return': {
-        const ctx = state.stack!.pop();
+        const ctx = state.stack?.pop();
         if (!ctx) return 'END';
         state.flowId = ctx.flowId;
         return ctx.nodeId;
@@ -674,7 +690,10 @@ export class FlowEngineGlobal {
           state.variables[saveAs] = parsed;
           return node.next ?? 'END';
         } catch (err) {
-          this.log.error('api_node_error', { user: state.user, error: (err as any)?.message });
+          this.log.error('api_node_error', {
+            user: state.user,
+            error: err instanceof Error ? err.message : String(err),
+          });
           throw err;
         }
       }
@@ -803,7 +822,8 @@ export class FlowEngineGlobal {
               where: { id: state.workspaceId },
             });
             const apiKey =
-              (workspace?.providerSettings as any)?.openai?.apiKey || process.env.OPENAI_API_KEY;
+              nestedString(workspace?.providerSettings, 'openai', 'apiKey') ||
+              process.env.OPENAI_API_KEY;
 
             if (apiKey) {
               const memory = new SemanticMemory(apiKey);
@@ -849,7 +869,8 @@ export class FlowEngineGlobal {
         const { AIProvider } = await import('./providers/ai-provider');
         const workspace = await prisma.workspace.findUnique({ where: { id: state.workspaceId } });
         const apiKey =
-          (workspace?.providerSettings as any)?.openai?.apiKey || process.env.OPENAI_API_KEY;
+          nestedString(workspace?.providerSettings, 'openai', 'apiKey') ||
+          process.env.OPENAI_API_KEY;
 
         if (!apiKey) {
           this.log.error('ai_key_missing', { workspaceId: state.workspaceId });
@@ -975,7 +996,7 @@ export class FlowEngineGlobal {
                 typeof (c as { target: unknown }).target === 'string',
             )
           : [];
-        const match = cases.find((c) => c.value == value); // loose equality
+        const match = cases.find((c) => String(c.value) === String(value)); // coerce to string for flow semantics
         if (match) return match.target;
 
         return defaultCase || node.next || 'END';
@@ -1044,7 +1065,8 @@ export class FlowEngineGlobal {
         try {
           const workspace = await prisma.workspace.findUnique({ where: { id: state.workspaceId } });
           const apiKey =
-            (workspace?.providerSettings as any)?.openai?.apiKey || process.env.OPENAI_API_KEY;
+            nestedString(workspace?.providerSettings, 'openai', 'apiKey') ||
+            process.env.OPENAI_API_KEY;
 
           if (apiKey) {
             const { AIProvider } = await import('./providers/ai-provider');
@@ -1177,14 +1199,14 @@ export class FlowEngineGlobal {
             // PULSE:OK — Redis lpop failure is non-critical; flow enters WAIT state normally
             this.log.error('waitforreply_lpop_error', {
               user: state.user,
-              error: (err as any)?.message,
+              error: err instanceof Error ? err.message : String(err),
             });
           }
         }
 
         if (pendingMessage) {
           // Consume the message so next wait node doesn't see it
-          delete state.variables.last_user_message;
+          state.variables.last_user_message = undefined;
           state.waitingForResponse = false;
           state.timeoutAt = undefined;
           return node.yes || node.next || 'END';
@@ -1192,7 +1214,7 @@ export class FlowEngineGlobal {
 
         // Timeout was triggered by checkTimeouts — follow the timeout edge (node.no)
         if (state.variables.timeout_triggered) {
-          delete state.variables.timeout_triggered;
+          state.variables.timeout_triggered = undefined;
           state.waitingForResponse = false;
           state.timeoutAt = undefined;
           return node.no || node.next || 'END';
@@ -1252,7 +1274,9 @@ export class FlowEngineGlobal {
     if (!provider) throw new Error('Nenhum provider para este usuário');
 
     // Workspace já vem injetado pelo Registry
-    const workspace = (provider as any).workspace || { id: 'default' };
+    const workspace = ((provider as unknown as Record<string, unknown>).workspace as {
+      id: string;
+    }) || { id: 'default' };
     let contactId: string | null = null;
     let conversationId: string | null = null;
     const extractExternalId = (res: unknown): string | null => {
@@ -1377,7 +1401,9 @@ export class FlowEngineGlobal {
             );
           } catch (pubErr) {
             // PULSE:OK — WebSocket publish non-critical; message already persisted to DB
-            this.log.warn('ws_publish_failed', { error: (pubErr as any)?.message });
+            this.log.warn('ws_publish_failed', {
+              error: pubErr instanceof Error ? pubErr.message : String(pubErr),
+            });
           }
           try {
             await redisPub.publish(
@@ -1396,11 +1422,15 @@ export class FlowEngineGlobal {
             );
           } catch (pubErr) {
             // PULSE:OK — WebSocket status publish non-critical; status tracked in DB
-            this.log.warn('ws_publish_failed_status', { error: (pubErr as any)?.message });
+            this.log.warn('ws_publish_failed_status', {
+              error: pubErr instanceof Error ? pubErr.message : String(pubErr),
+            });
           }
         } catch (err) {
           // PULSE:OK — Outbound message persist non-critical; WhatsApp delivery already done
-          this.log.warn('persist_outbound_failed', { error: (err as any)?.message });
+          this.log.warn('persist_outbound_failed', {
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
 
         return result;
@@ -1408,7 +1438,7 @@ export class FlowEngineGlobal {
         const latency = Date.now() - start;
         lastError = err;
         attempt++;
-        await Watchdog.reportError(workspace.id, (err as any).message);
+        await Watchdog.reportError(workspace.id, err instanceof Error ? err.message : String(err));
         await HealthMonitor.updateMetrics(workspace.id, false, latency);
         // Persist failed send for analytics
         if (contactId && conversationId) {
@@ -1422,14 +1452,14 @@ export class FlowEngineGlobal {
                 direction: 'OUTBOUND',
                 type: 'TEXT',
                 status: 'FAILED',
-                errorCode: (err as any)?.message,
+                errorCode: err instanceof Error ? err.message : String(err),
                 externalId: undefined,
               },
             });
           } catch (persistErr) {
             // PULSE:OK — Failed send DB persist non-critical; error already logged and retried
             this.log.warn('persist_outbound_failed_errorpath', {
-              error: (persistErr as any)?.message,
+              error: persistErr instanceof Error ? persistErr.message : String(persistErr),
             });
           }
 
@@ -1443,13 +1473,15 @@ export class FlowEngineGlobal {
                   conversationId,
                   contactId,
                   status: 'FAILED',
-                  errorCode: (err as any)?.message,
+                  errorCode: err instanceof Error ? err.message : String(err),
                 },
               }),
             );
           } catch (pubErr) {
             // PULSE:OK — WebSocket error-path publish non-critical; error already logged
-            this.log.warn('ws_publish_failed_errorpath', { error: (pubErr as any)?.message });
+            this.log.warn('ws_publish_failed_errorpath', {
+              error: pubErr instanceof Error ? pubErr.message : String(pubErr),
+            });
           }
         }
 
@@ -1458,7 +1490,7 @@ export class FlowEngineGlobal {
         await this.sleep(delay);
 
         // Se for erro fatal (ex: 400 Bad Request), não retentar
-        if ((err as any).message?.includes('400')) break;
+        if ((err instanceof Error ? err.message : String(err))?.includes('400')) break;
       }
     }
 
@@ -1569,12 +1601,12 @@ export class FlowEngineGlobal {
 
       return this.parseFlowDefinition(
         flow.id,
-        flow.nodes as any[],
-        flow.edges as any[],
+        flow.nodes as unknown as RawFlowNode[],
+        flow.edges as unknown as RawFlowEdge[],
         flow.workspaceId,
       );
     } catch (err) {
-      console.error(`[ENGINE] Error loading flow ${id}:`, err);
+      console.error('[ENGINE] Error loading flow %s: %O', id, err);
       return null;
     }
   }
@@ -1608,7 +1640,7 @@ export class FlowEngineGlobal {
   private parseTimeoutMember(member: string): { user: string; workspaceId?: string } {
     const parts = member.split(':');
     if (parts.length >= 2) {
-      const workspaceId = parts.shift() as string;
+      const workspaceId = parts.shift() ?? '';
       const user = parts.join(':');
       return { user, workspaceId };
     }
@@ -1665,7 +1697,7 @@ export class FlowEngineGlobal {
       select: { logs: true },
     });
 
-    const currentLogs = (currentExec?.logs as any[]) || [];
+    const currentLogs = (currentExec?.logs as unknown as PersistedFlowLogEntry[]) || [];
     const newLogs = [...currentLogs, entry];
 
     await prisma.flowExecution.updateMany({
@@ -1705,7 +1737,7 @@ export class FlowEngineGlobal {
     await prisma.flowExecution.updateMany({
       where: { id: state.executionId, workspaceId: state.workspaceId },
       data: {
-        status: status as any,
+        status: status as FlowExecutionStatus,
         currentNodeId: state.nodeId,
         state: state.variables as Prisma.InputJsonValue,
       },
@@ -1715,7 +1747,9 @@ export class FlowEngineGlobal {
       flowStatusCounter.inc({ workspaceId: state.workspaceId || 'unknown', status });
     } catch (err) {
       // PULSE:OK — Prometheus metric increment non-critical; flow state already persisted
-      this.log.error('flow_status_metric_error', { error: (err as any)?.message });
+      this.log.error('flow_status_metric_error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     if (status === 'COMPLETED' || status === 'FAILED') {
@@ -1739,7 +1773,9 @@ export class FlowEngineGlobal {
       flowStatusCounter.inc({ workspaceId: state.workspaceId || 'unknown', status: 'FAILED' });
     } catch (err) {
       // PULSE:OK — Prometheus metric increment non-critical; FAILED status already persisted
-      this.log.error('flow_status_metric_error', { error: (err as any)?.message });
+      this.log.error('flow_status_metric_error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 }

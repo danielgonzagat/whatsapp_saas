@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { escapeHtml } from '../common/utils/html-escape.util';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import { FacebookCAPIService } from './facebook-capi.service';
 
@@ -113,12 +114,12 @@ export class CheckoutPostPaymentEffectsService {
         subject: `Pagamento confirmado — ${order.plan?.product?.name || 'Seu pedido'}`,
         html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0A0A0C;color:#e0e0e0;padding:40px;">
       <h1 style="color:#E85D30;">KLOEL</h1>
-      <p>Ola ${order.customerName || ''},</p>
+      <p>Ola ${escapeHtml(order.customerName || '')},</p>
       <p>Seu pagamento foi confirmado!</p>
       <div style="background:#151517;padding:20px;border-radius:6px;margin:20px 0;">
-        <p><strong>Produto:</strong> ${order.plan?.product?.name || '—'}</p>
+        <p><strong>Produto:</strong> ${escapeHtml(order.plan?.product?.name || '\u2014')}</p>
         <p><strong>Valor:</strong> R$ ${Number((chargedAmount || Number(order.totalInCents || 0) / 100).toFixed(2))}</p>
-        <p><strong>Pedido:</strong> #${order.orderNumber || order.id || ''}</p>
+        <p><strong>Pedido:</strong> #${escapeHtml(order.orderNumber || order.id || '')}</p>
       </div>
     </div>`,
       });

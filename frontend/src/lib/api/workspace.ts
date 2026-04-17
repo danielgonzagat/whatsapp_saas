@@ -21,20 +21,21 @@ export interface WorkspaceSettings {
     newSale?: boolean;
     lowBalance?: boolean;
   };
+  [key: string]: unknown;
 }
 
 export async function saveWorkspaceSettings(
   workspaceId: string,
   settings: WorkspaceSettings,
   _token?: string,
-): Promise<any> {
-  const res = await apiFetch<any>(`/workspace/${workspaceId}/account`, {
+): Promise<Record<string, unknown>> {
+  const res = await apiFetch<Record<string, unknown>>(`/workspace/${workspaceId}/account`, {
     method: 'POST',
     body: settings,
   });
   if (res.error) throw new Error(res.error || 'Failed to save settings');
   invalidateWorkspace();
-  return res.data;
+  return res.data as Record<string, unknown>;
 }
 
 export interface ApiKey {
@@ -62,7 +63,7 @@ export async function createApiKey(name: string, _token?: string): Promise<ApiKe
 }
 
 export async function deleteApiKey(keyId: string, _token?: string): Promise<void> {
-  const res = await apiFetch<any>(`/settings/api-keys/${keyId}`, {
+  const res = await apiFetch<{ ok: boolean }>(`/settings/api-keys/${keyId}`, {
     method: 'DELETE',
   });
   if (res.error) throw new Error(res.error || 'Failed to delete API key');
@@ -97,34 +98,34 @@ export interface SubscriptionStatus {
   currentPeriodEnd?: string;
 }
 
-export async function getSubscriptionStatus(_token?: string): Promise<any> {
-  const res = await apiFetch<any>(`/billing/status`);
+export async function getSubscriptionStatus(_token?: string): Promise<SubscriptionStatus | null> {
+  const res = await apiFetch<SubscriptionStatus>(`/billing/status`);
   if (res.error) return null;
-  return res.data;
+  return res.data ?? null;
 }
 
-export async function activateTrial(): Promise<any> {
-  const res = await apiFetch<any>(`/billing/activate-trial`, {
+export async function activateTrial(): Promise<Record<string, unknown>> {
+  const res = await apiFetch<Record<string, unknown>>(`/billing/activate-trial`, {
     method: 'POST',
   });
   if (res.error) throw new Error(res.error || 'Failed to activate trial');
   invalidateBilling();
-  return res.data;
+  return res.data as Record<string, unknown>;
 }
 
-export async function cancelSubscription(): Promise<any> {
-  const res = await apiFetch<any>(`/billing/cancel`, {
+export async function cancelSubscription(): Promise<Record<string, unknown>> {
+  const res = await apiFetch<Record<string, unknown>>(`/billing/cancel`, {
     method: 'POST',
   });
   if (res.error) throw new Error(res.error || 'Failed to cancel subscription');
   invalidateBilling();
-  return res.data;
+  return res.data as Record<string, unknown>;
 }
 
-export async function getBillingUsage(): Promise<any> {
-  const res = await apiFetch<any>(`/billing/usage`);
+export async function getBillingUsage(): Promise<Record<string, unknown>> {
+  const res = await apiFetch<Record<string, unknown>>(`/billing/usage`);
   if (res.error) throw new Error(res.error || 'Failed to get billing usage');
-  return res.data;
+  return res.data as Record<string, unknown>;
 }
 
 // Payment Methods API (Stripe)
@@ -248,7 +249,7 @@ export const workspaceApi = {
     return apiFetch(`/workspace/${workspaceId}/settings`);
   },
 
-  updateSettings: async (settings: any) => {
+  updateSettings: async (settings: WorkspaceSettings) => {
     const workspaceId = tokenStorage.getWorkspaceId();
     const res = await apiFetch(`/workspace/${workspaceId}/settings`, {
       method: 'POST',
@@ -259,7 +260,7 @@ export const workspaceApi = {
   },
 
   getMe: () => {
-    return apiFetch<any>('/workspace/me');
+    return apiFetch<Record<string, unknown>>('/workspace/me');
   },
 
   updateAccount: async (payload: {
@@ -283,7 +284,7 @@ export const workspaceApi = {
 
   getChannels: () => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<any>(`/workspace/${workspaceId}/channels`);
+    return apiFetch<Record<string, unknown>>(`/workspace/${workspaceId}/channels`);
   },
 
   updateChannels: async (payload: { email?: boolean }) => {

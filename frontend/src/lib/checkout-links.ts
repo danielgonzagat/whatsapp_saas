@@ -65,22 +65,44 @@ export function buildPublicCheckoutEntryUrl(
     : buildPublicCheckoutUrl(slug, host);
 }
 
+interface RawCheckoutLink {
+  id?: string;
+  slug?: string;
+  referenceCode?: string;
+  isPrimary?: boolean;
+  isActive?: boolean;
+  name?: string;
+  checkoutId?: string;
+  checkout?: {
+    id?: string;
+    name?: string;
+    checkoutConfig?: {
+      enablePix?: boolean;
+      enableCreditCard?: boolean;
+      enableBoleto?: boolean;
+    };
+  };
+}
+
 export function normalizeCheckoutLinks(links: unknown): NormalizedCheckoutLink[] {
   return (Array.isArray(links) ? links : [])
-    .map((link) => ({
-      id: String((link as any)?.id || ''),
-      slug: (link as any)?.slug || null,
-      referenceCode: buildCheckoutDisplayCode((link as any)?.referenceCode) || null,
-      isPrimary: (link as any)?.isPrimary === true,
-      isActive: (link as any)?.isActive !== false,
-      checkoutName: (link as any)?.checkout?.name || (link as any)?.name || 'Checkout',
-      checkoutId: (link as any)?.checkout?.id || (link as any)?.checkoutId || null,
-      paymentMethods: [
-        (link as any)?.checkout?.checkoutConfig?.enablePix !== false ? 'PIX' : null,
-        (link as any)?.checkout?.checkoutConfig?.enableCreditCard !== false ? 'CARTÃO' : null,
-        (link as any)?.checkout?.checkoutConfig?.enableBoleto ? 'BOLETO' : null,
-      ].filter((entry): entry is string => Boolean(entry)),
-    }))
+    .map((rawLink: unknown) => {
+      const link = (rawLink ?? {}) as RawCheckoutLink;
+      return {
+        id: String(link.id || ''),
+        slug: link.slug || null,
+        referenceCode: buildCheckoutDisplayCode(link.referenceCode) || null,
+        isPrimary: link.isPrimary === true,
+        isActive: link.isActive !== false,
+        checkoutName: link.checkout?.name || link.name || 'Checkout',
+        checkoutId: link.checkout?.id || link.checkoutId || null,
+        paymentMethods: [
+          link.checkout?.checkoutConfig?.enablePix !== false ? 'PIX' : null,
+          link.checkout?.checkoutConfig?.enableCreditCard !== false ? 'CARTÃO' : null,
+          link.checkout?.checkoutConfig?.enableBoleto ? 'BOLETO' : null,
+        ].filter((entry): entry is string => Boolean(entry)),
+      };
+    })
     .filter((link) => Boolean(link.id));
 }
 

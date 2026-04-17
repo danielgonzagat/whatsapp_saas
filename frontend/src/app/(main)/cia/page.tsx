@@ -58,7 +58,7 @@ type StreamEvent = {
   message: string;
   phase?: string | null;
   ts?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 };
 
 function formatCurrency(value: number) {
@@ -762,23 +762,28 @@ export default function CiaPage() {
               Insights do Runtime
             </p>
             <div className="grid gap-3 md:grid-cols-2">
-              {surface?.insights?.map((insight: any, index: number) => (
-                <div
-                  key={insight.id || index}
-                  className="rounded-xl p-4"
-                  style={{
-                    backgroundColor: colors.background.surface1,
-                    border: `1px solid ${colors.stroke}`,
-                  }}
-                >
-                  <p className="text-sm font-semibold" style={{ color: colors.text.primary }}>
-                    {insight.title || insight.type}
-                  </p>
-                  <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
-                    {insight.description || 'Insight operacional disponível.'}
-                  </p>
-                </div>
-              ))}
+              {surface?.insights?.map(
+                (
+                  insight: { id?: string; title?: string; type?: string; description?: string },
+                  index: number,
+                ) => (
+                  <div
+                    key={insight.id || index}
+                    className="rounded-xl p-4"
+                    style={{
+                      backgroundColor: colors.background.surface1,
+                      border: `1px solid ${colors.stroke}`,
+                    }}
+                  >
+                    <p className="text-sm font-semibold" style={{ color: colors.text.primary }}>
+                      {insight.title || insight.type}
+                    </p>
+                    <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
+                      {insight.description || 'Insight operacional disponível.'}
+                    </p>
+                  </div>
+                ),
+              )}
             </div>
           </Surface>
         )}

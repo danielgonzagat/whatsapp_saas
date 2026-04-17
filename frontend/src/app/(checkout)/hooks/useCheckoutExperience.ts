@@ -11,7 +11,7 @@ import type {
 } from '@/lib/public-checkout-contract';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { createOrder, validateCoupon } from './useCheckout';
+import { type CreateOrderData, createOrder, validateCoupon } from './useCheckout';
 
 const D_RE = /\D/g;
 
@@ -409,12 +409,19 @@ export function useCheckoutExperience({
   );
 
   const resolveSuccessRedirect = useCallback(
-    (result: any) => {
-      const orderId = result?.id || result?.data?.id;
+    (result: Record<string, unknown>) => {
+      const data = result?.data as Record<string, unknown> | undefined;
+      const orderId = result?.id || data?.id;
       if (!orderId) return null;
       if (payMethod === 'pix') return `/order/${orderId}/pix`;
       if (payMethod === 'boleto') return `/order/${orderId}/boleto`;
-      if (result?.paymentData?.approved && result?.plan?.upsells?.length > 0) {
+      const paymentData = result?.paymentData as Record<string, unknown> | undefined;
+      const planData = result?.plan as Record<string, unknown> | undefined;
+      if (
+        paymentData?.approved &&
+        Array.isArray(planData?.upsells) &&
+        (planData.upsells as unknown[]).length > 0
+      ) {
         return `/order/${orderId}/upsell`;
       }
       return `/order/${orderId}/success`;
@@ -479,7 +486,7 @@ export function useCheckoutExperience({
         );
       }
 
-      const payload: Record<string, unknown> = {
+      const payload: CreateOrderData = {
         planId: plan.id,
         workspaceId,
         checkoutCode,
@@ -536,7 +543,7 @@ export function useCheckoutExperience({
         });
       }
 
-      const result = await createOrder(payload as any, { meliSessionId });
+      const result = (await createOrder(payload, { meliSessionId })) as Record<string, unknown>;
       setPixelEvent('Purchase');
 
       const successPath = resolveSuccessRedirect(result);
@@ -545,7 +552,8 @@ export function useCheckoutExperience({
       }
 
       if (payMethod === 'card') {
-        setSuccessOrderNumber(result?.orderNumber || result?.data?.orderNumber || '');
+        const resultData = result?.data as Record<string, unknown> | undefined;
+        setSuccessOrderNumber(String(result?.orderNumber || resultData?.orderNumber || ''));
         setShowSuccess(true);
         redirectTimer.current = window.setTimeout(() => {
           window.location.href = successPath;

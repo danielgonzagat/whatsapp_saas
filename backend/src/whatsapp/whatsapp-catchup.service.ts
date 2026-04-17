@@ -394,6 +394,7 @@ export class WhatsAppCatchupService {
           nextBackfillCursor,
         );
 
+        // Not a security-sensitive comparison — comparing loop iteration counter
         if (pass === 0) {
           estimatedTotalChats = candidateChats.length;
           await this.agentEvents.publish({
@@ -1244,6 +1245,8 @@ export class WhatsAppCatchupService {
   private async releaseLock(workspaceId: string, token: string) {
     const lockKey = this.getLockKey(workspaceId);
     const current = await this.redis.get(lockKey);
+    // Not a security-sensitive comparison — comparing Redis lock tokens (random UUIDs)
+    // for distributed-lock ownership. Timing leakage is irrelevant here.
     if (current === token) {
       await this.redis.del(lockKey);
     }

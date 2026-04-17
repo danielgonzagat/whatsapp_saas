@@ -481,46 +481,56 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const res = await apiFetch<any>(`/products/${productId}/ai-config`);
-        const data = res.data;
+        const res = await apiFetch<Record<string, unknown>>(`/products/${productId}/ai-config`);
+        const data = res.data as Record<string, unknown> | undefined;
         if (data) {
-          if (data.genders) setGenders(data.genders);
-          if (data.ages) setAges(data.ages);
-          if (data.moments) setMoments(data.moments);
-          if (data.knowledge) setKnowledge(data.knowledge);
-          if (data.buyingPower) setBuyingPower(data.buyingPower);
-          if (data.problem) setProblem(data.problem);
-          if (data.tier) setTier(data.tier);
-          if (data.whenOffer) setWhenOffer(data.whenOffer);
-          if (data.differentiators) setDifferentiators(data.differentiators);
-          if (data.scarcity) setScarcity(data.scarcity);
-          if (data.objectionStates) setObjectionStates(data.objectionStates);
-          if (data.socialProof) setSocialProof(data.socialProof);
-          if (data.socialProofValues) setSocialProofValues(data.socialProofValues);
-          if (data.guarantee) setGuarantee(data.guarantee);
-          if (data.guaranteeValues) setGuaranteeValues(data.guaranteeValues);
-          if (data.benefits) setBenefits(data.benefits);
-          if (data.benefitsValues) setBenefitsValues(data.benefitsValues);
-          if (data.urgencyArgs) setUrgencyArgs(data.urgencyArgs);
-          if (data.urgencyValues) setUrgencyValues(data.urgencyValues);
-          if (data.upsellEnabled !== undefined) setUpsellEnabled(data.upsellEnabled);
-          if (data.upsellTargetPlan) setUpsellTargetPlan(data.upsellTargetPlan);
-          if (data.upsellWhen) setUpsellWhen(data.upsellWhen);
-          if (data.upsellArgument) setUpsellArgument(data.upsellArgument);
-          if (data.downsellEnabled !== undefined) setDownsellEnabled(data.downsellEnabled);
-          if (data.downsellTargetPlan) setDownsellTargetPlan(data.downsellTargetPlan);
-          if (data.downsellWhen) setDownsellWhen(data.downsellWhen);
-          if (data.downsellArgument) setDownsellArgument(data.downsellArgument);
-          if (data.tone) setTone(data.tone);
-          if (data.persistence !== undefined) setPersistence(data.persistence);
-          if (data.messageLimit !== undefined) setMessageLimit(data.messageLimit);
-          if (data.followUpHours) setFollowUpHours(data.followUpHours);
-          if (data.followUpMax) setFollowUpMax(data.followUpMax);
-          if (data.hasTechInfo !== undefined) setHasTechInfo(data.hasTechInfo);
-          if (data.usageMode) setUsageMode(data.usageMode);
-          if (data.duration) setDuration(data.duration);
-          if (data.contraindications) setContraindications(data.contraindications);
-          if (data.expectedResults) setExpectedResults(data.expectedResults);
+          if (Array.isArray(data.genders)) setGenders(data.genders as string[]);
+          if (Array.isArray(data.ages)) setAges(data.ages as string[]);
+          if (Array.isArray(data.moments)) setMoments(data.moments as string[]);
+          if (typeof data.knowledge === 'string') setKnowledge(data.knowledge);
+          if (typeof data.buyingPower === 'string') setBuyingPower(data.buyingPower);
+          if (typeof data.problem === 'string') setProblem(data.problem);
+          if (typeof data.tier === 'string') setTier(data.tier);
+          if (Array.isArray(data.whenOffer)) setWhenOffer(data.whenOffer as string[]);
+          if (Array.isArray(data.differentiators))
+            setDifferentiators(data.differentiators as string[]);
+          if (typeof data.scarcity === 'string') setScarcity(data.scarcity);
+          if (data.objectionStates && typeof data.objectionStates === 'object')
+            setObjectionStates(
+              data.objectionStates as Record<string, { enabled: boolean; response: string }>,
+            );
+          if (Array.isArray(data.socialProof)) setSocialProof(data.socialProof as string[]);
+          if (data.socialProofValues && typeof data.socialProofValues === 'object')
+            setSocialProofValues(data.socialProofValues as Record<string, string>);
+          if (Array.isArray(data.guarantee)) setGuarantee(data.guarantee as string[]);
+          if (data.guaranteeValues && typeof data.guaranteeValues === 'object')
+            setGuaranteeValues(data.guaranteeValues as Record<string, string>);
+          if (Array.isArray(data.benefits)) setBenefits(data.benefits as string[]);
+          if (data.benefitsValues && typeof data.benefitsValues === 'object')
+            setBenefitsValues(data.benefitsValues as Record<string, string>);
+          if (Array.isArray(data.urgencyArgs)) setUrgencyArgs(data.urgencyArgs as string[]);
+          if (data.urgencyValues && typeof data.urgencyValues === 'object')
+            setUrgencyValues(data.urgencyValues as Record<string, string>);
+          if (typeof data.upsellEnabled === 'boolean') setUpsellEnabled(data.upsellEnabled);
+          if (typeof data.upsellTargetPlan === 'string') setUpsellTargetPlan(data.upsellTargetPlan);
+          if (Array.isArray(data.upsellWhen)) setUpsellWhen(data.upsellWhen as string[]);
+          if (typeof data.upsellArgument === 'string') setUpsellArgument(data.upsellArgument);
+          if (typeof data.downsellEnabled === 'boolean') setDownsellEnabled(data.downsellEnabled);
+          if (typeof data.downsellTargetPlan === 'string')
+            setDownsellTargetPlan(data.downsellTargetPlan);
+          if (Array.isArray(data.downsellWhen)) setDownsellWhen(data.downsellWhen as string[]);
+          if (typeof data.downsellArgument === 'string') setDownsellArgument(data.downsellArgument);
+          if (typeof data.tone === 'string') setTone(data.tone);
+          if (typeof data.persistence === 'number') setPersistence(data.persistence);
+          if (typeof data.messageLimit === 'number') setMessageLimit(data.messageLimit);
+          if (typeof data.followUpHours === 'string') setFollowUpHours(data.followUpHours);
+          if (typeof data.followUpMax === 'string') setFollowUpMax(data.followUpMax);
+          if (typeof data.hasTechInfo === 'boolean') setHasTechInfo(data.hasTechInfo);
+          if (typeof data.usageMode === 'string') setUsageMode(data.usageMode);
+          if (typeof data.duration === 'string') setDuration(data.duration);
+          if (Array.isArray(data.contraindications))
+            setContraindications(data.contraindications as string[]);
+          if (typeof data.expectedResults === 'string') setExpectedResults(data.expectedResults);
         }
       } catch {}
       setLoading(false);
@@ -532,12 +542,14 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   useEffect(() => {
     const loadPlans = async () => {
       try {
-        const data = await apiFetch<any>(`/products/${productId}/plans`);
-        if (Array.isArray(data)) {
+        const data = await apiFetch<{ id: string; name?: string; title?: string }[]>(
+          `/products/${productId}/plans`,
+        );
+        if (Array.isArray(data.data)) {
           setSiblingPlans(
-            data
-              .filter((p: any) => p.id !== planId)
-              .map((p: any) => ({ id: p.id, name: p.name || p.title || `Plano ${p.id}` })),
+            data.data
+              .filter((p) => p.id !== planId)
+              .map((p) => ({ id: p.id, name: p.name || p.title || `Plano ${p.id}` })),
           );
         }
       } catch {}

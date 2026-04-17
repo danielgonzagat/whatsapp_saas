@@ -467,6 +467,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
   private async releaseLock(key: string, token: string): Promise<void> {
     const current = await this.redis.get(key);
+    // Not a security-sensitive comparison — comparing Redis lock tokens (random UUIDs)
+    // for distributed-lock ownership. Timing leakage is irrelevant here.
     if (current === token) {
       await this.redis.del(key);
     }

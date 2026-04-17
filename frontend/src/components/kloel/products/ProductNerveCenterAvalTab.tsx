@@ -22,7 +22,7 @@ export function ProductNerveCenterAvalTab() {
   const { showToast } = useToast();
 
   /* ── Reviews state (owned by this tab) ── */
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<Record<string, unknown>[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
   /* ── Fetch Reviews on mount ── */
@@ -30,8 +30,8 @@ export function ProductNerveCenterAvalTab() {
     if (productId) {
       setReviewsLoading(true);
       apiFetch(`/products/${productId}/reviews`)
-        .then((res: any) => {
-          const d = unwrapApiPayload<any[]>(res);
+        .then((res: unknown) => {
+          const d = unwrapApiPayload<Record<string, unknown>[]>(res);
           setReviews(Array.isArray(d) ? d : []);
         })
         .catch(() => setReviews([]))
@@ -40,11 +40,11 @@ export function ProductNerveCenterAvalTab() {
   }, [productId]);
 
   /* ── Mapped reviews ── */
-  const REVIEWS = reviews.map((r: any) => ({
-    id: r.id,
-    rating: r.rating || 5,
-    text: r.text || r.comment || '',
-    name: r.name || r.authorName || 'Anônimo',
+  const REVIEWS = reviews.map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    rating: (r.rating as number) || 5,
+    text: (r.text as string) || (r.comment as string) || '',
+    name: (r.name as string) || (r.authorName as string) || 'Anônimo',
     ver: r.verified === true,
   }));
 
@@ -58,7 +58,7 @@ export function ProductNerveCenterAvalTab() {
   const handleCreateReview = async () => {
     if (!newRevName.trim()) return;
     try {
-      const res: any = await apiFetch(`/products/${productId}/reviews`, {
+      const res = await apiFetch(`/products/${productId}/reviews`, {
         method: 'POST',
         body: {
           authorName: newRevName.trim(),
@@ -67,8 +67,8 @@ export function ProductNerveCenterAvalTab() {
           verified: newRevVer,
         },
       });
-      const created = unwrapApiPayload<any>(res);
-      setReviews((prev: any) => [created, ...prev]);
+      const created = unwrapApiPayload<Record<string, unknown>>(res);
+      setReviews((prev) => [created, ...prev]);
       setShowRevForm(false);
       setNewRevName('');
       setNewRevText('');
@@ -84,7 +84,7 @@ export function ProductNerveCenterAvalTab() {
   const handleDeleteReview = async (id: string) => {
     try {
       await apiFetch(`/products/${productId}/reviews/${id}`, { method: 'DELETE' });
-      setReviews((prev: any) => prev.filter((r: any) => r.id !== id));
+      setReviews((prev) => prev.filter((r) => r.id !== id));
       showToast('Avaliação removida', 'success');
     } catch (e) {
       console.error(e);
@@ -166,9 +166,10 @@ export function ProductNerveCenterAvalTab() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
             <div style={{ textAlign: 'center' }}>
               <span style={{ fontFamily: M, fontSize: 48, fontWeight: 700, color: V.y }}>
-                {(REVIEWS.reduce((s: number, r: any) => s + r.rating, 0) / REVIEWS.length).toFixed(
-                  1,
-                )}
+                {(
+                  REVIEWS.reduce((s: number, r: { rating: number }) => s + r.rating, 0) /
+                  REVIEWS.length
+                ).toFixed(1)}
               </span>
               <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginTop: 4 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -178,7 +179,8 @@ export function ProductNerveCenterAvalTab() {
                       color:
                         star <=
                         Math.round(
-                          REVIEWS.reduce((s: number, r: any) => s + r.rating, 0) / REVIEWS.length,
+                          REVIEWS.reduce((s: number, r: { rating: number }) => s + r.rating, 0) /
+                            REVIEWS.length,
                         )
                           ? V.y
                           : V.t3,
@@ -201,7 +203,7 @@ export function ProductNerveCenterAvalTab() {
             </div>
             <div style={{ flex: 1 }}>
               {[5, 4, 3, 2, 1].map((n) => {
-                const ct = REVIEWS.filter((r: any) => r.rating === n).length;
+                const ct = REVIEWS.filter((r: { rating: number }) => r.rating === n).length;
                 return (
                   <div
                     key={n}
@@ -247,7 +249,7 @@ export function ProductNerveCenterAvalTab() {
               })}
             </div>
           </div>
-          {REVIEWS.map((r: any) => (
+          {REVIEWS.map((r) => (
             <div key={r.id} style={{ ...cs, padding: 16, marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <div

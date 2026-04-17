@@ -177,6 +177,7 @@ function readStringField(value: unknown, keys: string[]) {
   }
 
   for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
     const candidate = value[key];
     if (typeof candidate === 'string' && candidate.trim()) {
       return candidate.trim();

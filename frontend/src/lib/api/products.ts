@@ -16,11 +16,11 @@ export interface CatalogProduct {
   sku?: string | null;
   active?: boolean;
   featured?: boolean;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export const productApi = {
-  getStats: async () => apiFetch<any>('/products/stats'),
+  getStats: async () => apiFetch<Record<string, unknown>>('/products/stats'),
   list: (params?: { category?: string; active?: boolean; search?: string }) => {
     const search = new URLSearchParams();
     if (params?.category) search.set('category', params.category);
@@ -65,7 +65,7 @@ export const productApi = {
       sku: string;
       active: boolean;
       featured: boolean;
-      metadata: Record<string, any>;
+      metadata: Record<string, unknown>;
     }>,
   ) => {
     const res = await apiFetch<{ product: CatalogProduct; success: boolean }>(
@@ -125,7 +125,7 @@ export const knowledgeBaseApi = {
     if (!workspaceId) {
       throw new Error('missing_workspaceId');
     }
-    return apiFetch<any>(`/ai/kb/source`, {
+    return apiFetch<Record<string, unknown>>(`/ai/kb/source`, {
       method: 'POST',
       body: { workspaceId, knowledgeBaseId, ...payload },
     });

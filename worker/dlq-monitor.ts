@@ -11,12 +11,12 @@ const lastAlert: Record<string, number> = {};
 const ALERT_COOLDOWN = Number(process.env.DLQ_ALERT_COOLDOWN_MS || 10 * 60_000);
 
 async function notify(queue: string, waiting: number, failed: number) {
-  if (!OPS_WEBHOOK || !(global as any).fetch) return;
+  if (!OPS_WEBHOOK || typeof globalThis.fetch !== 'function') return;
   const now = Date.now();
   if (lastAlert[queue] && now - lastAlert[queue] < ALERT_COOLDOWN) return;
 
   try {
-    await (global as any).fetch(OPS_WEBHOOK, {
+    await globalThis.fetch(OPS_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

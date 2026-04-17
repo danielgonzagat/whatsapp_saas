@@ -342,14 +342,21 @@ export function useCheckoutExperienceSocial({
       });
 
       setPixelEvent('Purchase');
+      // Validate successPath is a safe relative path (starts with /)
+      // and does not redirect to an external origin.
+      const safeSuccessUrl = new URL(successPath, window.location.origin);
+      if (safeSuccessUrl.origin !== window.location.origin) {
+        throw new Error('Redirecionamento bloqueado: destino externo detectado.');
+      }
+      const safeHref = safeSuccessUrl.href;
       if (payMethod === 'card') {
         setSuccessOrderNumber(orderNumber);
         setShowSuccess(true);
         redirectTimer.current = window.setTimeout(() => {
-          window.location.href = successPath;
+          window.location.href = safeHref;
         }, 1200);
       } else {
-        window.location.href = successPath;
+        window.location.href = safeHref;
       }
     } catch (error) {
       setSubmitError(

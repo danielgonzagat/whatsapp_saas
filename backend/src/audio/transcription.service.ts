@@ -136,6 +136,8 @@ export class TranscriptionService {
    */
   async downloadToTemp(url: string, _messageId: string): Promise<string | null> {
     try {
+      // SECURITY: Validate URL does not target internal/private networks (SSRF protection).
+      // validateNoInternalAccess blocks localhost, private IPs, and link-local addresses.
       validateNoInternalAccess(url);
       const response = await fetch(url, {
         signal: AbortSignal.timeout(30000), // 30s timeout

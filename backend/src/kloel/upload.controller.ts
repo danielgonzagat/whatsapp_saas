@@ -170,7 +170,7 @@ export class UploadController {
 
     const workspaceId = resolveWorkspaceId(req);
 
-    const results = [];
+    const results: Array<Record<string, unknown>> = [];
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential file upload processing
     for (const file of files) {

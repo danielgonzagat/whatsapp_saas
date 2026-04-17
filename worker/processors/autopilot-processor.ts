@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { type Job, Worker } from 'bullmq';
+import type { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
@@ -102,7 +103,7 @@ import {
  * Deeply-indexable record for untyped provider data (settings, configs, remote payloads).
  * Permits arbitrary `?.`-chaining without per-access casts.
  *
- * Why not `Record<string, any>`?  Prisma's JsonValue and deeply-nested
+ * Why not `Record<string, unknown>`?  Prisma's JsonValue and deeply-nested
  * optional chains (`settings?.openai?.apiKey`) would require hundreds of
  * manual casts throughout the 9 300-line file.  This named alias centralizes
  * the lax indexing into a single auditable declaration so that raw :any
@@ -320,7 +321,7 @@ type QuotedCustomerMessage = {
   createdAt?: string;
 };
 
-async function reportSmokeTest(smokeTestId: string | undefined, payload: Record<string, any>) {
+async function reportSmokeTest(smokeTestId: string | undefined, payload: Record<string, unknown>) {
   if (!smokeTestId) return;
   await redis.set(
     `autopilot:smoke:${smokeTestId}`,
@@ -2448,7 +2449,7 @@ async function setWorkspaceSilentLiveMode(input: {
   }
 
   const settings = (workspace.providerSettings as UnknownRecord) || {};
-  const autonomy = (settings.autonomy || {}) as Record<string, any>;
+  const autonomy = (settings.autonomy || {}) as Record<string, unknown>;
 
   await prisma.workspace.update({
     where: { id: input.workspaceId },
@@ -3970,7 +3971,7 @@ async function fetchCompressedContactContext(
   return String(
     memory?.content ||
       (typeof memory?.value === 'object'
-        ? (memory?.value as Record<string, any> | null)?.summary
+        ? (memory?.value as Record<string, unknown> | null)?.summary
         : '') ||
       '',
   ).trim();
@@ -4327,7 +4328,7 @@ function normalizeAutonomyLedgerValue(value: unknown): unknown {
   if (value && typeof value === 'object') {
     return Object.keys(value)
       .sort()
-      .reduce<Record<string, any>>((acc, key) => {
+      .reduce<Record<string, unknown>>((acc, key) => {
         acc[key] = normalizeAutonomyLedgerValue(value[key]);
         return acc;
       }, {});
@@ -4342,7 +4343,7 @@ function buildAutonomyExecutionKey(input: {
   contactId?: string;
   conversationId?: string;
   phone?: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
 }) {
   const hash = createHash('sha256');
   hash.update(
@@ -4380,7 +4381,7 @@ async function beginAutonomyExecution(input: {
   capabilityCode?: string | null;
   tacticCode?: string | null;
   idempotencyKey: string;
-  request: Record<string, any>;
+  request: Record<string, unknown>;
 }) {
   const client = prisma as unknown as UnknownRecord;
   if (!client.autonomyExecution) {
@@ -4452,7 +4453,7 @@ async function finishAutonomyExecution(
   recordId: string | undefined,
   status: 'SUCCESS' | 'FAILED' | 'SKIPPED',
   payload?: {
-    response?: Record<string, any> | null;
+    response?: Record<string, unknown> | null;
     error?: string | null;
   },
 ) {
@@ -4623,7 +4624,7 @@ async function executeAction(
     smokeTestId?: string;
     smokeMode?: 'dry-run' | 'live';
     runId?: string;
-    idempotencyContext?: Record<string, any>;
+    idempotencyContext?: Record<string, unknown>;
     customerMessages?: QuotedCustomerMessage[];
   },
 ) {
@@ -4707,7 +4708,7 @@ async function executeAction(
     contactId: input.contactId,
     conversationId: input.conversationId,
     phone: targetPhone,
-    providerMessageIds: input.idempotencyContext?.providerMessageIds,
+    providerMessageIds: input.idempotencyContext?.providerMessageIds as string[] | undefined,
   });
 
   const compliance = await ensureCompliance(
@@ -4851,19 +4852,20 @@ async function executeAction(
       context: input.idempotencyContext || null,
     },
   });
+  const idemCtx = input.idempotencyContext || {};
   const execution = await beginAutonomyExecution({
     workspaceId: input.workspaceId,
     actionType: action,
     contactId: input.contactId,
     conversationId: input.conversationId,
-    workItemId: input.idempotencyContext?.workItemId || null,
+    workItemId: (idemCtx.workItemId as string | null) || null,
     proofId:
-      input.idempotencyContext?.conversationProofId ||
-      input.idempotencyContext?.accountProofId ||
-      input.idempotencyContext?.cycleProofId ||
+      (idemCtx.conversationProofId as string | null) ||
+      (idemCtx.accountProofId as string | null) ||
+      (idemCtx.cycleProofId as string | null) ||
       null,
-    capabilityCode: input.idempotencyContext?.capabilityCode || action,
-    tacticCode: input.idempotencyContext?.conversationTactic || null,
+    capabilityCode: (idemCtx.capabilityCode as string | null) || action,
+    tacticCode: (idemCtx.conversationTactic as string | null) || null,
     idempotencyKey,
     request: {
       phone: targetPhone,
@@ -4956,17 +4958,17 @@ async function executeAction(
       conversationId: input.conversationId,
       phone: targetPhone,
       action,
-      capabilityCode: input.idempotencyContext?.capabilityCode || action,
-      tacticCode: input.idempotencyContext?.conversationTactic || null,
-      conversationProofId: input.idempotencyContext?.conversationProofId || null,
-      accountProofId: input.idempotencyContext?.accountProofId || null,
-      cycleProofId: input.idempotencyContext?.cycleProofId || null,
+      capabilityCode: (input.idempotencyContext?.capabilityCode as string | null) || action,
+      tacticCode: (input.idempotencyContext?.conversationTactic as string | null) || null,
+      conversationProofId: (input.idempotencyContext?.conversationProofId as string | null) || null,
+      accountProofId: (input.idempotencyContext?.accountProofId as string | null) || null,
+      cycleProofId: (input.idempotencyContext?.cycleProofId as string | null) || null,
     },
   });
 
   let sent = false;
   let sendError: string | undefined;
-  let executionResponse: Record<string, any> | null = null;
+  let executionResponse: Record<string, unknown> | null = null;
   const followupEligible = action === 'SEND_OFFER' || action === 'GHOST_CLOSER';
   try {
     const started = Date.now();
@@ -5266,7 +5268,7 @@ async function sendDirectAutopilotText(input: {
   smokeTestId?: string;
   smokeMode?: 'dry-run' | 'live';
   runId?: string;
-  idempotencyContext?: Record<string, any>;
+  idempotencyContext?: Record<string, unknown>;
   customerMessages?: QuotedCustomerMessage[];
 }) {
   const action = input.actionLabel || 'UNIFIED_AGENT_TEXT';
@@ -5361,7 +5363,7 @@ async function sendDirectAutopilotText(input: {
     contactId: input.contactId,
     conversationId: input.conversationId,
     phone: targetPhone,
-    providerMessageIds: input.idempotencyContext?.providerMessageIds,
+    providerMessageIds: input.idempotencyContext?.providerMessageIds as string[] | undefined,
   });
 
   const compliance = await ensureCompliance(
@@ -5500,19 +5502,20 @@ async function sendDirectAutopilotText(input: {
       context: input.idempotencyContext || null,
     },
   });
+  const idemCtx2 = input.idempotencyContext || {};
   const execution = await beginAutonomyExecution({
     workspaceId: input.workspaceId,
     actionType: action,
     contactId: input.contactId,
-    conversationId: input.conversationId,
-    workItemId: input.idempotencyContext?.workItemId || null,
+    conversationId: String(input.conversationId ?? ''),
+    workItemId: String(idemCtx2.workItemId ?? '') || null,
     proofId:
-      input.idempotencyContext?.conversationProofId ||
-      input.idempotencyContext?.accountProofId ||
-      input.idempotencyContext?.cycleProofId ||
+      String(idemCtx2.conversationProofId ?? '') ||
+      String(idemCtx2.accountProofId ?? '') ||
+      String(idemCtx2.cycleProofId ?? '') ||
       null,
-    capabilityCode: input.idempotencyContext?.capabilityCode || action,
-    tacticCode: input.idempotencyContext?.conversationTactic || null,
+    capabilityCode: String(idemCtx2.capabilityCode ?? '') || action,
+    tacticCode: String(idemCtx2.conversationTactic ?? '') || null,
     idempotencyKey,
     request: {
       phone: targetPhone,
@@ -5609,10 +5612,11 @@ async function sendDirectAutopilotText(input: {
         conversationId: input.conversationId,
         phone: targetPhone,
         action,
-        capabilityCode: input.idempotencyContext?.capabilityCode || action,
-        tacticCode: input.idempotencyContext?.conversationTactic || null,
-        conversationProofId: input.idempotencyContext?.conversationProofId || null,
-        accountProofId: input.idempotencyContext?.accountProofId || null,
+        capabilityCode: (input.idempotencyContext?.capabilityCode as string | null) || action,
+        tacticCode: (input.idempotencyContext?.conversationTactic as string | null) || null,
+        conversationProofId:
+          (input.idempotencyContext?.conversationProofId as string | null) || null,
+        accountProofId: (input.idempotencyContext?.accountProofId as string | null) || null,
         cycleProofId: input.idempotencyContext?.cycleProofId || null,
       },
     });
@@ -5685,10 +5689,11 @@ async function sendDirectAutopilotText(input: {
         conversationId: input.conversationId,
         phone: targetPhone,
         action,
-        capabilityCode: input.idempotencyContext?.capabilityCode || action,
-        tacticCode: input.idempotencyContext?.conversationTactic || null,
-        conversationProofId: input.idempotencyContext?.conversationProofId || null,
-        accountProofId: input.idempotencyContext?.accountProofId || null,
+        capabilityCode: (input.idempotencyContext?.capabilityCode as string | null) || action,
+        tacticCode: (input.idempotencyContext?.conversationTactic as string | null) || null,
+        conversationProofId:
+          (input.idempotencyContext?.conversationProofId as string | null) || null,
+        accountProofId: (input.idempotencyContext?.accountProofId as string | null) || null,
         cycleProofId: input.idempotencyContext?.cycleProofId || null,
         messagePreview: responseText.slice(0, 240),
         autonomyExecutionId: execution.record?.id || null,
@@ -6311,7 +6316,7 @@ async function logAutopilotAction(input: {
   reason?: string;
   latencyMs?: number;
   intentConfidence?: number;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }) {
   try {
     const details = {
@@ -6411,10 +6416,10 @@ function classifyOpportunityCandidate(input: {
   };
   joinedText: string;
   optedOutAt?: Date | string | null;
-  customFields?: Record<string, any> | null;
+  customFields?: Record<string, unknown> | null;
 }) {
   const text = String(input.joinedText || '').toLowerCase();
-  const customFields = (input.customFields || {}) as Record<string, any>;
+  const customFields = (input.customFields || {}) as Record<string, unknown>;
   const customerStatus = String(
     customFields.customerStatus || customFields.status || customFields.stage || '',
   ).toLowerCase();
@@ -7666,7 +7671,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
   const conversationMap = new Map(
     conversations.map((conversation: UnknownRecord) => [conversation.id, conversation]),
   );
-  const rankings: Array<Record<string, any>> = [];
+  const rankings: Array<Record<string, unknown>> = [];
 
   // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution
   for (const candidate of seedState.candidates) {
@@ -7817,7 +7822,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
     });
   }
 
-  const orderedRankings = rankings.sort((left, right) => right.score - left.score);
+  const orderedRankings = rankings.sort((left, right) => Number(right.score) - Number(left.score));
   await prisma.kloelMemory.upsert({
     where: {
       workspaceId_key: {
@@ -7830,7 +7835,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
         refreshedAt: new Date().toISOString(),
         lookbackDays: CIA_OPPORTUNITY_LOOKBACK_DAYS,
         totalContacts: orderedRankings.length,
-        rankings: orderedRankings,
+        rankings: orderedRankings as unknown as Prisma.InputJsonValue,
       },
       category: 'opportunity_ranking',
       type: 'workspace_opportunity_universe',
@@ -7847,7 +7852,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
         refreshedAt: new Date().toISOString(),
         lookbackDays: CIA_OPPORTUNITY_LOOKBACK_DAYS,
         totalContacts: orderedRankings.length,
-        rankings: orderedRankings,
+        rankings: orderedRankings as unknown as Prisma.InputJsonValue,
       },
       category: 'opportunity_ranking',
       type: 'workspace_opportunity_universe',
@@ -7870,8 +7875,8 @@ async function persistCiaCycleProof(input: {
   workspaceId: string;
   cycleProofId: string;
   summary: string;
-  guaranteeReport: Record<string, any>;
-  exhaustionReport: Record<string, any>;
+  guaranteeReport: Record<string, unknown>;
+  exhaustionReport: Record<string, unknown>;
 }) {
   if (!prisma?.kloelMemory?.upsert) return null;
 
@@ -7883,6 +7888,16 @@ async function persistCiaCycleProof(input: {
     generatedAt: new Date().toISOString(),
   };
 
+  const details = (input.exhaustionReport?.details ?? {}) as Record<string, unknown>;
+  const buildMetadata = () => ({
+    cycleProofId: input.cycleProofId,
+    candidateCount: Number(details?.candidateCount || 0),
+    selectedCount: Number(details?.selectedCount || 0),
+    dispatchableCount: Number(input.exhaustionReport?.dispatchableCount || 0),
+    exhaustive: Boolean(input.exhaustionReport?.exhaustive),
+    noLegalActions: Boolean(input.exhaustionReport?.noLegalActions),
+  });
+
   return prisma.kloelMemory.upsert({
     where: {
       workspaceId_key: {
@@ -7891,34 +7906,20 @@ async function persistCiaCycleProof(input: {
       },
     },
     update: {
-      value: payload,
+      value: payload as unknown as Prisma.InputJsonValue,
       category: 'cia_cycle_proof',
       type: input.exhaustionReport?.noLegalActions ? 'no_legal_actions' : 'dispatched',
       content: input.summary,
-      metadata: {
-        cycleProofId: input.cycleProofId,
-        candidateCount: input.exhaustionReport?.details?.candidateCount || 0,
-        selectedCount: input.exhaustionReport?.details?.selectedCount || 0,
-        dispatchableCount: input.exhaustionReport?.dispatchableCount || 0,
-        exhaustive: Boolean(input.exhaustionReport?.exhaustive),
-        noLegalActions: Boolean(input.exhaustionReport?.noLegalActions),
-      },
+      metadata: buildMetadata(),
     },
     create: {
       workspaceId: input.workspaceId,
       key: 'cia_cycle_proof:current',
-      value: payload,
+      value: payload as unknown as Prisma.InputJsonValue,
       category: 'cia_cycle_proof',
       type: input.exhaustionReport?.noLegalActions ? 'no_legal_actions' : 'dispatched',
       content: input.summary,
-      metadata: {
-        cycleProofId: input.cycleProofId,
-        candidateCount: input.exhaustionReport?.details?.candidateCount || 0,
-        selectedCount: input.exhaustionReport?.details?.selectedCount || 0,
-        dispatchableCount: input.exhaustionReport?.dispatchableCount || 0,
-        exhaustive: Boolean(input.exhaustionReport?.exhaustive),
-        noLegalActions: Boolean(input.exhaustionReport?.noLegalActions),
-      },
+      metadata: buildMetadata(),
     },
   });
 }
@@ -7940,19 +7941,20 @@ async function persistAccountProofSnapshot(input: {
   workspaceId: string;
   cycleProofId: string;
   summary: string;
-  guaranteeReport: Record<string, any>;
-  exhaustionReport: Record<string, any>;
-  actions: Array<Record<string, any>>;
-  workItemUniverse: Array<Record<string, any>>;
-  tacticUniverse: Array<Record<string, any>>;
+  guaranteeReport: Record<string, unknown>;
+  exhaustionReport: Record<string, unknown>;
+  actions: Array<Record<string, unknown>>;
+  workItemUniverse: Array<Record<string, unknown>>;
+  tacticUniverse: Array<Record<string, unknown>>;
 }) {
   const client = prisma as unknown as UnknownRecord;
   if (!client?.accountProofSnapshot?.create) {
     return null;
   }
 
-  const classifications = Array.isArray(input.exhaustionReport?.details?.classifications)
-    ? input.exhaustionReport.details.classifications
+  const exhaustionDetails = (input.exhaustionReport?.details ?? {}) as Record<string, unknown>;
+  const classifications = Array.isArray(exhaustionDetails?.classifications)
+    ? exhaustionDetails.classifications
     : [];
   const blockedActions = classifications.filter(
     (item: UnknownRecord) => item?.disposition === 'DEFERRED_BY_RULE',
@@ -7972,7 +7974,7 @@ async function persistAccountProofSnapshot(input: {
           : 'IDLE',
       cycleProofId: input.cycleProofId,
       noLegalActions: Boolean(input.exhaustionReport?.noLegalActions),
-      candidateCount: Number(input.exhaustionReport?.details?.candidateCount || 0),
+      candidateCount: Number(exhaustionDetails?.candidateCount || 0),
       eligibleActionCount: Number(input.exhaustionReport?.dispatchableCount || 0),
       blockedActionCount: Number(input.exhaustionReport?.deferredByRuleCount || 0),
       deferredActionCount: Number(input.exhaustionReport?.deferredByBudgetCount || 0),
@@ -8005,9 +8007,9 @@ async function createConversationProofSnapshotDraft(input: {
   selectedTactic?: string | null;
   governor?: string | null;
   renderedMessage?: string | null;
-  actionUniverse?: Array<Record<string, any>>;
-  tacticUniverse?: Array<Record<string, any>>;
-  selectedAction?: Record<string, any> | null;
+  actionUniverse?: Array<Record<string, unknown>>;
+  tacticUniverse?: Array<Record<string, unknown>>;
+  selectedAction?: Record<string, unknown> | null;
 }) {
   const client = prisma as unknown as UnknownRecord;
   if (!client?.conversationProofSnapshot?.create) {
@@ -8050,7 +8052,7 @@ async function finalizeConversationProofSnapshot(
     status: string;
     outcome?: string | null;
     renderedMessage?: string | null;
-    metadata?: Record<string, any> | null;
+    metadata?: Record<string, unknown> | null;
   },
 ) {
   if (!recordId) return null;
@@ -8251,8 +8253,8 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
     workspaceId,
     cycleProofId,
     summary: batch.summary,
-    guaranteeReport,
-    exhaustionReport,
+    guaranteeReport: guaranteeReport as unknown as Record<string, unknown>,
+    exhaustionReport: exhaustionReport as unknown as Record<string, unknown>,
   });
   const workItemUniverse = await listCanonicalWorkItems(workspaceId);
   const tacticUniverse = batch.actions.map((action) => ({
@@ -8266,11 +8268,11 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
     workspaceId,
     cycleProofId,
     summary: batch.summary,
-    guaranteeReport,
-    exhaustionReport,
-    actions: batch.actions,
-    workItemUniverse,
-    tacticUniverse,
+    guaranteeReport: guaranteeReport as unknown as Record<string, unknown>,
+    exhaustionReport: exhaustionReport as unknown as Record<string, unknown>,
+    actions: batch.actions as unknown as Array<Record<string, unknown>>,
+    workItemUniverse: workItemUniverse as unknown as Array<Record<string, unknown>>,
+    tacticUniverse: tacticUniverse as unknown as Array<Record<string, unknown>>,
   });
   const accountProofId = accountProof?.id || null;
 

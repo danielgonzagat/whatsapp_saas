@@ -17,6 +17,44 @@ interface ReportFilters {
   perPage?: number;
 }
 
+interface PaginatedResponse<T = Record<string, unknown>> {
+  data: T[];
+  total: number;
+}
+
+interface VendasSummary {
+  totalSales?: number;
+  totalRevenue?: number;
+  avgTicket?: number;
+  [key: string]: unknown;
+}
+
+interface DailyEntry {
+  date: string;
+  total?: number;
+  count?: number;
+  [key: string]: unknown;
+}
+
+interface ChurnData {
+  total: number;
+  data: Record<string, unknown>[];
+  monthly: Record<string, unknown>[];
+}
+
+interface MetricasData {
+  totalSales: number;
+  paidSales: number;
+  conversao: number;
+  byMethod: Record<string, unknown>;
+}
+
+interface AssinaturasResponse {
+  data: Record<string, unknown>[];
+  total: number;
+  summary: Record<string, unknown>[];
+}
+
 function buildUrl(endpoint: string, filters: ReportFilters = {}) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {
@@ -29,47 +67,67 @@ function buildUrl(endpoint: string, filters: ReportFilters = {}) {
 const opts = { keepPreviousData: true, revalidateOnFocus: false };
 
 export function useVendas(f: ReportFilters = {}) {
-  const { data, isLoading, mutate } = useSWR<any>(buildUrl('vendas', f), swrFetcher, opts);
+  const { data, isLoading, mutate } = useSWR<PaginatedResponse>(
+    buildUrl('vendas', f),
+    swrFetcher,
+    opts,
+  );
   return { vendas: data?.data || [], total: data?.total || 0, isLoading, mutate };
 }
 
 export function useVendasSummary(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('vendas/summary', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<VendasSummary>(
+    buildUrl('vendas/summary', f),
+    swrFetcher,
+    opts,
+  );
   return { summary: data || {}, isLoading };
 }
 
 export function useVendasDaily(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('vendas/daily', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<DailyEntry[]>(buildUrl('vendas/daily', f), swrFetcher, opts);
   return { daily: Array.isArray(data) ? data : [], isLoading };
 }
 
 export function useAfterPay(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('afterpay', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<PaginatedResponse>(buildUrl('afterpay', f), swrFetcher, opts);
   return { afterpay: data?.data || [], total: data?.total || 0, isLoading };
 }
 
 export function useChurn(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('churn', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<ChurnData>(buildUrl('churn', f), swrFetcher, opts);
   return { churn: data || { total: 0, data: [], monthly: [] }, isLoading };
 }
 
 export function useAbandonos(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('abandonos', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<PaginatedResponse>(buildUrl('abandonos', f), swrFetcher, opts);
   return { abandonos: data?.data || [], total: data?.total || 0, isLoading };
 }
 
 export function useAfiliados(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('afiliados', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<Record<string, unknown>[]>(
+    buildUrl('afiliados', f),
+    swrFetcher,
+    opts,
+  );
   return { afiliados: Array.isArray(data) ? data : [], isLoading };
 }
 
 export function useIndicadores(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('indicadores', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<Record<string, unknown>[]>(
+    buildUrl('indicadores', f),
+    swrFetcher,
+    opts,
+  );
   return { indicadores: Array.isArray(data) ? data : [], isLoading };
 }
 
 export function useAssinaturas(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('assinaturas', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<AssinaturasResponse>(
+    buildUrl('assinaturas', f),
+    swrFetcher,
+    opts,
+  );
   return {
     assinaturas: data?.data || [],
     total: data?.total || 0,
@@ -79,22 +137,30 @@ export function useAssinaturas(f: ReportFilters = {}) {
 }
 
 export function useIndicadoresProduto(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('indicadores-produto', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<Record<string, unknown>[]>(
+    buildUrl('indicadores-produto', f),
+    swrFetcher,
+    opts,
+  );
   return { indicadoresProduto: Array.isArray(data) ? data : [], isLoading };
 }
 
 export function useRecusa(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('recusa', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<PaginatedResponse>(buildUrl('recusa', f), swrFetcher, opts);
   return { recusa: data?.data || [], total: data?.total || 0, isLoading };
 }
 
 export function useOrigem(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('origem', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<Record<string, unknown>[]>(
+    buildUrl('origem', f),
+    swrFetcher,
+    opts,
+  );
   return { origem: Array.isArray(data) ? data : [], isLoading };
 }
 
 export function useMetricas(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('metricas', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<MetricasData>(buildUrl('metricas', f), swrFetcher, opts);
   return {
     metricas: data || { totalSales: 0, paidSales: 0, conversao: 0, byMethod: {} },
     isLoading,
@@ -102,12 +168,16 @@ export function useMetricas(f: ReportFilters = {}) {
 }
 
 export function useEstornos(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('estornos', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<PaginatedResponse>(buildUrl('estornos', f), swrFetcher, opts);
   return { estornos: data?.data || [], total: data?.total || 0, isLoading };
 }
 
 export function useChargeback(f: ReportFilters = {}) {
-  const { data, isLoading } = useSWR<any>(buildUrl('chargeback', f), swrFetcher, opts);
+  const { data, isLoading } = useSWR<PaginatedResponse>(
+    buildUrl('chargeback', f),
+    swrFetcher,
+    opts,
+  );
   return { chargebacks: data?.data || [], total: data?.total || 0, isLoading };
 }
 

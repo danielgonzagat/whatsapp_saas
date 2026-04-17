@@ -18,7 +18,7 @@
 
 .polotno-side-tabs-container button {
   color: #6e6e73 !important;
-  font-family: var(--font-sora), "Sora", sans-serif !important;
+  font-family: var(--font-sora), Sora, sans-serif !important;
 }
 
 .polotno-side-tabs-container button:hover,
@@ -46,7 +46,7 @@
 
 /* All buttons */
 .polotno-container button {
-  font-family: var(--font-sora), "Sora", sans-serif !important;
+  font-family: var(--font-sora), Sora, sans-serif !important;
 }
 
 /* Input fields */
@@ -57,16 +57,18 @@
   border: 1px solid #1c1c1f !important;
   color: #e0ddd8 !important;
   border-radius: 4px !important;
-  font-family: var(--font-sora), "Sora", sans-serif !important;
+  font-family: var(--font-sora), Sora, sans-serif !important;
 }
 
 /* Scrollbars */
 .polotno-container ::-webkit-scrollbar {
   width: 4px;
 }
+
 .polotno-container ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .polotno-container ::-webkit-scrollbar-thumb {
   background: #2a2a2e;
   border-radius: 2px;

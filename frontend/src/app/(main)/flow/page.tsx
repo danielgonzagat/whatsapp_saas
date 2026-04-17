@@ -13,6 +13,7 @@ import {
   optimizeFlow,
   retryFlowExecution,
 } from '@/lib/api';
+import type { FlowExecutionSummary, FlowOptimizeResult } from '@/lib/api/flows';
 import {
   Clock,
   FileText,
@@ -44,7 +45,7 @@ function FlowPageContent() {
         ? 'editor'
         : 'editor',
   );
-  const [executions, setExecutions] = useState<any[]>([]);
+  const [executions, setExecutions] = useState<FlowExecutionSummary[]>([]);
   const [execLoading, setExecLoading] = useState(false);
   const [execError, setExecError] = useState<string | null>(null);
 
@@ -57,7 +58,7 @@ function FlowPageContent() {
 
   // AI Optimize state
   const [optimizing, setOptimizing] = useState(false);
-  const [optimizeResult, setOptimizeResult] = useState<any>(null);
+  const [optimizeResult, setOptimizeResult] = useState<FlowOptimizeResult | null>(null);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
 
   const sourceLabel =
@@ -97,8 +98,8 @@ function FlowPageContent() {
     try {
       const data = await listFlowExecutions(workspaceId, 50);
       setExecutions(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      setExecError(err.message || 'Falha ao carregar execuções');
+    } catch (err: unknown) {
+      setExecError(err instanceof Error ? err.message : 'Falha ao carregar execuções');
     } finally {
       setExecLoading(false);
     }
@@ -110,8 +111,8 @@ function FlowPageContent() {
     try {
       const data = await listPublicFlowTemplates();
       setTemplates(data);
-    } catch (err: any) {
-      setTemplatesError(err.message || 'Falha ao carregar templates');
+    } catch (err: unknown) {
+      setTemplatesError(err instanceof Error ? err.message : 'Falha ao carregar templates');
     } finally {
       setTemplatesLoading(false);
     }
@@ -152,9 +153,9 @@ function FlowPageContent() {
     setOptimizeResult(null);
     try {
       const result = await optimizeFlow(currentFlowId);
-      setOptimizeResult(result);
-    } catch (err: any) {
-      setOptimizeError(err.message || 'Falha ao otimizar fluxo');
+      setOptimizeResult(result ?? null);
+    } catch (err: unknown) {
+      setOptimizeError(err instanceof Error ? err.message : 'Falha ao otimizar fluxo');
     } finally {
       setOptimizing(false);
     }

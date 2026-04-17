@@ -101,6 +101,7 @@ export default function CanvasEditor() {
   const [saved, setSaved] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [sidebarTab, setSidebarTab] = useState<SidebarTabId>('templates');
+  // biome-ignore lint/suspicious/noExplicitAny: fabric.js objects have a complex dynamic type system
   const [selectedObj, setSelectedObj] = useState<any>(null);
   const [uploadDrag, setUploadDrag] = useState(false);
   const [_layerList, setLayerList] = useState<unknown[]>([]);
@@ -159,7 +160,7 @@ export default function CanvasEditor() {
         }
         try {
           if (!currentId.current) {
-            const res: any = await apiFetch('/canvas/designs', {
+            const res = await apiFetch<{ design?: { id?: string } }>('/canvas/designs', {
               method: 'POST',
               body: {
                 name: designName,
@@ -192,8 +193,8 @@ export default function CanvasEditor() {
 
     /* Load existing design or template */
     if (designId) {
-      apiFetch(`/canvas/designs/${designId}`)
-        .then((res: any) => {
+      apiFetch<{ design?: { elements?: unknown } }>(`/canvas/designs/${designId}`)
+        .then((res) => {
           const design = res?.data?.design;
           if (design?.elements) {
             const el = design.elements;
@@ -333,17 +334,17 @@ export default function CanvasEditor() {
   }, []);
 
   /** Update a property on the selected canvas object */
-  const updateProp = useCallback((prop: string, value: any) => {
+  const updateProp = useCallback((prop: string, value: unknown) => {
     const ed = editorRef.current;
     if (!ed) return;
     const obj = ed.canvas.getActiveObject();
     if (!obj) return;
-    obj.set(prop as any, value);
+    obj.set(prop as keyof typeof obj, value as never);
     obj.setCoords();
     ed.canvas.requestRenderAll();
     ed.history.saveState();
     // Force re-render of property panel
-    setSelectedObj({ ...obj });
+    setSelectedObj({ ...(obj as unknown as Record<string, unknown>) });
   }, []);
 
   /* Close context menu on any click */
@@ -798,7 +799,9 @@ export default function CanvasEditor() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {[...objects].reverse().map((obj, i) => {
                   const objType = obj.type || 'object';
-                  const objName = (obj as any).name || `${objType} ${objects.length - i}`;
+                  const objName =
+                    ('name' in obj && typeof obj.name === 'string' ? obj.name : '') ||
+                    `${objType} ${objects.length - i}`;
                   const isActive = editorRef.current?.canvas.getActiveObject() === obj;
                   return (
                     <button
@@ -833,7 +836,8 @@ export default function CanvasEditor() {
                             e.stopPropagation();
                             if (obj.visible === false) editorRef.current?.layers.showObject(obj);
                             else editorRef.current?.layers.hideObject(obj);
-                            setLayerList([...editorRef.current!.layers.getObjects()]);
+                            if (editorRef.current)
+                              setLayerList([...editorRef.current.layers.getObjects()]);
                           }}
                           style={{
                             background: 'none',
@@ -855,7 +859,8 @@ export default function CanvasEditor() {
                             if (obj.selectable === false)
                               editorRef.current?.layers.unlockObject(obj);
                             else editorRef.current?.layers.lockObject(obj);
-                            setLayerList([...editorRef.current!.layers.getObjects()]);
+                            if (editorRef.current)
+                              setLayerList([...editorRef.current.layers.getObjects()]);
                           }}
                           style={{
                             background: 'none',
@@ -919,7 +924,8 @@ export default function CanvasEditor() {
                     type="button"
                     onClick={() => {
                       editorRef.current?.selection.deleteSelected();
-                      setLayerList([...editorRef.current!.layers.getObjects()]);
+                      if (editorRef.current)
+                        setLayerList([...editorRef.current.layers.getObjects()]);
                     }}
                     style={{
                       ...cardBtn,
@@ -963,7 +969,7 @@ export default function CanvasEditor() {
                     canvas.freeDrawingBrush.color = '#E85D30';
                     canvas.freeDrawingBrush.width = 3;
                   }
-                  setLayerList([...editorRef.current!.layers.getObjects()]);
+                  if (editorRef.current) setLayerList([...editorRef.current.layers.getObjects()]);
                 }}
                 style={{
                   ...cardBtn,

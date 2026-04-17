@@ -411,10 +411,10 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
                 minHeight: 60,
               }}
             >
-              {(msgs[key] || []).slice(-3).map((msg, index) =>
+              {(msgs[key] || []).slice(-3).map((msg) =>
                 msg.f === '$' ? (
                   <div
-                    key={`${msg.t}-${index}`}
+                    key={`${key}-${msg.f}-${msg.t}`}
                     style={{ textAlign: 'center', animation: 'thanosIn .2s ease both' }}
                   >
                     <span style={{ fontSize: 9, fontWeight: 700, color: '#10B981', fontFamily: M }}>
@@ -423,7 +423,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
                   </div>
                 ) : (
                   <div
-                    key={`${msg.t}-${index}`}
+                    key={`${key}-${msg.f}-${msg.t}`}
                     style={{
                       alignSelf: msg.f === 'a' ? 'flex-end' : 'flex-start',
                       maxWidth: '85%',

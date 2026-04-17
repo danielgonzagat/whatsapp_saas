@@ -160,6 +160,10 @@ services:
   prometheus:
     image: prom/prometheus
     container_name: whatsapp_saas_prometheus
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /prometheus
     security_opt:
       - 'no-new-privileges:true'
     volumes:

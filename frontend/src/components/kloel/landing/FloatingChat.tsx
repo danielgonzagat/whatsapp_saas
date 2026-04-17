@@ -96,13 +96,6 @@ export function FloatingChat({
     return () => window.removeEventListener(LANDING_CHAT_EVENT, handler);
   }, [toggle]);
 
-  useEffect(() => {
-    if (!initialMessage || !isOpen || consumedRef.current === initialMessage) return;
-    consumedRef.current = initialMessage;
-    onInitialMessageConsumed?.();
-    void sendMessage(initialMessage);
-  }, [initialMessage, isOpen]);
-
   const streamGuestMessage = useCallback(
     async (text: string, signal: AbortSignal, assistantMessageId: string) => {
       const headers: Record<string, string> = {
@@ -289,8 +282,8 @@ export function FloatingChat({
         } else {
           await streamGuestMessage(text, controller.signal, assistantId);
         }
-      } catch (err: any) {
-        if (err?.name === 'AbortError') return;
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setMessages((prev) => {
           return prev.map((message) =>
             message.id === assistantId && message.role === 'assistant'
@@ -313,6 +306,13 @@ export function FloatingChat({
     },
     [isStreaming, isAuthenticated, streamAuthMessage, streamGuestMessage],
   );
+
+  useEffect(() => {
+    if (!initialMessage || !isOpen || consumedRef.current === initialMessage) return;
+    consumedRef.current = initialMessage;
+    onInitialMessageConsumed?.();
+    void sendMessage(initialMessage);
+  }, [initialMessage, isOpen, onInitialMessageConsumed, sendMessage]);
 
   const handleUserEdit = useCallback(
     (messageId: string) => {

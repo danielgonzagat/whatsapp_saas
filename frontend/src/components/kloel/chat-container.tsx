@@ -59,7 +59,7 @@ export interface Message {
   content: string;
   isStreaming?: boolean;
   eventType?: 'tool_call' | 'tool_result';
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 export interface ChatContainerProps {
@@ -91,7 +91,7 @@ interface AgentStreamEvent {
   persistent?: boolean;
   streaming?: boolean;
   token?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 interface AgentTraceEntry {
@@ -114,7 +114,7 @@ function mapThreadMessageToChatMessage(message: {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
 }) {
   return {
     id: message.id,
@@ -124,12 +124,12 @@ function mapThreadMessageToChatMessage(message: {
   } satisfies Message;
 }
 
-function normalizeMessageMeta(metadata: unknown): Record<string, any> | undefined {
+function normalizeMessageMeta(metadata: unknown): Record<string, unknown> | undefined {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
     return undefined;
   }
 
-  return metadata as Record<string, any>;
+  return metadata as Record<string, unknown>;
 }
 
 function createClientRequestId() {
@@ -137,6 +137,22 @@ function createClientRequestId() {
     globalThis.crypto?.randomUUID?.() ||
     `kloel_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
   );
+}
+
+function readMetaString(
+  meta: Record<string, unknown> | undefined,
+  key: string,
+): string | undefined {
+  const value = meta?.[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function readMetaNumber(
+  meta: Record<string, unknown> | undefined,
+  key: string,
+): number | undefined {
+  const value = meta?.[key];
+  return typeof value === 'number' ? value : undefined;
 }
 
 const EMPTY_AGENT_STATS: AgentStats = {
@@ -397,6 +413,8 @@ function createAgentActivity(event: AgentStreamEvent): AgentActivity {
                   ? 'connection_status'
                   : 'action_executed';
 
+  const meta = event.meta;
+
   return {
     id: createAgentEventKey(event),
     type: activityType,
@@ -410,31 +428,34 @@ function createAgentActivity(event: AgentStreamEvent): AgentActivity {
           ? 'pending'
           : 'success',
     metadata: {
-      contactName: event.meta?.contactName,
-      contactPhone: event.meta?.phone,
+      contactName: readMetaString(meta, 'contactName'),
+      contactPhone: readMetaString(meta, 'phone'),
       messagePreview: event.message,
-      actionType: event.meta?.action || event.meta?.actionType || event.meta?.capabilityCode,
-      capabilityCode: event.meta?.capabilityCode,
-      tacticCode: event.meta?.tacticCode || event.meta?.selectedTactic,
-      conversationId: event.meta?.conversationId,
-      workItemId: event.meta?.workItemId,
-      conversationProofId: event.meta?.conversationProofId,
-      accountProofId: event.meta?.accountProofId,
-      cycleProofId: event.meta?.cycleProofId,
-      selectedActionUtility: event.meta?.selectedActionUtility,
-      selectedActionRank: event.meta?.selectedActionRank,
-      betterActionCount: event.meta?.betterActionCount,
-      betterExecutableActionCount: event.meta?.betterExecutableActionCount,
-      nextBestActionType: event.meta?.nextBestActionType,
-      nextBestActionUtility: event.meta?.nextBestActionUtility,
-      selectedTactic: event.meta?.selectedTactic,
-      selectedTacticUtility: event.meta?.selectedTacticUtility,
-      selectedTacticRank: event.meta?.selectedTacticRank,
-      betterTacticCount: event.meta?.betterTacticCount,
-      nextBestTactic: event.meta?.nextBestTactic,
-      nextBestTacticUtility: event.meta?.nextBestTacticUtility,
-      utility: event.meta?.utility,
-      state: event.meta?.state,
+      actionType:
+        readMetaString(meta, 'action') ||
+        readMetaString(meta, 'actionType') ||
+        readMetaString(meta, 'capabilityCode'),
+      capabilityCode: readMetaString(meta, 'capabilityCode'),
+      tacticCode: readMetaString(meta, 'tacticCode') || readMetaString(meta, 'selectedTactic'),
+      conversationId: readMetaString(meta, 'conversationId'),
+      workItemId: readMetaString(meta, 'workItemId'),
+      conversationProofId: readMetaString(meta, 'conversationProofId'),
+      accountProofId: readMetaString(meta, 'accountProofId'),
+      cycleProofId: readMetaString(meta, 'cycleProofId'),
+      selectedActionUtility: readMetaNumber(meta, 'selectedActionUtility'),
+      selectedActionRank: readMetaNumber(meta, 'selectedActionRank'),
+      betterActionCount: readMetaNumber(meta, 'betterActionCount'),
+      betterExecutableActionCount: readMetaNumber(meta, 'betterExecutableActionCount'),
+      nextBestActionType: readMetaString(meta, 'nextBestActionType'),
+      nextBestActionUtility: readMetaNumber(meta, 'nextBestActionUtility'),
+      selectedTactic: readMetaString(meta, 'selectedTactic'),
+      selectedTacticUtility: readMetaNumber(meta, 'selectedTacticUtility'),
+      selectedTacticRank: readMetaNumber(meta, 'selectedTacticRank'),
+      betterTacticCount: readMetaNumber(meta, 'betterTacticCount'),
+      nextBestTactic: readMetaString(meta, 'nextBestTactic'),
+      nextBestTacticUtility: readMetaNumber(meta, 'nextBestTacticUtility'),
+      utility: readMetaNumber(meta, 'utility'),
+      state: readMetaString(meta, 'state'),
       errorMessage: event.type === 'error' ? event.message : undefined,
     },
   };
@@ -454,8 +475,8 @@ export function ChatContainer({
   const authPrefillEmail = searchParams.get('email') || searchParams.get('authEmail') || '';
   const {
     isAuthenticated,
-    justSignedUp,
-    hasCompletedOnboarding,
+    justSignedUp: _justSignedUp,
+    hasCompletedOnboarding: _hasCompletedOnboarding,
     completeOnboarding,
     dismissOnboardingForSession,
     authModalOpen,
@@ -663,7 +684,7 @@ export function ChatContainer({
 
     try {
       const res = await billingApi.getPaymentMethods();
-      const methods = (res.data as Record<string, any> | undefined)?.paymentMethods || [];
+      const methods = Array.isArray(res.data?.paymentMethods) ? res.data.paymentMethods : [];
       setHasCard(methods.length > 0);
     } catch {
       setHasCard(false);
@@ -790,7 +811,7 @@ export function ChatContainer({
     };
   }, [checkWhatsAppStatus]);
 
-  const appendAssistantMessage = useCallback((content: string, meta?: Record<string, any>) => {
+  const appendAssistantMessage = useCallback((content: string, meta?: Record<string, unknown>) => {
     const normalized = String(content || '').trim();
     if (!normalized) return;
 
@@ -1114,13 +1135,13 @@ export function ChatContainer({
     appliedInitialDeepLink.current = true;
   }, [initialOpenSettings, initialSettingsTab, initialScrollToCreditCard, isAuthenticated]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [scrollToBottom, messages.length]);
 
   useEffect(() => {
     if (!isTyping || !isCancelableReply) {
@@ -1146,6 +1167,7 @@ export function ChatContainer({
     );
   }, []);
 
+  const handleSendMessageRef = useRef<(content: string) => Promise<void>>(async () => {});
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
     const clientRequestId = createClientRequestId();
@@ -1403,15 +1425,19 @@ export function ChatContainer({
           },
         },
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       setIsCancelableReply(false);
       setShowSlowHint(false);
+      const errMsg =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message: string }).message)
+          : 'Desculpe, ocorreu um erro ao continuar sua conversa.';
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
             ? {
                 ...m,
-                content: error?.message || 'Desculpe, ocorreu um erro ao continuar sua conversa.',
+                content: errMsg,
                 isStreaming: false,
               }
             : m,
@@ -1420,6 +1446,7 @@ export function ChatContainer({
       setIsTyping(false);
     }
   };
+  handleSendMessageRef.current = handleSendMessage;
 
   const handleMessageRetry = useCallback(
     async (messageId: string) => {
@@ -1428,9 +1455,9 @@ export function ChatContainer({
       );
       if (!sourceMessage) return;
 
-      await handleSendMessage(sourceMessage.content);
+      await handleSendMessageRef.current(sourceMessage.content);
     },
-    [handleSendMessage, messages],
+    [messages],
   );
 
   const handleMessageEdit = useCallback(
@@ -1450,9 +1477,9 @@ export function ChatContainer({
         ),
       );
 
-      await handleSendMessage(nextContent);
+      await handleSendMessageRef.current(nextContent);
     },
-    [activeConversationId, handleSendMessage],
+    [activeConversationId],
   );
 
   const handleAssistantFeedback = useCallback(
@@ -1528,15 +1555,17 @@ export function ChatContainer({
           ];
         });
         void refreshConversations();
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errMsg =
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message: string }).message)
+            : 'Desculpe, ocorreu uma instabilidade ao tentar gerar uma nova versão.';
         setMessages((prev) =>
           prev.map((message) =>
             message.id === messageId
               ? {
                   ...message,
-                  content:
-                    error?.message ||
-                    'Desculpe, ocorreu uma instabilidade ao tentar gerar uma nova versão.',
+                  content: errMsg,
                   isStreaming: false,
                 }
               : message,
@@ -1600,10 +1629,12 @@ export function ChatContainer({
       if (response.error) {
         throw new Error(response.error);
       }
-    } catch (error: any) {
-      appendAssistantMessage(
-        `Não consegui iniciar essa ação. Motivo: ${error?.message || 'erro desconhecido'}.`,
-      );
+    } catch (error: unknown) {
+      const errMsg =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message: string }).message)
+          : 'erro desconhecido';
+      appendAssistantMessage(`Não consegui iniciar essa ação. Motivo: ${errMsg}.`);
       setIsAgentThinking(false);
     } finally {
       setPendingAgentAction(null);
