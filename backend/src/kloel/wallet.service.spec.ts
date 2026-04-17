@@ -51,6 +51,7 @@ describe('WalletService', () => {
   beforeEach(async () => {
     prismaMock = {
       kloelWallet: {
+        upsert: jest.fn().mockResolvedValue(mockWallet),
         findUnique: jest.fn().mockResolvedValue(mockWallet),
         create: jest.fn(),
         update: jest.fn(),
@@ -104,18 +105,26 @@ describe('WalletService', () => {
     });
 
     it('creates wallet if none exists', async () => {
-      prismaMock.kloelWallet.findUnique.mockResolvedValue(null);
       const newWallet = {
         ...mockWallet,
         availableBalance: 0,
         pendingBalance: 0,
         blockedBalance: 0,
       };
-      prismaMock.kloelWallet.create.mockResolvedValue(newWallet);
+      prismaMock.kloelWallet.upsert.mockResolvedValue(newWallet);
 
       const balance = await service.getBalance('ws-1');
 
-      expect(prismaMock.kloelWallet.create).toHaveBeenCalled();
+      expect(prismaMock.kloelWallet.upsert).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-1' },
+        update: {},
+        create: {
+          workspaceId: 'ws-1',
+          availableBalance: 0,
+          pendingBalance: 0,
+          blockedBalance: 0,
+        },
+      });
       expect(balance.total).toBe(0);
     });
   });

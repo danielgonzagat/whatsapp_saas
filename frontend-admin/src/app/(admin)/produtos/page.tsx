@@ -1,24 +1,23 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { startTransition, useMemo, useState, type ReactNode } from 'react';
+import useSWR from 'swr';
 import {
   AdminPage,
   AdminProgressList,
-  AdminSectionHeader,
   AdminSubinterfaceTabs,
-  AdminSurface,
   AdminTicker,
   AdminTimelineFeed,
 } from '@/components/admin/admin-monitor-ui';
+import { Button } from '@/components/ui/button';
+import { adminDashboardApi, type AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
 import {
   adminProductsApi,
   type AdminProductRow,
   type ListProductsResponse,
 } from '@/lib/api/admin-products-api';
-import { adminDashboardApi, type AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { startTransition, useMemo, useState } from 'react';
-import useSWR from 'swr';
 
 const TABS = [
   { key: 'todos', label: 'Todos os Produtos' },
@@ -76,6 +75,35 @@ function pct(value: number, total: number) {
   return Math.max(0, Math.min(100, Math.round((value / total) * 100)));
 }
 
+function Surface({
+  title,
+  eyebrow,
+  children,
+  tone = 'default',
+}: {
+  title: string;
+  eyebrow?: string;
+  children: ReactNode;
+  tone?: 'default' | 'accent';
+}) {
+  return (
+    <div
+      className={`rounded-[12px] border border-[var(--app-border-primary)] bg-[var(--app-bg-card)] px-5 py-5 ${
+        tone === 'accent' ? 'border-l-[3px] border-l-[var(--app-accent)]' : ''
+      }`}
+      style={{ fontFamily: FONT_SANS }}
+    >
+      {eyebrow ? (
+        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+          {eyebrow}
+        </div>
+      ) : null}
+      <div className="mb-4 text-[13px] font-semibold text-[var(--app-text-primary)]">{title}</div>
+      {children}
+    </div>
+  );
+}
+
 function ProductCard({
   product,
   busyId,
@@ -89,6 +117,7 @@ function ProductCard({
 }) {
   const tone = statusTone(product.status);
   const isBusy = busyId === product.id;
+  const pendingModeration = product.status === 'PENDING';
 
   return (
     <div
@@ -108,9 +137,12 @@ function ProductCard({
 
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <div className="truncate text-[15px] font-semibold text-[var(--app-text-primary)]">
+            <Link
+              href={`/produtos/${product.id}`}
+              className="truncate text-[15px] font-semibold text-[var(--app-text-primary)] transition-colors hover:text-[var(--app-accent)]"
+            >
               {product.name}
-            </div>
+            </Link>
             <span
               className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${tone.badge}`}
             >
@@ -141,15 +173,31 @@ function ProductCard({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--app-accent-medium)] bg-[var(--app-bg-secondary)] px-3 py-1 text-[10px] uppercase tracking-[0.12em] text-[var(--app-accent)]">
               PREÇO
-              <span className="text-[12px] font-semibold normal-case" style={{ fontFamily: FONT_MONO }}>
+              <span
+                className="text-[12px] font-semibold normal-case"
+                style={{ fontFamily: FONT_MONO }}
+              >
                 {formatMoney(product.priceInCents)}
               </span>
             </span>
 
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-3 py-1 text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-secondary)]">
               GMV 30D
-              <span className="text-[12px] font-semibold normal-case text-[var(--app-text-primary)]" style={{ fontFamily: FONT_MONO }}>
+              <span
+                className="text-[12px] font-semibold normal-case text-[var(--app-text-primary)]"
+                style={{ fontFamily: FONT_MONO }}
+              >
                 {formatMoney(product.commerce.last30dGmvInCents)}
+              </span>
+            </span>
+
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-3 py-1 text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-secondary)]">
+              PRODUTOR
+              <span
+                className="max-w-[160px] truncate text-[12px] font-semibold normal-case text-[var(--app-text-primary)]"
+                style={{ fontFamily: FONT_MONO }}
+              >
+                {product.workspaceName || product.workspaceId}
               </span>
             </span>
           </div>
@@ -175,20 +223,24 @@ function ProductCard({
           </div>
 
           <div className="flex flex-wrap justify-end gap-2 opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100">
-            {product.status === 'PENDING' ? (
+            <Button size="sm" variant="outline" asChild>
+              <Link href={`/produtos/${product.id}`}>Detalhar</Link>
+            </Button>
+            {pendingModeration ? (
               <>
                 <Button size="sm" onClick={() => onApprove(product)} disabled={isBusy}>
                   {isBusy ? 'Processando...' : 'Aprovar'}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => onReject(product)} disabled={isBusy}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onReject(product)}
+                  disabled={isBusy}
+                >
                   Rejeitar
                 </Button>
               </>
-            ) : (
-              <Button size="sm" variant="outline" disabled>
-                Moderado
-              </Button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -238,7 +290,9 @@ export default function ProdutosPage() {
       items.length > 0
         ? items
             .slice()
-            .sort((left, right) => right.commerce.last30dGmvInCents - left.commerce.last30dGmvInCents)
+            .sort(
+              (left, right) => right.commerce.last30dGmvInCents - left.commerce.last30dGmvInCents,
+            )
             .slice(0, 10)
             .map(
               (item) =>
@@ -257,6 +311,11 @@ export default function ProdutosPage() {
   const totalPending = items.reduce((sum, item) => sum + item.commerce.pendingOrders, 0);
   const totalApproved = items.reduce((sum, item) => sum + item.commerce.approvedOrders, 0);
   const activeProducts = items.filter((item) => item.active).length;
+  const workspaceCount = new Set(items.map((item) => item.workspaceId)).size;
+  const last30dGmv = items.reduce((sum, item) => sum + item.commerce.last30dGmvInCents, 0);
+  const totalChargebacks = items.reduce((sum, item) => sum + item.commerce.chargebackOrders, 0);
+  const totalRefunded = items.reduce((sum, item) => sum + item.commerce.refundedOrders, 0);
+  const moderationQueue = items.filter((item) => item.status === 'PENDING').length;
   const maxProductGmv = Math.max(1, ...items.map((item) => item.commerce.gmvInCents));
   const feedItems = useMemo(
     () =>
@@ -312,15 +371,15 @@ export default function ProdutosPage() {
       <section
         style={{
           position: 'relative',
-          padding: '26px 0 14px',
-          textAlign: 'center',
+          padding: '30px 0 24px',
+          marginBottom: 8,
           fontFamily: FONT_SANS,
         }}
       >
         <div
           style={{
             position: 'absolute',
-            top: '46%',
+            top: '50%',
             left: '50%',
             width: 220,
             height: 88,
@@ -330,76 +389,121 @@ export default function ProdutosPage() {
             pointerEvents: 'none',
           }}
         />
-        <div
-          style={{
-            marginBottom: 6,
-            fontFamily: FONT_MONO,
-            fontSize: 10,
-            letterSpacing: '0.25em',
-            textTransform: 'uppercase',
-            color: 'var(--app-text-tertiary)',
-          }}
-        >
-          RECEITA DA KLOEL NO CATÁLOGO
-        </div>
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            fontFamily: FONT_MONO,
-            fontSize: 72,
-            lineHeight: 1,
-            fontWeight: 700,
-            color: 'var(--app-accent)',
-            letterSpacing: '-0.04em',
-          }}
-        >
-          {formatMoney(dashboard?.kpis.revenueKloel.value ?? null)}
-        </div>
-        <div
-          style={{
-            marginTop: 8,
-            fontFamily: FONT_MONO,
-            fontSize: 12,
-            color: 'var(--app-text-secondary)',
-          }}
-        >
-          {formatInteger(activeProducts)} ativos · GMV global {formatMoney(totalGmv)} ·{' '}
-          {formatInteger(totalApproved)} pedidos aprovados
+        <div className="relative flex flex-col items-center gap-4 text-center lg:flex-row lg:justify-center">
+          <div className="lg:absolute lg:right-0 lg:top-1/2 lg:-translate-y-1/2">
+            <Button
+              type="button"
+              onClick={() =>
+                startTransition(() => {
+                  router.push('/produtos?tab=moderacao');
+                })
+              }
+              className="h-11 rounded-[10px] px-5"
+            >
+              Abrir moderação
+            </Button>
+          </div>
+          <div>
+            <div
+              style={{
+                marginBottom: 6,
+                fontFamily: FONT_MONO,
+                fontSize: 10,
+                letterSpacing: '0.25em',
+                textTransform: 'uppercase',
+                color: 'var(--app-text-tertiary)',
+              }}
+            >
+              GMV TOTAL DO CATÁLOGO
+            </div>
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                fontFamily: FONT_MONO,
+                fontSize: 72,
+                lineHeight: 1,
+                fontWeight: 700,
+                color: 'var(--app-accent)',
+                letterSpacing: '-0.04em',
+              }}
+            >
+              {formatMoney(totalGmv)}
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                fontFamily: FONT_MONO,
+                fontSize: 12,
+                color: 'var(--app-text-secondary)',
+              }}
+            >
+              {formatInteger(activeProducts)}/{formatInteger(items.length)} ativos ·{' '}
+              {formatInteger(workspaceCount)} produtores · {formatInteger(totalApproved)} pedidos
+              aprovados
+            </div>
+          </div>
         </div>
       </section>
 
       <AdminTicker items={tickerItems} />
 
-      <AdminSurface className="px-5 py-5 lg:px-6">
-        <AdminSectionHeader
-          title={activeTab === 'moderacao' ? 'Fila de moderação' : 'Catálogo global'}
-          description="Mesmo esqueleto visual do app: busca leve, foco no card e leitura operacional na própria listagem."
-        />
-        <div className="flex flex-col gap-3 lg:flex-row">
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar produto, categoria ou descrição"
-            className="h-10 flex-1 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none placeholder:text-[var(--app-text-placeholder)]"
-          />
-          <select
-            value={workspaceFilter}
-            onChange={(event) => setWorkspaceFilter(event.target.value)}
-            className="h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none"
-          >
-            <option value="">Todos os produtores</option>
-            {workspaceOptions.map((workspaceName) => (
-              <option key={workspaceName} value={workspaceName || ''}>
-                {workspaceName}
-              </option>
-            ))}
-          </select>
-        </div>
-      </AdminSurface>
+      <section className="grid gap-4 py-6">
+        <div
+          className="rounded-[12px] border border-[var(--app-border-primary)] bg-[var(--app-bg-card)] p-4"
+          style={{ fontFamily: FONT_SANS }}
+        >
+          <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="text-[13px] font-semibold text-[var(--app-text-primary)]">
+                {activeTab === 'moderacao' ? 'Fila de moderação' : 'Catálogo global'}
+              </div>
+              <div className="mt-1 text-[12px] text-[var(--app-text-secondary)]">
+                Hero, ticker, catálogo, chart, saúde, motor IA e feed no mesmo ritmo do app.
+              </div>
+            </div>
+            <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+              GMV 30D {formatMoney(last30dGmv)} · Revenue Kloel{' '}
+              {formatMoney(dashboard?.kpis.revenueKloel.value ?? null)}
+            </div>
+          </div>
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.24fr)_minmax(320px,0.76fr)]">
+          <div className="flex flex-col gap-3 lg:flex-row">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar produto, categoria ou descrição"
+              className="h-10 flex-1 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none placeholder:text-[var(--app-text-placeholder)]"
+            />
+            <select
+              value={workspaceFilter}
+              onChange={(event) => setWorkspaceFilter(event.target.value)}
+              className="h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 text-[14px] text-[var(--app-text-primary)] outline-none"
+            >
+              <option value="">Todos os produtores</option>
+              {workspaceOptions.map((workspaceName) => (
+                <option key={workspaceName} value={workspaceName || ''}>
+                  {workspaceName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="grid gap-3">
+          {items.length === 0 ? (
+            <div
+              className="rounded-[12px] border border-[var(--app-border-primary)] bg-[var(--app-bg-card)] px-6 py-10 text-center"
+              style={{ fontFamily: FONT_SANS }}
+            >
+              <div className="mb-2 text-[15px] font-semibold text-[var(--app-text-primary)]">
+                Nenhum produto encontrado
+              </div>
+              <div className="text-[12px] text-[var(--app-text-secondary)]">
+                Ajuste os filtros para explorar o catálogo global ou abra a fila de moderação.
+              </div>
+            </div>
+          ) : null}
           {items.map((product) => (
             <ProductCard
               key={product.id}
@@ -410,27 +514,21 @@ export default function ProdutosPage() {
             />
           ))}
         </div>
+      </section>
 
-        <div className="grid gap-3">
-          <AdminSurface className="px-5 py-5 lg:px-6">
-            <AdminSectionHeader
-              title="Receita por produto"
-              description="GMV real consolidado por produto com base nos pedidos aprovados."
-            />
-            <AdminProgressList
-              items={items.slice(0, 8).map((item) => ({
-                label: item.name,
-                valueLabel: formatMoney(item.commerce.gmvInCents),
-                progress: pct(item.commerce.gmvInCents, maxProductGmv),
-              }))}
-            />
-          </AdminSurface>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.14fr)_minmax(320px,0.86fr)]">
+        <Surface title="Receita por produto">
+          <AdminProgressList
+            items={items.slice(0, 8).map((item) => ({
+              label: item.name,
+              valueLabel: formatMoney(item.commerce.gmvInCents),
+              progress: pct(item.commerce.gmvInCents, maxProductGmv),
+            }))}
+          />
+        </Surface>
 
-          <AdminSurface className="px-5 py-5 lg:px-6">
-            <AdminSectionHeader
-              title="Saúde operacional"
-              description="A leitura adicional do admin entra sobre o mesmo desenho visual do app."
-            />
+        <div className="grid gap-4">
+          <Surface title="Saúde operacional">
             <AdminProgressList
               items={[
                 {
@@ -445,64 +543,64 @@ export default function ProdutosPage() {
                 },
                 {
                   label: 'Fila de moderação',
-                  valueLabel: formatInteger(items.filter((item) => item.status === 'PENDING').length),
-                  progress: pct(
-                    items.filter((item) => item.status === 'PENDING').length,
-                    Math.max(1, items.length),
-                  ),
+                  valueLabel: formatInteger(moderationQueue),
+                  progress: pct(moderationQueue, Math.max(1, items.length)),
                 },
                 {
                   label: 'Chargebacks no catálogo',
-                  valueLabel: formatInteger(
-                    items.reduce((sum, item) => sum + item.commerce.chargebackOrders, 0),
-                  ),
-                  progress: pct(
-                    items.reduce((sum, item) => sum + item.commerce.chargebackOrders, 0),
-                    Math.max(1, totalApproved),
-                  ),
+                  valueLabel: formatInteger(totalChargebacks),
+                  progress: pct(totalChargebacks, Math.max(1, totalApproved)),
                 },
               ]}
             />
-          </AdminSurface>
+          </Surface>
 
-          <AdminSurface className="px-5 py-5 lg:px-6">
-            <AdminSectionHeader
-              title="Motor IA"
-              description="Complemento admin sobre a superfície clone do app."
-            />
-            <div className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-4">
-              <div className="mb-2 text-[14px] font-semibold text-[var(--app-text-primary)]">
-                Catálogo global em monitoramento
-              </div>
-              <div className="text-[12px] leading-6 text-[var(--app-text-secondary)]">
-                A Kloel já consolidou {formatMoney(dashboard?.kpis.revenueKloel.value ?? null)} em
-                receita própria no período, com {formatMoney(totalGmv)} de GMV observado nos
-                produtos filtrados nesta tela.
-              </div>
+          <Surface title="Motor IA" tone="accent">
+            <div className="mb-3 flex items-center gap-2">
+              <div
+                className="h-3 w-10 rounded-full"
+                style={{
+                  background:
+                    'linear-gradient(90deg, rgba(232,93,48,0.22), rgba(232,93,48,0.9), rgba(232,93,48,0.22))',
+                }}
+              />
             </div>
-          </AdminSurface>
+            <div className="text-[12px] leading-6 text-[var(--app-text-secondary)]">
+              {items.length > 0
+                ? `O catálogo monitorado soma ${formatMoney(totalGmv)} em GMV, ${formatInteger(
+                    totalApproved,
+                  )} pedidos aprovados e ${formatInteger(
+                    moderationQueue,
+                  )} produto${moderationQueue === 1 ? '' : 's'} aguardando decisão operacional.`
+                : 'Assim que o catálogo ganhar produtos, o backoffice passa a receber leitura operacional e insights de moderação.'}
+            </div>
+          </Surface>
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-4 pt-4 md:grid-cols-3">
         {[
           {
-            label: 'Receita Kloel',
+            label: 'Revenue Kloel',
             value: formatMoney(dashboard?.kpis.revenueKloel.value ?? null),
             detail: 'Receita própria da plataforma',
           },
           {
-            label: 'GMV global',
-            value: formatMoney(dashboard?.kpis.gmv.value ?? null),
-            detail: 'GMV em novo lugar, sem roubar o foco da comissão Kloel',
+            label: 'Reembolsos',
+            value: formatInteger(totalRefunded),
+            detail: 'Pedidos devolvidos neste catálogo',
           },
           {
-            label: 'Pendências',
-            value: formatInteger(totalPending),
-            detail: 'Pedidos e moderação aguardando decisão',
+            label: 'Moderação',
+            value: formatInteger(moderationQueue),
+            detail: 'Produtos aguardando decisão',
           },
         ].map((item) => (
-          <AdminSurface key={item.label} className="px-5 py-5">
+          <div
+            key={item.label}
+            className="rounded-[12px] border border-[var(--app-border-primary)] bg-[var(--app-bg-card)] px-5 py-5"
+            style={{ fontFamily: FONT_SANS }}
+          >
             <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
               {item.label}
             </div>
@@ -513,17 +611,13 @@ export default function ProdutosPage() {
               {item.value}
             </div>
             <div className="mt-2 text-[11px] text-[var(--app-text-secondary)]">{item.detail}</div>
-          </AdminSurface>
+          </div>
         ))}
       </div>
 
-      <AdminSurface className="px-5 py-5 lg:px-6">
-        <AdminSectionHeader
-          title="Feed ao vivo"
-          description="Eventos recentes do catálogo de toda a plataforma."
-        />
+      <Surface title="Feed ao vivo" eyebrow="Feed ao vivo">
         <AdminTimelineFeed items={feedItems} />
-      </AdminSurface>
+      </Surface>
     </AdminPage>
   );
 }

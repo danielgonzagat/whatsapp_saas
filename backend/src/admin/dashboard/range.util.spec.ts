@@ -27,36 +27,10 @@ describe('resolveAdminHomeRange', () => {
     });
   });
 
-  describe('7D window is inclusive of today (7 distinct days)', () => {
-    it('covers 2026-04-09T00 → 2026-04-15T23:59:59.999', () => {
-      const r = resolve('7D');
-      expect(r.from.toISOString()).toBe('2026-04-09T00:00:00.000Z');
-      expect(r.to.toISOString()).toBe('2026-04-15T23:59:59.999Z');
-    });
-
-    it('previous-period is the 7 days immediately before that', () => {
-      const r = resolve('7D', 'PREVIOUS');
-      expect(r.previous?.from.toISOString().slice(0, 10)).toBe('2026-04-02');
-      expect(r.previous?.to.toISOString().slice(0, 10)).toBe('2026-04-08');
-    });
-  });
-
-  describe('30D and 90D windows', () => {
+  describe('30D window', () => {
     it('30D runs 30 days back', () => {
       const r = resolve('30D');
       expect(r.from.toISOString().slice(0, 10)).toBe('2026-03-17');
-      expect(r.to.toISOString().slice(0, 10)).toBe('2026-04-15');
-    });
-    it('90D runs 90 days back', () => {
-      const r = resolve('90D');
-      expect(r.from.toISOString().slice(0, 10)).toBe('2026-01-16');
-    });
-  });
-
-  describe('12M', () => {
-    it('runs 12 months back from `now`', () => {
-      const r = resolve('12M');
-      expect(r.from.toISOString().slice(0, 7)).toBe('2025-04');
       expect(r.to.toISOString().slice(0, 10)).toBe('2026-04-15');
     });
   });

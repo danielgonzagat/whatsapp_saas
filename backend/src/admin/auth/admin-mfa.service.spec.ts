@@ -16,8 +16,20 @@ function makeConfig(values: Record<string, string>): ConfigService {
 describe('AdminMfaService', () => {
   const keyHex = randomBytes(32).toString('hex');
 
-  it('throws on boot if ADMIN_MFA_ENCRYPTION_KEY is missing', () => {
-    expect(() => new AdminMfaService(makeConfig({}))).toThrow(/ADMIN_MFA_ENCRYPTION_KEY/);
+  it('throws on boot outside test/CI if ADMIN_MFA_ENCRYPTION_KEY is missing', () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousCi = process.env.CI;
+
+    process.env.NODE_ENV = 'production';
+    delete process.env.CI;
+
+    try {
+      expect(() => new AdminMfaService(makeConfig({}))).toThrow(/ADMIN_MFA_ENCRYPTION_KEY/);
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+      if (typeof previousCi === 'string') process.env.CI = previousCi;
+      else delete process.env.CI;
+    }
   });
 
   it('createSetup returns an encrypted secret, an otpauth URL, and a QR data URL', async () => {

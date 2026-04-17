@@ -12,6 +12,7 @@ import {
   adminCarteiraApi,
   type ListLedgerResponse,
   type PlatformWalletBalance,
+  type PlatformReconcileReport,
 } from '@/lib/api/admin-carteira-api';
 import { adminDashboardApi, type AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -78,6 +79,9 @@ export default function CarteiraPage() {
   );
   const { data: dashboard } = useSWR<AdminHomeResponse>(['admin/dashboard/home', '30D'], () =>
     adminDashboardApi.home({ period: '30D', compare: 'NONE' }),
+  );
+  const { data: reconcile } = useSWR<PlatformReconcileReport>('admin/carteira/reconcile', () =>
+    adminCarteiraApi.reconcile(),
   );
 
   const revenueBars = useMemo(
@@ -292,17 +296,176 @@ export default function CarteiraPage() {
             description="Módulos extras do admin encaixados sobre a mesma base visual do app."
           />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {['Cards KPI', 'Tabela operacional', 'Ações Ember'].map((label) => (
+            {(
+              {
+                split: [
+                  {
+                    label: 'Volume separado',
+                    value: dashboard?.kpis.gmv.value ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Base total sobre a qual o split é calculado',
+                  },
+                  {
+                    label: 'Receita Kloel',
+                    value: dashboard?.kpis.revenueKloel.value ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Fatia própria já retida pela plataforma',
+                  },
+                  {
+                    label: 'Entradas no ledger',
+                    value: ledger?.items.filter((row) => row.direction === 'credit').length ?? 0,
+                    kind: 'integer' as const,
+                    detail: 'Créditos append-only observados no período recente',
+                  },
+                ],
+                fees: [
+                  {
+                    label: 'Take rate',
+                    value: dashboard?.kpis.revenueKloelRate.value ?? null,
+                    kind: 'percentage' as const,
+                    detail: 'Receita Kloel sobre o GMV observado',
+                  },
+                  {
+                    label: 'Ticket médio',
+                    value: dashboard?.kpis.averageTicket.value ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Base média de cobrança para fee planning',
+                  },
+                  {
+                    label: 'Métodos ativos',
+                    value: dashboard?.breakdowns.byMethod.length ?? 0,
+                    kind: 'integer' as const,
+                    detail: 'Métodos com volume no período',
+                  },
+                ],
+                payouts: [
+                  {
+                    label: 'Saldo disponível',
+                    value: balance?.availableInCents ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Base operacional para liquidação e payout',
+                  },
+                  {
+                    label: 'Débitos de payout',
+                    value: ledger?.items.filter((row) => row.kind === 'PAYOUT_DEBIT').length ?? 0,
+                    kind: 'integer' as const,
+                    detail: 'Saídas registradas no ledger',
+                  },
+                  {
+                    label: 'Liquidação pendente',
+                    value: balance?.pendingInCents ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Receitas ainda em processamento',
+                  },
+                ],
+                conciliacao: [
+                  {
+                    label: 'Saúde da conciliação',
+                    value: reconcile?.healthy ? 1 : 0,
+                    kind: 'integer' as const,
+                    detail: reconcile?.healthy ? 'Ledger conciliado' : 'Drift detectado',
+                  },
+                  {
+                    label: 'Drift disponível',
+                    value: reconcile?.availableDriftInCents ?? 0,
+                    kind: 'currency-brl' as const,
+                    detail: 'Diferença entre materializado e ledger',
+                  },
+                  {
+                    label: 'Drift reserva',
+                    value: reconcile?.reservedDriftInCents ?? 0,
+                    kind: 'currency-brl' as const,
+                    detail: 'Proteção operacional para chargebacks',
+                  },
+                ],
+                reserva: [
+                  {
+                    label: 'Reserva atual',
+                    value: balance?.reservedInCents ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Capital retido para proteção',
+                  },
+                  {
+                    label: 'Chargebacks',
+                    value: dashboard?.kpis.chargebackCount.value ?? null,
+                    kind: 'integer' as const,
+                    detail: 'Ocorrências que pressionam a reserva',
+                  },
+                  {
+                    label: 'Chargeback amount',
+                    value: dashboard?.kpis.chargebackAmount.value ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Exposição financeira em disputa',
+                  },
+                ],
+                pl: [
+                  {
+                    label: 'Revenue Kloel',
+                    value: dashboard?.kpis.revenueKloel.value ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Receita própria da plataforma',
+                  },
+                  {
+                    label: 'Refund amount',
+                    value: dashboard?.kpis.refundAmount.value ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Saídas operacionais por reembolso',
+                  },
+                  {
+                    label: 'Net operacional',
+                    value:
+                      (dashboard?.kpis.revenueKloel.value ?? 0) -
+                      (dashboard?.kpis.refundAmount.value ?? 0) -
+                      (dashboard?.kpis.chargebackAmount.value ?? 0),
+                    kind: 'currency-brl' as const,
+                    detail: 'Revenue menos refund e chargeback',
+                  },
+                ],
+                fiscal: [
+                  {
+                    label: 'GMV',
+                    value: dashboard?.kpis.gmv.value ?? null,
+                    kind: 'currency-brl' as const,
+                    detail: 'Base bruta para leitura fiscal',
+                  },
+                  {
+                    label: 'Pedidos aprovados',
+                    value: dashboard?.kpis.approvedCount.value ?? null,
+                    kind: 'integer' as const,
+                    detail: 'Volume total aprovado no período',
+                  },
+                  {
+                    label: 'Produtores ativos',
+                    value: dashboard?.kpis.activeProducers.value ?? null,
+                    kind: 'integer' as const,
+                    detail: 'Operação ativa com impacto fiscal',
+                  },
+                ],
+              } as const
+            )[
+              activeTab as
+                | 'split'
+                | 'fees'
+                | 'payouts'
+                | 'conciliacao'
+                | 'reserva'
+                | 'pl'
+                | 'fiscal'
+            ].map((item) => (
               <div
-                key={label}
+                key={item.label}
                 className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-4"
               >
                 <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
-                  {label}
+                  {item.label}
                 </div>
-                <div className="text-[18px] font-semibold text-[var(--app-text-primary)]">—</div>
+                <MetricNumber
+                  value={item.value}
+                  kind={item.kind}
+                  className="text-[18px] font-semibold text-[var(--app-text-primary)]"
+                />
                 <div className="mt-2 text-[12px] leading-6 text-[var(--app-text-secondary)]">
-                  Sem eventos suficientes na carteira para compor este recorte.
+                  {item.detail}
                 </div>
               </div>
             ))}

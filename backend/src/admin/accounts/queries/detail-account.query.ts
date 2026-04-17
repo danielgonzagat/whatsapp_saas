@@ -1,5 +1,6 @@
 import { OrderStatus } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
+import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
 export interface AdminAccountAgent {
   id: string;
@@ -28,6 +29,16 @@ export interface AdminAccountDetail {
   name: string;
   createdAt: string;
   updatedAt: string;
+  ownerAgentId: string | null;
+  ownerEmail: string | null;
+  lifecycle: {
+    suspended: boolean;
+    blocked: boolean;
+    frozenBalanceInCents: number;
+    reason: string | null;
+    updatedAt: string | null;
+    updatedBy: string | null;
+  };
   agents: AdminAccountAgent[];
   kycDocuments: AdminAccountKycDocument[];
   productCount: number;
@@ -58,6 +69,7 @@ export async function getAdminAccountDetail(
       name: true,
       createdAt: true,
       updatedAt: true,
+      providerSettings: true,
       agents: {
         orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
         select: {
@@ -87,6 +99,15 @@ export async function getAdminAccountDetail(
     },
   });
   if (!workspace) return null;
+  const owner =
+    workspace.agents.find((agent) => agent.role === 'ADMIN') ?? workspace.agents[0] ?? null;
+  const providerSettings = asProviderSettings(workspace.providerSettings);
+  const accountAdminState =
+    providerSettings.accountAdmin &&
+    typeof providerSettings.accountAdmin === 'object' &&
+    !Array.isArray(providerSettings.accountAdmin)
+      ? (providerSettings.accountAdmin as Record<string, unknown>)
+      : {};
 
   const windowFrom = new Date(Date.now() - WINDOW_MS);
   const [gmv30d, gmvAll, productCount, recentOrders] = await Promise.all([
@@ -124,6 +145,25 @@ export async function getAdminAccountDetail(
     name: workspace.name,
     createdAt: workspace.createdAt.toISOString(),
     updatedAt: workspace.updatedAt.toISOString(),
+    ownerAgentId: owner?.id ?? null,
+    ownerEmail: owner?.email ?? null,
+    lifecycle: {
+      suspended: accountAdminState.suspended === true,
+      blocked: accountAdminState.blocked === true,
+      frozenBalanceInCents: Number(accountAdminState.frozenBalanceInCents ?? 0),
+      reason:
+        typeof accountAdminState.reason === 'string' && accountAdminState.reason.trim()
+          ? accountAdminState.reason.trim()
+          : null,
+      updatedAt:
+        typeof accountAdminState.updatedAt === 'string' && accountAdminState.updatedAt.trim()
+          ? accountAdminState.updatedAt
+          : null,
+      updatedBy:
+        typeof accountAdminState.updatedBy === 'string' && accountAdminState.updatedBy.trim()
+          ? accountAdminState.updatedBy
+          : null,
+    },
     agents: workspace.agents.map((a) => ({
       id: a.id,
       name: a.name,

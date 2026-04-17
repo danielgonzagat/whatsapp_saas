@@ -521,19 +521,15 @@ export class WalletService {
   }
 
   private async getOrCreateWallet(workspaceId: string) {
-    let wallet = await this.prisma.kloelWallet.findUnique({
+    return this.prisma.kloelWallet.upsert({
       where: { workspaceId },
+      update: {},
+      create: {
+        workspaceId,
+        availableBalance: 0,
+        pendingBalance: 0,
+        blockedBalance: 0,
+      },
     });
-    if (!wallet) {
-      wallet = await this.prisma.kloelWallet.create({
-        data: {
-          workspaceId,
-          availableBalance: 0,
-          pendingBalance: 0,
-          blockedBalance: 0,
-        },
-      });
-    }
-    return wallet;
   }
 }

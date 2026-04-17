@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { use } from 'react';
+import { use, useState } from 'react';
 import useSWR from 'swr';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { MetricNumber } from '@/components/ui/metric-number';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/ui/stat-card';
@@ -50,11 +51,78 @@ export default function AccountDetailPage({
   params: Promise<{ workspaceId: string }>;
 }) {
   const { workspaceId } = use(params);
+  const [actionReason, setActionReason] = useState('');
+  const [freezeAmount, setFreezeAmount] = useState('0');
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const { data, error, isLoading } = useSWR<AdminAccountDetail>(
+  const { data, error, isLoading, mutate } = useSWR<AdminAccountDetail>(
     ['admin/accounts', workspaceId],
     () => adminAccountsApi.detail(workspaceId),
   );
+
+  async function applyAction(action: 'SUSPEND' | 'BLOCK' | 'UNBLOCK' | 'FREEZE' | 'UNFREEZE') {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      await adminAccountsApi.updateState(workspaceId, {
+        action,
+        reason: actionReason || undefined,
+        frozenBalanceInCents:
+          action === 'FREEZE'
+            ? Math.max(0, Math.round(Number(freezeAmount || '0') * 100))
+            : undefined,
+      });
+      await mutate();
+    } catch (actionError) {
+      setFeedback(
+        actionError instanceof AdminApiClientError
+          ? actionError.message
+          : 'Não foi possível atualizar o estado da conta.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetPassword() {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const result = await adminAccountsApi.resetOwnerPassword(workspaceId);
+      setFeedback(`Senha temporária gerada para ${result.ownerEmail}: ${result.temporaryPassword}`);
+    } catch (actionError) {
+      setFeedback(
+        actionError instanceof AdminApiClientError
+          ? actionError.message
+          : 'Não foi possível resetar a senha do owner.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function impersonateOwner() {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const session = await adminAccountsApi.impersonateOwner(workspaceId);
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://app.localhost:3000';
+      const url = new URL('/auth/impersonate', appUrl);
+      const payload = window.btoa(JSON.stringify({ ...session, next: '/dashboard' }));
+      url.hash = new URLSearchParams({ session: payload }).toString();
+      window.open(url.toString(), '_blank', 'noopener,noreferrer');
+      setFeedback(`Impersonação aberta para ${session.user.email}.`);
+    } catch (actionError) {
+      setFeedback(
+        actionError instanceof AdminApiClientError
+          ? actionError.message
+          : 'Não foi possível abrir a impersonação do owner.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <section className="flex flex-1 flex-col gap-6 px-6 py-8 pb-24">
@@ -95,6 +163,83 @@ export default function AccountDetailPage({
             <StatCard label="Produtos" value={data.productCount} kind="integer" />
             <StatCard label="Agentes" value={data.agents.length} kind="integer" />
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Lifecycle da conta</CardTitle>
+              <CardDescription>
+                Controle administrativo de suspensão, bloqueio, congelamento de saldo e recovery do
+                owner.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="grid gap-4 md:grid-cols-4">
+                <StatCard
+                  label="Suspensa"
+                  value={data.lifecycle.suspended ? 1 : 0}
+                  kind="integer"
+                />
+                <StatCard label="Bloqueada" value={data.lifecycle.blocked ? 1 : 0} kind="integer" />
+                <StatCard
+                  label="Saldo congelado"
+                  value={data.lifecycle.frozenBalanceInCents}
+                  kind="currency-brl"
+                />
+                <StatCard
+                  label="Última ação"
+                  value={data.lifecycle.updatedAt ? 1 : null}
+                  kind="integer"
+                  unavailableReason={
+                    data.lifecycle.updatedAt ? undefined : 'Sem ações administrativas'
+                  }
+                />
+              </div>
+              <div className="grid gap-3 md:grid-cols-[1.4fr_0.8fr_1fr_1fr]">
+                <Input
+                  value={actionReason}
+                  onChange={(event) => setActionReason(event.currentTarget.value)}
+                  placeholder="Motivo administrativo"
+                />
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={freezeAmount}
+                  onChange={(event) => setFreezeAmount(event.currentTarget.value)}
+                  placeholder="Saldo a congelar"
+                />
+                <Button variant="outline" disabled={busy} onClick={resetPassword}>
+                  Resetar senha do owner
+                </Button>
+                <Button variant="outline" disabled={busy} onClick={impersonateOwner}>
+                  Impersonar owner
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button disabled={busy} onClick={() => applyAction('SUSPEND')}>
+                  Suspender
+                </Button>
+                <Button variant="outline" disabled={busy} onClick={() => applyAction('BLOCK')}>
+                  Bloquear
+                </Button>
+                <Button variant="outline" disabled={busy} onClick={() => applyAction('UNBLOCK')}>
+                  Desbloquear
+                </Button>
+                <Button variant="outline" disabled={busy} onClick={() => applyAction('FREEZE')}>
+                  Congelar saldo
+                </Button>
+                <Button variant="outline" disabled={busy} onClick={() => applyAction('UNFREEZE')}>
+                  Descongelar saldo
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {data.lifecycle.reason
+                  ? `Motivo atual: ${data.lifecycle.reason}`
+                  : 'Sem motivo operacional registrado.'}
+              </div>
+              {feedback ? <p className="text-xs text-muted-foreground">{feedback}</p> : null}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

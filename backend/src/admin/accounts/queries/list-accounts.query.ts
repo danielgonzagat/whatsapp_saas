@@ -1,5 +1,6 @@
 import { OrderStatus, Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
+import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
 export interface AdminAccountRow {
   workspaceId: string;
@@ -11,6 +12,9 @@ export interface AdminAccountRow {
   gmvLast30dInCents: number;
   lastSaleAt: string | null;
   productCount: number;
+  suspended: boolean;
+  blocked: boolean;
+  frozenBalanceInCents: number;
 }
 
 export interface ListAccountsInput {
@@ -77,6 +81,7 @@ export async function listAdminAccounts(
         id: true,
         name: true,
         createdAt: true,
+        providerSettings: true,
         agents: {
           where: { role: 'ADMIN' },
           orderBy: { createdAt: 'asc' },
@@ -134,6 +139,13 @@ export async function listAdminAccounts(
   const items: AdminAccountRow[] = workspaces.map((w) => {
     const owner = w.agents[0] ?? null;
     const lastSale = lastSaleMap.get(w.id) ?? null;
+    const providerSettings = asProviderSettings(w.providerSettings);
+    const accountAdminState =
+      providerSettings.accountAdmin &&
+      typeof providerSettings.accountAdmin === 'object' &&
+      !Array.isArray(providerSettings.accountAdmin)
+        ? (providerSettings.accountAdmin as Record<string, unknown>)
+        : {};
     return {
       workspaceId: w.id,
       name: w.name,
@@ -144,6 +156,9 @@ export async function listAdminAccounts(
       gmvLast30dInCents: Number(gmvMap.get(w.id) ?? 0),
       lastSaleAt: lastSale ? lastSale.toISOString() : null,
       productCount: productMap.get(w.id) ?? 0,
+      suspended: accountAdminState.suspended === true,
+      blocked: accountAdminState.blocked === true,
+      frozenBalanceInCents: Number(accountAdminState.frozenBalanceInCents ?? 0),
     };
   });
 

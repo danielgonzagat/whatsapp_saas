@@ -11,6 +11,7 @@ export type OrderStatusValue =
   | 'CHARGEBACK';
 
 export type PaymentMethodValue = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+export type AdminTransactionAction = 'REFUND' | 'CHARGEBACK';
 
 export interface AdminTransactionRow {
   id: string;
@@ -62,5 +63,11 @@ export const adminTransactionsApi = {
     }
     const qs = params.toString();
     return adminFetch<ListTransactionsResponse>(qs ? `/transactions?${qs}` : '/transactions');
+  },
+  operate(orderId: string, body: { action: AdminTransactionAction; note?: string }) {
+    return adminFetch<void>(`/transactions/${encodeURIComponent(orderId)}/operate`, {
+      method: 'POST',
+      body,
+    });
   },
 };

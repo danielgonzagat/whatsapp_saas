@@ -35,6 +35,21 @@ export interface ListLedgerResponse {
   total: number;
 }
 
+export interface PlatformReconcileReport {
+  currency: string;
+  runAt: string;
+  ledgerAvailableInCents: number;
+  ledgerPendingInCents: number;
+  ledgerReservedInCents: number;
+  walletAvailableInCents: number;
+  walletPendingInCents: number;
+  walletReservedInCents: number;
+  availableDriftInCents: number;
+  pendingDriftInCents: number;
+  reservedDriftInCents: number;
+  healthy: boolean;
+}
+
 export interface ListLedgerQuery {
   currency?: string;
   kind?: PlatformLedgerKind;
@@ -59,5 +74,10 @@ export const adminCarteiraApi = {
     }
     const qs = params.toString();
     return adminFetch<ListLedgerResponse>(qs ? `/carteira/ledger?${qs}` : '/carteira/ledger');
+  },
+  reconcile(currency = 'BRL'): Promise<PlatformReconcileReport> {
+    return adminFetch<PlatformReconcileReport>(
+      `/carteira/reconcile?currency=${encodeURIComponent(currency)}`,
+    );
   },
 };

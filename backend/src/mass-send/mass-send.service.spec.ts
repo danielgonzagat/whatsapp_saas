@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MassSendService } from './mass-send.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 describe('MassSendService', () => {
   let service: MassSendService;
@@ -11,11 +10,8 @@ describe('MassSendService', () => {
       providers: [
         {
           provide: MassSendService,
-          useFactory: (whatsapp: WhatsappService) => new MassSendService(whatsapp),
-          inject: [WhatsappService],
+          useFactory: () => new MassSendService(),
         },
-        // messageLimit: enforced via PlanLimitsService.trackMessageSend
-        { provide: WhatsappService, useValue: { sendMessage: jest.fn() } },
       ],
     }).compile();
 

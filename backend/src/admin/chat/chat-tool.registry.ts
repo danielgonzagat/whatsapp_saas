@@ -1,4 +1,4 @@
-import type { AdminModule, AdminAction } from '@prisma/client';
+import type { AdminAction, AdminModule, AdminRole } from '@prisma/client';
 
 /**
  * A tool exposed to the admin AI chat LLM. Tools are either
@@ -17,7 +17,10 @@ export interface ChatTool {
   readonly permissionModule: AdminModule;
   readonly permissionAction: AdminAction;
   readonly inputSchema: Record<string, unknown>; // JSON Schema
-  execute(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+  execute(
+    args: Record<string, unknown>,
+    context?: { adminUserId: string; adminRole: AdminRole },
+  ): Promise<Record<string, unknown>>;
 }
 
 /**

@@ -19,6 +19,7 @@ import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { AdminProductsService } from './admin-products.service';
 import { ListProductsQueryDto } from './dto/list-products.dto';
 import { ApproveProductDto, RejectProductDto } from './dto/moderate-product.dto';
+import { UpdateProductStateDto } from './dto/update-product-state.dto';
 
 @Public()
 @Controller('admin/products')
@@ -52,7 +53,10 @@ export class AdminProductsController {
     @Body() dto: ApproveProductDto,
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
-    await this.products.approve(productId, admin.id, dto.note);
+    await this.products.approve(productId, admin.id, {
+      note: dto.note,
+      checklist: dto.checklist,
+    });
   }
 
   @Post(':productId/reject')
@@ -63,6 +67,20 @@ export class AdminProductsController {
     @Body() dto: RejectProductDto,
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
-    await this.products.reject(productId, admin.id, dto.reason);
+    await this.products.reject(productId, admin.id, {
+      reason: dto.reason,
+      checklist: dto.checklist,
+    });
+  }
+
+  @Post(':productId/state')
+  @RequireAdminPermission(AdminModule.PRODUTOS, AdminAction.EDIT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateState(
+    @Param('productId') productId: string,
+    @Body() dto: UpdateProductStateDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    await this.products.updateState(productId, admin.id, dto.action, dto.note);
   }
 }

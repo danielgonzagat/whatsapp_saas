@@ -178,6 +178,10 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
     return NextResponse.rewrite(rewrittenUrl);
   }
 
+  if (pathname === '/auth/impersonate') {
+    return NextResponse.next();
+  }
+
   if (pathname === '/dashboard') {
     return NextResponse.next();
   }

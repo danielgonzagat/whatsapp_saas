@@ -56,23 +56,21 @@ describe('KnowledgeBaseService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('splitText', () => {
-    it('should split text by sentence boundaries', () => {
-      const text = 'Hello world. This is a test. Another sentence here.';
-      // Access private method via casting to any
-      const chunks = (service as any).splitText(text, 20, 5);
+  describe('htmlToText', () => {
+    it('should extract visible text and preserve natural spacing', () => {
+      const text =
+        '<p>Hello world.</p><div>This is a test.</div><article>Another sentence here.</article>';
+      const plainText = (service as any).htmlToText(text);
 
-      // Expect chunks to respect sentence boundaries where possible
-      // "Hello world." is 12 chars. " This is a test." is 16 chars.
-      // Chunk size 20.
-      expect(chunks.length).toBeGreaterThan(0);
-      expect(chunks[0]).toContain('Hello world.');
+      expect(plainText).toBe('Hello world. This is a test. Another sentence here.');
     });
 
-    it('should fallback to space splitting if no sentence boundary found', () => {
-      const text = 'ThisIsALongTextWithoutPunctuationButWithSpaces ToTestFallbackStrategy';
-      const chunks = (service as any).splitText(text, 30, 5);
-      expect(chunks.length).toBeGreaterThan(0);
+    it('should ignore script/style tags while flattening markup', () => {
+      const text =
+        '<div>Visible copy</div><script>window.secret = true;</script><style>body{display:none}</style><span>More text</span>';
+      const plainText = (service as any).htmlToText(text);
+
+      expect(plainText).toBe('Visible copy More text');
     });
   });
 });

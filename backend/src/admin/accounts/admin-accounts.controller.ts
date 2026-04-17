@@ -18,8 +18,11 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { AdminAccountsService } from './admin-accounts.service';
 import { ApproveKycDto } from './dto/approve-kyc.dto';
+import { BulkUpdateAccountStateDto } from './dto/bulk-update-account-state.dto';
 import { ListAccountsQueryDto } from './dto/list-accounts.dto';
 import { RejectKycDto } from './dto/reject-kyc.dto';
+import { ResetAccountPasswordDto } from './dto/reset-account-password.dto';
+import { UpdateAccountStateDto } from './dto/update-account-state.dto';
 
 @Public()
 @Controller('admin/accounts')
@@ -48,6 +51,51 @@ export class AdminAccountsController {
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
   async detail(@Param('workspaceId') workspaceId: string) {
     return this.accounts.detail(workspaceId);
+  }
+
+  @Post('bulk/state')
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
+  async bulkUpdateState(
+    @Body() dto: BulkUpdateAccountStateDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.accounts.bulkUpdateState(dto.workspaceIds, admin.id, dto.action, {
+      reason: dto.reason,
+      frozenBalanceInCents: dto.frozenBalanceInCents,
+    });
+  }
+
+  @Post(':workspaceId/state')
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateState(
+    @Param('workspaceId') workspaceId: string,
+    @Body() dto: UpdateAccountStateDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    await this.accounts.updateState(workspaceId, admin.id, dto.action, {
+      reason: dto.reason,
+      frozenBalanceInCents: dto.frozenBalanceInCents,
+    });
+  }
+
+  @Post(':workspaceId/reset-password')
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
+  async resetPassword(
+    @Param('workspaceId') workspaceId: string,
+    @Body() dto: ResetAccountPasswordDto,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.accounts.resetOwnerPassword(workspaceId, admin.id, dto.temporaryPassword);
+  }
+
+  @Post(':workspaceId/impersonate')
+  @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
+  async impersonateOwner(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    return this.accounts.impersonateOwner(workspaceId, admin.id, admin.role);
   }
 
   @Post('agents/:agentId/kyc/approve')

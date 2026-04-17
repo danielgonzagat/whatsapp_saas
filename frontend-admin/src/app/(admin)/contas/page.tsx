@@ -18,6 +18,7 @@ import {
   type AdminAccountKycStatus,
   type ListAccountsResponse,
 } from '@/lib/api/admin-accounts-api';
+import { adminSupportApi } from '@/lib/api/admin-support-api';
 
 const KYC_OPTIONS: Array<{ value: '' | AdminAccountKycStatus; label: string }> = [
   { value: '', label: 'Todos KYC' },
@@ -34,8 +35,14 @@ function kycLabel(value: AdminAccountKycStatus) {
 export default function ContasPage() {
   const [search, setSearch] = useState('');
   const [kycStatus, setKycStatus] = useState<'' | AdminAccountKycStatus>('');
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const { data: supportOverview, mutate: mutateSupport } = useSWR(
+    ['admin/support/overview', search],
+    () => adminSupportApi.overview(search || undefined),
+  );
 
-  const { data } = useSWR<ListAccountsResponse>(
+  const { data, mutate } = useSWR<ListAccountsResponse>(
     ['admin/accounts', search, kycStatus],
     () =>
       adminAccountsApi.list({
@@ -47,6 +54,26 @@ export default function ContasPage() {
   );
 
   const items = data?.items || [];
+  const selectedCount = selected.length;
+
+  async function applyBulkAction(action: 'SUSPEND' | 'BLOCK' | 'UNBLOCK') {
+    if (selected.length === 0) return;
+    setBulkBusy(true);
+    try {
+      await adminAccountsApi.bulkUpdateState({
+        workspaceIds: selected,
+        action,
+        reason:
+          action === 'UNBLOCK'
+            ? 'Desbloqueio administrativo em massa.'
+            : 'Ação administrativa em massa.',
+      });
+      setSelected([]);
+      await mutate();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   return (
     <AdminPage>
@@ -116,6 +143,35 @@ export default function ContasPage() {
             ))}
           </select>
         </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={selectedCount === 0 || bulkBusy}
+            onClick={() => applyBulkAction('SUSPEND')}
+          >
+            Suspender selecionadas
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={selectedCount === 0 || bulkBusy}
+            onClick={() => applyBulkAction('BLOCK')}
+          >
+            Bloquear selecionadas
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={selectedCount === 0 || bulkBusy}
+            onClick={() => applyBulkAction('UNBLOCK')}
+          >
+            Desbloquear selecionadas
+          </Button>
+          <span className="text-[12px] text-[var(--app-text-secondary)]">
+            {selectedCount} workspace(s) selecionada(s)
+          </span>
+        </div>
       </AdminSurface>
 
       <AdminSurface className="px-5 py-5 lg:px-6">
@@ -133,8 +189,21 @@ export default function ContasPage() {
             <table className="w-full min-w-[960px] text-left text-[13px]">
               <thead className="bg-[var(--app-bg-secondary)] text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
                 <tr>
+                  <th className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      aria-label="Selecionar todas as contas"
+                      checked={items.length > 0 && selectedCount === items.length}
+                      onChange={(event) =>
+                        setSelected(
+                          event.currentTarget.checked ? items.map((item) => item.workspaceId) : [],
+                        )
+                      }
+                    />
+                  </th>
                   <th className="px-4 py-3">Workspace</th>
                   <th className="px-4 py-3">Dono</th>
+                  <th className="px-4 py-3">Estado</th>
                   <th className="px-4 py-3">KYC</th>
                   <th className="px-4 py-3 text-right">GMV 30d</th>
                   <th className="px-4 py-3 text-right">Produtos</th>
@@ -145,6 +214,20 @@ export default function ContasPage() {
               <tbody className="divide-y divide-[var(--app-border-primary)]">
                 {items.map((item) => (
                   <tr key={item.workspaceId} className="bg-[var(--app-bg-card)]">
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        aria-label={`Selecionar ${item.name}`}
+                        checked={selected.includes(item.workspaceId)}
+                        onChange={(event) =>
+                          setSelected((current) =>
+                            event.currentTarget.checked
+                              ? [...new Set([...current, item.workspaceId])]
+                              : current.filter((value) => value !== item.workspaceId),
+                          )
+                        }
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
                         <span className="font-semibold text-[var(--app-text-primary)]">
@@ -163,6 +246,25 @@ export default function ContasPage() {
                         <span className="text-[11px] text-[var(--app-text-secondary)]">
                           {item.ownerEmail || '—'}
                         </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {item.suspended ? (
+                          <span className="rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-300">
+                            Suspensa
+                          </span>
+                        ) : null}
+                        {item.blocked ? (
+                          <span className="rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-rose-300">
+                            Bloqueada
+                          </span>
+                        ) : null}
+                        {!item.suspended && !item.blocked ? (
+                          <span className="rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                            Normal
+                          </span>
+                        ) : null}
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -189,6 +291,75 @@ export default function ContasPage() {
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/contas/${item.workspaceId}`}>Ver detalhe</Link>
                       </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </AdminSurface>
+
+      <AdminSurface className="px-5 py-5 lg:px-6">
+        <AdminSectionHeader
+          title="Support"
+          description="Fila operacional das conversas abertas da plataforma, integrada ao módulo de contas."
+        />
+        {(supportOverview?.items ?? []).length === 0 ? (
+          <AdminEmptyState
+            title="Sem tickets ativos"
+            description="A fila operacional de suporte está vazia para o filtro atual."
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-md border border-[var(--app-border-primary)]">
+            <table className="w-full min-w-[960px] text-left text-[13px]">
+              <thead className="bg-[var(--app-bg-secondary)] text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
+                <tr>
+                  <th className="px-4 py-3">Workspace</th>
+                  <th className="px-4 py-3">Contato</th>
+                  <th className="px-4 py-3">Canal</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Última mensagem</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--app-border-primary)]">
+                {(supportOverview?.items ?? []).map((ticket) => (
+                  <tr key={ticket.conversationId} className="bg-[var(--app-bg-card)]">
+                    <td className="px-4 py-3 text-[var(--app-text-primary)]">
+                      {ticket.workspaceName}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="text-[var(--app-text-primary)]">
+                          {ticket.contactName || ticket.contactPhone || 'Contato'}
+                        </span>
+                        <span className="text-[11px] text-[var(--app-text-secondary)]">
+                          {ticket.contactEmail || ticket.contactPhone || '—'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-[var(--app-text-secondary)]">{ticket.channel}</td>
+                    <td className="px-4 py-3 text-[var(--app-text-secondary)]">{ticket.status}</td>
+                    <td className="px-4 py-3 text-[var(--app-text-secondary)]">
+                      {new Date(ticket.lastMessageAt).toLocaleString('pt-BR')}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            await adminSupportApi.updateStatus(ticket.conversationId, 'PENDING');
+                            await mutateSupport();
+                          }}
+                        >
+                          Pendente
+                        </Button>
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/contas/suporte/${ticket.conversationId}`}>Abrir</Link>
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

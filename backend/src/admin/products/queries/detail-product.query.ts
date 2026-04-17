@@ -23,6 +23,13 @@ export interface AdminProductDetail {
   supportEmail: string | null;
   createdAt: string;
   updatedAt: string;
+  moderationHistory: Array<{
+    id: string;
+    action: string;
+    createdAt: string;
+    details: unknown;
+    adminUserName: string | null;
+  }>;
   commerce: {
     approvedOrders: number;
     pendingOrders: number;
@@ -63,14 +70,19 @@ export async function getAdminProductDetail(
   const planIds = plans.map((p) => p.id);
 
   if (planIds.length === 0) {
-    return toDetail(product, workspace?.name ?? null, {
-      approvedOrders: 0,
-      pendingOrders: 0,
-      refundedOrders: 0,
-      chargebackOrders: 0,
-      gmvInCents: 0,
-      last30dGmvInCents: 0,
-    });
+    return toDetail(
+      product,
+      workspace?.name ?? null,
+      {
+        approvedOrders: 0,
+        pendingOrders: 0,
+        refundedOrders: 0,
+        chargebackOrders: 0,
+        gmvInCents: 0,
+        last30dGmvInCents: 0,
+      },
+      [],
+    );
   }
 
   const windowFrom = new Date(Date.now() - WINDOW_MS);
@@ -80,52 +92,76 @@ export async function getAdminProductDetail(
   // (tenant isolation static scan) and documents that this module
   // intentionally scopes order lookups to the product it came from.
   const workspaceId = product.workspaceId;
-  const [approved, pending, refunded, chargeback, gmvAll, gmv30d] = await Promise.all([
-    prisma.checkoutOrder.count({
-      where: { workspaceId, planId: { in: planIds }, status: { in: APPROVED } },
-    }),
-    prisma.checkoutOrder.count({
-      where: {
-        workspaceId,
-        planId: { in: planIds },
-        status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
-      },
-    }),
-    prisma.checkoutOrder.count({
-      where: { workspaceId, planId: { in: planIds }, status: OrderStatus.REFUNDED },
-    }),
-    prisma.checkoutOrder.count({
-      where: { workspaceId, planId: { in: planIds }, status: OrderStatus.CHARGEBACK },
-    }),
-    prisma.checkoutOrder.aggregate({
-      where: { workspaceId, planId: { in: planIds }, status: { in: APPROVED } },
-      _sum: { totalInCents: true },
-    }),
-    prisma.checkoutOrder.aggregate({
-      where: {
-        workspaceId,
-        planId: { in: planIds },
-        status: { in: APPROVED },
-        paidAt: { gte: windowFrom },
-      },
-      _sum: { totalInCents: true },
-    }),
-  ]);
+  const [approved, pending, refunded, chargeback, gmvAll, gmv30d, moderationHistory] =
+    await Promise.all([
+      prisma.checkoutOrder.count({
+        where: { workspaceId, planId: { in: planIds }, status: { in: APPROVED } },
+      }),
+      prisma.checkoutOrder.count({
+        where: {
+          workspaceId,
+          planId: { in: planIds },
+          status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
+        },
+      }),
+      prisma.checkoutOrder.count({
+        where: { workspaceId, planId: { in: planIds }, status: OrderStatus.REFUNDED },
+      }),
+      prisma.checkoutOrder.count({
+        where: { workspaceId, planId: { in: planIds }, status: OrderStatus.CHARGEBACK },
+      }),
+      prisma.checkoutOrder.aggregate({
+        where: { workspaceId, planId: { in: planIds }, status: { in: APPROVED } },
+        _sum: { totalInCents: true },
+      }),
+      prisma.checkoutOrder.aggregate({
+        where: {
+          workspaceId,
+          planId: { in: planIds },
+          status: { in: APPROVED },
+          paidAt: { gte: windowFrom },
+        },
+        _sum: { totalInCents: true },
+      }),
+      prisma.adminAuditLog.findMany({
+        where: {
+          entityType: 'Product',
+          entityId: productId,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 12,
+        include: {
+          adminUser: { select: { name: true } },
+        },
+      }),
+    ]);
 
-  return toDetail(product, workspace?.name ?? null, {
-    approvedOrders: approved,
-    pendingOrders: pending,
-    refundedOrders: refunded,
-    chargebackOrders: chargeback,
-    gmvInCents: Number(gmvAll._sum.totalInCents ?? 0),
-    last30dGmvInCents: Number(gmv30d._sum.totalInCents ?? 0),
-  });
+  return toDetail(
+    product,
+    workspace?.name ?? null,
+    {
+      approvedOrders: approved,
+      pendingOrders: pending,
+      refundedOrders: refunded,
+      chargebackOrders: chargeback,
+      gmvInCents: Number(gmvAll._sum.totalInCents ?? 0),
+      last30dGmvInCents: Number(gmv30d._sum.totalInCents ?? 0),
+    },
+    moderationHistory.map((entry) => ({
+      id: entry.id,
+      action: entry.action,
+      createdAt: entry.createdAt.toISOString(),
+      details: entry.details,
+      adminUserName: entry.adminUser?.name ?? null,
+    })),
+  );
 }
 
 function toDetail(
   product: Awaited<ReturnType<PrismaService['product']['findUnique']>>,
   workspaceName: string | null,
   commerce: AdminProductDetail['commerce'],
+  moderationHistory: AdminProductDetail['moderationHistory'],
 ): AdminProductDetail | null {
   if (!product) return null;
   return {
@@ -150,6 +186,7 @@ function toDetail(
     supportEmail: product.supportEmail,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
+    moderationHistory,
     commerce,
   };
 }

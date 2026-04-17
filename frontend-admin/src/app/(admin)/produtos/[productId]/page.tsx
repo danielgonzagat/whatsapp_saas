@@ -26,6 +26,12 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'default
 
 type Dialog = 'approve' | 'reject' | null;
 type DestructiveKind = 'PRODUCT_ARCHIVE' | 'PRODUCT_DELETE' | null;
+const MODERATION_CHECKLIST = [
+  'Oferta clara e sem promessa abusiva',
+  'Criativos e descrição consistentes',
+  'Suporte configurado',
+  'Checkout com dados mínimos válidos',
+];
 
 function formatDateTime(iso: string): string {
   try {
@@ -45,6 +51,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
   const reasonId = useId();
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [checklist, setChecklist] = useState<string[]>([]);
 
   const { data, error, isLoading, mutate } = useSWR<AdminProductDetail>(
     ['admin/products', productId],
@@ -57,14 +64,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
     setBusy(true);
     try {
       if (dialog === 'approve') {
-        await adminProductsApi.approve(productId, note || undefined);
+        await adminProductsApi.approve(productId, note || undefined, checklist);
       } else {
-        await adminProductsApi.reject(productId, reason);
+        await adminProductsApi.reject(productId, reason, checklist);
       }
       await mutate();
       setDialog(null);
       setNote('');
       setReason('');
+      setChecklist([]);
     } catch (err) {
       setFeedback(
         err instanceof AdminApiClientError ? err.message : 'Erro inesperado ao moderar o produto.',
@@ -155,6 +163,42 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
               <Button variant="outline" onClick={() => setDialog('reject')}>
                 Rejeitar
               </Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await adminProductsApi.updateState(
+                      productId,
+                      'PAUSE',
+                      'Pausado pelo backoffice.',
+                    );
+                    await mutate();
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Pausar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await adminProductsApi.updateState(
+                      productId,
+                      'REACTIVATE',
+                      'Reativado pelo backoffice.',
+                    );
+                    await mutate();
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Reativar
+              </Button>
               <Button variant="outline" onClick={() => setDestructive('PRODUCT_ARCHIVE')}>
                 Arquivar
               </Button>
@@ -190,6 +234,40 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
               <Field label="Atualizado em" value={formatDateTime(data.updatedAt)} />
               <Field label="Página de vendas" value={data.salesPageUrl ?? '—'} />
               <Field label="Email de suporte" value={data.supportEmail ?? '—'} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Histórico de moderação</CardTitle>
+              <CardDescription>
+                Trilha append-only das últimas decisões administrativas deste produto.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {data.moderationHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Sem eventos de moderação registrados.
+                </p>
+              ) : (
+                data.moderationHistory.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="rounded-md border border-border bg-card px-4 py-3 text-sm"
+                  >
+                    <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                      <span>{entry.action}</span>
+                      <span>{formatDateTime(entry.createdAt)}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-foreground">
+                      {entry.adminUserName ? `por ${entry.adminUserName}` : 'sem autor visível'}
+                    </p>
+                    <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-[11px] text-muted-foreground">
+                      {JSON.stringify(entry.details, null, 2)}
+                    </pre>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </>
@@ -232,6 +310,30 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
                   />
                 </div>
               )}
+              <div className="flex flex-col gap-2">
+                <Label>Checklist</Label>
+                <div className="grid gap-2">
+                  {MODERATION_CHECKLIST.map((item) => {
+                    const checked = checklist.includes(item);
+                    return (
+                      <label key={item} className="flex items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(event) =>
+                            setChecklist((current) =>
+                              event.currentTarget.checked
+                                ? [...current, item]
+                                : current.filter((value) => value !== item),
+                            )
+                          }
+                        />
+                        <span>{item}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               {feedback ? <p className="text-xs text-red-400">{feedback}</p> : null}
               <div className="flex items-center justify-end gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setDialog(null)} disabled={busy}>

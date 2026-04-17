@@ -14,11 +14,9 @@ import {
   AdminSurface,
 } from '@/components/admin/admin-monitor-ui';
 import {
-  adminTransactionsApi,
-  type ListTransactionsResponse,
-} from '@/lib/api/admin-transactions-api';
-import { adminAuditApi, type AdminAuditListResponse } from '@/lib/api/admin-audit-api';
-import { AdminApiClientError } from '@/lib/api/admin-errors';
+  adminComplianceApi,
+  type AdminComplianceOverviewResponse,
+} from '@/lib/api/admin-compliance-api';
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return '—';
@@ -30,27 +28,13 @@ function formatDateTime(iso: string | null): string {
 }
 
 export default function CompliancePage() {
-  const { data: chargebacks, error: cbError } = useSWR<ListTransactionsResponse>(
-    'admin/transactions?status=CHARGEBACK',
-    () => adminTransactionsApi.list({ status: 'CHARGEBACK', take: 50 }),
-    { refreshInterval: 60_000 },
+  const { data } = useSWR<AdminComplianceOverviewResponse>('admin/compliance/overview', () =>
+    adminComplianceApi.overview({ period: '30D' }),
   );
 
-  const { data: refunds, error: rfError } = useSWR<ListTransactionsResponse>(
-    'admin/transactions?status=REFUNDED',
-    () => adminTransactionsApi.list({ status: 'REFUNDED', take: 50 }),
-    { refreshInterval: 60_000 },
-  );
-
-  const { data: audit } = useSWR<AdminAuditListResponse>(
-    'admin/audit?action=kyc',
-    () => adminAuditApi.list({ action: 'kyc', take: 20 }),
-    { refreshInterval: 60_000 },
-  );
-
-  const chargebackItems = chargebacks?.items ?? [];
-  const refundItems = refunds?.items ?? [];
-  const auditItems = audit?.items ?? [];
+  const chargebackItems = data?.chargebacks ?? [];
+  const refundItems = data?.refunds ?? [];
+  const auditItems = data?.recentKycEvents ?? [];
 
   return (
     <AdminPage>
@@ -67,29 +51,29 @@ export default function CompliancePage() {
 
       <AdminHeroSplit
         label="Valor sob observação"
-        value={chargebacks?.sum.totalInCents ?? null}
+        value={data?.summary.chargebackAmountInCents ?? null}
         description="Total em chargebacks abertos na plataforma. Use esta visão para priorizar tratativas e revisar anomalias."
         compactCards={[
           {
             label: 'Chargebacks',
-            value: chargebacks?.total ?? null,
+            value: data?.summary.chargebackCount ?? null,
             kind: 'integer',
             note: 'Ocorrências abertas',
           },
           {
             label: 'Reembolsos',
-            value: refunds?.total ?? null,
+            value: data?.summary.refundCount ?? null,
             kind: 'integer',
             note: 'Ocorrências recentes',
           },
           {
             label: 'Valor reembolsado',
-            value: refunds?.sum.totalInCents ?? null,
+            value: data?.summary.refundAmountInCents ?? null,
             note: 'Últimos registros carregados',
           },
           {
             label: 'Eventos KYC',
-            value: auditItems.length,
+            value: data?.summary.kycEventsCount ?? null,
             kind: 'integer',
             note: 'Feed operacional recente',
           },
@@ -112,15 +96,15 @@ export default function CompliancePage() {
           },
           {
             label: 'Gateways em disputa',
-            value: new Set(chargebackItems.map((item) => item.gateway).filter(Boolean)).size,
+            value: data?.riskByGateway.length ?? 0,
             kind: 'integer',
             detail: 'Integrações com eventos ativos',
           },
           {
-            label: 'Decisões KYC',
-            value: auditItems.length,
+            label: 'Fila KYC',
+            value: data?.kycQueue.length ?? 0,
             kind: 'integer',
-            detail: 'Eventos disponíveis no feed atual',
+            detail: 'Pendências operacionais',
           },
         ]}
       />
@@ -130,13 +114,7 @@ export default function CompliancePage() {
           title="Chargebacks abertos"
           description="Pedidos em disputa com leitura rápida de cliente, valor e data do evento."
         />
-        {cbError ? (
-          <p className="text-sm text-red-400">
-            {cbError instanceof AdminApiClientError
-              ? cbError.message
-              : 'Erro ao carregar chargebacks.'}
-          </p>
-        ) : chargebackItems.length === 0 ? (
+        {chargebackItems.length === 0 ? (
           <AdminEmptyState
             title="Nenhum chargeback aberto"
             description="Quando surgirem disputas elas aparecem aqui para tratamento prioritário."
@@ -197,16 +175,80 @@ export default function CompliancePage() {
       <div className="grid gap-3 lg:grid-cols-2">
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
+            title="Risco por gateway"
+            description="Concentração de disputas por integração financeira."
+          />
+          {data?.riskByGateway.length ? (
+            <ul className="divide-y divide-[var(--app-border-primary)] overflow-hidden rounded-md border border-[var(--app-border-primary)]">
+              {data.riskByGateway.slice(0, 8).map((row) => (
+                <li
+                  key={row.gateway}
+                  className="flex items-center justify-between gap-4 bg-[var(--app-bg-card)] px-4 py-3"
+                >
+                  <div>
+                    <div className="font-medium text-[var(--app-text-primary)]">{row.gateway}</div>
+                    <div className="text-[11px] text-[var(--app-text-secondary)]">
+                      {row.count} ocorrência(s)
+                    </div>
+                  </div>
+                  <MetricNumber
+                    value={row.totalInCents}
+                    kind="currency-brl"
+                    className="text-[13px] font-semibold text-[var(--app-text-primary)]"
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <AdminEmptyState
+              title="Nenhum gateway em risco"
+              description="A concentração por integração aparece aqui quando houver disputas."
+            />
+          )}
+        </AdminSurface>
+
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
+            title="Eventos KYC recentes"
+            description="Leitura rápida das últimas decisões registradas pela operação."
+          />
+          {auditItems.length === 0 ? (
+            <AdminEmptyState
+              title="Nenhum evento recente"
+              description="Assim que o time registrar novas decisões elas aparecem aqui."
+            />
+          ) : (
+            <ul className="divide-y divide-[var(--app-border-primary)] overflow-hidden rounded-md border border-[var(--app-border-primary)]">
+              {auditItems.slice(0, 8).map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-4 bg-[var(--app-bg-card)] px-4 py-3"
+                >
+                  <div>
+                    <div className="font-mono text-[12px] text-[var(--app-accent)]">
+                      {item.action}
+                    </div>
+                    <div className="text-[11px] text-[var(--app-text-secondary)]">
+                      {item.actorName || 'Sistema'} · {formatDateTime(item.createdAt)}
+                    </div>
+                  </div>
+                  <div className="text-[11px] text-[var(--app-text-secondary)]">
+                    {item.entityId || '—'}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </AdminSurface>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <AdminSurface className="px-5 py-5 lg:px-6">
+          <AdminSectionHeader
             title="Reembolsos recentes"
             description="Últimos reembolsos processados na plataforma."
           />
-          {rfError ? (
-            <p className="text-sm text-red-400">
-              {rfError instanceof AdminApiClientError
-                ? rfError.message
-                : 'Erro ao carregar reembolsos.'}
-            </p>
-          ) : refundItems.length === 0 ? (
+          {refundItems.length === 0 ? (
             <AdminEmptyState
               title="Nenhum reembolso recente"
               description="A superfície será preenchida assim que houver movimentação."
@@ -239,35 +281,35 @@ export default function CompliancePage() {
 
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
-            title="Eventos KYC recentes"
-            description="Leitura rápida das últimas decisões registradas pela operação."
+            title="Fila KYC"
+            description="Workspaces aguardando ação do time de compliance."
           />
-          {auditItems.length === 0 ? (
-            <AdminEmptyState
-              title="Nenhum evento recente"
-              description="Assim que o time registrar novas decisões elas aparecem aqui."
-            />
-          ) : (
+          {data?.kycQueue.length ? (
             <ul className="divide-y divide-[var(--app-border-primary)] overflow-hidden rounded-md border border-[var(--app-border-primary)]">
-              {auditItems.slice(0, 8).map((item) => (
+              {data.kycQueue.slice(0, 8).map((row) => (
                 <li
-                  key={item.id}
+                  key={row.agentId}
                   className="flex items-center justify-between gap-4 bg-[var(--app-bg-card)] px-4 py-3"
                 >
                   <div>
-                    <div className="font-mono text-[12px] text-[var(--app-accent)]">
-                      {item.action}
+                    <div className="font-medium text-[var(--app-text-primary)]">
+                      {row.workspaceName}
                     </div>
                     <div className="text-[11px] text-[var(--app-text-secondary)]">
-                      {item.adminUser?.name ?? 'Operação'} • {item.entityType ?? 'KYC'}
+                      {row.ownerName} · {row.ownerEmail}
                     </div>
                   </div>
-                  <div className="text-right text-[11px] text-[var(--app-text-secondary)]">
-                    {formatDateTime(item.createdAt)}
+                  <div className="rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--app-accent)]">
+                    {row.kycStatus}
                   </div>
                 </li>
               ))}
             </ul>
+          ) : (
+            <AdminEmptyState
+              title="Sem fila KYC"
+              description="Quando houver pendências de KYC elas aparecem aqui."
+            />
           )}
         </AdminSurface>
       </div>

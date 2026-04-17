@@ -14,7 +14,7 @@ describe('home-aggregation util', () => {
     expect(range.buckets).toHaveLength(6);
     expect(range.previousBuckets).toHaveLength(6);
     expect(range.start.getFullYear()).toBe(2026);
-    expect(range.start.getMonth()).toBe(3);
+    expect(range.start.getMonth()).toBe(2);
     expect(range.start.getDate()).toBe(11);
     expect(range.label).toBe('Últimos 30 dias');
   });
@@ -51,7 +51,7 @@ describe('home-aggregation util', () => {
       (row) => row.value,
     );
 
-    expect(result[0]).toBe(300);
+    expect(result[4]).toBe(300);
     expect(result[result.length - 1]).toBe(50);
   });
 

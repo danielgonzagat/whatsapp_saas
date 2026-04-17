@@ -8,11 +8,12 @@ import {
   AdminTicker,
   AdminTimelineFeed,
 } from '@/components/admin/admin-monitor-ui';
-import { adminDashboardApi, type AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
-import { useAdminChatHistory } from '@/lib/admin-chat-history';
-import { adminProductsApi, type ListProductsResponse } from '@/lib/api/admin-products-api';
+import {
+  adminMarketingApi,
+  type AdminMarketingOverviewResponse,
+} from '@/lib/api/admin-marketing-api';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { startTransition, useMemo } from 'react';
+import { startTransition } from 'react';
 import useSWR from 'swr';
 
 const TABS = [
@@ -45,78 +46,14 @@ export default function MarketingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') || 'conversas';
-  const { sessions } = useAdminChatHistory();
-  const { data } = useSWR<AdminHomeResponse>(['admin/dashboard/home', '30D'], () =>
-    adminDashboardApi.home({ period: '30D', compare: 'NONE' }),
-  );
-  const { data: productsData } = useSWR<ListProductsResponse>('admin/products/marketing-top', () =>
-    adminProductsApi.list({ take: 6 }),
+  const { data } = useSWR<AdminMarketingOverviewResponse>('admin/marketing/overview', () =>
+    adminMarketingApi.overview({ period: '30D' }),
   );
 
-  const tickerItems = useMemo(
-    () =>
-      sessions.length > 0
-        ? sessions.slice(0, 10).map((session) => `${session.title} · ${session.lastMessagePreview}`)
-        : ['Aguardando novas conversas'],
-    [sessions],
-  );
-
-  const topProducts = useMemo(
-    () =>
-      (productsData?.items || [])
-        .slice()
-        .sort((left, right) => right.commerce.gmvInCents - left.commerce.gmvInCents)
-        .slice(0, 3),
-    [productsData?.items],
-  );
-
-  const channelCards = [
-    {
-      label: 'WhatsApp',
-      accent: '#25D366',
-      status: sessions.length > 0 ? 'Conectado' : 'Sem conexão ativa',
-      stats: `${formatInteger(sessions.length)} conversas · ${formatInteger(
-        sessions.reduce((sum, session) => sum + session.messageCount, 0),
-      )} msgs`,
-    },
-    {
-      label: 'Instagram',
-      accent: '#E1306C',
-      status: 'Sem eventos do período',
-      stats: 'DMs e leads ainda não apareceram nesta leitura',
-    },
-    {
-      label: 'TikTok',
-      accent: '#111111',
-      status: 'Sem eventos do período',
-      stats: 'Mensageria ainda não apareceu nesta leitura',
-    },
-    {
-      label: 'Facebook',
-      accent: '#1877F2',
-      status: 'Sem eventos do período',
-      stats: 'Mensageria ainda não apareceu nesta leitura',
-    },
-    {
-      label: 'Email',
-      accent: '#F59E0B',
-      status: 'Sem campanhas no período',
-      stats: 'Campanhas e respostas ainda não entraram nesta leitura',
-    },
-  ];
-
-  const feedItems = useMemo(
-    () =>
-      sessions.slice(0, 8).map((session) => ({
-        id: session.id,
-        title: session.title,
-        body: session.lastMessagePreview,
-        meta: `${formatInteger(session.messageCount)} mensagens · ${new Date(
-          session.updatedAt,
-        ).toLocaleString('pt-BR')}`,
-      })),
-    [sessions],
-  );
+  const tickerItems =
+    data?.feed.length && data.feed.length > 0
+      ? data.feed.slice(0, 10).map((item) => `${item.title} · ${item.body}`)
+      : ['Aguardando novas conversas'];
 
   return (
     <AdminPage>
@@ -156,7 +93,7 @@ export default function MarketingPage() {
             letterSpacing: '-0.04em',
           }}
         >
-          {formatMoney(data?.kpis.revenueKloel.value ?? null)}
+          {formatMoney(data?.hero.revenueKloelInCents ?? null)}
         </div>
         <div
           style={{
@@ -166,9 +103,10 @@ export default function MarketingPage() {
             color: 'var(--app-text-secondary)',
           }}
         >
-          {formatInteger(sessions.reduce((sum, session) => sum + session.messageCount, 0))} msgs ·{' '}
-          {formatInteger(sessions.length)} leads ·{' '}
-          {formatInteger(data?.kpis.approvedCount.value ?? null)} vendas
+          {formatInteger(data?.hero.messages ?? null)} msgs ·{' '}
+          {formatInteger(data?.hero.leads ?? null)} leads
+          {' · '}
+          {formatInteger(data?.hero.approvedOrders ?? null)} vendas
         </div>
       </AdminSurface>
 
@@ -180,34 +118,22 @@ export default function MarketingPage() {
           description="A mesma leitura por canal do app, agora no escopo global da plataforma."
         />
         <div className="grid gap-2">
-          {channelCards.map((card) => (
+          {(data?.channels ?? []).map((card) => (
             <div
-              key={card.label}
+              key={card.key}
               className="relative flex flex-col gap-2 overflow-hidden rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3 lg:flex-row lg:items-center"
             >
-              <div
-                className="absolute inset-y-0 left-0 w-[3px]"
-                style={{ background: card.accent }}
-                aria-hidden="true"
-              />
               <div className="pl-1 text-[14px] font-semibold text-[var(--app-text-primary)]">
                 {card.label}
               </div>
-              <span
-                className="inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
-                style={{
-                  borderColor: `${card.accent}33`,
-                  background: `${card.accent}14`,
-                  color: card.accent,
-                }}
-              >
+              <span className="inline-flex w-fit items-center rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-card)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--app-accent)]">
                 {card.status}
               </span>
               <div
                 className="text-[11px] text-[var(--app-text-secondary)] lg:ml-auto"
                 style={{ fontFamily: FONT_MONO }}
               >
-                {card.stats}
+                {formatInteger(card.conversations)} conversas · {formatInteger(card.messages)} msgs
               </div>
             </div>
           ))}
@@ -221,7 +147,7 @@ export default function MarketingPage() {
             description="Complemento admin em cima do layout do Marketing do app."
           />
           <div className="grid gap-3 md:grid-cols-3">
-            {topProducts.map((product) => (
+            {(data?.topProducts ?? []).slice(0, 3).map((product) => (
               <div
                 key={product.id}
                 className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] p-4"
@@ -250,10 +176,10 @@ export default function MarketingPage() {
                   className="text-[13px] font-semibold text-[var(--app-accent)]"
                   style={{ fontFamily: FONT_MONO }}
                 >
-                  {formatMoney(product.commerce.gmvInCents)}
+                  {formatMoney(product.gmvInCents)}
                 </div>
                 <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
-                  {formatInteger(product.commerce.approvedOrders)} vendas aprovadas
+                  {formatInteger(product.approvedOrders)} vendas aprovadas
                 </div>
               </div>
             ))}
@@ -275,7 +201,7 @@ export default function MarketingPage() {
                 className="mt-2 text-[13px] text-[var(--app-accent)]"
                 style={{ fontFamily: FONT_MONO }}
               >
-                {formatInteger(sessions.length)} conversas ativas
+                {formatInteger(data?.ai.activeConversations ?? null)} conversas ativas
               </div>
               <div className="mt-4 flex gap-8">
                 <div className="text-center">
@@ -283,7 +209,7 @@ export default function MarketingPage() {
                     className="text-[18px] font-semibold text-[var(--app-text-primary)]"
                     style={{ fontFamily: FONT_MONO }}
                   >
-                    {formatInteger(topProducts.length)}
+                    {formatInteger(data?.ai.trackedProducts ?? null)}
                   </div>
                   <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
                     Produtos
@@ -294,7 +220,7 @@ export default function MarketingPage() {
                     className="text-[18px] font-semibold text-[var(--app-text-primary)]"
                     style={{ fontFamily: FONT_MONO }}
                   >
-                    {formatInteger(data?.kpis.approvedCount.value ?? null)}
+                    {formatInteger(data?.ai.approvedOrders ?? null)}
                   </div>
                   <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
                     Vendas
@@ -310,23 +236,7 @@ export default function MarketingPage() {
               description="Leitura executiva sem fugir do mesmo design system."
             />
             <div className="grid gap-2">
-              {[
-                {
-                  label: 'Top produtores por conversas',
-                  value: formatInteger(sessions.length),
-                  detail: 'Baseado nas sessões recentes do admin',
-                },
-                {
-                  label: 'Top produtos atendidos',
-                  value: formatInteger(topProducts.length),
-                  detail: 'Produtos com GMV observado',
-                },
-                {
-                  label: 'Revenue Kloel',
-                  value: formatMoney(data?.kpis.revenueKloel.value ?? null),
-                  detail: 'Comissão própria da plataforma',
-                },
-              ].map((item) => (
+              {(data?.rankings ?? []).map((item) => (
                 <div
                   key={item.label}
                   className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3"
@@ -338,7 +248,9 @@ export default function MarketingPage() {
                     className="text-[15px] font-semibold text-[var(--app-text-primary)]"
                     style={{ fontFamily: FONT_MONO }}
                   >
-                    {item.value}
+                    {item.label === 'Revenue Kloel'
+                      ? formatMoney(item.value)
+                      : formatInteger(item.value)}
                   </div>
                   <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
                     {item.detail}
@@ -355,7 +267,7 @@ export default function MarketingPage() {
           title="Feed em tempo real"
           description="Conversas globais da plataforma na superfície administrativa."
         />
-        <AdminTimelineFeed items={feedItems} />
+        <AdminTimelineFeed items={data?.feed ?? []} />
       </AdminSurface>
     </AdminPage>
   );

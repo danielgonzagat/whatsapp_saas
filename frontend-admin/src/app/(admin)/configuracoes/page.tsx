@@ -22,6 +22,7 @@ import {
   type AdminUserRecord,
   type PermissionSetEntry,
 } from '@/lib/api/admin-iam-api';
+import { adminConfigApi, type AdminConfigWorkspaceRow } from '@/lib/api/admin-config-api';
 import { AdminApiClientError } from '@/lib/api/admin-errors';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 
@@ -69,6 +70,8 @@ export default function ConfiguracoesPage() {
   const { admin } = useAdminSession();
   const [selected, setSelected] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [configSearch, setConfigSearch] = useState('');
+  const [selectedWorkspace, setSelectedWorkspace] = useState<AdminConfigWorkspaceRow | null>(null);
 
   useEffect(() => {
     if (admin && admin.role !== 'OWNER') {
@@ -88,6 +91,10 @@ export default function ConfiguracoesPage() {
   const { data: permissions, mutate: refetchPermissions } = useSWR<AdminUserPermission[]>(
     selected ? ['admin/users/permissions', selected] : null,
     () => adminIamApi.getUserPermissions(selected as string),
+  );
+  const { data: configOverview, mutate: refetchConfigOverview } = useSWR(
+    ['admin/config/overview', configSearch],
+    () => adminConfigApi.overview(configSearch || undefined),
   );
 
   if (!admin || admin.role !== 'OWNER') return null;
@@ -251,6 +258,106 @@ export default function ConfiguracoesPage() {
         </div>
       </AdminSurface>
 
+      <AdminSurface className="px-5 py-5 lg:px-6">
+        <AdminSectionHeader
+          title="Workspace config"
+          description="Controles editáveis de domínio, guest mode, auth mode e autopilot por workspace."
+        />
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row">
+          <Input
+            value={configSearch}
+            onChange={(event) => setConfigSearch(event.currentTarget.value)}
+            placeholder="Buscar workspace, domínio ou email"
+            className="max-w-xl"
+          />
+        </div>
+        <AdminMetricGrid
+          items={[
+            {
+              label: 'Workspaces',
+              value: configOverview?.metrics.totalWorkspaces ?? null,
+              kind: 'integer',
+              detail: 'Escopo atual da busca',
+            },
+            {
+              label: 'Domínios ativos',
+              value: configOverview?.metrics.customDomainsActive ?? null,
+              kind: 'integer',
+              detail: 'Custom domains configurados',
+            },
+            {
+              label: 'API keys',
+              value: configOverview?.metrics.apiKeysActive ?? null,
+              kind: 'integer',
+              detail: 'Chaves públicas ativas',
+            },
+            {
+              label: 'Autopilot on',
+              value: configOverview?.metrics.autopilotEnabled ?? null,
+              kind: 'integer',
+              detail: 'Workspaces com automação ativa',
+            },
+          ]}
+        />
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+          <div className="overflow-x-auto rounded-sm border border-border">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3">Workspace</th>
+                  <th className="px-4 py-3">Domínio</th>
+                  <th className="px-4 py-3">Guest</th>
+                  <th className="px-4 py-3">Autopilot</th>
+                  <th className="px-4 py-3">Auth</th>
+                  <th className="px-4 py-3">Infra</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {(configOverview?.workspaces ?? []).map((workspace) => (
+                  <tr
+                    key={workspace.workspaceId}
+                    className={
+                      'cursor-pointer hover:bg-accent/40 ' +
+                      (selectedWorkspace?.workspaceId === workspace.workspaceId
+                        ? 'bg-primary/10'
+                        : '')
+                    }
+                    onClick={() => setSelectedWorkspace(workspace)}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground">{workspace.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {workspace.workspaceId}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {workspace.customDomain || '—'}
+                    </td>
+                    <td className="px-4 py-3">{workspace.guestMode ? 'Ativo' : 'Off'}</td>
+                    <td className="px-4 py-3">{workspace.autopilotEnabled ? 'Ativo' : 'Off'}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {workspace.authMode || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {workspace.apiKeysCount} keys • {workspace.webhookSubscriptionsCount} webhooks
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <WorkspaceConfigEditor
+            workspace={selectedWorkspace}
+            onSaved={async (updated) => {
+              setSelectedWorkspace(updated);
+              await refetchConfigOverview();
+            }}
+          />
+        </div>
+      </AdminSurface>
+
       {showCreate ? (
         <CreateUserDialog
           onClose={() => setShowCreate(false)}
@@ -261,6 +368,110 @@ export default function ConfiguracoesPage() {
         />
       ) : null}
     </AdminPage>
+  );
+}
+
+function WorkspaceConfigEditor({
+  workspace,
+  onSaved,
+}: {
+  workspace: AdminConfigWorkspaceRow | null;
+  onSaved: (workspace: AdminConfigWorkspaceRow) => Promise<void> | void;
+}) {
+  const [customDomain, setCustomDomain] = useState('');
+  const [guestMode, setGuestMode] = useState(false);
+  const [autopilotEnabled, setAutopilotEnabled] = useState(false);
+  const [authMode, setAuthMode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCustomDomain(workspace?.customDomain ?? '');
+    setGuestMode(workspace?.guestMode ?? false);
+    setAutopilotEnabled(workspace?.autopilotEnabled ?? false);
+    setAuthMode(workspace?.authMode ?? '');
+    setError(null);
+  }, [workspace]);
+
+  if (!workspace) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Editar workspace</CardTitle>
+          <CardDescription>Selecione uma linha para editar.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">{workspace.name}</CardTitle>
+        <CardDescription>
+          Controles reais persistidos em `Workspace` e `providerSettings`.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
+          <Label>Custom domain</Label>
+          <Input
+            value={customDomain}
+            onChange={(event) => setCustomDomain(event.currentTarget.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>Auth mode</Label>
+          <Input value={authMode} onChange={(event) => setAuthMode(event.currentTarget.value)} />
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={guestMode}
+            onChange={(event) => setGuestMode(event.currentTarget.checked)}
+          />
+          Guest mode ativo
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={autopilotEnabled}
+            onChange={(event) => setAutopilotEnabled(event.currentTarget.checked)}
+          />
+          Autopilot ativo
+        </label>
+        {error ? <p className="text-xs text-red-400">{error}</p> : null}
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError(null);
+              try {
+                const updated = await adminConfigApi.updateWorkspace(workspace.workspaceId, {
+                  customDomain,
+                  guestMode,
+                  autopilotEnabled,
+                  authMode,
+                });
+                await onSaved(updated);
+              } catch (err) {
+                setError(
+                  err instanceof AdminApiClientError
+                    ? err.message
+                    : 'Erro inesperado ao salvar configuração.',
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? 'Salvando…' : 'Salvar workspace'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

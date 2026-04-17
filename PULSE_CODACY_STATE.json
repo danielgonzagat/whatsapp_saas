@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "syncedAt": "2026-04-15T17:36:18.713Z",
-  "elapsedMs": 8593,
+  "syncedAt": "2026-04-17T15:41:20.882Z",
+  "elapsedMs": 7907,
   "source": "scripts/ops/sync-codacy-issues.mjs",
   "target": {
     "provider": "gh",
@@ -10,272 +10,172 @@
     "endpoint": "https://api.codacy.com/api/v3/analysis/organizations/gh/danielgonzagat/repositories/whatsapp_saas/issues/search"
   },
   "repositorySummary": {
-    "grade": 87,
-    "gradeLetter": "B",
-    "issuesCount": 3508,
-    "issuesPercentage": 11,
-    "loc": 276767,
+    "grade": 92,
+    "gradeLetter": "A",
+    "issuesCount": 2283,
+    "issuesPercentage": 6,
+    "loc": 307490,
     "lastAnalysedCommit": {
-      "sha": "393ffa5972ef186f67b3e110e9201418b8133022",
+      "sha": "6f5dc38cd48dce08285889137a5edb8bf3fa8722",
       "authorName": "danielgonzagat",
-      "endedAnalysis": "2026-04-15T17:34:46.499Z"
+      "endedAnalysis": "2026-04-17T14:55:35.663Z"
     }
   },
-  "totalIssues": 3508,
-  "totalIssuesFromApi": 3508,
+  "totalIssues": 2283,
+  "totalIssuesFromApi": 2283,
   "duplicatePagesSkipped": 0,
-  "pagesFetched": 4,
+  "pagesFetched": 3,
   "bySeverity": {
-    "HIGH": 723,
-    "MEDIUM": 2590,
-    "LOW": 195,
+    "HIGH": 462,
+    "MEDIUM": 1720,
+    "LOW": 101,
     "UNKNOWN": 0
   },
   "bySeverityRaw": {
-    "Warning": 2590,
-    "High": 641,
-    "Info": 195,
-    "Error": 82
+    "Warning": 1720,
+    "High": 377,
+    "Info": 101,
+    "Error": 85
   },
   "byCategory": {
-    "BestPractice": 1823,
-    "Complexity": 671,
-    "ErrorProne": 312,
-    "Performance": 302,
-    "Security": 208,
-    "CodeStyle": 129,
-    "Comprehensibility": 43,
-    "Compatibility": 17,
+    "BestPractice": 923,
+    "Complexity": 657,
+    "Performance": 287,
+    "Security": 156,
+    "ErrorProne": 141,
+    "CodeStyle": 88,
+    "Compatibility": 21,
+    "Comprehensibility": 7,
     "Documentation": 3
   },
   "byPatternId": {
-    "Biome_lint_suspicious_noExplicitAny": 1420,
-    "Lizard_ccn-medium": 292,
-    "Lizard_nloc-medium": 150,
+    "Biome_lint_suspicious_noExplicitAny": 628,
+    "Lizard_ccn-medium": 295,
+    "Lizard_nloc-medium": 153,
     "Biome_lint_performance_noAwaitInLoops": 147,
-    "Lizard_file-nloc-medium": 87,
-    "Lizard_parameter-count-medium": 85,
-    "Biome_lint_correctness_useUniqueElementIds": 69,
-    "Biome_lint_performance_useTopLevelRegex": 62,
-    "Biome_lint_suspicious_noArrayIndexKey": 57,
-    "Biome_lint_a11y_noStaticElementInteractions": 54,
-    "Semgrep_ai.typescript.detect-openai.detect-openai": 53,
-    "Semgrep_yaml.semgrep.duplicate-id.duplicate-id": 43,
-    "Biome_lint_correctness_useExhaustiveDependencies": 41,
-    "Biome_lint_correctness_noUnusedPrivateClassMembers": 39,
-    "markdownlint_MD032": 37,
-    "Agentlinter_clarity_undefined-term": 36,
-    "Semgrep_codacy.javascript.security.hard-coded-password": 36,
-    "Biome_lint_correctness_useParseIntRadix": 36,
-    "markdownlint_MD022": 31,
-    "Biome_lint_performance_noNamespaceImport": 30,
-    "Biome_lint_a11y_noLabelWithoutControl": 29,
+    "Lizard_file-nloc-medium": 89,
+    "Lizard_parameter-count-medium": 78,
+    "Biome_lint_performance_useTopLevelRegex": 72,
+    "Biome_lint_a11y_noStaticElementInteractions": 55,
+    "Semgrep_ai.typescript.detect-openai.detect-openai": 52,
+    "Biome_lint_correctness_useExhaustiveDependencies": 43,
+    "Biome_lint_suspicious_noArrayIndexKey": 41,
     "Biome_lint_style_noNonNullAssertion": 29,
     "Semgrep_javascript_pathtraversal_rule-non-literal-fs-filename": 28,
-    "Biome_lint_nursery_noReturnAssign": 25,
-    "Biome_lint_correctness_noUnusedVariables": 24,
-    "Semgrep_rules_lgpl_javascript_ssrf_rule-node-ssrf": 21,
+    "Biome_lint_correctness_noUnusedVariables": 26,
+    "Stylelint_custom-property-empty-line-before": 22,
+    "Semgrep_rules_lgpl_javascript_ssrf_rule-node-ssrf": 22,
     "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos": 21,
-    "Biome_lint_correctness_noNestedComponentDefinitions": 21,
-    "Biome_lint_suspicious_noEvolvingTypes": 18,
+    "Biome_lint_performance_noNamespaceImport": 21,
+    "Biome_lint_performance_noImgElement": 20,
+    "Biome_lint_correctness_useImageSize": 19,
     "Semgrep_javascript.lang.correctness.no-stringify-keys.no-stringify-keys": 17,
     "Biome_lint_complexity_useOptionalChain": 17,
-    "Biome_lint_complexity_noThisInStatic": 17,
-    "Biome_lint_correctness_noUnusedFunctionParameters": 16,
-    "Biome_lint_correctness_useImageSize": 15,
-    "Biome_lint_performance_noImgElement": 15,
+    "Stylelint_color-hex-length": 15,
     "Semgrep_javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring": 14,
-    "Biome_lint_suspicious_noImplicitAnyLet": 14,
-    "Stylelint_color-function-notation": 14,
-    "Stylelint_alpha-value-notation": 14,
-    "markdownlint_MD033": 13,
+    "Stylelint_rule-empty-line-before": 13,
+    "Stylelint_alpha-value-notation": 13,
+    "Stylelint_color-function-notation": 13,
     "Biome_lint_performance_noBarrelFile": 12,
-    "Biome_lint_a11y_noSvgWithoutTitle": 12,
-    "Biome_lint_correctness_noGlobalDirnameFilename": 10,
-    "Semgrep_yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service": 9,
-    "Biome_lint_style_useNodejsImportProtocol": 9,
-    "Semgrep_yaml.docker-compose.security.no-new-privileges.no-new-privileges": 9,
+    "Biome_lint_correctness_noGlobalDirnameFilename": 12,
+    "Biome_lint_correctness_noUnusedFunctionParameters": 11,
+    "Biome_lint_correctness_useUniqueElementIds": 11,
     "Biome_lint_suspicious_useIterableCallbackReturn": 9,
-    "Semgrep_yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha": 8,
     "Semgrep_javascript.lang.security.html-in-template-string.html-in-template-string": 8,
-    "Biome_lint_nursery_noUnnecessaryConditions": 8
+    "Semgrep_yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha": 8,
+    "Biome_lint_complexity_noUselessSwitchCase": 8,
+    "Biome_lint_performance_noDelete": 8,
+    "shellcheck_SC2155": 8,
+    "Biome_lint_correctness_noUnusedPrivateClassMembers": 8,
+    "Biome_lint_complexity_noStaticOnlyClass": 8,
+    "Biome_lint_nursery_noUnnecessaryConditions": 8,
+    "Semgrep_rules_lgpl_javascript_crypto_rule-node-timing-attack": 7,
+    "Semgrep_javascript_timing_rule-possible-timing-attacks": 7,
+    "Semgrep_bash.lang.correctness.unquoted-expansion.unquoted-variable-expansion-in-command": 6,
+    "Biome_lint_a11y_noAutofocus": 5,
+    "shellcheck_SC2086": 5,
+    "PMD_category_ecmascript_errorprone_AvoidTrailingComma": 5,
+    "Semgrep_javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function": 5,
+    "Semgrep_javascript_dos_rule-non-literal-regexp": 5,
+    "Biome_lint_suspicious_noEvolvingTypes": 4,
+    "Biome_lint_complexity_noUselessFragments": 4
   },
   "byTool": {
-    "Biome": 2336,
-    "Lizard": 614,
-    "Opengrep": 322,
-    "markdownlint": 96,
-    "Stylelint": 62,
-    "Agentlinter": 51,
+    "Biome": 1284,
+    "Lizard": 615,
+    "Opengrep": 226,
+    "Stylelint": 112,
     "ShellCheck": 17,
+    "Agentlinter": 15,
     "PMD": 6,
+    "markdownlint": 4,
     "Hadolint": 3,
     "ESLint9": 1
   },
   "topFiles": [
     {
-      "file": "frontend/src/app/(main)/analytics/page.tsx",
-      "count": 63
-    },
-    {
-      "file": "frontend/src/components/kloel/products/ProductNerveCenter.tsx",
-      "count": 55
-    },
-    {
-      "file": "frontend/src/lib/api/misc.ts",
-      "count": 52
-    },
-    {
-      "file": "frontend/src/lib/api/whatsapp.ts",
-      "count": 52
-    },
-    {
       "file": "frontend/src/app/globals.css",
       "count": 50
     },
     {
-      "file": "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
-      "count": 49
+      "file": "frontend-admin/src/app/globals.css",
+      "count": 50
     },
     {
       "file": "worker/flow-engine-global.ts",
-      "count": 49
-    },
-    {
-      "file": "backend/src/autopilot/autopilot.service.ts",
-      "count": 47
-    },
-    {
-      "file": "frontend/src/lib/api/core.ts",
-      "count": 45
-    },
-    {
-      "file": "backend/src/whatsapp/providers/waha.provider.ts",
-      "count": 42
-    },
-    {
-      "file": "frontend/src/components/kloel/vendas/VendasView.tsx",
-      "count": 41
+      "count": 43
     },
     {
       "file": "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
-      "count": 40
-    },
-    {
-      "file": "backend/src/whatsapp/whatsapp.service.ts",
       "count": 37
-    },
-    {
-      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
-      "count": 35
-    },
-    {
-      "file": "CLAUDE.md",
-      "count": 33
-    },
-    {
-      "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
-      "count": 33
-    },
-    {
-      "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "count": 33
-    },
-    {
-      "file": "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx",
-      "count": 31
-    },
-    {
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "count": 30
     },
     {
       "file": "frontend/src/app/(checkout)/components/PixelTracker.tsx",
       "count": 29
     },
     {
+      "file": "backend/src/whatsapp/providers/waha.provider.ts",
+      "count": 29
+    },
+    {
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "count": 29
+    },
+    {
+      "file": "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx",
+      "count": 27
+    },
+    {
       "file": "frontend/src/components/kloel/chat-container.tsx",
-      "count": 28
-    },
-    {
-      "file": "worker/processor.ts",
-      "count": 27
-    },
-    {
-      "file": "frontend/src/components/canvas/CanvasEditor.tsx",
-      "count": 27
-    },
-    {
-      "file": "backend/src/whatsapp/cia-runtime.service.ts",
-      "count": 27
-    },
-    {
-      "file": "frontend/src/components/kloel/carteira.tsx",
       "count": 27
     },
     {
       "file": "frontend/src/components/kloel/landing/KloelLanding.tsx",
-      "count": 26
+      "count": 23
     },
     {
-      "file": "worker/providers/unified-whatsapp-provider.ts",
-      "count": 26
+      "file": "worker/processor.ts",
+      "count": 23
     },
     {
-      "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
-      "count": 25
-    },
-    {
-      "file": "frontend/src/components/kloel/sites/SitesView.tsx",
-      "count": 25
-    },
-    {
-      "file": "docker/prometheus/alerting-rules.yml",
+      "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
       "count": 23
     },
     {
       "file": "frontend/src/components/kloel/anuncios/AnunciosView.tsx",
-      "count": 23
-    },
-    {
-      "file": "frontend/src/components/kloel/crm/CRMPipelineView.tsx",
-      "count": 23
-    },
-    {
-      "file": "backend/src/marketing/marketing.controller.ts",
-      "count": 22
-    },
-    {
-      "file": "backend/src/kloel/kloel-context-formatter.ts",
-      "count": 22
-    },
-    {
-      "file": "backend/src/checkout/checkout.service.ts",
       "count": 21
-    },
-    {
-      "file": "worker/autopilot-alerts.yaml",
-      "count": 20
     },
     {
       "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
       "count": 20
     },
     {
+      "file": "frontend/src/components/kloel/sites/SitesView.tsx",
+      "count": 20
+    },
+    {
       "file": "frontend/src/components/kloel/WhatsAppConsole.tsx",
       "count": 19
-    },
-    {
-      "file": "frontend/src/lib/api/whatsapp-api.ts",
-      "count": 19
-    },
-    {
-      "file": "backend/README.md",
-      "count": 18
-    },
-    {
-      "file": "backend/src/whatsapp/whatsapp-watchdog.service.ts",
-      "count": 18
     },
     {
       "file": "frontend/src/lib/api/autopilot.ts",
@@ -286,131 +186,135 @@
       "count": 18
     },
     {
-      "file": "backend/src/checkout/checkout-webhook.controller.ts",
-      "count": 17
-    },
-    {
-      "file": "backend/src/kloel/asaas.service.ts",
-      "count": 17
-    },
-    {
-      "file": "frontend/src/components/products/CheckoutConfigPage.tsx",
-      "count": 17
-    },
-    {
-      "file": "README_AUTONOMOUS_AI.md",
-      "count": 16
-    },
-    {
-      "file": "worker/voice-processor.ts",
-      "count": 16
-    },
-    {
       "file": "scripts/ops/collect-ratchet-metrics.mjs",
       "count": 16
     },
     {
-      "file": "frontend/src/app/(main)/products/new/page.tsx",
+      "file": "frontend/src/components/kloel/carteira.tsx",
       "count": 16
+    },
+    {
+      "file": "backend/src/whatsapp/whatsapp.service.ts",
+      "count": 15
+    },
+    {
+      "file": "scripts/ops/check-tenant-keys.mjs",
+      "count": 15
+    },
+    {
+      "file": "frontend/src/components/canvas/CanvasEditor.tsx",
+      "count": 15
+    },
+    {
+      "file": "frontend/src/hooks/useDetailedReports.ts",
+      "count": 15
+    },
+    {
+      "file": "backend/src/autopilot/autopilot.service.ts",
+      "count": 14
+    },
+    {
+      "file": "frontend/src/lib/api/workspace.ts",
+      "count": 14
+    },
+    {
+      "file": "scripts/railway-env.sh",
+      "count": 14
+    },
+    {
+      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
+      "count": 13
+    },
+    {
+      "file": "backend/src/whatsapp/whatsapp-watchdog.service.ts",
+      "count": 13
+    },
+    {
+      "file": "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
+      "count": 13
+    },
+    {
+      "file": "worker/processors/cia/cognitive-state.ts",
+      "count": 13
+    },
+    {
+      "file": "scripts/ops/codacy-apply-noise-disables.mjs",
+      "count": 13
+    },
+    {
+      "file": "frontend/src/components/kloel/products/ProductNerveCenterAvalTab.tsx",
+      "count": 13
+    },
+    {
+      "file": "backend/src/kloel/asaas.service.ts",
+      "count": 13
+    },
+    {
+      "file": "scripts/ops/guard-prisma-db-push.mjs",
+      "count": 13
+    },
+    {
+      "file": "frontend/src/app/(checkout)/hooks/useCheckoutExperience.ts",
+      "count": 13
+    },
+    {
+      "file": "frontend/src/components/kloel/home/HomeView.tsx",
+      "count": 12
+    },
+    {
+      "file": "backend/src/cia/cia.service.ts",
+      "count": 12
+    },
+    {
+      "file": "frontend/src/styles/polotno-terminator.css",
+      "count": 12
+    },
+    {
+      "file": "worker/voice-processor.ts",
+      "count": 12
+    },
+    {
+      "file": "frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx",
+      "count": 12
+    },
+    {
+      "file": "scripts/ops/validate-production-readiness.mjs",
+      "count": 12
+    },
+    {
+      "file": "backend/src/kloel/openai-wrapper.ts",
+      "count": 11
+    },
+    {
+      "file": "frontend/src/components/kloel/products/ProductNerveCenterCampanhasTab.tsx",
+      "count": 11
+    },
+    {
+      "file": "frontend/src/lib/api/core.ts",
+      "count": 11
+    },
+    {
+      "file": "frontend/src/lib/checkout-links.ts",
+      "count": 11
+    },
+    {
+      "file": "backend/src/kloel/conversational-onboarding.service.ts",
+      "count": 11
+    },
+    {
+      "file": "frontend/src/components/kloel/landing/FloatingChat.tsx",
+      "count": 11
+    },
+    {
+      "file": "backend/src/member-area/member-area.controller.ts",
+      "count": 11
+    },
+    {
+      "file": "frontend/src/components/plans/PlanAIConfigTab.tsx",
+      "count": 11
     }
   ],
   "highPriorityBatch": [
-    {
-      "issueId": "b07de26c40e9828df110da2fa785a20b",
-      "filePath": "worker/processors/checkout-social-lead-enrichment.ts",
-      "lineNumber": 178,
-      "patternId": "Semgrep_javascript.lang.correctness.no-stringify-keys.no-stringify-keys",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "JSON stringify does not produce a stable key ordering, and should not be relied on for producing object keys.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "ea8331400ed328ccaebaaaead54109a6",
-      "filePath": "backend/src/checkout/checkout-post-payment-effects.service.ts",
-      "lineNumber": 113,
-      "patternId": "Semgrep_javascript.lang.security.html-in-template-string.html-in-template-string",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "This template literal looks like HTML and has interpolated variables.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "33b4c8b76e6e28debf02094ffa492087",
-      "filePath": "frontend/src/components/kloel/settings/missing-steps-card.tsx",
-      "lineNumber": 61,
-      "patternId": "Biome_lint_suspicious_noArrayIndexKey",
-      "category": "BestPractice",
-      "severityLevel": "High",
-      "tool": "Biome",
-      "message": "Avoid using the index of an array as key property in an element.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "43e2f4a3f1da2162bf14711827798006",
-      "filePath": "frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.ts",
-      "lineNumber": 347,
-      "patternId": "Semgrep_javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function",
-      "category": "Security",
-      "severityLevel": "Error",
-      "tool": "Opengrep",
-      "message": "The application accepts potentially user-controlled input `{   product,   config,   plan,   slug,   workspaceId,   checkoutCode,   paymentProvider,   affiliateContext,   merchant,   defaults,   helpers, }: UseCheckoutExperienceSocialOptions` which can control the location of the ",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "96b809ea280e761804477a624fc3e27a",
-      "filePath": "frontend/src/components/kloel/chat-container.tsx",
-      "lineNumber": 453,
-      "patternId": "Biome_lint_correctness_noUnusedVariables",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Biome",
-      "message": "This variable justSignedUp is unused.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "f8f37365b6ba429a12042a06caf9fe9f",
-      "filePath": "frontend/src/components/kloel/chat-container.tsx",
-      "lineNumber": 454,
-      "patternId": "Biome_lint_correctness_noUnusedVariables",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Biome",
-      "message": "This variable hasCompletedOnboarding is unused.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "c9379436c4328833490447693e428f01",
-      "filePath": "frontend/src/app/(checkout)/hooks/useCheckoutSocialIdentity.ts",
-      "lineNumber": 12,
-      "patternId": "Semgrep_codacy.javascript.security.hard-coded-password",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "Hardcoded passwords are a security risk.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "10fbaf5bbd398cd410e3f24a92e0bcb6",
-      "filePath": "frontend/src/components/kloel/chat-container.tsx",
-      "lineNumber": 1116,
-      "patternId": "Biome_lint_correctness_useExhaustiveDependencies",
-      "category": "BestPractice",
-      "severityLevel": "High",
-      "tool": "Biome",
-      "message": "This hook specifies more dependencies than necessary: messages.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
     {
       "issueId": "1e9dfb3eae62c6394284e4fca5b7836b",
       "filePath": "frontend/src/app/(checkout)/hooks/checkout-order-submit.ts",
@@ -424,26 +328,74 @@
       "commitTimestamp": null
     },
     {
-      "issueId": "18148dfda6bd513876d0c552f4b940e7",
-      "filePath": "frontend/src/app/(checkout)/hooks/useCheckoutSocialIdentity.ts",
-      "lineNumber": 13,
-      "patternId": "Semgrep_codacy.javascript.security.hard-coded-password",
-      "category": "Security",
+      "issueId": "b07de26c40e9828df110da2fa785a20b",
+      "filePath": "worker/processors/checkout-social-lead-enrichment.ts",
+      "lineNumber": 180,
+      "patternId": "Semgrep_javascript.lang.correctness.no-stringify-keys.no-stringify-keys",
+      "category": "ErrorProne",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "Hardcoded passwords are a security risk.",
+      "message": "JSON stringify does not produce a stable key ordering, and should not be relied on for producing object keys.",
       "commitSha": null,
       "commitTimestamp": null
     },
     {
-      "issueId": "252b8ecbdfdc7c331c12e97f70e890aa",
-      "filePath": "frontend/src/components/kloel/settings/product-checkout-plans.tsx",
-      "lineNumber": 170,
-      "patternId": "Biome_lint_correctness_useUniqueElementIds",
+      "issueId": "43e2f4a3f1da2162bf14711827798006",
+      "filePath": "frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.ts",
+      "lineNumber": 349,
+      "patternId": "Semgrep_javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function",
+      "category": "Security",
+      "severityLevel": "Error",
+      "tool": "Opengrep",
+      "message": "The application accepts potentially user-controlled input `{   product,   config,   plan,   slug,   workspaceId,   checkoutCode,   paymentProvider,   affiliateContext,   merchant,   defaults,   helpers, }: UseCheckoutExperienceSocialOptions` which can control the location of the ",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "96b809ea280e761804477a624fc3e27a",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 457,
+      "patternId": "Biome_lint_correctness_noUnusedVariables",
       "category": "ErrorProne",
       "severityLevel": "High",
       "tool": "Biome",
-      "message": "id attribute should not be a static string literal. Generate unique IDs using useId().",
+      "message": "This variable justSignedUp is unused.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "ea8331400ed328ccaebaaaead54109a6",
+      "filePath": "backend/src/checkout/checkout-post-payment-effects.service.ts",
+      "lineNumber": 114,
+      "patternId": "Semgrep_javascript.lang.security.html-in-template-string.html-in-template-string",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "This template literal looks like HTML and has interpolated variables.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "f8f37365b6ba429a12042a06caf9fe9f",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 458,
+      "patternId": "Biome_lint_correctness_noUnusedVariables",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This variable hasCompletedOnboarding is unused.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "10fbaf5bbd398cd410e3f24a92e0bcb6",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 1121,
+      "patternId": "Biome_lint_correctness_useExhaustiveDependencies",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook does not specify its dependency on scrollToBottom.",
       "commitSha": null,
       "commitTimestamp": null
     },
@@ -462,7 +414,7 @@
     {
       "issueId": "bd565f7f6b1300b2906920dd8218beed",
       "filePath": "frontend/src/components/kloel/auth/auth-modal.tsx",
-      "lineNumber": 455,
+      "lineNumber": 458,
       "patternId": "Biome_lint_a11y_useValidAnchor",
       "category": "BestPractice",
       "severityLevel": "High",
@@ -472,242 +424,38 @@
       "commitTimestamp": null
     },
     {
-      "issueId": "f194d70d454d4283bbc7294a35a59431",
-      "filePath": "frontend/src/components/kloel/auth/auth-modal.tsx",
-      "lineNumber": 441,
-      "patternId": "Biome_lint_correctness_useUniqueElementIds",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Biome",
-      "message": "id attribute should not be a static string literal. Generate unique IDs using useId().",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "e40025ab61d215a91f98e095d31b491d",
-      "filePath": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
-      "lineNumber": 1055,
-      "patternId": "Biome_lint_suspicious_noArrayIndexKey",
-      "category": "BestPractice",
-      "severityLevel": "High",
-      "tool": "Biome",
-      "message": "Avoid using the index of an array as key property in an element.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "a24a8865caf101a2a1f786d481d1d701",
-      "filePath": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
-      "lineNumber": 836,
-      "patternId": "Biome_lint_suspicious_noArrayIndexKey",
-      "category": "BestPractice",
-      "severityLevel": "High",
-      "tool": "Biome",
-      "message": "Avoid using the index of an array as key property in an element.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "7d27c1ec00fa804d315926490ad41ce7",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 12,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "22010c069cfd02686d3e35857b398147",
-      "filePath": "docker-compose.yml",
-      "lineNumber": 153,
-      "patternId": "Semgrep_yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "Service 'grafana' is running with a writable root filesystem.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "1bf0376924db506df24591be8aa3eeda",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 23,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "d5b544cb4e1b518495baabf97ae24b1e",
-      "filePath": "worker/autopilot-alerts.yaml",
+      "issueId": "63b6f966c039817c86f2479bd34d8c23",
+      "filePath": "worker/src/utils/error-handler.ts",
       "lineNumber": 14,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "7230eb236b81b990ec826f098f13bed5",
-      "filePath": "backend/src/auth/permissions.guard.ts",
-      "lineNumber": 12,
-      "patternId": "Semgrep_codacy.javascript.security.hard-coded-password",
+      "patternId": "Semgrep_javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring",
       "category": "Security",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "Hardcoded passwords are a security risk.",
+      "message": "Detected string concatenation with a non-literal variable in a util.format / console.log function.",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "1cd03f7926447ece5618a109108bd32b",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 32,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
+      "issueId": "8ebc86d4eb329a56ed5d5600990e1fb8",
+      "filePath": "worker/queue.ts",
+      "lineNumber": 167,
+      "patternId": "Semgrep_javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring",
+      "category": "Security",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "54e54266b533a2f653c520df9f3156d",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 38,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "e3f4510159ea9fd4591810bdcf37ef8f",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 20,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "8839b584aa5e15515d85bea4a6af3800",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 10,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
+      "message": "Detected string concatenation with a non-literal variable in a util.format / console.log function.",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
       "issueId": "cf4fb75aab279cfeddab424432f302fb",
       "filePath": "worker/voice-processor.ts",
-      "lineNumber": 12,
+      "lineNumber": 14,
       "patternId": "Semgrep_javascript_pathtraversal_rule-non-literal-fs-filename",
       "category": "Security",
       "severityLevel": "Error",
       "tool": "Opengrep",
       "message": "The application dynamically constructs file or path information.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "78cbd465d07b55d1a7dc169ff3f3f1d9",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 23,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "14ac10613423665266c79cd022f6d1a6",
-      "filePath": "docker-compose.prod.yml",
-      "lineNumber": 27,
-      "patternId": "Semgrep_yaml.docker-compose.security.no-new-privileges.no-new-privileges",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "Service 'redis' allows for privilege escalation via setuid or setgid binaries.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "69912ed39882e2c041011cb76c2baa1d",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 6,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "d703b854d50392f3facc005dadfe56ea",
-      "filePath": "docker-compose.prod.yml",
-      "lineNumber": 156,
-      "patternId": "Semgrep_yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "Service 'nginx' is running with a writable root filesystem.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "2cdfd32f3c2fed4eaca18c82e81ec56b",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 14,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "a185f5ef31a153e575bdc573aeface52",
-      "filePath": "docker-compose.yml",
-      "lineNumber": 7,
-      "patternId": "Semgrep_yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "Service 'postgres' is running with a writable root filesystem.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "7b8fa9ce3af5f9db19dbf5c4b624af6f",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 8,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
@@ -724,69 +472,45 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "fbdf89e05223d311c174619a61e179f9",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 11,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "12cef91742532b717fabed7272fc412f",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 7,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "f67b5f26853332059ad685f16b1eef37",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 18,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "c564b66dff59e6811264c7cefb087ab8",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 17,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "ebb36ee091e640bab0f90cd87e2b2dc3",
-      "filePath": "docker-compose.prod.yml",
-      "lineNumber": 7,
+      "issueId": "20d12ebfdb9b46473dae09de93c636df",
+      "filePath": "docker-compose.yml",
+      "lineNumber": 160,
       "patternId": "Semgrep_yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service",
       "category": "Security",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "Service 'postgres' is running with a writable root filesystem.",
+      "message": "Service 'prometheus' is running with a writable root filesystem.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "8c4776364870a1adb091740efb9f6678",
+      "filePath": "worker/queue.ts",
+      "lineNumber": 296,
+      "patternId": "Semgrep_javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Detected string concatenation with a non-literal variable in a util.format / console.log function.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "fcfde8b940f0b474bc878160589cac1c",
+      "filePath": "docker-compose.prod.yml",
+      "lineNumber": 198,
+      "patternId": "Semgrep_yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Service 'certbot' is running with a writable root filesystem.",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
       "issueId": "5dc045abb8986694a42849dedf28a65a",
       "filePath": "worker/voice-processor.ts",
-      "lineNumber": 13,
+      "lineNumber": 15,
       "patternId": "Semgrep_javascript_pathtraversal_rule-non-literal-fs-filename",
       "category": "Security",
       "severityLevel": "Error",
@@ -796,124 +520,400 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "c107ea6cb357ee4f1aa99767c49b0b27",
-      "filePath": "backend/src/auth/roles.decorator.ts",
-      "lineNumber": 3,
-      "patternId": "Semgrep_codacy.javascript.security.hard-coded-password",
+      "issueId": "495d14c6dfc17a2bfc7938296fc1482f",
+      "filePath": "backend/src/autopilot/autopilot.service.ts",
+      "lineNumber": 876,
+      "patternId": "Semgrep_javascript.lang.correctness.no-stringify-keys.no-stringify-keys",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "JSON stringify does not produce a stable key ordering, and should not be relied on for producing object keys.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "bfbea285a50a5387dba6557017b8dfbf",
+      "filePath": "worker/campaign-processor.ts",
+      "lineNumber": 173,
+      "patternId": "Semgrep_javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring",
       "category": "Security",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "Hardcoded passwords are a security risk.",
+      "message": "Detected string concatenation with a non-literal variable in a util.format / console.log function.",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "54b57c44663387424cb58a395d3d82f2",
-      "filePath": "docker-compose.yml",
-      "lineNumber": 153,
-      "patternId": "Semgrep_yaml.docker-compose.security.no-new-privileges.no-new-privileges",
+      "issueId": "948680561e42758cf1212c65d63bca9e",
+      "filePath": "worker/scrapers/google-maps.ts",
+      "lineNumber": 173,
+      "patternId": "Semgrep_javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring",
       "category": "Security",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "Service 'grafana' allows for privilege escalation via setuid or setgid binaries.",
+      "message": "Detected string concatenation with a non-literal variable in a util.format / console.log function.",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "1666cb8a3e943afd173cdd9ef5291e1c",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 31,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "f4c08afe18dece6aedf573649b1ab32",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 29,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "284f611c00007cc040c81e2cebd471df",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 28,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "b47c1a8703faf07c8f6e1b11ef5bf547",
-      "filePath": "docker-compose.yml",
-      "lineNumber": 168,
-      "patternId": "Semgrep_yaml.docker-compose.security.no-new-privileges.no-new-privileges",
+      "issueId": "90ca1e98dcd49fea99d4d5d00fa24386",
+      "filePath": "worker/flow-engine-global.ts",
+      "lineNumber": 1577,
+      "patternId": "Semgrep_javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring",
       "category": "Security",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "Service 'alertmanager' allows for privilege escalation via setuid or setgid binaries.",
+      "message": "Detected string concatenation with a non-literal variable in a util.format / console.log function.",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "7ab81319c3f1de33bb9b9c6cbde76fbd",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 19,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "issueId": "41cd9c12abd680b129fff1d62916b287",
+      "filePath": "backend/src/main.ts",
+      "lineNumber": 244,
+      "patternId": "Biome_lint_correctness_useHookAtTopLevel",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook is being called indirectly and conditionally, but all hooks must be called in the exact same order in every component render.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "28caabe5e3dc8242f624cc4da92470f1",
+      "filePath": "backend/src/kloel/conversational-onboarding.service.ts",
+      "lineNumber": 455,
+      "patternId": "Semgrep_javascript.lang.correctness.no-stringify-keys.no-stringify-keys",
       "category": "ErrorProne",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
+      "message": "JSON stringify does not produce a stable key ordering, and should not be relied on for producing object keys.",
+      "commitSha": "127cfb5aaff0df13437d8e260169181d8c1d555e",
+      "commitTimestamp": "2025-12-08T13:37:18Z"
     },
     {
-      "issueId": "10ca75c75a1d398a1605260420a118a0",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 35,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "issueId": "f87e2a4d468fd2346f66b3f85584bebf",
+      "filePath": "backend/src/kloel/conversational-onboarding.service.ts",
+      "lineNumber": 457,
+      "patternId": "Semgrep_javascript.lang.correctness.no-stringify-keys.no-stringify-keys",
       "category": "ErrorProne",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
+      "message": "JSON stringify does not produce a stable key ordering, and should not be relied on for producing object keys.",
+      "commitSha": "127cfb5aaff0df13437d8e260169181d8c1d555e",
+      "commitTimestamp": "2025-12-08T13:37:18Z"
     },
     {
-      "issueId": "4b30b641859fe564fedcf782019e2321",
-      "filePath": "docker-compose.yml",
-      "lineNumber": 168,
-      "patternId": "Semgrep_yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service",
+      "issueId": "daabcc1f0a6a0a5306b4f61a64c30065",
+      "filePath": "backend/src/kloel/conversational-onboarding.service.ts",
+      "lineNumber": 452,
+      "patternId": "Semgrep_javascript.lang.correctness.no-stringify-keys.no-stringify-keys",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "JSON stringify does not produce a stable key ordering, and should not be relied on for producing object keys.",
+      "commitSha": "127cfb5aaff0df13437d8e260169181d8c1d555e",
+      "commitTimestamp": "2025-12-08T13:37:18Z"
+    },
+    {
+      "issueId": "8c8d472d801b023166d356aebb3a139b",
+      "filePath": "frontend/src/components/flow/nodes/ConditionNode.tsx",
+      "lineNumber": 55,
+      "patternId": "Biome_lint_correctness_useUniqueElementIds",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "id attribute should not be a static string literal. Generate unique IDs using useId().",
+      "commitSha": "7e6e355d7324e74f00bdf7251acf6a9a9161b0d9",
+      "commitTimestamp": "2025-12-08T14:10:14Z"
+    },
+    {
+      "issueId": "b87a99e2e99f93b6c63dd75188c13a3f",
+      "filePath": "frontend/src/app/(main)/flow/page.tsx",
+      "lineNumber": 39,
+      "patternId": "Biome_lint_correctness_noUnusedVariables",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This variable loading is unused.",
+      "commitSha": "7e6e355d7324e74f00bdf7251acf6a9a9161b0d9",
+      "commitTimestamp": "2025-12-08T14:10:14Z"
+    },
+    {
+      "issueId": "8ef7057afebf7ea53096e3e3a057acae",
+      "filePath": "frontend/src/components/flow/FlowBuilder.tsx",
+      "lineNumber": 96,
+      "patternId": "Biome_lint_correctness_useExhaustiveDependencies",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook does not specify its dependency on setNodes.",
+      "commitSha": "7e6e355d7324e74f00bdf7251acf6a9a9161b0d9",
+      "commitTimestamp": "2025-12-08T14:10:14Z"
+    },
+    {
+      "issueId": "6c2a714999d5f7c7a00c99491c03b974",
+      "filePath": "frontend/src/components/flow/FlowSidebar.tsx",
+      "lineNumber": 189,
+      "patternId": "Biome_lint_a11y_noStaticElementInteractions",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Static Elements should not be interactive.",
+      "commitSha": "7e6e355d7324e74f00bdf7251acf6a9a9161b0d9",
+      "commitTimestamp": "2025-12-08T14:10:14Z"
+    },
+    {
+      "issueId": "8da89ff2da97723b27f10f2fc167fa63",
+      "filePath": "backend/src/auth/email.service.ts",
+      "lineNumber": 165,
+      "patternId": "Semgrep_javascript.lang.security.html-in-template-string.html-in-template-string",
       "category": "Security",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "Service 'alertmanager' is running with a writable root filesystem.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
+      "message": "This template literal looks like HTML and has interpolated variables.",
+      "commitSha": "c009e0f45286d80f111e372163a734b214113c81",
+      "commitTimestamp": "2025-12-08T15:58:25Z"
     },
     {
-      "issueId": "d974ecb79127c49b47353dd6278a0aa2",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 29,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "issueId": "6806a15ff7d8f1e7340841beab0a4e49",
+      "filePath": "frontend/src/components/kloel/UniversalComposer.tsx",
+      "lineNumber": 122,
+      "patternId": "Biome_lint_correctness_useExhaustiveDependencies",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook specifies more dependencies than necessary: message.",
+      "commitSha": "52d2051b9ba37b11389d2eecb57723d4112c1d84",
+      "commitTimestamp": "2025-12-08T18:16:40Z"
+    },
+    {
+      "issueId": "6402b7626017a30dd70c7b1e9af57495",
+      "filePath": "frontend/src/components/kloel/AgentConsole.tsx",
+      "lineNumber": 317,
+      "patternId": "Biome_lint_correctness_useExhaustiveDependencies",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook specifies more dependencies than necessary: activities.",
+      "commitSha": "cac67c21165e0166efe93a57f8d7129bd3c1e5e7",
+      "commitTimestamp": "2025-12-08T19:43:51Z"
+    },
+    {
+      "issueId": "7e202287547ed8d9d5fdf49329cf0855",
+      "filePath": "frontend/src/app/(main)/leads/page.tsx",
+      "lineNumber": 115,
+      "patternId": "Biome_lint_correctness_useExhaustiveDependencies",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook does not specify its dependency on refreshLeads.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "eef9684477313f6c5f29ad587cb8ea63",
+      "filePath": "frontend/src/app/(main)/pricing/page.tsx",
+      "lineNumber": 158,
+      "patternId": "Semgrep_javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function",
+      "category": "Security",
+      "severityLevel": "Error",
+      "tool": "Opengrep",
+      "message": "The application accepts potentially user-controlled input `plan` which can control the location of the current window context.",
+      "commitSha": "af2eeddf8ffab0aeef2514282f9c8f3a9e99cede",
+      "commitTimestamp": "2025-12-09T18:21:02Z"
+    },
+    {
+      "issueId": "140567da178b411e63b2d1e2c5aed1e2",
+      "filePath": "backend/src/main.ts",
+      "lineNumber": 274,
+      "patternId": "Biome_lint_correctness_useHookAtTopLevel",
       "category": "ErrorProne",
       "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook is being called indirectly and conditionally, but all hooks must be called in the exact same order in every component render.",
+      "commitSha": "cb9f091b054fea48fa02b617b1ace44705171ded",
+      "commitTimestamp": "2025-12-09T20:03:41Z"
+    },
+    {
+      "issueId": "bf5e7d007e98a9cd5a649e0945618191",
+      "filePath": "frontend/src/lib/kloelClient.ts",
+      "lineNumber": 9,
+      "patternId": "Semgrep_rules_lgpl_javascript_ssrf_rule-node-ssrf",
+      "category": "Security",
+      "severityLevel": "Error",
       "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
+      "message": "This application allows user-controlled URLs to be passed directly to HTTP client libraries.",
+      "commitSha": "d46ed338196ca5426c578a349e0ec110573a2d8b",
+      "commitTimestamp": "2025-12-09T20:48:31Z"
+    },
+    {
+      "issueId": "e05e6a5cdd832b37b409705e67b4d901",
+      "filePath": "backend/src/kloel/upload.controller.ts",
+      "lineNumber": 173,
+      "patternId": "Biome_lint_suspicious_noEvolvingTypes",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "The type of this variable may evolve implicitly to any type, including the any type.",
+      "commitSha": "7b21aa3cd8609b9a552073b29e58c35d17f772f5",
+      "commitTimestamp": "2025-12-10T22:27:09Z"
+    },
+    {
+      "issueId": "95b521977027847d68a361eb71a03be5",
+      "filePath": "SECURITY.md",
+      "lineNumber": 254,
+      "patternId": "Agentlinter_security_no-pii-exposure",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Agentlinter",
+      "message": "Potential PII: email address found — \"security@kloel.com.br\"",
+      "commitSha": "9e587f30ec68e6dd6aa7d58d72b3cd0fb417dc6f",
+      "commitTimestamp": "2025-12-11T23:23:47Z"
+    },
+    {
+      "issueId": "716f998a0362a910e2c85c1fa9b0c9e9",
+      "filePath": "backend/src/common/middleware/prompt-sanitizer.middleware.ts",
+      "lineNumber": 69,
+      "patternId": "Semgrep_javascript.express.security.audit.remote-property-injection.remote-property-injection",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Bracket object notation with user input is present, this might allow an attacker to access all properties of the object and even it's prototype.",
+      "commitSha": "55179b92e85752b072c1fa597658250b48ac5de0",
+      "commitTimestamp": "2025-12-12T19:17:27Z"
+    },
+    {
+      "issueId": "a3b5763e9046e64cdf28d8de0db45358",
+      "filePath": "frontend/src/app/(main)/funnels/page.tsx",
+      "lineNumber": 60,
+      "patternId": "Biome_lint_correctness_useExhaustiveDependencies",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook does not specify its dependency on refresh.",
+      "commitSha": "19626c5b18edbe16187148afee46541a67f5c970",
+      "commitTimestamp": "2025-12-13T02:40:05Z"
+    },
+    {
+      "issueId": "4b19b9b9503de16cdf88a676959a0892",
+      "filePath": "backend/src/main.ts",
+      "lineNumber": 218,
+      "patternId": "Semgrep_javascript.express.security.cors-misconfiguration.cors-misconfiguration",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "By letting user input control CORS parameters, there is a risk that software does not properly verify that the source of data or communication is valid.",
+      "commitSha": "9f602d87ba6ea5415b9163f50f00c70bf2a9889f",
+      "commitTimestamp": "2026-03-17T00:50:34Z"
+    },
+    {
+      "issueId": "31e4c285ba95db34ebb7d99c97e19759",
+      "filePath": "backend/src/audio/transcription.service.ts",
+      "lineNumber": 140,
+      "patternId": "Semgrep_rules_lgpl_javascript_ssrf_rule-node-ssrf",
+      "category": "Security",
+      "severityLevel": "Error",
+      "tool": "Opengrep",
+      "message": "This application allows user-controlled URLs to be passed directly to HTTP client libraries.",
+      "commitSha": "1961ff4bac3c0c2ead7b45f924c518442c49c97e",
+      "commitTimestamp": "2026-03-18T21:01:42Z"
+    },
+    {
+      "issueId": "760c893c11b1630c1810b2b28a70bcc3",
+      "filePath": "backend/src/main.ts",
+      "lineNumber": 190,
+      "patternId": "Semgrep_javascript_dos_rule-non-literal-regexp",
+      "category": "Security",
+      "severityLevel": "Error",
+      "tool": "Opengrep",
+      "message": "The `RegExp` constructor was called with a non-literal value.",
+      "commitSha": "1961ff4bac3c0c2ead7b45f924c518442c49c97e",
+      "commitTimestamp": "2026-03-18T21:01:42Z"
+    },
+    {
+      "issueId": "ac0d1b1f2524284a1dd47fb257387282",
+      "filePath": "backend/src/whatsapp/whatsapp-catchup.service.ts",
+      "lineNumber": 1247,
+      "patternId": "Semgrep_rules_lgpl_javascript_crypto_rule-node-timing-attack",
+      "category": "Security",
+      "severityLevel": "Error",
+      "tool": "Opengrep",
+      "message": "'String comparisons using ''==='', ''!=='', ''!='' and ''=='' is vulnerable to timing attacks.",
+      "commitSha": "63b0469554862a8bba03ff411bfd272539cd3620",
+      "commitTimestamp": "2026-03-18T23:46:57Z"
+    },
+    {
+      "issueId": "b5b1fadc318fb677bc334a1d9fc7311b",
+      "filePath": "backend/src/whatsapp/whatsapp-catchup.service.ts",
+      "lineNumber": 1247,
+      "patternId": "Semgrep_javascript_timing_rule-possible-timing-attacks",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The application was found executing string comparisons using one of `===`, `!==`, `==` or `!=` against security sensitive values.",
+      "commitSha": "63b0469554862a8bba03ff411bfd272539cd3620",
+      "commitTimestamp": "2026-03-18T23:46:57Z"
+    },
+    {
+      "issueId": "67407ba07470808ab5a0f6c136c02eec",
+      "filePath": "backend/src/whatsapp/whatsapp-catchup.service.ts",
+      "lineNumber": 397,
+      "patternId": "Semgrep_rules_lgpl_javascript_crypto_rule-node-timing-attack",
+      "category": "Security",
+      "severityLevel": "Error",
+      "tool": "Opengrep",
+      "message": "'String comparisons using ''==='', ''!=='', ''!='' and ''=='' is vulnerable to timing attacks.",
+      "commitSha": "25a77807cc50e0ee03cecaa1f2810b4051f96eb0",
+      "commitTimestamp": "2026-03-19T16:02:36Z"
+    },
+    {
+      "issueId": "ffda04093e36924168ee06fd9a12ad8a",
+      "filePath": "backend/src/whatsapp/whatsapp-catchup.service.ts",
+      "lineNumber": 397,
+      "patternId": "Semgrep_javascript_timing_rule-possible-timing-attacks",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The application was found executing string comparisons using one of `===`, `!==`, `==` or `!=` against security sensitive values.",
+      "commitSha": "25a77807cc50e0ee03cecaa1f2810b4051f96eb0",
+      "commitTimestamp": "2026-03-19T16:02:36Z"
+    },
+    {
+      "issueId": "fc847a228a489ae96ba9a7c7ecb0f79",
+      "filePath": "frontend/src/app/(main)/cia/page.tsx",
+      "lineNumber": 186,
+      "patternId": "Biome_lint_correctness_useExhaustiveDependencies",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook does not specify its dependency on loadSurface.",
+      "commitSha": "cfd93e04bfdbf33d6721b86dc9c65a3afbf5acea",
+      "commitTimestamp": "2026-03-19T16:50:10Z"
+    },
+    {
+      "issueId": "f89fb6756b1a7cc3fb7cf83f2eed85cf",
+      "filePath": "backend/src/whatsapp/whatsapp-watchdog.service.ts",
+      "lineNumber": 470,
+      "patternId": "Semgrep_rules_lgpl_javascript_crypto_rule-node-timing-attack",
+      "category": "Security",
+      "severityLevel": "Error",
+      "tool": "Opengrep",
+      "message": "'String comparisons using ''==='', ''!=='', ''!='' and ''=='' is vulnerable to timing attacks.",
+      "commitSha": "d57378fd219fea3e6f5a5cec1ef45ba182d6b88a",
+      "commitTimestamp": "2026-03-20T00:31:10Z"
+    },
+    {
+      "issueId": "f7fea59af56145379e5cc54189c5856f",
+      "filePath": "backend/src/whatsapp/whatsapp-watchdog.service.ts",
+      "lineNumber": 470,
+      "patternId": "Semgrep_javascript_timing_rule-possible-timing-attacks",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The application was found executing string comparisons using one of `===`, `!==`, `==` or `!=` against security sensitive values.",
+      "commitSha": "d57378fd219fea3e6f5a5cec1ef45ba182d6b88a",
+      "commitTimestamp": "2026-03-20T00:31:10Z"
     }
   ]
 }

@@ -203,7 +203,7 @@ export class AdminChatService {
 
     let result: Record<string, unknown>;
     try {
-      result = await tool.execute(call.args);
+      result = await tool.execute(call.args, { adminUserId, adminRole });
     } catch (error) {
       this.logger.warn(
         `Tool ${tool.name} threw: ${error instanceof Error ? error.message : String(error)}`,
@@ -265,7 +265,7 @@ export class AdminChatService {
     return [
       'Ferramentas disponíveis agora:',
       ...allowedTools.map((tool) => `- ${tool.name}: ${tool.description}`),
-      'Você também pode pedir em linguagem natural, por exemplo: "buscar workspace acme".',
+      'Você também pode pedir em linguagem natural, por exemplo: "buscar workspace acme" ou "me mostra o overview de marketing".',
     ].join('\n');
   }
 
@@ -319,6 +319,40 @@ function inferToolInvocation(
   const contextualSearch = trimmed.match(/(?:workspace|conta|produtor|cliente)\s+(.+)/i);
   if (contextualSearch?.[1] && contextualSearch[1].trim().length >= 2) {
     return { name: 'searchWorkspaces', args: { query: contextualSearch[1].trim() } };
+  }
+
+  if (/(overview|resumo|dashboard|home|gmv|receita)/i.test(trimmed)) {
+    if (/marketing|canal|conversa|lead/i.test(trimmed)) {
+      return { name: 'marketingOverview', args: {} };
+    }
+    if (/vendas|assinaturas|pipeline|transa/i.test(trimmed)) {
+      return { name: 'salesOverview', args: {} };
+    }
+    if (/compliance|chargeback|kyc|fraude|reembolso/i.test(trimmed)) {
+      return { name: 'complianceOverview', args: {} };
+    }
+    if (/relat[oó]rio|export|funnel|cohort/i.test(trimmed)) {
+      return { name: 'reportsOverview', args: {} };
+    }
+    if (/config|feature flag|dom[ií]nio|webhook|seguran/i.test(trimmed)) {
+      return { name: 'configOverview', args: {} };
+    }
+    if (/suporte|ticket|sla|macro/i.test(trimmed)) {
+      return { name: 'supportOverview', args: {} };
+    }
+    if (/alerta|notifica/i.test(trimmed)) {
+      return { name: 'notificationsOverview', args: {} };
+    }
+    if (/produto/i.test(trimmed)) {
+      return { name: 'productsOverview', args: {} };
+    }
+    if (/conta|workspace|produtor/i.test(trimmed)) {
+      return { name: 'accountsOverview', args: {} };
+    }
+    if (/cliente/i.test(trimmed)) {
+      return { name: 'clientsOverview', args: {} };
+    }
+    return { name: 'dashboardOverview', args: {} };
   }
 
   return null;

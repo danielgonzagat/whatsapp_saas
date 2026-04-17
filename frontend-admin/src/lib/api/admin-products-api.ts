@@ -38,6 +38,13 @@ export interface AdminProductDetail extends AdminProductRow {
   trackStock: boolean;
   salesPageUrl: string | null;
   supportEmail: string | null;
+  moderationHistory: Array<{
+    id: string;
+    action: string;
+    createdAt: string;
+    details: unknown;
+    adminUserName: string | null;
+  }>;
   commerce: {
     approvedOrders: number;
     pendingOrders: number;
@@ -56,6 +63,8 @@ export interface ListProductsQuery {
   take?: number;
 }
 
+export type AdminProductStateAction = 'PAUSE' | 'REACTIVATE';
+
 export const adminProductsApi = {
   list(query: ListProductsQuery = {}): Promise<ListProductsResponse> {
     const params = new URLSearchParams();
@@ -70,16 +79,22 @@ export const adminProductsApi = {
   detail(productId: string): Promise<AdminProductDetail> {
     return adminFetch<AdminProductDetail>(`/products/${encodeURIComponent(productId)}`);
   },
-  approve(productId: string, note?: string): Promise<void> {
+  approve(productId: string, note?: string, checklist?: string[]): Promise<void> {
     return adminFetch<void>(`/products/${encodeURIComponent(productId)}/approve`, {
       method: 'POST',
-      body: { note },
+      body: { note, checklist },
     });
   },
-  reject(productId: string, reason: string): Promise<void> {
+  reject(productId: string, reason: string, checklist?: string[]): Promise<void> {
     return adminFetch<void>(`/products/${encodeURIComponent(productId)}/reject`, {
       method: 'POST',
-      body: { reason },
+      body: { reason, checklist },
+    });
+  },
+  updateState(productId: string, action: AdminProductStateAction, note?: string): Promise<void> {
+    return adminFetch<void>(`/products/${encodeURIComponent(productId)}/state`, {
+      method: 'POST',
+      body: { action, note },
     });
   },
 };

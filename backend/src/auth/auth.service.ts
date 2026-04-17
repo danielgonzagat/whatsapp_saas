@@ -238,6 +238,25 @@ export class AuthService {
     }
   }
 
+  async issueTokensForAgentId(agentId: string) {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: {
+        id: true,
+        email: true,
+        workspaceId: true,
+        name: true,
+        role: true,
+      },
+    });
+
+    if (!agent) {
+      throw new UnauthorizedException('Usuário não encontrado para emissão de sessão.');
+    }
+
+    return this.issueTokens(agent);
+  }
+
   async checkEmail(email: string): Promise<{ exists: boolean }> {
     try {
       const agent = await this.prisma.agent.findFirst({

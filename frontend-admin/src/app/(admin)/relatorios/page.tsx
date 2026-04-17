@@ -14,12 +14,8 @@ import {
 import { BreakdownDonut } from '@/components/admin/god-view/breakdown-donut';
 import { GmvChart } from '@/components/admin/god-view/gmv-chart';
 import { PeriodFilter } from '@/components/admin/god-view/period-filter';
-import {
-  adminDashboardApi,
-  type AdminHomePeriod,
-  type AdminHomeResponse,
-} from '@/lib/api/admin-dashboard-api';
-import { adminTransactionsApi } from '@/lib/api/admin-transactions-api';
+import { adminReportsApi, type AdminReportsOverviewResponse } from '@/lib/api/admin-reports-api';
+import type { AdminHomePeriod } from '@/lib/api/admin-dashboard-api';
 
 function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
   if (rows.length === 0) return;
@@ -50,35 +46,34 @@ function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
 
 export default function RelatoriosPage() {
   const [period, setPeriod] = useState<AdminHomePeriod>('30D');
+  const [customRange, setCustomRange] = useState({ from: '', to: '' });
   const [exporting, setExporting] = useState(false);
 
-  const { data } = useSWR<AdminHomeResponse>(['admin/dashboard/home', period], () =>
-    adminDashboardApi.home({ period, compare: 'NONE' }),
+  const { data } = useSWR<AdminReportsOverviewResponse>(
+    ['admin/reports/overview', period, customRange.from, customRange.to],
+    () =>
+      adminReportsApi.overview({
+        period,
+        from: period === 'CUSTOM' ? customRange.from : undefined,
+        to: period === 'CUSTOM' ? customRange.to : undefined,
+      }),
   );
 
   async function exportCsv() {
     setExporting(true);
     try {
-      const payload = await adminTransactionsApi.list({ take: 200 });
-      downloadCsv(
-        `kloel-relatorio-${new Date().toISOString().slice(0, 10)}.csv`,
-        payload.items.map((item) => ({
-          orderNumber: item.orderNumber,
-          workspace: item.workspaceName || item.workspaceId,
-          customerName: item.customerName,
-          customerEmail: item.customerEmail,
-          paymentMethod: item.paymentMethod,
-          status: item.status,
-          gateway: item.gateway || '',
-          totalInCents: item.totalInCents,
-          totalBRL: (item.totalInCents / 100).toFixed(2),
-          paidAt: item.paidAt || '',
-        })),
-      );
+      const rows = await adminReportsApi.exportCsvRows({
+        period,
+        from: period === 'CUSTOM' ? customRange.from : undefined,
+        to: period === 'CUSTOM' ? customRange.to : undefined,
+      });
+      downloadCsv(`kloel-relatorio-${new Date().toISOString().slice(0, 10)}.csv`, rows);
     } finally {
       setExporting(false);
     }
   }
+
+  const snapshot = data?.snapshot;
 
   return (
     <AdminPage>
@@ -88,7 +83,12 @@ export default function RelatoriosPage() {
         description="Relatórios pré-construídos com exportação direta e leitura global da plataforma."
         actions={
           <>
-            <PeriodFilter value={period} onChange={setPeriod} />
+            <PeriodFilter
+              value={period}
+              onChange={setPeriod}
+              customRange={customRange}
+              onApplyCustomRange={setCustomRange}
+            />
             <Button size="sm" variant="outline" onClick={() => window.print()}>
               Exportar PDF
             </Button>
@@ -103,25 +103,25 @@ export default function RelatoriosPage() {
         items={[
           {
             label: 'GMV',
-            value: data?.kpis.gmv.value ?? null,
-            detail: data?.range.label || 'Período ativo',
+            value: snapshot?.kpis.gmv.value ?? null,
+            detail: snapshot?.range.label || 'Período ativo',
             tone: 'text-[var(--app-accent)]',
           },
           {
             label: 'Transações aprovadas',
-            value: data?.kpis.approvedCount.value ?? null,
+            value: snapshot?.kpis.approvedCount.value ?? null,
             kind: 'integer',
             detail: 'Pedidos aprovados no período',
           },
           {
             label: 'Taxa de aprovação',
-            value: data?.kpis.approvalRate.value ?? null,
+            value: snapshot?.kpis.approvalRate.value ?? null,
             kind: 'percentage',
             detail: 'Leitura macro do funil',
           },
           {
             label: 'Ticket médio',
-            value: data?.kpis.averageTicket.value ?? null,
+            value: snapshot?.kpis.averageTicket.value ?? null,
             detail: 'Média das vendas aprovadas',
           },
         ]}
@@ -134,7 +134,7 @@ export default function RelatoriosPage() {
             description="Comparativo contínuo do volume bruto aprovado dentro da janela selecionada."
           />
           <div className="h-[320px]">
-            <GmvChart data={data?.series.gmvDaily ?? []} />
+            <GmvChart data={snapshot?.series.gmvDaily ?? []} />
           </div>
         </AdminSurface>
 
@@ -146,7 +146,7 @@ export default function RelatoriosPage() {
           <div className="h-[320px]">
             <BreakdownDonut
               data={
-                data?.breakdowns.byMethod.map((row) => ({
+                snapshot?.breakdowns.byMethod.map((row) => ({
                   label: row.method,
                   gmvInCents: row.gmvInCents,
                 })) ?? []
@@ -165,23 +165,23 @@ export default function RelatoriosPage() {
           {[
             {
               label: 'Reembolsos',
-              value: data?.kpis.refundAmount.value ?? null,
-              detail: `${data?.kpis.refundCount.value ?? 0} ocorrências`,
+              value: snapshot?.kpis.refundAmount.value ?? null,
+              detail: `${snapshot?.kpis.refundCount.value ?? 0} ocorrências`,
             },
             {
               label: 'Chargebacks',
-              value: data?.kpis.chargebackAmount.value ?? null,
-              detail: `${data?.kpis.chargebackCount.value ?? 0} disputas`,
+              value: snapshot?.kpis.chargebackAmount.value ?? null,
+              detail: `${snapshot?.kpis.chargebackCount.value ?? 0} disputas`,
             },
             {
               label: 'Produtores ativos',
-              value: data?.kpis.activeProducers.value ?? null,
+              value: snapshot?.kpis.activeProducers.value ?? null,
               detail: 'Rolling 30 dias',
               kind: 'integer' as const,
             },
             {
               label: 'Novos produtores',
-              value: data?.kpis.newProducers.value ?? null,
+              value: snapshot?.kpis.newProducers.value ?? null,
               detail: 'Aquisição no período',
               kind: 'integer' as const,
             },
@@ -199,6 +199,28 @@ export default function RelatoriosPage() {
                 className="text-[24px] font-bold tracking-[-0.04em] text-[var(--app-text-primary)]"
               />
               <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">{item.detail}</div>
+            </div>
+          ))}
+        </div>
+      </AdminSurface>
+
+      <AdminSurface className="px-5 py-5 lg:px-6">
+        <AdminSectionHeader
+          title="Histórico de exports"
+          description="Rastro operacional das últimas exportações disparadas pelo time."
+        />
+        <div className="grid gap-2">
+          {(data?.exportHistory ?? []).map((item) => (
+            <div
+              key={item.id}
+              className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3"
+            >
+              <div className="text-[12px] font-semibold text-[var(--app-text-primary)]">
+                {item.action}
+              </div>
+              <div className="mt-1 text-[11px] text-[var(--app-text-secondary)]">
+                {item.actorName || 'Sistema'} · {new Date(item.createdAt).toLocaleString('pt-BR')}
+              </div>
             </div>
           ))}
         </div>

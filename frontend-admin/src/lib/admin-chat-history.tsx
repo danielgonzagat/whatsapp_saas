@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { adminChatApi, type AdminChatSessionView } from '@/lib/api/admin-chat-api';
@@ -97,14 +98,18 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
   const { admin } = useAdminSession();
   const [sessions, setSessions] = useState<AdminChatSessionSummary[]>([]);
   const [activeSessionId, setActiveSessionIdRaw] = useState<string | null>(null);
+  const sessionsRef = useRef<AdminChatSessionSummary[]>([]);
 
   useEffect(() => {
-    setSessions(readCache<AdminChatSessionSummary[]>(CACHE_KEY_SESSIONS, []));
+    const cachedSessions = readCache<AdminChatSessionSummary[]>(CACHE_KEY_SESSIONS, []);
+    sessionsRef.current = cachedSessions;
+    setSessions(cachedSessions);
     setActiveSessionIdRaw(readCache<string | null>(CACHE_KEY_ACTIVE, null));
   }, []);
 
   const persistSessions = useCallback((nextSessions: AdminChatSessionSummary[]) => {
     const normalized = sortSessions(nextSessions).slice(0, 50);
+    sessionsRef.current = normalized;
     setSessions(normalized);
     writeCache(CACHE_KEY_SESSIONS, normalized);
   }, []);
@@ -165,6 +170,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
         mapped,
         ...current.filter((entry) => entry.id !== mapped.id),
       ]).slice(0, 50);
+      sessionsRef.current = next;
       writeCache(CACHE_KEY_SESSIONS, next);
       return next;
     });
@@ -172,8 +178,8 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
   }, []);
 
   const getSessionById = useCallback(
-    (sessionId: string) => sessions.find((session) => session.id === sessionId) || null,
-    [sessions],
+    (sessionId: string) => sessionsRef.current.find((session) => session.id === sessionId) || null,
+    [],
   );
 
   const value = useMemo<AdminChatHistoryContextValue>(

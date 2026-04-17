@@ -19,6 +19,7 @@ describe('Financial Scenarios', () => {
   beforeEach(async () => {
     prismaMock = {
       kloelWallet: {
+        upsert: jest.fn().mockResolvedValue({ ...mockWallet }),
         findUnique: jest.fn().mockResolvedValue({ ...mockWallet }),
         create: jest.fn().mockResolvedValue({ ...mockWallet }),
         update: jest.fn().mockResolvedValue({ ...mockWallet }),

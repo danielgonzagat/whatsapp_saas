@@ -12,6 +12,9 @@ export interface AdminAccountRow {
   gmvLast30dInCents: number;
   lastSaleAt: string | null;
   productCount: number;
+  suspended: boolean;
+  blocked: boolean;
+  frozenBalanceInCents: number;
 }
 
 export interface ListAccountsResponse {
@@ -46,6 +49,16 @@ export interface AdminAccountDetail {
   name: string;
   createdAt: string;
   updatedAt: string;
+  ownerAgentId: string | null;
+  ownerEmail: string | null;
+  lifecycle: {
+    suspended: boolean;
+    blocked: boolean;
+    frozenBalanceInCents: number;
+    reason: string | null;
+    updatedAt: string | null;
+    updatedBy: string | null;
+  };
   agents: AdminAccountAgent[];
   kycDocuments: AdminAccountKycDocument[];
   productCount: number;
@@ -59,6 +72,26 @@ export interface AdminAccountDetail {
     customerEmail: string;
     createdAt: string;
     paidAt: string | null;
+  }>;
+}
+
+export interface AdminAccountImpersonationSession {
+  access_token: string;
+  refresh_token: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    workspaceId: string;
+    role: string;
+  };
+  workspace: {
+    id: string;
+    name: string;
+  } | null;
+  workspaces: Array<{
+    id: string;
+    name: string;
   }>;
 }
 
@@ -84,6 +117,8 @@ export interface ListAccountsQuery {
   skip?: number;
   take?: number;
 }
+
+export type AdminAccountStateAction = 'SUSPEND' | 'BLOCK' | 'UNBLOCK' | 'FREEZE' | 'UNFREEZE';
 
 export const adminAccountsApi = {
   list(query: ListAccountsQuery = {}): Promise<ListAccountsResponse> {
@@ -118,5 +153,45 @@ export const adminAccountsApi = {
       method: 'POST',
       body: { reason },
     });
+  },
+  updateState(
+    workspaceId: string,
+    body: { action: AdminAccountStateAction; reason?: string; frozenBalanceInCents?: number },
+  ): Promise<void> {
+    return adminFetch<void>(`/accounts/${encodeURIComponent(workspaceId)}/state`, {
+      method: 'POST',
+      body,
+    });
+  },
+  bulkUpdateState(body: {
+    workspaceIds: string[];
+    action: AdminAccountStateAction;
+    reason?: string;
+    frozenBalanceInCents?: number;
+  }): Promise<{ updated: number }> {
+    return adminFetch<{ updated: number }>(`/accounts/bulk/state`, {
+      method: 'POST',
+      body,
+    });
+  },
+  resetOwnerPassword(
+    workspaceId: string,
+    temporaryPassword?: string,
+  ): Promise<{ ownerAgentId: string; ownerEmail: string; temporaryPassword: string }> {
+    return adminFetch<{ ownerAgentId: string; ownerEmail: string; temporaryPassword: string }>(
+      `/accounts/${encodeURIComponent(workspaceId)}/reset-password`,
+      {
+        method: 'POST',
+        body: { temporaryPassword },
+      },
+    );
+  },
+  impersonateOwner(workspaceId: string): Promise<AdminAccountImpersonationSession> {
+    return adminFetch<AdminAccountImpersonationSession>(
+      `/accounts/${encodeURIComponent(workspaceId)}/impersonate`,
+      {
+        method: 'POST',
+      },
+    );
   },
 };

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
+import { AdminNotificationsPanel } from './admin-notifications-panel';
 
 function initialsFromName(name?: string | null) {
   const trimmed = String(name || '').trim();
@@ -123,6 +124,8 @@ export function AdminSidebarUserMenu({ expanded }: { expanded: boolean }) {
               <span>{isDark ? 'Tema claro' : 'Tema escuro'}</span>
             </button>
           </div>
+
+          <AdminNotificationsPanel />
 
           <div className="p-2">
             <button
