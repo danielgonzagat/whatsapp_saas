@@ -1,7 +1,7 @@
 /**
  * Period resolver for the God View dashboard.
  *
- * Each operator-facing period (TODAY / 7D / 30D / 90D / 12M / CUSTOM) maps
+ * Each operator-facing period (TODAY / 30D / CUSTOM) maps
  * to a canonical [from, to] pair in UTC, plus an optional comparison range
  * (previous-period or year-over-year).
  *
@@ -12,15 +12,14 @@
  *     `createdAt <= to` so same-day activity is included.
  *   - TODAY is [today 00:00:00, today 23:59:59.999] — not the last 24h.
  *     That matches Stripe/Hotmart operator mental model.
- *   - 7D / 30D / 90D are "last N days including today", so their previous
- *     period is "the N days before that". 12M is "last 12 months", and its
- *     YoY comparison is "the same 12-month window one year earlier".
+ *   - 30D is "last 30 days including today", so the previous period is
+ *     "the 30 days before that".
  *   - CUSTOM requires both `from` and `to` as inputs; the previous period
  *     is symmetric (same length backward from `from`). YoY subtracts 1y
  *     from both.
  */
 
-export type AdminHomePeriod = 'TODAY' | '7D' | '30D' | '90D' | '12M' | 'CUSTOM';
+export type AdminHomePeriod = 'TODAY' | '30D' | 'CUSTOM';
 export type AdminHomeCompare = 'PREVIOUS' | 'YOY' | 'NONE';
 
 export interface ResolvedAdminHomeRange {
@@ -50,12 +49,6 @@ function addDays(d: Date, n: number): Date {
   return new Date(d.getTime() + n * MS_IN_DAY);
 }
 
-function subtractMonths(d: Date, months: number): Date {
-  const out = new Date(d.getTime());
-  out.setUTCMonth(out.getUTCMonth() - months);
-  return out;
-}
-
 function previousWindowOf(from: Date, to: Date): { from: Date; to: Date } {
   const spanMs = to.getTime() - from.getTime();
   const prevTo = new Date(from.getTime() - 1);
@@ -73,10 +66,7 @@ function yoyWindowOf(from: Date, to: Date): { from: Date; to: Date } {
 
 const LABELS: Record<AdminHomePeriod, string> = {
   TODAY: 'Hoje',
-  '7D': 'Últimos 7 dias',
   '30D': 'Últimos 30 dias',
-  '90D': 'Últimos 90 dias',
-  '12M': 'Últimos 12 meses',
   CUSTOM: 'Período personalizado',
 };
 
@@ -101,20 +91,8 @@ export function resolveAdminHomeRange(input: ResolveAdminHomeRangeInput): Resolv
       from = startOfDay(now);
       to = endOfDay(now);
       break;
-    case '7D':
-      from = startOfDay(addDays(now, -6));
-      to = endOfDay(now);
-      break;
     case '30D':
       from = startOfDay(addDays(now, -29));
-      to = endOfDay(now);
-      break;
-    case '90D':
-      from = startOfDay(addDays(now, -89));
-      to = endOfDay(now);
-      break;
-    case '12M':
-      from = startOfDay(subtractMonths(now, 12));
       to = endOfDay(now);
       break;
     case 'CUSTOM':

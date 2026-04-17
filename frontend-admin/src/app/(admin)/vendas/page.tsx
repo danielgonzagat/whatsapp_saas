@@ -111,7 +111,14 @@ export default function VendasPage() {
     (item) => item.status === 'PENDING' || item.status === 'PROCESSING',
   ).length;
   const refundedCount = items.filter((item) => item.status === 'REFUNDED').length;
-  const gatewayOptions = Array.from(new Set(items.map((item) => item.gateway).filter(Boolean))).sort();
+  const chargebackCount = items.filter((item) => item.status === 'CHARGEBACK').length;
+  const gatewayOptions = Array.from(
+    new Set(items.map((item) => item.gateway).filter(Boolean)),
+  ).sort();
+  const arrProjected =
+    dashboard?.kpis.mrrProjected.value !== null && dashboard?.kpis.mrrProjected.value !== undefined
+      ? dashboard.kpis.mrrProjected.value * 12
+      : null;
 
   const chartValues = useMemo(() => {
     const values = Array.from({ length: 7 }, () => 0);
@@ -318,30 +325,35 @@ export default function VendasPage() {
           />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             {[
-              { label: 'MRR', value: null, kind: 'currency-brl', detail: 'Dados sendo coletados' },
+              {
+                label: 'MRR',
+                value: dashboard?.kpis.mrrProjected.value ?? null,
+                kind: 'currency-brl',
+                detail: 'Receita recorrente mensal projetada',
+              },
               {
                 label: 'Assinaturas ativas',
-                value: null,
+                value: Math.max(paidCount - refundedCount - chargebackCount, 0),
                 kind: 'integer',
-                detail: 'Dados sendo coletados',
+                detail: 'Base recorrente estimada a partir das cobranças pagas',
               },
               {
                 label: 'Churn rate',
-                value: null,
+                value: dashboard?.kpis.churnRate.value ?? null,
                 kind: 'percentage',
-                detail: 'Dados sendo coletados',
+                detail: 'Cancelamentos sobre a base recorrente',
               },
               {
                 label: 'LTV médio',
-                value: null,
+                value: dashboard?.kpis.averageTicket.value ?? null,
                 kind: 'currency-brl',
-                detail: 'Dados sendo coletados',
+                detail: 'Valor médio por cobrança aprovada',
               },
               {
                 label: 'ARR projetado',
-                value: null,
+                value: arrProjected,
                 kind: 'currency-brl',
-                detail: 'Dados sendo coletados',
+                detail: 'Projeção anual derivada do MRR atual',
               },
             ].map((item) => (
               <div
@@ -440,22 +452,65 @@ export default function VendasPage() {
           />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {[
-              'Recuperar carrinhos',
-              'Escalar recorrência',
-              'Cobrança imediata',
-              'Fulfillment físico',
-              'Pipeline comercial',
-              'Monitorar chargebacks',
-            ].map((label) => (
+              {
+                label: 'Recuperar carrinhos',
+                value: pendingCount,
+                kind: 'integer' as const,
+                detail: 'Pedidos pendentes aguardando recuperação ou pagamento.',
+              },
+              {
+                label: 'Escalar recorrência',
+                value: dashboard?.kpis.mrrProjected.value ?? 0,
+                kind: 'currency-brl' as const,
+                detail: 'MRR projetado para a base recorrente ativa.',
+              },
+              {
+                label: 'Cobrança imediata',
+                value: paidCount,
+                kind: 'integer' as const,
+                detail: 'Pedidos pagos já liquidados na janela atual.',
+              },
+              {
+                label: 'Fulfillment físico',
+                value: items.filter(
+                  (item) => item.status === 'SHIPPED' || item.status === 'DELIVERED',
+                ).length,
+                kind: 'integer' as const,
+                detail: 'Pedidos físicos já enviados ou concluídos.',
+              },
+              {
+                label: 'Pipeline comercial',
+                value: items.length,
+                kind: 'integer' as const,
+                detail: 'Volume total de linhas operacionais carregadas na leitura.',
+              },
+              {
+                label: 'Monitorar chargebacks',
+                value: chargebackCount,
+                kind: 'integer' as const,
+                detail: 'Pedidos em disputa que precisam de atenção operacional.',
+              },
+            ].map((item) => (
               <div
-                key={label}
+                key={item.label}
                 className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-4"
               >
                 <div className="mb-2 text-[14px] font-semibold text-[var(--app-text-primary)]">
-                  {label}
+                  {item.label}
                 </div>
-                <div className="text-[12px] leading-6 text-[var(--app-text-secondary)]">
-                  Dados sendo coletados para esta leitura estratégica.
+                <div className="text-[24px] font-bold tracking-[-0.04em] text-[var(--app-accent)]">
+                  {item.kind === 'currency-brl' ? (
+                    <MetricNumber
+                      value={item.value}
+                      kind="currency-brl"
+                      className="text-[24px] font-bold tracking-[-0.04em] text-[var(--app-accent)]"
+                    />
+                  ) : (
+                    formatInteger(item.value)
+                  )}
+                </div>
+                <div className="mt-2 text-[12px] leading-6 text-[var(--app-text-secondary)]">
+                  {item.detail}
                 </div>
               </div>
             ))}

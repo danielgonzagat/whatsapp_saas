@@ -6,6 +6,7 @@ import { AdminAuditModule } from './audit/admin-audit.module';
 import { AdminAuthModule } from './auth/admin-auth.module';
 import { AdminCarteiraModule } from './carteira/admin-carteira.module';
 import { AdminChatModule } from './chat/admin-chat.module';
+import { AdminClientsModule } from './clients/admin-clients.module';
 import { AdminDashboardModule } from './dashboard/admin-dashboard.module';
 import { AdminDestructiveModule } from './destructive/admin-destructive.module';
 import { AdminPermissionsModule } from './permissions/admin-permissions.module';
@@ -27,6 +28,7 @@ import { AdminUsersModule } from './users/admin-users.module';
     AdminCarteiraModule,
     AdminProductsModule,
     AdminTransactionsModule,
+    AdminClientsModule,
     AdminUsersModule,
     AdminSessionsModule,
     AdminSeedModule,

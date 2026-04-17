@@ -1,6 +1,6 @@
 import { adminFetch } from './admin-client';
 
-export type AdminHomePeriod = 'TODAY' | '7D' | '30D' | '90D' | '12M' | 'CUSTOM';
+export type AdminHomePeriod = 'TODAY' | '30D' | 'CUSTOM';
 export type AdminHomeCompare = 'PREVIOUS' | 'YOY' | 'NONE';
 
 export interface KpiMoneyValue {
@@ -19,11 +19,6 @@ export interface KpiRateValue {
   value: number | null;
   previous: number | null;
   deltaPct: number | null;
-}
-
-export interface KpiUnavailable {
-  value: null;
-  unavailableReason: string;
 }
 
 export interface GatewayBreakdownRow {
@@ -75,8 +70,10 @@ export interface AdminHomeResponse {
     totalProducers: { value: number };
     revenueKloel: KpiMoneyValue;
     revenueKloelRate: KpiRateValue;
-    mrrProjected: KpiUnavailable;
-    churnRate: KpiUnavailable;
+    mrrProjected: KpiMoneyValue;
+    churnRate: KpiRateValue;
+    conversations: KpiNumberValue;
+    responseTimeMinutes: KpiNumberValue;
   };
   breakdowns: {
     byGateway: GatewayBreakdownRow[];

@@ -259,7 +259,7 @@ export function AdminSubinterfaceTabs({
 
 export function AdminTicker({
   items,
-  emptyLabel = 'Dados sendo coletados',
+  emptyLabel = 'Sem atualizações recentes',
 }: {
   items: string[];
   emptyLabel?: string;

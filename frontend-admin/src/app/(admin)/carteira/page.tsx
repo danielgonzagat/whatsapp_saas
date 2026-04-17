@@ -76,8 +76,8 @@ export default function CarteiraPage() {
   const { data: ledger } = useSWR<ListLedgerResponse>('admin/carteira/ledger', () =>
     adminCarteiraApi.ledger({ take: 40 }),
   );
-  const { data: dashboard } = useSWR<AdminHomeResponse>(['admin/dashboard/home', '7D'], () =>
-    adminDashboardApi.home({ period: '7D', compare: 'NONE' }),
+  const { data: dashboard } = useSWR<AdminHomeResponse>(['admin/dashboard/home', '30D'], () =>
+    adminDashboardApi.home({ period: '30D', compare: 'NONE' }),
   );
 
   const revenueBars = useMemo(
@@ -158,7 +158,9 @@ export default function CarteiraPage() {
                   title="Receita - últimos 7 dias"
                   description="Barras diárias da receita própria da Kloel."
                 />
-                <RevenueBars values={revenueBars.length > 0 ? revenueBars : Array.from({ length: 7 }, () => 0)} />
+                <RevenueBars
+                  values={revenueBars.length > 0 ? revenueBars : Array.from({ length: 7 }, () => 0)}
+                />
               </AdminSurface>
 
               <AdminSurface className="px-5 py-5 lg:px-6">
@@ -300,7 +302,7 @@ export default function CarteiraPage() {
                 </div>
                 <div className="text-[18px] font-semibold text-[var(--app-text-primary)]">—</div>
                 <div className="mt-2 text-[12px] leading-6 text-[var(--app-text-secondary)]">
-                  Dados sendo coletados
+                  Sem eventos suficientes na carteira para compor este recorte.
                 </div>
               </div>
             ))}
