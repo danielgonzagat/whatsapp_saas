@@ -21,10 +21,12 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import type Redis from 'ioredis';
 import { Counter, Gauge, register } from 'prom-client';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 
@@ -112,16 +114,18 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       select: { providerSettings: true },
     });
 
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const autonomy = (settings.autonomy || {}) as Record<string, any>;
-    const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
+    const settings = asProviderSettings(workspace?.providerSettings);
+    const autonomy = settings.autonomy ?? {};
+    const runtime = settings.ciaRuntime ?? {};
     const autonomyMode = String(autonomy.mode || '').toUpperCase();
     const runtimeState = String(runtime.state || '').toUpperCase();
+    const lastBootstrapRaw =
+      this.readText(runtime.lastBootstrapAt) || this.readText(runtime.startedAt);
     if (autonomy.autoBootstrapOnConnected === false) {
       return false;
     }
 
-    const lastBootstrapAt = Date.parse(String(runtime.lastBootstrapAt || runtime.startedAt || ''));
+    const lastBootstrapAt = Date.parse(lastBootstrapRaw);
     const runtimeAppearsActive =
       ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
       ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
@@ -141,7 +145,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       await this.prisma.workspace.update({
         where: { id: workspaceId },
         data: {
-          providerSettings: {
+          providerSettings: toPrismaJsonValue({
             ...settings,
             autonomy: preserveManualBlock
               ? {
@@ -164,7 +168,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
               lastRuntimeResetAt: now,
               lastRuntimeResetReason: 'watchdog_stale_bootstrap',
             },
-          } as Prisma.JsonObject,
+          }),
         },
       });
 
@@ -228,10 +232,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       select: { providerSettings: true },
     });
 
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const sessionMeta = (settings.whatsappWebSession ||
-      settings.whatsappApiSession ||
-      {}) as Record<string, any>;
+    const settings = asProviderSettings(workspace?.providerSettings);
+    const sessionMeta = settings.whatsappWebSession || settings.whatsappApiSession || {};
     const recoveryBlockedReason = String(sessionMeta.recoveryBlockedReason || '').trim();
 
     if (this.isNowebStoreMisconfigured(recoveryBlockedReason)) {
@@ -249,7 +251,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     return null;
   }
 
-  private isGuestWorkspace(workspaceName?: string, settings?: Record<string, any> | null): boolean {
+  private readText(value: unknown): string {
+    return typeof value === 'string' ? value : '';
+  }
+
+  private isGuestWorkspace(workspaceName?: string, settings?: ProviderSettings | null): boolean {
     const normalizedName = String(workspaceName || '')
       .trim()
       .toLowerCase();
@@ -271,8 +277,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     name?: string | null;
     providerSettings?: unknown;
   }): boolean {
-    const settings = (workspace.providerSettings as Record<string, any>) || {};
-    const lifecycle = (settings.whatsappLifecycle || {}) as Record<string, any>;
+    const settings = asProviderSettings(workspace.providerSettings);
+    const lifecycle = settings.whatsappLifecycle ?? {};
 
     if (this.isGuestWorkspace(workspace.name || undefined, settings)) {
       return false;
@@ -394,7 +400,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     let orphanLiveSessions = 0;
 
     for (const workspace of workspaces) {
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings = asProviderSettings(workspace.providerSettings);
       if (this.isGuestWorkspace(workspace.name || undefined, settings)) {
         continue;
       }
@@ -497,15 +503,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
-      const sessionMeta = (settings.whatsappWebSession ||
-        settings.whatsappApiSession ||
-        {}) as Record<string, any>;
+      const settings = asProviderSettings(workspace.providerSettings);
+      const sessionMeta = settings.whatsappWebSession || settings.whatsappApiSession || {};
 
       await this.prisma.workspace.update({
         where: { id: workspaceId },
         data: {
-          providerSettings: {
+          providerSettings: toPrismaJsonValue({
             ...settings,
             whatsappApiSession: {
               ...sessionMeta,
@@ -517,7 +521,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
               ...update,
               lastUpdated: new Date().toISOString(),
             },
-          } as Prisma.JsonObject,
+          }),
         },
       });
     } catch (error: unknown) {
