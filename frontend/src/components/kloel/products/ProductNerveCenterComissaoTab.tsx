@@ -20,19 +20,17 @@ import {
   cs,
   is,
   unwrapApiPayload,
+  JsonRecord,
 } from './product-nerve-center.shared';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
 function sanitizeHtml(html: string): string {
   if (!DOMPurify) return html;
-  return (DOMPurify as { sanitize: (html: string, opts: Record<string, any>) => string }).sanitize(
-    html,
-    {
-      ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
-      ALLOWED_ATTR: ['href', 'target'],
-    },
-  );
+  return (DOMPurify as { sanitize: (html: string, opts: JsonRecord) => string }).sanitize(html, {
+    ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
+    ALLOWED_ATTR: ['href', 'target'],
+  });
 }
 
 function clampNumber(value: number, min: number, max: number) {
@@ -98,9 +96,9 @@ interface CoproducerRecord {
 /* ── Shared prop types for sub-tabs ── */
 interface SubTabProps {
   productId: string;
-  p: Record<string, any>;
+  p: Record<string, unknown>;
   refreshProduct: () => Promise<void>;
-  setAffiliateSummary: (v: Record<string, any> | null) => void;
+  setAffiliateSummary: (v: JsonRecord | null) => void;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -114,7 +112,7 @@ function AfiliadosSubTab({
   copied,
   cp,
 }: SubTabProps & {
-  affiliateSummary: Record<string, any> | null;
+  affiliateSummary: JsonRecord | null;
   affiliateLoading: boolean;
   copied: string | null;
   cp: (text: string, id: string) => void;
@@ -273,7 +271,7 @@ function AfiliadosSubTab({
               {requests.length === 0 ? (
                 <div style={{ fontSize: 12, color: V.t3 }}>Nenhuma solicitação recebida ainda.</div>
               ) : (
-                requests.slice(0, 6).map((request: Record<string, any>) => (
+                requests.slice(0, 6).map((request) => (
                   <div
                     key={String(request.id)}
                     style={{
@@ -348,7 +346,7 @@ function AfiliadosSubTab({
               {links.length === 0 ? (
                 <div style={{ fontSize: 12, color: V.t3 }}>Nenhum link ativo gerado ainda.</div>
               ) : (
-                links.slice(0, 6).map((link: Record<string, any>) => (
+                links.slice(0, 6).map((link) => (
                   <div
                     key={String(link.id)}
                     style={{ padding: '10px 0', borderBottom: `1px solid ${V.b}` }}
@@ -432,7 +430,7 @@ function AfiliadosSubTab({
    ═══════════════════════════════════════════════════ */
 function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: SubTabProps) {
   const { showToast } = useToast();
-  const [merchan, setMerchan] = useState(p.merchandContent || '');
+  const [merchan, setMerchan] = useState(String(p.merchandContent ?? ''));
   const [mSaving, setMSaving] = useState(false);
   const [mSaved, setMSaved] = useState(false);
   const edRef = useRef<HTMLDivElement | null>(null);
@@ -551,7 +549,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
    ═══════════════════════════════════════════════════ */
 function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: SubTabProps) {
   const { showToast } = useToast();
-  const [terms, setTerms] = useState(p.affiliateTerms || '');
+  const [terms, setTerms] = useState(String(p.affiliateTerms ?? ''));
   const [tSaving, setTSaving] = useState(false);
   const [tSaved, setTSaved] = useState(false);
   const edRef = useRef<HTMLDivElement | null>(null);
@@ -680,7 +678,7 @@ function CoprodSubTab({
 }) {
   const fid = useId();
   const { showToast } = useToast();
-  const [items, setItems] = useState<Record<string, any>[]>([]);
+  const [items, setItems] = useState<JsonRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -692,11 +690,11 @@ function CoprodSubTab({
   const [creating, setCreating] = useState(false);
 
   const fetchCommissions = () => {
-    apiFetch<Record<string, any>>(`/products/${productId}/commissions`)
+    apiFetch<JsonRecord>(`/products/${productId}/commissions`)
       .then((r) => {
-        const d = unwrapApiPayload<Record<string, any>[]>(r);
+        const d = unwrapApiPayload<JsonRecord[]>(r);
         setItems(
-          (Array.isArray(d) ? d : []).filter((c: Record<string, any>) =>
+          (Array.isArray(d) ? d : []).filter((c: JsonRecord) =>
             ['COPRODUCER', 'MANAGER'].includes(c.role as string),
           ),
         );
@@ -944,9 +942,9 @@ function CoprodSubTab({
           <span style={{ color: V.t3, fontSize: 13 }}>Nenhum parceiro cadastrado</span>
         </div>
       ) : (
-        items.map((c: Record<string, any>) => (
+        items.map((c: JsonRecord) => (
           <div
-            key={c.id}
+            key={String(c.id)}
             style={{
               background: V.e,
               border: `1px solid ${V.b}`,
@@ -985,13 +983,13 @@ function CoprodSubTab({
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: V.t }}>
-                  {c.agentName || 'Sem nome'}
+                  {String(c.agentName || 'Sem nome')}
                 </div>
                 <Bg color={c.role === 'MANAGER' ? V.bl : V.em}>
                   {c.role === 'MANAGER' ? 'GERENTE' : 'COPRODUTOR'}
                 </Bg>
               </div>
-              <div style={{ fontSize: 11, color: V.t3 }}>{c.agentEmail || '—'}</div>
+              <div style={{ fontSize: 11, color: V.t3 }}>{String(c.agentEmail || '—')}</div>
             </div>
             <div style={{ textAlign: 'right', marginRight: 8 }}>
               <span style={{ fontFamily: M, fontSize: 15, fontWeight: 700, color: V.em }}>
@@ -1001,7 +999,7 @@ function CoprodSubTab({
             </div>
             <button
               type="button"
-              onClick={() => handleDelete(c.id)}
+              onClick={() => handleDelete(String(c.id))}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -1039,7 +1037,7 @@ export function ProductNerveCenterComissaoTab() {
   const { showToast } = useToast();
 
   /* ── affiliate state (moved from parent) ── */
-  const [affiliateSummary, setAffiliateSummary] = useState<Record<string, any> | null>(null);
+  const [affiliateSummary, setAffiliateSummary] = useState<JsonRecord | null>(null);
   const [affiliateLoading, setAffiliateLoading] = useState(false);
 
   /* ── comSub state (moved from parent) ── */
@@ -1053,7 +1051,7 @@ export function ProductNerveCenterComissaoTab() {
     setAffiliateLoading(true);
     apiFetch(`/products/${productId}/affiliates`)
       .then((res: unknown) => {
-        const data = unwrapApiPayload<Record<string, any>>(res);
+        const data = unwrapApiPayload<JsonRecord>(res);
         setAffiliateSummary(data || null);
       })
       .catch(() => setAffiliateSummary(null))
@@ -1279,7 +1277,7 @@ export function ProductNerveCenterComissaoTab() {
       {comSub === 'afiliados' && (
         <AfiliadosSubTab
           productId={productId}
-          p={p}
+          p={p as unknown as JsonRecord}
           refreshProduct={refreshProduct}
           setAffiliateSummary={setAffiliateSummary}
           affiliateSummary={affiliateSummary}
@@ -1291,7 +1289,7 @@ export function ProductNerveCenterComissaoTab() {
       {comSub === 'merchan' && (
         <MerchanSubTab
           productId={productId}
-          p={p}
+          p={p as unknown as JsonRecord}
           refreshProduct={refreshProduct}
           setAffiliateSummary={setAffiliateSummary}
         />
@@ -1299,7 +1297,7 @@ export function ProductNerveCenterComissaoTab() {
       {comSub === 'termos' && (
         <TermosSubTab
           productId={productId}
-          p={p}
+          p={p as unknown as JsonRecord}
           refreshProduct={refreshProduct}
           setAffiliateSummary={setAffiliateSummary}
         />

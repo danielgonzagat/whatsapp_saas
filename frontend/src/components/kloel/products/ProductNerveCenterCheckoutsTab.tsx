@@ -19,6 +19,8 @@ import {
   cs,
   formatBrlCents,
   is,
+  type JsonRecord,
+  type JsonValue,
 } from './product-nerve-center.shared';
 import type { ProductEditorCheckoutView } from './product-nerve-center.view-models';
 
@@ -26,14 +28,14 @@ interface ProductNerveCenterCheckoutsTabProps {
   ckEdit: string | null;
   setCkEdit: (value: string | null) => void;
   checkouts: ProductEditorCheckoutView[];
-  rawCheckouts: Record<string, any>[];
-  rawPlans: Record<string, any>[];
+  rawCheckouts: JsonRecord[];
+  rawPlans: JsonRecord[];
   copied: string | null;
   onDuplicateCheckout: (checkoutId: string) => void | Promise<void>;
   onDeleteCheckout: (checkoutId: string) => void | Promise<void>;
   onCreateCheckout: () => void | Promise<void>;
   syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<unknown>;
-  updatePlan: (planId: string, payload: Record<string, any>) => Promise<unknown>;
+  updatePlan: (planId: string, payload: JsonRecord) => Promise<unknown>;
 }
 
 export function ProductNerveCenterCheckoutsTab({
@@ -419,11 +421,11 @@ function CheckoutConfigPanel({
   updatePlan,
 }: {
   ckEdit: string;
-  rawCheckouts: Record<string, any>[];
-  rawPlans: Record<string, any>[];
+  rawCheckouts: JsonRecord[];
+  rawPlans: JsonRecord[];
   setCkEdit: (value: string | null) => void;
   syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<unknown>;
-  updatePlan: (planId: string, payload: Record<string, any>) => Promise<unknown>;
+  updatePlan: (planId: string, payload: JsonRecord) => Promise<unknown>;
 }) {
   const { isMobile } = useResponsiveViewport();
   const { COUPONS } = useNerveCenterContext();
@@ -434,7 +436,7 @@ function CheckoutConfigPanel({
     isLoading: ckLoading,
   } = useCheckoutConfig(ckEdit);
   // biome-ignore lint/suspicious/noExplicitAny: checkout config has dynamic fields from API
-  const [ckLocal, setCkLocal] = useState<Record<string, any>>({});
+  const [ckLocal, setCkLocal] = useState<JsonRecord>({});
   const [ckSaving, setCkSaving] = useState(false);
   const [ckSaved, setCkSaved] = useState(false);
   const [linkedPlanIds, setLinkedPlanIds] = useState<string[]>([]);
@@ -443,19 +445,13 @@ function CheckoutConfigPanel({
   const checkoutForCk = rawCheckouts.find((checkout) => checkout.id === ckEdit);
 
   useEffect(() => {
-    if (ckCfg) setCkLocal(ckCfg);
+    if (ckCfg) setCkLocal(ckCfg as unknown as JsonRecord);
   }, [ckCfg]);
 
   useEffect(() => {
     const nextPlanIds = Array.isArray(checkoutForCk?.checkoutLinks)
-      ? checkoutForCk.checkoutLinks
-          .map((link: Record<string, any>) =>
-            String(
-              (link as Record<string, any>)?.planId ||
-                ((link as Record<string, any>)?.plan as Record<string, any>)?.id ||
-                '',
-            ).trim(),
-          )
+      ? (checkoutForCk.checkoutLinks as JsonRecord[])
+          .map((link) => String(link?.planId || (link?.plan as JsonRecord)?.id || '').trim())
           .filter((value: string): value is string => Boolean(value))
       : [];
     const uniquePlanIds = Array.from(new Set(nextPlanIds)) as string[];
@@ -463,8 +459,8 @@ function CheckoutConfigPanel({
     setOriginalLinkedPlanIds(uniquePlanIds);
   }, [checkoutForCk]);
 
-  const patch = (key: string, value: unknown) =>
-    setCkLocal((current: Record<string, any>) => ({ ...current, [key]: value }));
+  const patch = (key: string, value: JsonValue) =>
+    setCkLocal((current) => ({ ...current, [key]: value }));
   const selectedPlans = rawPlans.filter((planCandidate) =>
     linkedPlanIds.includes(String(planCandidate.id)),
   );
@@ -573,7 +569,7 @@ function CheckoutConfigPanel({
           </div>
           <Fd
             label="Nome / Descrição *"
-            value={ckLocal.brandName || ''}
+            value={String(ckLocal.brandName ?? '')}
             onChange={(value) => patch('brandName', value)}
             full
           />
@@ -647,7 +643,7 @@ function CheckoutConfigPanel({
             <Fd label="Cupom automático">
               <select
                 style={is}
-                value={ckLocal.autoCouponCode || ''}
+                value={String(ckLocal.autoCouponCode ?? '')}
                 onChange={(event) => patch('autoCouponCode', event.target.value)}
               >
                 <option value="">Selecione um cupom...</option>
@@ -681,7 +677,7 @@ function CheckoutConfigPanel({
               />
               <Fd
                 label="Mensagem"
-                value={ckLocal.timerMessage || ''}
+                value={String(ckLocal.timerMessage ?? '')}
                 onChange={(value) => patch('timerMessage', value)}
               />
             </div>
@@ -705,7 +701,7 @@ function CheckoutConfigPanel({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="color"
-                value={ckLocal.accentColor || '#E85D30'}
+                value={String(ckLocal.accentColor ?? '#E85D30')}
                 onChange={(e) => patch('accentColor', e.target.value)}
                 style={{
                   width: 36,
@@ -719,7 +715,7 @@ function CheckoutConfigPanel({
               />
               <input
                 type="text"
-                value={ckLocal.accentColor || '#E85D30'}
+                value={String(ckLocal.accentColor ?? '#E85D30')}
                 onChange={(e) => patch('accentColor', e.target.value)}
                 style={{
                   flex: 1,
@@ -750,9 +746,9 @@ function CheckoutConfigPanel({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="color"
-                value={
-                  ckLocal.backgroundColor || (ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff')
-                }
+                value={String(
+                  ckLocal.backgroundColor || (ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff'),
+                )}
                 onChange={(e) => patch('backgroundColor', e.target.value)}
                 style={{
                   width: 36,
@@ -766,9 +762,9 @@ function CheckoutConfigPanel({
               />
               <input
                 type="text"
-                value={
-                  ckLocal.backgroundColor || (ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff')
-                }
+                value={String(
+                  ckLocal.backgroundColor || (ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff'),
+                )}
                 onChange={(e) => patch('backgroundColor', e.target.value)}
                 style={{
                   flex: 1,
@@ -786,14 +782,14 @@ function CheckoutConfigPanel({
           </div>
           <Fd
             label="Texto do botão"
-            value={ckLocal.btnFinalizeText || 'Finalizar compra'}
+            value={String(ckLocal.btnFinalizeText ?? 'Finalizar compra')}
             onChange={(value) => patch('btnFinalizeText', value)}
             full
           />
           <Fd label="Layout">
             <select
               style={is}
-              value={ckLocal.theme || 'BLANC'}
+              value={String(ckLocal.theme ?? 'BLANC')}
               onChange={(event) => patch('theme', event.target.value)}
             >
               <option value="NOIR">Noir (Escuro)</option>
@@ -870,12 +866,13 @@ function CheckoutConfigPanel({
             <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
               {availablePlans.map((planCandidate) => (
                 <button
-                  key={planCandidate.id}
+                  key={String(planCandidate.id)}
                   type="button"
                   onClick={() =>
-                    setLinkedPlanIds((current) =>
-                      current.includes(planCandidate.id) ? current : [...current, planCandidate.id],
-                    )
+                    setLinkedPlanIds((current) => {
+                      const pid = String(planCandidate.id);
+                      return current.includes(pid) ? current : [...current, pid];
+                    })
                   }
                   style={{
                     ...cs,
@@ -890,11 +887,11 @@ function CheckoutConfigPanel({
                 >
                   <div style={{ display: 'grid', gap: 4 }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: V.t }}>
-                      {planCandidate.name}
+                      {String(planCandidate.name)}
                     </span>
                     <span style={{ fontSize: 10, color: V.t3 }}>
-                      {formatBrlCents(planCandidate.priceInCents || 0)} ·{' '}
-                      {planCandidate.quantity || 1} item
+                      {formatBrlCents(Number(planCandidate.priceInCents || 0))} ·{' '}
+                      {Number(planCandidate.quantity || 1)} item
                       {Number(planCandidate.quantity || 1) === 1 ? '' : 's'}
                     </span>
                   </div>

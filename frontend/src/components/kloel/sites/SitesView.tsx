@@ -8,6 +8,16 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
 import { mutate } from 'swr';
 
+// ── Site item shape returned by the backend ──
+interface SiteItem {
+  id: string;
+  name: string;
+  htmlContent: string;
+  updatedAt?: string;
+  published?: boolean;
+  slug?: string;
+}
+
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
 const MONO = "'JetBrains Mono',monospace";
@@ -1242,7 +1252,7 @@ function CriarSite({ mode }: { mode?: string }) {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState('');
-  const [savedSites, setSavedSites] = useState<Record<string, any>[]>([]);
+  const [savedSites, setSavedSites] = useState<SiteItem[]>([]);
   const [loadingSites, setLoadingSites] = useState(false);
   const [editPrompt, setEditPrompt] = useState('');
   const [editLoading, setEditLoading] = useState(false);
@@ -1271,7 +1281,7 @@ function CriarSite({ mode }: { mode?: string }) {
     setLoadingSites(true);
     apiFetch('/kloel/site/list')
       .then((res) => {
-        const data = res.data as { sites?: Record<string, any>[] } | undefined;
+        const data = res.data as { sites?: SiteItem[] } | undefined;
         if (data?.sites) setSavedSites(data.sites);
       })
       .finally(() => setLoadingSites(false));
@@ -1279,9 +1289,9 @@ function CriarSite({ mode }: { mode?: string }) {
 
   const productList = useMemo(() => {
     if (!rawProducts || !Array.isArray(rawProducts)) return [];
-    return (rawProducts as Record<string, any>[])
+    return (rawProducts as Record<string, unknown>[])
       .slice(0, 6)
-      .map((p: Record<string, any>) => ({
+      .map((p: Record<string, unknown>) => ({
         name: (p.name as string) || (p.title as string) || 'Produto',
         price: (p.price as number) ?? 0,
       }));
@@ -1402,7 +1412,7 @@ function CriarSite({ mode }: { mode?: string }) {
     }
   };
 
-  const loadSavedSite = (site: Record<string, any>) => {
+  const loadSavedSite = (site: SiteItem) => {
     setGeneratedHtml(site.htmlContent || '');
     setSavedSiteId(site.id);
     setSiteName(site.name || '');
@@ -1856,9 +1866,9 @@ function CriarSite({ mode }: { mode?: string }) {
 function EditarSite({ mode }: { mode?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [savedSites, setSavedSites] = useState<Record<string, any>[]>([]);
+  const [savedSites, setSavedSites] = useState<SiteItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSite, setSelectedSite] = useState<any | null>(null);
+  const [selectedSite, setSelectedSite] = useState<SiteItem | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1873,7 +1883,7 @@ function EditarSite({ mode }: { mode?: string }) {
   useEffect(() => {
     apiFetch('/kloel/site/list')
       .then((res) => {
-        const data = res.data as { sites?: Record<string, any>[] } | undefined;
+        const data = res.data as { sites?: SiteItem[] } | undefined;
         if (data?.sites) setSavedSites(data.sites);
       })
       .finally(() => setLoading(false));
@@ -1944,7 +1954,7 @@ function EditarSite({ mode }: { mode?: string }) {
       body: { name: variantName, htmlContent: generatedVariantData.html },
     });
     setVariantLoading(false);
-    const savedVariantData = saveRes.data as { site?: Record<string, any> } | undefined;
+    const savedVariantData = saveRes.data as { site?: SiteItem } | undefined;
     if (saveRes.error || !savedVariantData?.site) {
       setError(saveRes.error || 'Falha ao salvar variante.');
       return;

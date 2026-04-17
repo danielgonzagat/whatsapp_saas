@@ -5,6 +5,29 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type React from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 
+/** Recursive JSON-safe record type — allows property access without `any` */
+ 
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+export type JsonRecord = { [key: string]: JsonValue };
+
+/** Safe string extractor for JSX value props on JSON records */
+export function jv(value: unknown): string {
+  if (value == null) return '';
+  return String(value);
+}
+
+/** Safe number extractor for JSON records */
+export function jn(value: unknown): number {
+  return Number(value) || 0;
+}
+
 export const S = "'Sora',sans-serif";
 export const M = "'JetBrains Mono',monospace";
 export const V = {

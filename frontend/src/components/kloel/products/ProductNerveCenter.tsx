@@ -52,6 +52,7 @@ import {
   formatBrlCents,
   is,
   unwrapApiPayload,
+  type JsonRecord,
 } from './product-nerve-center.shared';
 import {
   type ProductEditorPlanView,
@@ -2641,8 +2642,8 @@ export default function ProductNerveCenter({
               ckEdit={ckEdit}
               setCkEdit={setCkEdit}
               checkouts={CKS}
-              rawCheckouts={rawCheckouts || []}
-              rawPlans={rawPlans || []}
+              rawCheckouts={(rawCheckouts || []) as JsonRecord[]}
+              rawPlans={(rawPlans || []) as JsonRecord[]}
               copied={copied}
               onDuplicateCheckout={handleDuplicateCheckout}
               onDeleteCheckout={handleDeleteCheckout}

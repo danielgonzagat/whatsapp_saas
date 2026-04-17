@@ -342,15 +342,15 @@ function WarRoom({
   onGoToTab: (id: string) => void;
   metaAccessToken?: string;
 }) {
-  const { data: rulesData } = useSWR<Record<string, any>[]>('/ad-rules', swrFetcher, {
+  const { data: rulesData } = useSWR<Record<string, unknown>[]>('/ad-rules', swrFetcher, {
     keepPreviousData: true,
   });
-  const adRules = (rulesData || []).map((r: Record<string, any>) => ({
-    id: r.id,
-    condition: r.condition,
-    action: r.action,
-    active: r.active ?? true,
-    fires: r.fireCount ?? 0,
+  const adRules = (rulesData || []).map((r: Record<string, unknown>) => ({
+    id: typeof r.id === 'string' ? r.id : `rule-${Math.random().toString(36).slice(2, 10)}`,
+    condition: typeof r.condition === 'string' ? r.condition : 'condição não informada',
+    action: typeof r.action === 'string' ? r.action : 'ação não informada',
+    active: typeof r.active === 'boolean' ? r.active : true,
+    fires: typeof r.fireCount === 'number' ? r.fireCount : 0,
   }));
 
   const handleCampaignToggle = async (campaign: Campaign) => {
@@ -2032,19 +2032,19 @@ function TrackingTab({ focus }: { focus?: string }) {
 // ── RulesTab — CONNECTED TO /ad-rules backend via SWR ──
 function RulesTab() {
   const fid = useId();
-  const { data: rulesData, mutate: mutateRules } = useSWR<Record<string, any>[]>(
+  const { data: rulesData, mutate: mutateRules } = useSWR<Record<string, unknown>[]>(
     '/ad-rules',
     swrFetcher,
     {
       keepPreviousData: true,
     },
   );
-  const rules: Rule[] = (rulesData || []).map((r: Record<string, any>) => ({
-    id: r.id,
-    condition: r.condition,
-    action: r.action,
-    active: r.active ?? true,
-    fires: r.fireCount ?? 0,
+  const rules: Rule[] = (rulesData || []).map((r: Record<string, unknown>) => ({
+    id: typeof r.id === 'string' ? r.id : `rule-${Math.random().toString(36).slice(2, 10)}`,
+    condition: typeof r.condition === 'string' ? r.condition : 'condição não informada',
+    action: typeof r.action === 'string' ? r.action : 'ação não informada',
+    active: typeof r.active === 'boolean' ? r.active : true,
+    fires: typeof r.fireCount === 'number' ? r.fireCount : 0,
   }));
   const [showForm, setShowForm] = useState(false);
   const [newCondition, setNewCondition] = useState('');
@@ -2663,14 +2663,14 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   }, [requestedFocus, tab]);
 
   // ── Meta connection & real ad data ──
-  const { data: metaStatus } = useSWR<Record<string, any>>('/meta/auth/status', swrFetcher);
+  const { data: metaStatus } = useSWR<Record<string, unknown>>('/meta/auth/status', swrFetcher);
   const metaConnected = metaStatus?.connected === true;
 
-  const { data: metaInsights } = useSWR<Record<string, any>>(
+  const { data: metaInsights } = useSWR<Record<string, unknown>>(
     metaConnected ? '/meta/ads/insights/account' : null,
     swrFetcher,
   );
-  const { data: metaCampaigns } = useSWR<Record<string, any>>(
+  const { data: metaCampaigns } = useSWR<Record<string, unknown>>(
     metaConnected ? '/meta/ads/campaigns' : null,
     swrFetcher,
   );
@@ -2693,7 +2693,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
           revenue:
             Number.parseFloat(
               d?.action_values?.find?.(
-                (a: Record<string, any>) =>
+                (a: Record<string, unknown>) =>
                   a.action_type === 'offsite_conversion.fb_pixel_purchase',
               )?.value ||
                 d?.purchase_roas?.[0]?.value ||
@@ -2723,38 +2723,73 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   // Hydrate CAMPAIGNS with real campaign data
   useEffect(() => {
-    if (metaConnected && metaCampaigns && Array.isArray(metaCampaigns.data || metaCampaigns)) {
-      const raw = metaCampaigns.data || metaCampaigns;
-      CAMPAIGNS = raw.map((c: Record<string, any>) => ({
-        id: c.id,
-        platform: 'meta' as const,
-        name: c.name || `Campaign ${c.id}`,
-        status:
-          (c.status || c.effective_status || 'PAUSED').toLowerCase() === 'active'
-            ? 'active'
-            : 'paused',
-        spend: Number.parseFloat(c.spend || c.insights?.data?.[0]?.spend || '0'),
-        revenue: Number.parseFloat(
-          c.insights?.data?.[0]?.action_values?.find?.(
-            (a: Record<string, any>) => a.action_type === 'offsite_conversion.fb_pixel_purchase',
-          )?.value || '0',
-        ),
-        roas: Number.parseFloat(c.insights?.data?.[0]?.purchase_roas?.[0]?.value || '0'),
-        conv: Number.parseInt(c.insights?.data?.[0]?.conversions || '0', 10),
-        ctr: Number.parseFloat(c.insights?.data?.[0]?.ctr || '0'),
-        cpc: Number.parseFloat(c.insights?.data?.[0]?.cpc || '0'),
-        trend:
-          Number.parseFloat(c.insights?.data?.[0]?.purchase_roas?.[0]?.value || '0') > 1
-            ? ('up' as const)
-            : ('down' as const),
-      }));
+    const raw = Array.isArray(metaCampaigns?.data)
+      ? metaCampaigns.data
+      : Array.isArray(metaCampaigns)
+        ? metaCampaigns
+        : [];
+
+    if (metaConnected && raw.length > 0) {
+      CAMPAIGNS = raw.map((c: Record<string, unknown>) => {
+        const id =
+          typeof c.id === 'string' ? c.id : `campaign-${Math.random().toString(36).slice(2, 10)}`;
+        const insightsData = (() => {
+          const candidate = c.insights;
+          if (
+            candidate &&
+            typeof candidate === 'object' &&
+            Array.isArray((candidate as { data?: unknown[] }).data)
+          ) {
+            return (candidate as { data: Array<Record<string, unknown>> }).data;
+          }
+          return [];
+        })();
+        const firstInsight = insightsData[0] || {};
+        const actionValues = Array.isArray(firstInsight.action_values)
+          ? (firstInsight.action_values as Array<Record<string, unknown>>)
+          : [];
+        const purchaseRoas = Array.isArray(firstInsight.purchase_roas)
+          ? (firstInsight.purchase_roas as Array<Record<string, unknown>>)
+          : [];
+
+        return {
+          id,
+          platform: 'meta' as const,
+          name: typeof c.name === 'string' ? c.name : `Campaign ${id}`,
+          status:
+            String(c.status || c.effective_status || 'PAUSED').toLowerCase() === 'active'
+              ? 'active'
+              : 'paused',
+          spend: Number.parseFloat(String(c.spend || firstInsight.spend || '0')),
+          revenue: Number.parseFloat(
+            String(
+              actionValues.find(
+                (a: Record<string, unknown>) =>
+                  a.action_type === 'offsite_conversion.fb_pixel_purchase',
+              )?.value || '0',
+            ),
+          ),
+          roas: Number.parseFloat(String(purchaseRoas[0]?.value || '0')),
+          conv: Number.parseInt(String(firstInsight.conversions || '0'), 10),
+          ctr: Number.parseFloat(String(firstInsight.ctr || '0')),
+          cpc: Number.parseFloat(String(firstInsight.cpc || '0')),
+          trend:
+            Number.parseFloat(String(purchaseRoas[0]?.value || '0')) > 1
+              ? ('up' as const)
+              : ('down' as const),
+        };
+      });
     } else {
       CAMPAIGNS = [];
     }
   }, [metaConnected, metaCampaigns]);
 
   const metaAccessToken: string | undefined =
-    metaStatus?.accessToken || metaStatus?.token || undefined;
+    typeof metaStatus?.accessToken === 'string'
+      ? (metaStatus.accessToken as string)
+      : typeof metaStatus?.token === 'string'
+        ? (metaStatus.token as string)
+        : undefined;
 
   const goToRules = () => {
     setTab('rules');

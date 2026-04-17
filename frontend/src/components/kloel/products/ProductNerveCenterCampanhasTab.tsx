@@ -14,10 +14,11 @@ import {
   cs,
   formatBrlCents,
   is,
+  JsonRecord,
 } from './product-nerve-center.shared';
 
 function unwrapApiPayload<T>(res: unknown): T {
-  const r = res as Record<string, any> | undefined;
+  const r = res as JsonRecord | undefined;
   return (r?.data ?? res) as T;
 }
 
@@ -27,12 +28,12 @@ export function ProductNerveCenterCampanhasTab({
   recommendedProducts,
   productName,
 }: {
-  recommendedProducts: Array<Record<string, any>>;
+  recommendedProducts: Array<JsonRecord>;
   productName: string;
 }) {
   const { productId, router, initialFocus } = useNerveCenterContext();
   const { showToast } = useToast();
-  const [camps, setCamps] = useState<Array<Record<string, any>>>([]);
+  const [camps, setCamps] = useState<Array<JsonRecord>>([]);
   const [campsLoading, setCampsLoading] = useState(true);
   const [showCampForm, setShowCampForm] = useState(false);
   const [campName, setCampName] = useState('');
@@ -43,7 +44,7 @@ export function ProductNerveCenterCampanhasTab({
     setCampsLoading(true);
     return apiFetch(`/products/${productId}/campaigns`)
       .then((r: unknown) => {
-        const d = unwrapApiPayload<Array<Record<string, any>>>(r);
+        const d = unwrapApiPayload<Array<JsonRecord>>(r);
         setCamps(Array.isArray(d) ? d : []);
       })
       .catch(() => setCamps([]))
@@ -63,7 +64,7 @@ export function ProductNerveCenterCampanhasTab({
           messageTemplate: campMessage.trim() || undefined,
         },
       });
-      const created = unwrapApiPayload<Record<string, any>>(res);
+      const created = unwrapApiPayload<JsonRecord>(res);
       setCamps((prev) => [created, ...prev]);
       setCampName('');
       setCampPixel('');
@@ -115,7 +116,7 @@ export function ProductNerveCenterCampanhasTab({
       await unwrapApiPayload(
         await apiFetch(`/products/${productId}/campaigns/${id}`, { method: 'DELETE' }),
       );
-      setCamps((prev) => prev.filter((c: Record<string, any>) => c.id !== id));
+      setCamps((prev) => prev.filter((c: JsonRecord) => c.id !== id));
       showToast('Campanha removida', 'success');
     } catch (e) {
       console.error(e);
@@ -158,9 +159,9 @@ export function ProductNerveCenterCampanhasTab({
               gap: 10,
             }}
           >
-            {recommendedProducts.map((candidate: Record<string, any>) => (
+            {recommendedProducts.map((candidate: JsonRecord) => (
               <div
-                key={candidate.id}
+                key={String(candidate.id)}
                 style={{
                   background: V.e,
                   border: `1px solid ${V.b}`,
@@ -177,7 +178,7 @@ export function ProductNerveCenterCampanhasTab({
                   }}
                 >
                   <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-                    {candidate.name || 'Produto complementar'}
+                    {String(candidate.name || 'Produto complementar')}
                   </div>
                   <span style={{ fontFamily: M, fontSize: 11, color: V.em }}>
                     {R$(Math.round(Number(candidate.price || 0) * 100))}
@@ -311,9 +312,9 @@ export function ProductNerveCenterCampanhasTab({
               </span>
             ))}
           </div>
-          {camps.map((c: Record<string, any>, i: number) => (
+          {camps.map((c: JsonRecord, i: number) => (
             <div
-              key={c.id}
+              key={String(c.id)}
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1.2fr',
@@ -324,10 +325,10 @@ export function ProductNerveCenterCampanhasTab({
               }}
             >
               <span style={{ fontFamily: M, fontSize: 10, color: V.t3 }}>
-                {c.code?.slice(0, 8) || c.id.slice(0, 8)}
+                {String(c.code ?? '').slice(0, 8) || String(c.id ?? '').slice(0, 8)}
               </span>
               <div>
-                <span style={{ fontSize: 12, color: V.t, display: 'block' }}>{c.name}</span>
+                <span style={{ fontSize: 12, color: V.t, display: 'block' }}>{String(c.name)}</span>
                 {c.messageTemplate && (
                   <span
                     style={{
@@ -340,7 +341,7 @@ export function ProductNerveCenterCampanhasTab({
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    {c.messageTemplate}
+                    {String(c.messageTemplate)}
                   </span>
                 )}
               </div>
@@ -354,33 +355,36 @@ export function ProductNerveCenterCampanhasTab({
                         : V.t3
                   }
                 >
-                  {c.status || 'DRAFT'}
+                  {String(c.status || 'DRAFT')}
                 </Bg>
               </div>
               <span style={{ fontFamily: M, fontSize: 11, color: V.t2, textAlign: 'center' }}>
-                {c.sentCount || 0} / {c.deliveredCount || 0}
+                {String(c.sentCount || 0)} / {String(c.deliveredCount || 0)}
               </span>
               <div
                 style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}
               >
                 {c.status === 'RUNNING' || c.status === 'SCHEDULED' ? (
-                  <Bt onClick={() => handlePauseCamp(c.id)} style={{ padding: '4px 8px' }}>
+                  <Bt onClick={() => handlePauseCamp(String(c.id))} style={{ padding: '4px 8px' }}>
                     {campBusyId === `pause-${c.id}` ? 'Pausando...' : 'Pausar'}
                   </Bt>
                 ) : (
                   <Bt
                     primary
-                    onClick={() => handleLaunchCamp(c.id, false)}
+                    onClick={() => handleLaunchCamp(String(c.id), false)}
                     style={{ padding: '4px 8px' }}
                   >
                     {campBusyId === `launch-${c.id}` ? 'Lançando...' : 'Lançar'}
                   </Bt>
                 )}
-                <Bt onClick={() => handleLaunchCamp(c.id, true)} style={{ padding: '4px 8px' }}>
+                <Bt
+                  onClick={() => handleLaunchCamp(String(c.id), true)}
+                  style={{ padding: '4px 8px' }}
+                >
                   {campBusyId === `launch-${c.id}` ? 'Agendando...' : 'Smart time'}
                 </Bt>
                 <Bt
-                  onClick={() => handleDeleteCamp(c.id)}
+                  onClick={() => handleDeleteCamp(String(c.id))}
                   style={{ padding: '4px 8px', color: V.r }}
                 >
                   Excluir
