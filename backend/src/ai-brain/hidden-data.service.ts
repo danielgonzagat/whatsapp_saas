@@ -35,7 +35,7 @@ export class HiddenDataExtractorService {
       response_format: { type: 'json_object' },
     });
 
-    let result: any = {};
+    let result: Record<string, unknown> = {};
     try {
       result = JSON.parse(completion.choices[0]?.message?.content || '{}');
     } catch {

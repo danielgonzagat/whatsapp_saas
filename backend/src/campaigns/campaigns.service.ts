@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
@@ -40,13 +41,24 @@ export class CampaignsService {
     });
   }
 
-  async create(workspaceId: string, data: any) {
+  async create(
+    workspaceId: string,
+    data: {
+      name: string;
+      messageTemplate?: string;
+      scheduledAt?: string;
+      aiStrategy?: string;
+      parentId?: string;
+      filters?: Prisma.InputJsonValue;
+      idempotencyKey?: string;
+    },
+  ) {
     return this.prisma.campaign.create({
       data: {
-        ...data,
-        workspaceId,
+        ...(data as Prisma.CampaignCreateInput),
+        workspace: { connect: { id: workspaceId } },
         status: 'DRAFT',
-        stats: { sent: 0, delivered: 0, read: 0, failed: 0 },
+        stats: { sent: 0, delivered: 0, read: 0, failed: 0 } as Prisma.InputJsonValue,
       },
     });
   }
@@ -156,7 +168,7 @@ export class CampaignsService {
 
     // Resolve audience from campaign filters
     const filters = (campaign.filters as { tags?: string[] } | null) || {};
-    const contactWhere: any = { workspaceId, optIn: true };
+    const contactWhere: Record<string, unknown> = { workspaceId, optIn: true };
     if (filters.tags?.length) {
       contactWhere.tags = { some: { name: { in: filters.tags } } };
     }
@@ -291,7 +303,7 @@ export class CampaignsService {
       throw new BadRequestException('No variants to evaluate');
     }
 
-    let best: any = parent;
+    let best: Record<string, unknown> = parent;
     let bestScore = this.scoreCampaign(parent);
     for (const v of variants) {
       const score = this.scoreCampaign(v);
@@ -321,8 +333,8 @@ export class CampaignsService {
     };
   }
 
-  private scoreCampaign(c: any): number {
-    const stats = c?.stats || {};
+  private scoreCampaign(c: Record<string, unknown>): number {
+    const stats = (c?.stats || {}) as Record<string, number>;
     const sent = stats.sent || 0;
     const replied = stats.replied || 0;
     if (!sent) return 0;

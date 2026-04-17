@@ -21,7 +21,7 @@ export class OmniScraperService {
     this.strategies.set(strategy.name, strategy);
   }
 
-  async scrape(source: string, query: string, filters: any) {
+  async scrape(source: string, query: string, filters: Record<string, unknown>) {
     const strategy = this.strategies.get(source);
     if (!strategy) {
       throw new NotImplementedException(`Strategy ${source} not implemented`);

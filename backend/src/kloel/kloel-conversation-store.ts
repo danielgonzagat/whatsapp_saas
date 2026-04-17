@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const A_Z0_9_RE = /[^a-z0-9_:-]+/g;
@@ -54,15 +55,31 @@ export class KloelConversationStore {
     workspaceId: string,
     type: string,
     content: string,
-    metadata?: any,
+    metadata?: Prisma.InputJsonValue,
   ): Promise<void> {
     try {
+      const metadataRecord =
+        metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+          ? (metadata as Record<string, unknown>)
+          : {};
       const safeType = String(type || 'general')
         .trim()
         .toLowerCase()
         .replace(A_Z0_9_RE, '_');
       const key =
-        metadata?.key || `${safeType}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+        (typeof metadataRecord.key === 'string' ? metadataRecord.key : undefined) ||
+        `${safeType}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+      const value =
+        metadataRecord.value !== undefined
+          ? (JSON.parse(JSON.stringify(metadataRecord.value)) as Prisma.InputJsonValue)
+          : ({ content } as Prisma.InputJsonValue);
+      const category =
+        typeof metadataRecord.category === 'string' && metadataRecord.category.trim()
+          ? metadataRecord.category.trim()
+          : 'general';
+      const safeMetadata = metadata
+        ? (JSON.parse(JSON.stringify(metadata)) as Prisma.InputJsonValue)
+        : ({} as Prisma.InputJsonValue);
 
       await this.prisma.kloelMemory.upsert({
         where: {
@@ -72,20 +89,20 @@ export class KloelConversationStore {
           },
         },
         update: {
-          value: metadata?.value || { content },
-          category: metadata?.category || 'general',
+          value,
+          category,
           type: safeType,
           content,
-          metadata: metadata || {},
+          metadata: safeMetadata,
         },
         create: {
           workspaceId,
           key,
-          value: metadata?.value || { content },
-          category: metadata?.category || 'general',
+          value,
+          category,
           type: safeType,
           content,
-          metadata: metadata || {},
+          metadata: safeMetadata,
         },
       });
     } catch (error) {

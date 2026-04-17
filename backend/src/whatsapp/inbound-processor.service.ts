@@ -16,6 +16,7 @@ import {
 } from './whatsapp-normalization.util';
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
+import type { ProviderSettings } from './provider-settings.types';
 
 const D_RE = /\D/g;
 
@@ -475,7 +476,7 @@ export class InboundProcessorService {
     messageContent: string,
     messageId: string,
     providerMessageId: string,
-    settings?: any,
+    settings?: ProviderSettings,
     ingestMode?: InboundIngestMode,
   ) {
     try {
@@ -601,7 +602,10 @@ export class InboundProcessorService {
     }
   }
 
-  private isAutonomousEnabled(settings: any, ingestMode?: InboundIngestMode): boolean {
+  private isAutonomousEnabled(
+    settings: ProviderSettings | undefined,
+    ingestMode?: InboundIngestMode,
+  ): boolean {
     const mode = String(settings?.autonomy?.mode || '')
       .trim()
       .toUpperCase();
@@ -630,7 +634,7 @@ export class InboundProcessorService {
   }
 
   private shouldUseInlineReactiveProcessing(
-    settings: any,
+    settings: ProviderSettings | undefined,
     ingestMode?: InboundIngestMode,
   ): boolean {
     if (ingestMode !== 'live') {
@@ -661,7 +665,7 @@ export class InboundProcessorService {
     providerMessageId: string;
     source: string;
     reason: 'inline_reactive_primary' | 'worker_unavailable';
-    settings?: any;
+    settings?: ProviderSettings;
   }) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
@@ -976,7 +980,7 @@ export class InboundProcessorService {
     };
   }
 
-  private shouldBypassHumanLock(settings?: any): boolean {
+  private shouldBypassHumanLock(settings?: ProviderSettings): boolean {
     const override = String(process.env.AUTOPILOT_BYPASS_HUMAN_LOCK || '')
       .trim()
       .toLowerCase();
@@ -997,7 +1001,7 @@ export class InboundProcessorService {
   }
 
   private shouldAutoReclaimHumanLock(
-    settings: any,
+    settings: ProviderSettings | undefined,
     conversation?: {
       mode?: string | null;
       status?: string | null;
@@ -1042,7 +1046,10 @@ export class InboundProcessorService {
     return conversationMode === 'HUMAN' || Boolean(conversation.assignedAgentId);
   }
 
-  private shouldForceLiveAutonomyFallback(settings: any, ingestMode?: InboundIngestMode): boolean {
+  private shouldForceLiveAutonomyFallback(
+    settings: ProviderSettings | undefined,
+    ingestMode?: InboundIngestMode,
+  ): boolean {
     if (ingestMode !== 'live') {
       return false;
     }

@@ -516,7 +516,7 @@ export class MercadoPagoService {
     }
   }
 
-  private resolveCallbackUrl(req?: any) {
+  private resolveCallbackUrl(req?: { headers?: Record<string, string | string[] | undefined> }) {
     if (this.oauthRedirectUriOverride) {
       return this.oauthRedirectUriOverride.replace(PATTERN_RE, '');
     }
@@ -532,7 +532,9 @@ export class MercadoPagoService {
     return `${backendOrigin}${OAUTH_CALLBACK_PATH}`;
   }
 
-  private resolvePublicBackendOrigin(req?: any) {
+  private resolvePublicBackendOrigin(req?: {
+    headers?: Record<string, string | string[] | undefined>;
+  }) {
     const raw =
       process.env.BACKEND_URL?.trim() ||
       process.env.RAILWAY_PUBLIC_DOMAIN?.trim() ||
@@ -830,7 +832,11 @@ export class MercadoPagoService {
     };
   }
 
-  getAuthorizationUrl(workspaceId: string, req?: any, returnUrl?: string) {
+  getAuthorizationUrl(
+    workspaceId: string,
+    req?: { headers?: Record<string, string | string[] | undefined> },
+    returnUrl?: string,
+  ) {
     if (this.platformManagedMarketplace) {
       return {
         authUrl: null,
@@ -863,7 +869,11 @@ export class MercadoPagoService {
     return { authUrl };
   }
 
-  async handleOAuthCallback(code: string, state: string, req?: any) {
+  async handleOAuthCallback(
+    code: string,
+    state: string,
+    req?: { headers?: Record<string, string | string[] | undefined> },
+  ) {
     if (!code) {
       throw new BadRequestException('Mercado Pago não retornou o código de autorização.');
     }

@@ -38,7 +38,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
       const workspaceId = channel.split(':').pop();
       if (workspaceId) {
         if (channel.startsWith('flow:log:')) {
-          let flowLogPayload: any = null;
+          let flowLogPayload: Record<string, unknown> | null = null;
           try {
             flowLogPayload = JSON.parse(message);
           } catch {
@@ -47,7 +47,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
           if (flowLogPayload)
             this.server.to(`workspace:${workspaceId}`).emit('flow:log', flowLogPayload);
         } else if (channel.startsWith('alerts:')) {
-          let alertPayload: any = null;
+          let alertPayload: Record<string, unknown> | null = null;
           try {
             alertPayload = JSON.parse(message);
           } catch {
@@ -68,7 +68,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     }
 
     try {
-      const payload: any = this.jwtService.verify(token);
+      const payload = this.jwtService.verify(token);
       const workspaceId = (client.handshake.query.workspaceId as string) || payload.workspaceId;
       if (!workspaceId || (payload.workspaceId && payload.workspaceId !== workspaceId)) {
         this.logger.warn(`Client ${client.id} disconnect: workspace mismatch`);

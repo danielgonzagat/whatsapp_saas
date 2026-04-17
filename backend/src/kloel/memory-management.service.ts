@@ -313,7 +313,7 @@ export class MemoryManagementService {
         by: ['workspaceId'],
       });
 
-      const workspaceIds = memoryWorkspaces.map((m: any) => m.workspaceId);
+      const workspaceIds = memoryWorkspaces.map((m: { workspaceId: string }) => m.workspaceId);
 
       // Verificar quais existem
       const existingWorkspaces = await this.prisma.workspace.findMany({
@@ -431,7 +431,7 @@ export class MemoryManagementService {
   ): Promise<number> {
     if (!this.prisma.kloelMemory) return 0;
 
-    const where: any = { workspaceId };
+    const where: Record<string, unknown> = { workspaceId };
 
     if (options?.category) {
       where.category = options.category;
@@ -502,10 +502,11 @@ export class MemoryManagementService {
 
       // Manter o mais recente, deletar os outros
       const sorted = mems.sort(
-        (a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        (a: { updatedAt: Date | string }, b: { updatedAt: Date | string }) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       );
 
-      const toDelete = sorted.slice(1).map((m: any) => m.id);
+      const toDelete = sorted.slice(1).map((m: { id: string }) => m.id);
 
       if (toDelete.length > 0) {
         await this.prisma.kloelMemory.deleteMany({

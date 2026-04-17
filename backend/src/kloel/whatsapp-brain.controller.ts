@@ -56,7 +56,7 @@ export class WhatsAppBrainController {
   @HttpCode(200)
   async receiveWebhook(
     @Req() req: Request,
-    @Body() payload: any,
+    @Body() payload: Record<string, unknown>,
     @Query('workspace') workspaceId: string = 'default',
   ) {
     const signature = req.headers['x-hub-signature-256'] || req.headers['x-waha-signature'];

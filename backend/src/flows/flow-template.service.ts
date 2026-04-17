@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 type CreateFlowTemplateInput = {
   name: string;
   category: string;
-  nodes: any;
-  edges: any;
+  nodes: unknown;
+  edges: unknown;
   description?: string;
   isPublic?: boolean;
 };
@@ -124,8 +125,8 @@ export class FlowTemplateService {
       data: {
         name: input.name,
         category: input.category,
-        nodes: input.nodes,
-        edges: input.edges,
+        nodes: input.nodes as Prisma.InputJsonValue,
+        edges: input.edges as Prisma.InputJsonValue,
         description: input.description,
         isPublic: input.isPublic ?? false,
       },

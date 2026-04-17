@@ -384,7 +384,7 @@ export class AccountAgentService {
 
     const openApprovals = approvals.filter((item) => item.status === 'OPEN');
     const pendingInputs = inputSessions.filter((item) => item.status !== 'COMPLETED');
-    const actionableWorkItems = workItems.filter((item: any) =>
+    const actionableWorkItems = workItems.filter((item: { state?: string | null }) =>
       ['OPEN', 'WAITING_APPROVAL', 'WAITING_INPUT', 'BLOCKED'].includes(String(item.state || '')),
     );
     const noLegalActions =
@@ -400,7 +400,9 @@ export class AccountAgentService {
       openApprovals: openApprovals.slice(0, 10),
       pendingInputs: pendingInputs.slice(0, 10),
       workItems: workItems.slice(0, 20),
-      openWorkItemCount: workItems.filter((item: any) => item.state !== 'COMPLETED').length,
+      openWorkItemCount: workItems.filter(
+        (item: { state?: string | null }) => item.state !== 'COMPLETED',
+      ).length,
       noLegalActions,
       noLegalActionReasons: noLegalActions
         ? ['account_universe_exhausted_for_current_registry']

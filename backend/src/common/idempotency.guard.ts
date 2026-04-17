@@ -21,7 +21,7 @@ export const IDEMPOTENCY_TTL_KEY = 'idempotency_ttl';
  * @param ttlSeconds - How long to cache the idempotency key (default: 86400 = 24h)
  */
 export const Idempotent = (ttlSeconds = 86400) => {
-  return (target: any, key: string, descriptor: PropertyDescriptor) => {
+  return (target: object, key: string, descriptor: PropertyDescriptor) => {
     SetMetadata(IDEMPOTENCY_KEY, true)(target, key, descriptor);
     SetMetadata(IDEMPOTENCY_TTL_KEY, ttlSeconds)(target, key, descriptor);
     return descriptor;
@@ -220,7 +220,7 @@ export class IdempotencyGuard implements CanActivate {
     existing: string,
     context: ExecutionContext,
   ): Promise<{ kind: 'responded' | 'proceed' }> {
-    let cached: any;
+    let cached: Record<string, unknown> | undefined;
     try {
       cached = JSON.parse(existing);
     } catch {
@@ -239,7 +239,7 @@ export class IdempotencyGuard implements CanActivate {
           // The in-flight request errored and cleared the placeholder.
           return { kind: 'proceed' };
         }
-        let retryParsed: any;
+        let retryParsed: Record<string, unknown> | undefined;
         try {
           retryParsed = JSON.parse(retry);
         } catch {

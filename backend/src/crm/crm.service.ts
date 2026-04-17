@@ -272,7 +272,7 @@ export class CrmService {
       throw new ForbiddenException('Contato não pertence a este workspace');
     }
 
-    const cf: any = contact.customFields || {};
+    const cf = (contact.customFields || {}) as Record<string, string>;
     const sourceCampaignId = cf.lastCampaignId || undefined;
 
     return this.prisma.deal.create({
@@ -313,7 +313,7 @@ export class CrmService {
 
     // Atribuição de receita (Money Machine) quando status vira WON
     if (data.status === 'WON') {
-      const cf: any = deal.contact?.customFields || {};
+      const cf = (deal.contact?.customFields || {}) as Record<string, string>;
       const campaignId = cf.lastCampaignId;
       if (campaignId) {
         await this.prisma.autopilotEvent.create({
@@ -414,7 +414,7 @@ export class CrmService {
     const lower = (updatedDeal.stage?.name || '').toLowerCase();
     const isWon = lower.includes('won') || lower.includes('venda') || lower.includes('fechado');
     if (isWon) {
-      const cf: any = deal.contact?.customFields || {};
+      const cf = (deal.contact?.customFields || {}) as Record<string, string>;
       const campaignId = cf.lastCampaignId;
       if (campaignId) {
         await this.prisma.autopilotEvent.create({

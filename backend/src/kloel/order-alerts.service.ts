@@ -167,11 +167,11 @@ export class OrderAlertsService {
   async getAlerts(
     workspaceId: string,
     resolved?: boolean,
-  ): Promise<{ alerts: any[]; counts: Record<string, number> }> {
+  ): Promise<{ alerts: Record<string, unknown>[]; counts: Record<string, number> }> {
     // Generate fresh alerts on every read so the list is always up to date
     await this.generateAlerts(workspaceId);
 
-    const where: any = { workspaceId };
+    const where: Record<string, unknown> = { workspaceId };
     if (resolved !== undefined) {
       where.resolved = resolved;
     }

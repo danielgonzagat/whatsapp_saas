@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -6,7 +7,7 @@ export interface MemoryItem {
   id: string;
   workspaceId: string;
   key: string;
-  value: any;
+  value: unknown;
   category: string;
   content: string;
   similarity?: number;
@@ -33,7 +34,7 @@ export class MemoryService {
   async saveMemory(
     workspaceId: string,
     key: string,
-    value: any,
+    value: unknown,
     category = 'general',
     content?: string,
   ): Promise<MemoryItem> {
@@ -48,12 +49,12 @@ export class MemoryService {
         create: {
           workspaceId,
           key,
-          value,
+          value: value as Prisma.InputJsonValue,
           category,
           content: textContent,
         },
         update: {
-          value,
+          value: value as Prisma.InputJsonValue,
           category,
           content: textContent,
         },
@@ -79,7 +80,7 @@ export class MemoryService {
     const startTime = Date.now();
 
     try {
-      const where: any = { workspaceId };
+      const where: Record<string, unknown> = { workspaceId };
       if (category) where.category = category;
 
       // Busca por texto simples
@@ -191,7 +192,7 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
     page = 1,
     limit = 20,
   ): Promise<{ memories: MemoryItem[]; total: number }> {
-    const where: any = { workspaceId };
+    const where: Record<string, unknown> = { workspaceId };
     if (category) where.category = category;
 
     const [memories, total] = await Promise.all([

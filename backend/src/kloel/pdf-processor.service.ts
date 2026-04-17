@@ -85,12 +85,22 @@ Retorne JSON:
   /**
    * 💾 Salva análise na memória
    */
-  private async saveToMemory(workspaceId: string, sourceName: string, analysis: any) {
+  private async saveToMemory(
+    workspaceId: string,
+    sourceName: string,
+    analysis: Record<string, unknown>,
+  ) {
     const pdfId = sourceName.replace(A_Z_A_Z0_9_RE, '_');
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential product embedding with AI calls
-    for (let i = 0; i < analysis.products.length; i++) {
-      const product = analysis.products[i];
+    const products = (analysis.products || []) as Array<{
+      name: string;
+      description: string;
+      price?: number;
+      benefits?: string[];
+    }>;
+    for (let i = 0; i < products.length; i++) {
+      const product = products[i];
       await this.memoryService.saveProduct(workspaceId, `${pdfId}_product_${i}`, {
         name: product.name,
         description: product.description,
@@ -99,29 +109,33 @@ Retorne JSON:
       });
     }
 
-    if (analysis.companyInfo) {
+    if (analysis.companyInfo as string) {
       await this.memoryService.saveMemory(
         workspaceId,
         `${pdfId}_company_info`,
         { source: sourceName },
         'company_info',
-        analysis.companyInfo,
+        analysis.companyInfo as string,
       );
     }
 
-    if (analysis.salesScript) {
+    if (analysis.salesScript as string) {
       await this.memoryService.saveMemory(
         workspaceId,
         `${pdfId}_sales_script`,
         { source: sourceName },
         'script',
-        analysis.salesScript,
+        analysis.salesScript as string,
       );
     }
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential objection embedding with AI calls
-    for (let i = 0; i < analysis.objections.length; i++) {
-      const obj = analysis.objections[i];
+    const objections = (analysis.objections || []) as Array<{
+      objection: string;
+      response: string;
+    }>;
+    for (let i = 0; i < objections.length; i++) {
+      const obj = objections[i];
       await this.memoryService.saveMemory(
         workspaceId,
         `${pdfId}_objection_${i}`,
@@ -132,7 +146,11 @@ Retorne JSON:
     }
 
     this.logger.log(
-      `Análise salva: ${analysis.products.length} produtos, ${analysis.objections.length} objeções`,
+      'Analise salva: ' +
+        String(products.length) +
+        ' produtos, ' +
+        String(objections.length) +
+        ' objecoes',
     );
   }
 }

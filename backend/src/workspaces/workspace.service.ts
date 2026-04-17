@@ -34,7 +34,7 @@ export class WorkspaceService {
 
     return this.prisma.workspace.update({
       where: { id },
-      data: { providerSettings: newSettings },
+      data: { providerSettings: toPrismaJsonValue(newSettings) },
     });
   }
 
@@ -112,7 +112,7 @@ export class WorkspaceService {
     const settings = asProviderSettings(ws.providerSettings);
     return {
       whatsapp: true,
-      email: !!settings.email?.enabled,
+      email: !!(settings.email as Record<string, unknown> | undefined)?.enabled,
     };
   }
 
@@ -124,7 +124,7 @@ export class WorkspaceService {
       data: {
         providerSettings: toPrismaJsonValue({
           ...settings,
-          email: { ...(settings.email || {}), enabled: !!email },
+          email: { ...((settings.email as Record<string, unknown>) || {}), enabled: !!email },
         }),
       },
     });
@@ -166,7 +166,7 @@ export class WorkspaceService {
     const ws = await this.getWorkspace(id);
     const settings = asProviderSettings(ws.providerSettings);
 
-    const data: any = {};
+    const data: Record<string, unknown> = {};
     if (payload.name !== undefined) data.name = payload.name;
 
     const nextSettings = {
@@ -179,7 +179,7 @@ export class WorkspaceService {
       webhookUrl: payload.webhookUrl ?? settings.webhookUrl,
       role: payload.role ?? settings.role,
       notifications: {
-        ...(settings.notifications || {}),
+        ...((settings.notifications as Record<string, boolean>) || {}),
         ...(payload.notifications || {}),
       },
     };
@@ -188,7 +188,7 @@ export class WorkspaceService {
       where: { id },
       data: {
         ...data,
-        providerSettings: nextSettings,
+        providerSettings: toPrismaJsonValue(nextSettings),
       },
     });
   }
@@ -197,7 +197,12 @@ export class WorkspaceService {
    * Converte o Workspace (Prisma) para o formato
    * esperado pelo WhatsAppEngine (UWE-Ω).
    */
-  toEngineWorkspace(ws: Workspace): any {
+  toEngineWorkspace(ws: Workspace): {
+    id: string;
+    jitterMin: number;
+    jitterMax: number;
+    whatsappProvider: string;
+  } {
     return {
       id: ws.id,
       jitterMin: ws.jitterMin,

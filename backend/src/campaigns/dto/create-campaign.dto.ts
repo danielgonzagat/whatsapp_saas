@@ -1,4 +1,5 @@
 import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Prisma } from '@prisma/client';
 
 export class CreateCampaignDto {
   @IsString()
@@ -30,7 +31,7 @@ export class CreateCampaignDto {
   parentId?: string;
 
   @IsOptional()
-  filters?: any;
+  filters?: Prisma.InputJsonValue;
 
   @IsOptional()
   @IsString()

@@ -40,7 +40,7 @@ export class StorageService implements OnModuleInit {
   private readonly uploadsDir: string;
   private readonly baseUrl: string;
   private readonly signingSecret: string;
-  private r2Client: any = null;
+  private r2Client: S3Client | null = null;
 
   constructor(private config: ConfigService) {
     this.driver = this.config.get('STORAGE_DRIVER', 'local');
@@ -556,7 +556,7 @@ export class StorageService implements OnModuleInit {
   /**
    * Returns a cached R2 S3-compatible client, or null if not configured.
    */
-  private getR2Client(): any {
+  private getR2Client(): S3Client | null {
     if (this.r2Client) return this.r2Client;
 
     const bucket = this.config.get('R2_BUCKET');
@@ -746,7 +746,7 @@ export class StorageService implements OnModuleInit {
     }
   }
 
-  private async objectBodyToBuffer(body: any): Promise<Buffer> {
+  private async objectBodyToBuffer(body: unknown): Promise<Buffer> {
     if (!body) {
       return Buffer.alloc(0);
     }
@@ -755,8 +755,10 @@ export class StorageService implements OnModuleInit {
       return body;
     }
 
-    if (typeof body.transformToByteArray === 'function') {
-      return Buffer.from(await body.transformToByteArray());
+    if (typeof (body as Record<string, unknown>).transformToByteArray === 'function') {
+      return Buffer.from(
+        await (body as { transformToByteArray: () => Promise<Uint8Array> }).transformToByteArray(),
+      );
     }
 
     const chunks: Buffer[] = [];

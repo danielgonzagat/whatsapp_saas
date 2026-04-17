@@ -44,14 +44,14 @@ interface ThinkDto {
   workspaceId?: string;
   conversationId?: string;
   mode?: 'chat' | 'onboarding' | 'sales';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface MemoryDto {
   workspaceId: string;
   type: string;
   content: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface OnboardingChatDto {
@@ -247,10 +247,20 @@ export class KloelController {
     res.on('close', () => abortWithReason('client_disconnected'));
 
     try {
-      return await this.kloelService.think({ ...dto, workspaceId, userId, userName }, res, {
-        signal: abortController.signal,
-        timeoutMs,
-      });
+      return await this.kloelService.think(
+        {
+          ...dto,
+          workspaceId,
+          userId,
+          userName,
+          metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+        },
+        res,
+        {
+          signal: abortController.signal,
+          timeoutMs,
+        },
+      );
     } finally {
       clearTimeout(timeout);
     }
@@ -283,6 +293,7 @@ export class KloelController {
       workspaceId,
       userId,
       userName,
+      metadata: dto.metadata as Prisma.InputJsonValue | undefined,
     });
   }
 
@@ -298,7 +309,12 @@ export class KloelController {
   ): Promise<{ success: boolean }> {
     // Validate workspace access
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    await this.kloelService.saveMemory(workspaceId, dto.type, dto.content, dto.metadata);
+    await this.kloelService.saveMemory(
+      workspaceId,
+      dto.type,
+      dto.content,
+      dto.metadata as Prisma.InputJsonValue | undefined,
+    );
     return { success: true };
   }
 
@@ -365,7 +381,7 @@ export class KloelController {
         fileIsRequired: false,
       }),
     )
-    file: any,
+    file: { buffer: Buffer; originalname?: string; mimetype?: string; size?: number },
     @Request() req: AuthenticatedRequest,
   ) {
     if (!file) {
@@ -450,7 +466,7 @@ export class KloelController {
         fileIsRequired: false,
       }),
     )
-    file: any,
+    file: { buffer: Buffer; originalname?: string; mimetype?: string; size?: number },
     @Request() req: AuthenticatedRequest,
   ) {
     if (!file) {
@@ -818,7 +834,13 @@ export class KloelController {
   @Post('threads/:id/messages')
   async addThreadMessage(
     @Param('id') id: string,
-    @Body() dto: { role: string; content: string; metadata?: any; idempotencyKey?: string },
+    @Body()
+    dto: {
+      role: string;
+      content: string;
+      metadata?: Record<string, unknown>;
+      idempotencyKey?: string;
+    },
     @Req() req: AuthenticatedRequest,
   ) {
     try {
@@ -832,7 +854,7 @@ export class KloelController {
           threadId: id,
           role: dto.role,
           content: dto.content,
-          metadata: dto.metadata,
+          metadata: dto.metadata as Prisma.InputJsonValue | undefined,
         },
       });
       await this.prisma.chatThread.updateMany({

@@ -78,7 +78,7 @@ export class WebinarController {
       where: { id, workspaceId },
     });
     if (!existing) throw new NotFoundException('Webinar not found');
-    const data: any = { ...body };
+    const data: Record<string, unknown> = { ...body };
     if (data.date && typeof data.date === 'string') {
       data.date = new Date(data.date);
     }

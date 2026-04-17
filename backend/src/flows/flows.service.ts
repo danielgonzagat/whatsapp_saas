@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -51,27 +52,31 @@ export class FlowsService {
     private audit: AuditService,
   ) {}
 
-  async save(workspaceId: string, flowId: string, data: { nodes: any; edges: any; name?: string }) {
+  async save(
+    workspaceId: string,
+    flowId: string,
+    data: { nodes: unknown; edges: unknown; name?: string },
+  ) {
     await this.audit.log({
       workspaceId,
       action: 'UPDATE_FLOW',
       resource: 'Flow',
       resourceId: flowId,
-      details: { name: data.name, nodesCount: data.nodes?.length },
+      details: { name: data.name, nodesCount: Array.isArray(data.nodes) ? data.nodes.length : 0 },
     });
 
     return this.prisma.flow.upsert({
       where: { id: flowId },
       update: {
-        nodes: data.nodes,
-        edges: data.edges,
+        nodes: data.nodes as Prisma.InputJsonValue,
+        edges: data.edges as Prisma.InputJsonValue,
         name: data.name || undefined,
       },
       create: {
         id: flowId,
         workspaceId,
-        nodes: data.nodes,
-        edges: data.edges,
+        nodes: data.nodes as Prisma.InputJsonValue,
+        edges: data.edges as Prisma.InputJsonValue,
         name: data.name || 'Fluxo Sem Nome',
       },
     });
@@ -105,8 +110,8 @@ export class FlowsService {
   async saveVersion(params: {
     workspaceId: string;
     flowId: string;
-    nodes: any;
-    edges: any;
+    nodes: unknown;
+    edges: unknown;
     label?: string;
     createdById?: string | null;
   }) {
@@ -119,8 +124,8 @@ export class FlowsService {
       create: {
         id: flowId,
         workspaceId,
-        nodes,
-        edges,
+        nodes: nodes as Prisma.InputJsonValue,
+        edges: edges as Prisma.InputJsonValue,
         name: label || 'Fluxo sem nome',
       },
     });
@@ -129,8 +134,8 @@ export class FlowsService {
       data: {
         workspaceId,
         flowId,
-        nodes,
-        edges,
+        nodes: nodes as Prisma.InputJsonValue,
+        edges: edges as Prisma.InputJsonValue,
         label: label || null,
         createdById: createdById || null,
       },

@@ -56,7 +56,7 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     next();
   }
 
-  private sanitizeObject(obj: any, path: string): void {
+  private sanitizeObject(obj: Record<string, unknown>, path: string): void {
     if (!obj || typeof obj !== 'object') return;
 
     for (const key of Object.keys(obj)) {
@@ -68,8 +68,8 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
           this.logger.warn(`Prompt injection detectado em ${path}.${key}`);
           obj[key] = sanitized;
         }
-      } else if (typeof value === 'object') {
-        this.sanitizeObject(value, `${path}.${key}`);
+      } else if (value && typeof value === 'object') {
+        this.sanitizeObject(value as Record<string, unknown>, `${path}.${key}`);
       }
     }
   }

@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -17,12 +18,12 @@ export class MemoryController {
   async saveMemory(
     @Param('workspaceId') workspaceId: string,
     @Body()
-    body: { key: string; value: any; category?: string; content?: string },
+    body: { key: string; value: unknown; category?: string; content?: string },
   ) {
     const memory = await this.memoryService.saveMemory(
       workspaceId,
       body.key,
-      body.value,
+      body.value as Prisma.InputJsonValue,
       body.category || 'general',
       body.content,
     );

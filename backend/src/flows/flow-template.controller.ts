@@ -31,8 +31,8 @@ export class FlowTemplateController {
     body: {
       name: string;
       category: string;
-      nodes: any;
-      edges: any;
+      nodes: unknown;
+      edges: unknown;
       description?: string;
       isPublic?: boolean;
       idempotencyKey?: string;

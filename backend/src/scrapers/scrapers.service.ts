@@ -13,7 +13,10 @@ export class ScrapersService {
     this.scraperQueue = new Queue('scraper-jobs', { connection });
   }
 
-  async createJob(workspaceId: string, data: any) {
+  async createJob(
+    workspaceId: string,
+    data: { type: string; query: string; [key: string]: unknown },
+  ) {
     const job = await this.prisma.scrapingJob.create({
       data: {
         ...data,

@@ -38,7 +38,7 @@ export interface ProviderAutonomySettings {
   proactiveEnabled?: boolean;
   autoBootstrapOnConnected?: boolean;
 
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ProviderCiaRuntime {
@@ -50,7 +50,7 @@ export interface ProviderCiaRuntime {
   lastProgressAt?: string;
   updatedAt?: string;
 
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ProviderAutopilotSettings {
@@ -61,7 +61,7 @@ export interface ProviderAutopilotSettings {
   lastTrigger?: string;
   lastModeAt?: string;
 
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ProviderSettings {
@@ -77,9 +77,9 @@ export interface ProviderSettings {
   anonymousGuest?: boolean;
   workspaceMode?: string;
   authMode?: string;
-  auth?: { anonymous?: boolean; [key: string]: any };
+  auth?: { anonymous?: boolean; [key: string]: unknown };
 
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

@@ -24,7 +24,7 @@ export class MediaService {
       this.config.get('MEDIA_BASE_URL') || this.config.get('APP_URL', 'http://localhost:3001');
   }
 
-  async createVideoJob(workspaceId: string, data: any) {
+  async createVideoJob(workspaceId: string, data: { imageUrl: string; prompt?: string }) {
     const job = await this.prisma.mediaJob.create({
       data: {
         workspaceId,
@@ -59,7 +59,7 @@ export class MediaService {
    */
   async uploadDocument(
     workspaceId: string,
-    file: any,
+    file: { buffer: Buffer; originalname?: string; mimetype?: string; size?: number },
     metadata: { name?: string; description?: string; category?: string },
   ) {
     if (!file?.buffer) {
@@ -101,7 +101,7 @@ export class MediaService {
    * Lista documentos do workspace
    */
   async listDocuments(workspaceId: string, category?: string) {
-    const where: any = { workspaceId, isActive: true };
+    const where: Record<string, unknown> = { workspaceId, isActive: true };
     if (category) {
       where.category = category;
     }
@@ -127,7 +127,7 @@ export class MediaService {
     });
 
     return {
-      documents: documents.map((doc: any) => ({
+      documents: documents.map((doc) => ({
         ...doc,
         url: this.buildDocumentAccessUrl(doc.id),
       })),

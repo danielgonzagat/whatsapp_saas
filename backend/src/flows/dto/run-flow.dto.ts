@@ -2,7 +2,7 @@ import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class RunFlowDto {
   @IsObject()
-  flow: any;
+  flow: Record<string, unknown>;
 
   @IsString()
   @MaxLength(255)

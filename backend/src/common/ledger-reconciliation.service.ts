@@ -78,7 +78,18 @@ export class LedgerReconciliationService {
     // Load all paid checkout orders within the window. We use `include`
     // instead of `select` because the Prisma type narrowing for nested
     // relations is friendlier and the extra columns are cheap.
-    const orders: any[] = await (this.prisma as any).checkoutOrder.findMany({
+    type PrismaDelegate = {
+      findMany: (...args: unknown[]) => Promise<unknown[]>;
+      groupBy: (...args: unknown[]) => Promise<unknown[]>;
+    };
+    type OrderWithPayment = {
+      id: string;
+      workspaceId: string;
+      status: string;
+      payment?: { status?: string; externalId?: string; gateway?: string } | null;
+    };
+    const prismaExt = this.prisma as unknown as Record<string, PrismaDelegate>;
+    const orders = (await prismaExt.checkoutOrder.findMany({
       where: {
         paidAt: { not: null, gte: since },
         status: { in: ['PAID', 'SHIPPED', 'DELIVERED'] },
@@ -86,7 +97,7 @@ export class LedgerReconciliationService {
       include: {
         payment: true,
       },
-    });
+    })) as OrderWithPayment[];
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential order reconciliation for data integrity
     for (const order of orders) {
@@ -219,13 +230,18 @@ export class LedgerReconciliationService {
    * append-only ledger is to make drift detectable, not invisible.
    */
   async runWalletReconciliation(): Promise<WalletReconciliationResult> {
+    type PrismaDelegate = {
+      findMany: (...args: unknown[]) => Promise<unknown[]>;
+      groupBy: (...args: unknown[]) => Promise<unknown[]>;
+    };
+    const prismaExt = this.prisma as unknown as Record<string, PrismaDelegate>;
     const drifts: DriftReport[] = [];
 
     // Read all wallets. Production volumes here are small (one wallet
     // per workspace, hundreds to low thousands), and the ledger sum is
     // bounded by the wallet's history. If this method becomes slow,
     // the next step is a per-workspace cron pass instead of all-at-once.
-    const wallets: any[] = await (this.prisma as any).kloelWallet.findMany({
+    const wallets = (await prismaExt.kloelWallet.findMany({
       select: {
         id: true,
         workspaceId: true,
@@ -234,7 +250,13 @@ export class LedgerReconciliationService {
         blockedBalanceInCents: true,
       },
       take: 5000,
-    });
+    })) as Array<{
+      id: string;
+      workspaceId: string;
+      availableBalanceInCents: bigint;
+      pendingBalanceInCents: bigint;
+      blockedBalanceInCents: bigint;
+    }>;
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential wallet reconciliation for data integrity
     for (const wallet of wallets) {
@@ -242,11 +264,15 @@ export class LedgerReconciliationService {
       // BigInt column requires the raw form because Prisma's groupBy
       // type system does not always cooperate with `_sum` on BigInt
       // — we cast to `any` and trust the runtime shape.
-      const aggregates: any[] = await (this.prisma as any).kloelWalletLedger.groupBy({
+      const aggregates = (await prismaExt.kloelWalletLedger.groupBy({
         by: ['bucket', 'direction'],
         where: { walletId: wallet.id },
         _sum: { amountInCents: true },
-      });
+      })) as Array<{
+        bucket?: string;
+        direction?: string;
+        _sum?: { amountInCents?: string | number | bigint | null };
+      }>;
 
       const sumByKey = new Map<string, bigint>();
       for (const row of aggregates) {

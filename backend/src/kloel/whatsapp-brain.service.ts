@@ -28,7 +28,7 @@ export class WhatsAppBrainService {
     private readonly kloelService: KloelService,
   ) {}
 
-  async processWebhook(payload: any, workspaceId: string): Promise<void> {
+  async processWebhook(payload: Record<string, unknown>, workspaceId: string): Promise<void> {
     this.logger.log('Processando webhook WhatsApp');
 
     const entry = payload.entry?.[0];

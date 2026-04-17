@@ -59,7 +59,10 @@ export class FlowsController {
     return this.handleRunFlow(req, { ...body, workspaceId, flowId });
   }
 
-  private async handleRunFlow(req: any, body: any) {
+  private async handleRunFlow(
+    req: AuthenticatedRequest,
+    body: RunFlowDto & { workspaceId?: string; flowId?: string },
+  ) {
     const { flow, startNode, user, flowId } = body ?? {};
     const workspaceId = resolveWorkspaceId(req, body?.workspaceId);
 
@@ -89,7 +92,7 @@ export class FlowsController {
       await this.flows.save(workspaceId, targetFlowId, {
         nodes: flow.nodes,
         edges: flow.edges,
-        name: flow.name || 'Runtime Flow',
+        name: (flow.name as string) || 'Runtime Flow',
       });
     }
 
@@ -97,7 +100,7 @@ export class FlowsController {
     if (!Array.isArray(flow.nodes) || !Array.isArray(flow.edges)) {
       throw new BadRequestException('flow.nodes e flow.edges devem ser arrays');
     }
-    const startExists = flow.nodes.some((n: any) => n.id === startNode);
+    const startExists = flow.nodes.some((n: Record<string, unknown>) => n.id === startNode);
     if (!startExists) {
       throw new BadRequestException('startNode não existe no flow');
     }

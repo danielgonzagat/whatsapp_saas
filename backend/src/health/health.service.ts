@@ -68,14 +68,14 @@ export class HealthService {
     let lastCheck = 0;
 
     if (statusData) {
-      let parsed: any = {};
+      let parsed: Record<string, unknown> = {};
       try {
         parsed = JSON.parse(statusData);
       } catch {
         /* invalid JSON in Redis */
       }
-      status = parsed.status;
-      lastCheck = parsed.lastCheck;
+      status = parsed.status as string;
+      lastCheck = parsed.lastCheck as number;
     }
 
     let score = 100;

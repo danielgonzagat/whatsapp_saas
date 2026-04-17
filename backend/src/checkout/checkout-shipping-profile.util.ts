@@ -23,10 +23,12 @@ export type CheckoutShippingProfile = {
 };
 
 export function resolveCheckoutShippingProfile(
-  plan: any,
-  checkoutConfig?: any | null,
+  plan: Record<string, unknown>,
+  checkoutConfig?: Record<string, unknown> | null,
 ): CheckoutShippingProfile {
-  const configMode = String(checkoutConfig?.shippingMode || '')
+  const configMode = (
+    typeof checkoutConfig?.shippingMode === 'string' ? checkoutConfig.shippingMode : ''
+  )
     .trim()
     .toUpperCase();
   const mode: CheckoutShippingProfile['mode'] =
@@ -83,8 +85,8 @@ export function calculateVariableShippingInCents(input: {
 }
 
 export function buildCheckoutShippingQuote(input: {
-  plan: any;
-  checkoutConfig?: any | null;
+  plan: Record<string, unknown>;
+  checkoutConfig?: Record<string, unknown> | null;
   destinationZip?: string | null;
 }) {
   const profile = resolveCheckoutShippingProfile(input.plan, input.checkoutConfig);

@@ -9,7 +9,7 @@ export class SmartTimeService {
     // If contactId is provided, analyze specific contact habits
     // Otherwise, analyze workspace global habits
 
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       workspaceId,
       direction: 'INBOUND', // We want to know when THEY write
     };

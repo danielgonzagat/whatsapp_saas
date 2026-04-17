@@ -7,13 +7,13 @@ export interface ScraperResult {
 
 export interface IScraperStrategy {
   name: string;
-  scrape(query: string, filters: any): Promise<ScraperResult>;
+  scrape(query: string, filters: Record<string, unknown>): Promise<ScraperResult>;
 }
 
 @Injectable()
 export class GoogleMapsStrategy implements IScraperStrategy {
   name = 'GOOGLE_MAPS';
-  scrape(query: string, filters: any): Promise<ScraperResult> {
+  scrape(query: string, filters: Record<string, unknown>): Promise<ScraperResult> {
     void query;
     void filters;
     // Existing logic adapted
@@ -24,7 +24,7 @@ export class GoogleMapsStrategy implements IScraperStrategy {
 @Injectable()
 export class LinkedInStrategy implements IScraperStrategy {
   name = 'LINKEDIN';
-  scrape(query: string, filters: any): Promise<ScraperResult> {
+  scrape(query: string, filters: Record<string, unknown>): Promise<ScraperResult> {
     void query;
     void filters;
     // Mock for Top 1
@@ -35,7 +35,7 @@ export class LinkedInStrategy implements IScraperStrategy {
 @Injectable()
 export class InstagramStrategy implements IScraperStrategy {
   name = 'INSTAGRAM';
-  scrape(query: string, filters: any): Promise<ScraperResult> {
+  scrape(query: string, filters: Record<string, unknown>): Promise<ScraperResult> {
     void query;
     void filters;
     // Mock for Top 1

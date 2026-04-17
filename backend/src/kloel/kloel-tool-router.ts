@@ -21,7 +21,7 @@ export interface KloelToolExecutionReceipt {
   name: string;
   args: Record<string, unknown>;
   success: boolean;
-  result: any;
+  result: Record<string, unknown> | null;
   error?: string;
 }
 
@@ -63,6 +63,14 @@ function formatToolLabel(toolName: string) {
 
 function stringArgument(value: unknown) {
   return typeof value === 'string' ? value : '';
+}
+
+function toResultRecord(value: unknown): Record<string, unknown> | null {
+  if (!value) return null;
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return { value };
 }
 
 export class KloelToolRouter {
@@ -107,14 +115,16 @@ export class KloelToolRouter {
       );
       input.safeWrite?.(createKloelToolCallEvent(callId, toolName, toolArgs));
 
-      let result: any = null;
+      let result = toResultRecord(null);
 
       try {
-        result = await this.unifiedAgentService.executeTool(toolName, toolArgs, {
-          workspaceId: input.workspaceId,
-          phone: stringArgument(toolArgs.phone),
-          contactId: stringArgument(toolArgs.contactId),
-        });
+        result = toResultRecord(
+          await this.unifiedAgentService.executeTool(toolName, toolArgs, {
+            workspaceId: input.workspaceId,
+            phone: stringArgument(toolArgs.phone),
+            contactId: stringArgument(toolArgs.contactId),
+          }),
+        );
       } catch (error: unknown) {
         const errorInstanceofError =
           error instanceof Error
@@ -124,14 +134,22 @@ export class KloelToolRouter {
       }
 
       if (!result || result?.error === 'Unknown tool') {
-        result = await input.executeLocalTool(input.workspaceId, toolName, toolArgs, input.userId);
+        result = toResultRecord(
+          await input.executeLocalTool(input.workspaceId, toolName, toolArgs, input.userId),
+        );
       }
 
       const success =
         !!result &&
         (result.success === true || result.ok === true || result.status === 'success') &&
         !result.error;
-      const error = !success ? result?.error || result?.message || 'tool_failed' : undefined;
+      const error = !success
+        ? typeof result?.error === 'string'
+          ? result.error
+          : typeof result?.message === 'string'
+            ? result.message
+            : 'tool_failed'
+        : undefined;
 
       receipts.push({
         callId,

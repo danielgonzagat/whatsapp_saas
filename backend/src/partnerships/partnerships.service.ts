@@ -144,7 +144,7 @@ export class PartnershipsService {
     workspaceId: string,
     params?: { type?: string; status?: string; search?: string },
   ) {
-    const where: any = { workspaceId };
+    const where: Record<string, unknown> = { workspaceId };
     if (params?.type && params.type !== 'todos') where.type = params.type;
     if (params?.status) where.status = params.status;
     if (params?.search) where.partnerName = { contains: params.search, mode: 'insensitive' };

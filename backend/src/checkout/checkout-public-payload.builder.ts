@@ -9,11 +9,16 @@ export class CheckoutPublicPayloadBuilder {
   ) {}
 
   async build(
-    plan: any,
+    plan: Record<string, unknown> & {
+      product: { workspaceId: string; name?: string; [k: string]: unknown };
+      checkoutConfig?: Record<string, unknown> | null;
+      slug?: string;
+      referenceCode?: string;
+    },
     options?: {
-      affiliateLink?: any | null;
-      checkoutLink?: any | null;
-      checkoutConfigOverride?: any | null;
+      affiliateLink?: Record<string, unknown> | null;
+      checkoutLink?: Record<string, unknown> | null;
+      checkoutConfigOverride?: Record<string, unknown> | null;
     },
   ) {
     const affiliateLink = options?.affiliateLink || null;
@@ -69,7 +74,8 @@ export class CheckoutPublicPayloadBuilder {
       checkoutCode: affiliateLink?.code || checkoutLink?.referenceCode || plan.referenceCode,
       checkoutLinkId: checkoutLink?.id || null,
       checkoutTemplateId: checkoutLink?.checkoutId || null,
-      checkoutTemplateName: checkoutLink?.checkout?.name || null,
+      checkoutTemplateName:
+        (checkoutLink?.checkout as Record<string, unknown> | undefined)?.name || null,
       checkoutConfig,
       paymentProvider,
       merchant: {
@@ -97,7 +103,10 @@ export class CheckoutPublicPayloadBuilder {
             affiliateWorkspaceId: affiliateLink.affiliateWorkspaceId,
             affiliateProductId: affiliateLink.affiliateProductId,
             affiliateCode: affiliateLink.code,
-            commissionPct: Number(affiliateLink.affiliateProduct?.commissionPct || 0),
+            commissionPct: Number(
+              (affiliateLink.affiliateProduct as Record<string, unknown> | undefined)
+                ?.commissionPct || 0,
+            ),
           }
         : null,
     };

@@ -15,7 +15,7 @@ interface ServiceStatus {
   status: 'healthy' | 'degraded' | 'down';
   latencyMs: number;
   lastCheck: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 interface DiagnosticsReport {

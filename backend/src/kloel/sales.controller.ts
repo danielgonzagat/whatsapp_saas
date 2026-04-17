@@ -46,7 +46,7 @@ export class SalesController {
   ) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { sales: [], count: 0 };
-    const where: any = { workspaceId };
+    const where: Record<string, unknown> = { workspaceId };
     if (status && status !== 'todos') where.status = status;
     if (method) where.paymentMethod = method;
     if (search) {
@@ -145,7 +145,7 @@ export class SalesController {
   async listSubscriptions(@Request() req: AuthenticatedRequest, @Query('status') status?: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { subscriptions: [], count: 0 };
-    const where: any = { workspaceId };
+    const where: Record<string, unknown> = { workspaceId };
     if (status && status !== 'todos') where.status = status;
     const subscriptions = await this.prisma.customerSubscription.findMany({
       where,
@@ -382,7 +382,7 @@ export class SalesController {
   async listOrders(@Request() req: AuthenticatedRequest, @Query('status') status?: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { orders: [], count: 0 };
-    const where: any = { workspaceId };
+    const where: Record<string, unknown> = { workspaceId };
     if (status && status !== 'todos') where.status = status;
     const orders = await this.prisma.physicalOrder.findMany({
       where,

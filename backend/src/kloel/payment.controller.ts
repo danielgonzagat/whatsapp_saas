@@ -32,7 +32,12 @@ export class PaymentController {
   @Throttle({ default: { limit: 100, ttl: 60000 } }) // Webhooks precisam de limite alto
   async paymentWebhook(
     @Headers('x-webhook-secret') secret: string | undefined,
-    @Body() body: { event: string; payment: any; workspaceId?: string },
+    @Body()
+    body: {
+      event: string;
+      payment: Record<string, unknown> & { workspaceId?: string };
+      workspaceId?: string;
+    },
   ) {
     const expected = process.env.PAYMENT_WEBHOOK_SECRET;
     if (process.env.NODE_ENV === 'production' && !expected) {
@@ -44,8 +49,11 @@ export class PaymentController {
       }
     }
 
-    const workspaceId =
-      body.workspaceId || body?.payment?.metadata?.workspaceId || body?.payment?.workspaceId;
+    const rawWsId =
+      body.workspaceId ||
+      (body?.payment?.metadata as Record<string, unknown> | undefined)?.workspaceId ||
+      body?.payment?.workspaceId;
+    const workspaceId = typeof rawWsId === 'string' ? rawWsId : undefined;
     if (!workspaceId) {
       throw new BadRequestException('missing_workspaceId');
     }

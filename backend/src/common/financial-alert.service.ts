@@ -79,7 +79,7 @@ export class FinancialAlertService {
     }
   }
 
-  reconciliationAlert(message: string, context: { workspaceId?: string; details?: any }) {
+  reconciliationAlert(message: string, context: { workspaceId?: string; details?: unknown }) {
     this.logger.warn(`FINANCIAL_ALERT: ${message}`, JSON.stringify(context));
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports

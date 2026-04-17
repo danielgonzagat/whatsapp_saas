@@ -12,7 +12,10 @@ export class VoiceService {
     this.voiceQueue = new Queue('voice-jobs', { connection });
   }
 
-  async createVoiceProfile(workspaceId: string, data: any) {
+  async createVoiceProfile(
+    workspaceId: string,
+    data: { name: string; provider: string; voiceId: string },
+  ) {
     return this.prisma.voiceProfile.create({
       data: {
         ...data,
@@ -21,7 +24,7 @@ export class VoiceService {
     });
   }
 
-  async generateAudio(workspaceId: string, data: any) {
+  async generateAudio(workspaceId: string, data: { profileId: string; text: string }) {
     // Validate profile belongs to workspace
     const profile = await this.prisma.voiceProfile.findUnique({
       where: { id: data.profileId },

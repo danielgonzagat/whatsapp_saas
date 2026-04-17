@@ -1,7 +1,7 @@
 // PULSE:OK — helper/wrapper module only. Real budget enforcement happens in caller services
 // via PlanLimitsService.ensureTokenBudget() before invoking these helpers.
 import { Logger } from '@nestjs/common';
-import OpenAI from 'openai';
+import OpenAI, { type Uploadable } from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 const logger = new Logger('OpenAIWrapper');
@@ -30,19 +30,20 @@ const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
 /**
  * Verifica se o erro é retryable (temporário)
  */
-function isRetryableError(err: any): boolean {
+function isRetryableError(err: unknown): boolean {
+  const errObj = err as { status?: number; code?: string; message?: string } | null;
   // Rate limit
-  if (err.status === 429) return true;
+  if (errObj?.status === 429) return true;
 
   // Server errors (5xx)
-  if (err.status >= 500 && err.status < 600) return true;
+  if (errObj?.status && errObj.status >= 500 && errObj.status < 600) return true;
 
   // Network errors
   const networkErrors = ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN'];
-  if (networkErrors.includes(err.code)) return true;
+  if (errObj?.code && networkErrors.includes(errObj.code)) return true;
 
   // Timeout errors
-  if (err.message?.includes('timeout') || err.message?.includes('Timeout')) return true;
+  if (errObj?.message?.includes('timeout') || errObj?.message?.includes('Timeout')) return true;
 
   return false;
 }
@@ -70,7 +71,7 @@ export async function callOpenAIWithRetry<T>(
   options?: RetryOptions,
 ): Promise<T> {
   const opts = { ...DEFAULT_RETRY_OPTIONS, ...options };
-  let lastError: any;
+  let lastError: unknown;
 
   // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff
   for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
@@ -125,7 +126,7 @@ export async function chatCompletionWithRetry(
   client: OpenAI,
   params: NonStreamingChatParams,
   options?: RetryOptions,
-  requestOptions?: any,
+  requestOptions?: Record<string, unknown>,
 ): Promise<OpenAI.Chat.ChatCompletion> {
   const normalizedParams = normalizeChatCompletionParams(params);
   return callOpenAIWithRetry(
@@ -144,7 +145,7 @@ export async function chatCompletionStreamWithRetry(
   client: OpenAI,
   params: StreamingChatParams,
   options?: RetryOptions,
-  requestOptions?: any,
+  requestOptions?: Record<string, unknown>,
 ): Promise<AsyncIterable<OpenAI.ChatCompletionChunk>> {
   const normalizedParams = normalizeChatCompletionParams(params);
   return callOpenAIWithRetry(
@@ -195,14 +196,14 @@ export async function ttsWithRetry(
 // max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
 export async function transcribeWithRetry(
   client: OpenAI,
-  file: any,
+  file: Uploadable,
   model = resolveBackendOpenAIModel('audio_understanding'),
   options?: RetryOptions,
 ): Promise<string> {
-  const result = await callOpenAIWithRetry<any>(
+  const result = await callOpenAIWithRetry<{ text: string } | string>(
     () =>
       client.audio.transcriptions.create({
-        file,
+        file: file,
         model,
         response_format: 'text',
       }),
@@ -222,7 +223,7 @@ export async function chatCompletionWithFallback(
   params: NonStreamingChatParams,
   fallbackModel = resolveBackendOpenAIModel('writer_fallback'),
   options?: RetryOptions,
-  requestOptions?: any,
+  requestOptions?: Record<string, unknown>,
 ): Promise<OpenAI.Chat.ChatCompletion> {
   const normalizedParams = normalizeChatCompletionParams(params);
   try {

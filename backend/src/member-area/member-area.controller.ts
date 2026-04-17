@@ -13,6 +13,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -65,7 +66,7 @@ interface CreateLessonDto {
   videoUrl?: string;
   textContent?: string;
   downloadUrl?: string;
-  quizData?: any;
+  quizData?: Prisma.InputJsonValue;
   durationMin?: number;
 }
 
@@ -97,22 +98,22 @@ export class MemberAreaController {
     private readonly auditService: AuditService,
   ) {}
 
-  private serializeArea(req: any, area: any) {
+  private serializeArea(req: AuthenticatedRequest, area: Record<string, unknown>) {
     if (!area) return area;
 
     const modules = Array.isArray(area.modules) ? area.modules : [];
     const lessonsCount =
       area.totalLessons ??
       modules.reduce(
-        (sum: number, module: any) =>
+        (sum: number, module: { lessons?: unknown[] }) =>
           sum + (Array.isArray(module.lessons) ? module.lessons.length : 0),
         0,
       );
 
     return {
       ...area,
-      logoUrl: normalizeStorageUrlForRequest(area.logoUrl, req) || null,
-      coverUrl: normalizeStorageUrlForRequest(area.coverUrl, req) || null,
+      logoUrl: normalizeStorageUrlForRequest(area.logoUrl as string, req) || null,
+      coverUrl: normalizeStorageUrlForRequest(area.coverUrl as string, req) || null,
       studentsCount: area.totalStudents ?? 0,
       modulesCount: area.totalModules ?? modules.length,
       lessonsCount,
@@ -158,7 +159,7 @@ export class MemberAreaController {
   ) {
     const workspaceId = req.user.workspaceId;
 
-    const where: any = { workspaceId };
+    const where: Record<string, unknown> = { workspaceId };
 
     if (type) {
       where.type = type;
@@ -967,7 +968,7 @@ export class MemberAreaController {
         where: { id: areaId, workspaceId },
       });
       if (!area) return [];
-      const where: any = { memberAreaId: areaId, workspaceId };
+      const where: Record<string, unknown> = { memberAreaId: areaId, workspaceId };
       if (q) {
         where.OR = [
           { studentName: { contains: q, mode: 'insensitive' } },

@@ -63,7 +63,7 @@ export class PdfProcessorController {
         ],
       }),
     )
-    file: any,
+    file: { buffer: Buffer; mimetype: string; originalname: string; size: number },
   ) {
     if (!file) throw new BadRequestException('Nenhum arquivo enviado');
 
@@ -74,13 +74,15 @@ export class PdfProcessorController {
 
     if (file.mimetype === 'application/pdf') {
       try {
-        const mod: any = await import('pdf-parse');
-        const PDFParse = mod?.PDFParse ?? mod?.default ?? mod;
-        const parser = new PDFParse({ data: file.buffer });
-        const textResult = await parser.getText();
+        const mod = (await import('pdf-parse')) as Record<string, unknown>;
+        const pdfParse = (mod.default ?? mod) as (data: Buffer) => Promise<{
+          text: string;
+          numpages?: number;
+        }>;
+        const textResult = await pdfParse(file.buffer);
         text = textResult.text;
         this.logger.log(
-          `PDF extraído: ${textResult.pages.length} páginas, ${text.length} caracteres`,
+          `PDF extraído: ${textResult.numpages || 0} páginas, ${text.length} caracteres`,
         );
       } catch (error) {
         this.logger.error(`Erro ao extrair PDF: ${error.message}`);

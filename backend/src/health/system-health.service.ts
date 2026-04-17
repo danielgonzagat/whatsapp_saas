@@ -80,13 +80,15 @@ export class SystemHealthService {
       status.config,
     ];
     const hasDownDependency = hardDependencies.some(
-      (dependency: any) => dependency?.status === 'DOWN',
+      (dependency: Record<string, unknown>) => dependency?.status === 'DOWN',
     );
     const isHealthy =
       !hasDownDependency &&
       Object.values(status)
-        .filter((s: any) => typeof s === 'object' && s && 'status' in s)
-        .every((s: any) => ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(s.status));
+        .filter((s: unknown) => typeof s === 'object' && s && 'status' in s)
+        .every((s: unknown) =>
+          ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes((s as Record<string, string>).status),
+        );
     return {
       status: hasDownDependency ? 'DOWN' : isHealthy ? 'UP' : 'DEGRADED',
       details: status,

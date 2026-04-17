@@ -43,7 +43,7 @@ export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['s
   }
 }
 
-export function resolveWahaSessionState(data: any): {
+export function resolveWahaSessionState(data: Record<string, unknown> | null | undefined): {
   rawStatus: string;
   state: SessionStatus['state'];
 } {
@@ -88,7 +88,7 @@ export interface WahaChatMessage {
   mimetype?: string;
   timestamp?: number;
   chatId?: string;
-  raw?: any;
+  raw?: Record<string, unknown>;
 }
 
 export interface WahaLidMapping {

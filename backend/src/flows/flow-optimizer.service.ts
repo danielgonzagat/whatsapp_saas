@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -60,7 +61,7 @@ export class FlowOptimizerService {
     await this.planLimits
       .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
       .catch(() => {});
-    let suggestion: any = {};
+    let suggestion: Record<string, unknown> = {};
     try {
       suggestion = JSON.parse(completion.choices[0]?.message?.content || '{}');
     } catch {
@@ -73,9 +74,11 @@ export class FlowOptimizerService {
         data: {
           flowId,
           workspaceId,
-          nodes: suggestion.nodes,
+          nodes: suggestion.nodes as Prisma.InputJsonValue,
           edges: flow.edges, // Keep edges for now
-          label: `AI Auto-Optimization: ${suggestion.reason}`,
+          label:
+            'AI Auto-Optimization: ' +
+            (typeof suggestion.reason === 'string' ? suggestion.reason : ''),
         },
       });
       this.logger.log(`Created optimized version for flow ${flowId}`);
