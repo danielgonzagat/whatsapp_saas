@@ -84,6 +84,12 @@ export interface ProviderCalendarSettings {
   [key: string]: unknown;
 }
 
+export interface ProviderPlanLimitSettings {
+  plan?: string;
+
+  [key: string]: unknown;
+}
+
 export interface ProviderSettings {
   whatsappProvider?: string;
   connectionStatus?: string;
@@ -99,6 +105,7 @@ export interface ProviderSettings {
   authMode?: string;
   billingSuspended?: boolean;
   calendar?: ProviderCalendarSettings;
+  planLimits?: ProviderPlanLimitSettings;
   auth?: { anonymous?: boolean; [key: string]: unknown };
 
   [key: string]: unknown;
