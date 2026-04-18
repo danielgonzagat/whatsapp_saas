@@ -6,15 +6,31 @@ const ACCESS_TOKEN_COOKIE = 'kloel_access_token';
 const REFRESH_TOKEN_COOKIE = 'kloel_refresh_token';
 const WORKSPACE_COOKIE = 'kloel_workspace_id';
 
-function resolveWorkspaceId(payload: any): string | null {
-  const explicitWorkspace = String(payload?.workspace?.id || '').trim();
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function readString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function resolveWorkspaceId(payload: unknown): string | null {
+  const payloadRecord = readRecord(payload);
+  const workspaceRecord = readRecord(payloadRecord?.workspace);
+  const userRecord = readRecord(payloadRecord?.user);
+  const workspaces = Array.isArray(payloadRecord?.workspaces) ? payloadRecord.workspaces : [];
+  const firstWorkspace = readRecord(workspaces[0]);
+
+  const explicitWorkspace = readString(workspaceRecord?.id);
   if (explicitWorkspace) return explicitWorkspace;
 
-  const userWorkspace = String(payload?.user?.workspaceId || '').trim();
+  const userWorkspace = readString(userRecord?.workspaceId);
   if (userWorkspace) return userWorkspace;
 
-  const firstWorkspace = payload?.workspaces?.[0];
-  const firstWorkspaceId = String(firstWorkspace?.id || '').trim();
+  const firstWorkspaceId = readString(firstWorkspace?.id);
   return firstWorkspaceId || null;
 }
 
@@ -29,9 +45,14 @@ function cookieOptions(request: NextRequest) {
   };
 }
 
-export function setSharedAuthCookies(request: NextRequest, response: NextResponse, payload: any) {
-  const accessToken = payload?.access_token || payload?.accessToken;
-  const refreshToken = payload?.refresh_token || payload?.refreshToken;
+export function setSharedAuthCookies(
+  request: NextRequest,
+  response: NextResponse,
+  payload: unknown,
+) {
+  const payloadRecord = readRecord(payload);
+  const accessToken = payloadRecord?.access_token ?? payloadRecord?.accessToken;
+  const refreshToken = payloadRecord?.refresh_token ?? payloadRecord?.refreshToken;
   const workspaceId = resolveWorkspaceId(payload);
   const options = cookieOptions(request);
 

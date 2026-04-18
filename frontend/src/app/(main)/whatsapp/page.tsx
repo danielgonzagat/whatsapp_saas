@@ -3,18 +3,27 @@
 export const dynamic = 'force-dynamic';
 
 import { apiFetch } from '@/lib/api/core';
-import { getWhatsAppStatus } from '@/lib/api/whatsapp';
+import { getWhatsAppStatus, type WhatsAppConnectionStatus } from '@/lib/api/whatsapp';
 import { useCallback, useEffect, useState } from 'react';
 import { mutate } from 'swr';
+
+type MetaChannelStatus = {
+  connected?: boolean;
+  phoneNumberId?: string | null;
+  whatsappBusinessId?: string | null;
+  username?: string | null;
+  pageId?: string | null;
+  adAccountId?: string | null;
+};
 
 type MetaStatusResponse = {
   connected?: boolean;
   tokenExpired?: boolean;
   channels?: {
-    whatsapp?: Record<string, any>;
-    instagram?: Record<string, any>;
-    messenger?: Record<string, any>;
-    ads?: Record<string, any>;
+    whatsapp?: MetaChannelStatus;
+    instagram?: MetaChannelStatus;
+    messenger?: MetaChannelStatus;
+    ads?: MetaChannelStatus;
   };
   pageName?: string | null;
   pageId?: string | null;
@@ -22,6 +31,21 @@ type MetaStatusResponse = {
   whatsappPhoneNumberId?: string | null;
   whatsappBusinessId?: string | null;
 };
+
+function readErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = error.message;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
+
+  return fallback;
+}
 
 function ChannelCard({
   title,
@@ -62,7 +86,7 @@ function ChannelCard({
 
 export default function WhatsAppPage() {
   const [metaStatus, setMetaStatus] = useState<MetaStatusResponse | null>(null);
-  const [whatsAppStatus, setWhatsAppStatus] = useState<Record<string, any> | null>(null);
+  const [whatsAppStatus, setWhatsAppStatus] = useState<WhatsAppConnectionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
@@ -74,7 +98,7 @@ export default function WhatsAppPage() {
         getWhatsAppStatus(''),
       ]);
 
-      setMetaStatus((metaRes.data as MetaStatusResponse) || null);
+      setMetaStatus(metaRes.data ?? null);
       setWhatsAppStatus(whatsappRes || null);
     } finally {
       setLoading(false);
@@ -96,8 +120,8 @@ export default function WhatsAppPage() {
         throw new Error('Nao foi possivel gerar a URL de conexao da Meta.');
       }
       window.location.href = url;
-    } catch (error: any) {
-      setActionMessage(error?.message || 'Falha ao iniciar a conexao Meta.');
+    } catch (error: unknown) {
+      setActionMessage(readErrorMessage(error, 'Falha ao iniciar a conexao Meta.'));
     }
   }, []);
 
@@ -111,8 +135,8 @@ export default function WhatsAppPage() {
       );
       await load();
       setActionMessage('Meta desconectada.');
-    } catch (error: any) {
-      setActionMessage(error?.message || 'Falha ao desconectar Meta.');
+    } catch (error: unknown) {
+      setActionMessage(readErrorMessage(error, 'Falha ao desconectar Meta.'));
     }
   }, [load]);
 
