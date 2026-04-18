@@ -762,8 +762,19 @@ export class StorageService implements OnModuleInit {
     }
 
     const chunks: Buffer[] = [];
-    for await (const chunk of body as AsyncIterable<any>) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const streamBody = body as AsyncIterable<Buffer | Uint8Array | string | ArrayBuffer>;
+    for await (const chunk of streamBody) {
+      if (Buffer.isBuffer(chunk)) {
+        chunks.push(chunk);
+        continue;
+      }
+
+      if (chunk instanceof ArrayBuffer) {
+        chunks.push(Buffer.from(new Uint8Array(chunk)));
+        continue;
+      }
+
+      chunks.push(Buffer.from(chunk));
     }
     return Buffer.concat(chunks);
   }

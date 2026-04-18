@@ -354,7 +354,7 @@ export class FlowsService {
       data: {
         status: 'WAITING_INPUT',
         currentNodeId: waitNodeId,
-        state: waitState as any,
+        state: waitState as Prisma.InputJsonValue,
         logs: {
           push: {
             timestamp: Date.now(),
@@ -435,7 +435,7 @@ export class FlowsService {
       where: { id: execution.id },
       data: {
         status: 'RUNNING',
-        state: updatedState as any,
+        state: updatedState as Prisma.InputJsonValue,
         logs: {
           push: {
             timestamp: Date.now(),
@@ -519,7 +519,7 @@ export class FlowsService {
         where: { id: execution.id },
         data: {
           status: 'RUNNING',
-          state: updatedState as any,
+          state: updatedState as Prisma.InputJsonValue,
           logs: {
             push: {
               timestamp: Date.now(),
