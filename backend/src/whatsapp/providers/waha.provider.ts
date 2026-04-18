@@ -1500,14 +1500,20 @@ export class WahaProvider {
 
   // ─── CONTACT & CHAT INFO ─────────────────────────────────
 
-  async getClientInfo(sessionId: string): Promise<any> {
+  async getClientInfo(sessionId: string): Promise<Record<string, unknown>> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    return this.request('GET', `/api/sessions/${encodeURIComponent(resolvedSessionId)}`);
+    return this.request<Record<string, unknown>>(
+      'GET',
+      `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
+    );
   }
 
-  async getContacts(sessionId: string): Promise<any> {
+  async getContacts(sessionId: string): Promise<unknown[]> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    return this.request('GET', `/api/contacts?session=${encodeURIComponent(resolvedSessionId)}`);
+    return this.request<unknown[]>(
+      'GET',
+      `/api/contacts?session=${encodeURIComponent(resolvedSessionId)}`,
+    );
   }
 
   async upsertContactProfile(
@@ -1620,7 +1626,7 @@ export class WahaProvider {
   private async collectChatsWithPagination(
     pathBuilder: (offset: number, limit: number) => string,
     options?: { timeoutMs?: number },
-  ): Promise<any[] | null> {
+  ): Promise<unknown[] | null> {
     const pageSize = 200;
     const maxPages = 10;
     const collected: unknown[] = [];
@@ -1629,7 +1635,7 @@ export class WahaProvider {
     // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
     for (let page = 0; page < maxPages; page += 1) {
       const offset = page * pageSize;
-      const payload = await this.tryRequest<any>(
+      const payload = await this.tryRequest<Record<string, unknown> | unknown[]>(
         'GET',
         pathBuilder(offset, pageSize),
         undefined,
@@ -1666,7 +1672,7 @@ export class WahaProvider {
     return collected;
   }
 
-  async getChats(sessionId: string): Promise<any> {
+  async getChats(sessionId: string): Promise<unknown[]> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     if (!this.shouldSkipChatsOverview(resolvedSessionId)) {
       const overview = await this.collectChatsWithPagination(
@@ -1693,21 +1699,21 @@ export class WahaProvider {
       return chats;
     }
 
-    return this.request('GET', `/api/${encodeURIComponent(resolvedSessionId)}/chats`);
+    return this.request<unknown[]>('GET', `/api/${encodeURIComponent(resolvedSessionId)}/chats`);
   }
 
   async getChatMessages(
     sessionId: string,
     chatId: string,
     options?: { limit?: number; offset?: number; downloadMedia?: boolean },
-  ): Promise<any> {
+  ): Promise<unknown[]> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const normalizedChatId = this.formatChatId(chatId);
     const limit = Math.max(1, Math.min(100, options?.limit || 20));
     const offset = Math.max(0, options?.offset || 0);
     const downloadMedia = options?.downloadMedia === true ? 'true' : 'false';
 
-    const sessionScoped = await this.tryRequest<any>(
+    const sessionScoped = await this.tryRequest<unknown[]>(
       'GET',
       `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(normalizedChatId)}/messages?limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
     );
