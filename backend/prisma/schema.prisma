@@ -3331,3 +3331,36 @@ model UsagePrice {
   @@index([active])
   @@map("usage_prices")
 }
+
+// ============================================================================
+// SP-STRIPE-5 — Fraud Engine (FASE 5 of stripe migration plan).
+//
+// Centralized blacklist shared across all sellers in the platform. Each row
+// is a (type, value) tuple — duplicate inserts are upserted via the unique
+// constraint. Blacklist hits short-circuit the FraudEngine evaluation
+// before a PaymentIntent is created so suspect transactions never reach
+// Stripe.
+// ============================================================================
+
+enum FraudBlacklistType {
+  CPF
+  CNPJ
+  EMAIL
+  IP
+  DEVICE_FINGERPRINT
+  CARD_BIN
+}
+
+model FraudBlacklist {
+  id        String              @id @default(cuid())
+  type      FraudBlacklistType
+  value     String
+  reason    String
+  addedBy   String?             @map("added_by")
+  expiresAt DateTime?           @map("expires_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  @@unique([type, value])
+  @@index([expiresAt])
+  @@map("fraud_blacklist")
+}
