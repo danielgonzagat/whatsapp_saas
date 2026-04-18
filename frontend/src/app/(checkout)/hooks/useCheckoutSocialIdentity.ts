@@ -432,11 +432,14 @@ function persistIdentity(value: CheckoutSocialIdentitySnapshot) {
   writeToStorage(IDENTITY_STORAGE_KEY, JSON.stringify(value));
 }
 
-function mergeSnapshot(
+function mergeIdentityCore(
   current: CheckoutSocialIdentitySnapshot | null,
   incoming: PrefillResponse,
   fallbackFingerprint: string,
-): CheckoutSocialIdentitySnapshot {
+): Pick<
+  CheckoutSocialIdentitySnapshot,
+  'leadId' | 'provider' | 'name' | 'email' | 'avatarUrl' | 'deviceFingerprint'
+> {
   return {
     leadId: incoming.leadId || current?.leadId,
     provider: incoming.provider || current?.provider || 'google',
@@ -445,8 +448,27 @@ function mergeSnapshot(
     avatarUrl: incoming.avatarUrl ?? current?.avatarUrl ?? null,
     deviceFingerprint:
       incoming.deviceFingerprint || current?.deviceFingerprint || fallbackFingerprint,
+  };
+}
+
+function mergeContactFields(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+): Pick<CheckoutSocialIdentitySnapshot, 'phone' | 'cpf'> {
+  return {
     phone: incoming.phone ?? current?.phone ?? null,
     cpf: incoming.cpf ?? current?.cpf ?? null,
+  };
+}
+
+function mergeAddressFields(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+): Pick<
+  CheckoutSocialIdentitySnapshot,
+  'cep' | 'street' | 'number' | 'neighborhood' | 'city' | 'state' | 'complement'
+> {
+  return {
     cep: incoming.cep ?? current?.cep ?? null,
     street: incoming.street ?? current?.street ?? null,
     number: incoming.number ?? current?.number ?? null,
@@ -454,6 +476,18 @@ function mergeSnapshot(
     city: incoming.city ?? current?.city ?? null,
     state: incoming.state ?? current?.state ?? null,
     complement: incoming.complement ?? current?.complement ?? null,
+  };
+}
+
+function mergeSnapshot(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+  fallbackFingerprint: string,
+): CheckoutSocialIdentitySnapshot {
+  return {
+    ...mergeIdentityCore(current, incoming, fallbackFingerprint),
+    ...mergeContactFields(current, incoming),
+    ...mergeAddressFields(current, incoming),
   };
 }
 

@@ -20,28 +20,25 @@ function readEnv(key: string): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-export function resolveWorkerOpenAIModel(role: WorkerOpenAIModelRole): string {
-  switch (role) {
-    case 'brain':
-      return readEnv('OPENAI_BRAIN_MODEL') || DEFAULT_MODELS.brain;
-    case 'brain_fallback':
-      return readEnv('OPENAI_BRAIN_FALLBACK_MODEL') || DEFAULT_MODELS.brain_fallback;
-    case 'writer':
-      return readEnv('OPENAI_WRITER_MODEL') || readEnv('OPENAI_MODEL') || DEFAULT_MODELS.writer;
-    case 'writer_fallback':
-      return (
-        readEnv('OPENAI_WRITER_FALLBACK_MODEL') ||
-        readEnv('OPENAI_FALLBACK_MODEL') ||
-        DEFAULT_MODELS.writer_fallback
-      );
-    case 'audio_understanding':
-      return readEnv('OPENAI_AUDIO_UNDERSTANDING_MODEL') || DEFAULT_MODELS.audio_understanding;
-    case 'audio_understanding_fallback':
-      return (
-        readEnv('OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL') ||
-        DEFAULT_MODELS.audio_understanding_fallback
-      );
+const ROLE_ENV_CHAIN: Record<WorkerOpenAIModelRole, readonly string[]> = {
+  brain: ['OPENAI_BRAIN_MODEL'],
+  brain_fallback: ['OPENAI_BRAIN_FALLBACK_MODEL'],
+  writer: ['OPENAI_WRITER_MODEL', 'OPENAI_MODEL'],
+  writer_fallback: ['OPENAI_WRITER_FALLBACK_MODEL', 'OPENAI_FALLBACK_MODEL'],
+  audio_understanding: ['OPENAI_AUDIO_UNDERSTANDING_MODEL'],
+  audio_understanding_fallback: ['OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL'],
+};
+
+function resolveFromChain(keys: readonly string[]): string | undefined {
+  for (const key of keys) {
+    const value = readEnv(key);
+    if (value) return value;
   }
+  return undefined;
+}
+
+export function resolveWorkerOpenAIModel(role: WorkerOpenAIModelRole): string {
+  return resolveFromChain(ROLE_ENV_CHAIN[role]) || DEFAULT_MODELS[role];
 }
 
 export function shouldRequireAudioReplyByDefault(): boolean {
