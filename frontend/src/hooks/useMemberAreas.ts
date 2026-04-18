@@ -123,12 +123,14 @@ export function useMemberAreaStudents(areaId: string | null, q?: string) {
     areaId ? `/member-areas/${areaId}/students${qs}` : null,
     swrFetcher,
   );
-  const students = Array.isArray(data) ? data : ((data as any)?.students ?? []);
+  const students = Array.isArray(data)
+    ? data
+    : ((data as { students?: unknown[] } | undefined)?.students ?? []);
   return { students, isLoading, error, mutate };
 }
 
 export function useMemberAreaStudentMutations() {
-  const updateStudent = async (areaId: string, studentId: string, data: Record<string, any>) =>
+  const updateStudent = async (areaId: string, studentId: string, data: Record<string, unknown>) =>
     memberAreaStudentsApi.update(areaId, studentId, data);
 
   return { updateStudent };

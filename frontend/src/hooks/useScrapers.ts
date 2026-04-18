@@ -17,7 +17,10 @@ export interface ScrapingJob {
 }
 
 export function useScrapers() {
-  const { data, error, isLoading, mutate } = useSWR<any>('/scrapers/jobs', swrFetcher);
+  const { data, error, isLoading, mutate } = useSWR<ScrapingJob[] | { jobs?: ScrapingJob[] }>(
+    '/scrapers/jobs',
+    swrFetcher,
+  );
   const jobs: ScrapingJob[] = Array.isArray(data) ? data : data?.jobs || [];
   return { jobs, isLoading, error, mutate };
 }
@@ -44,9 +47,9 @@ export async function createScraperJob(data: {
 
 export async function importScraperResults(
   jobId: string,
-): Promise<{ imported: number; errors?: any[] }> {
+): Promise<{ imported: number; errors?: unknown[] }> {
   const workspaceId = tokenStorage.getWorkspaceId() || '';
   const res = await scrapersApi.importResults(jobId, workspaceId);
   if (res.error) throw new Error(res.error || 'Erro ao importar resultados');
-  return res.data as { imported: number; errors?: any[] };
+  return res.data as { imported: number; errors?: unknown[] };
 }

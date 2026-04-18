@@ -16,8 +16,13 @@ interface ChannelData {
   sales: number;
 }
 
+interface LiveFeedMessage {
+  id?: string;
+  [key: string]: unknown;
+}
+
 interface LiveFeedResponse {
-  messages: any[];
+  messages: LiveFeedMessage[];
 }
 
 interface ChannelStats {

@@ -3,8 +3,62 @@ import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
 
 /* ── Response types ── */
-type ReportResponse = Record<string, any>;
-type AIReportResponse = Record<string, any>;
+/**
+ * Analytics payload shapes. Backend evolves, so known-accessed branches are
+ * declared explicitly as optional while extra keys remain permissive — this
+ * keeps hooks typed without cascading forced edits through analytics views.
+ */
+/**
+ * Backend returns `messages` as either a scalar count OR a nested object with
+ * breakdown. We model this as an intersection so both `.total` access and
+ * numeric-coercion paths remain typed without forcing consumers to narrow.
+ */
+type ReportMessages = number & { total?: number };
+interface ReportLeads {
+  newContacts?: number;
+  [key: string]: unknown;
+}
+interface ReportFlows {
+  executions?: number;
+  completed?: number;
+  [key: string]: unknown;
+}
+interface ReportSales {
+  revenue?: number;
+  [key: string]: unknown;
+}
+interface ReportSentiment {
+  positive?: number;
+  neutral?: number;
+  negative?: number;
+}
+interface ReportLeadScore {
+  high?: number;
+  medium?: number;
+  low?: number;
+}
+
+interface ReportResponse {
+  messages?: ReportMessages;
+  leads?: ReportLeads;
+  flows?: ReportFlows;
+  sales?: ReportSales;
+  [key: string]: unknown;
+}
+
+interface AnalyticsStatsResponse {
+  messages?: number;
+  contacts?: number;
+  deliveryRate?: number;
+  readRate?: number;
+  flows?: number;
+  flowCompleted?: number;
+  sentiment?: ReportSentiment;
+  leadScore?: ReportLeadScore;
+  [key: string]: unknown;
+}
+
+type AIReportResponse = Record<string, unknown>;
 
 export function useReports(period = '30d') {
   // Support custom period format: "custom:YYYY-MM-DD:YYYY-MM-DD"
@@ -57,7 +111,7 @@ export function useAnalyticsStats() {
     refreshInterval: 120_000,
     keepPreviousData: true,
   });
-  return { stats: (data || {}) as ReportResponse, isLoading, error, mutate };
+  return { stats: (data || {}) as AnalyticsStatsResponse, isLoading, error, mutate };
 }
 
 // ── Flow Analytics ──

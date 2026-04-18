@@ -10,7 +10,16 @@ interface SalesResponse {
   count: number;
 }
 
-type SalesStatsResponse = Record<string, any>;
+interface SalesStatsResponse {
+  totalRevenue?: number;
+  totalTransactions?: number;
+  pendingCount?: number;
+  activeCount?: number;
+  pastDueCount?: number;
+  processing?: number;
+  shipped?: number;
+  [key: string]: unknown;
+}
 
 interface SalesChartResponse {
   chart: number[];
@@ -26,7 +35,7 @@ interface OrdersResponse {
   count: number;
 }
 
-type OrderPipelineResponse = Record<string, any>;
+type OrderPipelineResponse = Record<string, unknown>;
 
 export function useSales(params?: { status?: string; search?: string; method?: string }) {
   const qs = new URLSearchParams();
@@ -144,5 +153,6 @@ export function useSaleDetail(id: string | null) {
   const { data, isLoading, error, mutate } = useSWR(id ? `/sales/${id}` : null, swrFetcher, {
     revalidateOnFocus: false,
   });
-  return { sale: data as any, isLoading, error, mutate };
+  const sale: unknown = data ?? null;
+  return { sale, isLoading, error, mutate };
 }

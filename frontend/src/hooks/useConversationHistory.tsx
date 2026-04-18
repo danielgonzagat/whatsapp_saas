@@ -99,9 +99,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   const refreshConversations = useCallback(async () => {
     try {
-      const res: any = await apiFetch('/kloel/threads');
-      const threads = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-      const mapped = threads.map((t: any) => ({
+      const res = await apiFetch<Conversation[]>('/kloel/threads');
+      const threads: Conversation[] = Array.isArray(res?.data) ? res.data : [];
+      const mapped = threads.map((t) => ({
         id: t.id,
         title: t.title,
         updatedAt: t.updatedAt,
@@ -167,13 +167,13 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
     try {
-      const res: any = await apiFetch('/kloel/threads', {
+      const res = await apiFetch<Partial<Conversation>>('/kloel/threads', {
         method: 'POST',
         body: { title: title || 'Nova conversa' },
       });
-      const payload = res?.data && typeof res.data === 'object' ? res.data : res;
+      const payload = res?.data;
       if (payload?.id && isValidConversationId(payload.id)) {
-        const conv = {
+        const conv: Conversation = {
           id: payload.id,
           title: payload.title || 'Nova conversa',
           updatedAt: payload.updatedAt,

@@ -12,7 +12,7 @@ export interface CanvasDesign {
   width: number;
   height: number;
   productId?: string | null;
-  elements: any;
+  elements: unknown;
   background: string;
   thumbnailUrl?: string | null;
   status: string;
@@ -27,8 +27,8 @@ export function useCanvasDesigns() {
   const fetchDesigns = useCallback(async () => {
     setLoading(true);
     try {
-      const res: any = await apiFetch('/canvas/designs');
-      const list = res?.data?.designs ?? res?.designs ?? [];
+      const res = await apiFetch<{ designs?: CanvasDesign[] }>('/canvas/designs');
+      const list = res?.data?.designs ?? [];
       setDesigns(Array.isArray(list) ? list : []);
     } catch {
       setDesigns([]);
@@ -47,10 +47,10 @@ export function useCanvasDesigns() {
   };
 
   const duplicateDesign = async (id: string) => {
-    const res: any = await apiFetch(`/canvas/designs/${id}`);
+    const res = await apiFetch<{ design?: CanvasDesign }>(`/canvas/designs/${id}`);
     const orig = res?.data?.design;
     if (!orig) return;
-    const dup: any = await apiFetch('/canvas/designs', {
+    const dup = await apiFetch<{ design?: CanvasDesign }>('/canvas/designs', {
       method: 'POST',
       body: {
         name: `${orig.name} (copia)`,
@@ -61,8 +61,9 @@ export function useCanvasDesigns() {
         background: orig.background,
       },
     });
-    if (dup?.data?.design) {
-      setDesigns((prev) => [dup.data.design, ...prev]);
+    const created = dup?.data?.design;
+    if (created) {
+      setDesigns((prev) => [created, ...prev]);
       mutate((key: string) => typeof key === 'string' && key.startsWith('/canvas'));
     }
   };

@@ -12,14 +12,14 @@ export function useCanvasAI() {
     setGenerating(true);
     setError(null);
     try {
-      const res: any = await apiFetch('/canvas/generate', {
+      const res = await apiFetch<{ imageUrl?: string | null }>('/canvas/generate', {
         method: 'POST',
         body: { prompt, productId },
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
-      return res?.imageUrl || null;
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao gerar imagem');
+      return res?.data?.imageUrl || null;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Falha ao gerar imagem');
       return null;
     } finally {
       setGenerating(false);
@@ -28,11 +28,11 @@ export function useCanvasAI() {
 
   const generateText = useCallback(async (type: string, productId?: string) => {
     try {
-      const res: any = await apiFetch('/canvas/generate-text', {
+      const res = await apiFetch<{ suggestions?: string[] }>('/canvas/generate-text', {
         method: 'POST',
         body: { type, productId },
       });
-      return res?.suggestions || [];
+      return res?.data?.suggestions || [];
     } catch {
       return [];
     }
