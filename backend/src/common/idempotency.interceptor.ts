@@ -29,7 +29,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
 
   constructor(@InjectRedis() private readonly redis: Redis) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest();
     const cacheKey = request._idempotencyKey;
 

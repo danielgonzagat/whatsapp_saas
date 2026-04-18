@@ -5,6 +5,21 @@ import { safeCompareStrings } from './common/utils/crypto-compare.util';
 import { PrismaService } from './prisma/prisma.service';
 import { AuthenticatedRequest } from './common/interfaces/authenticated-request.interface';
 
+interface DiagnosticTables {
+  workspaces?: number;
+  agents?: number;
+  contacts?: number;
+  conversations?: number;
+}
+
+interface DiagnosticResult {
+  timestamp: string;
+  database: 'checking...' | 'connected' | 'error';
+  tables: DiagnosticTables;
+  error?: string;
+  stack?: string[];
+}
+
 @Controller()
 export class AppController {
   constructor(
@@ -37,7 +52,7 @@ export class AppController {
    */
   @Public()
   @Get('diag-db')
-  async diagnostic(@Req() req: AuthenticatedRequest) {
+  async diagnostic(@Req() req: AuthenticatedRequest): Promise<DiagnosticResult> {
     const expected = process.env.DIAG_TOKEN;
     if (process.env.NODE_ENV === 'production' && !expected) {
       throw new UnauthorizedException('DIAG_TOKEN not configured');
@@ -56,7 +71,7 @@ export class AppController {
       }
     }
 
-    const results: Record<string, any> = {
+    const results: DiagnosticResult = {
       timestamp: new Date().toISOString(),
       database: 'checking...',
       tables: {},
