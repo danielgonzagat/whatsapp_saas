@@ -89,7 +89,7 @@ export function buildDashboardContextMetadata(
 export function readDashboardContextFromMetadata(value: unknown): DashboardContextMetadata | null {
   const source = value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
   const nested =
-    source && source.dashboardContext && typeof source.dashboardContext === 'object'
+    source?.dashboardContext && typeof source?.dashboardContext === 'object'
       ? (source.dashboardContext as Record<string, unknown>)
       : null;
   const candidate = nested ?? source;

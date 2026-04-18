@@ -165,7 +165,7 @@ export function AgentCursor({
 
     const surface = imageRef?.current || containerRef.current;
     const rect = surface?.getBoundingClientRect();
-    if (!rect || !rect.width || !rect.height) {
+    if (!rect?.width || !rect?.height) {
       return;
     }
 
