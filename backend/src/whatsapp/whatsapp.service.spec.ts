@@ -701,6 +701,37 @@ describe('WhatsappService', () => {
     expect(catchupService.triggerCatchup).toHaveBeenCalledWith('ws-1', 'proof_run');
   });
 
+  it('ignores malformed persisted read candidates instead of stringifying objects', async () => {
+    providerRegistry.readChatMessages.mockClear();
+    prisma.contact.findUnique.mockResolvedValueOnce({
+      customFields: {
+        lastRemoteChatId: { serialized: 'bad' },
+        lastCatalogChatId: ['bad'],
+        lastResolvedChatId: { serialized: 'still-bad' },
+      },
+    });
+
+    const result = await service.setPresence('ws-1', '5511999991111', 'seen');
+
+    expect(result).toEqual({
+      ok: true,
+      chatId: '5511999991111@c.us',
+      presence: 'seen',
+    });
+    expect(providerRegistry.readChatMessages).toHaveBeenCalledTimes(2);
+    expect(providerRegistry.readChatMessages).toHaveBeenNthCalledWith(
+      1,
+      'ws-1',
+      '5511999991111@c.us',
+    );
+    expect(providerRegistry.readChatMessages).toHaveBeenNthCalledWith(
+      2,
+      'ws-1',
+      '5511999991111@s.whatsapp.net',
+    );
+    expect(providerRegistry.readChatMessages).not.toHaveBeenCalledWith('ws-1', '[object Object]');
+  });
+
   it('falls back to direct WAHA send when the worker is unavailable', async () => {
     workerRuntime.isAvailable.mockResolvedValue(false);
 
