@@ -381,18 +381,22 @@ interface NextActionInput {
   confidence: number;
 }
 
-function nextActionForEscalation(input: NextActionInput): CognitiveActionType | null {
-  if (input.riskFlags.length > 0) return 'ESCALATE_HUMAN';
-  if (input.intent === 'UNKNOWN' && input.unreadCount > 0 && input.confidence < 0.68) {
-    return 'ASK_CLARIFYING';
-  }
-  if (
+function needsLowConfidenceClarification(input: NextActionInput): boolean {
+  return input.intent === 'UNKNOWN' && input.unreadCount > 0 && input.confidence < 0.68;
+}
+
+function hasPaymentRecoverySignal(input: NextActionInput): boolean {
+  return (
     input.paymentState === 'PENDING' ||
     input.paymentState === 'READY_TO_PAY' ||
     input.intent === 'PAYMENT'
-  ) {
-    return 'PAYMENT_RECOVERY';
-  }
+  );
+}
+
+function nextActionForEscalation(input: NextActionInput): CognitiveActionType | null {
+  if (input.riskFlags.length > 0) return 'ESCALATE_HUMAN';
+  if (needsLowConfidenceClarification(input)) return 'ASK_CLARIFYING';
+  if (hasPaymentRecoverySignal(input)) return 'PAYMENT_RECOVERY';
   return null;
 }
 

@@ -182,18 +182,22 @@ function buildActionDirective(
   return `${base}\nTATICA: ${tacticHint[tactic] || tactic}`;
 }
 
+const VALIDATION_TONES: ReadonlyArray<ActiveListeningSignals['emotionalTone']> = [
+  'frustrated',
+  'anxious',
+  'confused',
+];
+
+function isValidationTone(emotionalTone: ActiveListeningSignals['emotionalTone']): boolean {
+  return VALIDATION_TONES.includes(emotionalTone);
+}
+
 function needsValidation(
   complaintDetected: boolean,
   wordCount: number,
   emotionalTone: ActiveListeningSignals['emotionalTone'],
 ): boolean {
-  return (
-    complaintDetected ||
-    wordCount > 18 ||
-    emotionalTone === 'frustrated' ||
-    emotionalTone === 'anxious' ||
-    emotionalTone === 'confused'
-  );
+  return complaintDetected || wordCount > 18 || isValidationTone(emotionalTone);
 }
 
 function inferNeed(normalized: string, personalDetailShared: boolean): string | null {

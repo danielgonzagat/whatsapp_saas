@@ -381,30 +381,53 @@ interface OutcomeAggregate {
   variantScores: Map<string, number>;
 }
 
-function aggregateDecisionOutcomes(
-  logs: Array<{ value: unknown; metadata?: unknown }>,
-): OutcomeAggregate {
+interface DecisionLogItem {
+  value: unknown;
+  metadata?: unknown;
+}
+
+interface ExtractedOutcome {
+  outcome: string;
+  variantKey: string;
+}
+
+function extractOutcomeFromLog(item: DecisionLogItem): ExtractedOutcome {
+  const value = (item?.value || {}) as Record<string, unknown>;
+  const itemMeta = (item?.metadata || {}) as Record<string, unknown>;
+  return {
+    outcome: String(value?.outcome || itemMeta?.outcome || ''),
+    variantKey: String(value?.variantKey || itemMeta?.variantKey || ''),
+  };
+}
+
+function isSoldOrSentOrReplied(outcome: string): boolean {
+  return outcome === 'SENT' || outcome === 'REPLIED' || outcome === 'SOLD';
+}
+
+function accumulateVariantScore(
+  variantScores: Map<string, number>,
+  variantKey: string,
+  outcome: string,
+): void {
+  if (!variantKey) return;
+  const score = outcomeToVariantScore(outcome);
+  variantScores.set(variantKey, (variantScores.get(variantKey) || 0) + score);
+}
+
+function aggregateDecisionOutcomes(logs: Array<DecisionLogItem>): OutcomeAggregate {
   const variantScores = new Map<string, number>();
   let soldCount = 0;
   let sentCount = 0;
   let failedCount = 0;
 
   for (const item of logs) {
-    const value = (item?.value || {}) as Record<string, unknown>;
-    const itemMeta = (item?.metadata || {}) as Record<string, unknown>;
-    const outcome = String(value?.outcome || itemMeta?.outcome || '');
-    const variantKey = String(value?.variantKey || itemMeta?.variantKey || '');
+    const { outcome, variantKey } = extractOutcomeFromLog(item);
 
     if (outcome === 'SOLD') soldCount += 1;
-    if (outcome === 'SENT' || outcome === 'REPLIED' || outcome === 'SOLD') {
-      sentCount += 1;
-    }
+    if (isSoldOrSentOrReplied(outcome)) sentCount += 1;
     if (outcome === 'FAILED') failedCount += 1;
 
-    if (variantKey) {
-      const score = outcomeToVariantScore(outcome);
-      variantScores.set(variantKey, (variantScores.get(variantKey) || 0) + score);
-    }
+    accumulateVariantScore(variantScores, variantKey, outcome);
   }
 
   return { soldCount, sentCount, failedCount, variantScores };

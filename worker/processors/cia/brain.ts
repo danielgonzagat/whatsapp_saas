@@ -116,19 +116,38 @@ interface OptionBaseline {
   baseRisk: number;
 }
 
-function computeOptionBaseline(candidate: CiaCandidate): OptionBaseline {
-  const state = candidate.cognitiveState;
-  const baseConfidence = Number(state.classificationConfidence || 0.58) || 0.58;
-  const baseReward =
+function resolveStageRewardBonus(stage: CustomerCognitiveState['stage']): number {
+  if (stage === 'CHECKOUT') return 0.35;
+  if (stage === 'HOT') return 0.2;
+  return 0;
+}
+
+function resolveBaseReward(candidate: CiaCandidate, state: CustomerCognitiveState): number {
+  return (
     candidate.priority / 100 +
     state.trustScore * 0.35 +
     state.urgencyScore * 0.45 +
-    (state.stage === 'CHECKOUT' ? 0.35 : state.stage === 'HOT' ? 0.2 : 0);
-  const baseRisk =
-    state.riskFlags.length * 0.22 +
-    (state.intent === 'SUPPORT' ? 0.18 : 0) +
-    (state.priceSensitivity > 0.75 ? 0.07 : 0);
-  return { baseConfidence, baseReward, baseRisk };
+    resolveStageRewardBonus(state.stage)
+  );
+}
+
+function resolveBaseRisk(state: CustomerCognitiveState): number {
+  const supportPenalty = state.intent === 'SUPPORT' ? 0.18 : 0;
+  const pricePenalty = state.priceSensitivity > 0.75 ? 0.07 : 0;
+  return state.riskFlags.length * 0.22 + supportPenalty + pricePenalty;
+}
+
+function resolveBaseConfidence(state: CustomerCognitiveState): number {
+  return Number(state.classificationConfidence || 0.58) || 0.58;
+}
+
+function computeOptionBaseline(candidate: CiaCandidate): OptionBaseline {
+  const state = candidate.cognitiveState;
+  return {
+    baseConfidence: resolveBaseConfidence(state),
+    baseReward: resolveBaseReward(candidate, state),
+    baseRisk: resolveBaseRisk(state),
+  };
 }
 
 function buildWaitOption(baseline: OptionBaseline): ActionOption {

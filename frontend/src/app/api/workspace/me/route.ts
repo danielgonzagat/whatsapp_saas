@@ -73,52 +73,93 @@ function normalizeWorkspaceMeResponse(data: unknown, authHeader: string) {
   };
 }
 
+function resolveAccessToken(request: NextRequest): string {
+  return (
+    request.headers.get('x-kloel-access-token') ||
+    request.cookies.get('kloel_access_token')?.value ||
+    request.cookies.get('kloel_token')?.value ||
+    ''
+  );
+}
+
+function resolveWorkspaceId(request: NextRequest): string {
+  return (
+    request.headers.get('x-workspace-id') ||
+    request.headers.get('x-kloel-workspace-id') ||
+    request.cookies.get('kloel_workspace_id')?.value ||
+    ''
+  );
+}
+
+function resolveAuthHeader(request: NextRequest): string {
+  const forwardedAuthorization = request.headers.get('authorization') || '';
+  if (forwardedAuthorization) return forwardedAuthorization;
+  const accessToken = resolveAccessToken(request);
+  return accessToken ? `Bearer ${accessToken}` : '';
+}
+
+type UpstreamAttempt = { response: Response; baseUrl: string } | { error: Error };
+
+async function tryUpstream(
+  baseUrl: string,
+  headers: Record<string, string>,
+): Promise<UpstreamAttempt> {
+  const response = await fetch(`${baseUrl}/workspace/me`, {
+    method: 'GET',
+    headers,
+    cache: 'no-store',
+  }).catch((error: unknown) => {
+    return { __error: error };
+  });
+
+  if (response && typeof response === 'object' && '__error' in response) {
+    const err = response.__error;
+    return { error: err instanceof Error ? err : new Error(String(err)) };
+  }
+
+  const realResponse = response as Response;
+  if (realResponse.status === 404 || realResponse.status === 405) {
+    return {
+      error: new Error(`upstream ${realResponse.status} at ${baseUrl}/workspace/me`),
+    };
+  }
+  return { response: realResponse, baseUrl };
+}
+
+async function fetchWorkspaceFromUpstreams(
+  headers: Record<string, string>,
+  authHeader: string,
+): Promise<NextResponse> {
+  let lastError: Error | null = null;
+
+  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+  for (const baseUrl of getBackendCandidateUrls()) {
+    const attempt = await tryUpstream(baseUrl, headers);
+    if ('error' in attempt) {
+      lastError = attempt.error;
+      continue;
+    }
+
+    const data = await attempt.response.json().catch(() => ({}));
+    return NextResponse.json(normalizeWorkspaceMeResponse(data, authHeader), {
+      status: attempt.response.status,
+    });
+  }
+
+  throw lastError || new Error('Unable to reach workspace backend endpoint');
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const forwardedAuthorization = request.headers.get('authorization') || '';
-    const accessToken =
-      request.headers.get('x-kloel-access-token') ||
-      request.cookies.get('kloel_access_token')?.value ||
-      request.cookies.get('kloel_token')?.value ||
-      '';
-    const authHeader = forwardedAuthorization || (accessToken ? `Bearer ${accessToken}` : '');
-    const workspaceId =
-      request.headers.get('x-workspace-id') ||
-      request.headers.get('x-kloel-workspace-id') ||
-      request.cookies.get('kloel_workspace_id')?.value ||
-      '';
+    const authHeader = resolveAuthHeader(request);
+    const workspaceId = resolveWorkspaceId(request);
     const headers = {
       Authorization: authHeader,
       'x-workspace-id': workspaceId,
       Accept: 'application/json',
     };
 
-    let lastError: unknown;
-
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-    for (const baseUrl of getBackendCandidateUrls()) {
-      const response = await fetch(`${baseUrl}/workspace/me`, {
-        method: 'GET',
-        headers,
-        cache: 'no-store',
-      }).catch((error) => {
-        lastError = error;
-        return null;
-      });
-
-      if (!response) continue;
-      if (response.status === 404 || response.status === 405) {
-        lastError = new Error(`upstream ${response.status} at ${baseUrl}/workspace/me`);
-        continue;
-      }
-
-      const data = await response.json().catch(() => ({}));
-      return NextResponse.json(normalizeWorkspaceMeResponse(data, authHeader), {
-        status: response.status,
-      });
-    }
-
-    throw lastError || new Error('Unable to reach workspace backend endpoint');
+    return await fetchWorkspaceFromUpstreams(headers, authHeader);
   } catch (error) {
     console.error('[Workspace Proxy] me error:', error);
     return NextResponse.json({ message: 'Falha ao carregar workspace.' }, { status: 502 });
