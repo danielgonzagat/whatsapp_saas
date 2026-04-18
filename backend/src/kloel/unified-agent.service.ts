@@ -3,9 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
-import Stripe from 'stripe';
+// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import Stripe = require('stripe');
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import type { StripeClient, StripeSubscription } from '../billing/stripe-types';
 import { StorageService } from '../common/storage/storage.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
@@ -1139,7 +1142,7 @@ export class UnifiedAgentService {
     return Array.isArray(v) ? v.map((item) => String(item ?? '')) : [];
   }
 
-  private createStripeClient(): Stripe | null {
+  private createStripeClient(): StripeClient | null {
     const secretKey = this.readOptionalText(process.env.STRIPE_SECRET_KEY);
     if (!secretKey) {
       return null;
@@ -4612,7 +4615,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         };
       }
 
-      let result: Stripe.Response<Stripe.Subscription>;
+      let result: StripeSubscription;
       if (subscriptionId) {
         // Atualizar assinatura existente
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);

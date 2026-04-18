@@ -115,7 +115,15 @@ const envSchema = z.object({
   // ========================
   // PAYMENT PROVIDERS
   // ========================
-  STRIPE_SECRET_KEY: z.string().optional().describe('Stripe secret key'),
+  STRIPE_SECRET_KEY: z.string().optional().describe('Stripe secret key (sk_test_* or sk_live_*)'),
+  STRIPE_PUBLISHABLE_KEY: z
+    .string()
+    .optional()
+    .describe('Stripe publishable key (pk_test_* or pk_live_*); safe to expose to frontend'),
+  STRIPE_RESTRICTED_KEY: z
+    .string()
+    .optional()
+    .describe('Stripe restricted key (rk_test_* or rk_live_*) for scoped automation'),
   STRIPE_WEBHOOK_SECRET: z.string().optional().describe('Stripe webhook signing secret'),
   ASAAS_API_KEY: z
     .string()

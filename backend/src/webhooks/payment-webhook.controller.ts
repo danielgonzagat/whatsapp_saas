@@ -15,9 +15,12 @@ import { Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Contact, WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
-import Stripe from 'stripe';
+// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import Stripe = require('stripe');
 import { Public } from '../auth/public.decorator';
 import { AutopilotService } from '../autopilot/autopilot.service';
+import type { StripeCheckoutSession, StripeEvent } from '../billing/stripe-types';
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -184,7 +187,7 @@ export class PaymentWebhookController {
         };
       }
       const stripe = new Stripe(stripeKey);
-      const verified: Stripe.Event = stripe.webhooks.constructEvent(
+      const verified: StripeEvent = stripe.webhooks.constructEvent(
         req.rawBody,
         stripeSignature,
         endpointSecret,
@@ -194,7 +197,7 @@ export class PaymentWebhookController {
       // union on `verified.type` narrows `verified.data.object` to
       // `Stripe.Checkout.Session` inside the guarded branch.
       if (verified.type === 'checkout.session.completed') {
-        const session: Stripe.Checkout.Session = verified.data.object;
+        const session: StripeCheckoutSession = verified.data.object;
         event = {
           id: verified.id,
           type: verified.type,

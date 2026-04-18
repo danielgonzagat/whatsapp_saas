@@ -1,24 +1,33 @@
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
-import Stripe from 'stripe';
+// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import Stripe = require('stripe');
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import type {
+  StripeCheckoutSession,
+  StripeClient,
+  StripeEvent,
+  StripeInvoice,
+  StripeSubscription,
+} from './stripe-types';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
-type StripeInvoiceWithSubscription = Stripe.Invoice & {
+type StripeInvoiceWithSubscription = StripeInvoice & {
   subscription?: string | { id?: string | null } | null;
 };
 
-type StripeSubscriptionWithPeriodEnd = Stripe.Subscription & {
+type StripeSubscriptionWithPeriodEnd = StripeSubscription & {
   current_period_end?: number | null;
 };
 
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
-  private stripe: Stripe;
+  private stripe: StripeClient;
 
   private normalizeSubscriptionStatus(status: string | null | undefined): string {
     return String(status || '')
@@ -26,7 +35,7 @@ export class BillingService {
       .toUpperCase();
   }
 
-  private readInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+  private readInvoiceSubscriptionId(invoice: StripeInvoice): string | null {
     const subscriptionRef = (invoice as StripeInvoiceWithSubscription).subscription;
     if (typeof subscriptionRef === 'string' && subscriptionRef.trim()) {
       return subscriptionRef;
@@ -339,7 +348,7 @@ export class BillingService {
       throw new Error('STRIPE_WEBHOOK_SECRET not configured');
     }
 
-    let event: Stripe.Event;
+    let event: StripeEvent;
 
     try {
       event = this.stripe.webhooks.constructEvent(rawBody, signature, endpointSecret);
@@ -421,7 +430,7 @@ export class BillingService {
     return { received: true };
   }
 
-  private async fulfillCheckout(session: Stripe.Checkout.Session) {
+  private async fulfillCheckout(session: StripeCheckoutSession) {
     const workspaceId = session.metadata?.workspaceId;
     const plan = session.metadata?.plan || 'PRO';
     const subscriptionId = session.subscription as string;
@@ -464,7 +473,7 @@ export class BillingService {
     return 'ACTIVE';
   }
 
-  private async syncSubscriptionStatus(subscription: Stripe.Subscription) {
+  private async syncSubscriptionStatus(subscription: StripeSubscription) {
     const workspaceId = await this.resolveWorkspaceId(subscription);
     if (!workspaceId) return;
     const status = this.mapStripeStatus(subscription.status);
@@ -490,7 +499,7 @@ export class BillingService {
     });
   }
 
-  private async resolveWorkspaceId(subscription: Stripe.Subscription): Promise<string | null> {
+  private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
     const metaWs = (subscription.metadata as Record<string, string> | null)?.workspaceId;
     if (metaWs) return metaWs;
 
@@ -621,7 +630,7 @@ export class BillingService {
    */
   private async notifyCustomerPaymentConfirmed(
     workspaceId: string,
-    session: Stripe.Checkout.Session,
+    session: StripeCheckoutSession,
     plan: string,
   ): Promise<void> {
     if (!this.whatsappService) {
