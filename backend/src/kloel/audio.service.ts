@@ -205,7 +205,7 @@ export class AudioService {
       await this.ensureBudget(workspaceId);
       const response = await this.openai.audio.speech.create({
         model: 'tts-1',
-        voice: ttsVoice as any,
+        voice: ttsVoice,
         input: text,
         speed: ttsSpeed,
         response_format: 'opus',
@@ -232,7 +232,7 @@ export class AudioService {
       await this.ensureBudget(workspaceId);
       const response = await this.openai.audio.speech.create({
         model: 'tts-1-hd',
-        voice: ttsVoice as any,
+        voice: ttsVoice,
         input: text,
         speed: ttsSpeed,
         response_format: 'opus',
