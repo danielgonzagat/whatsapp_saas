@@ -113,7 +113,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
             width: '15%',
             render: (v) => (
               <span className="font-mono text-sm font-bold" style={{ color: colors.text.silver }}>
-                {v}
+                {String(v ?? '')}
               </span>
             ),
           },
@@ -151,7 +151,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
             key: 'expiresAt',
             label: 'Expira',
             width: '15%',
-            render: (v) => (v ? new Date(v).toLocaleDateString('pt-BR') : 'Sem expiracao'),
+            render: (v) =>
+              v ? new Date(v as string | number).toLocaleDateString('pt-BR') : 'Sem expiracao',
           },
           {
             key: 'active',

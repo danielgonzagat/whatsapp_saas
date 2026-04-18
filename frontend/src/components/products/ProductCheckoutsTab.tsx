@@ -151,19 +151,25 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
             key: 'config',
             label: 'Pagamento',
             width: '18%',
-            render: (v) => (
-              <div className="flex flex-wrap gap-1">
-                {(v?.paymentMethods || []).map((m: string) => (
-                  <span
-                    key={m}
-                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
-                    style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}
-                  >
-                    {m}
-                  </span>
-                ))}
-              </div>
-            ),
+            render: (v) => {
+              const methods = (v as { paymentMethods?: string[] } | null)?.paymentMethods ?? [];
+              return (
+                <div className="flex flex-wrap gap-1">
+                  {methods.map((m) => (
+                    <span
+                      key={m}
+                      className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+                      style={{
+                        backgroundColor: 'rgba(224,221,216,0.12)',
+                        color: colors.text.silver,
+                      }}
+                    >
+                      {m}
+                    </span>
+                  ))}
+                </div>
+              );
+            },
           },
           {
             key: 'active',
@@ -185,13 +191,17 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
             key: 'config',
             label: 'Resumo',
             width: '24%',
-            render: (v) => (
-              <span className="text-xs" style={{ color: colors.text.muted }}>
-                {Array.isArray(v?.paymentMethods) && v.paymentMethods.length > 0
-                  ? `${v.paymentMethods.length} forma(s) habilitada(s)`
-                  : 'Checkout pronto para configurar no Kloel'}
-              </span>
-            ),
+            render: (v) => {
+              const methods = (v as { paymentMethods?: unknown[] } | null)?.paymentMethods;
+              const enabled = Array.isArray(methods) && methods.length > 0;
+              return (
+                <span className="text-xs" style={{ color: colors.text.muted }}>
+                  {enabled
+                    ? `${(methods as unknown[]).length} forma(s) habilitada(s)`
+                    : 'Checkout pronto para configurar no Kloel'}
+                </span>
+              );
+            },
           },
           {
             key: 'id',

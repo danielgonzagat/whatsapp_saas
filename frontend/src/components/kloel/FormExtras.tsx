@@ -301,8 +301,7 @@ export function DataTable<TRow extends { id?: string | number } = Record<string,
     key: string;
     label: string;
     width?: string;
-    // biome-ignore lint/suspicious/noExplicitAny: column values vary across tables; narrowing is the caller's responsibility
-    render?: (val: any, row: TRow) => ReactNode;
+    render?: (val: unknown, row: TRow) => ReactNode;
   }[];
   rows: TRow[];
   emptyText?: string;

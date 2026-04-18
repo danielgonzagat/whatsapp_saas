@@ -200,7 +200,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   color: Number(v) > 0 ? colors.text.silver : colors.text.dim,
                 }}
               >
-                {v}
+                {String(v ?? '')}
               </span>
             ),
           },

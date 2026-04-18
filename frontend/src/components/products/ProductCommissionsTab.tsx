@@ -134,7 +134,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 className="rounded-full px-2 py-0.5 text-xs font-medium"
                 style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
               >
-                {ROLES.find((r) => r.value === v)?.label || v}
+                {ROLES.find((r) => r.value === v)?.label || String(v ?? '')}
               </span>
             ),
           },
