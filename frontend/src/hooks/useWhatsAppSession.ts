@@ -38,6 +38,28 @@ function isPendingQrStatus(status?: string | null): boolean {
   );
 }
 
+function resolveStatusMessage(data: { connected: boolean; status?: string | null }): string {
+  if (data.connected) return 'Sessão ativa e sincronizada.';
+  if (isPendingQrStatus(data.status)) return 'Aguardando leitura do QR Code no aparelho.';
+  return 'WhatsApp desconectado.';
+}
+
+async function recoverAuthenticatedWorkspaceId(): Promise<string> {
+  const me = await authApi.getMe();
+  return resolveWorkspaceFromAuthPayload(me.data)?.id || '';
+}
+
+const CIA_ACTIVE_MODES = new Set(['LIVE', 'BACKLOG', 'FULL']);
+const CIA_MANUAL_PAUSE_MODES = new Set(['HUMAN_ONLY', 'SUSPENDED']);
+
+function isCiaAutonomyActive(autonomy: Record<string, unknown> | null | undefined): boolean {
+  const mode = String(autonomy?.mode || 'OFF').toUpperCase();
+  const reason = String(autonomy?.reason || '');
+  const isActive = CIA_ACTIVE_MODES.has(mode);
+  const isManualPause = reason === 'manual_pause' || CIA_MANUAL_PAUSE_MODES.has(mode);
+  return isActive && !isManualPause;
+}
+
 export function useWhatsAppSession({
   enabled = true,
   workspaceId: providedWorkspaceId,

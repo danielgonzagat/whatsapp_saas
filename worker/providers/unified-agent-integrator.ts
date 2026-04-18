@@ -106,6 +106,79 @@ export async function processWithUnifiedAgent(params: {
   }
 }
 
+const NEGOTIATION_KEYWORDS = [
+  'desconto',
+  'promoção',
+  'parcelar',
+  'parcela',
+  'negociar',
+  'melhor preço',
+  'consigo menos',
+  'tá caro',
+  'está caro',
+  'caro demais',
+  'se eu pagar',
+  'à vista',
+  'a vista',
+];
+
+const PRODUCT_KEYWORDS = [
+  'como funciona',
+  'quanto tempo',
+  'garantia',
+  'entrega',
+  'prazo',
+  'inclui',
+  'diferença entre',
+  'qual a diferença',
+  'comparar',
+];
+
+function extractAutopilotSettings(
+  settings?: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  return (
+    settings?.autopilot && typeof settings.autopilot === 'object' ? settings.autopilot : null
+  ) as Record<string, unknown> | null;
+}
+
+/**
+ * Checks explicit opt-in/opt-out hints from the autopilot settings.
+ * Returns `true`/`false` when settings force a decision, `null` when undecided.
+ */
+function resolveUnifiedAgentSettingOverride(
+  autopilot: Record<string, unknown> | null,
+): boolean | null {
+  if (autopilot?.useUnifiedAgent === false) return false;
+  if (autopilot?.useUnifiedAgent === true) return true;
+
+  const mode = String(autopilot?.agentMode || '')
+    .trim()
+    .toLowerCase();
+  if (mode === 'fallback_only' || mode === 'local_only') return false;
+  if (mode === 'primary' || mode === 'unified_primary') return true;
+
+  return null;
+}
+
+/**
+ * Determines whether the message content itself signals a need for the
+ * advanced unified agent (long copy, multiple questions, negotiation or
+ * product-specific inquiries).
+ */
+function hasUnifiedAgentContentSignals(messageContent: string): boolean {
+  if (messageContent.length > 200) return true;
+
+  const questionCount = (messageContent.match(QUESTION_MARK_RE) || []).length;
+  if (questionCount >= 2) return true;
+
+  const text = messageContent.toLowerCase();
+  if (NEGOTIATION_KEYWORDS.some((keyword) => text.includes(keyword))) return true;
+  if (PRODUCT_KEYWORDS.some((keyword) => text.includes(keyword))) return true;
+
+  return false;
+}
+
 /**
  * Determina se a mensagem deve usar o UnifiedAgent ao invés do Autopilot básico.
  * Critérios:
@@ -120,84 +193,13 @@ export function shouldUseUnifiedAgent(params: {
   settings?: Record<string, unknown> | null;
 }): boolean {
   const { messageContent, leadScore, settings } = params;
-  const autopilot = (
-    settings?.autopilot && typeof settings.autopilot === 'object' ? settings.autopilot : null
-  ) as Record<string, unknown> | null;
+  const autopilot = extractAutopilotSettings(settings);
 
-  // Se explicitamente desabilitado
-  if (autopilot?.useUnifiedAgent === false) {
-    return false;
-  }
-
-  // Se explicitamente habilitado
-  if (autopilot?.useUnifiedAgent === true) {
-    return true;
-  }
-
-  const mode = String(autopilot?.agentMode || '')
-    .trim()
-    .toLowerCase();
-  if (mode === 'fallback_only' || mode === 'local_only') {
-    return false;
-  }
-
-  if (mode === 'primary' || mode === 'unified_primary') {
-    return true;
-  }
+  const override = resolveUnifiedAgentSettingOverride(autopilot);
+  if (override !== null) return override;
 
   // Leads quentes sempre usam o agente unificado
-  if (leadScore && leadScore >= 70) {
-    return true;
-  }
-
-  const text = messageContent.toLowerCase();
-
-  // Mensagens mais longas/complexas
-  if (messageContent.length > 200) {
-    return true;
-  }
-
-  // Múltiplas perguntas
-  const questionCount = (messageContent.match(QUESTION_MARK_RE) || []).length;
-  if (questionCount >= 2) {
-    return true;
-  }
-
-  // Sinais de negociação
-  const negotiationKeywords = [
-    'desconto',
-    'promoção',
-    'parcelar',
-    'parcela',
-    'negociar',
-    'melhor preço',
-    'consigo menos',
-    'tá caro',
-    'está caro',
-    'caro demais',
-    'se eu pagar',
-    'à vista',
-    'a vista',
-  ];
-  if (negotiationKeywords.some((k) => text.includes(k))) {
-    return true;
-  }
-
-  // Perguntas sobre produto específico
-  const productKeywords = [
-    'como funciona',
-    'quanto tempo',
-    'garantia',
-    'entrega',
-    'prazo',
-    'inclui',
-    'diferença entre',
-    'qual a diferença',
-    'comparar',
-  ];
-  if (productKeywords.some((k) => text.includes(k))) {
-    return true;
-  }
+  if (leadScore && leadScore >= 70) return true;
 
   // PR P4-1: previously this returned `messageContent.trim().length > 0`,
   // which made every preceding heuristic dead code (any non-empty
@@ -205,8 +207,74 @@ export function shouldUseUnifiedAgent(params: {
   // "use the unified agent for messages that need it"; if none of
   // the explicit signals above match, return false so the cheaper
   // local autopilot path handles the message.
-  return false;
+  return hasUnifiedAgentContentSignals(messageContent);
 }
+
+// Mapear tools para intents do Autopilot legado
+const TOOL_TO_INTENT: Record<string, string> = {
+  send_product_info: 'BUYING',
+  create_payment_link: 'BUYING',
+  apply_discount: 'BUYING',
+  handle_objection: 'OBJECTION',
+  qualify_lead: 'FOLLOW_UP',
+  update_lead_status: 'FOLLOW_UP',
+  add_tag: 'FOLLOW_UP',
+  schedule_meeting: 'SCHEDULING',
+  schedule_followup: 'FOLLOW_UP',
+  send_message: 'FOLLOW_UP',
+  send_media: 'FOLLOW_UP',
+  send_document: 'BUYING',
+  send_voice_note: 'VOICE_RESPONSE',
+  send_audio: 'VOICE_RESPONSE',
+  transfer_to_human: 'SUPPORT',
+  search_knowledge_base: 'SUPPORT',
+  anti_churn_action: 'CHURN_RISK',
+  reactivate_ghost: 'FOLLOW_UP',
+  trigger_flow: 'FOLLOW_UP',
+  log_event: 'IDLE',
+};
+
+// Mapear tools para actions do Autopilot legado
+const TOOL_TO_ACTION: Record<string, string> = {
+  send_product_info: 'SEND_OFFER',
+  create_payment_link: 'SEND_OFFER',
+  apply_discount: 'SEND_OFFER',
+  handle_objection: 'HANDLE_OBJECTION',
+  qualify_lead: 'QUALIFY',
+  update_lead_status: 'FOLLOW_UP',
+  add_tag: 'FOLLOW_UP',
+  schedule_meeting: 'SEND_CALENDAR',
+  schedule_followup: 'FOLLOW_UP',
+  send_message: 'FOLLOW_UP',
+  send_media: 'SEND_OFFER',
+  send_document: 'SEND_OFFER',
+  send_voice_note: 'SEND_AUDIO',
+  send_audio: 'SEND_AUDIO',
+  transfer_to_human: 'TRANSFER_AGENT',
+  search_knowledge_base: 'FOLLOW_UP',
+  anti_churn_action: 'ANTI_CHURN',
+  reactivate_ghost: 'GHOST_CLOSER',
+  trigger_flow: 'FOLLOW_UP',
+  log_event: 'NONE',
+};
+
+const SENDING_TOOLS: ReadonlySet<string> = new Set([
+  'send_message',
+  'send_product_info',
+  'create_payment_link',
+  'send_media',
+  'send_document',
+  'send_voice_note',
+  'send_audio',
+]);
+
+const EMPTY_AUTOPILOT_DECISION = {
+  intent: 'IDLE',
+  action: 'NONE',
+  reason: 'no_actions_from_unified_agent',
+  confidence: 0.5,
+  alreadyExecuted: false,
+} as const;
 
 /**
  * Mapeia ações do UnifiedAgent para ações do Autopilot legado.
@@ -220,83 +288,18 @@ export function mapUnifiedActionsToAutopilot(actions: UnifiedAgentResult['action
   alreadyExecuted: boolean;
 } {
   if (!actions || actions.length === 0) {
-    return {
-      intent: 'IDLE',
-      action: 'NONE',
-      reason: 'no_actions_from_unified_agent',
-      confidence: 0.5,
-      alreadyExecuted: false,
-    };
+    return { ...EMPTY_AUTOPILOT_DECISION };
   }
 
   // O primeiro tool geralmente indica a intenção principal
-  const primaryAction = actions[0];
-  const tool = primaryAction.tool;
-
-  // Mapear tools para intents do Autopilot legado
-  const toolToIntent: Record<string, string> = {
-    send_product_info: 'BUYING',
-    create_payment_link: 'BUYING',
-    apply_discount: 'BUYING',
-    handle_objection: 'OBJECTION',
-    qualify_lead: 'FOLLOW_UP',
-    update_lead_status: 'FOLLOW_UP',
-    add_tag: 'FOLLOW_UP',
-    schedule_meeting: 'SCHEDULING',
-    schedule_followup: 'FOLLOW_UP',
-    send_message: 'FOLLOW_UP',
-    send_media: 'FOLLOW_UP',
-    send_document: 'BUYING',
-    send_voice_note: 'VOICE_RESPONSE',
-    send_audio: 'VOICE_RESPONSE',
-    transfer_to_human: 'SUPPORT',
-    search_knowledge_base: 'SUPPORT',
-    anti_churn_action: 'CHURN_RISK',
-    reactivate_ghost: 'FOLLOW_UP',
-    trigger_flow: 'FOLLOW_UP',
-    log_event: 'IDLE',
-  };
-
-  // Mapear tools para actions do Autopilot legado
-  const toolToAction: Record<string, string> = {
-    send_product_info: 'SEND_OFFER',
-    create_payment_link: 'SEND_OFFER',
-    apply_discount: 'SEND_OFFER',
-    handle_objection: 'HANDLE_OBJECTION',
-    qualify_lead: 'QUALIFY',
-    update_lead_status: 'FOLLOW_UP',
-    add_tag: 'FOLLOW_UP',
-    schedule_meeting: 'SEND_CALENDAR',
-    schedule_followup: 'FOLLOW_UP',
-    send_message: 'FOLLOW_UP',
-    send_media: 'SEND_OFFER',
-    send_document: 'SEND_OFFER',
-    send_voice_note: 'SEND_AUDIO',
-    send_audio: 'SEND_AUDIO',
-    transfer_to_human: 'TRANSFER_AGENT',
-    search_knowledge_base: 'FOLLOW_UP',
-    anti_churn_action: 'ANTI_CHURN',
-    reactivate_ghost: 'GHOST_CLOSER',
-    trigger_flow: 'FOLLOW_UP',
-    log_event: 'NONE',
-  };
-
-  const sendingTools = new Set([
-    'send_message',
-    'send_product_info',
-    'create_payment_link',
-    'send_media',
-    'send_document',
-    'send_voice_note',
-    'send_audio',
-  ]);
+  const tool = actions[0].tool;
 
   return {
-    intent: toolToIntent[tool] || 'FOLLOW_UP',
-    action: toolToAction[tool] || 'FOLLOW_UP',
+    intent: TOOL_TO_INTENT[tool] || 'FOLLOW_UP',
+    action: TOOL_TO_ACTION[tool] || 'FOLLOW_UP',
     reason: `unified_agent:${tool}`,
     confidence: 0.9, // Alta confiança quando o agente unificado decide
-    alreadyExecuted: actions.some((action) => sendingTools.has(action.tool)),
+    alreadyExecuted: actions.some((action) => SENDING_TOOLS.has(action.tool)),
   };
 }
 
