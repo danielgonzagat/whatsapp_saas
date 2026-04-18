@@ -6,11 +6,16 @@ import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
+interface CheckoutConfig {
+  paymentMethods?: string[];
+  [key: string]: unknown;
+}
+
 interface Checkout {
   id: string;
   name: string;
   code: string;
-  config: any;
+  config: CheckoutConfig;
   uniqueVisits: number;
   totalVisits: number;
   abandonRate: number;
@@ -29,7 +34,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const [creating, setCreating] = useState(false);
 
   const fetch_ = () => {
-    apiFetch<any>(`/products/${productId}/checkouts`)
+    apiFetch<Checkout[]>(`/products/${productId}/checkouts`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));

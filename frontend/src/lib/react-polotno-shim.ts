@@ -15,14 +15,15 @@
 
 import React from 'react';
 
-const React19Internals = (React as any)
-  .__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+const reactInternals = React as unknown as Record<string, unknown>;
+const React19Internals =
+  reactInternals.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
 
-if (React19Internals && !(React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
-  (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = {
+if (React19Internals && !reactInternals.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
+  reactInternals.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = {
     ReactCurrentOwner: React19Internals, // In React 18, ReactCurrentOwner was a separate object; in 19 it's merged
     ReactCurrentBatchConfig: { transition: null }, // Stub — Polotno reads this for concurrent mode detection
     ReactCurrentDispatcher: React19Internals, // Used by hooks internally
-    ...React19Internals,
+    ...(React19Internals as Record<string, unknown>),
   };
 }

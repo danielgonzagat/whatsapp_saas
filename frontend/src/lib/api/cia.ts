@@ -247,10 +247,13 @@ export const ciaApi = {
   },
 
   activateAutopilotTotal: async (workspaceId: string, limit?: number) => {
-    const res = await apiFetch<any>(`/cia/autopilot-total/${encodeURIComponent(workspaceId)}`, {
-      method: 'POST',
-      body: { limit },
-    });
+    const res = await apiFetch<Record<string, unknown>>(
+      `/cia/autopilot-total/${encodeURIComponent(workspaceId)}`,
+      {
+        method: 'POST',
+        body: { limit },
+      },
+    );
     invalidateCia();
     return res;
   },
@@ -264,7 +267,7 @@ export const ciaApi = {
     taskId: string,
     body?: { message?: string; resume?: boolean },
   ) => {
-    const res = await apiFetch<any>(
+    const res = await apiFetch<Record<string, unknown>>(
       `/cia/human-tasks/${encodeURIComponent(workspaceId)}/${encodeURIComponent(taskId)}/approve`,
       {
         method: 'POST',
@@ -276,7 +279,7 @@ export const ciaApi = {
   },
 
   rejectHumanTask: async (workspaceId: string, taskId: string) => {
-    const res = await apiFetch<any>(
+    const res = await apiFetch<Record<string, unknown>>(
       `/cia/human-tasks/${encodeURIComponent(workspaceId)}/${encodeURIComponent(taskId)}/reject`,
       {
         method: 'POST',
@@ -287,7 +290,7 @@ export const ciaApi = {
   },
 
   resumeConversation: async (workspaceId: string, conversationId: string) => {
-    const res = await apiFetch<any>(
+    const res = await apiFetch<Record<string, unknown>>(
       `/cia/conversations/${encodeURIComponent(workspaceId)}/${encodeURIComponent(conversationId)}/resume`,
       {
         method: 'POST',
@@ -318,7 +321,7 @@ export const ciaApi = {
   },
 
   approveAccountApproval: async (workspaceId: string, approvalId: string) => {
-    const res = await apiFetch<any>(
+    const res = await apiFetch<Record<string, unknown>>(
       `/cia/account-approvals/${encodeURIComponent(workspaceId)}/${encodeURIComponent(approvalId)}/approve`,
       { method: 'POST' },
     );
@@ -327,7 +330,7 @@ export const ciaApi = {
   },
 
   rejectAccountApproval: async (workspaceId: string, approvalId: string) => {
-    const res = await apiFetch<any>(
+    const res = await apiFetch<Record<string, unknown>>(
       `/cia/account-approvals/${encodeURIComponent(workspaceId)}/${encodeURIComponent(approvalId)}/reject`,
       { method: 'POST' },
     );
@@ -342,7 +345,7 @@ export const ciaApi = {
   },
 
   respondToInputSession: async (workspaceId: string, sessionId: string, answer: string) => {
-    const res = await apiFetch<any>(
+    const res = await apiFetch<Record<string, unknown>>(
       `/cia/account-input-sessions/${encodeURIComponent(workspaceId)}/${encodeURIComponent(sessionId)}/respond`,
       {
         method: 'POST',

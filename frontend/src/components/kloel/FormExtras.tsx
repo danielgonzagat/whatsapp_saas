@@ -292,7 +292,7 @@ export function CodeSnippet({ code, label }: { code: string; label?: string }) {
 // DATA TABLE (simple)
 // ============================================
 
-export function DataTable({
+export function DataTable<TRow extends { id?: string | number } = Record<string, unknown>>({
   columns,
   rows,
   emptyText = 'Nenhum registro',
@@ -301,9 +301,10 @@ export function DataTable({
     key: string;
     label: string;
     width?: string;
-    render?: (val: any, row: any) => ReactNode;
+    // biome-ignore lint/suspicious/noExplicitAny: column values vary across tables; narrowing is the caller's responsibility
+    render?: (val: any, row: TRow) => ReactNode;
   }[];
-  rows: Record<string, any>[];
+  rows: TRow[];
   emptyText?: string;
 }) {
   if (!rows.length) {
@@ -332,10 +333,12 @@ export function DataTable({
         </thead>
         <tbody className="divide-y divide-gray-100">
           {rows.map((row, i) => (
-            <tr key={row.id || i} className="hover:bg-gray-50">
+            <tr key={row.id ?? i} className="hover:bg-gray-50">
               {columns.map((col) => (
                 <td key={col.key} className="px-4 py-3 text-gray-800">
-                  {col.render ? col.render(row[col.key], row) : String(row[col.key] ?? '—')}
+                  {col.render
+                    ? col.render((row as Record<string, unknown>)[col.key], row)
+                    : String((row as Record<string, unknown>)[col.key] ?? '—')}
                 </td>
               ))}
             </tr>

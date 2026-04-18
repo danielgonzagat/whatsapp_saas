@@ -2,13 +2,31 @@
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bg, Bt, M, PanelLoadingState, V, cs } from './product-nerve-center.shared';
 
+interface PrimaryCheckoutConfig {
+  enableCoupon?: boolean;
+  autoCouponCode?: string | null;
+  [key: string]: unknown;
+}
+
+interface CouponItem {
+  id: string;
+  code?: string;
+  type?: string;
+  val?: number | string;
+  on?: boolean;
+  used?: number | string;
+  max?: number | string | null;
+  expiresAt?: string | null;
+  [key: string]: unknown;
+}
+
 export function ProductNerveCenterCuponsTab({
   primaryPlanId,
   primaryCheckoutConfig,
   onDeleteCoupon,
 }: {
   primaryPlanId: string | null;
-  primaryCheckoutConfig: any;
+  primaryCheckoutConfig: PrimaryCheckoutConfig;
   onDeleteCoupon: (id: string) => Promise<void>;
 }) {
   const { setModal, openCheckoutEditor, COUPONS, couponsLoading, initialFocus } =
@@ -72,7 +90,7 @@ export function ProductNerveCenterCuponsTab({
           <span style={{ color: V.t3, fontSize: 13 }}>Nenhum cupom cadastrado</span>
         </div>
       ) : (
-        COUPONS.map((c: any) => (
+        COUPONS.map((c: CouponItem) => (
           <div
             key={c.id}
             style={{

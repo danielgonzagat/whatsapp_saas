@@ -6,25 +6,52 @@ import { useState, useEffect } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bt, Fd, PanelLoadingState, Tg, V, cs, is } from './product-nerve-center.shared';
 
-function unwrapApiPayload<T = any>(response: any): T {
-  if (response?.error) {
-    throw new Error(response.error);
+function unwrapApiPayload<T = unknown>(response: unknown): T {
+  const r = response as { error?: string; data?: unknown } | null | undefined;
+  if (r?.error) {
+    throw new Error(r.error);
   }
 
-  return (response?.data ?? response) as T;
+  return (r?.data ?? response) as T;
+}
+
+interface AiConfigShape {
+  customerProfile?: {
+    whobuys?: string;
+    idealCustomer?: string;
+    pains?: string;
+    painPoints?: string;
+    promise?: string;
+    promisedResult?: string;
+  };
+  objections?: Array<{ label?: string; q?: string; response?: string; a?: string }>;
+  tone?: string;
+  persistenceLevel?: number | string;
+  messageLimit?: number | string;
+  followUpConfig?: {
+    schedule?: string;
+    autoCheckoutLink?: boolean;
+    offerDiscount?: boolean;
+    useUrgency?: boolean;
+  };
+  salesArguments?: {
+    autoCheckoutLink?: boolean;
+    offerDiscount?: boolean;
+    useUrgency?: boolean;
+  };
 }
 
 export function ProductNerveCenterIATab() {
   const { productId } = useNerveCenterContext();
   const { showToast } = useToast();
 
-  const [aiCfg, setAiCfg] = useState<any>(null);
+  const [aiCfg, setAiCfg] = useState<AiConfigShape | null>(null);
   const [aiLoading, setAiLoading] = useState(true);
   const [_aiSaving, setAiSaving] = useState(false);
   const [aiSaved, setAiSaved] = useState(false);
   useEffect(() => {
     apiFetch(`/products/${productId}/ai-config`)
-      .then((r: any) => setAiCfg(unwrapApiPayload<any>(r) || {}))
+      .then((r) => setAiCfg(unwrapApiPayload<AiConfigShape>(r) || {}))
       .catch(() => setAiCfg({}))
       .finally(() => setAiLoading(false));
   }, [productId]);
@@ -51,7 +78,7 @@ export function ProductNerveCenterIATab() {
     setPromise(cp.promise || cp.promisedResult || '');
     if (Array.isArray(aiCfg.objections) && aiCfg.objections.length)
       setObjs(
-        aiCfg.objections.map((obj: any) => ({
+        aiCfg.objections.map((obj) => ({
           label: obj.label || obj.q || '',
           response: obj.response || obj.a || '',
         })),

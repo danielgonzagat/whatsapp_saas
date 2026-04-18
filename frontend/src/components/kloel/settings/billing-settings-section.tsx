@@ -86,10 +86,19 @@ export function BillingSettingsSection({
   const loadPaymentMethods = useCallback(async () => {
     try {
       const response = await billingApi.getPaymentMethods();
-      const paymentMethods =
-        (response.data as Record<string, any> | undefined)?.paymentMethods || [];
+      interface RawPaymentMethod {
+        id: string;
+        last4?: string;
+        brand?: string;
+        expMonth?: number | string;
+        expYear?: number | string;
+        isDefault?: boolean;
+      }
+      const paymentMethods: RawPaymentMethod[] =
+        (response.data as { paymentMethods?: RawPaymentMethod[] } | undefined)?.paymentMethods ||
+        [];
       setCards(
-        paymentMethods.map((pm: any) => ({
+        paymentMethods.map((pm) => ({
           id: pm.id,
           last4: pm.last4,
           brand: pm.brand ? String(pm.brand).toUpperCase() : 'CARD',
@@ -137,7 +146,7 @@ export function BillingSettingsSection({
     try {
       const returnUrl = typeof window !== 'undefined' ? window.location.href : undefined;
       const response = await billingApi.createSetupIntent(returnUrl);
-      const url = (response.data as Record<string, any> | undefined)?.url;
+      const url = (response.data as { url?: string } | undefined)?.url;
       if (url) {
         window.location.href = url;
         return;

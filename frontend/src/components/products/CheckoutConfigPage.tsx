@@ -3,10 +3,37 @@ import { apiFetch } from '@/lib/api';
 import { type CSSProperties, useCallback, useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
+interface CheckoutConfigState {
+  checkoutName: string;
+  enableBoleto: boolean;
+  enableCreditCard: boolean;
+  enablePix: boolean;
+  chatEnabled: boolean;
+  chatWelcomeMessage: string;
+  chatDelay: number;
+  chatPosition: string;
+  chatColor: string;
+  chatOfferDiscount: boolean;
+  chatDiscountCode: string;
+  chatSupportPhone: string;
+  enableCoupon: boolean;
+  enableTimer: boolean;
+  timerMinutes: number;
+  timerMessage: string;
+  socialProofEnabled: boolean;
+  socialProofCustomNames: string;
+  enableSteps: boolean;
+  [key: string]: unknown;
+}
+
+interface CheckoutConfigInput extends Partial<CheckoutConfigState> {
+  id?: string;
+}
+
 interface Props {
   planId: string;
-  config: any;
-  onSave: (data: any) => void;
+  config: CheckoutConfigInput | null | undefined;
+  onSave: (data: CheckoutConfigState) => void;
 }
 
 /* ── Inline SVG Icons ── */
@@ -299,7 +326,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
     setLoading(true);
     try {
       const res = await apiFetch(`/checkout/plans/${planId}/config`);
-      const data: any = res.data;
+      const data = res.data as { pixels?: Pixel[] } | undefined;
       setPixels(Array.isArray(data?.pixels) ? data.pixels : []);
     } catch {
       setPixels([]);
@@ -659,7 +686,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
 
 export function CheckoutConfigPage({ planId, config, onSave }: Props) {
   const fid = useId();
-  const [state, setState] = useState<any>({
+  const [state, setState] = useState<CheckoutConfigState>({
     checkoutName: '',
     enableBoleto: false,
     enableCreditCard: false,
@@ -683,12 +710,12 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
 
   useEffect(() => {
     if (config) {
-      setState((prev: any) => ({ ...prev, ...config }));
+      setState((prev) => ({ ...prev, ...config }));
     }
   }, [config]);
 
-  const set = (key: string, value: any) => {
-    setState((prev: any) => ({ ...prev, [key]: value }));
+  const set = (key: string, value: unknown) => {
+    setState((prev) => ({ ...prev, [key]: value }));
   };
 
   return (

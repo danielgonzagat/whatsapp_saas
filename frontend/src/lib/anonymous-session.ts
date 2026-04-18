@@ -12,11 +12,23 @@ type AnonymousSession = {
   created: boolean;
 };
 
-function resolveAnonymousToken(payload: any): string {
+interface AnonymousSessionPayload {
+  access_token?: string;
+  accessToken?: string;
+  token?: string;
+  refresh_token?: string;
+  refreshToken?: string;
+  workspaceId?: string;
+  workspace?: { id?: string };
+  user?: { workspaceId?: string };
+  [key: string]: unknown;
+}
+
+function resolveAnonymousToken(payload: AnonymousSessionPayload): string {
   return String(payload?.access_token || payload?.accessToken || payload?.token || '').trim();
 }
 
-function resolveAnonymousWorkspaceId(payload: any): string {
+function resolveAnonymousWorkspaceId(payload: AnonymousSessionPayload): string {
   return String(
     payload?.user?.workspaceId || payload?.workspace?.id || payload?.workspaceId || '',
   ).trim();
@@ -41,7 +53,9 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
     throw new Error('Falha ao criar sessão anônima.');
   }
 
-  const payload = await response.json().catch(() => ({}));
+  const payload: AnonymousSessionPayload = await response
+    .json()
+    .catch(() => ({}) as AnonymousSessionPayload);
   mutate((key: unknown) => typeof key === 'string' && key.startsWith('/auth'));
   const token = resolveAnonymousToken(payload);
   const workspaceId = resolveAnonymousWorkspaceId(payload);

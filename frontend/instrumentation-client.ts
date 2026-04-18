@@ -30,22 +30,23 @@ if (sentryEnabled) {
   });
 }
 
-export function onRouterTransitionStart(...args: any[]) {
+export function onRouterTransitionStart(...args: unknown[]) {
   if (!sentryEnabled) return;
   void getSentryModule()?.then((Sentry) => {
-    (Sentry.captureRouterTransitionStart as (...params: any[]) => any)(...args);
+    (Sentry.captureRouterTransitionStart as (...params: unknown[]) => unknown)(...args);
   });
 }
 
-const newInternals = (React as any).__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+const reactInternals = React as unknown as Record<string, unknown>;
+const newInternals = reactInternals.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
 
-if (newInternals && !(React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
+if (newInternals && !reactInternals.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
   Object.defineProperty(React, '__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED', {
     value: {
       ReactCurrentOwner: { current: null },
       ReactCurrentBatchConfig: { transition: null },
       ReactCurrentDispatcher: { current: null },
-      ...newInternals,
+      ...(newInternals as Record<string, unknown>),
     },
     writable: true,
     configurable: true,
