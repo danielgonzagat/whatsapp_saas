@@ -325,6 +325,55 @@ export class WahaProvider {
     return 'default';
   }
 
+  private readRecord(value: unknown): Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  }
+
+  private readString(value: unknown): string | null {
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
+
+  private readStringArray(values: unknown[]): string[] {
+    return values
+      .filter((value): value is string => typeof value === 'string')
+      .map((value) => value.trim())
+      .filter(Boolean);
+  }
+
+  private resolveSessionIdentity(
+    payload: unknown,
+    options?: { allowTopLevelName?: boolean },
+  ): {
+    phoneNumber: string | null;
+    pushName: string | null;
+    selfIds: string[];
+  } {
+    const data = this.readRecord(payload);
+    const me = this.readRecord(data.me);
+
+    return {
+      phoneNumber:
+        this.readString(me.id) ||
+        this.readString(me.phone) ||
+        this.readString(data.phone) ||
+        this.readString(data.phoneNumber) ||
+        null,
+      pushName:
+        this.readString(me.pushName) ||
+        this.readString(me.name) ||
+        this.readString(data.pushName) ||
+        (options?.allowTopLevelName !== false ? this.readString(data.name) : null) ||
+        null,
+      selfIds: Array.from(
+        new Set(
+          this.readStringArray([me.id, me.lid, me._serialized, data.phone, data.phoneNumber]),
+        ),
+      ),
+    };
+  }
+
   getResolvedSessionId(workspaceSessionId: string): string {
     return this.resolveSessionName(workspaceSessionId);
   }
@@ -717,7 +766,7 @@ export class WahaProvider {
     const resolvedSessionId = this.resolveSessionName(sessionId);
 
     try {
-      const payload = await this.request<any>(
+      const payload = await this.request<Record<string, unknown>>(
         'GET',
         `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
       );
@@ -725,6 +774,7 @@ export class WahaProvider {
       const config = this.extractSessionConfig(payload);
       const webhook = this.resolveWebhookDiagnosticsFromConfig(config);
       const store = this.resolveStoreDiagnosticsFromConfig(config);
+      const identity = this.resolveSessionIdentity(payload);
       const mismatchReasons = this.resolveSessionConfigMismatch({
         webhookUrl: webhook.webhookUrl,
         events: webhook.events,
@@ -737,10 +787,8 @@ export class WahaProvider {
         available: true,
         rawStatus: resolvedStatus.rawStatus,
         state: resolvedStatus.state,
-        phoneNumber:
-          payload?.me?.id || payload?.me?.phone || payload?.phone || payload?.phoneNumber || null,
-        pushName:
-          payload?.me?.pushName || payload?.me?.name || payload?.pushName || payload?.name || null,
+        phoneNumber: identity.phoneNumber,
+        pushName: identity.pushName,
         webhookUrl: webhook.webhookUrl,
         webhookConfigured: webhook.webhookConfigured,
         inboundEventsConfigured: webhook.inboundEventsConfigured,
@@ -1019,25 +1067,20 @@ export class WahaProvider {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
       // WAHA: GET /api/sessions/:name
-      const data = await this.request<any>(
+      const data = await this.request<Record<string, unknown>>(
         'GET',
         `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
       );
       const resolvedStatus = resolveWahaSessionState(data);
+      const identity = this.resolveSessionIdentity(data);
 
       return {
         success: true,
         state: resolvedStatus.state,
         message: resolvedStatus.rawStatus,
-        phoneNumber: data?.me?.id || data?.me?.phone || data?.phone || data?.phoneNumber || null,
-        pushName: data?.me?.pushName || data?.me?.name || data?.pushName || data?.name || null,
-        selfIds: Array.from(
-          new Set(
-            [data?.me?.id, data?.me?.lid, data?.me?._serialized, data?.phone, data?.phoneNumber]
-              .map((value) => String(value || '').trim())
-              .filter(Boolean),
-          ),
-        ),
+        phoneNumber: identity.phoneNumber,
+        pushName: identity.pushName,
+        selfIds: identity.selfIds,
       };
     } catch (err: unknown) {
       const errInstanceofError =
@@ -1048,15 +1091,17 @@ export class WahaProvider {
 
   async listSessions(): Promise<WahaSessionOverview[]> {
     try {
-      const data = await this.request<any[]>('GET', '/api/sessions');
+      const data = await this.request<unknown[]>('GET', '/api/sessions');
       if (!Array.isArray(data)) {
         return [];
       }
 
       return data
         .map((entry): WahaSessionOverview | null => {
-          const resolvedStatus = resolveWahaSessionState(entry);
-          const name = String(entry?.name || '').trim();
+          const entryRecord = this.readRecord(entry);
+          const resolvedStatus = resolveWahaSessionState(entryRecord);
+          const identity = this.resolveSessionIdentity(entryRecord, { allowTopLevelName: false });
+          const name = this.readString(entryRecord.name);
           if (!name) {
             return null;
           }
@@ -1066,9 +1111,8 @@ export class WahaProvider {
             success: true,
             rawStatus: resolvedStatus.rawStatus,
             state: resolvedStatus.state,
-            phoneNumber:
-              entry?.me?.id || entry?.me?.phone || entry?.phone || entry?.phoneNumber || null,
-            pushName: entry?.me?.pushName || entry?.me?.name || entry?.pushName || null,
+            phoneNumber: identity.phoneNumber,
+            pushName: identity.pushName,
           };
         })
         .filter((entry): entry is WahaSessionOverview => Boolean(entry));
@@ -1096,7 +1140,7 @@ export class WahaProvider {
     // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
     for (let page = 0; page < maxPages; page += 1) {
       const offset = page * pageSize;
-      const payload = await this.tryRequest<any>(
+      const payload = await this.tryRequest<Record<string, unknown> | unknown[]>(
         'GET',
         `/api/${encodeURIComponent(resolvedSessionId)}/lids?limit=${pageSize}&offset=${offset}`,
       );
@@ -1356,7 +1400,7 @@ export class WahaProvider {
       payload.reply_to = options.quotedMessageId;
     }
 
-    const result = await this.request<any>('POST', '/api/sendText', payload);
+    const result = await this.request<Record<string, unknown>>('POST', '/api/sendText', payload);
     return { success: true, message: result };
   }
 
@@ -1369,7 +1413,7 @@ export class WahaProvider {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
 
-    const result = await this.request<any>('POST', '/api/sendImage', {
+    const result = await this.request<Record<string, unknown>>('POST', '/api/sendImage', {
       session: resolvedSessionId,
       chatId,
       file: { url: imageUrl },
@@ -1400,7 +1444,7 @@ export class WahaProvider {
       payload.reply_to = options.quotedMessageId;
     }
 
-    const result = await this.request<any>('POST', '/api/sendFile', payload);
+    const result = await this.request<Record<string, unknown>>('POST', '/api/sendFile', payload);
     return { success: true, message: result };
   }
 
@@ -1430,7 +1474,7 @@ export class WahaProvider {
       payload.reply_to = options.quotedMessageId;
     }
 
-    const result = await this.request<any>('POST', '/api/sendFile', payload);
+    const result = await this.request<Record<string, unknown>>('POST', '/api/sendFile', payload);
     return { success: true, message: result };
   }
 
@@ -1444,7 +1488,7 @@ export class WahaProvider {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
 
-    const result = await this.request<any>('POST', '/api/sendLocation', {
+    const result = await this.request<Record<string, unknown>>('POST', '/api/sendLocation', {
       session: resolvedSessionId,
       chatId,
       latitude,
@@ -1672,7 +1716,7 @@ export class WahaProvider {
       return sessionScoped;
     }
 
-    return this.request<any>(
+    return this.request<unknown[]>(
       'GET',
       `/api/messages?session=${encodeURIComponent(resolvedSessionId)}&chatId=${encodeURIComponent(normalizedChatId)}&limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
     );
@@ -1682,7 +1726,7 @@ export class WahaProvider {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
       const chatId = this.formatChatId(phone);
-      const res = await this.request<any>(
+      const res = await this.request<Record<string, unknown>>(
         'GET',
         `/api/contacts/check-exists?session=${encodeURIComponent(resolvedSessionId)}&phone=${encodeURIComponent(chatId)}`,
       );
@@ -1839,7 +1883,7 @@ export class WahaProvider {
 
   async ping(): Promise<boolean> {
     try {
-      const res = await this.request<any>('GET', '/api/sessions');
+      const res = await this.request<unknown[]>('GET', '/api/sessions');
       return Array.isArray(res);
     } catch {
       return false;

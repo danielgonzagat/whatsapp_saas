@@ -1703,11 +1703,11 @@ export class AccountAgentService {
     workspaceId: string,
     key: string,
     input: {
-      value: Record<string, any>;
+      value: object;
       category: string;
       type: string;
       content?: string;
-      metadata?: Record<string, any>;
+      metadata?: object;
     },
   ) {
     await this.prisma.kloelMemory.upsert({
