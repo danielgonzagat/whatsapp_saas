@@ -214,6 +214,20 @@ export class KloelController {
     return {} as Record<string, unknown>;
   }
 
+  private readUserId(user: unknown) {
+    if (!user || typeof user !== 'object') {
+      return undefined;
+    }
+
+    const sub = 'sub' in user ? user.sub : undefined;
+    if (typeof sub === 'string' && sub.trim()) {
+      return sub;
+    }
+
+    const legacyId = 'id' in user ? user.id : undefined;
+    return typeof legacyId === 'string' && legacyId.trim() ? legacyId : undefined;
+  }
+
   /**
    * 🧠 KLOEL THINK - Endpoint principal de chat com streaming
    * Retorna SSE (Server-Sent Events) em tempo real
@@ -230,7 +244,7 @@ export class KloelController {
   ): Promise<void> {
     // Workspace SEMPRE vem do token (WorkspaceGuard propaga req.workspaceId)
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = req.user?.sub || (req.user as any)?.id;
+    const userId = this.readUserId(req.user);
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
 
     const abortController = new AbortController();
@@ -286,7 +300,7 @@ export class KloelController {
     @Request() req: AuthenticatedRequest,
   ): Promise<{ response: string; conversationId?: string; title?: string }> {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = req.user?.sub || (req.user as any)?.id;
+    const userId = this.readUserId(req.user);
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     return this.kloelService.thinkSync({
       ...dto,
