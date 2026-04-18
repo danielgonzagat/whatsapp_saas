@@ -122,7 +122,7 @@ describe('payment-state-machine — invariant I3 (monotonicity, fail-closed)', (
       expect(
         validatePaymentTransition('GLITCH', 'RECEIVED', {
           paymentId: 'p3',
-          provider: 'asaas',
+          provider: 'stripe',
           externalId: 'ext3',
         }),
       ).toBe(false);

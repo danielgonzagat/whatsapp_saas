@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  asProviderSettings,
+  type ProviderCalendarSettings,
+} from '../whatsapp/provider-settings.types';
 
 interface AppointmentRecord {
   id: string;
@@ -65,6 +69,46 @@ export class CalendarService {
     private readonly prisma: PrismaService,
   ) {}
 
+  private normalizeCalendarConfig(value: unknown): CalendarConfig | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+
+    const config = value as ProviderCalendarSettings;
+    if (
+      config.provider !== 'google' &&
+      config.provider !== 'outlook' &&
+      config.provider !== 'internal'
+    ) {
+      return null;
+    }
+
+    const credentials =
+      config.credentials &&
+      typeof config.credentials === 'object' &&
+      !Array.isArray(config.credentials)
+        ? {
+            ...(typeof config.credentials.clientId === 'string'
+              ? { clientId: config.credentials.clientId }
+              : {}),
+            ...(typeof config.credentials.clientSecret === 'string'
+              ? { clientSecret: config.credentials.clientSecret }
+              : {}),
+            ...(typeof config.credentials.refreshToken === 'string'
+              ? { refreshToken: config.credentials.refreshToken }
+              : {}),
+            ...(typeof config.credentials.accessToken === 'string'
+              ? { accessToken: config.credentials.accessToken }
+              : {}),
+          }
+        : undefined;
+
+    return {
+      provider: config.provider,
+      ...(credentials && Object.keys(credentials).length > 0 ? { credentials } : {}),
+    };
+  }
+
   /**
    * Obtém configuração de calendário do workspace
    */
@@ -74,8 +118,7 @@ export class CalendarService {
       select: { providerSettings: true },
     });
 
-    const settings = workspace?.providerSettings as Record<string, any>;
-    return settings?.calendar || null;
+    return this.normalizeCalendarConfig(asProviderSettings(workspace?.providerSettings).calendar);
   }
 
   /**

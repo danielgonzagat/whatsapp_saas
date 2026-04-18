@@ -9,14 +9,14 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
-import { toPrismaJsonArray } from '../common/prisma/prisma-json.util';
-import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { toPrismaJsonArray, toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
   isValidPublicCheckoutCode,
   normalizePublicCheckoutCode,
 } from './checkout-code.util';
+import { buildCheckoutMarketplacePricing } from './checkout-marketplace-pricing.util';
 import {
   calculateCheckoutServerTotals,
   normalizeCheckoutOrderQuantity,
@@ -26,8 +26,6 @@ import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
 import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
-import { getMercadoPagoAffiliateBlockReason } from './mercado-pago-checkout-policy.util';
-import { assertMercadoPagoCheckoutQuality } from './mercado-pago-quality.util';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const CHECKOUT_ORDER_STATUSES = [
@@ -55,10 +53,9 @@ export class CheckoutService {
     @Inject(forwardRef(() => CheckoutPaymentService))
     private readonly paymentService: CheckoutPaymentService,
     private readonly auditService: AuditService,
-    private readonly mercadoPago: MercadoPagoService,
   ) {
     this.planLinkManager = new CheckoutPlanLinkManager(prisma);
-    this.publicPayloadBuilder = new CheckoutPublicPayloadBuilder(prisma, mercadoPago);
+    this.publicPayloadBuilder = new CheckoutPublicPayloadBuilder(prisma);
     this.orderSupport = new CheckoutOrderSupport(prisma, this.logger);
   }
 
@@ -1538,12 +1535,7 @@ export class CheckoutService {
     utmTerm?: string;
     ipAddress?: string;
     userAgent?: string;
-    meliSessionId?: string;
     cardHolderName?: string;
-    mercadoPagoToken?: string;
-    mercadoPagoPaymentMethodId?: string;
-    mercadoPagoPaymentType?: string;
-    mercadoPagoCardLast4?: string;
   }) {
     const {
       correlationId: incomingCorrelationId,
@@ -1551,12 +1543,7 @@ export class CheckoutService {
       capturedLeadId,
       deviceFingerprint,
       affiliateId,
-      meliSessionId,
       cardHolderName,
-      mercadoPagoToken,
-      mercadoPagoPaymentMethodId,
-      mercadoPagoPaymentType,
-      mercadoPagoCardLast4,
       orderQuantity,
       ...orderData
     } = data;
@@ -1687,28 +1674,31 @@ export class CheckoutService {
       orderData.paymentMethod === 'CREDIT_CARD'
         ? Math.max(1, Math.round(Number(orderData.installments || 1)))
         : 1;
-    const qualityGate = assertMercadoPagoCheckoutQuality({
-      customerName: orderData.customerName,
-      customerEmail: orderData.customerEmail,
-      customerCPF: orderData.customerCPF,
-      customerPhone: orderData.customerPhone,
-      shippingAddress: orderData.shippingAddress,
-      meliSessionId,
-    });
-    const lineItems = this.orderSupport.buildMercadoPagoLineItems(
+    const qualityGate = {
+      documentDigits: String(orderData.customerCPF || '').replace(/\D/g, ''),
+      phoneDigits: this.orderSupport.normalizePhoneDigits(orderData.customerPhone),
+      payerAddress:
+        orderData.shippingAddress && typeof orderData.shippingAddress === 'object'
+          ? (orderData.shippingAddress as Record<string, unknown>)
+          : null,
+    };
+    const lineItems = this.orderSupport.buildCheckoutLineItems(
       planRecord,
       serverTotals.acceptedBumpIds,
       normalizedOrderQuantity,
     );
-    const customerRegistrationDate = await this.orderSupport.resolveMercadoPagoRegistrationDate({
+    const customerRegistrationDate = await this.orderSupport.resolveCustomerRegistrationDate({
       workspaceId: orderData.workspaceId,
       customerEmail: orderData.customerEmail,
       customerPhone: qualityGate.phoneDigits,
     });
-    const platformSplit = this.mercadoPago.buildChargeSummary({
+    const platformSplit = buildCheckoutMarketplacePricing({
       baseTotalInCents: normalizedBaseTotalInCents,
       paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
       installments: normalizedInstallments,
+      platformFeePercent: 9.9,
+      installmentInterestMonthlyPercent: 3.99,
+      gatewayFeePercent: 0,
     });
     const affiliateCommissionPct = Number(affiliateLink?.affiliateProduct?.commissionPct || 0);
     const affiliateCommissionInCents = affiliateLink
@@ -1718,18 +1708,11 @@ export class CheckoutService {
       0,
       platformSplit.sellerReceivableInCents - affiliateCommissionInCents,
     );
-    const affiliateBlockReason = getMercadoPagoAffiliateBlockReason({
-      hasAffiliateContext: Boolean(affiliateLink || affiliateId),
-    });
-
-    if (affiliateBlockReason) {
-      throw new BadRequestException(affiliateBlockReason);
+    if (orderData.paymentMethod === 'BOLETO') {
+      throw new BadRequestException(
+        'Boleto ainda não está habilitado no checkout Stripe-only. Use cartão ou Pix.',
+      );
     }
-
-    await this.mercadoPago.assertPaymentMethodAvailable(
-      orderData.workspaceId,
-      orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
-    );
 
     const orderNumber = `KL-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
@@ -1746,13 +1729,12 @@ export class CheckoutService {
         couponDiscount: normalizedDiscountInCents || null,
         installments: normalizedInstallments,
         affiliateId: affiliateLink?.affiliateWorkspaceId || affiliateId,
-        metadata: {
+        metadata: toPrismaJsonValue({
           checkoutCode: checkoutCode || null,
           capturedLeadId: capturedLeadId || null,
           correlationId,
           deviceFingerprint: deviceFingerprint || null,
-          qualityGateVersion: 'mercado_pago_fixed_v1',
-          meliSessionId: qualityGate.meliSessionId,
+          qualityGateVersion: 'stripe_checkout_v1',
           customerDocumentDigits: qualityGate.documentDigits,
           customerPhoneDigits: qualityGate.phoneDigits,
           customerRegistrationDate,
@@ -1786,7 +1768,7 @@ export class CheckoutService {
           payoutStrategy: affiliateLink
             ? 'marketplace_fee_plus_affiliate_reconciliation'
             : 'marketplace_fee',
-        },
+        }),
         orderNumber,
       },
       include: {
@@ -1827,11 +1809,7 @@ export class CheckoutService {
         paymentMethod: orderData.paymentMethod,
         totalInCents: normalizedBaseTotalInCents,
         installments: normalizedInstallments,
-        cardToken: mercadoPagoToken,
-        cardPaymentMethodId: mercadoPagoPaymentMethodId,
-        cardPaymentType: mercadoPagoPaymentType,
         cardHolderName,
-        cardLast4: mercadoPagoCardLast4,
       });
 
       const contactSync = await this.orderSupport.ensureCheckoutContactRecord({

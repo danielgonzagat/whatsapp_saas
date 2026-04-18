@@ -3,6 +3,7 @@ import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@ne
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
 interface SystemMetrics {
   cpu: { usage: number; cores: number };
@@ -37,6 +38,13 @@ interface DiagnosticsReport {
   };
 }
 
+interface WorkspaceDiagnosticsSettings {
+  autopilotEnabled: boolean;
+  whatsappConnected: boolean;
+  billingStatus: 'active' | 'suspended';
+  plan: string;
+}
+
 @ApiTags('diagnostics')
 @UseGuards(JwtAuthGuard)
 @Controller('diag')
@@ -55,7 +63,7 @@ export class DiagnosticsController {
 
   @Get('full')
   @ApiOperation({ summary: 'Diagnóstico completo do sistema' })
-  async fullDiagnostics(): Promise<DiagnosticsReport & { deploy: Record<string, any> }> {
+  async fullDiagnostics(): Promise<DiagnosticsReport & { deploy: Record<string, unknown> }> {
     // Métricas do sistema
     const system = this.getSystemMetrics();
 
@@ -116,7 +124,7 @@ export class DiagnosticsController {
       throw new NotFoundException('Workspace not found');
     }
 
-    const settings = workspace.providerSettings as Record<string, any>;
+    const settings = asProviderSettings(workspace.providerSettings);
 
     // Buscar métricas específicas
     const today = new Date();
@@ -141,14 +149,7 @@ export class DiagnosticsController {
         createdAt: workspace.createdAt,
         counts: workspace._count,
       },
-      settings: {
-        autopilotEnabled: settings?.autopilot?.enabled || false,
-        whatsappConnected: ['connected', 'working'].includes(
-          String(settings?.whatsappApiSession?.status || '').toLowerCase(),
-        ),
-        billingStatus: settings?.billingSuspended ? 'suspended' : 'active',
-        plan: settings?.planLimits?.plan || 'free',
-      },
+      settings: this.buildWorkspaceSettings(settings),
       todayMetrics: {
         messages: todayMessages,
         autopilotEvents: todayAutopilotEvents,
@@ -327,7 +328,7 @@ kloel_uptime_seconds ${process.uptime()}
     });
 
     const autopilotEnabled = workspaces.filter((w) => {
-      const settings = w.providerSettings as Record<string, any>;
+      const settings = asProviderSettings(w.providerSettings);
       return settings?.autopilot?.enabled === true;
     }).length;
 
@@ -346,6 +347,25 @@ kloel_uptime_seconds ${process.uptime()}
       autopilotEnabled,
       activeWorkspaces,
       todayEvents,
+    };
+  }
+
+  private buildWorkspaceSettings(settings: unknown): WorkspaceDiagnosticsSettings {
+    const providerSettings = asProviderSettings(settings);
+    const whatsappStatus =
+      typeof providerSettings.whatsappApiSession?.status === 'string'
+        ? providerSettings.whatsappApiSession.status.toLowerCase()
+        : '';
+    const plan =
+      typeof providerSettings.planLimits?.plan === 'string'
+        ? providerSettings.planLimits.plan
+        : 'free';
+
+    return {
+      autopilotEnabled: providerSettings.autopilot?.enabled === true,
+      whatsappConnected: whatsappStatus === 'connected' || whatsappStatus === 'working',
+      billingStatus: providerSettings.billingSuspended === true ? 'suspended' : 'active',
+      plan,
     };
   }
 }

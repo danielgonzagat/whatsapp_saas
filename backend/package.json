@@ -72,7 +72,6 @@
     "htmlparser2": "^10.0.0",
     "ioredis": "^5.8.2",
     "joi": "^18.1.2",
-    "mercadopago": "^2.12.0",
     "openai": "^6.34.0",
     "otplib": "^12.0.1",
     "passport": "^0.7.0",
@@ -87,7 +86,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
-    "stripe": "^20.4.1",
+    "stripe": "^22.0.2",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.3.6"
   },

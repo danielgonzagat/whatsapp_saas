@@ -250,6 +250,31 @@ describe('AccountAgentService', () => {
     );
   });
 
+  it('ignores malformed persisted approval payloads when reopening a catalog gap', async () => {
+    memoryStore.set(memoryKey('ws-1', 'account_approval:product_creation:serum'), {
+      id: 'memory-legacy',
+      workspaceId: 'ws-1',
+      key: 'account_approval:product_creation:serum',
+      category: 'account_approval',
+      type: 'product_creation',
+      value: {
+        id: 'approval-legacy',
+        status: 'OPEN',
+        requestedProductName: { broken: true },
+      },
+      metadata: null,
+    });
+
+    const result = await service.detectCatalogGap({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      messageContent: 'Quero comprar o serum agora.',
+    });
+
+    expect(result.approval?.requestedProductName).toBe('serum');
+  });
+
   it('collects operator input, creates the product and resumes the contact flow', async () => {
     const detection = await service.detectCatalogGap({
       workspaceId: 'ws-1',
@@ -349,6 +374,73 @@ describe('AccountAgentService', () => {
           state: 'OPEN',
         }),
       }),
+    );
+  });
+
+  it('ignores malformed memory metadata when approving a catalog gap', async () => {
+    const detection = await service.detectCatalogGap({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      messageContent: 'Quero comprar o serum parcelado, me passa o link.',
+    });
+
+    const approvalId = detection.approval?.id;
+    const key = memoryKey('ws-1', 'account_approval:product_creation:serum');
+    memoryStore.set(key, {
+      ...memoryStore.get(key),
+      metadata: 'corrupted',
+    });
+
+    await service.approveCatalogApproval('ws-1', approvalId);
+
+    const updateArgs = prisma.kloelMemory.update.mock.calls.at(-1)?.[0];
+    expect(updateArgs.data.metadata).toEqual({
+      status: 'APPROVED',
+      inputSessionId: expect.any(String),
+    });
+  });
+
+  it('ignores malformed memory metadata when completing a catalog gap from input session', async () => {
+    const detection = await service.detectCatalogGap({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      messageContent: 'Quero comprar o serum parcelado, me passa o link.',
+    });
+
+    const approvalId = detection.approval?.id;
+    const approval = await service.approveCatalogApproval('ws-1', approvalId);
+    const key = memoryKey('ws-1', 'account_approval:product_creation:serum');
+    memoryStore.set(key, {
+      ...memoryStore.get(key),
+      metadata: 'corrupted',
+    });
+    await service.respondToInputSession(
+      'ws-1',
+      approval.inputSessionId,
+      'O serum é um protocolo regenerativo premium para pele.',
+    );
+    await service.respondToInputSession(
+      'ws-1',
+      approval.inputSessionId,
+      'Plano Start - 1 sessão - R$ 499,00 - desconto máximo 10% - 3x - https://pay.test/serum-start',
+    );
+    await service.respondToInputSession(
+      'ws-1',
+      approval.inputSessionId,
+      'Empresa: Clinica Exemplo LTDA. CNPJ 12.345.678/0001-90.',
+    );
+
+    const updateArgs = prisma.kloelMemory.update.mock.calls.at(-1)?.[0];
+    expect(updateArgs.data.metadata).toEqual(
+      expect.objectContaining({
+        status: 'COMPLETED',
+        productId: 'product-1',
+      }),
+    );
+    expect(Object.keys(updateArgs.data.metadata)).toEqual(
+      expect.not.arrayContaining(['0', '1', '2']),
     );
   });
 

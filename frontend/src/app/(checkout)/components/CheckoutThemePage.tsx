@@ -255,6 +255,10 @@ export function CheckoutThemePage({
           submitError={checkout.submitError}
           isSubmitting={checkout.isSubmitting}
           finalizeOrder={checkout.finalizeOrder}
+          stripeClientSecret={checkout.stripeClientSecret}
+          stripeReturnUrl={checkout.stripeReturnUrl}
+          onStripeSuccess={checkout.handleStripePaymentSuccess}
+          onStripeError={checkout.handleStripePaymentError}
         />
         <CheckoutDesktopSidebar
           theme={theme}

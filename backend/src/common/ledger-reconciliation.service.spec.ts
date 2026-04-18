@@ -103,7 +103,7 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
             payment: {
               id: 'pay-3',
               status: 'CONFIRMED',
-              gateway: 'asaas',
+              gateway: 'stripe',
               externalId: 'ext-3',
             },
           },

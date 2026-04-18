@@ -3,7 +3,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { asProviderSettings } from '../provider-settings.types';
+import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
 import { type ResolvedWhatsAppProvider, resolveDefaultWhatsAppProvider } from './provider-env';
 import { WahaProvider } from './waha.provider';
@@ -55,6 +55,41 @@ export class WhatsAppProviderRegistry {
     return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
   }
 
+  private readString(value: unknown): string | undefined {
+    return typeof value === 'string' && value.trim() ? value : undefined;
+  }
+
+  private readStringArray(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) {
+      return undefined;
+    }
+
+    const items = value.filter(
+      (item): item is string => typeof item === 'string' && item.length > 0,
+    );
+    return items.length > 0 ? items : [];
+  }
+
+  private readSessionSnapshot(value: unknown): ProviderSessionSnapshot {
+    const snapshot = this.readRecord(value);
+
+    return {
+      status: this.readString(snapshot.status),
+      rawStatus: this.readString(snapshot.rawStatus) ?? null,
+      phoneNumber: this.readString(snapshot.phoneNumber) ?? null,
+      pushName: this.readString(snapshot.pushName) ?? null,
+      selfIds: this.readStringArray(snapshot.selfIds) ?? [],
+      qrCode: this.readString(snapshot.qrCode) ?? null,
+      authUrl: this.readString(snapshot.authUrl) ?? null,
+      phoneNumberId: this.readString(snapshot.phoneNumberId) ?? null,
+      whatsappBusinessId: this.readString(snapshot.whatsappBusinessId) ?? null,
+      sessionName: this.readString(snapshot.sessionName) ?? null,
+      disconnectReason: this.readString(snapshot.disconnectReason) ?? null,
+      provider: this.readString(snapshot.provider),
+      lastUpdated: this.readString(snapshot.lastUpdated),
+    };
+  }
+
   private isWahaMode(): boolean {
     return this.defaultProvider === 'whatsapp-api' && !!this.wahaProvider;
   }
@@ -90,7 +125,10 @@ export class WhatsAppProviderRegistry {
     return 'disconnected';
   }
 
-  private async persistSessionSnapshot(workspaceId: string, update: Record<string, any>) {
+  private async persistSessionSnapshot(
+    workspaceId: string,
+    update: Partial<ProviderSessionSnapshot>,
+  ) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -211,7 +249,7 @@ export class WhatsAppProviderRegistry {
       this.metaCloudProvider.getSessionConfigDiagnostics(workspaceId),
     ]);
     const settings = asProviderSettings(workspace?.providerSettings);
-    const snapshot = (settings.whatsappApiSession || {}) as Record<string, any>;
+    const snapshot = this.readSessionSnapshot(settings.whatsappApiSession);
     const snapshotStatus = String(snapshot.status || snapshot.rawStatus || '')
       .trim()
       .toUpperCase();
@@ -225,9 +263,9 @@ export class WhatsAppProviderRegistry {
       phoneNumber: details.phoneNumber || snapshot.phoneNumber || undefined,
       pushName: details.pushName || snapshot.pushName || undefined,
       selfIds: [],
-      authUrl: details.authUrl || snapshot.authUrl,
-      phoneNumberId: details.phoneNumberId || snapshot.phoneNumberId,
-      whatsappBusinessId: details.whatsappBusinessId || snapshot.whatsappBusinessId,
+      authUrl: details.authUrl || snapshot.authUrl || undefined,
+      phoneNumberId: details.phoneNumberId || snapshot.phoneNumberId || undefined,
+      whatsappBusinessId: details.whatsappBusinessId || snapshot.whatsappBusinessId || undefined,
       degradedReason: fallbackToSnapshot ? null : details.error || null,
     };
 
@@ -463,7 +501,7 @@ export class WhatsAppProviderRegistry {
     };
   }
 
-  async getSessionDiagnostics(workspaceId: string): Promise<Record<string, any>> {
+  async getSessionDiagnostics(workspaceId: string): Promise<Record<string, unknown>> {
     if (this.isWahaMode()) {
       const diag = await this.wahaProvider.getSessionConfigDiagnostics(workspaceId);
       return {

@@ -1,0 +1,85 @@
+import { CartRecoveryService } from './cart-recovery.service';
+
+const sendEmail = jest.fn().mockResolvedValue(undefined);
+
+jest.mock('../auth/email.service', () => ({
+  EmailService: jest.fn().mockImplementation(() => ({
+    sendEmail,
+  })),
+}));
+
+describe('CartRecoveryService', () => {
+  let prisma: any;
+  let service: CartRecoveryService;
+
+  beforeEach(() => {
+    sendEmail.mockClear();
+    prisma = {
+      checkoutOrder: {
+        findMany: jest.fn(),
+        update: jest.fn().mockResolvedValue(undefined),
+      },
+    };
+
+    service = new CartRecoveryService(prisma);
+  });
+
+  it('ignores malformed metadata when marking recovery email as sent', async () => {
+    prisma.checkoutOrder.findMany.mockResolvedValue([
+      {
+        id: 'order-1',
+        orderNumber: '1001',
+        status: 'PENDING',
+        customerEmail: 'cliente@kloel.test',
+        metadata: 'corrupted',
+        plan: {
+          product: {
+            name: 'Plano Premium',
+          },
+        },
+      },
+    ]);
+
+    await service.checkAbandonedCarts();
+
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+
+    const updatePayload = prisma.checkoutOrder.update.mock.calls[0][0].data.metadata;
+    expect(updatePayload).toEqual({
+      recoveryEmailSent: true,
+      recoveryEmailSentAt: expect.any(String),
+    });
+  });
+
+  it('preserves valid metadata fields when recording recovery delivery', async () => {
+    prisma.checkoutOrder.findMany.mockResolvedValue([
+      {
+        id: 'order-2',
+        orderNumber: '1002',
+        status: 'PENDING',
+        customerEmail: 'cliente@kloel.test',
+        metadata: { source: 'checkout' },
+        plan: {
+          product: {
+            name: 'Plano Plus',
+          },
+        },
+      },
+    ]);
+
+    await service.checkAbandonedCarts();
+
+    expect(prisma.checkoutOrder.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'order-2' },
+        data: {
+          metadata: expect.objectContaining({
+            source: 'checkout',
+            recoveryEmailSent: true,
+            recoveryEmailSentAt: expect.any(String),
+          }),
+        },
+      }),
+    );
+  });
+});

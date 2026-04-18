@@ -2,7 +2,6 @@
 
 import { checkoutPublicApi } from '@/lib/api/misc';
 import { buildCheckoutPricing } from '@/lib/checkout-pricing';
-import { getMercadoPagoDeviceSessionId, tokenizeMercadoPagoCard } from '@/lib/mercado-pago';
 import type {
   CheckoutDisplayTestimonial,
   PublicCheckoutConfig,
@@ -138,11 +137,9 @@ export function useCheckoutExperience({
     (Array.isArray(product?.images)
       ? product.images.find((entry) => typeof entry === 'string' && entry.trim())
       : '');
-  const mercadoPagoPublicKey =
-    paymentProvider?.publicKey || process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || '';
   const checkoutUnavailableReason =
     paymentProvider?.checkoutEnabled === false
-      ? paymentProvider.unavailableReason || 'Conecte seu Mercado Pago para começar a vender.'
+      ? paymentProvider.unavailableReason || 'Conecte sua conta Stripe para começar a vender.'
       : '';
   const testimonials = useMemo(
     () =>
@@ -477,15 +474,6 @@ export function useCheckoutExperience({
     setIsSubmitting(true);
 
     try {
-      const meliSessionId =
-        paymentProvider?.provider === 'mercado_pago' ? await getMercadoPagoDeviceSessionId() : null;
-
-      if (paymentProvider?.provider === 'mercado_pago' && !meliSessionId) {
-        throw new Error(
-          'Não foi possível validar este dispositivo para o Mercado Pago. Atualize a página e tente novamente.',
-        );
-      }
-
       const payload: CreateOrderData = {
         planId: plan.id,
         workspaceId,
@@ -524,26 +512,10 @@ export function useCheckoutExperience({
       };
 
       if (payMethod === 'card') {
-        const [expMonth = '', expYearSuffix = ''] = form.cardExp.split('/');
-        const token = await tokenizeMercadoPagoCard(mercadoPagoPublicKey, {
-          cardNumber: form.cardNumber,
-          cardholderName: form.cardName || form.name,
-          identificationNumber: form.cardCpf || form.cpf,
-          securityCode: form.cardCvv,
-          cardExpirationMonth: expMonth,
-          cardExpirationYear: `20${expYearSuffix}`,
-        });
-
-        Object.assign(payload, {
-          cardHolderName: form.cardName || form.name,
-          mercadoPagoToken: token.token,
-          mercadoPagoPaymentMethodId: token.paymentMethodId,
-          mercadoPagoPaymentType: token.paymentType,
-          mercadoPagoCardLast4: token.last4,
-        });
+        payload.cardHolderName = form.cardName || form.name;
       }
 
-      const result = (await createOrder(payload, { meliSessionId })) as Record<string, unknown>;
+      const result = (await createOrder(payload)) as Record<string, unknown>;
       setPixelEvent('Purchase');
 
       const successPath = resolveSuccessRedirect(result);
@@ -593,7 +565,6 @@ export function useCheckoutExperience({
     form.state,
     form.street,
     installments,
-    mercadoPagoPublicKey,
     payMethod,
     paymentProvider?.provider,
     plan?.id,

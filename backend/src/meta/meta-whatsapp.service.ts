@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
 const D_RE = /\D/g;
 
@@ -40,6 +42,16 @@ export class MetaWhatsAppService {
       return String(value);
     }
     return '';
+  }
+
+  private readStrictText(value: unknown): string | undefined {
+    return typeof value === 'string' && value.trim() ? value : undefined;
+  }
+
+  private readRecord(value: unknown): Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
   }
 
   buildEmbeddedSignupUrl(
@@ -264,9 +276,9 @@ export class MetaWhatsAppService {
         throw new Error(phoneInfo.error.message);
       }
 
-      const displayPhoneNumber = String(phoneInfo?.display_phone_number || '').trim() || null;
+      const displayPhoneNumber = this.readStrictText(phoneInfo?.display_phone_number) ?? null;
       const verifiedName =
-        String(phoneInfo?.verified_name || '').trim() || resolved.pageName || null;
+        this.readStrictText(phoneInfo?.verified_name) || resolved.pageName || null;
       const phoneDigits = this.normalizePhone(displayPhoneNumber || '');
 
       return {
@@ -491,8 +503,13 @@ export class MetaWhatsAppService {
       return;
     }
 
-    const settings = (workspace.providerSettings as Record<string, unknown>) || {};
-    const currentSession = (settings.whatsappApiSession || {}) as Record<string, unknown>;
+    const settings = asProviderSettings(workspace.providerSettings);
+    const currentSession = this.readRecord(settings.whatsappApiSession);
+    const patchRecord = this.readRecord(patch);
+    const persistedStatus = this.readStrictText(currentSession.status);
+    const heartbeatStatus = this.readStrictText(patchRecord.status);
+    const { status: _ignoredStatus, ...patchWithoutStatus } = patchRecord;
+    const nextStatus = heartbeatStatus || persistedStatus || 'connected';
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
@@ -500,14 +517,15 @@ export class MetaWhatsAppService {
         providerSettings: {
           ...settings,
           whatsappProvider: 'meta-cloud',
-          connectionStatus: patch?.status || currentSession.status || 'connected',
+          connectionStatus: nextStatus,
           whatsappApiSession: {
             ...currentSession,
+            ...patchWithoutStatus,
+            status: nextStatus,
             provider: 'meta-cloud',
             lastWebhookAt: new Date().toISOString(),
-            ...patch,
           },
-        } as any,
+        } as unknown as Prisma.InputJsonValue,
       },
     });
   }

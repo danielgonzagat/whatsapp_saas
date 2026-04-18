@@ -136,6 +136,45 @@ describe('WhatsAppProviderRegistry', () => {
     );
   });
 
+  it('ignores malformed persisted snapshot fields when live diagnostics are missing them', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: {
+          status: { broken: true },
+          phoneNumber: { broken: true },
+          pushName: { broken: true },
+          authUrl: { broken: true },
+          phoneNumberId: { broken: true },
+          whatsappBusinessId: { broken: true },
+        },
+      },
+    });
+    whatsappApi.getSessionConfigDiagnostics.mockResolvedValue({
+      state: 'DISCONNECTED',
+      phoneNumber: null,
+      pushName: null,
+      authUrl: null,
+      phoneNumberId: null,
+      whatsappBusinessId: null,
+      error: null,
+    });
+
+    const result = await registry.getSessionStatus('ws-1');
+
+    expect(result).toEqual({
+      connected: false,
+      status: 'DISCONNECTED',
+      phoneNumber: undefined,
+      pushName: undefined,
+      selfIds: [],
+      authUrl: undefined,
+      phoneNumberId: undefined,
+      whatsappBusinessId: undefined,
+      degradedReason: null,
+    });
+  });
+
   it('persists connection_required when Meta session start needs authentication', async () => {
     whatsappApi.startSession.mockResolvedValue({
       success: true,

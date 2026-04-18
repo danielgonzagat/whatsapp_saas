@@ -20,6 +20,7 @@ describe('WhatsAppWatchdogService', () => {
           name: 'Workspace Teste',
           providerSettings: { whatsappApiSession: {} },
         }),
+        update: jest.fn().mockResolvedValue(undefined),
       },
     };
 
@@ -182,6 +183,47 @@ describe('WhatsAppWatchdogService', () => {
     expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
     expect(ciaRuntime.ensureBacklogCoverage).not.toHaveBeenCalled();
     expect(health.connected).toBe(true);
+  });
+
+  it('normalizes malformed providerSettings before persisting watchdog diagnostics', async () => {
+    Object.defineProperty(service, 'isWahaOperationallyEnabled', {
+      value: () => true,
+    });
+
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: true,
+      status: 'CONNECTED',
+    });
+    prisma.workspace.findUnique.mockResolvedValue({
+      name: 'Workspace Teste',
+      providerSettings: 'malformed-settings',
+    });
+
+    await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
+
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            whatsappApiSession: expect.objectContaining({
+              lastHeartbeatAt: expect.any(String),
+              lastSeenWorkingAt: expect.any(String),
+              lastUpdated: expect.any(String),
+            }),
+            whatsappWebSession: expect.objectContaining({
+              lastHeartbeatAt: expect.any(String),
+              lastSeenWorkingAt: expect.any(String),
+              lastUpdated: expect.any(String),
+            }),
+          }),
+        }),
+      }),
+    );
+
+    const updatePayload = prisma.workspace.update.mock.calls[0]?.[0]?.data?.providerSettings;
+    expect(updatePayload).not.toHaveProperty('0');
+    expect(updatePayload).not.toHaveProperty('1');
   });
 
   it('reboots autonomy when the WhatsApp stays connected even after a previous manual pause', async () => {

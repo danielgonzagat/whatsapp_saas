@@ -53,7 +53,7 @@ The platform is considered minimally ready for real users only when all of the f
 - CORS allowlists are explicit,
 - Helmet is enabled,
 - DTO validation is enabled,
-- `ASAAS_WEBHOOK_TOKEN` is enforced on payment webhooks,
+- `STRIPE_WEBHOOK_SECRET` is enforced on payment webhooks,
 - `/metrics` requires `METRICS_TOKEN`,
 - `/diag-db` requires `DIAG_TOKEN`.
 

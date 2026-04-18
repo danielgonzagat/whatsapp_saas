@@ -1,6 +1,7 @@
 {
   "enabledPlugins": {
-    "railway@claude-plugins-official": true
+    "railway@claude-plugins-official": true,
+    "stripe@claude-plugins-official": true
   },
   "hooks": {
     "PreToolUse": [

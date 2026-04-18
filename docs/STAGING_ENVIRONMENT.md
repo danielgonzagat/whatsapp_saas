@@ -63,7 +63,7 @@ Set these in the `staging` environment:
 - Login and dashboard work.
 - Product creation and checkout editor work.
 - Checkout public page creates order in staging.
-- Asaas sandbox webhook reaches staging and validates `ASAAS_WEBHOOK_TOKEN`.
+- Stripe sandbox webhook reaches staging and validates `STRIPE_WEBHOOK_SECRET`.
 - Wallet read path works.
 - Worker consumes queue and `/health/system` stays green.
 - `/metrics` is reachable only with `METRICS_TOKEN`.

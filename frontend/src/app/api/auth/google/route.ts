@@ -36,8 +36,10 @@ export async function POST(request: NextRequest) {
     }
 
     return res;
-  } catch (error: any) {
-    const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+  } catch (error: unknown) {
+    const errorName =
+      error && typeof error === 'object' && 'name' in error ? String(error.name) : '';
+    const isTimeout = errorName === 'TimeoutError' || errorName === 'AbortError';
     console.error(
       '[Auth Proxy] google oauth error:',
       isTimeout ? 'Request timed out (15s)' : error,

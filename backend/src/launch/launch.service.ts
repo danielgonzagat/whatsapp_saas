@@ -1,7 +1,12 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
 const PATTERN_RE = / /g;
+
+function readWorkspacePhone(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
 
 @Injectable()
 export class LaunchService {
@@ -81,11 +86,11 @@ export class LaunchService {
 
     if (!workspace) throw new NotFoundException('Workspace not found');
 
-    const settings = workspace.providerSettings as Record<string, any>;
+    const settings = asProviderSettings(workspace.providerSettings);
     // Tenta pegar o telefone conectado. Se não tiver, usa placeholder.
     // No mundo real, precisaríamos armazenar o "phone" da sessão conectada.
     // Vamos assumir que o usuário salvou em settings ou usamos um domínio próprio.
-    const phone = settings?.phone || '';
+    const phone = readWorkspacePhone(settings.phone);
 
     // Command format: "start_flow_<flowId>" or custom
     const command = customCommand || `start_flow_${flowId}`;

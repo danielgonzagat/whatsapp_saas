@@ -96,6 +96,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
     planSlug: '',
     orderId: '',
     paymentId: '',
+    paymentExternalId: '',
     saleId: '',
   };
 
@@ -323,27 +324,31 @@ describe('KLOEL Full User Journey (e2e)', () => {
     const order = res.body.order || res.body;
     state.orderId = order.id;
     state.paymentId = order.payments?.[0]?.id || order.paymentId || '';
-    console.log(`  -> Order: ${state.orderId}, Payment: ${state.paymentId}`);
+    state.paymentExternalId =
+      order.payments?.[0]?.externalId || order.paymentIntentId || order.paymentId || '';
+    console.log(
+      `  -> Order: ${state.orderId}, Payment: ${state.paymentId}, External: ${state.paymentExternalId}`,
+    );
   });
 
   // ═══════════════════════════════════════════
   // TEST 8: SIMULATE PAYMENT CONFIRMED (webhook)
   // ═══════════════════════════════════════════
-  it('8. Asaas webhook confirms payment', async () => {
-    // Simulate Asaas PAYMENT_CONFIRMED webhook
+  it('8. Stripe webhook confirms payment', async () => {
     const res = await request(app.getHttpServer())
-      .post('/webhooks/checkout/asaas')
+      .post('/webhook/payment/stripe')
       .send({
-        event: 'PAYMENT_CONFIRMED',
-        payment: {
-          id: `pay_test_${uniqueSuffix}`,
-          customer: 'cus_test',
-          value: 197.0,
-          netValue: 187.15,
-          status: 'CONFIRMED',
-          billingType: 'PIX',
-          externalReference: state.paymentId || state.orderId,
-          confirmedDate: new Date().toISOString(),
+        id: `evt_test_${uniqueSuffix}`,
+        type: 'payment_intent.succeeded',
+        data: {
+          object: {
+            id: state.paymentExternalId || `pi_test_${uniqueSuffix}`,
+            status: 'succeeded',
+            metadata: {
+              workspaceId: state.workspaceId,
+              kloel_order_id: state.orderId,
+            },
+          },
         },
       })
       .expect((r) => expect([200, 201]).toContain(r.status));

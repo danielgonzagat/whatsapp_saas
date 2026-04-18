@@ -7,11 +7,14 @@ import { WorkspaceService } from '../../workspaces/workspace.service';
 import { AccountAgentService } from '../account-agent.service';
 import { AgentEventsService } from '../agent-events.service';
 import { CiaRuntimeService } from '../cia-runtime.service';
+import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
+
+type BacklogMode = Exclude<Parameters<CiaRuntimeService['startBacklogRun']>[1], undefined>;
 
 /**
  * =====================================================================
@@ -36,7 +39,7 @@ export class WhatsAppApiController {
     private readonly watchdog: WhatsAppWatchdogService,
   ) {}
 
-  private buildMetaUnsupportedResponse(feature: string, extra?: Record<string, any>) {
+  private buildMetaUnsupportedResponse(feature: string, extra?: Record<string, unknown>) {
     return {
       success: false,
       provider: 'meta-cloud',
@@ -48,13 +51,10 @@ export class WhatsAppApiController {
 
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const sessionSnapshot = (settings?.whatsappWebSession ||
-      settings?.whatsappApiSession ||
-      {}) as Record<string, any>;
+    const sessionSnapshot = this.readSessionSnapshot(workspace?.providerSettings);
     const providerType = await this.providerRegistry.getProviderType(workspaceId);
     const sessionName =
-      String(sessionSnapshot?.sessionName || '').trim() ||
+      this.readText(sessionSnapshot?.sessionName).trim() ||
       this.whatsappApi.getResolvedSessionId(workspaceId);
 
     const [status, configDiagnostics, clientInfo, operationalIntelligence] = await Promise.all([
@@ -216,7 +216,11 @@ export class WhatsAppApiController {
     if (body?.mode === 'pause_autonomy') {
       return this.ciaRuntime.pauseAutonomy(req.workspaceId);
     }
-    return this.ciaRuntime.startBacklogRun(req.workspaceId, body?.mode as any, body?.limit);
+    return this.ciaRuntime.startBacklogRun(
+      req.workspaceId,
+      this.readBacklogMode(body?.mode),
+      body?.limit,
+    );
   }
 
   @Post('cia/conversations/:conversationId/resume')
@@ -625,7 +629,7 @@ export class WhatsAppApiController {
   ) {
     return this.whatsappService.triggerCatalogRefresh(req.workspaceId, {
       days: this.readNumberQuery(body?.days, 30, 1, 365),
-      reason: String(body?.reason || 'manual_catalog_refresh'),
+      reason: this.readText(body?.reason, 'manual_catalog_refresh'),
     });
   }
 
@@ -640,11 +644,12 @@ export class WhatsAppApiController {
       reason?: string;
     },
   ) {
+    const contactId = this.readText(body?.contactId).trim() || undefined;
     return this.whatsappService.triggerCatalogRescore(req.workspaceId, {
-      contactId: body?.contactId ? String(body.contactId) : undefined,
+      contactId,
       days: this.readNumberQuery(body?.days, 30, 1, 365),
       limit: this.readNumberQuery(body?.limit, 100, 1, 500),
-      reason: String(body?.reason || 'manual_catalog_rescore'),
+      reason: this.readText(body?.reason, 'manual_catalog_rescore'),
     });
   }
 
@@ -655,7 +660,7 @@ export class WhatsAppApiController {
   ) {
     return this.whatsappService.triggerBacklogRebuild(req.workspaceId, {
       limit: this.readNumberQuery(body?.limit, 500, 1, 2000),
-      reason: String(body?.reason || 'manual_backlog_rebuild'),
+      reason: this.readText(body?.reason, 'manual_backlog_rebuild'),
     });
   }
 
@@ -666,7 +671,10 @@ export class WhatsAppApiController {
 
   @Post('sync')
   async sync(@Req() req: AuthenticatedRequest, @Body() body: { reason?: string }) {
-    return this.whatsappService.triggerSync(req.workspaceId, body?.reason || 'manual_sync');
+    return this.whatsappService.triggerSync(
+      req.workspaceId,
+      this.readText(body?.reason, 'manual_sync'),
+    );
   }
 
   /**
@@ -722,16 +730,16 @@ export class WhatsAppApiController {
   async getProviderStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     const workspace = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const sessionMeta = (settings?.whatsappWebSession ||
-      settings?.whatsappApiSession ||
-      {}) as Record<string, any>;
+    const sessionMeta = this.readSessionSnapshot(workspace?.providerSettings);
+    const sessionName =
+      this.readText(sessionMeta?.sessionName).trim() ||
+      this.whatsappApi.getResolvedSessionId(workspaceId);
     const providerType = await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     const health = await this.providerRegistry.healthCheck();
 
     const runtimeDiagnostics = this.whatsappApi.getRuntimeConfigDiagnostics();
-    const sessionDiagnostics = await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
+    const sessionDiagnostics = await this.whatsappApi.getSessionConfigDiagnostics(sessionName);
     const backlog = await this.whatsappService.getBacklog(workspaceId).catch(() => null);
 
     const degradedReasons: string[] = [];
@@ -767,8 +775,9 @@ export class WhatsAppApiController {
       degradedReasons.push('meta_session_config_unavailable');
     }
 
-    if (sessionMeta?.recoveryBlockedReason) {
-      degradedReasons.push(String(sessionMeta.recoveryBlockedReason));
+    const recoveryBlockedReason = this.readText(sessionMeta?.recoveryBlockedReason).trim();
+    if (recoveryBlockedReason) {
+      degradedReasons.push(recoveryBlockedReason);
     }
 
     if (
@@ -832,5 +841,25 @@ export class WhatsAppApiController {
       return false;
     }
     return fallback;
+  }
+
+  private readText(value: unknown, fallback = '') {
+    return typeof value === 'string' ? value : fallback;
+  }
+
+  private readSessionSnapshot(providerSettings: unknown): ProviderSessionSnapshot | null {
+    const settings = asProviderSettings(providerSettings);
+    return settings.whatsappWebSession ?? settings.whatsappApiSession ?? null;
+  }
+
+  private readBacklogMode(value: unknown): BacklogMode {
+    switch (value) {
+      case 'reply_only_new':
+      case 'prioritize_hot':
+      case 'reply_all_recent_first':
+        return value;
+      default:
+        return 'reply_all_recent_first';
+    }
   }
 }

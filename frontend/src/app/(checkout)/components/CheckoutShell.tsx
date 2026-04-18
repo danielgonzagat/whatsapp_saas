@@ -2,7 +2,6 @@
 
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 import { API_BASE } from '@/lib/http';
-import { preloadMercadoPagoDeviceSession, preloadMercadoPagoSdk } from '@/lib/mercado-pago';
 import { normalizePublicCheckoutResponse } from '@/lib/public-checkout';
 import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
 import { useEffect, useState } from 'react';
@@ -25,8 +24,6 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
   const [data, setData] = useState<CheckoutData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const mercadoPagoPublicKey =
-    data?.paymentProvider?.publicKey || process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || '';
 
   useEffect(() => {
     const controller = new AbortController();
@@ -55,12 +52,6 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
     return () => controller.abort();
   }, [slug, mode]);
-
-  useEffect(() => {
-    if (data?.paymentProvider?.provider !== 'mercado_pago') return;
-    preloadMercadoPagoSdk(mercadoPagoPublicKey).catch(() => undefined);
-    preloadMercadoPagoDeviceSession().catch(() => undefined);
-  }, [data?.paymentProvider?.provider, mercadoPagoPublicKey]);
 
   /* ── Loading state ─────────────────────────────────────────────────────── */
 
@@ -148,14 +139,7 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
   /* ── Resolve props ─────────────────────────────────────────────────────── */
 
-  const forceMercadoPagoIdentity = data.paymentProvider?.provider === 'mercado_pago';
-  const config = data.checkoutConfig
-    ? {
-        ...data.checkoutConfig,
-        requireCPF: forceMercadoPagoIdentity || data.checkoutConfig.requireCPF,
-        requirePhone: forceMercadoPagoIdentity || data.checkoutConfig.requirePhone,
-      }
-    : data.checkoutConfig;
+  const config = data.checkoutConfig;
   const product = data.product;
   const plan = {
     id: data.id,

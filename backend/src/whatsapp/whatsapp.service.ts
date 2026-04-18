@@ -28,6 +28,49 @@ import { WorkerRuntimeService } from './worker-runtime.service';
 const D_RE = /\D/g;
 const PATTERN_RE = /-/g;
 
+type NormalizedContact = {
+  id: string;
+  phone: string;
+  name: string | null;
+  pushName: string | null;
+  shortName: string | null;
+  email: string | null;
+  localContactId: string | null;
+  source: 'provider' | 'crm' | 'waha+crm';
+  registered: boolean | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+type NormalizedChat = {
+  id: string;
+  phone: string;
+  name: string | null;
+  unreadCount: number;
+  pending: boolean;
+  needsReply?: boolean;
+  pendingMessages?: number;
+  owner?: ConversationOperationalState['owner'];
+  blockedReason?: ConversationOperationalState['blockedReason'];
+  lastMessageDirection?: ConversationOperationalState['lastMessageDirection'];
+  timestamp: number;
+  lastMessageAt: string | null;
+  conversationId: string | null;
+  status: string | null;
+  mode?: string | null;
+  assignedAgentId?: string | null;
+  source: 'provider' | 'crm' | 'waha+crm';
+};
+
+type CatalogConversationSummary = {
+  id: string;
+  contactId: string;
+  unreadCount: number | null;
+  status: string | null;
+  mode: string | null;
+  lastMessageAt: Date | null;
+};
+
 /**
  * =====================================================================
  * WHATSAPPSERVICE PRO (UWE-Ω)
@@ -101,7 +144,7 @@ export class WhatsappService {
         orderBy: { updatedAt: 'desc' },
       })) || [];
 
-    const merged = new Map<string, any>();
+    const merged = new Map<string, NormalizedContact>();
 
     for (const contact of remoteContacts) {
       merged.set(contact.phone, contact);
@@ -258,7 +301,7 @@ export class WhatsappService {
         take: 500,
       })) || [];
 
-    const merged = new Map<string, any>();
+    const merged = new Map<string, NormalizedChat>();
 
     for (const chat of remoteChats) {
       const existing = merged.get(chat.phone);
@@ -424,7 +467,7 @@ export class WhatsappService {
       this.isIndividualChatId(chat.id),
     );
 
-    const remoteByPhone = new Map<string, any>();
+    const remoteByPhone = new Map<string, NormalizedChat>();
     for (const chat of remoteChats) {
       const existing = remoteByPhone.get(chat.phone);
       if (!existing || Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)) {
@@ -1001,7 +1044,7 @@ export class WhatsappService {
       }),
     ]);
 
-    const conversationsByContact = new Map<string, any[]>();
+    const conversationsByContact = new Map<string, CatalogConversationSummary[]>();
     for (const conversation of conversations || []) {
       const items = conversationsByContact.get(conversation.contactId) || [];
       items.push(conversation);
@@ -2023,7 +2066,7 @@ export class WhatsappService {
     await this.providerRegistry.disconnect(workspaceId);
   }
 
-  private normalizeContacts(raw: unknown) {
+  private normalizeContacts(raw: unknown): NormalizedContact[] {
     const r = raw as Record<string, unknown> | undefined;
     const candidates: unknown[] = Array.isArray(raw)
       ? raw
@@ -2090,10 +2133,10 @@ export class WhatsappService {
           updatedAt: null,
         };
       })
-      .filter(Boolean);
+      .filter((contact): contact is NormalizedContact => contact !== null);
   }
 
-  private normalizeChats(raw: unknown) {
+  private normalizeChats(raw: unknown): NormalizedChat[] {
     const r = raw as Record<string, unknown> | undefined;
     const candidates: unknown[] = Array.isArray(raw)
       ? raw
@@ -2155,7 +2198,7 @@ export class WhatsappService {
           source: 'provider',
         };
       })
-      .filter(Boolean);
+      .filter((chat): chat is NormalizedChat => chat !== null);
   }
 
   private normalizeMessages(raw: unknown, fallbackChatId: string) {
@@ -2290,20 +2333,15 @@ export class WhatsappService {
           })
           .catch(() => null)
       : null;
-    const customFields =
-      contact?.customFields &&
-      typeof contact.customFields === 'object' &&
-      !Array.isArray(contact.customFields)
-        ? (contact.customFields as Record<string, any>)
-        : {};
+    const customFields = this.normalizeJsonObject(contact?.customFields);
 
     return Array.from(
       new Set(
         [
           normalizedChatId,
-          String(customFields.lastRemoteChatId || '').trim(),
-          String(customFields.lastCatalogChatId || '').trim(),
-          String(customFields.lastResolvedChatId || '').trim(),
+          this.readText(customFields.lastRemoteChatId),
+          this.readText(customFields.lastCatalogChatId),
+          this.readText(customFields.lastResolvedChatId),
           normalizedPhone ? `${normalizedPhone}@c.us` : '',
           normalizedPhone ? `${normalizedPhone}@s.whatsapp.net` : '',
         ].filter(Boolean),

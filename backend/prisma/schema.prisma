@@ -617,7 +617,7 @@ model Vector {
 // --- OMNICHANNEL INTEGRATIONS ---
 model Integration {
   id          String   @id @default(uuid())
-  type        String   // INSTAGRAM, MERCADO_PAGO, STRIPE, GOOGLE_CALENDAR
+  type        String   // INSTAGRAM, STRIPE, GOOGLE_CALENDAR
   name        String
   credentials Json     // Encrypted keys
   isActive    Boolean  @default(true)
@@ -1227,7 +1227,7 @@ model WebhookSubscription {
 
 model WebhookEvent {
   id          String   @id @default(uuid())
-  provider    String   // asaas, stripe, checkout
+  provider    String   // stripe, checkout
   eventType   String
   externalId  String
   payload     Json
@@ -2136,7 +2136,7 @@ model Payment {
   workspaceId    String
   workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   externalId     String
-  provider       String    // "asaas", "stripe", etc.
+  provider       String    // "stripe", etc.
   status         String    @default("PENDING") // PENDING, CONFIRMED, RECEIVED, REFUNDED, CANCELLED
   amount         Float
   currency       String    @default("BRL")
@@ -3171,4 +3171,196 @@ model AdminChatMessage {
 
   @@index([sessionId, createdAt])
   @@map("admin_chat_messages")
+}
+
+// ============================================================================
+// SP-STRIPE-2 — Connect Ledger (FASE 2 of stripe migration plan).
+//
+// Per-Connected-Account dual-balance ledger. Distinct from PlatformWallet
+// (which tracks the Kloel platform's own balance buckets). This ledger
+// tracks each seller/affiliate/supplier/coproducer/manager Stripe account's
+// pending vs available cents inside KLOEL's view, independently of what
+// Stripe says the connected account technically holds.
+//
+// All payouts to seller/role bank accounts go through Kloel-orchestrated
+// stripe.payouts.create() calls — never automatic. The available_balance
+// here is what the dashboard shows as "withdrawable", not what Stripe's
+// own balance API reports.
+//
+// Append-only: LedgerEntry rows are never UPDATEd. Corrections are new
+// ADJUSTMENT entries. The two balances on ConnectAccountBalance are the
+// running materialized views, recomputable from the ledger at any time.
+// ============================================================================
+
+enum ConnectAccountType {
+  SELLER
+  AFFILIATE
+  SUPPLIER
+  COPRODUCER
+  MANAGER
+}
+
+enum ConnectLedgerEntryType {
+  CREDIT_PENDING
+  MATURE
+  DEBIT_PAYOUT
+  DEBIT_CHARGEBACK
+  DEBIT_REFUND
+  ADJUSTMENT
+}
+
+model ConnectAccountBalance {
+  id                       String              @id @default(cuid())
+  workspaceId              String              @map("workspace_id")
+  stripeAccountId          String              @unique @map("stripe_account_id")
+  accountType              ConnectAccountType  @map("account_type")
+  pendingBalanceCents      BigInt              @default(0) @map("pending_balance_cents")
+  availableBalanceCents    BigInt              @default(0) @map("available_balance_cents")
+  lifetimeReceivedCents    BigInt              @default(0) @map("lifetime_received_cents")
+  lifetimePaidOutCents     BigInt              @default(0) @map("lifetime_paid_out_cents")
+  lifetimeChargebacksCents BigInt              @default(0) @map("lifetime_chargebacks_cents")
+  createdAt                DateTime            @default(now()) @map("created_at")
+  updatedAt                DateTime            @updatedAt @map("updated_at")
+
+  ledger ConnectLedgerEntry[]
+
+  @@index([workspaceId])
+  @@index([accountType])
+  @@map("connect_account_balances")
+}
+
+model ConnectLedgerEntry {
+  id                         String                 @id @default(cuid())
+  accountBalanceId           String                 @map("account_balance_id")
+  accountBalance             ConnectAccountBalance  @relation(fields: [accountBalanceId], references: [id], onDelete: Restrict)
+  type                       ConnectLedgerEntryType
+  amountCents                BigInt                 @map("amount_cents")
+  balanceAfterPendingCents   BigInt                 @map("balance_after_pending_cents")
+  balanceAfterAvailableCents BigInt                 @map("balance_after_available_cents")
+  referenceType              String                 @map("reference_type")
+  referenceId                String                 @map("reference_id")
+  scheduledFor               DateTime?              @map("scheduled_for")
+  matured                    Boolean                @default(false)
+  metadata                   Json?                  @db.JsonB
+  createdAt                  DateTime               @default(now()) @map("created_at")
+
+  @@index([accountBalanceId, createdAt])
+  @@index([scheduledFor, matured])
+  @@unique([referenceType, referenceId, type])
+  @@map("connect_ledger_entries")
+}
+
+model ConnectMaturationRule {
+  id          String              @id @default(cuid())
+  productId   String?             @map("product_id")
+  accountType ConnectAccountType  @map("account_type")
+  delayDays   Int                 @map("delay_days")
+  active      Boolean             @default(true)
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  @@index([productId, accountType])
+  @@unique([productId, accountType])
+  @@map("connect_maturation_rules")
+}
+
+// ============================================================================
+// SP-STRIPE-4 — Prepaid Wallet (FASE 4 of stripe migration plan).
+//
+// Per-workspace prepaid balance for usage-metered services (AI agent
+// messages, WhatsApp sends, generic API calls). Independent of Connect:
+// the wallet is funded by direct PaymentIntents on the platform's own
+// Stripe account, then debited atomically as services are consumed.
+//
+// Append-only transactions table mirrors the LedgerEntry pattern so
+// every change has an audit row and the running balance is recomputable
+// from history at any time.
+// ============================================================================
+
+enum PrepaidWalletTxType {
+  TOPUP
+  USAGE
+  REFUND
+  ADJUSTMENT
+}
+
+model PrepaidWallet {
+  id                         String                     @id @default(cuid())
+  workspaceId                String                     @unique @map("workspace_id")
+  balanceCents               BigInt                     @default(0) @map("balance_cents")
+  currency                   String                     @default("BRL")
+  autoRechargeEnabled        Boolean                    @default(false) @map("auto_recharge_enabled")
+  autoRechargeThresholdCents BigInt?                    @map("auto_recharge_threshold_cents")
+  autoRechargeAmountCents    BigInt?                    @map("auto_recharge_amount_cents")
+  defaultPaymentMethodId     String?                    @map("default_payment_method_id")
+  stripeCustomerId           String?                    @map("stripe_customer_id")
+  createdAt                  DateTime                   @default(now()) @map("created_at")
+  updatedAt                  DateTime                   @updatedAt @map("updated_at")
+  transactions               PrepaidWalletTransaction[]
+
+  @@index([stripeCustomerId])
+  @@map("prepaid_wallets")
+}
+
+model PrepaidWalletTransaction {
+  id                String              @id @default(cuid())
+  walletId          String              @map("wallet_id")
+  wallet            PrepaidWallet       @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  type              PrepaidWalletTxType
+  amountCents       BigInt              @map("amount_cents")
+  balanceAfterCents BigInt              @map("balance_after_cents")
+  referenceType     String              @map("reference_type")
+  referenceId       String              @map("reference_id")
+  metadata          Json?               @db.JsonB
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  @@index([walletId, createdAt])
+  @@unique([referenceType, referenceId, type])
+  @@map("prepaid_wallet_transactions")
+}
+
+model UsagePrice {
+  id                  String   @id @default(cuid())
+  operation           String   @unique
+  pricePerUnitCents   BigInt   @map("price_per_unit_cents")
+  unit                String
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@index([active])
+  @@map("usage_prices")
+}
+
+// ============================================================================
+// SP-STRIPE-5 — Fraud Engine (FASE 5 of stripe migration plan).
+//
+// Centralized blacklist shared across all sellers in the platform. Each row
+// is a (type, value) tuple — duplicate inserts are upserted via the unique
+// constraint. Blacklist hits short-circuit the FraudEngine evaluation
+// before a PaymentIntent is created so suspect transactions never reach
+// Stripe.
+// ============================================================================
+
+enum FraudBlacklistType {
+  CPF
+  CNPJ
+  EMAIL
+  IP
+  DEVICE_FINGERPRINT
+  CARD_BIN
+}
+
+model FraudBlacklist {
+  id        String              @id @default(cuid())
+  type      FraudBlacklistType
+  value     String
+  reason    String
+  addedBy   String?             @map("added_by")
+  expiresAt DateTime?           @map("expires_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  @@unique([type, value])
+  @@index([expiresAt])
+  @@map("fraud_blacklist")
 }

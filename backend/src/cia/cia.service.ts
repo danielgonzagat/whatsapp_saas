@@ -6,6 +6,8 @@ import { AccountAgentService } from '../whatsapp/account-agent.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
 
+type JsonRecord = Record<string, unknown>;
+
 @Injectable()
 export class CiaService {
   constructor(
@@ -37,7 +39,7 @@ export class CiaService {
     ]);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
     const latest = recent[recent.length - 1] || null;
-    const businessState = (intelligence.businessState || {}) as Record<string, any>;
+    const businessState = this.readRecord(intelligence.businessState);
 
     return {
       title: 'KLOEL',
@@ -45,9 +47,9 @@ export class CiaService {
       workspaceName: intelligence.workspaceName,
       state: intelligence.runtime?.state || 'IDLE',
       today: {
-        soldAmount: Number(businessState.approvedSalesAmount || 0) || 0,
-        activeConversations: Number(businessState.openBacklog || 0) || 0,
-        pendingPayments: Number(businessState.pendingPaymentCount || 0) || 0,
+        soldAmount: this.readNumber(businessState.approvedSalesAmount),
+        activeConversations: this.readNumber(businessState.openBacklog),
+        pendingPayments: this.readNumber(businessState.pendingPaymentCount),
       },
       now: latest
         ? {
@@ -97,12 +99,12 @@ export class CiaService {
 
     return items
       .map((item) => {
-        const task = (item.value as Record<string, any>) || {};
+        const task = this.readRecord(item.value);
         return {
           memoryId: item.id,
           key: item.key,
           ...task,
-          status: String(task.status || 'OPEN'),
+          status: this.readText(task.status) || 'OPEN',
         };
       })
       .filter((task) => task.status !== 'REJECTED' && task.status !== 'RESOLVED');
@@ -117,28 +119,31 @@ export class CiaService {
     },
   ) {
     const { record, task } = await this.findHumanTask(workspaceId, taskId);
-    const approvedReply = String(input?.message || task.suggestedReply || '').trim();
+    const approvedReply = (input?.message || this.readText(task.suggestedReply)).trim();
+    const taskPhone = this.readText(task.phone);
+    const taskConversationId = this.readText(task.conversationId);
+    const resolvedTaskId = this.readText(task.id) || taskId;
 
-    if (approvedReply && task.phone) {
+    if (approvedReply && taskPhone) {
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await flowQueue.add(
         'send-message',
         {
           workspaceId,
-          to: task.phone,
-          user: task.phone,
+          to: taskPhone,
+          user: taskPhone,
           message: approvedReply,
-          externalId: buildQueueJobId('cia-human-task', task.id),
+          externalId: buildQueueJobId('cia-human-task', resolvedTaskId),
         },
         {
-          jobId: buildQueueJobId('cia-human-task', task.id),
+          jobId: buildQueueJobId('cia-human-task', resolvedTaskId),
           removeOnComplete: true,
         },
       );
     }
 
-    if ((input?.resume ?? true) && task.conversationId) {
-      await this.runtime.resumeConversationAutonomy(workspaceId, task.conversationId);
+    if ((input?.resume ?? true) && taskConversationId) {
+      await this.runtime.resumeConversationAutonomy(workspaceId, taskConversationId);
     }
 
     const nextValue = {
@@ -158,7 +163,7 @@ export class CiaService {
       data: {
         value: nextValue,
         metadata: {
-          ...((record.metadata as Record<string, any>) || {}),
+          ...this.readRecord(record.metadata),
           status: 'RESOLVED',
           resolvedAt: nextValue.resolvedAt,
         },
@@ -171,12 +176,12 @@ export class CiaService {
       phase: 'human_task_approved',
       persistent: true,
       message: approvedReply
-        ? `Validação concluída. Enviei a resposta aprovada para ${task.phone || 'o contato'}.`
-        : `Validação concluída. Retomei a autonomia da conversa ${task.conversationId || ''}.`,
+        ? `Validação concluída. Enviei a resposta aprovada para ${taskPhone || 'o contato'}.`
+        : `Validação concluída. Retomei a autonomia da conversa ${taskConversationId}.`,
       meta: {
         taskId,
-        conversationId: task.conversationId || null,
-        phone: task.phone || null,
+        conversationId: taskConversationId || null,
+        phone: taskPhone || null,
       },
     });
 
@@ -184,7 +189,7 @@ export class CiaService {
       approved: true,
       taskId,
       sent: !!approvedReply,
-      resumed: !!task.conversationId && (input?.resume ?? true),
+      resumed: !!taskConversationId && (input?.resume ?? true),
     };
   }
 
@@ -206,7 +211,7 @@ export class CiaService {
       data: {
         value: nextValue,
         metadata: {
-          ...((record.metadata as Record<string, any>) || {}),
+          ...this.readRecord(record.metadata),
           status: 'REJECTED',
           resolvedAt: nextValue.resolvedAt,
         },
@@ -218,11 +223,11 @@ export class CiaService {
       workspaceId,
       phase: 'human_task_rejected',
       persistent: true,
-      message: `Exceção humana dispensada para ${task.phone || 'o contato'}.`,
+      message: `Exceção humana dispensada para ${this.readText(task.phone) || 'o contato'}.`,
       meta: {
         taskId,
-        conversationId: task.conversationId || null,
-        phone: task.phone || null,
+        conversationId: this.readText(task.conversationId) || null,
+        phone: this.readText(task.phone) || null,
       },
     });
 
@@ -275,7 +280,7 @@ export class CiaService {
     });
 
     if (record) {
-      const metadata = (record.metadata as Record<string, any> | null) || {};
+      const metadata = this.readRecord(record.metadata);
       return {
         id: record.id,
         canonical: true,
@@ -355,14 +360,14 @@ export class CiaService {
       return null;
     }
 
-    const value = (record.value as Record<string, any>) || {};
+    const value = this.readRecord(record.value);
+    const metadata = this.readRecord(record.metadata);
     return {
       id: record.id,
       key: record.key,
       type: record.type,
       summary: value.summary || record.content || null,
-      cycleProofId:
-        value.cycleProofId || (record.metadata as Record<string, any> | null)?.cycleProofId || null,
+      cycleProofId: value.cycleProofId || metadata.cycleProofId || null,
       generatedAt: value.generatedAt || record.createdAt,
       guaranteeReport: value.guaranteeReport || null,
       exhaustionReport: value.exhaustionReport || null,
@@ -396,18 +401,15 @@ export class CiaService {
     });
 
     return items.map((item) => {
-      const value = (item.value as Record<string, any>) || {};
+      const value = this.readRecord(item.value);
+      const metadata = this.readRecord(item.metadata);
       return {
         id: item.id,
         category: item.category,
         type: item.type,
-        contactId:
-          value.contactId || (item.metadata as Record<string, any> | null)?.contactId || null,
-        conversationId:
-          value.conversationId ||
-          (item.metadata as Record<string, any> | null)?.conversationId ||
-          null,
-        phone: value.phone || (item.metadata as Record<string, any> | null)?.phone || null,
+        contactId: value.contactId || metadata.contactId || null,
+        conversationId: value.conversationId || metadata.conversationId || null,
+        phone: value.phone || metadata.phone || null,
         summary: value.summary || value.message || item.content || 'Sinal cognitivo disponível.',
         nextBestAction: value.nextBestAction || value.action || null,
         intent: value.intent || null,
@@ -440,8 +442,8 @@ export class CiaService {
     });
 
     const record = candidates.find((item) => {
-      const value = (item.value as Record<string, any>) || {};
-      return String(value.id || '') === taskId;
+      const value = this.readRecord(item.value);
+      return this.readText(value.id) === taskId;
     });
 
     if (!record) {
@@ -450,7 +452,30 @@ export class CiaService {
 
     return {
       record,
-      task: (record.value as Record<string, any>) || {},
+      task: this.readRecord(record.value),
     };
+  }
+
+  private readRecord(value: unknown): JsonRecord {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as JsonRecord)
+      : {};
+  }
+
+  private readText(value: unknown): string {
+    return typeof value === 'string' ? value : '';
+  }
+
+  private readNumber(value: unknown): number {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    return 0;
   }
 }

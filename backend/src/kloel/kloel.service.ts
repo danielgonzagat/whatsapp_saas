@@ -4,6 +4,9 @@ import { Response } from 'express';
 import type { ImageGenerateParamsNonStreaming, ImagesResponse } from 'openai/resources/images';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
+// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import Stripe = require('stripe');
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 import { StorageService } from '../common/storage/storage.service';
@@ -4416,8 +4419,6 @@ export class KloelService {
       });
 
       if (workspace?.stripeCustomerId) {
-        // Se tiver Stripe, criar session de setup
-        const { default: Stripe } = await import('stripe');
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
         const session = await stripe.billingPortal.sessions.create({
           customer: workspace.stripeCustomerId,

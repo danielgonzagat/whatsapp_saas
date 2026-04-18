@@ -5,7 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
-import { AsaasService } from './asaas.service';
+import { PaymentService } from './payment.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 
 const JSON_N___N_RE = /```json\n?|\n?```/g;
@@ -48,7 +48,7 @@ export class SmartPaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly asaasService: AsaasService,
+    private readonly paymentService: PaymentService,
     private readonly auditService: AuditService,
     private readonly planLimits: PlanLimitsService,
   ) {
@@ -77,10 +77,7 @@ export class SmartPaymentService {
     const preferredPayment: 'PIX' | 'BOLETO' | 'CREDIT_CARD' =
       settings?.payment?.preferredMethod || 'PIX';
 
-    // 2. Verificar conexão Asaas
-    const asaasStatus = await this.asaasService.getConnectionStatus(workspaceId);
-
-    // 3. Se temos a conversa, usar IA para gerar mensagem personalizada
+    // 2. Se temos a conversa, usar IA para gerar mensagem personalizada
     let suggestedMessage = '';
     let billingType: 'PIX' | 'BOLETO' | 'CREDIT_CARD' = preferredPayment;
 
@@ -127,50 +124,30 @@ Responda em JSON:
       }
     }
 
-    // 4. Criar pagamento no Asaas ou usar fallback
-    if (asaasStatus.connected) {
-      try {
-        if (billingType === 'PIX') {
-          const payment = await this.asaasService.createPixPayment(workspaceId, {
-            customerName,
-            customerPhone: phone,
-            amount,
-            description: productName || 'Pagamento KLOEL',
-          });
+    // 3. O stack ativo do Kloel gera links Pix via Stripe.
+    try {
+      billingType = 'PIX';
+      const payment = await this.paymentService.createPayment({
+        workspaceId,
+        leadId: context.contactId || phone,
+        customerName,
+        customerPhone: phone,
+        amount,
+        description: productName || 'Pagamento KLOEL',
+      });
 
-          return {
-            paymentId: payment.id,
-            paymentUrl: payment.pixQrCodeUrl,
-            pixQrCode: payment.pixQrCodeUrl,
-            pixCopyPaste: payment.pixCopyPaste,
-            billingType: 'PIX',
-            suggestedMessage:
-              suggestedMessage ||
-              `${customerName}, seu pagamento PIX de R$ ${Number(amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX abaixo.`,
-          };
-        }
-
-        // Boleto
-        const boletoPayment = await this.asaasService.createBoletoPayment(workspaceId, {
-          customerName,
-          customerPhone: phone,
-          customerCpfCnpj: '', // Será solicitado posteriormente se necessário
-          amount,
-          description: productName || 'Pagamento KLOEL',
-        });
-
-        return {
-          paymentId: boletoPayment.id,
-          paymentUrl: boletoPayment.bankSlipUrl,
-          billingType: 'BOLETO',
-          suggestedMessage:
-            suggestedMessage ||
-            `${customerName}, seu boleto de R$ ${Number(amount.toFixed(2))} foi gerado.\n\nClique no link para visualizar e pagar.`,
-        };
-        // PULSE:OK — Asaas failure is gracefully degraded to internal fallback payment link below
-      } catch (err) {
-        this.logger.error('Asaas payment failed, using fallback', err.message);
-      }
+      return {
+        paymentId: payment.id,
+        paymentUrl: payment.paymentLink || payment.invoiceUrl || '',
+        pixQrCode: payment.pixQrCodeUrl,
+        pixCopyPaste: payment.pixCopyPaste,
+        billingType: 'PIX',
+        suggestedMessage:
+          suggestedMessage ||
+          `${customerName}, seu pagamento PIX de R$ ${Number(amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX abaixo.`,
+      };
+    } catch (err) {
+      this.logger.error('Stripe payment failed, using fallback', err.message);
     }
 
     // Fallback: link de pagamento interno

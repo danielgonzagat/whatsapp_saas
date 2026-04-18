@@ -5,7 +5,7 @@
  *
  * SAFE CHECKS (no real webhook POSTs to production):
  * 1. HTTP: GET /health/system — verify backend is reachable
- * 2. DB: COUNT WebhookEvent WHERE provider = 'asaas' — verify webhooks are recorded
+ * 2. DB: COUNT WebhookEvent WHERE provider = 'stripe' — verify webhooks are recorded
  * 3. DB: Check for duplicate externalId in WebhookEvent (idempotency violation)
  * 4. DB: Check for WebhookEvent records with status = 'failed' > 10% of total
  * 5. DB: Verify @unique constraint on (provider, externalId) is present in schema
@@ -14,7 +14,7 @@
  * BREAK TYPES:
  * - WEBHOOK_NOT_IDEMPOTENT (critical) — same webhook processed twice causes double credit
  * - WEBHOOK_NO_SIGNATURE_CHECK (critical) — webhook accepted without valid token
- * - WEBHOOK_ASAAS_BROKEN (critical) — webhook not processed or wallet not updated
+ * - WEBHOOK_STRIPE_BROKEN (critical) — webhook not processed or wallet not updated
  */
 
 import * as fs from 'fs';
@@ -40,7 +40,7 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
     const healthRes = await httpGet('/health/system', { timeout: 5000 });
     if (healthRes.status === 0) {
       breaks.push({
-        type: 'WEBHOOK_ASAAS_BROKEN',
+        type: 'WEBHOOK_STRIPE_BROKEN',
         severity: 'critical',
         file: 'backend/src/health/system-health.controller.ts',
         line: 12,
@@ -59,23 +59,23 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
       `SELECT provider, COUNT(*) as count FROM "WebhookEvent" GROUP BY provider ORDER BY count DESC`,
     );
 
-    const asaasRow = countRows.find((r: any) => r.provider === 'asaas');
-    const asaasCount = parseInt(asaasRow?.count || '0', 10);
+    const stripeRow = countRows.find((r: any) => r.provider === 'stripe');
+    const stripeCount = parseInt(stripeRow?.count || '0', 10);
 
-    // If there are PAID orders but zero asaas webhook events, that's broken
+    // If there are PAID orders but zero Stripe webhook events, that's broken
     const paidRows = await dbQuery(
       `SELECT COUNT(*) as count FROM "CheckoutOrder" WHERE status = 'PAID'`,
     );
     const paidOrders = parseInt(paidRows[0]?.count || '0', 10);
 
-    if (paidOrders > 0 && asaasCount === 0) {
+    if (paidOrders > 0 && stripeCount === 0) {
       breaks.push({
-        type: 'WEBHOOK_ASAAS_BROKEN',
+        type: 'WEBHOOK_STRIPE_BROKEN',
         severity: 'critical',
-        file: 'backend/src/kloel/asaas-webhook.controller.ts',
+        file: 'backend/src/webhooks/payment-webhook.controller.ts',
         line: 1,
-        description: `${paidOrders} PAID orders exist but zero asaas WebhookEvents recorded — webhook recording not working`,
-        detail: `PAID orders: ${paidOrders}, asaas WebhookEvents: ${asaasCount}`,
+        description: `${paidOrders} PAID orders exist but zero Stripe WebhookEvents recorded — webhook recording not working`,
+        detail: `PAID orders: ${paidOrders}, Stripe WebhookEvents: ${stripeCount}`,
       });
     }
   } catch (err: any) {
@@ -92,9 +92,10 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
         breaks.push({
           type: 'WEBHOOK_NOT_IDEMPOTENT',
           severity: 'critical',
-          file: 'backend/src/kloel/asaas-webhook.controller.ts',
+          file: 'backend/src/webhooks/payment-webhook.controller.ts',
           line: 1,
-          description: 'WebhookEvent table does not exist in DB — webhook idempotency guard missing',
+          description:
+            'WebhookEvent table does not exist in DB — webhook idempotency guard missing',
           detail: 'Schema migration may not have been applied. Run: npx prisma migrate deploy',
         });
       }
@@ -117,10 +118,13 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
       breaks.push({
         type: 'WEBHOOK_NOT_IDEMPOTENT',
         severity: 'critical',
-        file: 'backend/src/kloel/asaas-webhook.controller.ts',
+        file: 'backend/src/webhooks/payment-webhook.controller.ts',
         line: 1,
         description: `${dupeRows.length} duplicate externalId entries in WebhookEvent — idempotency @@unique constraint not enforced`,
-        detail: `Sample duplicate externalIds: ${dupeRows.slice(0, 3).map((r: any) => r.externalId).join(', ')} (each appears ${dupeRows[0]?.cnt} times)`,
+        detail: `Sample duplicate externalIds: ${dupeRows
+          .slice(0, 3)
+          .map((r: any) => r.externalId)
+          .join(', ')} (each appears ${dupeRows[0]?.cnt} times)`,
       });
     }
   } catch {
@@ -134,7 +138,7 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
          COUNT(*) FILTER (WHERE status = 'failed') as failed,
          COUNT(*) as total
        FROM "WebhookEvent"
-       WHERE provider = 'asaas'`,
+       WHERE provider = 'stripe'`,
     );
 
     const failed = parseInt(failRows[0]?.failed || '0', 10);
@@ -142,11 +146,11 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
 
     if (total > 10 && failed / total > 0.1) {
       breaks.push({
-        type: 'WEBHOOK_ASAAS_BROKEN',
+        type: 'WEBHOOK_STRIPE_BROKEN',
         severity: 'critical',
-        file: 'backend/src/kloel/asaas-webhook.controller.ts',
+        file: 'backend/src/webhooks/payment-webhook.controller.ts',
         line: 1,
-        description: `${failed}/${total} asaas webhooks failed (${((failed / total) * 100).toFixed(1)}%) — webhook processing error rate too high`,
+        description: `${failed}/${total} Stripe webhooks failed (${((failed / total) * 100).toFixed(1)}%) — webhook processing error rate too high`,
         detail: `Failed: ${failed}, Total: ${total}`,
       });
     }
@@ -156,11 +160,9 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
 
   // ── Check 5: Static — webhook controller checks Authorization header ───────
   try {
-    // Check asaas-webhook.controller.ts and checkout-webhook.controller.ts
+    // Check the consolidated Stripe payment webhook controller
     const webhookControllerPaths = [
-      path.join(config.backendDir, 'src/kloel/asaas-webhook.controller.ts'),
-      path.join(config.backendDir, 'src/checkout/checkout-webhook.controller.ts'),
-      path.join(config.backendDir, 'src/kloel/checkout-webhook.controller.ts'),
+      path.join(config.backendDir, 'src/webhooks/payment-webhook.controller.ts'),
     ];
 
     for (const wPath of webhookControllerPaths) {
@@ -168,11 +170,9 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
       const content = fs.readFileSync(wPath, 'utf8');
 
       const hasTokenCheck =
-        content.includes('asaas-access-token') ||
-        content.includes('ASAAS_WEBHOOK_TOKEN') ||
-        content.includes('asaasWebhookToken') ||
-        content.includes('webhook-token') ||
-        content.includes('authorization');
+        content.includes('stripe-signature') ||
+        content.includes('STRIPE_WEBHOOK_SECRET') ||
+        content.includes('constructEvent');
 
       if (!hasTokenCheck) {
         breaks.push({
@@ -180,7 +180,8 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
           severity: 'critical',
           file: path.relative(process.cwd(), wPath),
           line: 1,
-          description: 'Webhook controller does not verify asaas-access-token header — unauthenticated webhooks accepted',
+          description:
+            'Webhook controller does not verify Stripe signature — unauthenticated webhooks accepted',
           detail: `File: ${wPath} has no token verification code`,
         });
       }
@@ -194,10 +195,14 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
   // We only try this if backend is reachable (non-destructive: no real payload)
   try {
     const noAuthRes = await httpPost(
-      '/webhook/asaas',
-      { event: 'PULSE_TEST_PROBE', payment: { id: '__pulse_probe__' } },
+      '/webhook/payment/stripe',
+      {
+        id: 'evt_pulse_probe',
+        type: 'payment_intent.succeeded',
+        data: { object: { id: 'pi_pulse_probe' } },
+      },
       { timeout: 5000 },
-      // No JWT, no asaas-access-token header
+      // No JWT, no stripe-signature header
     );
 
     // If 200 or 201 — webhook accepted without auth (critical)
@@ -205,9 +210,10 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
       breaks.push({
         type: 'WEBHOOK_NO_SIGNATURE_CHECK',
         severity: 'critical',
-        file: 'backend/src/kloel/asaas-webhook.controller.ts',
+        file: 'backend/src/webhooks/payment-webhook.controller.ts',
         line: 1,
-        description: 'POST /webhook/asaas accepted without asaas-access-token header — authentication bypass',
+        description:
+          'POST /webhook/payment/stripe accepted without stripe-signature header — authentication bypass',
         detail: `Unauthenticated probe returned ${noAuthRes.status}. Expected 403.`,
       });
     }

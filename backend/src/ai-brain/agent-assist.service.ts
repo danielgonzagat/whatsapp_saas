@@ -19,6 +19,10 @@ export class AgentAssistService {
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
+  private readWorkspaceId(value: unknown) {
+    return typeof value === 'string' && value.trim() ? value : undefined;
+  }
+
   private async ensureBudget(workspaceId?: string | null) {
     if (!workspaceId) {
       return;
@@ -64,7 +68,8 @@ export class AgentAssistService {
       },
     });
     if (!convo) return { summary: '' };
-    const effectiveWorkspaceId = workspaceId || (convo as any).workspaceId;
+    const effectiveWorkspaceId =
+      this.readWorkspaceId(workspaceId) || this.readWorkspaceId(convo.workspaceId);
 
     const history = convo.messages.map((m) => `[${m.direction}] ${m.content}`).join('\n');
 

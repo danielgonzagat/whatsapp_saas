@@ -104,7 +104,7 @@ const CI_LIKE_ENV =
   'OPENAI_API_KEY=e2e-dummy-key ' +
   'METRICS_TOKEN=test-metrics-token ' +
   'DIAG_TOKEN=test-diag-token ' +
-  'ASAAS_WEBHOOK_TOKEN=test-asaas-token ' +
+  'STRIPE_WEBHOOK_SECRET=whsec_test_scoped_prepush ' +
   'OPS_WEBHOOK_URL=https://example.com/ops-webhook ' +
   'DLQ_WEBHOOK_URL=https://example.com/dlq-webhook ';
 

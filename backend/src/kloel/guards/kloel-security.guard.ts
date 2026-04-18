@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
+import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 
 /**
  * Decorator para marcar rotas como públicas do KLOEL
@@ -132,7 +133,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
       }
 
       // 6. Verificar se billing está suspenso
-      const settings = workspace.providerSettings as Record<string, any>;
+      const settings = asProviderSettings(workspace.providerSettings);
       if (settings?.billingSuspended === true) {
         // Permitir apenas endpoints de status/diagnóstico
         const allowedPaths = ['/health', '/diag', '/status', '/billing'];
@@ -151,16 +152,21 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
       }
 
       // 7. Verificar limites do plano
-      const planLimits = settings?.planLimits;
-      if (planLimits) {
+      const aiRequestsPerDay =
+        typeof settings?.planLimits?.aiRequestsPerDay === 'number' &&
+        Number.isFinite(settings.planLimits.aiRequestsPerDay) &&
+        settings.planLimits.aiRequestsPerDay > 0
+          ? settings.planLimits.aiRequestsPerDay
+          : null;
+      if (aiRequestsPerDay !== null) {
         // Verificar endpoints específicos
-        if (path.includes('/agent/process') && planLimits.aiRequestsPerDay) {
+        if (path.includes('/agent/process')) {
           const dailyUsage = await this.getDailyAIUsage(workspaceId);
-          if (dailyUsage >= planLimits.aiRequestsPerDay) {
+          if (dailyUsage >= aiRequestsPerDay) {
             throw new ForbiddenException({
               message: 'Daily AI request limit exceeded',
               code: 'PLAN_LIMIT_EXCEEDED',
-              limit: planLimits.aiRequestsPerDay,
+              limit: aiRequestsPerDay,
               used: dailyUsage,
             });
           }

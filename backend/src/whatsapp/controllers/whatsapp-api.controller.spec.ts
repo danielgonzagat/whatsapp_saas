@@ -17,7 +17,10 @@ describe('WhatsAppApiController', () => {
     providerRegistry = {
       startSession: jest.fn(),
       restartSession: jest.fn().mockResolvedValue({ success: true, message: 'already_connected' }),
-      getSessionStatus: jest.fn(),
+      getSessionStatus: jest.fn().mockResolvedValue({
+        connected: false,
+        status: 'PENDING',
+      }),
       getQrCode: jest.fn(),
       getProviderType: jest.fn().mockResolvedValue('meta-cloud'),
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
@@ -64,6 +67,8 @@ describe('WhatsAppApiController', () => {
     ciaRuntime = {
       getOperationalIntelligence: jest.fn().mockResolvedValue(null),
       bootstrap: jest.fn().mockResolvedValue({ connected: true, mode: 'LIVE' }),
+      startBacklogRun: jest.fn().mockResolvedValue({ queued: true }),
+      pauseAutonomy: jest.fn().mockResolvedValue({ paused: true }),
     };
     whatsappService = {
       listContacts: jest.fn().mockResolvedValue([{ phone: '5511999991111' }]),
@@ -195,6 +200,41 @@ describe('WhatsAppApiController', () => {
         }),
       }),
     );
+  });
+
+  it('falls back to the resolved workspace session id when sessionName is malformed', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: true,
+      status: 'CONNECTED',
+    });
+    workspaces.getWorkspace.mockResolvedValue({
+      name: 'Workspace Teste',
+      providerSettings: {
+        whatsappProvider: 'meta-cloud',
+        whatsappApiSession: { sessionName: { broken: true } },
+      },
+    });
+
+    const result = await controller.getDiagnostics({
+      workspaceId: 'ws-1',
+    } as unknown as AuthenticatedRequest);
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        sessionName: 'ws-1',
+      }),
+    );
+    expect(whatsappApi.getSessionConfigDiagnostics).toHaveBeenCalledWith('ws-1');
+    expect(whatsappApi.getClientInfo).toHaveBeenCalledWith('ws-1');
+  });
+
+  it('normalizes unsupported backlog modes to the safe default', async () => {
+    await controller.startBacklog({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest, {
+      mode: 'unexpected-mode',
+      limit: 12,
+    });
+
+    expect(ciaRuntime.startBacklogRun).toHaveBeenCalledWith('ws-1', 'reply_all_recent_first', 12);
   });
 
   it('returns a not-supported response for legacy session linking', async () => {

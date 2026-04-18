@@ -84,7 +84,7 @@ export class WalletService {
 
     const wallet = await this.getOrCreateWallet(workspaceId);
 
-    const transaction = await this.prisma.$transaction(async (tx) => {
+    const transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.kloelWallet.update({
         where: { id: wallet.id },
         data: {
@@ -119,7 +119,7 @@ export class WalletService {
       // I12 — append-only ledger entry for the credit, INSIDE the same
       // $transaction so the wallet update + ledger append commit together
       // or both roll back together.
-      await this.walletLedger.appendWithinTx(tx as any, {
+      await this.walletLedger.appendWithinTx(tx, {
         workspaceId,
         walletId: wallet.id,
         transactionId: created.id,
@@ -173,18 +173,11 @@ export class WalletService {
       | { kind: 'race_lost' };
 
     const outcome = await this.prisma.$transaction(
-      async (tx): Promise<ConfirmResult> => {
-        const walletTx = (await (tx as any).kloelWalletTransaction.findUnique({
+      async (tx: Prisma.TransactionClient): Promise<ConfirmResult> => {
+        const walletTx = await tx.kloelWalletTransaction.findUnique({
           where: { id: transactionId },
           include: { wallet: { select: { id: true, workspaceId: true } } },
-        })) as {
-          id: string;
-          walletId: string;
-          status: string;
-          amount: number;
-          amountInCents: bigint;
-          wallet: { id: string; workspaceId: string };
-        } | null;
+        });
 
         if (!walletTx) return { kind: 'not_found' };
         if (walletTx.status !== 'pending') return { kind: 'not_pending' };
@@ -196,14 +189,14 @@ export class WalletService {
 
         // Atomic status transition. If another worker beat us to it, count=0
         // and we leave the balance untouched.
-        const statusFlip = await (tx as any).kloelWalletTransaction.updateMany({
+        const statusFlip = await tx.kloelWalletTransaction.updateMany({
           where: { id: transactionId, status: 'pending' },
           data: { status: 'completed' },
         });
         if (statusFlip.count === 0) return { kind: 'race_lost' };
 
         // DUAL-WRITE during the P6-2 → P6-3 observation window (I11).
-        await (tx as any).kloelWallet.update({
+        await tx.kloelWallet.update({
           where: { id: walletTx.wallet.id },
           data: {
             pendingBalance: { decrement: walletTx.amount },
@@ -216,7 +209,7 @@ export class WalletService {
         // I12 — confirm_payment moves cents from `pending` to `available`
         // by writing TWO ledger entries (a debit on pending and a credit
         // on available) inside the same transaction snapshot.
-        await this.walletLedger.appendWithinTx(tx as any, {
+        await this.walletLedger.appendWithinTx(tx, {
           workspaceId,
           walletId: walletTx.wallet.id,
           transactionId: walletTx.id,
@@ -225,7 +218,7 @@ export class WalletService {
           amountInCents: walletTx.amountInCents,
           reason: 'confirm_payment_debit',
         });
-        await this.walletLedger.appendWithinTx(tx as any, {
+        await this.walletLedger.appendWithinTx(tx, {
           workspaceId,
           walletId: walletTx.wallet.id,
           transactionId: walletTx.id,
@@ -274,7 +267,7 @@ export class WalletService {
 
     let transaction: { id: string };
     try {
-      transaction = await this.prisma.$transaction(async (tx) => {
+      transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.kloelWallet.update({
           where: { id: wallet.id },
           data: {
@@ -297,7 +290,7 @@ export class WalletService {
 
         // I12 — withdrawal debits the `available` bucket. Sign is conveyed
         // by `direction`, so amountInCents is positive in the ledger row.
-        await this.walletLedger.appendWithinTx(tx as any, {
+        await this.walletLedger.appendWithinTx(tx, {
           workspaceId,
           walletId: wallet.id,
           transactionId: created.id,

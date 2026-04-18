@@ -6,8 +6,6 @@ import {
   Controller,
   ForbiddenException,
   Headers,
-  HttpException,
-  HttpStatus,
   Post,
   Req,
 } from '@nestjs/common';
@@ -15,9 +13,16 @@ import { Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Contact, WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
-import Stripe from 'stripe';
+// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import Stripe = require('stripe');
 import { Public } from '../auth/public.decorator';
 import { AutopilotService } from '../autopilot/autopilot.service';
+import type {
+  StripeCheckoutSession,
+  StripeEvent,
+  StripePaymentIntent,
+} from '../billing/stripe-types';
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -127,11 +132,34 @@ interface StripeCheckoutSessionLike {
     [key: string]: string | undefined;
   } | null;
 }
+interface StripePaymentIntentLike {
+  id?: string;
+  status?: string | null;
+  currency?: string | null;
+  metadata?: {
+    workspaceId?: string;
+    workspace_id?: string;
+    kloel_order_id?: string;
+    orderId?: string;
+    [key: string]: string | undefined;
+  } | null;
+  next_action?: {
+    type?: string | null;
+    pix_display_qr_code?: {
+      data?: string | null;
+      image_url_png?: string | null;
+      expires_at?: number | null;
+    } | null;
+  } | null;
+  last_payment_error?: {
+    message?: string | null;
+  } | null;
+}
 interface StripeEventLike {
   id?: string;
   type?: string;
   data?: {
-    object?: StripeCheckoutSessionLike;
+    object?: StripeCheckoutSessionLike | StripePaymentIntentLike;
   };
 }
 
@@ -184,7 +212,7 @@ export class PaymentWebhookController {
         };
       }
       const stripe = new Stripe(stripeKey);
-      const verified: Stripe.Event = stripe.webhooks.constructEvent(
+      const verified: StripeEvent = stripe.webhooks.constructEvent(
         req.rawBody,
         stripeSignature,
         endpointSecret,
@@ -194,7 +222,7 @@ export class PaymentWebhookController {
       // union on `verified.type` narrows `verified.data.object` to
       // `Stripe.Checkout.Session` inside the guarded branch.
       if (verified.type === 'checkout.session.completed') {
-        const session: Stripe.Checkout.Session = verified.data.object;
+        const session: StripeCheckoutSession = verified.data.object;
         event = {
           id: verified.id,
           type: verified.type,
@@ -215,6 +243,37 @@ export class PaymentWebhookController {
                   }
                 : null,
               metadata: session.metadata ?? null,
+            },
+          },
+        };
+      } else if (verified.type.startsWith('payment_intent.')) {
+        const intent = verified.data.object as unknown as StripePaymentIntent;
+        event = {
+          id: verified.id,
+          type: verified.type,
+          data: {
+            object: {
+              id: intent.id,
+              status: intent.status,
+              currency: intent.currency ?? null,
+              metadata: intent.metadata ?? null,
+              next_action:
+                intent.next_action?.type === 'pix_display_qr_code'
+                  ? {
+                      type: intent.next_action.type,
+                      pix_display_qr_code: {
+                        data: intent.next_action.pix_display_qr_code?.data ?? null,
+                        image_url_png:
+                          intent.next_action.pix_display_qr_code?.image_url_png ?? null,
+                        expires_at: intent.next_action.pix_display_qr_code?.expires_at ?? null,
+                      },
+                    }
+                  : null,
+              last_payment_error: intent.last_payment_error
+                ? {
+                    message: intent.last_payment_error.message ?? null,
+                  }
+                : null,
             },
           },
         };
@@ -248,6 +307,91 @@ export class PaymentWebhookController {
         };
       }
       this.logger.warn(`Failed to log Stripe webhook event: ${errInstanceofError?.message}`);
+    }
+
+    if (
+      event?.type === 'payment_intent.succeeded' ||
+      event?.type === 'payment_intent.processing' ||
+      event?.type === 'payment_intent.payment_failed' ||
+      event?.type === 'payment_intent.canceled'
+    ) {
+      const rawIntent = event.data?.object;
+      const intent: StripePaymentIntentLike =
+        rawIntent && typeof rawIntent === 'object' ? rawIntent : {};
+      const workspaceId = intent.metadata?.workspace_id || intent.metadata?.workspaceId;
+      const orderId = intent.metadata?.kloel_order_id || intent.metadata?.orderId;
+
+      if (workspaceId) {
+        await this.assertWorkspaceExists(workspaceId);
+      }
+
+      const checkoutPaymentStatus = mapStripeIntentStatusForCheckout(
+        event.type,
+        intent.status || undefined,
+      );
+
+      if (intent.id) {
+        await this.prisma.checkoutPayment
+          .updateMany({
+            where: { externalId: intent.id },
+            data: {
+              status: checkoutPaymentStatus,
+              ...(intent.next_action?.type === 'pix_display_qr_code'
+                ? {
+                    pixQrCode: intent.next_action.pix_display_qr_code?.image_url_png || undefined,
+                    pixCopyPaste: intent.next_action.pix_display_qr_code?.data || undefined,
+                    pixExpiresAt:
+                      typeof intent.next_action.pix_display_qr_code?.expires_at === 'number'
+                        ? new Date(intent.next_action.pix_display_qr_code.expires_at * 1000)
+                        : undefined,
+                  }
+                : {}),
+            },
+          })
+          .catch(() => undefined);
+      }
+
+      if (workspaceId && intent.id) {
+        if (checkoutPaymentStatus === 'APPROVED') {
+          await this.prisma.kloelSale
+            .updateMany({
+              where: { workspaceId, externalPaymentId: intent.id },
+              data: { status: 'paid', paidAt: new Date() },
+            })
+            .catch(() => undefined);
+        } else if (checkoutPaymentStatus === 'CANCELED') {
+          await this.prisma.kloelSale
+            .updateMany({
+              where: { workspaceId, externalPaymentId: intent.id },
+              data: { status: 'cancelled' },
+            })
+            .catch(() => undefined);
+        }
+      }
+
+      if (workspaceId && orderId) {
+        if (checkoutPaymentStatus === 'APPROVED') {
+          await this.prisma.checkoutOrder.updateMany({
+            where: { id: orderId, workspaceId },
+            data: { status: 'PAID', paidAt: new Date() },
+          });
+        } else if (checkoutPaymentStatus === 'PROCESSING') {
+          await this.prisma.checkoutOrder.updateMany({
+            where: { id: orderId, workspaceId },
+            data: { status: 'PROCESSING' },
+          });
+        } else if (checkoutPaymentStatus === 'CANCELED') {
+          await this.prisma.checkoutOrder.updateMany({
+            where: { id: orderId, workspaceId },
+            data: { status: 'CANCELED', canceledAt: new Date() },
+          });
+        }
+      }
+
+      if (webhookEvent?.id) {
+        await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+      }
+      return { received: true };
     }
 
     if (event?.type === 'checkout.session.completed') {
@@ -645,36 +789,6 @@ export class PaymentWebhookController {
     return { ok: true };
   }
 
-  /**
-   * `/webhook/payment/asaas` — DEPRECATED route. Returns HTTP 410 Gone.
-   *
-   * The canonical Asaas webhook is `/checkout/webhooks/asaas`
-   * (CheckoutWebhookController). PR P0-2 unified the dedup strategy
-   * on the canonical route. PR P4-4 closes this legacy route by
-   * returning 410 so operators reconfigure Asaas to point at
-   * the canonical route.
-   *
-   * 410 Gone is the documented HTTP status for "intentionally
-   * removed"; webhook providers stop retrying on 410 (vs 404 which
-   * they treat as a transient routing issue and keep retrying).
-   */
-  @Public()
-  @Post('asaas')
-  handleAsaas() {
-    this.logger.warn(
-      '[GONE] /webhook/payment/asaas received traffic — return 410, configure Asaas to use /checkout/webhooks/asaas',
-    );
-    throw new HttpException(
-      {
-        ok: false,
-        gone: true,
-        message:
-          'This webhook endpoint is deprecated. Configure Asaas to send webhooks to /checkout/webhooks/asaas instead.',
-      },
-      HttpStatus.GONE,
-    );
-  }
-
   private async assertWorkspaceExists(workspaceId: string) {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -806,7 +920,7 @@ export class PaymentWebhookController {
    *   - Atomic SET EX NX (single command) instead of non-atomic SETNX + EXPIRE.
    *     The previous pattern could leak keys forever if the process crashed
    *     between SETNX and EXPIRE.
-   *   - Returns 200 instead of throwing 403. Providers (Stripe, Asaas, Shopify)
+   *   - Returns 200 instead of throwing 403. Providers (Stripe, Shopify)
    *     interpret 4xx as a retry signal, which created a retry storm on
    *     duplicates.
    */
@@ -913,4 +1027,26 @@ export class PaymentWebhookController {
       // ignore
     }
   }
+}
+
+function mapStripeIntentStatusForCheckout(
+  eventType?: string,
+  intentStatus?: string,
+): 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED' {
+  const event = String(eventType || '').toLowerCase();
+  const status = String(intentStatus || '').toLowerCase();
+
+  if (event === 'payment_intent.succeeded' || status === 'succeeded') {
+    return 'APPROVED';
+  }
+  if (event === 'payment_intent.payment_failed') {
+    return 'DECLINED';
+  }
+  if (event === 'payment_intent.processing' || status === 'processing') {
+    return 'PROCESSING';
+  }
+  if (event === 'payment_intent.canceled' || status === 'canceled') {
+    return 'CANCELED';
+  }
+  return 'PENDING';
 }

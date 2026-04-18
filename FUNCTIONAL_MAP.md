@@ -5,360 +5,385 @@
 
 ## Summary
 
-| Status | Count | % |
-|--------|-------|---|
-| FUNCIONA | 741 | 57% |
-| FACHADA | 263 | 20% |
-| QUEBRADO | 26 | 2% |
-| INCOMPLETO | 270 | 21% |
-| AUSENTE | 0 | 0% |
-| **TOTAL** | **1300** | |
+| Status     | Count    | %   |
+| ---------- | -------- | --- |
+| FUNCIONA   | 741      | 57% |
+| FACHADA    | 263      | 20% |
+| QUEBRADO   | 26       | 2%  |
+| INCOMPLETO | 270      | 21% |
+| AUSENTE    | 0        | 0%  |
+| **TOTAL**  | **1300** |     |
 
 - **Pages**: 93 (8 redirects)
 
 ## Coverage by Group
 
-| Group | Pages | FUNCIONA | FACHADA | QUEBRADO | INCOMPLETO | AUSENTE |
-|-------|-------|----------|---------|----------|------------|---------|
-| checkout | 7 | 100 | 6 | 0 | 2 | 0 |
-| e2e | 2 | 1 | 3 | 0 | 4 | 0 |
-| main | 76 | 629 | 254 | 23 | 262 | 0 |
-| public | 8 | 11 | 0 | 3 | 2 | 0 |
+| Group    | Pages | FUNCIONA | FACHADA | QUEBRADO | INCOMPLETO | AUSENTE |
+| -------- | ----- | -------- | ------- | -------- | ---------- | ------- |
+| checkout | 7     | 100      | 6       | 0        | 2          | 0       |
+| e2e      | 2     | 1        | 3       | 0        | 4          | 0       |
+| main     | 76    | 629      | 254     | 23       | 262        | 0       |
+| public   | 8     | 11       | 0       | 3        | 2          | 0       |
 
 ## MAIN Pages
 
 ### /account
-*Redirect to /settings*
+
+_Redirect to /settings_
 
 ### /analytics
+
 Files: `frontend/src/app/(main)/analytics/page.tsx`, `frontend/src/hooks/useReports.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`
 Status: 2 funciona, 7 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/analytics/reports/ai` (useSWR) — OK
 - `/analytics/smart-time` (useSWR) — OK
 - `/analytics/stats` (useSWR) — OK
 - `/analytics/flow/:flowId` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| {children} | button | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| {p} | button | () => setPage(p) | — | — | FACHADA | Handler exists but no API call detect... |
-| Filtro avançado | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| &times; | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Aplicar filtros | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Limpar | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| setShowFilter(true)}>{IC.fi... | button | () => setShowFilter(true) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| {IC.dl(14)} Excel | button | handleExport | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | button | () => { setActive(t.k)... | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API | Backend | Status   | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | --- | ------- | -------- | ---------------------------------------- |
+| {children}                     | button    | onClick                   | —   | —       | FACHADA  | Handler exists but no API call detect... |
+| {p}                            | button    | () => setPage(p)          | —   | —       | FACHADA  | Handler exists but no API call detect... |
+| Filtro avançado                | clickable | onClose                   | —   | —       | FACHADA  | Handler exists but no API call detect... |
+| &times;                        | button    | onClose                   | —   | —       | FACHADA  | Handler exists but no API call detect... |
+| Aplicar filtros                | button    | onClose                   | —   | —       | FACHADA  | Handler exists but no API call detect... |
+| Limpar                         | button    | onClose                   | —   | —       | FACHADA  | Handler exists but no API call detect... |
+| setShowFilter(true)}>{IC.fi... | button    | () => setShowFilter(true) | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| {IC.dl(14)} Excel              | button    | handleExport              | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | button    | () => { setActive(t.k)... | —   | —       | FACHADA  | Handler exists but no API call detect... |
 
 ### /anuncios
+
 Files: `frontend/src/app/(main)/anuncios/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/ads/insights/account` (useSWR) — OK
 - `/meta/ads/campaigns` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| + Criar primeira regra de a... | button | onGoToRules | — | — | FACHADA | Handler exists but no API call detect... |
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| Cancelar | button | cancelEdit | PUT /ad-rules/:param | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Salvar | button | () => saveEdit(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| {IC.dup(12)} | button | () => startEdit(r) | POST /campaign/start | /campaign/start | FUNCIONA | Complete chain (no Prisma — may use R... |
-| &times; | button | () => toggleRule(r.id) | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
-| &times; | button | () => deleteRule(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Cancelar | button | () => { setShowForm(fa... | — | — | FACHADA | Handler exists but no API call detect... |
-| Criar Regra | button | handleCreateRule | GET /ad-rules | /ad-rules | FUNCIONA | Complete chain (no Prisma — may use R... |
-| + Criar nova regra | button | openForm | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento                       | Tipo   | Handler                   | API                       | Backend              | Status     | Reason                                   |
+| ------------------------------ | ------ | ------------------------- | ------------------------- | -------------------- | ---------- | ---------------------------------------- |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| + Criar primeira regra de a... | button | onGoToRules               | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Cancelar                       | button | cancelEdit                | PUT /ad-rules/:param      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Salvar                         | button | () => saveEdit(r.id)      | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| {IC.dup(12)}                   | button | () => startEdit(r)        | POST /campaign/start      | /campaign/start      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| &times;                        | button | () => toggleRule(r.id)    | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
+| &times;                        | button | () => deleteRule(r.id)    | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Cancelar                       | button | () => { setShowForm(fa... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Criar Regra                    | button | handleCreateRule          | GET /ad-rules             | /ad-rules            | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| + Criar nova regra             | button | openForm                  | —                         | —                    | FUNCIONA   | Pure UI handler (navigation/clipboard... |
 
 ### /anuncios/google
+
 Files: `frontend/src/app/(main)/anuncios/google/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/ads/insights/account` (useSWR) — OK
 - `/meta/ads/campaigns` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| + Criar primeira regra de a... | button | onGoToRules | — | — | FACHADA | Handler exists but no API call detect... |
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| Cancelar | button | cancelEdit | PUT /ad-rules/:param | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Salvar | button | () => saveEdit(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| {IC.dup(12)} | button | () => startEdit(r) | POST /campaign/start | /campaign/start | FUNCIONA | Complete chain (no Prisma — may use R... |
-| &times; | button | () => toggleRule(r.id) | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
-| &times; | button | () => deleteRule(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Cancelar | button | () => { setShowForm(fa... | — | — | FACHADA | Handler exists but no API call detect... |
-| Criar Regra | button | handleCreateRule | GET /ad-rules | /ad-rules | FUNCIONA | Complete chain (no Prisma — may use R... |
-| + Criar nova regra | button | openForm | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento                       | Tipo   | Handler                   | API                       | Backend              | Status     | Reason                                   |
+| ------------------------------ | ------ | ------------------------- | ------------------------- | -------------------- | ---------- | ---------------------------------------- |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| + Criar primeira regra de a... | button | onGoToRules               | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Cancelar                       | button | cancelEdit                | PUT /ad-rules/:param      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Salvar                         | button | () => saveEdit(r.id)      | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| {IC.dup(12)}                   | button | () => startEdit(r)        | POST /campaign/start      | /campaign/start      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| &times;                        | button | () => toggleRule(r.id)    | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
+| &times;                        | button | () => deleteRule(r.id)    | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Cancelar                       | button | () => { setShowForm(fa... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Criar Regra                    | button | handleCreateRule          | GET /ad-rules             | /ad-rules            | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| + Criar nova regra             | button | openForm                  | —                         | —                    | FUNCIONA   | Pure UI handler (navigation/clipboard... |
 
 ### /anuncios/meta
+
 Files: `frontend/src/app/(main)/anuncios/meta/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/ads/insights/account` (useSWR) — OK
 - `/meta/ads/campaigns` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| + Criar primeira regra de a... | button | onGoToRules | — | — | FACHADA | Handler exists but no API call detect... |
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| Cancelar | button | cancelEdit | PUT /ad-rules/:param | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Salvar | button | () => saveEdit(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| {IC.dup(12)} | button | () => startEdit(r) | POST /campaign/start | /campaign/start | FUNCIONA | Complete chain (no Prisma — may use R... |
-| &times; | button | () => toggleRule(r.id) | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
-| &times; | button | () => deleteRule(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Cancelar | button | () => { setShowForm(fa... | — | — | FACHADA | Handler exists but no API call detect... |
-| Criar Regra | button | handleCreateRule | GET /ad-rules | /ad-rules | FUNCIONA | Complete chain (no Prisma — may use R... |
-| + Criar nova regra | button | openForm | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento                       | Tipo   | Handler                   | API                       | Backend              | Status     | Reason                                   |
+| ------------------------------ | ------ | ------------------------- | ------------------------- | -------------------- | ---------- | ---------------------------------------- |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| + Criar primeira regra de a... | button | onGoToRules               | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Cancelar                       | button | cancelEdit                | PUT /ad-rules/:param      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Salvar                         | button | () => saveEdit(r.id)      | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| {IC.dup(12)}                   | button | () => startEdit(r)        | POST /campaign/start      | /campaign/start      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| &times;                        | button | () => toggleRule(r.id)    | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
+| &times;                        | button | () => deleteRule(r.id)    | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Cancelar                       | button | () => { setShowForm(fa... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Criar Regra                    | button | handleCreateRule          | GET /ad-rules             | /ad-rules            | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| + Criar nova regra             | button | openForm                  | —                         | —                    | FUNCIONA   | Pure UI handler (navigation/clipboard... |
 
 ### /anuncios/rastreamento
+
 Files: `frontend/src/app/(main)/anuncios/rastreamento/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/ads/insights/account` (useSWR) — OK
 - `/meta/ads/campaigns` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| + Criar primeira regra de a... | button | onGoToRules | — | — | FACHADA | Handler exists but no API call detect... |
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| Cancelar | button | cancelEdit | PUT /ad-rules/:param | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Salvar | button | () => saveEdit(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| {IC.dup(12)} | button | () => startEdit(r) | POST /campaign/start | /campaign/start | FUNCIONA | Complete chain (no Prisma — may use R... |
-| &times; | button | () => toggleRule(r.id) | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
-| &times; | button | () => deleteRule(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Cancelar | button | () => { setShowForm(fa... | — | — | FACHADA | Handler exists but no API call detect... |
-| Criar Regra | button | handleCreateRule | GET /ad-rules | /ad-rules | FUNCIONA | Complete chain (no Prisma — may use R... |
-| + Criar nova regra | button | openForm | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento                       | Tipo   | Handler                   | API                       | Backend              | Status     | Reason                                   |
+| ------------------------------ | ------ | ------------------------- | ------------------------- | -------------------- | ---------- | ---------------------------------------- |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| + Criar primeira regra de a... | button | onGoToRules               | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Cancelar                       | button | cancelEdit                | PUT /ad-rules/:param      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Salvar                         | button | () => saveEdit(r.id)      | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| {IC.dup(12)}                   | button | () => startEdit(r)        | POST /campaign/start      | /campaign/start      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| &times;                        | button | () => toggleRule(r.id)    | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
+| &times;                        | button | () => deleteRule(r.id)    | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Cancelar                       | button | () => { setShowForm(fa... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Criar Regra                    | button | handleCreateRule          | GET /ad-rules             | /ad-rules            | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| + Criar nova regra             | button | openForm                  | —                         | —                    | FUNCIONA   | Pure UI handler (navigation/clipboard... |
 
 ### /anuncios/regras
+
 Files: `frontend/src/app/(main)/anuncios/regras/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/ads/insights/account` (useSWR) — OK
 - `/meta/ads/campaigns` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| + Criar primeira regra de a... | button | onGoToRules | — | — | FACHADA | Handler exists but no API call detect... |
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| Cancelar | button | cancelEdit | PUT /ad-rules/:param | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Salvar | button | () => saveEdit(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| {IC.dup(12)} | button | () => startEdit(r) | POST /campaign/start | /campaign/start | FUNCIONA | Complete chain (no Prisma — may use R... |
-| &times; | button | () => toggleRule(r.id) | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
-| &times; | button | () => deleteRule(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Cancelar | button | () => { setShowForm(fa... | — | — | FACHADA | Handler exists but no API call detect... |
-| Criar Regra | button | handleCreateRule | GET /ad-rules | /ad-rules | FUNCIONA | Complete chain (no Prisma — may use R... |
-| + Criar nova regra | button | openForm | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento                       | Tipo   | Handler                   | API                       | Backend              | Status     | Reason                                   |
+| ------------------------------ | ------ | ------------------------- | ------------------------- | -------------------- | ---------- | ---------------------------------------- |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| + Criar primeira regra de a... | button | onGoToRules               | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Cancelar                       | button | cancelEdit                | PUT /ad-rules/:param      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Salvar                         | button | () => saveEdit(r.id)      | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| {IC.dup(12)}                   | button | () => startEdit(r)        | POST /campaign/start      | /campaign/start      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| &times;                        | button | () => toggleRule(r.id)    | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
+| &times;                        | button | () => deleteRule(r.id)    | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Cancelar                       | button | () => { setShowForm(fa... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Criar Regra                    | button | handleCreateRule          | GET /ad-rules             | /ad-rules            | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| + Criar nova regra             | button | openForm                  | —                         | —                    | FUNCIONA   | Pure UI handler (navigation/clipboard... |
 
 ### /anuncios/tiktok
+
 Files: `frontend/src/app/(main)/anuncios/tiktok/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/ads/insights/account` (useSWR) — OK
 - `/meta/ads/campaigns` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| + Criar primeira regra de a... | button | onGoToRules | — | — | FACHADA | Handler exists but no API call detect... |
-| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | — | — | FACHADA | Handler exists but no API call detect... |
-| Cancelar | button | cancelEdit | PUT /ad-rules/:param | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Salvar | button | () => saveEdit(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| {IC.dup(12)} | button | () => startEdit(r) | POST /campaign/start | /campaign/start | FUNCIONA | Complete chain (no Prisma — may use R... |
-| &times; | button | () => toggleRule(r.id) | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
-| &times; | button | () => deleteRule(r.id) | DELETE /ad-rules/:id | /ad-rules/:id | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
-| Cancelar | button | () => { setShowForm(fa... | — | — | FACHADA | Handler exists but no API call detect... |
-| Criar Regra | button | handleCreateRule | GET /ad-rules | /ad-rules | FUNCIONA | Complete chain (no Prisma — may use R... |
-| + Criar nova regra | button | openForm | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento                       | Tipo   | Handler                   | API                       | Backend              | Status     | Reason                                   |
+| ------------------------------ | ------ | ------------------------- | ------------------------- | -------------------- | ---------- | ---------------------------------------- |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| + Criar primeira regra de a... | button | onGoToRules               | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| {c.status === 'active' ? IC... | button | () => handleCampaignTo... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Cancelar                       | button | cancelEdit                | PUT /ad-rules/:param      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Salvar                         | button | () => saveEdit(r.id)      | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| {IC.dup(12)}                   | button | () => startEdit(r)        | POST /campaign/start      | /campaign/start      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| &times;                        | button | () => toggleRule(r.id)    | POST /ad-rules/:id/toggle | /ad-rules/:id/toggle | INCOMPLETO | Route /ad-rules/:id/toggle exists but... |
+| &times;                        | button | () => deleteRule(r.id)    | DELETE /ad-rules/:id      | /ad-rules/:id        | INCOMPLETO | Route /ad-rules/:id exists but no ser... |
+| Cancelar                       | button | () => { setShowForm(fa... | —                         | —                    | FACHADA    | Handler exists but no API call detect... |
+| Criar Regra                    | button | handleCreateRule          | GET /ad-rules             | /ad-rules            | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| + Criar nova regra             | button | openForm                  | —                         | —                    | FUNCIONA   | Pure UI handler (navigation/clipboard... |
 
 ### /autopilot
+
 Files: `frontend/src/app/(main)/autopilot/page.tsx`, `frontend/src/components/kloel/index.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/hooks/useWorkspaceId.ts`, `frontend/src/lib/api.ts`
 Status: 0 funciona, 3 fachada, 2 quebrado, 7 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| relative w-32 h-16 rounded-... | clickable | handleToggle | POST /autopilot/toggle | /autopilot/toggle | INCOMPLETO | Route /autopilot/toggle exists but no... |
-| (sem texto) | clickable | () => setError(null) | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | fetchAutopilotData | POST /autopilot/insights:pa... | — | QUEBRADO | API call to /autopilot/insights:param... |
-| (sem texto) | clickable | handleSmokeTest | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
-| (sem texto) | clickable | handleMoneyMachine | POST /growth/money-machine/... | /growth/money-machine/activate | INCOMPLETO | Route /growth/money-machine/activate ... |
-| (sem texto) | clickable | handleSendDirect | POST /autopilot/send | /autopilot/send | INCOMPLETO | Route /autopilot/send exists but no s... |
-| (sem texto) | clickable | fetchAutopilotData | POST /autopilot/insights:pa... | — | QUEBRADO | API call to /autopilot/insights:param... |
-| Exportar todas as ações | clickable | handleExportActions | POST /autopilot/test | /autopilot/test | INCOMPLETO | Route /autopilot/test exists but no s... |
-| (sem texto) | clickable | handleAskInsights | POST /autopilot/ask | /autopilot/ask | INCOMPLETO | Route /autopilot/ask exists but no se... |
-| (sem texto) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | handleSaveConfig | POST /growth/money-machine/... | /growth/money-machine/activate | INCOMPLETO | Route /growth/money-machine/activate ... |
-| setIsEditingConfig(false); | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler              | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | -------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| relative w-32 h-16 rounded-... | clickable | handleToggle         | POST /autopilot/toggle           | /autopilot/toggle              | INCOMPLETO | Route /autopilot/toggle exists but no... |
+| (sem texto)                    | clickable | () => setError(null) | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | fetchAutopilotData   | POST /autopilot/insights:pa...   | —                              | QUEBRADO   | API call to /autopilot/insights:param... |
+| (sem texto)                    | clickable | handleSmokeTest      | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
+| (sem texto)                    | clickable | handleMoneyMachine   | POST /growth/money-machine/...   | /growth/money-machine/activate | INCOMPLETO | Route /growth/money-machine/activate ... |
+| (sem texto)                    | clickable | handleSendDirect     | POST /autopilot/send             | /autopilot/send                | INCOMPLETO | Route /autopilot/send exists but no s... |
+| (sem texto)                    | clickable | fetchAutopilotData   | POST /autopilot/insights:pa...   | —                              | QUEBRADO   | API call to /autopilot/insights:param... |
+| Exportar todas as ações        | clickable | handleExportActions  | POST /autopilot/test             | /autopilot/test                | INCOMPLETO | Route /autopilot/test exists but no s... |
+| (sem texto)                    | clickable | handleAskInsights    | POST /autopilot/ask              | /autopilot/ask                 | INCOMPLETO | Route /autopilot/ask exists but no se... |
+| (sem texto)                    | clickable | () => {              | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | handleSaveConfig     | POST /growth/money-machine/...   | /growth/money-machine/activate | INCOMPLETO | Route /growth/money-machine/activate ... |
+| setIsEditingConfig(false);     | clickable | () => {              | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /billing
+
 Files: `frontend/src/app/(main)/billing/page.tsx`, `frontend/src/components/kloel/settings/billing-settings-section.tsx`, `frontend/src/components/ui/button.tsx`, `frontend/src/lib/utils.ts`, `frontend/src/components/ui/input.tsx` +8 more
 Status: 11 funciona, 3 fachada, 1 quebrado, 9 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | handleActivateTrialClick | POST /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
-| Gerenciar assinatura | clickable | () => setShowManageMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => setShowAddCredit... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Definir como padrao | clickable | () => handleSetDefault... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => handleRemove(car... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | clickable | () => setShowAddCard(f... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Salvar cartao | button | handleSaveCard | POST /billing/payment-metho... | /billing/payment-methods/se... | INCOMPLETO | Route /billing/payment-methods/setup-... |
-| (sem texto) | clickable | startAddCardFlow | POST /campaign/start | /campaign/start | FUNCIONA | Complete chain (no Prisma — may use R... |
-| Configuracoes avancadas do PIX | clickable | () => setShowPixAdvanc... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | handleConnectAsaas | POST /kloel/asaas/:workspac... | /kloel/asaas/:workspaceId/c... | INCOMPLETO | Route /kloel/asaas/:workspaceId/conne... |
-| (sem texto) | clickable | handleDisconnectAsaas | POST /kloel/asaas/:workspac... | /kloel/asaas/:workspaceId/c... | INCOMPLETO | Route /kloel/asaas/:workspaceId/conne... |
-| (sem texto) | clickable | handleCreateCharge | POST /kloel/asaas/:workspac... | /kloel/asaas/:workspaceId/pix | INCOMPLETO | Route /kloel/asaas/:workspaceId/pix e... |
-| (sem texto) | clickable | handleAddExternalLink | GET /kloel/external-paymen... | — | QUEBRADO | API call to /kloel/external-payments/... |
-| Tracking | button | () => handleGenerateTr... | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => handleDeleteLink... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleConnectMercadoPago | POST /mercadopago/:workspac... | /mercadopago/:workspaceId/c... | INCOMPLETO | Route /mercadopago/:workspaceId/conne... |
-| (sem texto) | clickable | handleDisconnectMercad... | POST /mercadopago/:workspac... | /mercadopago/:workspaceId/c... | INCOMPLETO | Route /mercadopago/:workspaceId/conne... |
-| (sem texto) | clickable | handleConfigurePlatform | POST /mercadopago/:workspac... | /mercadopago/:workspaceId/c... | INCOMPLETO | Route /mercadopago/:workspaceId/conne... |
-| Cancelar | clickable | () => setShowConfirmTr... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Ativar agora | clickable | handleConfirmTrial | POST /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
-| Cancelar | clickable | () => setShowAddCredit... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| setShowManageModal(false) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| Fechar | clickable | () => setShowManageMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Adicionar creditos agora | button | onAddCredits | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                                     | Backend                                 | Status     | Reason                                            |
+| ------------------------------ | --------- | ------------------------- | --------------------------------------- | --------------------------------------- | ---------- | ------------------------------------------------- |
+| (sem texto)                    | clickable | handleActivateTrialClick  | POST /billing/payment-metho...          | /billing/payment-methods/:p...          | INCOMPLETO | Route /billing/payment-methods/:payme...          |
+| Gerenciar assinatura           | clickable | () => setShowManageMod... | —                                       | —                                       | FUNCIONA   | Pure UI handler (navigation/clipboard...          |
+| (sem texto)                    | clickable | () => setShowAddCredit... | —                                       | —                                       | FUNCIONA   | Pure UI handler (navigation/clipboard...          |
+| Definir como padrao            | clickable | () => handleSetDefault... | DELETE /crm/deals/:dealId               | /crm/deals/:id                          | FUNCIONA   | Complete chain → deal                             |
+| (sem texto)                    | clickable | () => handleRemove(car... | DELETE /crm/deals/:dealId               | /crm/deals/:id                          | FUNCIONA   | Complete chain → deal                             |
+| Cancelar                       | clickable | () => setShowAddCard(f... | —                                       | —                                       | FUNCIONA   | Pure UI handler (navigation/clipboard...          |
+| Salvar cartao                  | button    | handleSaveCard            | POST /billing/payment-metho...          | /billing/payment-methods/se...          | INCOMPLETO | Route /billing/payment-methods/setup-...          |
+| (sem texto)                    | clickable | startAddCardFlow          | POST /campaign/start                    | /campaign/start                         | FUNCIONA   | Complete chain (no Prisma — may use R...          |
+| Configuracoes avancadas do PIX | clickable | () => setShowPixAdvanc... | —                                       | —                                       | FUNCIONA   | Pure UI handler (navigation/clipboard...          |
+| (sem texto)                    | clickable | handleConnectAsaas        | POST /kloel/legacy-payment/:workspac... | /kloel/legacy-payment/:workspaceId/c... | INCOMPLETO | Route /kloel/legacy-payment/:workspaceId/conne... |
+| (sem texto)                    | clickable | handleDisconnectAsaas     | POST /kloel/legacy-payment/:workspac... | /kloel/legacy-payment/:workspaceId/c... | INCOMPLETO | Route /kloel/legacy-payment/:workspaceId/conne... |
+| (sem texto)                    | clickable | handleCreateCharge        | POST /kloel/legacy-payment/:workspac... | /kloel/legacy-payment/:workspaceId/pix  | INCOMPLETO | Route /kloel/legacy-payment/:workspaceId/pix e... |
+| (sem texto)                    | clickable | handleAddExternalLink     | GET /kloel/external-paymen...           | —                                       | QUEBRADO   | API call to /kloel/external-payments/...          |
+| Tracking                       | button    | () => handleGenerateTr... | —                                       | —                                       | FACHADA    | Handler exists but no API call detect...          |
+| (sem texto)                    | clickable | () => handleDeleteLink... | DELETE /crm/deals/:dealId               | /crm/deals/:id                          | FUNCIONA   | Complete chain → deal                             |
+| (sem texto)                    | clickable | handleConnectMercadoPago  | POST /legacy-provider/:workspac...      | /legacy-provider/:workspaceId/c...      | INCOMPLETO | Route /legacy-provider/:workspaceId/conne...      |
+| (sem texto)                    | clickable | handleDisconnectMercad... | POST /legacy-provider/:workspac...      | /legacy-provider/:workspaceId/c...      | INCOMPLETO | Route /legacy-provider/:workspaceId/conne...      |
+| (sem texto)                    | clickable | handleConfigurePlatform   | POST /legacy-provider/:workspac...      | /legacy-provider/:workspaceId/c...      | INCOMPLETO | Route /legacy-provider/:workspaceId/conne...      |
+| Cancelar                       | clickable | () => setShowConfirmTr... | —                                       | —                                       | FUNCIONA   | Pure UI handler (navigation/clipboard...          |
+| Ativar agora                   | clickable | handleConfirmTrial        | POST /billing/payment-metho...          | /billing/payment-methods/:p...          | INCOMPLETO | Route /billing/payment-methods/:payme...          |
+| Cancelar                       | clickable | () => setShowAddCredit... | —                                       | —                                       | FUNCIONA   | Pure UI handler (navigation/clipboard...          |
+| setShowManageModal(false)      | clickable | () => {                   | —                                       | —                                       | FACHADA    | Handler exists but no API call detect...          |
+| Fechar                         | clickable | () => setShowManageMod... | —                                       | —                                       | FUNCIONA   | Pure UI handler (navigation/clipboard...          |
+| Adicionar creditos agora       | button    | onAddCredits              | —                                       | —                                       | FACHADA    | Handler exists but no API call detect...          |
 
 ### /campaigns
-*Redirect to /marketing*
+
+_Redirect to /marketing_
 
 ### /canvas
-*Redirect to /canvas/inicio*
+
+_Redirect to /canvas/inicio_
 
 ### /canvas/editor
+
 Files: `frontend/src/app/(main)/canvas/editor/page.tsx`, `frontend/src/components/canvas/EditorErrorBoundary.tsx`, `frontend/src/components/canvas/CanvasEditor.tsx`, `frontend/src/lib/fabric/index.ts`, `frontend/src/lib/fabric/HistoryManager.ts` +19 more
 Status: 40 funciona, 7 fachada, 1 quebrado, 7 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => handleApplyTempl... | — | — | FUNCIONA | State handler in component with save ... |
-| alignItems: 'center', justi... | clickable | () => handleAddShape(s... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => handleAddText('h... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => handleAddText('s... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => handleAddText('b... | GET /api/workspace/me | /workspace/me | FUNCIONA | Complete chain (no Prisma — may use R... |
-| Titulo | clickable | () => handleAddText('h... | — | — | FUNCIONA | State handler in component with save ... |
-| Subtitulo | clickable | () => handleAddText('s... | — | — | FUNCIONA | State handler in component with save ... |
-| Corpo de texto | clickable | () => handleAddText('b... | GET /api/workspace/me | /workspace/me | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | () => handleSetBackgro... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => handleSetBackgro... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| Remover fundo | clickable | () => editorRef.curren... | DELETE /member-areas/:id | /member-areas/:id | INCOMPLETO | Route /member-areas/:id exists but no... |
-| if (!editorRef.current) ret... | clickable | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| e.stopPropagation(); | clickable | (e) => { | — | — | FUNCIONA | State handler in component with save ... |
-| e.stopPropagation(); | clickable | (e) => { | — | — | FUNCIONA | State handler in component with save ... |
-| Duplicar | clickable | () => editorRef.curren... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| editorRef.current?.selectio... | clickable | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| if (!canvas) return; | clickable | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| if (nw > 0 && nh > 0) handl... | clickable | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => handleExportFmt(... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => toggleTab(tab.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => updateProp('font... | PUT /member-areas/:id | /member-areas/:id | INCOMPLETO | Route /member-areas/:id exists but no... |
-| (sem texto) | clickable | () => updateProp('font... | PUT /member-areas/:id | /member-areas/:id | INCOMPLETO | Route /member-areas/:id exists but no... |
-| (sem texto) | clickable | () => updateProp('unde... | PUT /member-areas/:id | /member-areas/:id | INCOMPLETO | Route /member-areas/:id exists but no... |
-| (sem texto) | clickable | () => updateProp('text... | POST /meta/instagram/messag... | /meta/instagram/messages/send | INCOMPLETO | Route /meta/instagram/messages/send e... |
-| P&amp;B | button | () => editorRef.curren... | — | — | FUNCIONA | State handler in component with save ... |
-| Reset | button | () => editorRef.curren... | DELETE /member-areas/:id | /member-areas/:id | INCOMPLETO | Route /member-areas/:id exists but no... |
-| (sem texto) | clickable | handleZoomOut | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleZoomFit | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleZoomIn | — | — | FUNCIONA | State handler in component with save ... |
-| item.separator ? ( | clickable | (e) => e.stopPropagati... | — | — | FUNCIONA | State handler in component with save ... |
-| item.action(); | clickable | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| }}> | button | onBack | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => toggleDropdown('... | POST /api/kyc/bank | — | QUEBRADO | API call to /api/kyc/bank has no matc... |
-| Salvar agora | clickable | () => closeAndRun(onSave) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Download PNG | clickable | () => closeAndRun(() =... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Download JPG | clickable | () => closeAndRun(() =... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Download SVG | clickable | () => closeAndRun(() =... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Download PDF | clickable | () => closeAndRun(() =... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => toggleDropdown('... | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
-| {p.l} | clickable | () => closeAndRun(() =... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| /> | clickable | e => e.stopPropagation() | — | — | FACHADA | Handler exists but no API call detect... |
-| /> | clickable | e => e.stopPropagation() | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => toggleDropdown('... | POST /kloel/external-paymen... | /kloel/external-payments/:w... | FUNCIONA | Complete chain (no Prisma — may use R... |
-| Desfazer | clickable | () => closeAndRun(onUndo) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Refazer | clickable | () => closeAndRun(onRedo) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Copiar | clickable | () => closeAndRun(onCopy) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Colar | clickable | () => closeAndRun(onPa... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Duplicar | clickable | () => closeAndRun(onDu... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Excluir | clickable | () => closeAndRun(onDe... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Selecionar tudo | clickable | () => closeAndRun(onSe... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| }}> | button | onUndo | — | — | FACHADA | Handler exists but no API call detect... |
-| }}> | button | onRedo | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => onExport?.('png') | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                            | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | ------------------------------ | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | () => handleApplyTempl... | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| alignItems: 'center', justi... | clickable | () => handleAddShape(s... | DELETE /crm/deals/:dealId      | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | button    | () => handleAddText('h... | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => handleAddText('s... | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => handleAddText('b... | GET /api/workspace/me          | /workspace/me                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| Titulo                         | clickable | () => handleAddText('h... | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| Subtitulo                      | clickable | () => handleAddText('s... | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| Corpo de texto                 | clickable | () => handleAddText('b... | GET /api/workspace/me          | /workspace/me                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| (sem texto)                    | clickable | () => handleSetBackgro... | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => handleSetBackgro... | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => {                   | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| Remover fundo                  | clickable | () => editorRef.curren... | DELETE /member-areas/:id       | /member-areas/:id              | INCOMPLETO | Route /member-areas/:id exists but no... |
+| if (!editorRef.current) ret... | clickable | () => {                   | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| e.stopPropagation();           | clickable | (e) => {                  | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| e.stopPropagation();           | clickable | (e) => {                  | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| Duplicar                       | clickable | () => editorRef.curren... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| editorRef.current?.selectio... | clickable | () => {                   | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| if (!canvas) return;           | clickable | () => {                   | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| if (nw > 0 && nh > 0) handl... | clickable | () => {                   | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => handleExportFmt(... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => toggleTab(tab.id)   | DELETE /crm/deals/:dealId      | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | () => updateProp('font... | PUT /member-areas/:id          | /member-areas/:id              | INCOMPLETO | Route /member-areas/:id exists but no... |
+| (sem texto)                    | clickable | () => updateProp('font... | PUT /member-areas/:id          | /member-areas/:id              | INCOMPLETO | Route /member-areas/:id exists but no... |
+| (sem texto)                    | clickable | () => updateProp('unde... | PUT /member-areas/:id          | /member-areas/:id              | INCOMPLETO | Route /member-areas/:id exists but no... |
+| (sem texto)                    | clickable | () => updateProp('text... | POST /meta/instagram/messag... | /meta/instagram/messages/send  | INCOMPLETO | Route /meta/instagram/messages/send e... |
+| P&amp;B                        | button    | () => editorRef.curren... | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| Reset                          | button    | () => editorRef.curren... | DELETE /member-areas/:id       | /member-areas/:id              | INCOMPLETO | Route /member-areas/:id exists but no... |
+| (sem texto)                    | clickable | handleZoomOut             | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleZoomFit             | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleZoomIn              | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| item.separator ? (             | clickable | (e) => e.stopPropagati... | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| item.action();                 | clickable | () => {                   | —                              | —                              | FUNCIONA   | State handler in component with save ... |
+| }}>                            | button    | onBack                    | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => toggleDropdown('... | POST /api/kyc/bank             | —                              | QUEBRADO   | API call to /api/kyc/bank has no matc... |
+| Salvar agora                   | clickable | () => closeAndRun(onSave) | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Download PNG                   | clickable | () => closeAndRun(() =... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Download JPG                   | clickable | () => closeAndRun(() =... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Download SVG                   | clickable | () => closeAndRun(() =... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Download PDF                   | clickable | () => closeAndRun(() =... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => toggleDropdown('... | POST /api/auth/google          | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| {p.l}                          | clickable | () => closeAndRun(() =... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| />                             | clickable | e => e.stopPropagation()  | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| />                             | clickable | e => e.stopPropagation()  | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => {                   | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => toggleDropdown('... | POST /kloel/external-paymen... | /kloel/external-payments/:w... | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| Desfazer                       | clickable | () => closeAndRun(onUndo) | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Refazer                        | clickable | () => closeAndRun(onRedo) | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Copiar                         | clickable | () => closeAndRun(onCopy) | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Colar                          | clickable | () => closeAndRun(onPa... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Duplicar                       | clickable | () => closeAndRun(onDu... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Excluir                        | clickable | () => closeAndRun(onDe... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Selecionar tudo                | clickable | () => closeAndRun(onSe... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| }}>                            | button    | onUndo                    | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| }}>                            | button    | onRedo                    | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => onExport?.('png')   | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /canvas/inicio
+
 Files: `frontend/src/app/(main)/canvas/inicio/page.tsx`, `frontend/src/components/canvas/CanvasIcons.tsx`, `frontend/src/components/canvas/FormatPills.tsx`, `frontend/src/lib/canvas-formats.ts`, `frontend/src/components/canvas/CreateModal.tsx` +4 more
 Status: 1 funciona, 8 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | handleAiSubmit | POST /canvas/generate | /canvas/generate | INCOMPLETO | Route /canvas/generate exists but no ... |
-| (sem texto) | clickable | () => setShowCreate(true) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | (e) => { e.stopPropaga... | — | — | FACHADA | Handler exists but no API call detect... |
-| }}> | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | e => e.stopPropagation() | — | — | FACHADA | Handler exists but no API call detect... |
-| }}> | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => { setCat(c.id); ... | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
-| (sem texto) | clickable | () => setSf(s) | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => onClick?.(item) | — | — | FACHADA | Handler exists but no API call detect... |
-| flexDirection: 'column', | clickable | onPillClick | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                 | Tipo      | Handler                   | API                   | Backend            | Status     | Reason                                   |
+| ------------------------ | --------- | ------------------------- | --------------------- | ------------------ | ---------- | ---------------------------------------- |
+| (sem texto)              | clickable | handleAiSubmit            | POST /canvas/generate | /canvas/generate   | INCOMPLETO | Route /canvas/generate exists but no ... |
+| (sem texto)              | clickable | () => setShowCreate(true) | —                     | —                  | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)              | clickable | (e) => { e.stopPropaga... | —                     | —                  | FACHADA    | Handler exists but no API call detect... |
+| }}>                      | clickable | onClick                   | —                     | —                  | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)              | clickable | onClose                   | —                     | —                  | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)              | clickable | e => e.stopPropagation()  | —                     | —                  | FACHADA    | Handler exists but no API call detect... |
+| }}>                      | button    | onClose                   | —                     | —                  | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)              | clickable | () => { setCat(c.id); ... | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| (sem texto)              | clickable | () => setSf(s)            | —                     | —                  | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)              | clickable | () => onClick?.(item)     | —                     | —                  | FACHADA    | Handler exists but no API call detect... |
+| flexDirection: 'column', | clickable | onPillClick               | —                     | —                  | FACHADA    | Handler exists but no API call detect... |
 
 ### /canvas/modelos
+
 Files: `frontend/src/app/(main)/canvas/modelos/page.tsx`, `frontend/src/components/canvas/CanvasIcons.tsx`, `frontend/src/components/canvas/FormatCard.tsx`, `frontend/src/components/canvas/MockupSVGs.tsx`, `frontend/src/lib/canvas-formats.ts` +1 more
 Status: 0 funciona, 3 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | handleGenerate | POST /canvas/generate | /canvas/generate | INCOMPLETO | Route /canvas/generate exists but no ... |
-| (sem texto) | clickable | () => setActiveTag(null) | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | button | () => setActiveTag(act... | PUT /products/:id | /products/:id | INCOMPLETO | Route /products/:id exists but no ser... |
-| (sem texto) | clickable | () => onClick(tpl) | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => onClick?.(item) | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento    | Tipo      | Handler                   | API                   | Backend          | Status     | Reason                                   |
+| ----------- | --------- | ------------------------- | --------------------- | ---------------- | ---------- | ---------------------------------------- |
+| (sem texto) | clickable | handleGenerate            | POST /canvas/generate | /canvas/generate | INCOMPLETO | Route /canvas/generate exists but no ... |
+| (sem texto) | clickable | () => setActiveTag(null)  | —                     | —                | FACHADA    | Handler exists but no API call detect... |
+| (sem texto) | button    | () => setActiveTag(act... | PUT /products/:id     | /products/:id    | INCOMPLETO | Route /products/:id exists but no ser... |
+| (sem texto) | clickable | () => onClick(tpl)        | —                     | —                | FACHADA    | Handler exists but no API call detect... |
+| (sem texto) | clickable | () => onClick?.(item)     | —                     | —                | FACHADA    | Handler exists but no API call detect... |
 
 ### /canvas/projetos
+
 Files: `frontend/src/app/(main)/canvas/projetos/page.tsx`, `frontend/src/components/canvas/CanvasIcons.tsx`, `frontend/src/hooks/useCanvasDesigns.ts`, `frontend/src/lib/api.ts`
 Status: 0 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| }}> | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| fontSize: 11, fontWeight: 6... | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | e => { e.stopPropagati... | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API | Backend | Status  | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | --- | ------- | ------- | ---------------------------------------- |
+| }}>                            | clickable | onClick                   | —   | —       | FACHADA | Handler exists but no API call detect... |
+| fontSize: 11, fontWeight: 6... | clickable | onClick                   | —   | —       | FACHADA | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | e => { e.stopPropagati... | —   | —       | FACHADA | Handler exists but no API call detect... |
 
 ### /carteira
+
 Files: `frontend/src/app/(main)/carteira/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
 - `/kloel/wallet/:wsId/chart` (useSWR) — OK
@@ -367,33 +392,35 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/kloel/wallet/:wsId/bank-accounts` (useSWR) — OK
 - `/kloel/wallet/:wsId/anticipations` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Solicitar saque | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Solicitar saque | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setSelectedBank(i) | — | — | FACHADA | Handler exists but no API call detect... |
-| {withdrawLoading ? 'Process... | button | handleWithdraw | POST /kloel/wallet/:workspa... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
-| Antecipar recebiveis | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar recebiveis | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar agora | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(12)} Sacar | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.spark(12)} Antecipar | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
-| Ver extrato completo | button | onNavigateExtrato | — | — | FACHADA | Handler exists but no API call detect... |
-| ))} | button | () => onFilterTypeChan... | — | — | FACHADA | Handler exists but no API call detect... |
-| if (!filtered.length) return; | button | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(14)} Novo saque | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | button | () => setShowAddAccoun... | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {addLoading ? "Salvando..."... | button | handleAddAccount | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {IC.x(12)} | button | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
-| {IC.spark(14)} Antecipar agora | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| Solicitar saque                | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Solicitar saque                | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setSelectedBank(i)  | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {withdrawLoading ? 'Process... | button    | handleWithdraw            | POST /kloel/wallet/:workspa...   | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
+| Antecipar recebiveis           | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar recebiveis           | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar agora                | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(12)} Sacar          | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.spark(12)} Antecipar       | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Ver extrato completo           | button    | onNavigateExtrato         | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| ))}                            | button    | () => onFilterTypeChan... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| if (!filtered.length) return;  | button    | () => {                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(14)} Novo saque     | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | button    | () => setShowAddAccoun... | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {addLoading ? "Salvando..."... | button    | handleAddAccount          | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {IC.x(12)}                     | button    | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
+| {IC.spark(14)} Antecipar agora | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /carteira/antecipacoes
+
 Files: `frontend/src/app/(main)/carteira/antecipacoes/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
 - `/kloel/wallet/:wsId/chart` (useSWR) — OK
@@ -402,33 +429,35 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/kloel/wallet/:wsId/bank-accounts` (useSWR) — OK
 - `/kloel/wallet/:wsId/anticipations` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Solicitar saque | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Solicitar saque | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setSelectedBank(i) | — | — | FACHADA | Handler exists but no API call detect... |
-| {withdrawLoading ? 'Process... | button | handleWithdraw | POST /kloel/wallet/:workspa... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
-| Antecipar recebiveis | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar recebiveis | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar agora | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(12)} Sacar | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.spark(12)} Antecipar | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
-| Ver extrato completo | button | onNavigateExtrato | — | — | FACHADA | Handler exists but no API call detect... |
-| ))} | button | () => onFilterTypeChan... | — | — | FACHADA | Handler exists but no API call detect... |
-| if (!filtered.length) return; | button | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(14)} Novo saque | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | button | () => setShowAddAccoun... | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {addLoading ? "Salvando..."... | button | handleAddAccount | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {IC.x(12)} | button | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
-| {IC.spark(14)} Antecipar agora | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| Solicitar saque                | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Solicitar saque                | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setSelectedBank(i)  | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {withdrawLoading ? 'Process... | button    | handleWithdraw            | POST /kloel/wallet/:workspa...   | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
+| Antecipar recebiveis           | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar recebiveis           | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar agora                | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(12)} Sacar          | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.spark(12)} Antecipar       | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Ver extrato completo           | button    | onNavigateExtrato         | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| ))}                            | button    | () => onFilterTypeChan... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| if (!filtered.length) return;  | button    | () => {                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(14)} Novo saque     | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | button    | () => setShowAddAccoun... | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {addLoading ? "Salvando..."... | button    | handleAddAccount          | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {IC.x(12)}                     | button    | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
+| {IC.spark(14)} Antecipar agora | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /carteira/extrato
+
 Files: `frontend/src/app/(main)/carteira/extrato/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
 - `/kloel/wallet/:wsId/chart` (useSWR) — OK
@@ -437,33 +466,35 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/kloel/wallet/:wsId/bank-accounts` (useSWR) — OK
 - `/kloel/wallet/:wsId/anticipations` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Solicitar saque | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Solicitar saque | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setSelectedBank(i) | — | — | FACHADA | Handler exists but no API call detect... |
-| {withdrawLoading ? 'Process... | button | handleWithdraw | POST /kloel/wallet/:workspa... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
-| Antecipar recebiveis | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar recebiveis | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar agora | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(12)} Sacar | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.spark(12)} Antecipar | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
-| Ver extrato completo | button | onNavigateExtrato | — | — | FACHADA | Handler exists but no API call detect... |
-| ))} | button | () => onFilterTypeChan... | — | — | FACHADA | Handler exists but no API call detect... |
-| if (!filtered.length) return; | button | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(14)} Novo saque | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | button | () => setShowAddAccoun... | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {addLoading ? "Salvando..."... | button | handleAddAccount | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {IC.x(12)} | button | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
-| {IC.spark(14)} Antecipar agora | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| Solicitar saque                | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Solicitar saque                | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setSelectedBank(i)  | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {withdrawLoading ? 'Process... | button    | handleWithdraw            | POST /kloel/wallet/:workspa...   | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
+| Antecipar recebiveis           | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar recebiveis           | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar agora                | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(12)} Sacar          | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.spark(12)} Antecipar       | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Ver extrato completo           | button    | onNavigateExtrato         | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| ))}                            | button    | () => onFilterTypeChan... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| if (!filtered.length) return;  | button    | () => {                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(14)} Novo saque     | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | button    | () => setShowAddAccoun... | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {addLoading ? "Salvando..."... | button    | handleAddAccount          | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {IC.x(12)}                     | button    | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
+| {IC.spark(14)} Antecipar agora | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /carteira/movimentacoes
+
 Files: `frontend/src/app/(main)/carteira/movimentacoes/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
 - `/kloel/wallet/:wsId/chart` (useSWR) — OK
@@ -472,33 +503,35 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/kloel/wallet/:wsId/bank-accounts` (useSWR) — OK
 - `/kloel/wallet/:wsId/anticipations` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Solicitar saque | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Solicitar saque | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setSelectedBank(i) | — | — | FACHADA | Handler exists but no API call detect... |
-| {withdrawLoading ? 'Process... | button | handleWithdraw | POST /kloel/wallet/:workspa... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
-| Antecipar recebiveis | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar recebiveis | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar agora | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(12)} Sacar | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.spark(12)} Antecipar | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
-| Ver extrato completo | button | onNavigateExtrato | — | — | FACHADA | Handler exists but no API call detect... |
-| ))} | button | () => onFilterTypeChan... | — | — | FACHADA | Handler exists but no API call detect... |
-| if (!filtered.length) return; | button | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(14)} Novo saque | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | button | () => setShowAddAccoun... | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {addLoading ? "Salvando..."... | button | handleAddAccount | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {IC.x(12)} | button | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
-| {IC.spark(14)} Antecipar agora | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| Solicitar saque                | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Solicitar saque                | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setSelectedBank(i)  | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {withdrawLoading ? 'Process... | button    | handleWithdraw            | POST /kloel/wallet/:workspa...   | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
+| Antecipar recebiveis           | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar recebiveis           | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar agora                | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(12)} Sacar          | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.spark(12)} Antecipar       | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Ver extrato completo           | button    | onNavigateExtrato         | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| ))}                            | button    | () => onFilterTypeChan... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| if (!filtered.length) return;  | button    | () => {                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(14)} Novo saque     | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | button    | () => setShowAddAccoun... | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {addLoading ? "Salvando..."... | button    | handleAddAccount          | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {IC.x(12)}                     | button    | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
+| {IC.spark(14)} Antecipar agora | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /carteira/saldo
+
 Files: `frontend/src/app/(main)/carteira/saldo/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
 - `/kloel/wallet/:wsId/chart` (useSWR) — OK
@@ -507,33 +540,35 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/kloel/wallet/:wsId/bank-accounts` (useSWR) — OK
 - `/kloel/wallet/:wsId/anticipations` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Solicitar saque | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Solicitar saque | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setSelectedBank(i) | — | — | FACHADA | Handler exists but no API call detect... |
-| {withdrawLoading ? 'Process... | button | handleWithdraw | POST /kloel/wallet/:workspa... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
-| Antecipar recebiveis | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar recebiveis | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar agora | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(12)} Sacar | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.spark(12)} Antecipar | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
-| Ver extrato completo | button | onNavigateExtrato | — | — | FACHADA | Handler exists but no API call detect... |
-| ))} | button | () => onFilterTypeChan... | — | — | FACHADA | Handler exists but no API call detect... |
-| if (!filtered.length) return; | button | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(14)} Novo saque | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | button | () => setShowAddAccoun... | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {addLoading ? "Salvando..."... | button | handleAddAccount | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {IC.x(12)} | button | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
-| {IC.spark(14)} Antecipar agora | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| Solicitar saque                | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Solicitar saque                | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setSelectedBank(i)  | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {withdrawLoading ? 'Process... | button    | handleWithdraw            | POST /kloel/wallet/:workspa...   | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
+| Antecipar recebiveis           | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar recebiveis           | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar agora                | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(12)} Sacar          | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.spark(12)} Antecipar       | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Ver extrato completo           | button    | onNavigateExtrato         | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| ))}                            | button    | () => onFilterTypeChan... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| if (!filtered.length) return;  | button    | () => {                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(14)} Novo saque     | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | button    | () => setShowAddAccoun... | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {addLoading ? "Salvando..."... | button    | handleAddAccount          | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {IC.x(12)}                     | button    | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
+| {IC.spark(14)} Antecipar agora | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /carteira/saques
+
 Files: `frontend/src/app/(main)/carteira/saques/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
 - `/kloel/wallet/:wsId/chart` (useSWR) — OK
@@ -542,239 +577,257 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/kloel/wallet/:wsId/bank-accounts` (useSWR) — OK
 - `/kloel/wallet/:wsId/anticipations` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Solicitar saque | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Solicitar saque | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setSelectedBank(i) | — | — | FACHADA | Handler exists but no API call detect... |
-| {withdrawLoading ? 'Process... | button | handleWithdraw | POST /kloel/wallet/:workspa... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
-| Antecipar recebiveis | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar recebiveis | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.x(16)} | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| Antecipar agora | button | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(12)} Sacar | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.spark(12)} Antecipar | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
-| Ver extrato completo | button | onNavigateExtrato | — | — | FACHADA | Handler exists but no API call detect... |
-| ))} | button | () => onFilterTypeChan... | — | — | FACHADA | Handler exists but no API call detect... |
-| if (!filtered.length) return; | button | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| {IC.upload(14)} Novo saque | button | onOpenWithdraw | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | button | () => setShowAddAccoun... | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {addLoading ? "Salvando..."... | button | handleAddAccount | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {IC.x(12)} | button | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
-| {IC.spark(14)} Antecipar agora | button | onOpenAntecipate | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| Solicitar saque                | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Solicitar saque                | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setSelectedBank(i)  | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {withdrawLoading ? 'Process... | button    | handleWithdraw            | POST /kloel/wallet/:workspa...   | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/with... |
+| Antecipar recebiveis           | clickable | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar recebiveis           | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Antecipar agora                | button    | onClose                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(12)} Sacar          | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.spark(12)} Antecipar       | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Ver extrato completo           | button    | onNavigateExtrato         | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| ))}                            | button    | () => onFilterTypeChan... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| if (!filtered.length) return;  | button    | () => {                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {IC.upload(14)} Novo saque     | button    | onOpenWithdraw            | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | button    | () => setShowAddAccoun... | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {addLoading ? "Salvando..."... | button    | handleAddAccount          | POST /products                   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| {IC.x(12)}                     | button    | () => removeBankAccoun... | DELETE /kloel/wallet/:wsId/ba... | /kloel/wallet/:workspaceId/... | INCOMPLETO | Route /kloel/wallet/:workspaceId/bank... |
+| {IC.spark(14)} Antecipar agora | button    | onOpenAntecipate          | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /chat
-*Redirect to /dashboard*
+
+_Redirect to /dashboard_
 
 ### /checkout/:planId
+
 Files: `frontend/src/app/(main)/checkout/[planId]/page.tsx`, `frontend/src/hooks/useCheckoutEditor.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`
 Status: 2 funciona, 24 fachada, 2 quebrado, 0 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/checkout/plans/:planId/config` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => onChange(!checked) | — | — | FACHADA | Handler exists but no API call detect... |
-| alignItems: "center", | clickable | () => router.back() | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => setDevice(d.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| ) : ( | button | copyLink | — | — | FACHADA | Handler exists but no API call detect... |
-| Exigir CPF | toggle | (v) => patch({ require... | POST /mercadopago/:workspac... | — | QUEBRADO | API call to /mercadopago/:workspaceId... |
-| Exigir telefone | toggle | (v) => patch({ require... | POST /mercadopago/:workspac... | — | QUEBRADO | API call to /mercadopago/:workspaceId... |
-| Cartao de Credito | toggle | (v) => patch({ enableC... | — | — | FACHADA | Handler exists but no API call detect... |
-| Pix | toggle | (v) => patch({ enableP... | — | — | FACHADA | Handler exists but no API call detect... |
-| Boleto | toggle | (v) => patch({ enableB... | — | — | FACHADA | Handler exists but no API call detect... |
-| Habilitar cupom | toggle | (v) => patch({ enableC... | — | — | FACHADA | Handler exists but no API call detect... |
-| Exibir popup de cupom | toggle | (v) => patch({ showCou... | — | — | FACHADA | Handler exists but no API call detect... |
-| Habilitar timer | toggle | (v) => patch({ enableT... | — | — | FACHADA | Handler exists but no API call detect... |
-| Exibir contador | toggle | (v) => patch({ showSto... | — | — | FACHADA | Handler exists but no API call detect... |
-| next.splice(i, 1) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| }) | clickable | () => | — | — | FACHADA | Handler exists but no API call detect... |
-| Habilitar garantia | toggle | (v) => patch({ enableG... | — | — | FACHADA | Handler exists but no API call detect... |
-| Habilitar selos | toggle | (v) => patch({ enableT... | — | — | FACHADA | Handler exists but no API call detect... |
-| next.splice(i, 1) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| }) | clickable | () => | — | — | FACHADA | Handler exists but no API call detect... |
-| next.splice(i, 1) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| orderBumps: [ | clickable | () => | — | — | FACHADA | Handler exists but no API call detect... |
-| next.splice(i, 1) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| upsells: [ | clickable | () => | — | — | FACHADA | Handler exists but no API call detect... |
-| Habilitar exit intent | toggle | (v) => patch({ enableE... | — | — | FACHADA | Handler exists but no API call detect... |
-| Habilitar barra flutuante | toggle | (v) => patch({ enableF... | — | — | FACHADA | Handler exists but no API call detect... |
-| next.splice(i, 1) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| }) | clickable | () => | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                  | Tipo      | Handler                   | API                                | Backend        | Status   | Reason                                       |
+| ------------------------- | --------- | ------------------------- | ---------------------------------- | -------------- | -------- | -------------------------------------------- |
+| (sem texto)               | clickable | () => onChange(!checked)  | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| alignItems: "center",     | clickable | () => router.back()       | —                                  | —              | FUNCIONA | Pure UI handler (navigation/clipboard...     |
+| (sem texto)               | clickable | () => setDevice(d.id)     | DELETE /crm/deals/:dealId          | /crm/deals/:id | FUNCIONA | Complete chain → deal                        |
+| ) : (                     | button    | copyLink                  | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Exigir CPF                | toggle    | (v) => patch({ require... | POST /legacy-provider/:workspac... | —              | QUEBRADO | API call to /legacy-provider/:workspaceId... |
+| Exigir telefone           | toggle    | (v) => patch({ require... | POST /legacy-provider/:workspac... | —              | QUEBRADO | API call to /legacy-provider/:workspaceId... |
+| Cartao de Credito         | toggle    | (v) => patch({ enableC... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Pix                       | toggle    | (v) => patch({ enableP... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Boleto                    | toggle    | (v) => patch({ enableB... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Habilitar cupom           | toggle    | (v) => patch({ enableC... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Exibir popup de cupom     | toggle    | (v) => patch({ showCou... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Habilitar timer           | toggle    | (v) => patch({ enableT... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Exibir contador           | toggle    | (v) => patch({ showSto... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| next.splice(i, 1)         | clickable | () => {                   | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| (sem texto)               | clickable | () => {                   | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| })                        | clickable | () =>                     | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Habilitar garantia        | toggle    | (v) => patch({ enableG... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Habilitar selos           | toggle    | (v) => patch({ enableT... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| next.splice(i, 1)         | clickable | () => {                   | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| })                        | clickable | () =>                     | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| next.splice(i, 1)         | clickable | () => {                   | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| orderBumps: [             | clickable | () =>                     | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| next.splice(i, 1)         | clickable | () => {                   | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| upsells: [                | clickable | () =>                     | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Habilitar exit intent     | toggle    | (v) => patch({ enableE... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| Habilitar barra flutuante | toggle    | (v) => patch({ enableF... | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| next.splice(i, 1)         | clickable | () => {                   | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
+| })                        | clickable | () =>                     | —                                  | —              | FACHADA  | Handler exists but no API call detect...     |
 
 ### /cia
+
 Files: `frontend/src/app/(main)/cia/page.tsx`, `frontend/src/components/kloel/index.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useWorkspaceId.ts`
 Status: 8 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => { void loadSurfa... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => void handleAutop... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => void handleAppro... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Retomar autonomia | clickable | () => void handleResum... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Dispensar | clickable | () => void handleRejec... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => void handleAppro... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => void handleRejec... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| workspaceLoading \|\| | clickable | () => void handleRespo... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => setRegistriesExp... | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento              | Tipo      | Handler                   | API                       | Backend        | Status   | Reason                                   |
+| --------------------- | --------- | ------------------------- | ------------------------- | -------------- | -------- | ---------------------------------------- |
+| (sem texto)           | clickable | () => { void loadSurfa... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal                    |
+| (sem texto)           | clickable | () => void handleAutop... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal                    |
+| (sem texto)           | clickable | () => void handleAppro... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal                    |
+| Retomar autonomia     | clickable | () => void handleResum... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal                    |
+| Dispensar             | clickable | () => void handleRejec... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal                    |
+| (sem texto)           | clickable | () => void handleAppro... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal                    |
+| (sem texto)           | clickable | () => void handleRejec... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal                    |
+| workspaceLoading \|\| | clickable | () => void handleRespo... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal                    |
+| (sem texto)           | clickable | () => setRegistriesExp... | —                         | —              | FACHADA  | Handler exists but no API call detect... |
 
 ### /dashboard
+
 Files: `frontend/src/app/(main)/dashboard/page.tsx`, `frontend/src/components/kloel/dashboard/KloelDashboard.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx` +1 more
 Status: 0 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | button | onSend | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento    | Tipo   | Handler | API | Backend | Status  | Reason                                   |
+| ----------- | ------ | ------- | --- | ------- | ------- | ---------------------------------------- |
+| (sem texto) | button | onSend  | —   | —       | FACHADA | Handler exists but no API call detect... |
 
 ### /ferramentas
+
 Files: `frontend/src/app/(main)/ferramentas/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/Card.tsx`, `frontend/src/components/kloel/Val.tsx`, `frontend/src/lib/design-tokens.ts`
 Status: 1 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | back | — | — | FACHADA | Handler exists but no API call detect... |
-| /> | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento    | Tipo      | Handler                   | API                              | Backend                        | Status   | Reason                                   |
+| ----------- | --------- | ------------------------- | -------------------------------- | ------------------------------ | -------- | ---------------------------------------- |
+| (sem texto) | clickable | onClick                   | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| (sem texto) | clickable | back                      | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| />          | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact            |
+| (sem texto) | clickable | onClick                   | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
 
 ### /ferramentas/em-breve
+
 Files: `frontend/src/app/(main)/ferramentas/em-breve/page.tsx`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Voltar | button | () => router.back() | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento | Tipo   | Handler             | API | Backend | Status   | Reason                                   |
+| -------- | ------ | ------------------- | --- | ------- | -------- | ---------------------------------------- |
+| Voltar   | button | () => router.back() | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
 
 ### /ferramentas/gerencie
+
 Files: `frontend/src/app/(main)/ferramentas/gerencie/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/ToolCard.tsx`
 Status: 1 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | back | — | — | FACHADA | Handler exists but no API call detect... |
-| /> | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | disabled ? undefined :... | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento    | Tipo      | Handler                   | API                              | Backend                        | Status   | Reason                                   |
+| ----------- | --------- | ------------------------- | -------------------------------- | ------------------------------ | -------- | ---------------------------------------- |
+| (sem texto) | clickable | back                      | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| />          | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact            |
+| (sem texto) | clickable | onClick                   | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| (sem texto) | clickable | disabled ? undefined :... | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
 
 ### /ferramentas/impulsione
+
 Files: `frontend/src/app/(main)/ferramentas/impulsione/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/ToolCard.tsx`
 Status: 1 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | back | — | — | FACHADA | Handler exists but no API call detect... |
-| /> | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | disabled ? undefined :... | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento    | Tipo      | Handler                   | API                              | Backend                        | Status   | Reason                                   |
+| ----------- | --------- | ------------------------- | -------------------------------- | ------------------------------ | -------- | ---------------------------------------- |
+| (sem texto) | clickable | back                      | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| />          | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact            |
+| (sem texto) | clickable | onClick                   | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| (sem texto) | clickable | disabled ? undefined :... | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
 
 ### /ferramentas/launchpad
+
 Files: `frontend/src/app/(main)/ferramentas/launchpad/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/Card.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
 Status: 7 funciona, 3 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => onAddGroup(launc... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| borderRadius: 6, color: '#6... | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSubmit | POST /launch/launcher | /launch/launcher | INCOMPLETO | Route /launch/launcher exists but no ... |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| borderRadius: 6, color: '#6... | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSubmit | POST /launch/launcher | /launch/launcher | INCOMPLETO | Route /launch/launcher exists but no ... |
-| (sem texto) | clickable | () => setShowNewModal(... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | back | — | — | FACHADA | Handler exists but no API call detect... |
-| /> | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | () => onAddGroup(launc... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| borderRadius: 6, color: '#6... | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSubmit              | POST /launch/launcher            | /launch/launcher               | INCOMPLETO | Route /launch/launcher exists but no ... |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| borderRadius: 6, color: '#6... | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSubmit              | POST /launch/launcher            | /launch/launcher               | INCOMPLETO | Route /launch/launcher exists but no ... |
+| (sem texto)                    | clickable | () => setShowNewModal(... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | onClick                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | back                      | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| />                             | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | onClick                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /ferramentas/ver-todas
+
 Files: `frontend/src/app/(main)/ferramentas/ver-todas/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/ToolCard.tsx`, `frontend/src/components/kloel/Card.tsx`, `frontend/src/components/kloel/Val.tsx` +1 more
 Status: 1 funciona, 4 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| alignItems: 'center', | clickable | () => setCategory(isAc... | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | back | — | — | FACHADA | Handler exists but no API call detect... |
-| /> | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | disabled ? undefined :... | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento              | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| --------------------- | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| alignItems: 'center', | clickable | () => setCategory(isAc... | GET /segmentation/:workspa...    | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| (sem texto)           | clickable | onClick                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)           | clickable | back                      | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| />                    | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)           | clickable | onClick                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)           | clickable | disabled ? undefined :... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /flow
+
 Files: `frontend/src/app/(main)/flow/page.tsx`, `frontend/src/components/flow/FlowBuilder.tsx`, `frontend/src/components/flow/FlowSidebar.tsx`, `frontend/src/components/flow/NodeProperties.tsx`, `frontend/src/components/flow/nodes/MessageNode.tsx` +11 more
 Status: 14 funciona, 1 fachada, 1 quebrado, 1 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| ? 'border-[#E85D30] text-[#... | clickable | () => setActiveTab('ed... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| ? 'border-[#E85D30] text-[#... | clickable | () => setActiveTab('te... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| ? 'border-[#E85D30] text-[#... | clickable | () => setActiveTab('ex... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | handleOptimize | POST /member-areas/:id | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | fetchTemplates | POST /member-areas/:id | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | () => handleDownloadTe... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | fetchExecutions | POST /flows/:workspaceId/ex... | — | QUEBRADO | API call to /flows/:workspaceId/execu... |
-| (sem texto) | clickable | () => handleRetry(exec... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleUndo | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleRedo | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => reactFlowInstanc... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => reactFlowInstanc... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleFitView | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleDeleteSelected | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSave | — | — | FUNCIONA | State handler in component with save ... |
-| {categoryInfo.label} | clickable | () => toggleCategory(c... | PUT /products/:id | /products/:id | INCOMPLETO | Route /products/:id exists but no ser... |
-| (sem texto) | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                            | Backend        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | ------------------------------ | -------------- | ---------- | ---------------------------------------- |
+| ? 'border-[#E85D30] text-[#... | clickable | () => setActiveTab('ed... | —                              | —              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| ? 'border-[#E85D30] text-[#... | clickable | () => setActiveTab('te... | —                              | —              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| ? 'border-[#E85D30] text-[#... | clickable | () => setActiveTab('ex... | —                              | —              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | handleOptimize            | POST /member-areas/:id         | /member-areas  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| (sem texto)                    | clickable | fetchTemplates            | POST /member-areas/:id         | /member-areas  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| (sem texto)                    | clickable | () => handleDownloadTe... | —                              | —              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | fetchExecutions           | POST /flows/:workspaceId/ex... | —              | QUEBRADO   | API call to /flows/:workspaceId/execu... |
+| (sem texto)                    | clickable | () => handleRetry(exec... | DELETE /crm/deals/:dealId      | /crm/deals/:id | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleUndo                | —                              | —              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleRedo                | —                              | —              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => reactFlowInstanc... | —                              | —              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => reactFlowInstanc... | —                              | —              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleFitView             | —                              | —              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleDeleteSelected      | —                              | —              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSave                | —                              | —              | FUNCIONA   | State handler in component with save ... |
+| {categoryInfo.label}           | clickable | () => toggleCategory(c... | PUT /products/:id              | /products/:id  | INCOMPLETO | Route /products/:id exists but no ser... |
+| (sem texto)                    | clickable | onClose                   | —                              | —              | FACHADA    | Handler exists but no API call detect... |
 
 ### /followups
+
 Files: `frontend/src/app/(main)/followups/page.tsx`, `frontend/src/lib/http.ts`, `frontend/src/hooks/useWorkspaceId.ts`, `frontend/src/lib/api.ts`
 Status: 0 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | loadFollowups | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento    | Tipo      | Handler       | API | Backend | Status  | Reason                                   |
+| ----------- | --------- | ------------- | --- | ------- | ------- | ---------------------------------------- |
+| (sem texto) | clickable | loadFollowups | —   | —       | FACHADA | Handler exists but no API call detect... |
 
 ### /funnels
+
 Files: `frontend/src/app/(main)/funnels/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +1 more
 Status: 1 funciona, 0 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Entrar | clickable | () => openAuthModal("l... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | refresh | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| Elemento    | Tipo      | Handler                   | API                   | Backend            | Status     | Reason                                   |
+| ----------- | --------- | ------------------------- | --------------------- | ------------------ | ---------- | ---------------------------------------- |
+| Entrar      | clickable | () => openAuthModal("l... | —                     | —                  | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto) | clickable | refresh                   | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
 
 ### /inbox
+
 Files: `frontend/src/app/(main)/inbox/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +4 more
 Status: 5 funciona, 1 fachada, 0 quebrado, 3 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Entrar | clickable | () => openAuthModal("l... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | refreshConversations | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
-| ? "bg-[#E85D30] text-[#0A0A... | clickable | () => setChannelFilter... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| ? "bg-[#E85D30] text-[#0A0A... | clickable | () => setStatusFilter(... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| (sem texto) | clickable | () => handleSelectConv... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleAssumir | POST /inbox/conversations/:... | /inbox/conversations/:conve... | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | handleDevolverIA | POST /inbox/conversations/:... | /inbox/conversations/:conve... | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | handleCloseConversation | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| form | form | (e) => { | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                            | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | ------------------------------ | ------------------------------ | ---------- | ---------------------------------------- |
+| Entrar                         | clickable | () => openAuthModal("l... | —                              | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | refreshConversations      | POST /api/auth/google          | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| ? "bg-[#E85D30] text-[#0A0A... | clickable | () => setChannelFilter... | PUT /crm/deals/:dealId         | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| ? "bg-[#E85D30] text-[#0A0A... | clickable | () => setStatusFilter(... | PUT /crm/deals/:dealId         | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| (sem texto)                    | clickable | () => handleSelectConv... | DELETE /crm/deals/:dealId      | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleAssumir             | POST /inbox/conversations/:... | /inbox/conversations/:conve... | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| (sem texto)                    | clickable | handleDevolverIA          | POST /inbox/conversations/:... | /inbox/conversations/:conve... | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| (sem texto)                    | clickable | handleCloseConversation   | POST /member-areas             | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| form                           | form      | (e) => {                  | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /leads
+
 Files: `frontend/src/app/(main)/leads/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +1 more
 Status: 2 funciona, 1 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Entrar | clickable | () => openAuthModal("l... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => refreshLeads({ k... | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
-| (sem texto) | clickable | () => setSelectedLeadI... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| if (!selectedLead.phone) re... | clickable | async () => { | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                       | Backend            | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | ------------------------- | ------------------ | ---------- | ---------------------------------------- |
+| Entrar                         | clickable | () => openAuthModal("l... | —                         | —                  | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => refreshLeads({ k... | POST /api/auth/google     | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| (sem texto)                    | clickable | () => setSelectedLeadI... | DELETE /crm/deals/:dealId | /crm/deals/:id     | FUNCIONA   | Complete chain → deal                    |
+| if (!selectedLead.phone) re... | clickable | async () => {             | —                         | —                  | FACHADA    | Handler exists but no API call detect... |
 
 ### /marketing
+
 Files: `frontend/src/app/(main)/marketing/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
 - `/meta/instagram/insights/account` (useSWR) — OK
@@ -787,18 +840,20 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | handleWaitlist | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| fontFamily: SORA, fontSize:... | clickable | handleSend | POST /marketing/email/send | /marketing/email/send | INCOMPLETO | Route /marketing/email/send exists bu... |
-| }}> | clickable | () => switchTab(key) | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                       | Tipo      | Handler               | API                           | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | --------------------- | ----------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:... | button    | handleWaitlist        | POST /member-areas            | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| fontFamily: SORA, fontSize:... | clickable | handleSend            | POST /marketing/email/send    | /marketing/email/send          | INCOMPLETO | Route /marketing/email/send exists bu... |
+| }}>                            | clickable | () => switchTab(key)  | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| fontFamily: SORA, fontSize:... | button    | () => switchTab(t.id) | DELETE /crm/deals/:dealId     | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
 
 ### /marketing/email
+
 Files: `frontend/src/app/(main)/marketing/email/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
 - `/meta/instagram/insights/account` (useSWR) — OK
@@ -811,18 +866,20 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | handleWaitlist | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| fontFamily: SORA, fontSize:... | clickable | handleSend | POST /marketing/email/send | /marketing/email/send | INCOMPLETO | Route /marketing/email/send exists bu... |
-| }}> | clickable | () => switchTab(key) | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                       | Tipo      | Handler               | API                           | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | --------------------- | ----------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:... | button    | handleWaitlist        | POST /member-areas            | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| fontFamily: SORA, fontSize:... | clickable | handleSend            | POST /marketing/email/send    | /marketing/email/send          | INCOMPLETO | Route /marketing/email/send exists bu... |
+| }}>                            | clickable | () => switchTab(key)  | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| fontFamily: SORA, fontSize:... | button    | () => switchTab(t.id) | DELETE /crm/deals/:dealId     | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
 
 ### /marketing/facebook
+
 Files: `frontend/src/app/(main)/marketing/facebook/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
 - `/meta/instagram/insights/account` (useSWR) — OK
@@ -835,18 +892,20 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | handleWaitlist | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| fontFamily: SORA, fontSize:... | clickable | handleSend | POST /marketing/email/send | /marketing/email/send | INCOMPLETO | Route /marketing/email/send exists bu... |
-| }}> | clickable | () => switchTab(key) | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                       | Tipo      | Handler               | API                           | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | --------------------- | ----------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:... | button    | handleWaitlist        | POST /member-areas            | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| fontFamily: SORA, fontSize:... | clickable | handleSend            | POST /marketing/email/send    | /marketing/email/send          | INCOMPLETO | Route /marketing/email/send exists bu... |
+| }}>                            | clickable | () => switchTab(key)  | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| fontFamily: SORA, fontSize:... | button    | () => switchTab(t.id) | DELETE /crm/deals/:dealId     | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
 
 ### /marketing/instagram
+
 Files: `frontend/src/app/(main)/marketing/instagram/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
 - `/meta/instagram/insights/account` (useSWR) — OK
@@ -859,18 +918,20 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | handleWaitlist | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| fontFamily: SORA, fontSize:... | clickable | handleSend | POST /marketing/email/send | /marketing/email/send | INCOMPLETO | Route /marketing/email/send exists bu... |
-| }}> | clickable | () => switchTab(key) | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                       | Tipo      | Handler               | API                           | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | --------------------- | ----------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:... | button    | handleWaitlist        | POST /member-areas            | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| fontFamily: SORA, fontSize:... | clickable | handleSend            | POST /marketing/email/send    | /marketing/email/send          | INCOMPLETO | Route /marketing/email/send exists bu... |
+| }}>                            | clickable | () => switchTab(key)  | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| fontFamily: SORA, fontSize:... | button    | () => switchTab(t.id) | DELETE /crm/deals/:dealId     | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
 
 ### /marketing/tiktok
+
 Files: `frontend/src/app/(main)/marketing/tiktok/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
 - `/meta/instagram/insights/account` (useSWR) — OK
@@ -883,18 +944,20 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | handleWaitlist | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| fontFamily: SORA, fontSize:... | clickable | handleSend | POST /marketing/email/send | /marketing/email/send | INCOMPLETO | Route /marketing/email/send exists bu... |
-| }}> | clickable | () => switchTab(key) | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                       | Tipo      | Handler               | API                           | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | --------------------- | ----------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:... | button    | handleWaitlist        | POST /member-areas            | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| fontFamily: SORA, fontSize:... | clickable | handleSend            | POST /marketing/email/send    | /marketing/email/send          | INCOMPLETO | Route /marketing/email/send exists bu... |
+| }}>                            | clickable | () => switchTab(key)  | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| fontFamily: SORA, fontSize:... | button    | () => switchTab(t.id) | DELETE /crm/deals/:dealId     | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
 
 ### /marketing/whatsapp
+
 Files: `frontend/src/app/(main)/marketing/whatsapp/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
 - `/meta/instagram/insights/account` (useSWR) — OK
@@ -907,21 +970,24 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | handleWaitlist | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| fontFamily: SORA, fontSize:... | clickable | handleSend | POST /marketing/email/send | /marketing/email/send | INCOMPLETO | Route /marketing/email/send exists bu... |
-| }}> | clickable | () => switchTab(key) | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                       | Tipo      | Handler               | API                           | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | --------------------- | ----------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:... | button    | handleWaitlist        | POST /member-areas            | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| fontFamily: SORA, fontSize:... | clickable | handleSend            | POST /marketing/email/send    | /marketing/email/send          | INCOMPLETO | Route /marketing/email/send exists bu... |
+| }}>                            | clickable | () => switchTab(key)  | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| fontFamily: SORA, fontSize:... | button    | () => switchTab(t.id) | DELETE /crm/deals/:dealId     | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
 
 ### /metrics
-*Redirect to /analytics*
+
+_Redirect to /analytics_
 
 ### /parcerias
+
 Files: `frontend/src/app/(main)/parcerias/page.tsx`, `frontend/src/components/kloel/parcerias/ParceriasView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/affiliate/my-links` (useSWR) — OK
 - `/partnerships/collaborators` (useSWR) — OK
 - `/partnerships/collaborators/stats` (useSWR) — OK
@@ -931,32 +997,34 @@ Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 - `/partnerships/chat/contacts` (useSWR) — OK
 - `/partnerships/chat/:partnerId/messages` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setRole(r.value) | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| borderRadius: 6, color: C.s... | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSubmit | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onChat | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onRevoke | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
-| (sem texto) | clickable | () => setShowInviteMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => setFilterType(op... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| (sem texto) | clickable | () => setDetailId(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleSuggest | POST /affiliate/ai-search | /affiliate/ai-search | INCOMPLETO | Route /affiliate/ai-search exists but... |
-| (sem texto) | clickable | () => handleSave(p.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleSearch | POST /affiliate/ai-search | /affiliate/ai-search | INCOMPLETO | Route /affiliate/ai-search exists but... |
-| (sem texto) | clickable | () => handleSave(p.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => handleSelectCont... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSend | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setRole(r.value)    | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| borderRadius: 6, color: C.s... | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSubmit              | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | onChat                    | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | onRevoke                  | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
+| (sem texto)                    | clickable | () => setShowInviteMod... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => setFilterType(op... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| (sem texto)                    | clickable | () => setDetailId(a.id)   | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleSuggest             | POST /affiliate/ai-search        | /affiliate/ai-search           | INCOMPLETO | Route /affiliate/ai-search exists but... |
+| (sem texto)                    | clickable | () => handleSave(p.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleSearch              | POST /affiliate/ai-search        | /affiliate/ai-search           | INCOMPLETO | Route /affiliate/ai-search exists but... |
+| (sem texto)                    | clickable | () => handleSave(p.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | () => handleSelectCont... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSend                | —                                | —                              | FUNCIONA   | State handler in component with save ... |
 
 ### /parcerias/afiliados
+
 Files: `frontend/src/app/(main)/parcerias/afiliados/page.tsx`, `frontend/src/components/kloel/parcerias/ParceriasView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/affiliate/my-links` (useSWR) — OK
 - `/partnerships/collaborators` (useSWR) — OK
 - `/partnerships/collaborators/stats` (useSWR) — OK
@@ -966,32 +1034,34 @@ Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 - `/partnerships/chat/contacts` (useSWR) — OK
 - `/partnerships/chat/:partnerId/messages` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setRole(r.value) | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| borderRadius: 6, color: C.s... | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSubmit | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onChat | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onRevoke | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
-| (sem texto) | clickable | () => setShowInviteMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => setFilterType(op... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| (sem texto) | clickable | () => setDetailId(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleSuggest | POST /affiliate/ai-search | /affiliate/ai-search | INCOMPLETO | Route /affiliate/ai-search exists but... |
-| (sem texto) | clickable | () => handleSave(p.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleSearch | POST /affiliate/ai-search | /affiliate/ai-search | INCOMPLETO | Route /affiliate/ai-search exists but... |
-| (sem texto) | clickable | () => handleSave(p.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => handleSelectCont... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSend | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setRole(r.value)    | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| borderRadius: 6, color: C.s... | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSubmit              | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | onChat                    | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | onRevoke                  | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
+| (sem texto)                    | clickable | () => setShowInviteMod... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => setFilterType(op... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| (sem texto)                    | clickable | () => setDetailId(a.id)   | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleSuggest             | POST /affiliate/ai-search        | /affiliate/ai-search           | INCOMPLETO | Route /affiliate/ai-search exists but... |
+| (sem texto)                    | clickable | () => handleSave(p.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleSearch              | POST /affiliate/ai-search        | /affiliate/ai-search           | INCOMPLETO | Route /affiliate/ai-search exists but... |
+| (sem texto)                    | clickable | () => handleSave(p.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | () => handleSelectCont... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSend                | —                                | —                              | FUNCIONA   | State handler in component with save ... |
 
 ### /parcerias/chat
+
 Files: `frontend/src/app/(main)/parcerias/chat/page.tsx`, `frontend/src/components/kloel/parcerias/ParceriasView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/affiliate/my-links` (useSWR) — OK
 - `/partnerships/collaborators` (useSWR) — OK
 - `/partnerships/collaborators/stats` (useSWR) — OK
@@ -1001,32 +1071,34 @@ Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 - `/partnerships/chat/contacts` (useSWR) — OK
 - `/partnerships/chat/:partnerId/messages` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setRole(r.value) | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| borderRadius: 6, color: C.s... | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSubmit | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onChat | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onRevoke | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
-| (sem texto) | clickable | () => setShowInviteMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => setFilterType(op... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| (sem texto) | clickable | () => setDetailId(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleSuggest | POST /affiliate/ai-search | /affiliate/ai-search | INCOMPLETO | Route /affiliate/ai-search exists but... |
-| (sem texto) | clickable | () => handleSave(p.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleSearch | POST /affiliate/ai-search | /affiliate/ai-search | INCOMPLETO | Route /affiliate/ai-search exists but... |
-| (sem texto) | clickable | () => handleSave(p.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => handleSelectCont... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSend | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setRole(r.value)    | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| borderRadius: 6, color: C.s... | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSubmit              | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | onChat                    | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | onRevoke                  | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
+| (sem texto)                    | clickable | () => setShowInviteMod... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => setFilterType(op... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| (sem texto)                    | clickable | () => setDetailId(a.id)   | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleSuggest             | POST /affiliate/ai-search        | /affiliate/ai-search           | INCOMPLETO | Route /affiliate/ai-search exists but... |
+| (sem texto)                    | clickable | () => handleSave(p.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleSearch              | POST /affiliate/ai-search        | /affiliate/ai-search           | INCOMPLETO | Route /affiliate/ai-search exists but... |
+| (sem texto)                    | clickable | () => handleSave(p.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | () => handleSelectCont... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSend                | —                                | —                              | FUNCIONA   | State handler in component with save ... |
 
 ### /parcerias/colaboradores
+
 Files: `frontend/src/app/(main)/parcerias/colaboradores/page.tsx`, `frontend/src/components/kloel/parcerias/ParceriasView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/affiliate/my-links` (useSWR) — OK
 - `/partnerships/collaborators` (useSWR) — OK
 - `/partnerships/collaborators/stats` (useSWR) — OK
@@ -1036,45 +1108,49 @@ Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 - `/partnerships/chat/contacts` (useSWR) — OK
 - `/partnerships/chat/:partnerId/messages` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setRole(r.value) | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| borderRadius: 6, color: C.s... | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSubmit | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onChat | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onRevoke | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
-| (sem texto) | clickable | () => setShowInviteMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => setFilterType(op... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| (sem texto) | clickable | () => setDetailId(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleSuggest | POST /affiliate/ai-search | /affiliate/ai-search | INCOMPLETO | Route /affiliate/ai-search exists but... |
-| (sem texto) | clickable | () => handleSave(p.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleSearch | POST /affiliate/ai-search | /affiliate/ai-search | INCOMPLETO | Route /affiliate/ai-search exists but... |
-| (sem texto) | clickable | () => handleSave(p.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => handleSelectCont... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSend | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setRole(r.value)    | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| borderRadius: 6, color: C.s... | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSubmit              | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | onChat                    | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | onRevoke                  | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
+| (sem texto)                    | clickable | () => setShowInviteMod... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => setFilterType(op... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| (sem texto)                    | clickable | () => setDetailId(a.id)   | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleSuggest             | POST /affiliate/ai-search        | /affiliate/ai-search           | INCOMPLETO | Route /affiliate/ai-search exists but... |
+| (sem texto)                    | clickable | () => handleSave(p.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleSearch              | POST /affiliate/ai-search        | /affiliate/ai-search           | INCOMPLETO | Route /affiliate/ai-search exists but... |
+| (sem texto)                    | clickable | () => handleSave(p.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | () => handleSelectCont... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSend                | —                                | —                              | FUNCIONA   | State handler in component with save ... |
 
 ### /payments
-*Redirect to /carteira*
+
+_Redirect to /carteira_
 
 ### /pricing
+
 Files: `frontend/src/app/(main)/pricing/page.tsx`, `frontend/src/components/kloel/index.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/hooks/useWorkspaceId.ts`, `frontend/src/lib/api.ts` +4 more
 Status: 0 funciona, 2 fachada, 1 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| ? 'bg-[#222226] text-[#E0DD... | clickable | () => setBillingCycle(... | — | — | FACHADA | Handler exists but no API call detect... |
-| ? 'bg-[#222226] text-[#E0DD... | clickable | () => setBillingCycle(... | — | — | FACHADA | Handler exists but no API call detect... |
-| plan.popular | clickable | () => handleSelectPlan... | POST /kloel/asaas/:workspac... | — | QUEBRADO | API call to /kloel/asaas/:workspaceId... |
+| Elemento                       | Tipo      | Handler                   | API                                     | Backend | Status   | Reason                                            |
+| ------------------------------ | --------- | ------------------------- | --------------------------------------- | ------- | -------- | ------------------------------------------------- |
+| ? 'bg-[#222226] text-[#E0DD... | clickable | () => setBillingCycle(... | —                                       | —       | FACHADA  | Handler exists but no API call detect...          |
+| ? 'bg-[#222226] text-[#E0DD... | clickable | () => setBillingCycle(... | —                                       | —       | FACHADA  | Handler exists but no API call detect...          |
+| plan.popular                   | clickable | () => handleSelectPlan... | POST /kloel/legacy-payment/:workspac... | —       | QUEBRADO | API call to /kloel/legacy-payment/:workspaceId... |
 
 ### /products
+
 Files: `frontend/src/app/(main)/products/page.tsx`, `frontend/src/components/kloel/produtos/ProdutosView.tsx`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
 Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
@@ -1082,52 +1158,54 @@ Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 - `/member-areas/stats` (useSWR) — OK
 - `/member-areas/:areaId/students` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| if (!displayProducts.length... | button | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | onCreateProduct | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | onCreateProduct | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setShowCreateAre... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | button | handleCreateArea | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| Cancelar | button | () => { setShowCreateA... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| (sem texto) | button | () => toggleArea(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Salvar | button | () => handleUpdateArea... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => setEditingArea(n... | — | — | FACHADA | Handler exists but no API call detect... |
-| {a.name} | clickable | () => toggleArea(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Gerenciar alunos | button | () => openStudentDrawe... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Editar area | button | () => { setEditingArea... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Excluir area | button | () => handleDeleteArea... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Salvar | button | () => handleUpdateModu... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => setEditingModule... | — | — | FACHADA | Handler exists but no API call detect... |
-| Editar modulo | button | () => { setEditingModu... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Excluir modulo | button | () => handleDeleteModu... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Salvar | button | () => handleUpdateLess... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => setEditingLesson... | — | — | FACHADA | Handler exists but no API call detect... |
-| Editar aula | button | () => { setEditingLess... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Excluir aula | button | () => handleDeleteLess... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => handleCreateLess... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => { setCreatingLes... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Adicionar aula | clickable | () => { setCreatingLes... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Cancelar | button | () => handleCreateModu... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => { setCreatingMod... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Adicionar modulo | clickable | () => { setCreatingMod... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| (sem texto) | clickable | () => setStudentAreaId... | — | — | FACHADA | Handler exists but no API call detect... |
-| Alunos | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| Fechar painel de alunos | button | () => setStudentAreaId... | — | — | FACHADA | Handler exists but no API call detect... |
-| {showAddStudent ? 'Cancelar... | button | () => setShowAddStuden... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | button | handleAddStudent | POST /member-areas/:student... | /member-areas/:id/students | INCOMPLETO | Route /member-areas/:id/students exis... |
-| Remover aluno | button | () => handleRemoveStud... | DELETE /member-areas/:student... | /member-areas/:id/students/... | INCOMPLETO | Route /member-areas/:id/students/:stu... |
-| &larr; Marketplace | clickable | () => setSelectedMarke... | — | — | FACHADA | Handler exists but no API call detect... |
-| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(null) | — | — | FACHADA | Handler exists but no API call detect... |
-| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(cat... | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setSelectedMarke... | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => handleTabChange(... | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| if (!displayProducts.length... | button    | () => {                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | onCreateProduct           | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | onCreateProduct           | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setShowCreateAre... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | button    | handleCreateArea          | POST /member-areas               | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| Cancelar                       | button    | () => { setShowCreateA... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| (sem texto)                    | button    | () => toggleArea(a.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Salvar                         | button    | () => handleUpdateArea... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => setEditingArea(n... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {a.name}                       | clickable | () => toggleArea(a.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Gerenciar alunos               | button    | () => openStudentDrawe... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Editar area                    | button    | () => { setEditingArea... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Excluir area                   | button    | () => handleDeleteArea... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Salvar                         | button    | () => handleUpdateModu... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => setEditingModule... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Editar modulo                  | button    | () => { setEditingModu... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Excluir modulo                 | button    | () => handleDeleteModu... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Salvar                         | button    | () => handleUpdateLess... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => setEditingLesson... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Editar aula                    | button    | () => { setEditingLess... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Excluir aula                   | button    | () => handleDeleteLess... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => handleCreateLess... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => { setCreatingLes... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Adicionar aula                 | clickable | () => { setCreatingLes... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Cancelar                       | button    | () => handleCreateModu... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => { setCreatingMod... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Adicionar modulo               | clickable | () => { setCreatingMod... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| (sem texto)                    | clickable | () => setStudentAreaId... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Alunos                         | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Fechar painel de alunos        | button    | () => setStudentAreaId... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {showAddStudent ? 'Cancelar... | button    | () => setShowAddStuden... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | button    | handleAddStudent          | POST /member-areas/:student...   | /member-areas/:id/students     | INCOMPLETO | Route /member-areas/:id/students exis... |
+| Remover aluno                  | button    | () => handleRemoveStud... | DELETE /member-areas/:student... | /member-areas/:id/students/... | INCOMPLETO | Route /member-areas/:id/students/:stu... |
+| &larr; Marketplace             | clickable | () => setSelectedMarke... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(null)  | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(cat... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setSelectedMarke... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => handleTabChange(... | GET /segmentation/:workspa...    | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
 
 ### /products/:id
+
 Files: `frontend/src/app/(main)/products/[id]/page.tsx`, `frontend/src/components/kloel/products/ProductNerveCenter.tsx`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +2 more
 Status: 49 funciona, 0 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
@@ -1139,75 +1217,77 @@ Status: 49 funciona, 0 fachada, 0 quebrado, 12 incompleto, 0 ausente
 - `/checkout/orders/:id` (useSWR) — OK
 - `/checkout/plans/:planId/config` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | onChange ? ()=>onChang... | — | — | FUNCIONA | State handler in component with save ... |
-| {children} | button | onClick | — | — | FUNCIONA | State handler in component with save ... |
-| {t.l} | button | ()=>onSelect(t.k) | — | — | FUNCIONA | State handler in component with save ... |
-| {title} | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {title} | clickable | e=>e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| ← Produtos | button | onBack | — | — | FUNCIONA | State handler in component with save ... |
-| ) : ( | clickable | () => imgInputRef.curr... | — | — | FUNCIONA | State handler in component with save ... |
-| {saved?"Salvo!":saving?"Sal... | button | save | POST /kloel/memory/save | /kloel/memory/save | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | () => imgInputRef.curr... | — | — | FUNCIONA | State handler in component with save ... |
-| Disponível para venda? | toggle | setEditActive | — | — | FUNCIONA | State handler in component with save ... |
-| É Amostra? | toggle | setEditIsSample | — | — | FUNCIONA | State handler in component with save ... |
-| setModal("newPlan")}>+ Novo... | button | ()=>setModal("newPlan") | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| setSelPlan(pl.id)} style={{... | button | ()=>setSelPlan(pl.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| ))} | button | ()=>setModal("links-"+... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| setSelPlan(null)}>← Planos | button | ()=>setSelPlan(null) | — | — | FUNCIONA | State handler in component with save ... |
-| Config da loja | toggle | async(v: boolean)=>{tr... | POST /kloel/think/sync | /kloel/think/sync | FUNCIONA | Complete chain → workspace |
-| Frete | toggle | async(v: boolean)=>{tr... | POST /kloel/think/sync | /kloel/think/sync | FUNCIONA | Complete chain → workspace |
-| Order Bumps | button | ()=>setModal("newBump") | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| {saved?"Salvo!":"Salvar"} | button | async ()=>{try{await u... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Checkouts disponíveis | button | handleNewCheckout | — | — | FUNCIONA | State handler in component with save ... |
-| setCkEdit(ck.id)} style={{p... | button | ()=>setCkEdit(ck.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| setCkEdit(null)}>← Checkouts | button | ()=>setCkEdit(null) | — | — | FUNCIONA | State handler in component with save ... |
-| Cupom de desconto? | toggle | (v: boolean)=>patch("e... | — | — | FUNCIONA | State handler in component with save ... |
-| Usar contador? | toggle | (v: boolean)=>patch("e... | — | — | FUNCIONA | State handler in component with save ... |
-| Depoimentos? | toggle | (v: boolean)=>patch("e... | — | — | FUNCIONA | State handler in component with save ... |
-| Garantia? | toggle | (v: boolean)=>patch("e... | — | — | FUNCIONA | State handler in component with save ... |
-| Popup Exit Intent? | toggle | (v: boolean)=>patch("s... | — | — | FUNCIONA | State handler in component with save ... |
-| setCkEdit(null)}>← Voltar | button | ()=>setCkEdit(null) | — | — | FUNCIONA | State handler in component with save ... |
-| Descrição | button | handleAddUrl | GET /products/:productId/urls | /products/:productId/urls | INCOMPLETO | Route /products/:productId/urls exist... |
-| x | button | ()=>handleDeleteUrl(u.id) | DELETE /products/:productId/u... | /products/:productId/urls/:... | INCOMPLETO | Route /products/:productId/urls/:urlI... |
-| Participar? | toggle | setAffEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| {comSaved?"Salvo!":comSavin... | button | handleComSave | PUT /products/:id | /products/:id | INCOMPLETO | Route /products/:id exists but no ser... |
-| Merchan | button | ()=>document.execComma... | — | — | FUNCIONA | State handler in component with save ... |
-| Termos de uso | button | ()=>document.execComma... | — | — | FUNCIONA | State handler in component with save ... |
-| setShowForm(!showForm)}>+ A... | button | ()=>setShowForm(!showF... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| {creating?"Salvando...":"Ad... | button | handleCreate | GET /products/:productId/c... | /products/:productId/commis... | INCOMPLETO | Route /products/:productId/commission... |
-| setShowForm(false)}>Cancelar | button | ()=>setShowForm(false) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Excluir | button | ()=>handleDelete(c.id) | DELETE /products/:productId/c... | /products/:productId/commis... | INCOMPLETO | Route /products/:productId/commission... |
-| Cupons | button | ()=>setModal("newCoupon") | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Campanhas Registradas | button | ()=>setShowCampForm(!s... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Criar | button | handleCreateCamp | GET /products/:productId/c... | /products/:productId/campaigns | INCOMPLETO | Route /products/:productId/campaigns ... |
-| ( | button | ()=>handleDeleteCamp(c... | DELETE /products/:productId/c... | /products/:productId/campai... | INCOMPLETO | Route /products/:productId/campaigns/... |
-| Avaliações | button | ()=>setShowRevForm(!sh... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| {[1,2,3,4,5].map(i=> | clickable | ()=>setNewRevRating(i) | — | — | FUNCIONA | State handler in component with save ... |
-| Verificado? | toggle | setNewRevVer | — | — | FUNCIONA | State handler in component with save ... |
-| Criar | button | handleCreateReview | GET /products/:productId/r... | /products/:productId/reviews | INCOMPLETO | Route /products/:productId/reviews ex... |
-| ( | button | ()=>handleDeleteReview... | DELETE /products/:productId/r... | /products/:productId/review... | INCOMPLETO | Route /products/:productId/reviews/:r... |
-| Permitir endereço duplicado... | toggle | setApDup | — | — | FUNCIONA | State handler in component with save ... |
-| Cobrança do afiliado por pe... | toggle | setApCharge | — | — | FUNCIONA | State handler in component with save ... |
-| {apSaved?"Salvo!":apSaving?... | button | handleSaveAP | POST /products/:param/ai-co... | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| j!==i))} style={{padding:"2... | button | ()=>setObjs(objs.filte... | — | — | FUNCIONA | State handler in component with save ... |
-| + Adicionar objeção | button | ()=>setObjs([...objs,{... | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
-| Enviar link checkout auto | toggle | setAutoLink | — | — | FUNCIONA | State handler in component with save ... |
-| Oferecer desconto se resist... | toggle | setOfferDisc | — | — | FUNCIONA | State handler in component with save ... |
-| Usar urgência/escassez | toggle | setUseUrg | — | — | FUNCIONA | State handler in component with save ... |
-| {aiSaved?"IA atualizada":"S... | button | handleSaveAI | GET /products/:productId/a... | /products/:productId/ai-config | INCOMPLETO | Route /products/:productId/ai-config ... |
-| (sem texto) | clickable | () => setExpCk(expCk =... | — | — | FUNCIONA | State handler in component with save ... |
-| setModal(null)}> | button | handleCreatePlan | — | — | FUNCIONA | State handler in component with save ... |
-| setModal(null)}> | button | handleCreateBump | — | — | FUNCIONA | State handler in component with save ... |
-| setModal(null)}> | button | handleCreateCoupon | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | onChange ? ()=>onChang... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {children}                     | button    | onClick                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {t.l}                          | button    | ()=>onSelect(t.k)         | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {title}                        | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {title}                        | clickable | e=>e.stopPropagation()    | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| ← Produtos                     | button    | onBack                    | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| ) : (                          | clickable | () => imgInputRef.curr... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {saved?"Salvo!":saving?"Sal... | button    | save                      | POST /kloel/memory/save          | /kloel/memory/save             | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| (sem texto)                    | clickable | () => imgInputRef.curr... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Disponível para venda?         | toggle    | setEditActive             | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| É Amostra?                     | toggle    | setEditIsSample           | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| setModal("newPlan")}>+ Novo... | button    | ()=>setModal("newPlan")   | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| setSelPlan(pl.id)} style={{... | button    | ()=>setSelPlan(pl.id)     | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| ))}                            | button    | ()=>setModal("links-"+... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| setSelPlan(null)}>← Planos     | button    | ()=>setSelPlan(null)      | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Config da loja                 | toggle    | async(v: boolean)=>{tr... | POST /kloel/think/sync           | /kloel/think/sync              | FUNCIONA   | Complete chain → workspace               |
+| Frete                          | toggle    | async(v: boolean)=>{tr... | POST /kloel/think/sync           | /kloel/think/sync              | FUNCIONA   | Complete chain → workspace               |
+| Order Bumps                    | button    | ()=>setModal("newBump")   | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| {saved?"Salvo!":"Salvar"}      | button    | async ()=>{try{await u... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Checkouts disponíveis          | button    | handleNewCheckout         | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| setCkEdit(ck.id)} style={{p... | button    | ()=>setCkEdit(ck.id)      | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| setCkEdit(null)}>← Checkouts   | button    | ()=>setCkEdit(null)       | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cupom de desconto?             | toggle    | (v: boolean)=>patch("e... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Usar contador?                 | toggle    | (v: boolean)=>patch("e... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Depoimentos?                   | toggle    | (v: boolean)=>patch("e... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Garantia?                      | toggle    | (v: boolean)=>patch("e... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Popup Exit Intent?             | toggle    | (v: boolean)=>patch("s... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| setCkEdit(null)}>← Voltar      | button    | ()=>setCkEdit(null)       | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Descrição                      | button    | handleAddUrl              | GET /products/:productId/urls    | /products/:productId/urls      | INCOMPLETO | Route /products/:productId/urls exist... |
+| x                              | button    | ()=>handleDeleteUrl(u.id) | DELETE /products/:productId/u... | /products/:productId/urls/:... | INCOMPLETO | Route /products/:productId/urls/:urlI... |
+| Participar?                    | toggle    | setAffEnabled             | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {comSaved?"Salvo!":comSavin... | button    | handleComSave             | PUT /products/:id                | /products/:id                  | INCOMPLETO | Route /products/:id exists but no ser... |
+| Merchan                        | button    | ()=>document.execComma... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Termos de uso                  | button    | ()=>document.execComma... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| setShowForm(!showForm)}>+ A... | button    | ()=>setShowForm(!showF... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| {creating?"Salvando...":"Ad... | button    | handleCreate              | GET /products/:productId/c...    | /products/:productId/commis... | INCOMPLETO | Route /products/:productId/commission... |
+| setShowForm(false)}>Cancelar   | button    | ()=>setShowForm(false)    | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Excluir                        | button    | ()=>handleDelete(c.id)    | DELETE /products/:productId/c... | /products/:productId/commis... | INCOMPLETO | Route /products/:productId/commission... |
+| Cupons                         | button    | ()=>setModal("newCoupon") | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Campanhas Registradas          | button    | ()=>setShowCampForm(!s... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Criar                          | button    | handleCreateCamp          | GET /products/:productId/c...    | /products/:productId/campaigns | INCOMPLETO | Route /products/:productId/campaigns ... |
+| (                              | button    | ()=>handleDeleteCamp(c... | DELETE /products/:productId/c... | /products/:productId/campai... | INCOMPLETO | Route /products/:productId/campaigns/... |
+| Avaliações                     | button    | ()=>setShowRevForm(!sh... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| {[1,2,3,4,5].map(i=>           | clickable | ()=>setNewRevRating(i)    | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Verificado?                    | toggle    | setNewRevVer              | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Criar                          | button    | handleCreateReview        | GET /products/:productId/r...    | /products/:productId/reviews   | INCOMPLETO | Route /products/:productId/reviews ex... |
+| (                              | button    | ()=>handleDeleteReview... | DELETE /products/:productId/r... | /products/:productId/review... | INCOMPLETO | Route /products/:productId/reviews/:r... |
+| Permitir endereço duplicado... | toggle    | setApDup                  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cobrança do afiliado por pe... | toggle    | setApCharge               | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {apSaved?"Salvo!":apSaving?... | button    | handleSaveAP              | POST /products/:param/ai-co...   | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| j!==i))} style={{padding:"2... | button    | ()=>setObjs(objs.filte... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| + Adicionar objeção            | button    | ()=>setObjs([...objs,{... | POST /api/auth/google            | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| Enviar link checkout auto      | toggle    | setAutoLink               | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Oferecer desconto se resist... | toggle    | setOfferDisc              | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Usar urgência/escassez         | toggle    | setUseUrg                 | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {aiSaved?"IA atualizada":"S... | button    | handleSaveAI              | GET /products/:productId/a...    | /products/:productId/ai-config | INCOMPLETO | Route /products/:productId/ai-config ... |
+| (sem texto)                    | clickable | () => setExpCk(expCk =... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| setModal(null)}>               | button    | handleCreatePlan          | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| setModal(null)}>               | button    | handleCreateBump          | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| setModal(null)}>               | button    | handleCreateCoupon        | —                                | —                              | FUNCIONA   | State handler in component with save ... |
 
 ### /products/:id/plans/:planId
+
 Files: `frontend/src/app/(main)/products/[id]/plans/[planId]/page.tsx`, `frontend/src/components/plans/PlanStoreTab.tsx`, `frontend/src/components/kloel/FormExtras.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/ToastProvider.tsx` +9 more
 Status: 30 funciona, 3 fachada, 3 quebrado, 8 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/checkout/products/:checkoutProductId` (useSWR) — OK
 - `/checkout/plans/:planId/bumps` (useSWR) — OK
 - `/checkout/plans/:planId/upsells` (useSWR) — OK
@@ -1216,77 +1296,80 @@ Status: 30 funciona, 3 fachada, 3 quebrado, 8 incompleto, 0 ausente
 - `/checkout/orders/:id` (useSWR) — OK
 - `/checkout/plans/:planId/config` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| alignItems: 'center', | clickable | () => setActiveTab(tab... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => setSaving(true) | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | button | () => onChange(value.f... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => onChange("") | — | — | FACHADA | Handler exists but no API call detect... |
-| e.preventDefault() | clickable | () => inputRef.current... | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setObjectionStat... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Fazer upsell? | toggle | setUpsellEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| Fazer downsell? | toggle | setDownsellEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setTone(t.v) | — | — | FUNCIONA | State handler in component with save ... |
-| Este plano tem informações ... | toggle | setHasTechInfo | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | handleSave | GET /products/:productId/a... | /products/:productId/ai-config | INCOMPLETO | Route /products/:productId/ai-config ... |
-| (sem texto) | clickable | () => setEnabled(!enab... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setApprovalMode(... | POST /api/whatsapp-api/sess... | /whatsapp-api/session/backl... | FUNCIONA | Complete chain → workspace |
-| (sem texto) | clickable | handleSave | GET /products/:productId | /products/:id | INCOMPLETO | Route /products/:id exists but no ser... |
-| (sem texto) | clickable | () => { setForm(defaul... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSave | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleCancel | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => handleEdit(bump) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => handleDelete(bum... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | onToggle | — | — | FUNCIONA | State handler in component with save ... |
-| Desconto por tipo de pagame... | toggle | setDiscountByPayment | POST /products | /products | FUNCIONA | Complete chain (no Prisma — may use R... |
-| Avisar comprador sobre venc... | toggle | setNotifyBoleto | — | — | FUNCIONA | State handler in component with save ... |
-| Afiliado recebe comissão de... | toggle | setAffiliateRecurring | — | — | FUNCIONA | State handler in component with save ... |
-| Período experimental na ass... | toggle | setTrialEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| Cobrança limitada na assina... | toggle | setLimitedBilling | — | — | FUNCIONA | State handler in component with save ... |
-| Ativar boleto parcelado? | toggle | setBoletoInstallment | — | — | FUNCIONA | State handler in component with save ... |
-| Juros no boleto parcelado? | toggle | setBoletoInterest | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
-| (sem texto) | clickable | handleSave | GET /products/:productId/p... | /products/:productId/plans/... | INCOMPLETO | Route /products/:productId/plans/:pla... |
-| {q} | button | () => toggleFaq(i) | POST /mercadopago/:workspac... | — | QUEBRADO | API call to /mercadopago/:workspaceId... |
-| (sem texto) | clickable | handleSave | GET /products/:productId/p... | /products/:productId/plans/... | INCOMPLETO | Route /products/:productId/plans/:pla... |
-| {label} | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| Disponível para venda? | toggle | setAvailable | — | — | FUNCIONA | State handler in component with save ... |
-| Ocultar plano para afiliados? | toggle | setHideAffiliates | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Amostra grátis? | toggle | setFreeSample | — | — | FUNCIONA | State handler in component with save ... |
-| Exigir e-mail na compra? | toggle | setRequireEmail | POST /mercadopago/:workspac... | — | QUEBRADO | API call to /mercadopago/:workspaceId... |
-| Exigir confirmação de e-mail? | toggle | setRequireEmailConfirm | POST /mercadopago/:workspac... | — | QUEBRADO | API call to /mercadopago/:workspaceId... |
-| Exigir endereço na compra? | toggle | setRequireAddress | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
-| Limite de vendas por plano | toggle | setLimitSales | — | — | FUNCIONA | State handler in component with save ... |
-| Limite por venda aprovada | toggle | setLimitPerApproved | — | — | FUNCIONA | State handler in component with save ... |
-| Definir quantidade mínima d... | toggle | setMinStock | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSave | GET /products/:productId/p... | /products/:productId/plans/... | INCOMPLETO | Route /products/:productId/plans/:pla... |
-| (sem texto) | clickable | handleSave | GET /products/:productId | /products/:id | INCOMPLETO | Route /products/:id exists but no ser... |
+| Elemento                       | Tipo      | Handler                   | API                                | Backend                        | Status     | Reason                                       |
+| ------------------------------ | --------- | ------------------------- | ---------------------------------- | ------------------------------ | ---------- | -------------------------------------------- |
+| alignItems: 'center',          | clickable | () => setActiveTab(tab... | DELETE /crm/deals/:dealId          | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                        |
+| (sem texto)                    | clickable | () => setSaving(true)     | —                                  | —                              | FACHADA    | Handler exists but no API call detect...     |
+| (sem texto)                    | button    | () => onChange(value.f... | DELETE /crm/contacts/:phone/t...   | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact                |
+| (sem texto)                    | clickable | () => onChange("")        | —                                  | —                              | FACHADA    | Handler exists but no API call detect...     |
+| e.preventDefault()             | clickable | () => inputRef.current... | —                                  | —                              | FACHADA    | Handler exists but no API call detect...     |
+| (sem texto)                    | button    | () => onChange(!checked)  | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | button    | () => setObjectionStat... | DELETE /crm/deals/:dealId          | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                        |
+| Fazer upsell?                  | toggle    | setUpsellEnabled          | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Fazer downsell?                | toggle    | setDownsellEnabled        | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | button    | () => setTone(t.v)        | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Este plano tem informações ... | toggle    | setHasTechInfo            | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | button    | handleSave                | GET /products/:productId/a...      | /products/:productId/ai-config | INCOMPLETO | Route /products/:productId/ai-config ...     |
+| (sem texto)                    | clickable | () => setEnabled(!enab... | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | clickable | () => setApprovalMode(... | POST /api/whatsapp-api/sess...     | /whatsapp-api/session/backl... | FUNCIONA   | Complete chain → workspace                   |
+| (sem texto)                    | clickable | handleSave                | GET /products/:productId           | /products/:id                  | INCOMPLETO | Route /products/:id exists but no ser...     |
+| (sem texto)                    | clickable | () => { setForm(defaul... | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | clickable | handleSave                | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | clickable | handleCancel              | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | clickable | () => handleEdit(bump)    | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | clickable | () => handleDelete(bum... | DELETE /crm/deals/:dealId          | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                        |
+| (sem texto)                    | button    | () => onChange(!checked)  | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | button    | onToggle                  | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Desconto por tipo de pagame... | toggle    | setDiscountByPayment      | POST /products                     | /products                      | FUNCIONA   | Complete chain (no Prisma — may use R...     |
+| Avisar comprador sobre venc... | toggle    | setNotifyBoleto           | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Afiliado recebe comissão de... | toggle    | setAffiliateRecurring     | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Período experimental na ass... | toggle    | setTrialEnabled           | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Cobrança limitada na assina... | toggle    | setLimitedBilling         | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Ativar boleto parcelado?       | toggle    | setBoletoInstallment      | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Juros no boleto parcelado?     | toggle    | setBoletoInterest         | POST /api/auth/google              | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n...     |
+| (sem texto)                    | clickable | handleSave                | GET /products/:productId/p...      | /products/:productId/plans/... | INCOMPLETO | Route /products/:productId/plans/:pla...     |
+| {q}                            | button    | () => toggleFaq(i)        | POST /legacy-provider/:workspac... | —                              | QUEBRADO   | API call to /legacy-provider/:workspaceId... |
+| (sem texto)                    | clickable | handleSave                | GET /products/:productId/p...      | /products/:productId/plans/... | INCOMPLETO | Route /products/:productId/plans/:pla...     |
+| {label}                        | button    | () => onChange(!checked)  | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Disponível para venda?         | toggle    | setAvailable              | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Ocultar plano para afiliados?  | toggle    | setHideAffiliates         | DELETE /crm/deals/:dealId          | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                        |
+| Amostra grátis?                | toggle    | setFreeSample             | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Exigir e-mail na compra?       | toggle    | setRequireEmail           | POST /legacy-provider/:workspac... | —                              | QUEBRADO   | API call to /legacy-provider/:workspaceId... |
+| Exigir confirmação de e-mail?  | toggle    | setRequireEmailConfirm    | POST /legacy-provider/:workspac... | —                              | QUEBRADO   | API call to /legacy-provider/:workspaceId... |
+| Exigir endereço na compra?     | toggle    | setRequireAddress         | POST /api/auth/google              | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n...     |
+| Limite de vendas por plano     | toggle    | setLimitSales             | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Limite por venda aprovada      | toggle    | setLimitPerApproved       | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| Definir quantidade mínima d... | toggle    | setMinStock               | —                                  | —                              | FUNCIONA   | State handler in component with save ...     |
+| (sem texto)                    | clickable | handleSave                | GET /products/:productId/p...      | /products/:productId/plans/... | INCOMPLETO | Route /products/:productId/plans/:pla...     |
+| (sem texto)                    | clickable | handleSave                | GET /products/:productId           | /products/:id                  | INCOMPLETO | Route /products/:id exists but no ser...     |
 
 ### /products/new
+
 Files: `frontend/src/app/(main)/products/new/page.tsx`, `frontend/src/lib/design-tokens.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useWorkspaceId.ts`, `frontend/src/lib/categories.ts`
 Status: 3 funciona, 0 fachada, 1 quebrado, 8 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => handleTagRemove(... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| ? `rgba(232, 93, 48, 0.08)` | clickable | () => updateForm({ for... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| (sem texto) | clickable | () => { setLocalPrevie... | POST /meta/instagram/publis... | /meta/instagram/publish/photo | INCOMPLETO | Route /meta/instagram/publish/photo e... |
-| e.preventDefault() | clickable | () => fileInputRef.cur... | POST /api/kyc/bank | — | QUEBRADO | API call to /api/kyc/bank has no matc... |
-| (sem texto) | clickable | () => updateForm({ pay... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| (sem texto) | clickable | () => updateForm({ che... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| (sem texto) | clickable | () => updateForm({ shi... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| alignItems: 'center', | clickable | () => updateForm({ aff... | PUT /member-areas/:id | /member-areas/:id | INCOMPLETO | Route /member-areas/:id exists but no... |
-| (sem texto) | clickable | () => updateForm({ aff... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| (sem texto) | clickable | () => updateForm({ bil... | PUT /crm/deals/:dealId | /crm/deals/:id | INCOMPLETO | Route /crm/deals/:id exists but no se... |
-| alignItems: 'center', | clickable | goNext | — | — | FUNCIONA | State handler in component with save ... |
-| alignItems: 'center', | clickable | onEdit | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento                    | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| --------------------------- | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                 | clickable | () => handleTagRemove(... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| ? `rgba(232, 93, 48, 0.08)` | clickable | () => updateForm({ for... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| (sem texto)                 | clickable | () => { setLocalPrevie... | POST /meta/instagram/publis...   | /meta/instagram/publish/photo  | INCOMPLETO | Route /meta/instagram/publish/photo e... |
+| e.preventDefault()          | clickable | () => fileInputRef.cur... | POST /api/kyc/bank               | —                              | QUEBRADO   | API call to /api/kyc/bank has no matc... |
+| (sem texto)                 | clickable | () => updateForm({ pay... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| (sem texto)                 | clickable | () => updateForm({ che... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| (sem texto)                 | clickable | () => updateForm({ shi... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| alignItems: 'center',       | clickable | () => updateForm({ aff... | PUT /member-areas/:id            | /member-areas/:id              | INCOMPLETO | Route /member-areas/:id exists but no... |
+| (sem texto)                 | clickable | () => updateForm({ aff... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| (sem texto)                 | clickable | () => updateForm({ bil... | PUT /crm/deals/:dealId           | /crm/deals/:id                 | INCOMPLETO | Route /crm/deals/:id exists but no se... |
+| alignItems: 'center',       | clickable | goNext                    | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| alignItems: 'center',       | clickable | onEdit                    | —                                | —                              | FUNCIONA   | State handler in component with save ... |
 
 ### /produtos/afiliar-se
+
 Files: `frontend/src/app/(main)/produtos/afiliar-se/page.tsx`, `frontend/src/components/kloel/produtos/ProdutosView.tsx`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
 Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
@@ -1294,52 +1377,54 @@ Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 - `/member-areas/stats` (useSWR) — OK
 - `/member-areas/:areaId/students` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| if (!displayProducts.length... | button | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | onCreateProduct | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | onCreateProduct | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setShowCreateAre... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | button | handleCreateArea | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| Cancelar | button | () => { setShowCreateA... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| (sem texto) | button | () => toggleArea(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Salvar | button | () => handleUpdateArea... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => setEditingArea(n... | — | — | FACHADA | Handler exists but no API call detect... |
-| {a.name} | clickable | () => toggleArea(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Gerenciar alunos | button | () => openStudentDrawe... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Editar area | button | () => { setEditingArea... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Excluir area | button | () => handleDeleteArea... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Salvar | button | () => handleUpdateModu... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => setEditingModule... | — | — | FACHADA | Handler exists but no API call detect... |
-| Editar modulo | button | () => { setEditingModu... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Excluir modulo | button | () => handleDeleteModu... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Salvar | button | () => handleUpdateLess... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => setEditingLesson... | — | — | FACHADA | Handler exists but no API call detect... |
-| Editar aula | button | () => { setEditingLess... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Excluir aula | button | () => handleDeleteLess... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => handleCreateLess... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => { setCreatingLes... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Adicionar aula | clickable | () => { setCreatingLes... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Cancelar | button | () => handleCreateModu... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => { setCreatingMod... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Adicionar modulo | clickable | () => { setCreatingMod... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| (sem texto) | clickable | () => setStudentAreaId... | — | — | FACHADA | Handler exists but no API call detect... |
-| Alunos | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| Fechar painel de alunos | button | () => setStudentAreaId... | — | — | FACHADA | Handler exists but no API call detect... |
-| {showAddStudent ? 'Cancelar... | button | () => setShowAddStuden... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | button | handleAddStudent | POST /member-areas/:student... | /member-areas/:id/students | INCOMPLETO | Route /member-areas/:id/students exis... |
-| Remover aluno | button | () => handleRemoveStud... | DELETE /member-areas/:student... | /member-areas/:id/students/... | INCOMPLETO | Route /member-areas/:id/students/:stu... |
-| &larr; Marketplace | clickable | () => setSelectedMarke... | — | — | FACHADA | Handler exists but no API call detect... |
-| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(null) | — | — | FACHADA | Handler exists but no API call detect... |
-| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(cat... | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setSelectedMarke... | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => handleTabChange(... | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| if (!displayProducts.length... | button    | () => {                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | onCreateProduct           | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | onCreateProduct           | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setShowCreateAre... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | button    | handleCreateArea          | POST /member-areas               | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| Cancelar                       | button    | () => { setShowCreateA... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| (sem texto)                    | button    | () => toggleArea(a.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Salvar                         | button    | () => handleUpdateArea... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => setEditingArea(n... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {a.name}                       | clickable | () => toggleArea(a.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Gerenciar alunos               | button    | () => openStudentDrawe... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Editar area                    | button    | () => { setEditingArea... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Excluir area                   | button    | () => handleDeleteArea... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Salvar                         | button    | () => handleUpdateModu... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => setEditingModule... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Editar modulo                  | button    | () => { setEditingModu... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Excluir modulo                 | button    | () => handleDeleteModu... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Salvar                         | button    | () => handleUpdateLess... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => setEditingLesson... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Editar aula                    | button    | () => { setEditingLess... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Excluir aula                   | button    | () => handleDeleteLess... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => handleCreateLess... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => { setCreatingLes... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Adicionar aula                 | clickable | () => { setCreatingLes... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Cancelar                       | button    | () => handleCreateModu... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => { setCreatingMod... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Adicionar modulo               | clickable | () => { setCreatingMod... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| (sem texto)                    | clickable | () => setStudentAreaId... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Alunos                         | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Fechar painel de alunos        | button    | () => setStudentAreaId... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {showAddStudent ? 'Cancelar... | button    | () => setShowAddStuden... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | button    | handleAddStudent          | POST /member-areas/:student...   | /member-areas/:id/students     | INCOMPLETO | Route /member-areas/:id/students exis... |
+| Remover aluno                  | button    | () => handleRemoveStud... | DELETE /member-areas/:student... | /member-areas/:id/students/... | INCOMPLETO | Route /member-areas/:id/students/:stu... |
+| &larr; Marketplace             | clickable | () => setSelectedMarke... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(null)  | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(cat... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setSelectedMarke... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => handleTabChange(... | GET /segmentation/:workspa...    | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
 
 ### /produtos/area-membros
+
 Files: `frontend/src/app/(main)/produtos/area-membros/page.tsx`, `frontend/src/components/kloel/produtos/ProdutosView.tsx`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
 Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
@@ -1347,87 +1432,93 @@ Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 - `/member-areas/stats` (useSWR) — OK
 - `/member-areas/:areaId/students` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| if (!displayProducts.length... | button | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | onCreateProduct | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | onCreateProduct | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setShowCreateAre... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | button | handleCreateArea | POST /member-areas | /member-areas | FUNCIONA | Complete chain (no Prisma — may use R... |
-| Cancelar | button | () => { setShowCreateA... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| (sem texto) | button | () => toggleArea(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Salvar | button | () => handleUpdateArea... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => setEditingArea(n... | — | — | FACHADA | Handler exists but no API call detect... |
-| {a.name} | clickable | () => toggleArea(a.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Gerenciar alunos | button | () => openStudentDrawe... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Editar area | button | () => { setEditingArea... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Excluir area | button | () => handleDeleteArea... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Salvar | button | () => handleUpdateModu... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => setEditingModule... | — | — | FACHADA | Handler exists but no API call detect... |
-| Editar modulo | button | () => { setEditingModu... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Excluir modulo | button | () => handleDeleteModu... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Salvar | button | () => handleUpdateLess... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => setEditingLesson... | — | — | FACHADA | Handler exists but no API call detect... |
-| Editar aula | button | () => { setEditingLess... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Excluir aula | button | () => handleDeleteLess... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => handleCreateLess... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => { setCreatingLes... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Adicionar aula | clickable | () => { setCreatingLes... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Cancelar | button | () => handleCreateModu... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Cancelar | button | () => { setCreatingMod... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| Adicionar modulo | clickable | () => { setCreatingMod... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| (sem texto) | clickable | () => setStudentAreaId... | — | — | FACHADA | Handler exists but no API call detect... |
-| Alunos | clickable | (e: React.MouseEvent) ... | — | — | FACHADA | Handler exists but no API call detect... |
-| Fechar painel de alunos | button | () => setStudentAreaId... | — | — | FACHADA | Handler exists but no API call detect... |
-| {showAddStudent ? 'Cancelar... | button | () => setShowAddStuden... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | button | handleAddStudent | POST /member-areas/:student... | /member-areas/:id/students | INCOMPLETO | Route /member-areas/:id/students exis... |
-| Remover aluno | button | () => handleRemoveStud... | DELETE /member-areas/:student... | /member-areas/:id/students/... | INCOMPLETO | Route /member-areas/:id/students/:stu... |
-| &larr; Marketplace | clickable | () => setSelectedMarke... | — | — | FACHADA | Handler exists but no API call detect... |
-| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(null) | — | — | FACHADA | Handler exists but no API call detect... |
-| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(cat... | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => setSelectedMarke... | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => handleTabChange(... | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| if (!displayProducts.length... | button    | () => {                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | onCreateProduct           | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | onCreateProduct           | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setShowCreateAre... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | button    | handleCreateArea          | POST /member-areas               | /member-areas                  | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| Cancelar                       | button    | () => { setShowCreateA... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| (sem texto)                    | button    | () => toggleArea(a.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Salvar                         | button    | () => handleUpdateArea... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => setEditingArea(n... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {a.name}                       | clickable | () => toggleArea(a.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Gerenciar alunos               | button    | () => openStudentDrawe... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Editar area                    | button    | () => { setEditingArea... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Excluir area                   | button    | () => handleDeleteArea... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Salvar                         | button    | () => handleUpdateModu... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => setEditingModule... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Editar modulo                  | button    | () => { setEditingModu... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Excluir modulo                 | button    | () => handleDeleteModu... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Salvar                         | button    | () => handleUpdateLess... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => setEditingLesson... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Editar aula                    | button    | () => { setEditingLess... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Excluir aula                   | button    | () => handleDeleteLess... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => handleCreateLess... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => { setCreatingLes... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Adicionar aula                 | clickable | () => { setCreatingLes... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Cancelar                       | button    | () => handleCreateModu... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Cancelar                       | button    | () => { setCreatingMod... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| Adicionar modulo               | clickable | () => { setCreatingMod... | POST /api/auth/register          | /auth/register                 | INCOMPLETO | Route /auth/register exists but no se... |
+| (sem texto)                    | clickable | () => setStudentAreaId... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Alunos                         | clickable | (e: React.MouseEvent) ... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| Fechar painel de alunos        | button    | () => setStudentAreaId... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| {showAddStudent ? 'Cancelar... | button    | () => setShowAddStuden... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | button    | handleAddStudent          | POST /member-areas/:student...   | /member-areas/:id/students     | INCOMPLETO | Route /member-areas/:id/students exis... |
+| Remover aluno                  | button    | () => handleRemoveStud... | DELETE /member-areas/:student... | /member-areas/:id/students/... | INCOMPLETO | Route /member-areas/:id/students/:stu... |
+| &larr; Marketplace             | clickable | () => setSelectedMarke... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(null)  | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| fontFamily: SORA, fontSize:... | clickable | () => setCatFilter(cat... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => setSelectedMarke... | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => handleTabChange(... | GET /segmentation/:workspa...    | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
 
 ### /produtos/area-membros/preview/:areaId
+
 Files: `frontend/src/app/(main)/produtos/area-membros/preview/[areaId]/page.tsx`, `frontend/src/lib/api.ts`
 Status: 2 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
+| Elemento    | Tipo      | Handler                   | API                       | Backend        | Status   | Reason                |
+| ----------- | --------- | ------------------------- | ------------------------- | -------------- | -------- | --------------------- |
 | (sem texto) | clickable | () => { setActiveModul... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
 | (sem texto) | clickable | () => setActiveLessonI... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
 
 ### /sales
-*Redirect to /vendas*
+
+_Redirect to /vendas_
 
 ### /scrapers
+
 Files: `frontend/src/app/(main)/scrapers/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/Card.tsx`, `frontend/src/hooks/useScrapers.ts`, `frontend/src/lib/fetcher.ts` +7 more
 Status: 7 funciona, 5 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/scrapers/jobs` (useSWR) — OK
 - `/scrapers/jobs/:id` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => onImport(job.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| /> | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| borderRadius: 6, color: '#6... | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleSubmit | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowModal(true) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| 'rounded-lg font-medium tra... | clickable | handlePrimaryAction | — | — | FACHADA | Handler exists but no API call detect... |
-| 'rounded-lg font-medium tra... | clickable | handleSecondaryAction | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | action.onClick | POST /api/whatsapp-api/sess... | /whatsapp-api/session/action | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | back | — | — | FACHADA | Handler exists but no API call detect... |
-| /> | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status   | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | -------- | ---------------------------------------- |
+| (sem texto)                    | clickable | () => onImport(job.id)    | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA | Complete chain → deal                    |
+| />                             | clickable | onClose                   | —                                | —                              | FUNCIONA | State handler in component with save ... |
+| borderRadius: 6, color: '#6... | clickable | onClose                   | —                                | —                              | FUNCIONA | State handler in component with save ... |
+| (sem texto)                    | clickable | handleSubmit              | —                                | —                              | FUNCIONA | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setShowModal(true)  | —                                | —                              | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | onClick                   | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| 'rounded-lg font-medium tra... | clickable | handlePrimaryAction       | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| 'rounded-lg font-medium tra... | clickable | handleSecondaryAction     | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | action.onClick            | POST /api/whatsapp-api/sess...   | /whatsapp-api/session/action   | FUNCIONA | Complete chain (no Prisma — may use R... |
+| (sem texto)                    | clickable | back                      | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
+| />                             | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | onClick                   | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
 
 ### /settings
+
 Files: `frontend/src/app/(main)/settings/page.tsx`, `frontend/src/components/kloel/conta/ContaView.tsx`, `frontend/src/lib/api/core.ts`, `frontend/src/lib/http.ts`, `frontend/src/hooks/useKyc.ts` +3 more
 Status: 15 funciona, 0 fachada, 6 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/team` (useSWR) — OK
 - `/api/kyc/profile` (useSWR) — OK
 - `/api/kyc/fiscal` (useSWR) — OK
@@ -1436,327 +1527,344 @@ Status: 15 funciona, 0 fachada, 6 quebrado, 9 incompleto, 0 ausente
 - `/api/kyc/status` (useSWR) — OK
 - `/api/kyc/completion` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | onClick | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => fileRef.current?... | POST /api/kyc/bank | — | QUEBRADO | API call to /api/kyc/bank has no matc... |
-| ); | clickable | handleSave | PUT /api/kyc/fiscal | — | QUEBRADO | API call to /api/kyc/fiscal has no ma... |
-| Pessoa Fisica (CPF) | button | () => setTipo('PF') | — | — | FUNCIONA | State handler in component with save ... |
-| Pessoa Juridica (CNPJ) | button | () => setTipo('PJ') | — | — | FUNCIONA | State handler in component with save ... |
-| ); | clickable | handleSave | PUT /api/kyc/fiscal | — | QUEBRADO | API call to /api/kyc/fiscal has no ma... |
-| (sem texto) | clickable | () => handleDelete(doc... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => inputRef.current... | — | — | FUNCIONA | State handler in component with save ... |
-| ))} | button | () => set('accountType... | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| (sem texto) | clickable | () => setBankDropdownO... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => selectBank(bank) | — | — | FUNCIONA | State handler in component with save ... |
-| Ver todos os bancos | clickable | () => setShowAllBanks(... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| ); | clickable | handleSave | PUT /api/kyc/fiscal | — | QUEBRADO | API call to /api/kyc/fiscal has no ma... |
-| Alterar senha | clickable | handleChangePw | POST /kyc/status | — | QUEBRADO | API call to /kyc/status has no matchi... |
-| (sem texto) | clickable | handleSave | PUT /api/kyc/fiscal | — | QUEBRADO | API call to /api/kyc/fiscal has no ma... |
-| (sem texto) | clickable | () => { if (!lang.disa... | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| (sem texto) | clickable | () => toggle(idx) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Sandbox (teste) | button | () => setEnv('sandbox') | — | — | FUNCIONA | State handler in component with save ... |
-| Producao | button | () => setEnv('producti... | PUT /products/:id | /products/:id | INCOMPLETO | Route /products/:id exists but no ser... |
-| (sem texto) | clickable | handleConnect | POST /kloel/asaas/:wsId/con... | /kloel/asaas/:workspaceId/c... | INCOMPLETO | Route /kloel/asaas/:workspaceId/conne... |
-| }}>Reconectar | button | handleConnect | POST /kloel/asaas/:wsId/con... | /kloel/asaas/:workspaceId/c... | INCOMPLETO | Route /kloel/asaas/:workspaceId/conne... |
-| (sem texto) | clickable | handleDisconnect | POST /meta/auth/disconnect | /meta/auth/disconnect | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | handleConnect | POST /kloel/asaas/:wsId/con... | /kloel/asaas/:workspaceId/c... | INCOMPLETO | Route /kloel/asaas/:workspaceId/conne... |
-| (sem texto) | clickable | handleInvite | POST /team/invite | /team/invite | INCOMPLETO | Route /team/invite exists but no serv... |
-| (sem texto) | clickable | () => handleRemove(m.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => handleRevoke(inv... | DELETE /billing/payment-metho... | /billing/payment-methods/:p... | INCOMPLETO | Route /billing/payment-methods/:payme... |
-| (sem texto) | clickable | handleLogout | POST /api/whatsapp-api/sess... | /whatsapp-api/session/logout | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | () => setSection(sec.key) | GET /segmentation/:workspa... | /segmentation/:workspaceId/... | INCOMPLETO | Route /segmentation/:workspaceId/cont... |
-| (sem texto) | clickable | () => { if (confirm('P... | POST /kloel/think/sync | /kloel/think/sync | FUNCIONA | Complete chain → workspace |
-| setSubmitError(''); | clickable | async () => { | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento               | Tipo      | Handler                   | API                                     | Backend                                 | Status     | Reason                                            |
+| ---------------------- | --------- | ------------------------- | --------------------------------------- | --------------------------------------- | ---------- | ------------------------------------------------- |
+| (sem texto)            | clickable | onClick                   | —                                       | —                                       | FUNCIONA   | State handler in component with save ...          |
+| (sem texto)            | clickable | () => fileRef.current?... | POST /api/kyc/bank                      | —                                       | QUEBRADO   | API call to /api/kyc/bank has no matc...          |
+| );                     | clickable | handleSave                | PUT /api/kyc/fiscal                     | —                                       | QUEBRADO   | API call to /api/kyc/fiscal has no ma...          |
+| Pessoa Fisica (CPF)    | button    | () => setTipo('PF')       | —                                       | —                                       | FUNCIONA   | State handler in component with save ...          |
+| Pessoa Juridica (CNPJ) | button    | () => setTipo('PJ')       | —                                       | —                                       | FUNCIONA   | State handler in component with save ...          |
+| );                     | clickable | handleSave                | PUT /api/kyc/fiscal                     | —                                       | QUEBRADO   | API call to /api/kyc/fiscal has no ma...          |
+| (sem texto)            | clickable | () => handleDelete(doc... | DELETE /crm/deals/:dealId               | /crm/deals/:id                          | FUNCIONA   | Complete chain → deal                             |
+| (sem texto)            | clickable | () => inputRef.current... | —                                       | —                                       | FUNCIONA   | State handler in component with save ...          |
+| ))}                    | button    | () => set('accountType... | GET /segmentation/:workspa...           | /segmentation/:workspaceId/...          | INCOMPLETO | Route /segmentation/:workspaceId/cont...          |
+| (sem texto)            | clickable | () => setBankDropdownO... | —                                       | —                                       | FUNCIONA   | State handler in component with save ...          |
+| (sem texto)            | clickable | () => selectBank(bank)    | —                                       | —                                       | FUNCIONA   | State handler in component with save ...          |
+| Ver todos os bancos    | clickable | () => setShowAllBanks(... | —                                       | —                                       | FUNCIONA   | Pure UI handler (navigation/clipboard...          |
+| );                     | clickable | handleSave                | PUT /api/kyc/fiscal                     | —                                       | QUEBRADO   | API call to /api/kyc/fiscal has no ma...          |
+| Alterar senha          | clickable | handleChangePw            | POST /kyc/status                        | —                                       | QUEBRADO   | API call to /kyc/status has no matchi...          |
+| (sem texto)            | clickable | handleSave                | PUT /api/kyc/fiscal                     | —                                       | QUEBRADO   | API call to /api/kyc/fiscal has no ma...          |
+| (sem texto)            | clickable | () => { if (!lang.disa... | GET /segmentation/:workspa...           | /segmentation/:workspaceId/...          | INCOMPLETO | Route /segmentation/:workspaceId/cont...          |
+| (sem texto)            | clickable | () => toggle(idx)         | DELETE /crm/deals/:dealId               | /crm/deals/:id                          | FUNCIONA   | Complete chain → deal                             |
+| Sandbox (teste)        | button    | () => setEnv('sandbox')   | —                                       | —                                       | FUNCIONA   | State handler in component with save ...          |
+| Producao               | button    | () => setEnv('producti... | PUT /products/:id                       | /products/:id                           | INCOMPLETO | Route /products/:id exists but no ser...          |
+| (sem texto)            | clickable | handleConnect             | POST /kloel/legacy-payment/:wsId/con... | /kloel/legacy-payment/:workspaceId/c... | INCOMPLETO | Route /kloel/legacy-payment/:workspaceId/conne... |
+| }}>Reconectar          | button    | handleConnect             | POST /kloel/legacy-payment/:wsId/con... | /kloel/legacy-payment/:workspaceId/c... | INCOMPLETO | Route /kloel/legacy-payment/:workspaceId/conne... |
+| (sem texto)            | clickable | handleDisconnect          | POST /meta/auth/disconnect              | /meta/auth/disconnect                   | FUNCIONA   | Complete chain (no Prisma — may use R...          |
+| (sem texto)            | clickable | handleConnect             | POST /kloel/legacy-payment/:wsId/con... | /kloel/legacy-payment/:workspaceId/c... | INCOMPLETO | Route /kloel/legacy-payment/:workspaceId/conne... |
+| (sem texto)            | clickable | handleInvite              | POST /team/invite                       | /team/invite                            | INCOMPLETO | Route /team/invite exists but no serv...          |
+| (sem texto)            | clickable | () => handleRemove(m.id)  | DELETE /crm/deals/:dealId               | /crm/deals/:id                          | FUNCIONA   | Complete chain → deal                             |
+| (sem texto)            | clickable | () => handleRevoke(inv... | DELETE /billing/payment-metho...        | /billing/payment-methods/:p...          | INCOMPLETO | Route /billing/payment-methods/:payme...          |
+| (sem texto)            | clickable | handleLogout              | POST /api/whatsapp-api/sess...          | /whatsapp-api/session/logout            | FUNCIONA   | Complete chain (no Prisma — may use R...          |
+| (sem texto)            | clickable | () => setSection(sec.key) | GET /segmentation/:workspa...           | /segmentation/:workspaceId/...          | INCOMPLETO | Route /segmentation/:workspaceId/cont...          |
+| (sem texto)            | clickable | () => { if (confirm('P... | POST /kloel/think/sync                  | /kloel/think/sync                       | FUNCIONA   | Complete chain → workspace                        |
+| setSubmitError('');    | clickable | async () => {             | —                                       | —                                       | FUNCIONA   | State handler in component with save ...          |
 
 ### /sites
+
 Files: `frontend/src/app/(main)/sites/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | onClick | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('criar')}>{IC.plu... | clickable | () => switchTab('criar') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('dominios')}>{IC.... | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA | Complete chain (no Prisma — may use R... |
-| switchTab('apps')}>{IC.puzz... | clickable | () => switchTab('apps') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('protecao')}>{IC.... | clickable | () => switchTab('prote... | — | — | FUNCIONA | State handler in component with save ... |
-| setNewDomain('')}>{IC.plus(... | clickable | () => setNewDomain('') | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setPrompt(prev =... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| {IC.zap(16)} Gerar Site com IA | clickable | handleGenerate | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| loadSavedSite(site)}>{IC.si... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| loadSavedSite(site)}>{site.... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| X | button | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| Voltar | clickable | () => { setPhase('ask'... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {publishing ? 'Publicando..... | clickable | handlePublish | POST /kloel/site/save | /kloel/site/save | INCOMPLETO | Route /kloel/site/save exists but no ... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| handleDelete(site.id)}>{IC.... | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| setSelectedSite(null)}>Voltar | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| (sem texto) | toggle | setSslEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setDdosProtection | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setFirewallEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setAutoBackups | — | — | FUNCIONA | State handler in component with save ... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                         | Tipo      | Handler                   | API                            | Backend               | Status     | Reason                                   |
+| -------------------------------- | --------- | ------------------------- | ------------------------------ | --------------------- | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:...   | button    | onClick                   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => onChange(!checked)  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('criar')}>{IC.plu...   | clickable | () => switchTab('criar')  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('dominios')}>{IC....   | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| switchTab('apps')}>{IC.puzz...   | clickable | () => switchTab('apps')   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('protecao')}>{IC....   | clickable | () => switchTab('prote... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setNewDomain('')}>{IC.plus(...   | clickable | () => setNewDomain('')    | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => setPrompt(prev =... | POST /api/auth/register        | /auth/register        | INCOMPLETO | Route /auth/register exists but no se... |
+| {IC.zap(16)} Gerar Site com IA   | clickable | handleGenerate            | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| loadSavedSite(site)}>{IC.si...   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| loadSavedSite(site)}>{site....   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| X                                | button    | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| Voltar                           | clickable | () => { setPhase('ask'... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {publishing ? 'Publicando.....   | clickable | handlePublish             | POST /kloel/site/save          | /kloel/site/save      | INCOMPLETO | Route /kloel/site/save exists but no ... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| handleDelete(site.id)}>{IC....   | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| setSelectedSite(null)}>Voltar    | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| (sem texto)                      | toggle    | setSslEnabled             | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setDdosProtection         | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setFirewallEnabled        | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setAutoBackups            | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| fontFamily: SORA, fontSize:...   | button    | () => switchTab(t.id)     | DELETE /crm/deals/:dealId      | /crm/deals/:id        | FUNCIONA   | Complete chain → deal                    |
 
 ### /sites/apps
+
 Files: `frontend/src/app/(main)/sites/apps/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | onClick | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('criar')}>{IC.plu... | clickable | () => switchTab('criar') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('dominios')}>{IC.... | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA | Complete chain (no Prisma — may use R... |
-| switchTab('apps')}>{IC.puzz... | clickable | () => switchTab('apps') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('protecao')}>{IC.... | clickable | () => switchTab('prote... | — | — | FUNCIONA | State handler in component with save ... |
-| setNewDomain('')}>{IC.plus(... | clickable | () => setNewDomain('') | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setPrompt(prev =... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| {IC.zap(16)} Gerar Site com IA | clickable | handleGenerate | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| loadSavedSite(site)}>{IC.si... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| loadSavedSite(site)}>{site.... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| X | button | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| Voltar | clickable | () => { setPhase('ask'... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {publishing ? 'Publicando..... | clickable | handlePublish | POST /kloel/site/save | /kloel/site/save | INCOMPLETO | Route /kloel/site/save exists but no ... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| handleDelete(site.id)}>{IC.... | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| setSelectedSite(null)}>Voltar | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| (sem texto) | toggle | setSslEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setDdosProtection | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setFirewallEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setAutoBackups | — | — | FUNCIONA | State handler in component with save ... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                         | Tipo      | Handler                   | API                            | Backend               | Status     | Reason                                   |
+| -------------------------------- | --------- | ------------------------- | ------------------------------ | --------------------- | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:...   | button    | onClick                   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => onChange(!checked)  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('criar')}>{IC.plu...   | clickable | () => switchTab('criar')  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('dominios')}>{IC....   | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| switchTab('apps')}>{IC.puzz...   | clickable | () => switchTab('apps')   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('protecao')}>{IC....   | clickable | () => switchTab('prote... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setNewDomain('')}>{IC.plus(...   | clickable | () => setNewDomain('')    | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => setPrompt(prev =... | POST /api/auth/register        | /auth/register        | INCOMPLETO | Route /auth/register exists but no se... |
+| {IC.zap(16)} Gerar Site com IA   | clickable | handleGenerate            | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| loadSavedSite(site)}>{IC.si...   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| loadSavedSite(site)}>{site....   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| X                                | button    | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| Voltar                           | clickable | () => { setPhase('ask'... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {publishing ? 'Publicando.....   | clickable | handlePublish             | POST /kloel/site/save          | /kloel/site/save      | INCOMPLETO | Route /kloel/site/save exists but no ... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| handleDelete(site.id)}>{IC....   | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| setSelectedSite(null)}>Voltar    | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| (sem texto)                      | toggle    | setSslEnabled             | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setDdosProtection         | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setFirewallEnabled        | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setAutoBackups            | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| fontFamily: SORA, fontSize:...   | button    | () => switchTab(t.id)     | DELETE /crm/deals/:dealId      | /crm/deals/:id        | FUNCIONA   | Complete chain → deal                    |
 
 ### /sites/criar
+
 Files: `frontend/src/app/(main)/sites/criar/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | onClick | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('criar')}>{IC.plu... | clickable | () => switchTab('criar') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('dominios')}>{IC.... | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA | Complete chain (no Prisma — may use R... |
-| switchTab('apps')}>{IC.puzz... | clickable | () => switchTab('apps') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('protecao')}>{IC.... | clickable | () => switchTab('prote... | — | — | FUNCIONA | State handler in component with save ... |
-| setNewDomain('')}>{IC.plus(... | clickable | () => setNewDomain('') | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setPrompt(prev =... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| {IC.zap(16)} Gerar Site com IA | clickable | handleGenerate | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| loadSavedSite(site)}>{IC.si... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| loadSavedSite(site)}>{site.... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| X | button | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| Voltar | clickable | () => { setPhase('ask'... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {publishing ? 'Publicando..... | clickable | handlePublish | POST /kloel/site/save | /kloel/site/save | INCOMPLETO | Route /kloel/site/save exists but no ... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| handleDelete(site.id)}>{IC.... | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| setSelectedSite(null)}>Voltar | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| (sem texto) | toggle | setSslEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setDdosProtection | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setFirewallEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setAutoBackups | — | — | FUNCIONA | State handler in component with save ... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                         | Tipo      | Handler                   | API                            | Backend               | Status     | Reason                                   |
+| -------------------------------- | --------- | ------------------------- | ------------------------------ | --------------------- | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:...   | button    | onClick                   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => onChange(!checked)  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('criar')}>{IC.plu...   | clickable | () => switchTab('criar')  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('dominios')}>{IC....   | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| switchTab('apps')}>{IC.puzz...   | clickable | () => switchTab('apps')   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('protecao')}>{IC....   | clickable | () => switchTab('prote... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setNewDomain('')}>{IC.plus(...   | clickable | () => setNewDomain('')    | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => setPrompt(prev =... | POST /api/auth/register        | /auth/register        | INCOMPLETO | Route /auth/register exists but no se... |
+| {IC.zap(16)} Gerar Site com IA   | clickable | handleGenerate            | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| loadSavedSite(site)}>{IC.si...   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| loadSavedSite(site)}>{site....   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| X                                | button    | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| Voltar                           | clickable | () => { setPhase('ask'... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {publishing ? 'Publicando.....   | clickable | handlePublish             | POST /kloel/site/save          | /kloel/site/save      | INCOMPLETO | Route /kloel/site/save exists but no ... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| handleDelete(site.id)}>{IC....   | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| setSelectedSite(null)}>Voltar    | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| (sem texto)                      | toggle    | setSslEnabled             | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setDdosProtection         | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setFirewallEnabled        | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setAutoBackups            | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| fontFamily: SORA, fontSize:...   | button    | () => switchTab(t.id)     | DELETE /crm/deals/:dealId      | /crm/deals/:id        | FUNCIONA   | Complete chain → deal                    |
 
 ### /sites/dominios
+
 Files: `frontend/src/app/(main)/sites/dominios/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | onClick | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('criar')}>{IC.plu... | clickable | () => switchTab('criar') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('dominios')}>{IC.... | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA | Complete chain (no Prisma — may use R... |
-| switchTab('apps')}>{IC.puzz... | clickable | () => switchTab('apps') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('protecao')}>{IC.... | clickable | () => switchTab('prote... | — | — | FUNCIONA | State handler in component with save ... |
-| setNewDomain('')}>{IC.plus(... | clickable | () => setNewDomain('') | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setPrompt(prev =... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| {IC.zap(16)} Gerar Site com IA | clickable | handleGenerate | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| loadSavedSite(site)}>{IC.si... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| loadSavedSite(site)}>{site.... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| X | button | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| Voltar | clickable | () => { setPhase('ask'... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {publishing ? 'Publicando..... | clickable | handlePublish | POST /kloel/site/save | /kloel/site/save | INCOMPLETO | Route /kloel/site/save exists but no ... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| handleDelete(site.id)}>{IC.... | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| setSelectedSite(null)}>Voltar | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| (sem texto) | toggle | setSslEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setDdosProtection | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setFirewallEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setAutoBackups | — | — | FUNCIONA | State handler in component with save ... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                         | Tipo      | Handler                   | API                            | Backend               | Status     | Reason                                   |
+| -------------------------------- | --------- | ------------------------- | ------------------------------ | --------------------- | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:...   | button    | onClick                   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => onChange(!checked)  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('criar')}>{IC.plu...   | clickable | () => switchTab('criar')  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('dominios')}>{IC....   | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| switchTab('apps')}>{IC.puzz...   | clickable | () => switchTab('apps')   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('protecao')}>{IC....   | clickable | () => switchTab('prote... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setNewDomain('')}>{IC.plus(...   | clickable | () => setNewDomain('')    | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => setPrompt(prev =... | POST /api/auth/register        | /auth/register        | INCOMPLETO | Route /auth/register exists but no se... |
+| {IC.zap(16)} Gerar Site com IA   | clickable | handleGenerate            | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| loadSavedSite(site)}>{IC.si...   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| loadSavedSite(site)}>{site....   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| X                                | button    | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| Voltar                           | clickable | () => { setPhase('ask'... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {publishing ? 'Publicando.....   | clickable | handlePublish             | POST /kloel/site/save          | /kloel/site/save      | INCOMPLETO | Route /kloel/site/save exists but no ... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| handleDelete(site.id)}>{IC....   | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| setSelectedSite(null)}>Voltar    | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| (sem texto)                      | toggle    | setSslEnabled             | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setDdosProtection         | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setFirewallEnabled        | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setAutoBackups            | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| fontFamily: SORA, fontSize:...   | button    | () => switchTab(t.id)     | DELETE /crm/deals/:dealId      | /crm/deals/:id        | FUNCIONA   | Complete chain → deal                    |
 
 ### /sites/editar
+
 Files: `frontend/src/app/(main)/sites/editar/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | onClick | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('criar')}>{IC.plu... | clickable | () => switchTab('criar') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('dominios')}>{IC.... | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA | Complete chain (no Prisma — may use R... |
-| switchTab('apps')}>{IC.puzz... | clickable | () => switchTab('apps') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('protecao')}>{IC.... | clickable | () => switchTab('prote... | — | — | FUNCIONA | State handler in component with save ... |
-| setNewDomain('')}>{IC.plus(... | clickable | () => setNewDomain('') | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setPrompt(prev =... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| {IC.zap(16)} Gerar Site com IA | clickable | handleGenerate | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| loadSavedSite(site)}>{IC.si... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| loadSavedSite(site)}>{site.... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| X | button | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| Voltar | clickable | () => { setPhase('ask'... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {publishing ? 'Publicando..... | clickable | handlePublish | POST /kloel/site/save | /kloel/site/save | INCOMPLETO | Route /kloel/site/save exists but no ... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| handleDelete(site.id)}>{IC.... | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| setSelectedSite(null)}>Voltar | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| (sem texto) | toggle | setSslEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setDdosProtection | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setFirewallEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setAutoBackups | — | — | FUNCIONA | State handler in component with save ... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                         | Tipo      | Handler                   | API                            | Backend               | Status     | Reason                                   |
+| -------------------------------- | --------- | ------------------------- | ------------------------------ | --------------------- | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:...   | button    | onClick                   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => onChange(!checked)  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('criar')}>{IC.plu...   | clickable | () => switchTab('criar')  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('dominios')}>{IC....   | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| switchTab('apps')}>{IC.puzz...   | clickable | () => switchTab('apps')   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('protecao')}>{IC....   | clickable | () => switchTab('prote... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setNewDomain('')}>{IC.plus(...   | clickable | () => setNewDomain('')    | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => setPrompt(prev =... | POST /api/auth/register        | /auth/register        | INCOMPLETO | Route /auth/register exists but no se... |
+| {IC.zap(16)} Gerar Site com IA   | clickable | handleGenerate            | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| loadSavedSite(site)}>{IC.si...   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| loadSavedSite(site)}>{site....   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| X                                | button    | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| Voltar                           | clickable | () => { setPhase('ask'... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {publishing ? 'Publicando.....   | clickable | handlePublish             | POST /kloel/site/save          | /kloel/site/save      | INCOMPLETO | Route /kloel/site/save exists but no ... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| handleDelete(site.id)}>{IC....   | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| setSelectedSite(null)}>Voltar    | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| (sem texto)                      | toggle    | setSslEnabled             | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setDdosProtection         | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setFirewallEnabled        | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setAutoBackups            | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| fontFamily: SORA, fontSize:...   | button    | () => switchTab(t.id)     | DELETE /crm/deals/:dealId      | /crm/deals/:id        | FUNCIONA   | Complete chain → deal                    |
 
 ### /sites/hospedagem
+
 Files: `frontend/src/app/(main)/sites/hospedagem/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | onClick | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('criar')}>{IC.plu... | clickable | () => switchTab('criar') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('dominios')}>{IC.... | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA | Complete chain (no Prisma — may use R... |
-| switchTab('apps')}>{IC.puzz... | clickable | () => switchTab('apps') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('protecao')}>{IC.... | clickable | () => switchTab('prote... | — | — | FUNCIONA | State handler in component with save ... |
-| setNewDomain('')}>{IC.plus(... | clickable | () => setNewDomain('') | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setPrompt(prev =... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| {IC.zap(16)} Gerar Site com IA | clickable | handleGenerate | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| loadSavedSite(site)}>{IC.si... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| loadSavedSite(site)}>{site.... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| X | button | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| Voltar | clickable | () => { setPhase('ask'... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {publishing ? 'Publicando..... | clickable | handlePublish | POST /kloel/site/save | /kloel/site/save | INCOMPLETO | Route /kloel/site/save exists but no ... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| handleDelete(site.id)}>{IC.... | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| setSelectedSite(null)}>Voltar | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| (sem texto) | toggle | setSslEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setDdosProtection | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setFirewallEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setAutoBackups | — | — | FUNCIONA | State handler in component with save ... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                         | Tipo      | Handler                   | API                            | Backend               | Status     | Reason                                   |
+| -------------------------------- | --------- | ------------------------- | ------------------------------ | --------------------- | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:...   | button    | onClick                   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => onChange(!checked)  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('criar')}>{IC.plu...   | clickable | () => switchTab('criar')  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('dominios')}>{IC....   | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| switchTab('apps')}>{IC.puzz...   | clickable | () => switchTab('apps')   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('protecao')}>{IC....   | clickable | () => switchTab('prote... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setNewDomain('')}>{IC.plus(...   | clickable | () => setNewDomain('')    | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => setPrompt(prev =... | POST /api/auth/register        | /auth/register        | INCOMPLETO | Route /auth/register exists but no se... |
+| {IC.zap(16)} Gerar Site com IA   | clickable | handleGenerate            | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| loadSavedSite(site)}>{IC.si...   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| loadSavedSite(site)}>{site....   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| X                                | button    | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| Voltar                           | clickable | () => { setPhase('ask'... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {publishing ? 'Publicando.....   | clickable | handlePublish             | POST /kloel/site/save          | /kloel/site/save      | INCOMPLETO | Route /kloel/site/save exists but no ... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| handleDelete(site.id)}>{IC....   | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| setSelectedSite(null)}>Voltar    | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| (sem texto)                      | toggle    | setSslEnabled             | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setDdosProtection         | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setFirewallEnabled        | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setAutoBackups            | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| fontFamily: SORA, fontSize:...   | button    | () => switchTab(t.id)     | DELETE /crm/deals/:dealId      | /crm/deals/:id        | FUNCIONA   | Complete chain → deal                    |
 
 ### /sites/protecao
+
 Files: `frontend/src/app/(main)/sites/protecao/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
 - `/products/categories/list` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| fontFamily: SORA, fontSize:... | button | onClick | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onChange(!checked) | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('criar')}>{IC.plu... | clickable | () => switchTab('criar') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('dominios')}>{IC.... | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA | Complete chain (no Prisma — may use R... |
-| switchTab('apps')}>{IC.puzz... | clickable | () => switchTab('apps') | — | — | FUNCIONA | State handler in component with save ... |
-| switchTab('protecao')}>{IC.... | clickable | () => switchTab('prote... | — | — | FUNCIONA | State handler in component with save ... |
-| setNewDomain('')}>{IC.plus(... | clickable | () => setNewDomain('') | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setPrompt(prev =... | POST /api/auth/register | /auth/register | INCOMPLETO | Route /auth/register exists but no se... |
-| {IC.zap(16)} Gerar Site com IA | clickable | handleGenerate | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| loadSavedSite(site)}>{IC.si... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| loadSavedSite(site)}>{site.... | clickable | () => loadSavedSite(site) | — | — | FUNCIONA | State handler in component with save ... |
-| X | button | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| Voltar | clickable | () => { setPhase('ask'... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {publishing ? 'Publicando..... | clickable | handlePublish | POST /kloel/site/save | /kloel/site/save | INCOMPLETO | Route /kloel/site/save exists but no ... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| setSelectedSite(site)}>{IC.... | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| handleDelete(site.id)}>{IC.... | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| setSelectedSite(null)}>Voltar | clickable | () => setSelectedSite(... | — | — | FUNCIONA | State handler in component with save ... |
-| {saving ? 'Salvando...' : '... | clickable | handleSave | PUT /kloel/site/:savedSiteId | /kloel/site/:id | INCOMPLETO | Route /kloel/site/:id exists but no s... |
-| {IC.zap(14)} Editar com IA | clickable | handleEditWithAI | POST /kloel/site/generate | /kloel/site/generate | INCOMPLETO | Route /kloel/site/generate exists but... |
-| (sem texto) | toggle | setSslEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setDdosProtection | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setFirewallEnabled | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | toggle | setAutoBackups | — | — | FUNCIONA | State handler in component with save ... |
-| fontFamily: SORA, fontSize:... | button | () => switchTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
+| Elemento                         | Tipo      | Handler                   | API                            | Backend               | Status     | Reason                                   |
+| -------------------------------- | --------- | ------------------------- | ------------------------------ | --------------------- | ---------- | ---------------------------------------- |
+| fontFamily: SORA, fontSize:...   | button    | onClick                   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => onChange(!checked)  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('criar')}>{IC.plu...   | clickable | () => switchTab('criar')  | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('dominios')}>{IC....   | clickable | () => switchTab('domin... | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| switchTab('apps')}>{IC.puzz...   | clickable | () => switchTab('apps')   | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| switchTab('protecao')}>{IC....   | clickable | () => switchTab('prote... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setNewDomain('')}>{IC.plus(...   | clickable | () => setNewDomain('')    | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | button    | () => setPrompt(prev =... | POST /api/auth/register        | /auth/register        | INCOMPLETO | Route /auth/register exists but no se... |
+| {IC.zap(16)} Gerar Site com IA   | clickable | handleGenerate            | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| loadSavedSite(site)}>{IC.si...   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| loadSavedSite(site)}>{site....   | clickable | () => loadSavedSite(site) | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| X                                | button    | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| Voltar                           | clickable | () => { setPhase('ask'... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {publishing ? 'Publicando.....   | clickable | handlePublish             | POST /kloel/site/save          | /kloel/site/save      | INCOMPLETO | Route /kloel/site/save exists but no ... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {site.name \|\| 'Site sem tit... | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| setSelectedSite(site)}>{IC....   | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| handleDelete(site.id)}>{IC....   | clickable | () => handleDelete(sit... | DELETE /kloel/site/:siteId     | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| setSelectedSite(null)}>Voltar    | clickable | () => setSelectedSite(... | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| {saving ? 'Salvando...' : '...   | clickable | handleSave                | PUT /kloel/site/:savedSiteId   | /kloel/site/:id       | INCOMPLETO | Route /kloel/site/:id exists but no s... |
+| {IC.zap(14)} Editar com IA       | clickable | handleEditWithAI          | POST /kloel/site/generate      | /kloel/site/generate  | INCOMPLETO | Route /kloel/site/generate exists but... |
+| (sem texto)                      | toggle    | setSslEnabled             | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setDdosProtection         | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setFirewallEnabled        | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                      | toggle    | setAutoBackups            | —                              | —                     | FUNCIONA   | State handler in component with save ... |
+| fontFamily: SORA, fontSize:...   | button    | () => switchTab(t.id)     | DELETE /crm/deals/:dealId      | /crm/deals/:id        | FUNCIONA   | Complete chain → deal                    |
 
 ### /tools
-*Redirect to /ferramentas*
+
+_Redirect to /ferramentas_
 
 ### /vendas
+
 Files: `frontend/src/app/(main)/vendas/page.tsx`, `frontend/src/components/kloel/vendas/VendasView.tsx`, `frontend/src/hooks/useSales.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/sales` (useSWR) — OK
 - `/sales/stats` (useSWR) — OK
 - `/sales/chart` (useSWR) — OK
@@ -1773,50 +1881,52 @@ Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 - `/crm/pipelines` (useSWR) — OK
 - `/crm/deals` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => setDetailDeal(deal) | — | — | FUNCIONA | State handler in component with save ... |
-| form | form | (e) => handleCreate(e,... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => setDetailDeal(null) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | (e) => e.stopPropagati... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setDetailDeal(null) | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | button | () => { setResult(null... | POST /api/workspace/me | — | QUEBRADO | API call to /api/workspace/me has no ... |
-| Fechar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Cancelar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | handleCreate | POST /kloel/payment/:worksp... | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onRefund(item.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.pause(12)} Pausar | button | () => onPauseSub(item.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Mudar plano | button | () => onChangePlan(ite... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.x(12)} Cancelar | button | () => onCancelSub(item... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.play(12)} Retomar | button | () => onResumeSub(item... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.truck(12)} Marcar como ... | button | () => { onOpenShipModa... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.undo(12)} Devolver | button | () => onReturnOrder(it... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Informar envio | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Informar envio | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| Cancelar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onShipOrder(show... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onFilterStatusCh... | — | — | FUNCIONA | State handler in component with save ... |
-| {s.leadPhone \|\| 'Cliente'} | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {s.customerName} | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {o.customerName} | clickable | () => onOpenDetail(o.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => setShowSmartPaym... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| let rows: Record | button | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| Atualizar | button | () => generateAlerts() | POST /voice/generate | /voice/generate | INCOMPLETO | Route /voice/generate exists but no s... |
-| Resolver | button | () => resolveAlert(ale... | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | () => setDetailDeal(deal) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| form                           | form      | (e) => handleCreate(e,... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | button    | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | () => setDetailDeal(null) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | (e) => e.stopPropagati... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => setDetailDeal(null) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | button    | () => { setResult(null... | POST /api/workspace/me           | —                              | QUEBRADO   | API call to /api/workspace/me has no ... |
+| Fechar                         | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cancelar                       | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | handleCreate              | POST /kloel/payment/:worksp...   | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onRefund(item.id)   | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.pause(12)} Pausar          | button    | () => onPauseSub(item.id) | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Mudar plano                    | button    | () => onChangePlan(ite... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.x(12)} Cancelar            | button    | () => onCancelSub(item... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.play(12)} Retomar          | button    | () => onResumeSub(item... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.truck(12)} Marcar como ... | button    | () => { onOpenShipModa... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.undo(12)} Devolver         | button    | () => onReturnOrder(it... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Informar envio                 | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Informar envio                 | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cancelar                       | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onShipOrder(show... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onFilterStatusCh... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {s.leadPhone \|\| 'Cliente'}   | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {s.customerName}               | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {o.customerName}               | clickable | () => onOpenDetail(o.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | button    | () => setShowSmartPaym... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| let rows: Record               | button    | () => {                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Atualizar                      | button    | () => generateAlerts()    | POST /voice/generate             | /voice/generate                | INCOMPLETO | Route /voice/generate exists but no s... |
+| Resolver                       | button    | () => resolveAlert(ale... | POST /api/auth/google            | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n... |
 
 ### /vendas/assinaturas
+
 Files: `frontend/src/app/(main)/vendas/assinaturas/page.tsx`, `frontend/src/components/kloel/vendas/VendasView.tsx`, `frontend/src/hooks/useSales.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/sales` (useSWR) — OK
 - `/sales/stats` (useSWR) — OK
 - `/sales/chart` (useSWR) — OK
@@ -1833,50 +1943,52 @@ Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 - `/crm/pipelines` (useSWR) — OK
 - `/crm/deals` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => setDetailDeal(deal) | — | — | FUNCIONA | State handler in component with save ... |
-| form | form | (e) => handleCreate(e,... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => setDetailDeal(null) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | (e) => e.stopPropagati... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setDetailDeal(null) | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | button | () => { setResult(null... | POST /api/workspace/me | — | QUEBRADO | API call to /api/workspace/me has no ... |
-| Fechar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Cancelar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | handleCreate | POST /kloel/payment/:worksp... | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onRefund(item.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.pause(12)} Pausar | button | () => onPauseSub(item.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Mudar plano | button | () => onChangePlan(ite... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.x(12)} Cancelar | button | () => onCancelSub(item... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.play(12)} Retomar | button | () => onResumeSub(item... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.truck(12)} Marcar como ... | button | () => { onOpenShipModa... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.undo(12)} Devolver | button | () => onReturnOrder(it... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Informar envio | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Informar envio | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| Cancelar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onShipOrder(show... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onFilterStatusCh... | — | — | FUNCIONA | State handler in component with save ... |
-| {s.leadPhone \|\| 'Cliente'} | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {s.customerName} | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {o.customerName} | clickable | () => onOpenDetail(o.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => setShowSmartPaym... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| let rows: Record | button | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| Atualizar | button | () => generateAlerts() | POST /voice/generate | /voice/generate | INCOMPLETO | Route /voice/generate exists but no s... |
-| Resolver | button | () => resolveAlert(ale... | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | () => setDetailDeal(deal) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| form                           | form      | (e) => handleCreate(e,... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | button    | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | () => setDetailDeal(null) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | (e) => e.stopPropagati... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => setDetailDeal(null) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | button    | () => { setResult(null... | POST /api/workspace/me           | —                              | QUEBRADO   | API call to /api/workspace/me has no ... |
+| Fechar                         | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cancelar                       | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | handleCreate              | POST /kloel/payment/:worksp...   | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onRefund(item.id)   | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.pause(12)} Pausar          | button    | () => onPauseSub(item.id) | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Mudar plano                    | button    | () => onChangePlan(ite... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.x(12)} Cancelar            | button    | () => onCancelSub(item... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.play(12)} Retomar          | button    | () => onResumeSub(item... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.truck(12)} Marcar como ... | button    | () => { onOpenShipModa... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.undo(12)} Devolver         | button    | () => onReturnOrder(it... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Informar envio                 | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Informar envio                 | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cancelar                       | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onShipOrder(show... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onFilterStatusCh... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {s.leadPhone \|\| 'Cliente'}   | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {s.customerName}               | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {o.customerName}               | clickable | () => onOpenDetail(o.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | button    | () => setShowSmartPaym... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| let rows: Record               | button    | () => {                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Atualizar                      | button    | () => generateAlerts()    | POST /voice/generate             | /voice/generate                | INCOMPLETO | Route /voice/generate exists but no s... |
+| Resolver                       | button    | () => resolveAlert(ale... | POST /api/auth/google            | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n... |
 
 ### /vendas/fisicos
+
 Files: `frontend/src/app/(main)/vendas/fisicos/page.tsx`, `frontend/src/components/kloel/vendas/VendasView.tsx`, `frontend/src/hooks/useSales.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/sales` (useSWR) — OK
 - `/sales/stats` (useSWR) — OK
 - `/sales/chart` (useSWR) — OK
@@ -1893,69 +2005,73 @@ Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 - `/crm/pipelines` (useSWR) — OK
 - `/crm/deals` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => setDetailDeal(deal) | — | — | FUNCIONA | State handler in component with save ... |
-| form | form | (e) => handleCreate(e,... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => setDetailDeal(null) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | (e) => e.stopPropagati... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setDetailDeal(null) | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | button | () => { setResult(null... | POST /api/workspace/me | — | QUEBRADO | API call to /api/workspace/me has no ... |
-| Fechar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Cancelar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | handleCreate | POST /kloel/payment/:worksp... | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onRefund(item.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.pause(12)} Pausar | button | () => onPauseSub(item.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Mudar plano | button | () => onChangePlan(ite... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.x(12)} Cancelar | button | () => onCancelSub(item... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.play(12)} Retomar | button | () => onResumeSub(item... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.truck(12)} Marcar como ... | button | () => { onOpenShipModa... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.undo(12)} Devolver | button | () => onReturnOrder(it... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Informar envio | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Informar envio | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| Cancelar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onShipOrder(show... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onFilterStatusCh... | — | — | FUNCIONA | State handler in component with save ... |
-| {s.leadPhone \|\| 'Cliente'} | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {s.customerName} | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {o.customerName} | clickable | () => onOpenDetail(o.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => setShowSmartPaym... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| let rows: Record | button | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| Atualizar | button | () => generateAlerts() | POST /voice/generate | /voice/generate | INCOMPLETO | Route /voice/generate exists but no s... |
-| Resolver | button | () => resolveAlert(ale... | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | () => setDetailDeal(deal) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| form                           | form      | (e) => handleCreate(e,... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | button    | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | () => setDetailDeal(null) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | (e) => e.stopPropagati... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => setDetailDeal(null) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | button    | () => { setResult(null... | POST /api/workspace/me           | —                              | QUEBRADO   | API call to /api/workspace/me has no ... |
+| Fechar                         | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cancelar                       | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | handleCreate              | POST /kloel/payment/:worksp...   | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onRefund(item.id)   | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.pause(12)} Pausar          | button    | () => onPauseSub(item.id) | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Mudar plano                    | button    | () => onChangePlan(ite... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.x(12)} Cancelar            | button    | () => onCancelSub(item... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.play(12)} Retomar          | button    | () => onResumeSub(item... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.truck(12)} Marcar como ... | button    | () => { onOpenShipModa... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.undo(12)} Devolver         | button    | () => onReturnOrder(it... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Informar envio                 | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Informar envio                 | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cancelar                       | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onShipOrder(show... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onFilterStatusCh... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {s.leadPhone \|\| 'Cliente'}   | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {s.customerName}               | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {o.customerName}               | clickable | () => onOpenDetail(o.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | button    | () => setShowSmartPaym... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| let rows: Record               | button    | () => {                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Atualizar                      | button    | () => generateAlerts()    | POST /voice/generate             | /voice/generate                | INCOMPLETO | Route /voice/generate exists but no s... |
+| Resolver                       | button    | () => resolveAlert(ale... | POST /api/auth/google            | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n... |
 
 ### /vendas/gestao-vendas
+
 Files: `frontend/src/app/(main)/vendas/gestao-vendas/page.tsx`, `frontend/src/hooks/useCRM.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/normalizer.ts` +5 more
 Status: 5 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/crm/contacts` (useSWR) — OK
 - `/crm/contacts/:phone` (useSWR) — OK
 - `/crm/pipelines` (useSWR) — OK
 - `/crm/deals` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => handleRemoveTag(... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => handleAddTag(phone) | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => { setActiveConta... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => setPage(String(M... | POST /crm/contacts | /crm/contacts | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | () => setPage(String(N... | POST /crm/contacts | /crm/contacts | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento    | Tipo      | Handler                   | API                              | Backend                        | Status   | Reason                                   |
+| ----------- | --------- | ------------------------- | -------------------------------- | ------------------------------ | -------- | ---------------------------------------- |
+| (sem texto) | clickable | () => handleRemoveTag(... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact            |
+| (sem texto) | clickable | () => handleAddTag(phone) | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact            |
+| (sem texto) | clickable | () => { setActiveConta... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact            |
+| (sem texto) | clickable | () => setPage(String(M... | POST /crm/contacts               | /crm/contacts                  | FUNCIONA | Complete chain (no Prisma — may use R... |
+| (sem texto) | clickable | () => setPage(String(N... | POST /crm/contacts               | /crm/contacts                  | FUNCIONA | Complete chain (no Prisma — may use R... |
+| (sem texto) | clickable | onClick                   | —                                | —                              | FACHADA  | Handler exists but no API call detect... |
 
 ### /vendas/pipeline
+
 Files: `frontend/src/app/(main)/vendas/pipeline/page.tsx`, `frontend/src/components/kloel/vendas/VendasView.tsx`, `frontend/src/hooks/useSales.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/sales` (useSWR) — OK
 - `/sales/stats` (useSWR) — OK
 - `/sales/chart` (useSWR) — OK
@@ -1972,370 +2088,391 @@ Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 - `/crm/pipelines` (useSWR) — OK
 - `/crm/deals` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => setDetailDeal(deal) | — | — | FUNCIONA | State handler in component with save ... |
-| form | form | (e) => handleCreate(e,... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | () => setDetailDeal(null) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | (e) => e.stopPropagati... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => setDetailDeal(null) | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Nova cobranca | button | () => { setResult(null... | POST /api/workspace/me | — | QUEBRADO | API call to /api/workspace/me has no ... |
-| Fechar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Cancelar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | handleCreate | POST /kloel/payment/:worksp... | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
-| (sem texto) | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| {IC.x(16)} | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onRefund(item.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.pause(12)} Pausar | button | () => onPauseSub(item.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Mudar plano | button | () => onChangePlan(ite... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.x(12)} Cancelar | button | () => onCancelSub(item... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.play(12)} Retomar | button | () => onResumeSub(item... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.truck(12)} Marcar como ... | button | () => { onOpenShipModa... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {IC.undo(12)} Devolver | button | () => onReturnOrder(it... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| Informar envio | clickable | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| Informar envio | clickable | e => e.stopPropagation() | — | — | FUNCIONA | State handler in component with save ... |
-| Cancelar | button | onClose | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onShipOrder(show... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | button | () => onFilterStatusCh... | — | — | FUNCIONA | State handler in component with save ... |
-| {s.leadPhone \|\| 'Cliente'} | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {s.customerName} | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| {o.customerName} | clickable | () => onOpenDetail(o.i... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | button | () => setShowSmartPaym... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| let rows: Record | button | () => { | — | — | FUNCIONA | State handler in component with save ... |
-| Atualizar | button | () => generateAlerts() | POST /voice/generate | /voice/generate | INCOMPLETO | Route /voice/generate exists but no s... |
-| Resolver | button | () => resolveAlert(ale... | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | () => setDetailDeal(deal) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| form                           | form      | (e) => handleCreate(e,... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | button    | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | () => { setAddingStage... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | () => setDetailDeal(null) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | (e) => e.stopPropagati... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => setDetailDeal(null) | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Nova cobranca                  | button    | () => { setResult(null... | POST /api/workspace/me           | —                              | QUEBRADO   | API call to /api/workspace/me has no ... |
+| Fechar                         | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cancelar                       | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | handleCreate              | POST /kloel/payment/:worksp...   | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
+| (sem texto)                    | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {IC.x(16)}                     | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onRefund(item.id)   | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.pause(12)} Pausar          | button    | () => onPauseSub(item.id) | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Mudar plano                    | button    | () => onChangePlan(ite... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.x(12)} Cancelar            | button    | () => onCancelSub(item... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.play(12)} Retomar          | button    | () => onResumeSub(item... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.truck(12)} Marcar como ... | button    | () => { onOpenShipModa... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {IC.undo(12)} Devolver         | button    | () => onReturnOrder(it... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| Informar envio                 | clickable | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Informar envio                 | clickable | e => e.stopPropagation()  | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Cancelar                       | button    | onClose                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onShipOrder(show... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | button    | () => onFilterStatusCh... | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| {s.leadPhone \|\| 'Cliente'}   | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {s.customerName}               | clickable | () => onOpenDetail(s.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| {o.customerName}               | clickable | () => onOpenDetail(o.i... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | button    | () => setShowSmartPaym... | —                                | —                              | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| let rows: Record               | button    | () => {                   | —                                | —                              | FUNCIONA   | State handler in component with save ... |
+| Atualizar                      | button    | () => generateAlerts()    | POST /voice/generate             | /voice/generate                | INCOMPLETO | Route /voice/generate exists but no s... |
+| Resolver                       | button    | () => resolveAlert(ale... | POST /api/auth/google            | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n... |
 
 ### /video
+
 Files: `frontend/src/app/(main)/video/page.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/Card.tsx` +6 more
 Status: 6 funciona, 5 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
+
 - `/video/jobs` (useSWR) — OK
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| Atualizar | clickable | () => onRefresh(job.id) | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
-| fontSize: 13, | clickable | () => setActiveTab(t.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleCreate | POST /kloel/payment/:worksp... | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
-| (sem texto) | clickable | handleCreateVoice | POST /voice/profiles | /voice/profiles | INCOMPLETO | Route /voice/profiles exists but no s... |
-| (sem texto) | clickable | () => setGenProfileId(... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | handleGenerate | POST /voice/generate | /voice/generate | INCOMPLETO | Route /voice/generate exists but no s... |
-| Verificar status | button | handleCheckMediaJob | GET /video/job/:id | /video/job/:id | FUNCIONA | Complete chain → mediaJob |
-| (sem texto) | clickable | handleProcessMedia | GET /video/job/:id | /video/job/:id | FUNCIONA | Complete chain → mediaJob |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
-| 'rounded-lg font-medium tra... | clickable | handlePrimaryAction | — | — | FACHADA | Handler exists but no API call detect... |
-| 'rounded-lg font-medium tra... | clickable | handleSecondaryAction | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | action.onClick | POST /api/whatsapp-api/sess... | /whatsapp-api/session/action | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | back | — | — | FACHADA | Handler exists but no API call detect... |
-| /> | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA | Complete chain → tag, contact |
-| (sem texto) | clickable | onClick | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | -------------------------------- | ------------------------------ | ---------- | ---------------------------------------- |
+| Atualizar                      | clickable | () => onRefresh(job.id)   | POST /api/auth/google            | /auth/oauth/google             | INCOMPLETO | Route /auth/oauth/google exists but n... |
+| fontSize: 13,                  | clickable | () => setActiveTab(t.id)  | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleCreate              | POST /kloel/payment/:worksp...   | /kloel/payment/:workspaceId... | INCOMPLETO | Route /kloel/payment/:workspaceId/cre... |
+| (sem texto)                    | clickable | handleCreateVoice         | POST /voice/profiles             | /voice/profiles                | INCOMPLETO | Route /voice/profiles exists but no s... |
+| (sem texto)                    | clickable | () => setGenProfileId(... | DELETE /crm/deals/:dealId        | /crm/deals/:id                 | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | handleGenerate            | POST /voice/generate             | /voice/generate                | INCOMPLETO | Route /voice/generate exists but no s... |
+| Verificar status               | button    | handleCheckMediaJob       | GET /video/job/:id               | /video/job/:id                 | FUNCIONA   | Complete chain → mediaJob                |
+| (sem texto)                    | clickable | handleProcessMedia        | GET /video/job/:id               | /video/job/:id                 | FUNCIONA   | Complete chain → mediaJob                |
+| (sem texto)                    | clickable | onClick                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| 'rounded-lg font-medium tra... | clickable | handlePrimaryAction       | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| 'rounded-lg font-medium tra... | clickable | handleSecondaryAction     | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | action.onClick            | POST /api/whatsapp-api/sess...   | /whatsapp-api/session/action   | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| (sem texto)                    | clickable | back                      | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
+| />                             | clickable | () => setActiveTag(act... | DELETE /crm/contacts/:phone/t... | /crm/contacts/:phone/tags/:tag | FUNCIONA   | Complete chain → tag, contact            |
+| (sem texto)                    | clickable | onClick                   | —                                | —                              | FACHADA    | Handler exists but no API call detect... |
 
 ### /webinarios
+
 Files: `frontend/src/app/(main)/webinarios/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +4 more
 Status: 16 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => setViewing(null) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => openAuthModal() | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => setShowModal(true) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => setViewing(w) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | (e) => openEdit(w, e) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | (e) => { e.stopPropaga... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => setShowModal(false) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | (e) => e.stopPropagati... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowModal(false) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | handleCreate | POST /webinars | /webinars | INCOMPLETO | Route /webinars exists but no service... |
-| (sem texto) | clickable | () => setEditingWebina... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | (e) => e.stopPropagati... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setEditingWebina... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | handleEdit | PUT /member-areas/:id | /member-areas/:id | INCOMPLETO | Route /member-areas/:id exists but no... |
-| (sem texto) | clickable | () => setConfirmDelete... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | (e) => e.stopPropagati... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setConfirmDelete... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => handleDelete(con... | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento    | Tipo      | Handler                   | API                       | Backend           | Status     | Reason                                   |
+| ----------- | --------- | ------------------------- | ------------------------- | ----------------- | ---------- | ---------------------------------------- |
+| (sem texto) | clickable | () => setViewing(null)    | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | () => openAuthModal()     | —                         | —                 | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto) | clickable | () => setShowModal(true)  | —                         | —                 | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto) | clickable | () => setViewing(w)       | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | (e) => openEdit(w, e)     | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | (e) => { e.stopPropaga... | DELETE /crm/deals/:dealId | /crm/deals/:id    | FUNCIONA   | Complete chain → deal                    |
+| (sem texto) | clickable | () => setShowModal(false) | —                         | —                 | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto) | clickable | (e) => e.stopPropagati... | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | () => setShowModal(false) | —                         | —                 | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto) | clickable | handleCreate              | POST /webinars            | /webinars         | INCOMPLETO | Route /webinars exists but no service... |
+| (sem texto) | clickable | () => setEditingWebina... | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | (e) => e.stopPropagati... | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | () => setEditingWebina... | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | handleEdit                | PUT /member-areas/:id     | /member-areas/:id | INCOMPLETO | Route /member-areas/:id exists but no... |
+| (sem texto) | clickable | () => setConfirmDelete... | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | (e) => e.stopPropagati... | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | () => setConfirmDelete... | —                         | —                 | FUNCIONA   | State handler in component with save ... |
+| (sem texto) | clickable | () => handleDelete(con... | —                         | —                 | FUNCIONA   | State handler in component with save ... |
 
 ### /whatsapp
+
 Files: `frontend/src/app/(main)/whatsapp/page.tsx`, `frontend/src/components/kloel/AgentDesktopViewer.tsx`, `frontend/src/lib/api.ts`, `frontend/src/lib/anonymous-session.ts`, `frontend/src/lib/api/index.ts` +4 more
 Status: 4 funciona, 5 fachada, 1 quebrado, 4 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| if (!showDiagPanel) loadDia... | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => runSessionAction... | POST /ai/assistant/analyze-... | /ai/assistant/analyze-senti... | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | loadDiagnostics | POST /api/whatsapp-api/sess... | — | QUEBRADO | API call to /api/whatsapp-api/session... |
-| if (!showSimulatePanel && !... | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | loadBrainStatus | POST /kloel/whatsapp/simula... | /kloel/whatsapp/simulate/:w... | INCOMPLETO | Route /kloel/whatsapp/simulate/:works... |
-| (sem texto) | clickable | handleSimulate | POST /kloel/whatsapp/simula... | /kloel/whatsapp/simulate/:w... | INCOMPLETO | Route /kloel/whatsapp/simulate/:works... |
-| (sem texto) | clickable | () => setMenuOpen((pre... | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| setMenuOpen(false) | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | status?.takeoverActive... | POST /billing/activate-trial | /billing/activate-trial | INCOMPLETO | Route /billing/activate-trial exists ... |
-| : | clickable | status?.agentPaused ? ... | POST /billing/activate-trial | /billing/activate-trial | INCOMPLETO | Route /billing/activate-trial exists ... |
-| /> | clickable | handleScreenClick | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA | Complete chain (no Prisma — may use R... |
-| Devolver ao agente | clickable | handleResumeAgent | POST /api/whatsapp-api/sess... | /whatsapp-api/session/resum... | FUNCIONA | Complete chain (no Prisma — may use R... |
-| Retomar agente | clickable | handleResumeFromPause | POST /workspace/:workspaceI... | /workspace/:id/jitter | FUNCIONA | Complete chain (no Prisma — may use R... |
+| Elemento                       | Tipo      | Handler                   | API                            | Backend                        | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | ------------------------------ | ------------------------------ | ---------- | ---------------------------------------- |
+| if (!showDiagPanel) loadDia... | clickable | () => {                   | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => runSessionAction... | POST /ai/assistant/analyze-... | /ai/assistant/analyze-senti... | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| (sem texto)                    | clickable | loadDiagnostics           | POST /api/whatsapp-api/sess... | —                              | QUEBRADO   | API call to /api/whatsapp-api/session... |
+| if (!showSimulatePanel && !... | clickable | () => {                   | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | loadBrainStatus           | POST /kloel/whatsapp/simula... | /kloel/whatsapp/simulate/:w... | INCOMPLETO | Route /kloel/whatsapp/simulate/:works... |
+| (sem texto)                    | clickable | handleSimulate            | POST /kloel/whatsapp/simula... | /kloel/whatsapp/simulate/:w... | INCOMPLETO | Route /kloel/whatsapp/simulate/:works... |
+| (sem texto)                    | clickable | () => setMenuOpen((pre... | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | onClose                   | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| setMenuOpen(false)             | clickable | () => {                   | —                              | —                              | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | status?.takeoverActive... | POST /billing/activate-trial   | /billing/activate-trial        | INCOMPLETO | Route /billing/activate-trial exists ... |
+| :                              | clickable | status?.agentPaused ? ... | POST /billing/activate-trial   | /billing/activate-trial        | INCOMPLETO | Route /billing/activate-trial exists ... |
+| />                             | clickable | handleScreenClick         | POST /workspace/:workspaceI... | /workspace/:id/jitter          | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| Devolver ao agente             | clickable | handleResumeAgent         | POST /api/whatsapp-api/sess... | /whatsapp-api/session/resum... | FUNCIONA   | Complete chain (no Prisma — may use R... |
+| Retomar agente                 | clickable | handleResumeFromPause     | POST /workspace/:workspaceI... | /workspace/:id/jitter          | FUNCIONA   | Complete chain (no Prisma — may use R... |
 
 ## PUBLIC Pages
 
 ### /
+
 Files: `frontend/src/app/(public)/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +5 more
 Status: 2 funciona, 0 fachada, 1 quebrado, 1 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => toggle(false) | POST /kloel/external-paymen... | /kloel/external-payments/:w... | FUNCIONA | Complete chain (no Prisma — may use R... |
-| (sem texto) | clickable | handleSubmit | POST /meta/instagram/messag... | /meta/instagram/messages/send | INCOMPLETO | Route /meta/instagram/messages/send e... |
-| (sem texto) | clickable | () => toggle(!isOpen) | POST /kloel/external-paymen... | /kloel/external-payments/:w... | FUNCIONA | Complete chain (no Prisma — may use R... |
-| {f.q} | button | ()=>setFaq(faq===i?nul... | POST /mercadopago/:workspac... | — | QUEBRADO | API call to /mercadopago/:workspaceId... |
+| Elemento    | Tipo      | Handler                   | API                                | Backend                        | Status     | Reason                                       |
+| ----------- | --------- | ------------------------- | ---------------------------------- | ------------------------------ | ---------- | -------------------------------------------- |
+| (sem texto) | clickable | () => toggle(false)       | POST /kloel/external-paymen...     | /kloel/external-payments/:w... | FUNCIONA   | Complete chain (no Prisma — may use R...     |
+| (sem texto) | clickable | handleSubmit              | POST /meta/instagram/messag...     | /meta/instagram/messages/send  | INCOMPLETO | Route /meta/instagram/messages/send e...     |
+| (sem texto) | clickable | () => toggle(!isOpen)     | POST /kloel/external-paymen...     | /kloel/external-payments/:w... | FUNCIONA   | Complete chain (no Prisma — may use R...     |
+| {f.q}       | button    | ()=>setFaq(faq===i?nul... | POST /legacy-provider/:workspac... | —                              | QUEBRADO   | API call to /legacy-provider/:workspaceId... |
 
 ### /login
+
 Files: `frontend/src/app/(public)/login/page.tsx`, `frontend/src/components/kloel/auth/kloel-auth-screen.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/components/kloel/loading-screen.tsx` +2 more
 Status: 3 funciona, 0 fachada, 1 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => setShowPassword(... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| fontFamily: sora, | clickable | handleForgotPassword | POST /api/auth/forgot-password | — | QUEBRADO | API call to /api/auth/forgot-password... |
-| fontFamily: sora, | clickable | () => switchMode("regi... | — | — | FUNCIONA | State handler in component with save ... |
-| fontFamily: sora, | clickable | () => switchMode("login") | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento          | Tipo      | Handler                   | API                            | Backend | Status   | Reason                                   |
+| ----------------- | --------- | ------------------------- | ------------------------------ | ------- | -------- | ---------------------------------------- |
+| (sem texto)       | clickable | () => setShowPassword(... | —                              | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| fontFamily: sora, | clickable | handleForgotPassword      | POST /api/auth/forgot-password | —       | QUEBRADO | API call to /api/auth/forgot-password... |
+| fontFamily: sora, | clickable | () => switchMode("regi... | —                              | —       | FUNCIONA | State handler in component with save ... |
+| fontFamily: sora, | clickable | () => switchMode("login") | —                              | —       | FUNCIONA | State handler in component with save ... |
 
 ### /onboarding
+
 Files: `frontend/src/app/(public)/onboarding/page.tsx`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
+| Elemento              | Tipo      | Handler                   | API                       | Backend        | Status   | Reason                |
+| --------------------- | --------- | ------------------------- | ------------------------- | -------------- | -------- | --------------------- |
 | alignItems: 'center', | clickable | () => setSelected(role... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
 
 ### /onboarding-chat
+
 Files: `frontend/src/app/(public)/onboarding-chat/page.tsx`, `frontend/src/lib/http.ts`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/components/kloel/loading-screen.tsx` +2 more
 Status: 0 funciona, 0 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
+| Elemento    | Tipo      | Handler     | API                            | Backend                       | Status     | Reason                                   |
+| ----------- | --------- | ----------- | ------------------------------ | ----------------------------- | ---------- | ---------------------------------------- |
 | (sem texto) | clickable | sendMessage | POST /meta/instagram/messag... | /meta/instagram/messages/send | INCOMPLETO | Route /meta/instagram/messages/send e... |
 
 ### /pay/:id
+
 Files: `frontend/src/app/(public)/pay/[id]/page.tsx`, `frontend/src/lib/http.ts`
 Status: 0 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-*No interactive elements detected*
+_No interactive elements detected_
 
 ### /privacy
+
 Files: `frontend/src/app/(public)/privacy/page.tsx`, `frontend/src/lib/design-tokens.ts`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => router.back() | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento    | Tipo      | Handler             | API | Backend | Status   | Reason                                   |
+| ----------- | --------- | ------------------- | --- | ------- | -------- | ---------------------------------------- |
+| (sem texto) | clickable | () => router.back() | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
 
 ### /register
+
 Files: `frontend/src/app/(public)/register/page.tsx`, `frontend/src/components/kloel/auth/kloel-auth-screen.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/components/kloel/loading-screen.tsx` +2 more
 Status: 3 funciona, 0 fachada, 1 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => setShowPassword(... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| fontFamily: sora, | clickable | handleForgotPassword | POST /api/auth/forgot-password | — | QUEBRADO | API call to /api/auth/forgot-password... |
-| fontFamily: sora, | clickable | () => switchMode("regi... | — | — | FUNCIONA | State handler in component with save ... |
-| fontFamily: sora, | clickable | () => switchMode("login") | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento          | Tipo      | Handler                   | API                            | Backend | Status   | Reason                                   |
+| ----------------- | --------- | ------------------------- | ------------------------------ | ------- | -------- | ---------------------------------------- |
+| (sem texto)       | clickable | () => setShowPassword(... | —                              | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| fontFamily: sora, | clickable | handleForgotPassword      | POST /api/auth/forgot-password | —       | QUEBRADO | API call to /api/auth/forgot-password... |
+| fontFamily: sora, | clickable | () => switchMode("regi... | —                              | —       | FUNCIONA | State handler in component with save ... |
+| fontFamily: sora, | clickable | () => switchMode("login") | —                              | —       | FUNCIONA | State handler in component with save ... |
 
 ### /terms
+
 Files: `frontend/src/app/(public)/terms/page.tsx`, `frontend/src/lib/design-tokens.ts`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => router.back() | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento    | Tipo      | Handler             | API | Backend | Status   | Reason                                   |
+| ----------- | --------- | ------------------- | --- | ------- | -------- | ---------------------------------------- |
+| (sem texto) | clickable | () => router.back() | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
 
 ## CHECKOUT Pages
 
 ### /:slug
+
 Files: `frontend/src/app/(checkout)/[slug]/page.tsx`, `frontend/src/app/(checkout)/[slug]/CheckoutClient.tsx`, `frontend/src/app/(checkout)/components/CheckoutShell.tsx`, `frontend/src/lib/http.ts`, `frontend/src/app/(checkout)/components/CheckoutNoir.tsx` +1 more
 Status: 30 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(1) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => goToStep(3) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| Aplicar | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | (e: React.MouseEvent) ... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => applyCoupon(c.au... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| marginTop: '12px', | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Voltar ao inicio | clickable | () => { setShowSuccess... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(1) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => goToStep(3) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| Aplicar | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | (e: React.MouseEvent) ... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => applyCoupon(c.au... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| marginTop: '12px', | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Voltar ao inicio | clickable | () => { setShowSuccess... | — | — | FUNCIONA | State handler in component with save ... |
+| Elemento           | Tipo      | Handler                   | API | Backend | Status   | Reason                                   |
+| ------------------ | --------- | ------------------------- | --- | ------- | -------- | ---------------------------------------- |
+| (sem texto)        | clickable | () => goToStep(2)         | —   | —       | FUNCIONA | State handler in component with save ... |
+| Voltar             | clickable | () => goToStep(1)         | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => goToStep(3)         | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setPaymentMethod... | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setPaymentMethod... | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setPaymentMethod... | —   | —       | FUNCIONA | State handler in component with save ... |
+| Aplicar            | clickable | () => applyCoupon(coup... | —   | —       | FUNCIONA | State handler in component with save ... |
+| Voltar             | clickable | () => goToStep(2)         | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setShowCouponMod... | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| (sem texto)        | clickable | (e: React.MouseEvent) ... | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setShowCouponMod... | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| (sem texto)        | clickable | () => applyCoupon(c.au... | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => applyCoupon(coup... | —   | —       | FUNCIONA | State handler in component with save ... |
+| marginTop: '12px', | clickable | () => setShowCouponMod... | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Voltar ao inicio   | clickable | () => { setShowSuccess... | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => goToStep(2)         | —   | —       | FUNCIONA | State handler in component with save ... |
+| Voltar             | clickable | () => goToStep(1)         | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => goToStep(3)         | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setPaymentMethod... | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setPaymentMethod... | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setPaymentMethod... | —   | —       | FUNCIONA | State handler in component with save ... |
+| Aplicar            | clickable | () => applyCoupon(coup... | —   | —       | FUNCIONA | State handler in component with save ... |
+| Voltar             | clickable | () => goToStep(2)         | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setShowCouponMod... | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| (sem texto)        | clickable | (e: React.MouseEvent) ... | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => setShowCouponMod... | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| (sem texto)        | clickable | () => applyCoupon(c.au... | —   | —       | FUNCIONA | State handler in component with save ... |
+| (sem texto)        | clickable | () => applyCoupon(coup... | —   | —       | FUNCIONA | State handler in component with save ... |
+| marginTop: '12px', | clickable | () => setShowCouponMod... | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Voltar ao inicio   | clickable | () => { setShowSuccess... | —   | —       | FUNCIONA | State handler in component with save ... |
 
 ### /order/:orderId/boleto
+
 Files: `frontend/src/app/(checkout)/order/[orderId]/boleto/page.tsx`, `frontend/src/app/(checkout)/hooks/useCheckout.ts`, `frontend/src/lib/http.ts`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | handleCopy | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento    | Tipo      | Handler    | API | Backend | Status   | Reason                                   |
+| ----------- | --------- | ---------- | --- | ------- | -------- | ---------------------------------------- |
+| (sem texto) | clickable | handleCopy | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
 
 ### /order/:orderId/pix
+
 Files: `frontend/src/app/(checkout)/order/[orderId]/pix/page.tsx`, `frontend/src/app/(checkout)/hooks/useCheckout.ts`, `frontend/src/lib/http.ts`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | handleCopy | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
+| Elemento    | Tipo      | Handler    | API | Backend | Status   | Reason                                   |
+| ----------- | --------- | ---------- | --- | ------- | -------- | ---------------------------------------- |
+| (sem texto) | clickable | handleCopy | —   | —       | FUNCIONA | Pure UI handler (navigation/clipboard... |
 
 ### /order/:orderId/success
+
 Files: `frontend/src/app/(checkout)/order/[orderId]/success/page.tsx`, `frontend/src/app/(checkout)/hooks/useCheckout.ts`, `frontend/src/lib/http.ts`
 Status: 0 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-*No interactive elements detected*
+_No interactive elements detected_
 
 ### /order/:orderId/upsell
+
 Files: `frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx`, `frontend/src/lib/http.ts`, `frontend/src/app/(checkout)/hooks/useCheckout.ts`
 Status: 0 funciona, 2 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | handleAccept | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | handleDecline | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento    | Tipo      | Handler       | API | Backend | Status  | Reason                                   |
+| ----------- | --------- | ------------- | --- | ------- | ------- | ---------------------------------------- |
+| (sem texto) | clickable | handleAccept  | —   | —       | FACHADA | Handler exists but no API call detect... |
+| (sem texto) | clickable | handleDecline | —   | —       | FACHADA | Handler exists but no API call detect... |
 
 ### /preview/:planId
+
 Files: `frontend/src/app/(checkout)/preview/[planId]/page.tsx`, `frontend/src/app/(checkout)/components/CheckoutNoir.tsx`, `frontend/src/components/checkout/SocialProofToast.tsx`, `frontend/src/lib/http.ts`, `frontend/src/components/checkout/KloelChatBubble.tsx` +7 more
 Status: 34 funciona, 2 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(1) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => goToStep(3) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| Aplicar | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | (e: React.MouseEvent) ... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => applyCoupon(c.au... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| marginTop: '12px', | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Voltar ao inicio | clickable | () => { setShowSuccess... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(1) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => goToStep(3) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| Aplicar | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | (e: React.MouseEvent) ... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => applyCoupon(c.au... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| marginTop: '12px', | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Voltar ao inicio | clickable | () => { setShowSuccess... | — | — | FUNCIONA | State handler in component with save ... |
-| onApplyCoupon?.(couponCode!); | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| fontSize: '13px', cursor: '... | clickable | () => setVisible(false) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| fontSize: '18px', cursor: '... | clickable | () => setDismissed(true) | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => onToggle(bump.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => setOpen(true) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Fechar chat | button | () => setOpen(false) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | sendMessage | POST /meta/instagram/messag... | /meta/instagram/messages/send | INCOMPLETO | Route /meta/instagram/messages/send e... |
+| Elemento                       | Tipo      | Handler                   | API                            | Backend                       | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | ------------------------------ | ----------------------------- | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | () => goToStep(2)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Voltar                         | clickable | () => goToStep(1)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => goToStep(3)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Aplicar                        | clickable | () => applyCoupon(coup... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Voltar                         | clickable | () => goToStep(2)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | (e: React.MouseEvent) ... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => applyCoupon(c.au... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => applyCoupon(coup... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| marginTop: '12px',             | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Voltar ao inicio               | clickable | () => { setShowSuccess... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => goToStep(2)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Voltar                         | clickable | () => goToStep(1)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => goToStep(3)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Aplicar                        | clickable | () => applyCoupon(coup... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Voltar                         | clickable | () => goToStep(2)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | (e: React.MouseEvent) ... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => applyCoupon(c.au... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => applyCoupon(coup... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| marginTop: '12px',             | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Voltar ao inicio               | clickable | () => { setShowSuccess... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| onApplyCoupon?.(couponCode!);  | clickable | () => {                   | —                              | —                             | FACHADA    | Handler exists but no API call detect... |
+| fontSize: '13px', cursor: '... | clickable | () => setVisible(false)   | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| fontSize: '18px', cursor: '... | clickable | () => setDismissed(true)  | —                              | —                             | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => onToggle(bump.id)   | DELETE /crm/deals/:dealId      | /crm/deals/:id                | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | () => setOpen(true)       | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Fechar chat                    | button    | () => setOpen(false)      | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | sendMessage               | POST /meta/instagram/messag... | /meta/instagram/messages/send | INCOMPLETO | Route /meta/instagram/messages/send e... |
 
 ### /r/:code
+
 Files: `frontend/src/app/(checkout)/r/[code]/page.tsx`, `frontend/src/app/(checkout)/components/CheckoutShell.tsx`, `frontend/src/lib/http.ts`, `frontend/src/app/(checkout)/components/CheckoutNoir.tsx`, `frontend/src/components/checkout/SocialProofToast.tsx` +8 more
 Status: 34 funciona, 2 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(1) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => goToStep(3) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| Aplicar | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | (e: React.MouseEvent) ... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => applyCoupon(c.au... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| marginTop: '12px', | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Voltar ao inicio | clickable | () => { setShowSuccess... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(1) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => goToStep(3) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setPaymentMethod... | — | — | FUNCIONA | State handler in component with save ... |
-| Aplicar | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| Voltar | clickable | () => goToStep(2) | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | (e: React.MouseEvent) ... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | () => applyCoupon(c.au... | — | — | FUNCIONA | State handler in component with save ... |
-| (sem texto) | clickable | () => applyCoupon(coup... | — | — | FUNCIONA | State handler in component with save ... |
-| marginTop: '12px', | clickable | () => setShowCouponMod... | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Voltar ao inicio | clickable | () => { setShowSuccess... | — | — | FUNCIONA | State handler in component with save ... |
-| onApplyCoupon?.(couponCode!); | clickable | () => { | — | — | FACHADA | Handler exists but no API call detect... |
-| fontSize: '13px', cursor: '... | clickable | () => setVisible(false) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| fontSize: '18px', cursor: '... | clickable | () => setDismissed(true) | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | () => onToggle(bump.id) | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| (sem texto) | clickable | () => setOpen(true) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| Fechar chat | button | () => setOpen(false) | — | — | FUNCIONA | Pure UI handler (navigation/clipboard... |
-| (sem texto) | clickable | sendMessage | POST /meta/instagram/messag... | /meta/instagram/messages/send | INCOMPLETO | Route /meta/instagram/messages/send e... |
+| Elemento                       | Tipo      | Handler                   | API                            | Backend                       | Status     | Reason                                   |
+| ------------------------------ | --------- | ------------------------- | ------------------------------ | ----------------------------- | ---------- | ---------------------------------------- |
+| (sem texto)                    | clickable | () => goToStep(2)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Voltar                         | clickable | () => goToStep(1)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => goToStep(3)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Aplicar                        | clickable | () => applyCoupon(coup... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Voltar                         | clickable | () => goToStep(2)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | (e: React.MouseEvent) ... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => applyCoupon(c.au... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => applyCoupon(coup... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| marginTop: '12px',             | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Voltar ao inicio               | clickable | () => { setShowSuccess... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => goToStep(2)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Voltar                         | clickable | () => goToStep(1)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => goToStep(3)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setPaymentMethod... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Aplicar                        | clickable | () => applyCoupon(coup... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| Voltar                         | clickable | () => goToStep(2)         | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | (e: React.MouseEvent) ... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | () => applyCoupon(c.au... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| (sem texto)                    | clickable | () => applyCoupon(coup... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| marginTop: '12px',             | clickable | () => setShowCouponMod... | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Voltar ao inicio               | clickable | () => { setShowSuccess... | —                              | —                             | FUNCIONA   | State handler in component with save ... |
+| onApplyCoupon?.(couponCode!);  | clickable | () => {                   | —                              | —                             | FACHADA    | Handler exists but no API call detect... |
+| fontSize: '13px', cursor: '... | clickable | () => setVisible(false)   | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| fontSize: '18px', cursor: '... | clickable | () => setDismissed(true)  | —                              | —                             | FACHADA    | Handler exists but no API call detect... |
+| (sem texto)                    | clickable | () => onToggle(bump.id)   | DELETE /crm/deals/:dealId      | /crm/deals/:id                | FUNCIONA   | Complete chain → deal                    |
+| (sem texto)                    | clickable | () => setOpen(true)       | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| Fechar chat                    | button    | () => setOpen(false)      | —                              | —                             | FUNCIONA   | Pure UI handler (navigation/clipboard... |
+| (sem texto)                    | clickable | sendMessage               | POST /meta/instagram/messag... | /meta/instagram/messages/send | INCOMPLETO | Route /meta/instagram/messages/send e... |
 
 ## E2E Pages
 
 ### /e2e/whatsapp-console
+
 Files: `frontend/src/app/e2e/whatsapp-console/page.tsx`, `frontend/src/components/kloel/WhatsAppConsole.tsx`, `frontend/src/lib/utils.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/lib/api.ts` +3 more
 Status: 1 funciona, 3 fachada, 0 quebrado, 3 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | onToggle | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | disconnect | POST /mercadopago/:workspac... | /mercadopago/:workspaceId/c... | INCOMPLETO | Route /mercadopago/:workspaceId/conne... |
-| (sem texto) | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
-| (sem texto) | clickable | connect | POST /mercadopago/:workspac... | /mercadopago/:workspaceId/c... | INCOMPLETO | Route /mercadopago/:workspaceId/conne... |
-| (sem texto) | clickable | reset | POST /api/auth/google | /auth/oauth/google | INCOMPLETO | Route /auth/oauth/google exists but n... |
-| 'flex w-full items-start ga... | clickable | () => setSelectedChatI... | DELETE /crm/deals/:dealId | /crm/deals/:id | FUNCIONA | Complete chain → deal |
-| /> | clickable | onClose | — | — | FACHADA | Handler exists but no API call detect... |
+| Elemento                       | Tipo      | Handler                   | API                                | Backend                            | Status     | Reason                                       |
+| ------------------------------ | --------- | ------------------------- | ---------------------------------- | ---------------------------------- | ---------- | -------------------------------------------- |
+| (sem texto)                    | clickable | onToggle                  | —                                  | —                                  | FACHADA    | Handler exists but no API call detect...     |
+| (sem texto)                    | clickable | disconnect                | POST /legacy-provider/:workspac... | /legacy-provider/:workspaceId/c... | INCOMPLETO | Route /legacy-provider/:workspaceId/conne... |
+| (sem texto)                    | clickable | onClose                   | —                                  | —                                  | FACHADA    | Handler exists but no API call detect...     |
+| (sem texto)                    | clickable | connect                   | POST /legacy-provider/:workspac... | /legacy-provider/:workspaceId/c... | INCOMPLETO | Route /legacy-provider/:workspaceId/conne... |
+| (sem texto)                    | clickable | reset                     | POST /api/auth/google              | /auth/oauth/google                 | INCOMPLETO | Route /auth/oauth/google exists but n...     |
+| 'flex w-full items-start ga... | clickable | () => setSelectedChatI... | DELETE /crm/deals/:dealId          | /crm/deals/:id                     | FUNCIONA   | Complete chain → deal                        |
+| />                             | clickable | onClose                   | —                                  | —                                  | FACHADA    | Handler exists but no API call detect...     |
 
 ### /e2e/whatsapp-session
+
 Files: `frontend/src/app/e2e/whatsapp-session/page.tsx`, `frontend/src/hooks/useWhatsAppSession.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/anonymous-session.ts`, `frontend/src/lib/api/index.ts`
 Status: 0 funciona, 0 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
-| Elemento | Tipo | Handler | API | Backend | Status | Reason |
-|----------|------|---------|-----|---------|--------|--------|
-| (sem texto) | clickable | connect | POST /mercadopago/:workspac... | /mercadopago/:workspaceId/c... | INCOMPLETO | Route /mercadopago/:workspaceId/conne... |
+| Elemento    | Tipo      | Handler | API                                | Backend                            | Status     | Reason                                       |
+| ----------- | --------- | ------- | ---------------------------------- | ---------------------------------- | ---------- | -------------------------------------------- |
+| (sem texto) | clickable | connect | POST /legacy-provider/:workspac... | /legacy-provider/:workspaceId/c... | INCOMPLETO | Route /legacy-provider/:workspaceId/conne... |
 
 ---
 
@@ -2349,8 +2486,8 @@ Fix the following non-functional UI interactions found by PULSE Functional Map:
 ## QUEBRADO (26)
 1. **frontend/src/components/kloel/landing/KloelLanding.tsx:429** — button "{f.q}"
    Page: /
-   Reason: API call to /mercadopago/:workspaceId/payments has no matching backend route
-   API: POST /mercadopago/:workspaceId/payments
+   Reason: API call to /legacy-provider/:workspaceId/payments has no matching backend route
+   API: POST /legacy-provider/:workspaceId/payments
 2. **frontend/src/app/(main)/autopilot/page.tsx:998** — clickable "(sem texto)"
    Page: /autopilot
    Reason: API call to /autopilot/insights:param)} has no matching backend route
@@ -2369,12 +2506,12 @@ Fix the following non-functional UI interactions found by PULSE Functional Map:
    API: POST /api/kyc/bank
 6. **frontend/src/app/(main)/checkout/[planId]/page.tsx:553** — toggle "Exigir CPF"
    Page: /checkout/:planId
-   Reason: API call to /mercadopago/:workspaceId/payments has no matching backend route
-   API: POST /mercadopago/:workspaceId/payments
+   Reason: API call to /legacy-provider/:workspaceId/payments has no matching backend route
+   API: POST /legacy-provider/:workspaceId/payments
 7. **frontend/src/app/(main)/checkout/[planId]/page.tsx:554** — toggle "Exigir telefone"
    Page: /checkout/:planId
-   Reason: API call to /mercadopago/:workspaceId/payments has no matching backend route
-   API: POST /mercadopago/:workspaceId/payments
+   Reason: API call to /legacy-provider/:workspaceId/payments has no matching backend route
+   API: POST /legacy-provider/:workspaceId/payments
 8. **frontend/src/app/(main)/flow/page.tsx:331** — clickable "(sem texto)"
    Page: /flow
    Reason: API call to /flows/:workspaceId/executions has no matching backend route
@@ -2385,20 +2522,20 @@ Fix the following non-functional UI interactions found by PULSE Functional Map:
    API: POST /api/auth/forgot-password
 10. **frontend/src/app/(main)/pricing/page.tsx:290** — clickable "plan.popular"
    Page: /pricing
-   Reason: API call to /kloel/asaas/:workspaceId/status has no matching backend route
-   API: POST /kloel/asaas/:workspaceId/status
+   Reason: API call to /kloel/legacy-payment/:workspaceId/status has no matching backend route
+   API: POST /kloel/legacy-payment/:workspaceId/status
 11. **frontend/src/components/plans/PlanShippingTab.tsx:272** — button "{q}"
    Page: /products/:id/plans/:planId
-   Reason: API call to /mercadopago/:workspaceId/payments has no matching backend route
-   API: POST /mercadopago/:workspaceId/payments
+   Reason: API call to /legacy-provider/:workspaceId/payments has no matching backend route
+   API: POST /legacy-provider/:workspaceId/payments
 12. **frontend/src/components/plans/PlanStoreTab.tsx:100** — toggle "Exigir e-mail na compra?"
    Page: /products/:id/plans/:planId
-   Reason: API call to /mercadopago/:workspaceId/payments has no matching backend route
-   API: POST /mercadopago/:workspaceId/payments
+   Reason: API call to /legacy-provider/:workspaceId/payments has no matching backend route
+   API: POST /legacy-provider/:workspaceId/payments
 13. **frontend/src/components/plans/PlanStoreTab.tsx:101** — toggle "Exigir confirmação de e-mail?"
    Page: /products/:id/plans/:planId
-   Reason: API call to /mercadopago/:workspaceId/payments has no matching backend route
-   API: POST /mercadopago/:workspaceId/payments
+   Reason: API call to /legacy-provider/:workspaceId/payments has no matching backend route
+   API: POST /legacy-provider/:workspaceId/payments
 14. **frontend/src/app/(main)/products/new/page.tsx:761** — clickable "e.preventDefault()"
    Page: /products/new
    Reason: API call to /api/kyc/bank has no matching backend route

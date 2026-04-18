@@ -1,80 +1,23 @@
-import { HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+
 import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
-import type { MercadoPagoCheckoutLineItem } from '../kloel/mercado-pago-order.util';
-import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { ConnectService } from '../payments/connect/connect.service';
+import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
+
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
-// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
-function serializeMercadoPagoError(error: unknown) {
-  if (!error || typeof error !== 'object') {
-    return {
-      message:
-        typeof error === 'string' && error.trim()
-          ? error
-          : typeof error === 'number' || typeof error === 'boolean'
-            ? String(error)
-            : 'unknown_error',
-    };
-  }
+type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
 
-  const value = error as {
-    message?: string;
-    name?: string;
-    status?: number;
-    statusCode?: number;
-    cause?: unknown;
-    error?: unknown;
-    response?: unknown;
-    api_response?: unknown;
-    errors?: unknown;
-  };
-
-  return {
-    name: value.name || null,
-    message: value.message || null,
-    status: value.status || value.statusCode || null,
-    cause: value.cause || null,
-    error: value.error || null,
-    response: value.response || null,
-    apiResponse: value.api_response || null,
-    errors: value.errors || null,
-  };
-}
-
-function resolveProductImage(
-  product: { imageUrl?: string | null; images?: unknown } | null | undefined,
-) {
-  if (!product) return undefined;
-  if (product.imageUrl) return product.imageUrl;
-  if (Array.isArray(product.images)) {
-    const firstImage = product.images.find((entry) => typeof entry === 'string' && entry.trim());
-    if (typeof firstImage === 'string') return firstImage;
-  }
-  return undefined;
-}
-
-function mapMercadoPagoStatus(
-  status?: string | null,
-): 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED' {
-  switch (String(status || '').toLowerCase()) {
-    case 'approved':
-      return 'APPROVED';
-    case 'rejected':
-      return 'DECLINED';
-    case 'cancelled':
-    case 'cancelled_by_user':
-      return 'CANCELED';
-    case 'authorized':
-    case 'in_process':
-      return 'PROCESSING';
-    default:
-      return 'PENDING';
-  }
-}
+type PixDisplayData = {
+  pixQrCode: string | null;
+  pixCopyPaste: string | null;
+  pixExpiresAt: string | null;
+};
 
 @Injectable()
 export class CheckoutPaymentService {
@@ -82,13 +25,13 @@ export class CheckoutPaymentService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mercadoPago: MercadoPagoService,
+    private readonly stripeCharge: StripeChargeService,
+    private readonly connectService: ConnectService,
     private readonly financialAlert: FinancialAlertService,
     private readonly auditService: AuditService,
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
   ) {}
 
-  // All dates stored as UTC via Prisma DateTime (toISOString)
   async processPayment(params: {
     orderId: string;
     idempotencyKey?: string;
@@ -97,44 +40,23 @@ export class CheckoutPaymentService {
     customerEmail: string;
     customerCPF?: string;
     customerPhone?: string;
-    paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+    paymentMethod: CheckoutPaymentMethod;
     totalInCents: number;
     installments?: number;
-    cardToken?: string;
-    cardPaymentMethodId?: string;
-    cardPaymentType?: string;
     cardHolderName?: string;
     cardLast4?: string;
   }) {
-    const order =
-      typeof this.prisma.checkoutOrder.findFirst === 'function'
-        ? await this.prisma.checkoutOrder.findFirst({
-            where: { id: params.orderId, workspaceId: params.workspaceId },
-            include: {
-              plan: {
-                include: {
-                  product: true,
-                },
-              },
-            },
-          })
-        : await this.prisma.checkoutOrder.findUnique({
-            where: { id: params.orderId },
-            include: {
-              plan: {
-                include: {
-                  product: true,
-                },
-              },
-            },
-          });
-
-    if (!order) {
-      throw new NotFoundException('Pedido não encontrado para processar no Mercado Pago.');
+    if (params.paymentMethod === 'BOLETO') {
+      throw new BadRequestException(
+        'Boleto ainda não está habilitado no checkout Stripe-only. Use cartão ou Pix.',
+      );
     }
 
-    const product = order.plan?.product;
-    const productName = product?.name || order.plan?.name || `Pedido ${params.orderId}`;
+    const order = await this.findOrder(params.orderId, params.workspaceId);
+    if (!order) {
+      throw new NotFoundException('Pedido não encontrado para processar no Stripe.');
+    }
+
     const orderMetadata =
       order.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
         ? (order.metadata as Record<string, unknown>)
@@ -143,221 +65,113 @@ export class CheckoutPaymentService {
     const chargedTotalInCents = Number(
       orderMetadata.chargedTotalInCents || baseTotalInCents || params.totalInCents || 0,
     );
-    const marketplaceFeeInCents = Number(
-      orderMetadata.marketplaceFeeInCents || orderMetadata.platformNetRevenueInCents || 0,
-    );
-    const lineItems = Array.isArray(orderMetadata.lineItems)
-      ? (orderMetadata.lineItems as MercadoPagoCheckoutLineItem[])
-      : [];
-    const customerRegistrationDate =
-      typeof orderMetadata.customerRegistrationDate === 'string'
-        ? orderMetadata.customerRegistrationDate
-        : undefined;
-    const meliSessionId =
-      typeof orderMetadata.meliSessionId === 'string' ? orderMetadata.meliSessionId : undefined;
+    const platformFeeInCents = Number(orderMetadata.platformFeeInCents || 0);
+    const interestInCents = Number(orderMetadata.installmentInterestInCents || 0);
     const idempotencyKey = params.idempotencyKey || params.orderId;
+    const sellerStripeAccountId = await this.ensureSellerStripeAccountId(params.workspaceId);
     const amount = chargedTotalInCents / 100;
 
     try {
-      if (
-        params.paymentMethod === 'CREDIT_CARD' &&
-        (!params.cardToken || !params.cardPaymentMethodId)
-      ) {
-        throw new HttpException(
-          'Token do cartão do Mercado Pago é obrigatório para pagamentos com cartão.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const { order: mercadoPagoOrder, split } = await this.mercadoPago.createMarketplaceOrder({
+      const charge = await this.stripeCharge.createSaleCharge({
         workspaceId: params.workspaceId,
-        orderId: params.orderId,
+        sellerStripeAccountId,
+        buyerPaidCents: BigInt(chargedTotalInCents),
+        saleValueCents: BigInt(baseTotalInCents),
+        interestCents: BigInt(interestInCents),
+        platformFeeCents: BigInt(platformFeeInCents),
+        currency: String(order.plan?.currency || 'BRL'),
         idempotencyKey,
-        orderNumber: order.orderNumber,
-        baseTotalInCents,
-        chargedTotalInCents,
-        marketplaceFeeInCents,
-        customerName: params.customerName,
-        customerEmail: params.customerEmail,
-        customerCPF: params.customerCPF,
-        customerPhone: params.customerPhone,
-        shippingAddress: order.shippingAddress,
-        productName,
-        productDescription: product?.description || order.plan?.name || productName,
-        productImage: resolveProductImage(product),
-        paymentMethod: params.paymentMethod,
-        cardToken: params.cardToken,
-        cardPaymentMethodId: params.cardPaymentMethodId,
-        cardPaymentType: params.cardPaymentType,
-        installments: params.installments,
-        ipAddress: order.ipAddress || undefined,
-        shippingPriceInCents: order.shippingPrice || 0,
-        customerRegistrationDate,
-        meliSessionId,
-        lineItems,
+        buyerEmail: params.customerEmail,
+        paymentMethodTypes: params.paymentMethod === 'PIX' ? ['pix'] : ['card'],
+        confirm: params.paymentMethod === 'PIX',
+        paymentMethodData:
+          params.paymentMethod === 'PIX'
+            ? {
+                type: 'pix',
+                billing_details: {
+                  name: params.customerName,
+                  email: params.customerEmail,
+                  phone: params.customerPhone,
+                },
+              }
+            : undefined,
+        paymentMethodOptions:
+          params.paymentMethod === 'PIX'
+            ? {
+                pix: {
+                  expires_after_seconds: 30 * 60,
+                },
+              }
+            : undefined,
+        metadata: {
+          kloel_order_id: params.orderId,
+          workspace_id: params.workspaceId,
+        },
       });
 
-      const primaryPayment = this.mercadoPago.extractPrimaryOrderPayment(mercadoPagoOrder);
-      const paymentStatus = mapMercadoPagoStatus(primaryPayment.status);
+      const paymentStatus = mapStripePaymentStatus(charge.stripePaymentIntent.status);
       const approved = paymentStatus === 'APPROVED';
+      const pixData =
+        params.paymentMethod === 'PIX'
+          ? extractPixDisplayData(charge.stripePaymentIntent)
+          : { pixQrCode: null, pixCopyPaste: null, pixExpiresAt: null };
 
       const payment = await this.prisma.$transaction(
         async (tx) => {
-          const p = await tx.checkoutPayment.create({
+          const createdPayment = await tx.checkoutPayment.create({
             data: {
               orderId: params.orderId,
-              gateway: 'mercadopago',
-              externalId: primaryPayment.externalId || mercadoPagoOrder.id || null,
-              pixQrCode: primaryPayment.pixQrCode,
-              pixCopyPaste: primaryPayment.pixCopyPaste,
-              pixExpiresAt: primaryPayment.pixExpiresAt
-                ? new Date(primaryPayment.pixExpiresAt)
-                : params.paymentMethod === 'PIX'
-                  ? new Date(Date.now() + 30 * 60 * 1000)
-                  : null,
-              boletoUrl: primaryPayment.boletoUrl,
-              boletoBarcode: primaryPayment.boletoBarcode,
-              boletoExpiresAt: primaryPayment.boletoExpiresAt
-                ? new Date(primaryPayment.boletoExpiresAt)
-                : null,
+              gateway: 'stripe',
+              externalId: charge.paymentIntentId,
+              pixQrCode: pixData.pixQrCode,
+              pixCopyPaste: pixData.pixCopyPaste,
+              pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
+              boletoUrl: null,
+              boletoBarcode: null,
+              boletoExpiresAt: null,
               cardLast4: params.cardLast4 || null,
-              cardBrand: primaryPayment.cardBrand,
+              cardBrand: null,
               status: paymentStatus,
-              webhookData: JSON.parse(
-                JSON.stringify({
-                  provider: 'mercadopago',
-                  order: mercadoPagoOrder,
-                  split: {
-                    ...split,
-                    baseTotalInCents,
-                    chargedTotalInCents,
-                    marketplaceFeeInCents,
-                  },
-                }),
-              ) as Prisma.InputJsonValue,
+              webhookData: toJsonValue({
+                provider: 'stripe',
+                paymentIntent: charge.stripePaymentIntent,
+                split: charge.split,
+                splitInput: charge.splitInput,
+              }),
             },
           });
 
           if (approved) {
-            // Mercado Pago can approve synchronously, but the order state still
-            // moves through PROCESSING before we close it as PAID.
-            const currentOrder =
-              typeof tx.checkoutOrder.findFirst === 'function'
-                ? await tx.checkoutOrder.findFirst({
-                    where: { id: params.orderId, workspaceId: params.workspaceId },
-                    select: { status: true },
-                  })
-                : await tx.checkoutOrder.findUnique({
-                    where: { id: params.orderId },
-                    select: { status: true },
-                  });
-            let currentStatus = currentOrder?.status || 'PENDING';
-            const transitionContext = {
-              paymentId: p.id,
-              provider: 'mercadopago',
-              externalId: primaryPayment.externalId || mercadoPagoOrder.id,
-            };
-
-            if (currentStatus !== 'PROCESSING') {
-              const canEnterProcessing = validatePaymentTransition(
-                currentStatus,
-                'PROCESSING',
-                transitionContext,
-              );
-
-              if (!canEnterProcessing) {
-                return p;
-              }
-
-              if (typeof tx.checkoutOrder.updateMany === 'function') {
-                await tx.checkoutOrder.updateMany({
-                  where: { id: params.orderId, workspaceId: params.workspaceId },
-                  data: { status: 'PROCESSING' },
-                });
-              } else {
-                await tx.checkoutOrder.update({
-                  where: { id: params.orderId },
-                  data: { status: 'PROCESSING' },
-                });
-              }
-              currentStatus = 'PROCESSING';
-            }
-
-            const canTransition = validatePaymentTransition(
-              currentStatus,
-              'APPROVED',
-              transitionContext,
-            );
-
-            if (canTransition) {
-              // Order status is PROCESSING here; approval closes it as PAID.
-              if (typeof tx.checkoutOrder.updateMany === 'function') {
-                await tx.checkoutOrder.updateMany({
-                  where: { id: params.orderId, workspaceId: params.workspaceId },
-                  data: { status: 'PAID', paidAt: new Date() },
-                });
-              } else {
-                await tx.checkoutOrder.update({
-                  where: { id: params.orderId },
-                  data: { status: 'PAID', paidAt: new Date() },
-                });
-              }
-            }
-          } else if (paymentStatus === 'PROCESSING') {
-            if (typeof tx.checkoutOrder.updateMany === 'function') {
-              await tx.checkoutOrder.updateMany({
-                where: { id: params.orderId, workspaceId: params.workspaceId },
-                data: { status: 'PROCESSING' },
-              });
-            } else {
-              await tx.checkoutOrder.update({
-                where: { id: params.orderId },
-                data: { status: 'PROCESSING' },
-              });
-            }
-          } else if (paymentStatus === 'CANCELED') {
-            if (typeof tx.checkoutOrder.updateMany === 'function') {
-              await tx.checkoutOrder.updateMany({
-                where: { id: params.orderId, workspaceId: params.workspaceId },
-                data: { status: 'CANCELED', canceledAt: new Date() },
-              });
-            } else {
-              await tx.checkoutOrder.update({
-                where: { id: params.orderId },
-                data: { status: 'CANCELED', canceledAt: new Date() },
-              });
-            }
+            await this.transitionOrderToApproved(tx, params.orderId, params.workspaceId, {
+              paymentId: createdPayment.id,
+              provider: 'stripe',
+              externalId: charge.paymentIntentId,
+            });
           }
 
           await this.auditService.logWithTx(tx, {
             workspaceId: params.workspaceId,
             action: 'CHECKOUT_PAYMENT_CREATED',
             resource: 'CheckoutPayment',
-            resourceId: p.id,
+            resourceId: createdPayment.id,
             details: {
               method: params.paymentMethod,
               amount,
               orderId: params.orderId,
-              gateway: 'mercadopago',
-              externalId: primaryPayment.externalId || mercadoPagoOrder.id,
+              gateway: 'stripe',
+              externalId: charge.paymentIntentId,
               approved,
               installments: params.installments,
-              split,
-              paymentStatus: primaryPayment.status,
+              paymentStatus: charge.stripePaymentIntent.status,
             },
           });
 
-          return p;
+          return createdPayment;
         },
         { isolationLevel: 'ReadCommitted' },
       );
 
       if (approved) {
-        const orderMetadata =
-          order.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
-            ? (order.metadata as Record<string, unknown>)
-            : {};
-
         await this.checkoutSocialLeadService
           .markConvertedFromOrder({
             workspaceId: params.workspaceId,
@@ -380,25 +194,167 @@ export class CheckoutPaymentService {
         payment,
         type: params.paymentMethod,
         approved,
-        pixQrCode: primaryPayment.pixQrCode,
-        pixCopyPaste: primaryPayment.pixCopyPaste,
-        pixExpiresAt: primaryPayment.pixExpiresAt,
-        boletoUrl: primaryPayment.boletoUrl,
-        boletoBarcode: primaryPayment.boletoBarcode,
-        boletoExpiresAt: primaryPayment.boletoExpiresAt,
+        clientSecret: charge.clientSecret,
+        paymentIntentId: charge.paymentIntentId,
+        pixQrCode: pixData.pixQrCode,
+        pixCopyPaste: pixData.pixCopyPaste,
+        pixExpiresAt: pixData.pixExpiresAt,
+        boletoUrl: null,
+        boletoBarcode: null,
+        boletoExpiresAt: null,
       };
     } catch (error) {
-      const errorDetails = serializeMercadoPagoError(error);
       this.logger.error(
-        `Payment processing failed for order ${params.orderId}: ${JSON.stringify(errorDetails)}`,
+        `Stripe payment processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
       );
       this.financialAlert.paymentFailed(error as Error, {
         workspaceId: params.workspaceId,
         orderId: params.orderId,
         amount,
-        gateway: 'mercadopago',
+        gateway: 'stripe',
       });
       throw error;
     }
   }
+
+  private findOrder(orderId: string, workspaceId: string) {
+    return this.prisma.checkoutOrder.findFirst({
+      where: { id: orderId, workspaceId },
+      include: {
+        plan: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+  }
+
+  private async ensureSellerStripeAccountId(workspaceId: string): Promise<string> {
+    const existing = await this.prisma.connectAccountBalance.findFirst({
+      where: { workspaceId, accountType: 'SELLER' },
+    });
+    if (existing?.stripeAccountId) {
+      return existing.stripeAccountId;
+    }
+
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      include: {
+        agents: {
+          orderBy: { createdAt: 'asc' },
+          take: 1,
+          select: { email: true },
+        },
+      },
+    });
+    if (!workspace) {
+      throw new NotFoundException('Workspace não encontrado para criar conta Stripe seller.');
+    }
+
+    const sellerEmail = workspace.agents[0]?.email;
+    if (!sellerEmail) {
+      throw new BadRequestException(
+        'Workspace sem agente responsável para criar a conta Stripe seller.',
+      );
+    }
+
+    const created = await this.connectService.createCustomAccount({
+      workspaceId,
+      accountType: 'SELLER',
+      email: sellerEmail,
+      displayName: workspace.name,
+    });
+    return created.stripeAccountId;
+  }
+
+  private async transitionOrderToApproved(
+    tx: {
+      checkoutOrder: {
+        findFirst: (args: unknown) => Promise<{ status: string } | null>;
+        updateMany: (args: unknown) => Promise<unknown>;
+      };
+    },
+    orderId: string,
+    workspaceId: string,
+    transitionContext: {
+      paymentId: string;
+      provider: 'stripe';
+      externalId: string;
+    },
+  ) {
+    const currentOrder = await tx.checkoutOrder.findFirst({
+      where: { id: orderId, workspaceId },
+      select: { status: true },
+    });
+    let currentStatus = currentOrder?.status || 'PENDING';
+
+    if (currentStatus !== 'PROCESSING') {
+      const canEnterProcessing = validatePaymentTransition(
+        currentStatus,
+        'PROCESSING',
+        transitionContext,
+      );
+      if (!canEnterProcessing) return;
+
+      await tx.checkoutOrder.updateMany({
+        where: { id: orderId, workspaceId },
+        data: { status: 'PROCESSING' },
+      });
+      currentStatus = 'PROCESSING';
+    }
+
+    const canApprove = validatePaymentTransition(currentStatus, 'APPROVED', transitionContext);
+    if (!canApprove) return;
+
+    await tx.checkoutOrder.updateMany({
+      where: { id: orderId, workspaceId },
+      data: { status: 'PAID', paidAt: new Date() },
+    });
+  }
+}
+
+function mapStripePaymentStatus(status?: string | null): CheckoutPaymentStatus {
+  switch (String(status || '').toLowerCase()) {
+    case 'succeeded':
+      return 'APPROVED';
+    case 'processing':
+      return 'PROCESSING';
+    case 'canceled':
+      return 'CANCELED';
+    default:
+      return 'PENDING';
+  }
+}
+
+function extractPixDisplayData(paymentIntent: {
+  next_action?: {
+    type?: string | null;
+    pix_display_qr_code?: {
+      data?: string | null;
+      image_url_png?: string | null;
+      expires_at?: number | null;
+    } | null;
+  } | null;
+}): PixDisplayData {
+  const nextAction = paymentIntent.next_action;
+  const pixAction =
+    nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
+
+  return {
+    pixQrCode: pixAction?.image_url_png || null,
+    pixCopyPaste: pixAction?.data || null,
+    pixExpiresAt:
+      typeof pixAction?.expires_at === 'number'
+        ? new Date(pixAction.expires_at * 1000).toISOString()
+        : null,
+  };
+}
+
+function toJsonValue(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(
+    JSON.stringify(value, (_key, currentValue) =>
+      typeof currentValue === 'bigint' ? currentValue.toString() : currentValue,
+    ),
+  ) as Prisma.InputJsonValue;
 }

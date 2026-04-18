@@ -10,8 +10,8 @@ PULSE_BACKEND_URL=$(echo "$BACKEND_VARS" | grep -o '"RAILWAY_PUBLIC_DOMAIN":"[^"
 export PULSE_BACKEND_URL
 PULSE_DATABASE_URL=$(echo "$BACKEND_VARS" | grep -o '"DATABASE_URL":"[^"]*"' | cut -d'"' -f4)
 export PULSE_DATABASE_URL
-PULSE_ASAAS_KEY=$(echo "$BACKEND_VARS" | grep -o '"ASAAS_API_KEY":"[^"]*"' | cut -d'"' -f4)
-export PULSE_ASAAS_KEY
+PULSE_STRIPE_KEY=$(echo "$BACKEND_VARS" | grep -o '"STRIPE_SECRET_KEY":"[^"]*"' | cut -d'"' -f4)
+export PULSE_STRIPE_KEY
 PULSE_OPENAI_KEY=$(echo "$BACKEND_VARS" | grep -o '"OPENAI_API_KEY":"[^"]*"' | cut -d'"' -f4)
 export PULSE_OPENAI_KEY
 

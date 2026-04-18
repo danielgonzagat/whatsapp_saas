@@ -1,13 +1,50 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import {
-  type MercadoPagoCheckoutLineItem,
-  resolveMercadoPagoItemCategoryId,
-} from '../kloel/mercado-pago-order.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
 
 const D_RE = /\D/g;
+
+type CheckoutLineItem = {
+  id: string;
+  title: string;
+  description?: string;
+  pictureUrl?: string;
+  categoryId?: string;
+  quantity: number;
+  unitPriceInCents: number;
+  warranty?: boolean;
+};
+
+function resolveCheckoutItemCategory(input?: {
+  productCategory?: string | null;
+  productFormat?: string | null;
+}) {
+  const category = String(input?.productCategory || '')
+    .trim()
+    .toLowerCase();
+  const format = String(input?.productFormat || '')
+    .trim()
+    .toLowerCase();
+  const fingerprint = `${category} ${format}`;
+
+  if (
+    format === 'digital' ||
+    fingerprint.includes('digital') ||
+    fingerprint.includes('ebook') ||
+    fingerprint.includes('curso') ||
+    fingerprint.includes('infoprod') ||
+    fingerprint.includes('software') ||
+    fingerprint.includes('app') ||
+    fingerprint.includes('assinatura') ||
+    fingerprint.includes('mentoria') ||
+    fingerprint.includes('consultoria')
+  ) {
+    return 'digital_goods';
+  }
+
+  return 'goods';
+}
 
 export class CheckoutOrderSupport {
   constructor(
@@ -43,7 +80,7 @@ export class CheckoutOrderSupport {
       .filter((value) => Boolean(value));
   }
 
-  buildMercadoPagoLineItems(
+  buildCheckoutLineItems(
     planRecord: {
       id: string;
       name: string;
@@ -68,13 +105,13 @@ export class CheckoutOrderSupport {
     },
     acceptedBumpIds: string[],
     orderQuantity: number,
-  ): MercadoPagoCheckoutLineItem[] {
-    const categoryId = resolveMercadoPagoItemCategoryId({
+  ): CheckoutLineItem[] {
+    const categoryId = resolveCheckoutItemCategory({
       productCategory: planRecord.product?.category,
       productFormat: planRecord.product?.format,
     });
 
-    const items: MercadoPagoCheckoutLineItem[] = [
+    const items: CheckoutLineItem[] = [
       {
         id: planRecord.id,
         title: planRecord.name || planRecord.product?.name || 'Produto',
@@ -104,7 +141,7 @@ export class CheckoutOrderSupport {
     return items;
   }
 
-  async resolveMercadoPagoRegistrationDate(input: {
+  async resolveCustomerRegistrationDate(input: {
     workspaceId: string;
     customerEmail: string;
     customerPhone?: string;
@@ -196,7 +233,7 @@ export class CheckoutOrderSupport {
     const state =
       typeof input.shippingAddress?.state === 'string' ? input.shippingAddress.state.trim() : '';
     const customFields = {
-      checkoutOrigin: 'mercado_pago',
+      checkoutOrigin: 'stripe',
       ...(city ? { city } : {}),
       ...(state ? { state } : {}),
     };
@@ -228,9 +265,7 @@ export class CheckoutOrderSupport {
       } as const;
     } catch (error) {
       const message = String((error as Error)?.message || error);
-      this.logger.warn(
-        `Mercado Pago checkout contact sync failed for ${input.workspaceId}: ${message}`,
-      );
+      this.logger.warn(`Checkout contact sync failed for ${input.workspaceId}: ${message}`);
       return {
         synced: false,
         skipped: false,

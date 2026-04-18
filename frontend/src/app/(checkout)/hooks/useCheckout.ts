@@ -48,10 +48,6 @@ export interface CreateOrderData {
   paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
   installments?: number;
   cardHolderName?: string;
-  mercadoPagoToken?: string;
-  mercadoPagoPaymentMethodId?: string;
-  mercadoPagoPaymentType?: string;
-  mercadoPagoCardLast4?: string;
   affiliateId?: string;
   utmSource?: string;
   utmMedium?: string;
@@ -116,15 +112,11 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
 
 /* ─── createOrder ──────────────────────────────────────────────────────────── */
 
-export async function createOrder(
-  data: CreateOrderData,
-  options?: { meliSessionId?: string | null },
-) {
+export async function createOrder(data: CreateOrderData) {
   const res = await fetch(`${API_BASE}/checkout/public/order`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(options?.meliSessionId ? { 'X-Meli-Session-Id': options.meliSessionId } : {}),
     },
     body: JSON.stringify(data),
   });

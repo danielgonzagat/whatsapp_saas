@@ -6,7 +6,18 @@ const PATTERN_RE_2 = /_/g;
 
 const BEARER_S_RE = /^Bearer\s+(.+)$/i;
 
-function decodeJwtPayload(authHeader: string) {
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function readString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function decodeJwtPayload(authHeader: string): Record<string, unknown> | null {
   const match = authHeader.match(BEARER_S_RE);
   const token = match?.[1];
   if (!token) return null;
@@ -23,12 +34,14 @@ function decodeJwtPayload(authHeader: string) {
   }
 }
 
-function normalizeWorkspaceMeResponse(data: any, authHeader: string) {
-  if (data?.user) {
+function normalizeWorkspaceMeResponse(data: unknown, authHeader: string) {
+  const dataRecord = readRecord(data);
+
+  if (dataRecord?.user) {
     return data;
   }
 
-  if (!data || typeof data !== 'object' || typeof data.id !== 'string') {
+  if (!dataRecord || typeof dataRecord.id !== 'string') {
     return data;
   }
 
@@ -37,27 +50,26 @@ function normalizeWorkspaceMeResponse(data: any, authHeader: string) {
     return data;
   }
 
-  const email = typeof payload.email === 'string' ? payload.email : '';
-  const workspaceId = typeof payload.workspaceId === 'string' ? payload.workspaceId : data.id;
+  const email = readString(payload.email);
+  const workspaceId = readString(payload.workspaceId) || dataRecord.id;
 
   return {
     user: {
-      id: typeof payload.sub === 'string' ? payload.sub : '',
+      id: readString(payload.sub),
       email,
-      name:
-        typeof payload.name === 'string' && payload.name.trim().length
-          ? payload.name
-          : email.split('@')[0] || 'User',
+      name: readString(payload.name).trim().length
+        ? readString(payload.name)
+        : email.split('@')[0] || 'User',
       workspaceId,
-      role: typeof payload.role === 'string' ? payload.role : undefined,
+      role: readString(payload.role) || undefined,
     },
     workspaces: [
       {
-        id: data.id,
-        name: typeof data.name === 'string' ? data.name : 'Workspace',
+        id: dataRecord.id,
+        name: typeof dataRecord.name === 'string' ? dataRecord.name : 'Workspace',
       },
     ],
-    workspace: data,
+    workspace: dataRecord,
   };
 }
 

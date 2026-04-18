@@ -189,7 +189,7 @@ describe('Financial Scenarios', () => {
       const mockPayment = {
         id: 'pay-1',
         status: 'APPROVED', // Already processed
-        externalId: 'asaas-pay-123',
+        externalId: 'pi_test_123',
         order: { plan: { product: {}, checkoutConfig: { pixels: [] } } },
       };
 

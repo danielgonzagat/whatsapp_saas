@@ -583,10 +583,10 @@
 | WARNING | backend/src/inbox/inbox.service.ts:224 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/ad-rules-engine.service.ts:54 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/ad-rules-engine.service.ts:99 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/kloel/asaas.service.ts:339 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/kloel/asaas.service.ts:436 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/kloel/asaas.service.ts:538 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/kloel/asaas.service.ts:638 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/kloel/legacy-payment.service.ts:339 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/kloel/legacy-payment.service.ts:436 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/kloel/legacy-payment.service.ts:538 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/kloel/legacy-payment.service.ts:638 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/cart-recovery.service.ts:72 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/conversational-onboarding.service.ts:535 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/conversational-onboarding.service.ts:536 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -878,8 +878,8 @@
 | WARNING | backend/src/instrument.ts:7 | Environment variable VERCEL_GIT_COMMIT_SHA is referenced but not documented in .env.example |
 | WARNING | backend/src/instrument.ts:8 | Environment variable GITHUB_SHA is referenced but not documented in .env.example |
 | WARNING | backend/src/instrument.ts:13 | Environment variable SENTRY_ENVIRONMENT is referenced but not documented in .env.example |
-| WARNING | backend/src/kloel/asaas.service.ts:105 | Environment variable ASAAS_API_KEY is referenced but not documented in .env.example |
-| WARNING | backend/src/kloel/asaas.service.ts:110 | Environment variable ASAAS_ENVIRONMENT is referenced but not documented in .env.example |
+| WARNING | backend/src/kloel/legacy-payment.service.ts:105 | Environment variable STRIPE_SECRET_KEY is referenced but not documented in .env.example |
+| WARNING | backend/src/kloel/legacy-payment.service.ts:110 | Environment variable STRIPE_ENVIRONMENT is referenced but not documented in .env.example |
 | WARNING | backend/src/kloel/audio.service.ts:164 | Environment variable AUDIO_FETCH_ALLOWLIST is referenced but not documented in .env.example |
 | WARNING | backend/src/kloel/audio.service.ts:167 | Environment variable R2_PUBLIC_URL is referenced but not documented in .env.example |
 | WARNING | backend/src/kloel/kloel-stream-writer.ts:31 | Environment variable KLOEL_STREAM_HEARTBEAT_MS is referenced but not documented in .env.example |
@@ -968,7 +968,7 @@
 | HIGH | backend/src/campaigns/campaigns.service.ts:0 | Retry logic around operations with external side effects without idempotency guard |
 | HIGH | backend/src/kloel/smart-payment.service.ts:0 | Retry logic around operations with external side effects without idempotency guard |
 | HIGH | backend/src/kloel/wallet.controller.ts:129 | POST endpoint creates resource without idempotency — safe retry not possible |
-| HIGH | backend/src/webhooks/asaas-webhook.controller.ts:0 | Webhook handler without idempotency check — duplicate webhooks will be processed twice |
+| HIGH | backend/src/webhook/payment/stripe-webhook.controller.ts:0 | Webhook handler without idempotency check — duplicate webhooks will be processed twice |
 
 ### JSON_PARSE_UNSAFE (2)
 
@@ -1040,7 +1040,7 @@
 |----------|-----------|-------------|
 | HIGH | backend/src/checkout/mercado-pago-webhook-signature.util.ts:0 | Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state |
 | HIGH | backend/src/common/utils/webhook-challenge-response.util.ts:0 | Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state |
-| HIGH | backend/src/webhooks/asaas-webhook.controller.ts:0 | Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state |
+| HIGH | backend/src/webhook/payment/stripe-webhook.controller.ts:0 | Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state |
 
 ### ORPHANED_FILE (1)
 
@@ -1055,8 +1055,8 @@
 | WARNING | backend/src/common/ledger-reconciliation.service.ts:81 | Prisma accessed via untyped \`prismaAny\` or \`(this.prisma as any)\` — model not yet in generated schema |
 | WARNING | backend/src/common/ledger-reconciliation.service.ts:227 | Prisma accessed via untyped \`prismaAny\` or \`(this.prisma as any)\` — model not yet in generated schema |
 | WARNING | backend/src/common/ledger-reconciliation.service.ts:243 | Prisma accessed via untyped \`prismaAny\` or \`(this.prisma as any)\` — model not yet in generated schema |
-| WARNING | backend/src/kloel/asaas.service.ts:670 | Prisma accessed via untyped \`prismaAny\` or \`(this.prisma as any)\` — model not yet in generated schema |
-| WARNING | backend/src/kloel/asaas.service.ts:679 | Prisma accessed via untyped \`prismaAny\` or \`(this.prisma as any)\` — model not yet in generated schema |
+| WARNING | backend/src/kloel/legacy-payment.service.ts:670 | Prisma accessed via untyped \`prismaAny\` or \`(this.prisma as any)\` — model not yet in generated schema |
+| WARNING | backend/src/kloel/legacy-payment.service.ts:679 | Prisma accessed via untyped \`prismaAny\` or \`(this.prisma as any)\` — model not yet in generated schema |
 
 ### PROXY_NO_UPSTREAM (5)
 
@@ -1693,7 +1693,7 @@
 | WARNING | frontend/src/styles/polotno-terminator.css:38 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/styles/polotno-terminator.css:44 | Hardcoded hex color outside the approved visual token set. |
 
-### WEBHOOK_ASAAS_BROKEN (1)
+### WEBHOOK_STRIPE_BROKEN (1)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
@@ -1714,7 +1714,7 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: Status: 0, Body: {"error":"fetch failed"}
 4. [BRUTE_FORCE_VULNERABLE] backend/src (POST /auth/login):0 — No rate limiting on POST /auth/login — brute-force attack is possible
    Evidence: Fired 20 rapid login requests. Received 0 HTTP 429 responses. All statuses: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]. The auth throttle (5 req/min) does not appear to be active. Configure @nestjs/throttler on the auth controller.
-5. [WEBHOOK_ASAAS_BROKEN] backend/src/health/system-health.controller.ts:12 — Backend unreachable — GET /health/system timed out or connection refused
+5. [WEBHOOK_STRIPE_BROKEN] backend/src/health/system-health.controller.ts:12 — Backend unreachable — GET /health/system timed out or connection refused
    Evidence: Backend URL: http://localhost:3001, error: fetch failed
 6. [FACADE] frontend/src/app/(main)/checkout/[planId]/page.tsx:462 — [fake_save] setTimeout resets state without API call — fake save feedback
    Evidence: const clearTimer = setTimeout(() => setHighlightedSection(null), 2600);
@@ -1857,9 +1857,9 @@ Fix the following blocking issues found by PULSE certification:
 75. [TOFIX_WITHOUT_PARSE] backend/src/kloel/wallet.service.ts:89 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: `Split: R$ ${saleAmount.toFixed(2)} -> Líquido: R$ ${netAmount.toFixed(2)} ` +
 76. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:335 — fetch() call without AbortController/signal timeout
-   Evidence: const response = await fetch('https://api.mercadopago.com/oauth/token', { — wrap with AbortController and setTimeout to avoid hanging requests
+   Evidence: const response = await fetch('https://api.legacy-provider.com/oauth/token', { — wrap with AbortController and setTimeout to avoid hanging requests
 77. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:640 — fetch() call without AbortController/signal timeout
-   Evidence: const response = await fetch('https://api.mercadopago.com/v1/payment_methods', { — wrap with AbortController and setTimeout to avoid hanging requests
+   Evidence: const response = await fetch('https://api.legacy-provider.com/v1/payment_methods', { — wrap with AbortController and setTimeout to avoid hanging requests
 78. [IDEMPOTENCY_MISSING] backend/src/affiliate/affiliate.controller.ts:522 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
 79. [IDEMPOTENCY_MISSING] backend/src/campaigns/campaigns.service.ts:0 — Retry logic around operations with external side effects without idempotency guard
@@ -1868,7 +1868,7 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries
 81. [IDEMPOTENCY_MISSING] backend/src/kloel/wallet.controller.ts:129 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
-82. [IDEMPOTENCY_MISSING] backend/src/webhooks/asaas-webhook.controller.ts:0 — Webhook handler without idempotency check — duplicate webhooks will be processed twice
+82. [IDEMPOTENCY_MISSING] backend/src/webhook/payment/stripe-webhook.controller.ts:0 — Webhook handler without idempotency check — duplicate webhooks will be processed twice
    Evidence: Store processed webhook IDs in WebhookEvent model; reject duplicates with 200 (not 409)
 83. [JSON_PARSE_UNSAFE] backend/src/kloel/mercado-pago.service.ts:431 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: const payload = JSON.parse(base64UrlDecode(encodedPayload)) as OAuthStatePayload;
@@ -1900,7 +1900,7 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: Check event.dateCreated/timestamp before applying; reject events older than current entity state
 97. [ORDERING_WEBHOOK_OOO] backend/src/common/utils/webhook-challenge-response.util.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
    Evidence: Check event.dateCreated/timestamp before applying; reject events older than current entity state
-98. [ORDERING_WEBHOOK_OOO] backend/src/webhooks/asaas-webhook.controller.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
+98. [ORDERING_WEBHOOK_OOO] backend/src/webhook/payment/stripe-webhook.controller.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
    Evidence: Check event.dateCreated/timestamp before applying; reject events older than current entity state
 99. [TRANSACTION_NO_ISOLATION] backend/src/billing/payment-method.service.ts:39 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(

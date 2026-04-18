@@ -17,6 +17,15 @@ import { InboxGateway } from './inbox.gateway';
  */
 const GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS = 3;
 
+function isQueuedSendResult(value: unknown): value is { queued: true } {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    (value as { queued?: unknown }).queued === true
+  );
+}
+
 @Injectable()
 export class InboxService {
   private readonly logger = new Logger(InboxService.name);
@@ -485,7 +494,7 @@ export class InboxService {
 
     // Direct sends persist the message internally; for queued sends,
     // persist immediately so the inbox reflects the reply right away.
-    if ((result as any)?.queued) {
+    if (isQueuedSendResult(result)) {
       await this.saveMessage({
         workspaceId,
         contactId: conversation.contactId,

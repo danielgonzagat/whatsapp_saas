@@ -66,7 +66,7 @@ function titleCase(value: string): string {
   return value
     .split(/[\s-]+/)
     .filter(Boolean)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
 
@@ -78,7 +78,10 @@ function getLegacyModules(manifest: PulseManifest | null): PulseManifestModule[]
   return manifest?.legacyModules || [];
 }
 
-function findManifestModule(entries: PulseManifestModule[], candidates: string[]): PulseManifestModule | null {
+function findManifestModule(
+  entries: PulseManifestModule[],
+  candidates: string[],
+): PulseManifestModule | null {
   const normalizedCandidates = candidates.map(normalizeText).filter(Boolean);
   for (const entry of entries) {
     const normalizedEntry = normalizeText(entry.name);
@@ -89,7 +92,7 @@ function findManifestModule(entries: PulseManifestModule[], candidates: string[]
 
 function matchesOverride(candidate: string, values: string[]): boolean {
   const normalized = normalizeText(candidate);
-  return values.some(value => normalizeText(value) === normalized);
+  return values.some((value) => normalizeText(value) === normalized);
 }
 
 function buildModuleCandidates(
@@ -97,18 +100,19 @@ function buildModuleCandidates(
   manifest: PulseManifest | null,
 ): string[] {
   const overrides = manifest?.overrides || {};
-  const explicitAlias = overrides.moduleAliases?.[module.key]
-    || overrides.moduleAliases?.[module.name]
-    || null;
+  const explicitAlias =
+    overrides.moduleAliases?.[module.key] || overrides.moduleAliases?.[module.name] || null;
 
-  return unique([
-    module.name,
-    module.declaredModule || '',
-    explicitAlias || '',
-    titleCase(module.key),
-    ...module.routeRoots.map(titleCase),
-    ...(LEGACY_MODULE_CANDIDATES[module.key] || []),
-  ].filter(Boolean));
+  return unique(
+    [
+      module.name,
+      module.declaredModule || '',
+      explicitAlias || '',
+      titleCase(module.key),
+      ...module.routeRoots.map(titleCase),
+      ...(LEGACY_MODULE_CANDIDATES[module.key] || []),
+    ].filter(Boolean),
+  );
 }
 
 function buildModuleResolution(
@@ -119,26 +123,31 @@ function buildModuleResolution(
   const candidates = buildModuleCandidates(module, manifest);
   const manualModule = findManifestModule(getActiveModules(manifest), candidates);
   const legacyModule = findManifestModule(getLegacyModules(manifest), candidates);
-  const excluded = matchesOverride(module.key, overrides.excludedModules || [])
-    || matchesOverride(module.name, overrides.excludedModules || []);
-  const criticalOverride = matchesOverride(module.key, overrides.criticalModules || [])
-    || matchesOverride(module.name, overrides.criticalModules || []);
-  const internalOverride = matchesOverride(module.key, overrides.internalModules || [])
-    || matchesOverride(module.name, overrides.internalModules || []);
+  const excluded =
+    matchesOverride(module.key, overrides.excludedModules || []) ||
+    matchesOverride(module.name, overrides.excludedModules || []);
+  const criticalOverride =
+    matchesOverride(module.key, overrides.criticalModules || []) ||
+    matchesOverride(module.name, overrides.criticalModules || []);
+  const internalOverride =
+    matchesOverride(module.key, overrides.internalModules || []) ||
+    matchesOverride(module.name, overrides.internalModules || []);
 
   const moduleKind = internalOverride || !module.userFacing ? 'internal' : 'user_facing';
   const resolution = excluded ? 'excluded' : manualModule ? 'matched' : 'derived';
-  const critical = !excluded && (
-    criticalOverride
-    || Boolean(manualModule?.critical)
-    || (moduleKind === 'user_facing' && CRITICAL_MODULE_DEFAULTS.has(module.key))
+  const critical =
+    !excluded &&
+    (criticalOverride ||
+      Boolean(manualModule?.critical) ||
+      (moduleKind === 'user_facing' && CRITICAL_MODULE_DEFAULTS.has(module.key)));
+  const aliases = unique(
+    [
+      module.name,
+      manualModule?.name || '',
+      legacyModule?.name || '',
+      ...module.routeRoots.map(titleCase),
+    ].filter(Boolean),
   );
-  const aliases = unique([
-    module.name,
-    manualModule?.name || '',
-    legacyModule?.name || '',
-    ...module.routeRoots.map(titleCase),
-  ].filter(Boolean));
 
   let notes = module.notes;
   if (manualModule) {
@@ -181,15 +190,17 @@ function getPath(flow: PulseDiscoveredFlowCandidate): string {
 }
 
 function getHaystack(flow: PulseDiscoveredFlowCandidate): string {
-  return normalizeText([
-    flow.id,
-    flow.moduleKey,
-    flow.moduleName,
-    flow.pageRoute,
-    flow.elementLabel,
-    flow.endpoint,
-    flow.backendRoute || '',
-  ].join(' '));
+  return normalizeText(
+    [
+      flow.id,
+      flow.moduleKey,
+      flow.moduleName,
+      flow.pageRoute,
+      flow.elementLabel,
+      flow.endpoint,
+      flow.backendRoute || '',
+    ].join(' '),
+  );
 }
 
 function inferAction(flow: PulseDiscoveredFlowCandidate): string {
@@ -215,18 +226,37 @@ function getEndpointSegments(flow: PulseDiscoveredFlowCandidate): string[] {
   const source = getPath(flow)
     .replace(/^\/+/g, '')
     .split('/')
-    .map(part => part.replace(/^:+/, ''))
+    .map((part) => part.replace(/^:+/, ''))
     .filter(Boolean)
-    .filter(part => !['api', 'v1', 'kloel'].includes(part));
+    .filter((part) => !['api', 'v1', 'kloel'].includes(part));
 
-  return source.filter(part => !/^(id|workspaceid|orderid|planid|productid|campaignid|conversationid|paymentmethodid|studentid|phone|tag|slug)$/i.test(part));
+  return source.filter(
+    (part) =>
+      !/^(id|workspaceid|orderid|planid|productid|campaignid|conversationid|paymentmethodid|studentid|phone|tag|slug)$/i.test(
+        part,
+      ),
+  );
 }
 
 function inferResourceFamily(flow: PulseDiscoveredFlowCandidate): string {
   const segments = getEndpointSegments(flow)
-    .filter(segment => normalizeText(segment) !== flow.moduleKey)
-    .filter(segment => !['send', 'reply', 'toggle', 'connect', 'default', 'approve', 'start', 'sync', 'generate', 'save'].includes(normalizeText(segment)));
-  const selected = segments.slice(0, 2).map(segment => slugify(segment));
+    .filter((segment) => normalizeText(segment) !== flow.moduleKey)
+    .filter(
+      (segment) =>
+        ![
+          'send',
+          'reply',
+          'toggle',
+          'connect',
+          'default',
+          'approve',
+          'start',
+          'sync',
+          'generate',
+          'save',
+        ].includes(normalizeText(segment)),
+    );
+  const selected = segments.slice(0, 2).map((segment) => slugify(segment));
   return selected.length > 0 ? selected.join('-') : 'flow';
 }
 
@@ -307,10 +337,12 @@ function sharedCapability(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescr
   }
 
   if (
-    path.includes('/inbox/conversations/') && path.includes('/reply')
-    || path.includes('/meta/instagram/messages/send')
-    || path.includes('/marketing/email/send')
-    || (haystack.includes('whatsapp') && /(send|reply|message)/.test(haystack) && !path.includes('/crm/deals/'))
+    (path.includes('/inbox/conversations/') && path.includes('/reply')) ||
+    path.includes('/meta/instagram/messages/send') ||
+    path.includes('/marketing/email/send') ||
+    (haystack.includes('whatsapp') &&
+      /(send|reply|message)/.test(haystack) &&
+      !path.includes('/crm/deals/'))
   ) {
     return {
       id: 'shared-message-send',
@@ -321,9 +353,9 @@ function sharedCapability(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescr
   }
 
   if (
-    path.includes('/mercadopago/') && path.includes('/payments')
-    || path.includes('/kloel/payment/') && path.includes('/create')
-    || path.includes('/external-payments/') && path.includes('/platform')
+    (path.includes('/kloel/payment/') && path.includes('/create')) ||
+    (path.includes('/external-payments/') && path.includes('/platform')) ||
+    path.includes('/webhook/payment/stripe')
   ) {
     return {
       id: 'shared-payment-creation',
@@ -343,8 +375,8 @@ function sharedCapability(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescr
   }
 
   if (
-    (path.includes('/asaas/') || path.includes('/mercadopago/')) && path.includes('/connect')
-    || path.includes('/meta/auth/disconnect')
+    (path.includes('/stripe/') && path.includes('/connect')) ||
+    path.includes('/meta/auth/disconnect')
   ) {
     return {
       id: 'shared-provider-connection-management',
@@ -378,12 +410,14 @@ function sharedCapability(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescr
 function isLegacyNoise(flow: PulseDiscoveredFlowCandidate): boolean {
   const haystack = getHaystack(flow);
   const path = getPath(flow);
-  return haystack.includes('fontfamily')
-    || haystack.includes('fontsize')
-    || haystack.includes('borderradius')
-    || path.includes('param)}')
-    || path.includes('…')
-    || path.endsWith('/flow');
+  return (
+    haystack.includes('fontfamily') ||
+    haystack.includes('fontsize') ||
+    haystack.includes('borderradius') ||
+    path.includes('param)}') ||
+    path.includes('…') ||
+    path.endsWith('/flow')
+  );
 }
 
 function moduleFeature(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescriptor {
@@ -418,7 +452,10 @@ function moduleFeature(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescript
     };
   }
 
-  if (flow.moduleKey === 'sites' && (path.includes('/site/') || path.includes('/workspace/') && path.includes('/jitter'))) {
+  if (
+    flow.moduleKey === 'sites' &&
+    (path.includes('/site/') || (path.includes('/workspace/') && path.includes('/jitter')))
+  ) {
     return {
       id: 'sites-site-management',
       canonicalName: 'Sites Site Management',
@@ -508,7 +545,7 @@ function moduleFeature(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescript
     };
   }
 
-  if (flow.moduleKey === 'billing' && path.includes('/asaas/') && path.includes('/pix')) {
+  if (flow.moduleKey === 'billing' && path.includes('/stripe/') && path.includes('/pix')) {
     return {
       id: 'billing-provider-payment-management',
       canonicalName: 'Billing Provider Payment Management',
@@ -573,30 +610,54 @@ function inferFlowSpecMatch(
 
   const overrides = manifest.overrides || {};
   if (overrides.flowAliases?.[group.id]) return overrides.flowAliases[group.id];
-  if (overrides.flowAliases?.[group.canonicalName]) return overrides.flowAliases[group.canonicalName];
+  if (overrides.flowAliases?.[group.canonicalName])
+    return overrides.flowAliases[group.canonicalName];
 
-  const haystack = normalizeText([
-    group.id,
-    group.canonicalName,
-    ...group.aliases,
-    ...group.pageRoutes,
-    ...group.endpoints,
-    ...group.backendRoutes,
-    ...group.moduleKeys,
-    ...group.moduleNames,
-  ].join(' '));
+  const haystack = normalizeText(
+    [
+      group.id,
+      group.canonicalName,
+      ...group.aliases,
+      ...group.pageRoutes,
+      ...group.endpoints,
+      ...group.backendRoutes,
+      ...group.moduleKeys,
+      ...group.moduleNames,
+    ].join(' '),
+  );
   const groupId = group.id;
 
   const heuristics: Array<[string, boolean]> = [
-    ['wallet-withdrawal', groupId === 'wallet-withdrawal-capability' || (group.moduleKeys.includes('wallet') && /withdraw/.test(haystack))],
-    ['whatsapp-message-send', groupId === 'shared-message-send' || /message send|reply conversation|instagram messages send|email send/.test(haystack)],
-    ['checkout-payment', groupId === 'shared-payment-creation' || (group.moduleKeys.includes('checkout') && /payment|order|pix|boleto|mercadopago/.test(haystack))],
-    ['product-create', groupId === 'products-product-management' || (group.moduleKeys.includes('products') && /product management/.test(haystack))],
-    ['auth-login', group.moduleKeys.includes('auth') || groupId === 'shared-auth-oauth' || groupId === 'shared-auth-registration'],
+    [
+      'wallet-withdrawal',
+      groupId === 'wallet-withdrawal-capability' ||
+        (group.moduleKeys.includes('wallet') && /withdraw/.test(haystack)),
+    ],
+    [
+      'whatsapp-message-send',
+      groupId === 'shared-message-send' ||
+        /message send|reply conversation|instagram messages send|email send/.test(haystack),
+    ],
+    [
+      'checkout-payment',
+      groupId === 'shared-payment-creation' ||
+        (group.moduleKeys.includes('checkout') && /payment|order|pix|boleto|stripe/.test(haystack)),
+    ],
+    [
+      'product-create',
+      groupId === 'products-product-management' ||
+        (group.moduleKeys.includes('products') && /product management/.test(haystack)),
+    ],
+    [
+      'auth-login',
+      group.moduleKeys.includes('auth') ||
+        groupId === 'shared-auth-oauth' ||
+        groupId === 'shared-auth-registration',
+    ],
   ];
 
   for (const [flowSpecId, matched] of heuristics) {
-    if (matched && manifest.flowSpecs.some(item => item.id === flowSpecId)) {
+    if (matched && manifest.flowSpecs.some((item) => item.id === flowSpecId)) {
       return flowSpecId;
     }
   }
@@ -609,7 +670,10 @@ function buildFlowGroups(
   flows: PulseDiscoveredFlowCandidate[],
   criticalModuleKeys: Set<string>,
 ): PulseResolvedFlowGroup[] {
-  const byGroup = new Map<string, { descriptor: SemanticFlowDescriptor; flows: PulseDiscoveredFlowCandidate[] }>();
+  const byGroup = new Map<
+    string,
+    { descriptor: SemanticFlowDescriptor; flows: PulseDiscoveredFlowCandidate[] }
+  >();
 
   for (const flow of flows) {
     const descriptor = describeFlow(flow);
@@ -627,17 +691,19 @@ function buildFlowGroups(
 
   const activeAcceptances = new Set(
     (manifest?.temporaryAcceptances || [])
-      .filter(entry => entry.targetType === 'flow')
-      .map(entry => entry.target),
+      .filter((entry) => entry.targetType === 'flow')
+      .map((entry) => entry.target),
   );
   const excludedCandidates = manifest?.overrides?.excludedFlowCandidates || [];
 
   return [...byGroup.entries()]
     .map(([id, group]) => {
-      const moduleKeys = unique(group.flows.map(item => item.moduleKey)).sort();
-      const moduleNames = unique(group.flows.map(item => item.moduleName)).sort();
-      const primaryModuleKey = group.descriptor.flowKind === 'shared_capability' ? 'shared' : moduleKeys[0];
-      const primaryModuleName = group.descriptor.flowKind === 'shared_capability' ? 'Shared Capability' : moduleNames[0];
+      const moduleKeys = unique(group.flows.map((item) => item.moduleKey)).sort();
+      const moduleNames = unique(group.flows.map((item) => item.moduleName)).sort();
+      const primaryModuleKey =
+        group.descriptor.flowKind === 'shared_capability' ? 'shared' : moduleKeys[0];
+      const primaryModuleName =
+        group.descriptor.flowKind === 'shared_capability' ? 'Shared Capability' : moduleNames[0];
       const matchedFlowSpec = inferFlowSpecMatch(manifest, {
         id,
         canonicalName: group.descriptor.canonicalName,
@@ -660,11 +726,15 @@ function buildFlowGroups(
         notes: '',
       });
       const accepted = matchedFlowSpec ? activeAcceptances.has(matchedFlowSpec) : false;
-      const excluded = matchesOverride(id, excludedCandidates)
-        || group.descriptor.aliases.some(alias => matchesOverride(alias, excludedCandidates));
-      const connected = group.flows.some(item => item.connected);
-      const persistent = group.flows.some(item => item.persistent);
-      const critical = moduleKeys.some(key => criticalModuleKeys.has(key)) || persistent || Boolean(matchedFlowSpec);
+      const excluded =
+        matchesOverride(id, excludedCandidates) ||
+        group.descriptor.aliases.some((alias) => matchesOverride(alias, excludedCandidates));
+      const connected = group.flows.some((item) => item.connected);
+      const persistent = group.flows.some((item) => item.persistent);
+      const critical =
+        moduleKeys.some((key) => criticalModuleKeys.has(key)) ||
+        persistent ||
+        Boolean(matchedFlowSpec);
 
       let resolution: PulseResolvedFlowGroup['resolution'];
       if (excluded) resolution = 'excluded';
@@ -675,16 +745,23 @@ function buildFlowGroups(
       return {
         id,
         canonicalName: group.descriptor.canonicalName,
-        aliases: unique([...group.descriptor.aliases, ...group.flows.map(item => item.id)]).sort(),
+        aliases: unique([
+          ...group.descriptor.aliases,
+          ...group.flows.map((item) => item.id),
+        ]).sort(),
         flowKind: group.descriptor.flowKind,
         moduleKey: primaryModuleKey,
         moduleName: primaryModuleName,
         moduleKeys,
         moduleNames,
-        pageRoutes: unique(group.flows.map(item => item.pageRoute)).sort(),
+        pageRoutes: unique(group.flows.map((item) => item.pageRoute)).sort(),
         actions: unique(group.flows.map(inferAction)).sort(),
-        endpoints: unique(group.flows.map(item => item.endpoint)).sort(),
-        backendRoutes: unique(group.flows.map(item => item.backendRoute).filter((value): value is string => Boolean(value))).sort(),
+        endpoints: unique(group.flows.map((item) => item.endpoint)).sort(),
+        backendRoutes: unique(
+          group.flows
+            .map((item) => item.backendRoute)
+            .filter((value): value is string => Boolean(value)),
+        ).sort(),
         connected,
         persistent,
         memberCount: group.flows.length,
@@ -706,69 +783,76 @@ export function buildResolvedManifest(
   manifestPath: string | null,
   codebaseTruth: PulseCodebaseTruth,
 ): PulseResolvedManifest {
-  const modules = codebaseTruth.discoveredModules.map(module => buildModuleResolution(manifest, module));
-  const criticalModuleKeys = new Set(modules.filter(module => module.critical).map(module => module.key));
+  const modules = codebaseTruth.discoveredModules.map((module) =>
+    buildModuleResolution(manifest, module),
+  );
+  const criticalModuleKeys = new Set(
+    modules.filter((module) => module.critical).map((module) => module.key),
+  );
   const flowGroups = buildFlowGroups(manifest, codebaseTruth.discoveredFlows, criticalModuleKeys);
 
   const matchedModuleNames = new Set(
-    modules
-      .map(module => module.sourceModule)
-      .filter((value): value is string => Boolean(value)),
+    modules.map((module) => module.sourceModule).filter((value): value is string => Boolean(value)),
   );
   const orphanManualModules = getActiveModules(manifest)
-    .filter(entry => !matchedModuleNames.has(entry.name))
-    .map(entry => entry.name)
+    .filter((entry) => !matchedModuleNames.has(entry.name))
+    .map((entry) => entry.name)
     .sort();
 
   const legacyManualModules = getLegacyModules(manifest)
-    .map(entry => entry.name)
+    .map((entry) => entry.name)
     .sort();
 
   const matchedFlowSpecs = new Set(
     flowGroups
-      .map(group => group.matchedFlowSpec)
+      .map((group) => group.matchedFlowSpec)
       .filter((value): value is string => Boolean(value)),
   );
   const orphanFlowSpecs = (manifest?.flowSpecs || [])
-    .filter(spec => !matchedFlowSpecs.has(spec.id))
-    .map(spec => spec.id)
+    .filter((spec) => !matchedFlowSpecs.has(spec.id))
+    .map((spec) => spec.id)
     .sort();
 
   const unresolvedModules: string[] = [];
 
   const unresolvedFlowGroups = flowGroups
-    .filter(group => group.resolution === 'candidate' && group.flowKind !== 'ops_internal' && group.flowKind !== 'legacy_noise')
-    .map(group => group.id)
+    .filter(
+      (group) =>
+        group.resolution === 'candidate' &&
+        group.flowKind !== 'ops_internal' &&
+        group.flowKind !== 'legacy_noise',
+    )
+    .map((group) => group.id)
     .sort();
 
   const excludedModules = modules
-    .filter(module => module.resolution === 'excluded')
-    .map(module => module.name)
+    .filter((module) => module.resolution === 'excluded')
+    .map((module) => module.name)
     .sort();
 
   const excludedFlowGroups = flowGroups
-    .filter(group => group.resolution === 'excluded')
-    .map(group => group.id)
+    .filter((group) => group.resolution === 'excluded')
+    .map((group) => group.id)
     .sort();
 
   const groupedFlowGroups = flowGroups
-    .filter(group => group.resolution === 'grouped')
-    .map(group => group.id)
+    .filter((group) => group.resolution === 'grouped')
+    .map((group) => group.id)
     .sort();
 
   const sharedCapabilityGroups = flowGroups
-    .filter(group => group.flowKind === 'shared_capability')
-    .map(group => group.id)
+    .filter((group) => group.flowKind === 'shared_capability')
+    .map((group) => group.id)
     .sort();
 
   const opsInternalFlowGroups = flowGroups
-    .filter(group => group.flowKind === 'ops_internal')
-    .map(group => group.id)
+    .filter((group) => group.flowKind === 'ops_internal')
+    .map((group) => group.id)
     .sort();
 
   const legacyNoiseFlowGroups = flowGroups
-    .filter(group => group.flowKind === 'legacy_noise')
-    .map(group => group.id)
+    .filter((group) => group.flowKind === 'legacy_noise')
+    .map((group) => group.id)
     .sort();
 
   const blockerCount =
@@ -793,8 +877,8 @@ export function buildResolvedManifest(
     supportedStacks: manifest?.supportedStacks || [],
     surfaces: manifest?.surfaces || [],
     criticalDomains: modules
-      .filter(module => module.critical && module.moduleKind === 'user_facing')
-      .map(module => module.key)
+      .filter((module) => module.critical && module.moduleKind === 'user_facing')
+      .map((module) => module.key)
       .sort(),
     modules,
     flowGroups,
@@ -815,10 +899,10 @@ export function buildResolvedManifest(
     slos: manifest?.slos || {},
     summary: {
       totalModules: modules.length,
-      resolvedModules: modules.filter(module => module.resolution !== 'excluded').length,
+      resolvedModules: modules.filter((module) => module.resolution !== 'excluded').length,
       unresolvedModules: unresolvedModules.length,
       totalFlowGroups: flowGroups.length,
-      resolvedFlowGroups: flowGroups.filter(group => group.resolution !== 'candidate').length,
+      resolvedFlowGroups: flowGroups.filter((group) => group.resolution !== 'candidate').length,
       unresolvedFlowGroups: unresolvedFlowGroups.length,
       orphanManualModules: orphanManualModules.length,
       orphanFlowSpecs: orphanFlowSpecs.length,

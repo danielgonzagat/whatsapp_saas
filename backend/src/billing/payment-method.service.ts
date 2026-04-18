@@ -1,8 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Stripe from 'stripe';
+// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import Stripe = require('stripe');
 import { PrismaService } from '../prisma/prisma.service';
+import type { StripeClient, StripeCustomer } from './stripe-types';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
 
@@ -15,7 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class PaymentMethodService {
   private readonly logger = new Logger(PaymentMethodService.name);
-  private stripe: Stripe | null = null;
+  private stripe: StripeClient | null = null;
 
   constructor(
     private prisma: PrismaService,
@@ -190,7 +193,7 @@ export class PaymentMethodService {
       });
 
       // Buscar método padrão
-      const customer = (await this.stripe.customers.retrieve(customerId)) as Stripe.Customer;
+      const customer = (await this.stripe.customers.retrieve(customerId)) as StripeCustomer;
       const defaultMethodId =
         typeof customer.invoice_settings?.default_payment_method === 'string'
           ? customer.invoice_settings.default_payment_method

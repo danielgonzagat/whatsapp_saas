@@ -28,6 +28,13 @@ export interface ProviderSessionSnapshot {
   lastCatchupFailedAt?: string | null;
   recoveryBlockedReason?: string | null;
   recoveryBlockedAt?: string | null;
+  lastCatchupAt?: string | null;
+  lastCatchupReason?: string | null;
+  lastCatchupImportedMessages?: number | null;
+  lastCatchupTouchedChats?: number | null;
+  lastCatchupProcessedChats?: number | null;
+  lastCatchupOverflow?: boolean | null;
+  backfillCursor?: Record<string, unknown> | null;
 }
 
 export interface ProviderAutonomySettings {
@@ -64,6 +71,26 @@ export interface ProviderAutopilotSettings {
   [key: string]: unknown;
 }
 
+export interface ProviderCalendarSettings {
+  provider?: 'google' | 'outlook' | 'internal';
+  credentials?: {
+    clientId?: string;
+    clientSecret?: string;
+    refreshToken?: string;
+    accessToken?: string;
+    [key: string]: unknown;
+  };
+
+  [key: string]: unknown;
+}
+
+export interface ProviderPlanLimitSettings {
+  plan?: string;
+  aiRequestsPerDay?: number;
+
+  [key: string]: unknown;
+}
+
 export interface ProviderSettings {
   whatsappProvider?: string;
   connectionStatus?: string;
@@ -77,6 +104,9 @@ export interface ProviderSettings {
   anonymousGuest?: boolean;
   workspaceMode?: string;
   authMode?: string;
+  billingSuspended?: boolean;
+  calendar?: ProviderCalendarSettings;
+  planLimits?: ProviderPlanLimitSettings;
   auth?: { anonymous?: boolean; [key: string]: unknown };
 
   [key: string]: unknown;

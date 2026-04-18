@@ -7,11 +7,12 @@ import { BillingService } from './billing.service';
 import { PaymentMethodController } from './payment-method.controller';
 import { PaymentMethodService } from './payment-method.service';
 import { PlanLimitsService } from './plan-limits.service';
+import { StripeService } from './stripe.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule, forwardRef(() => WhatsappModule)],
-  providers: [BillingService, PlanLimitsService, PaymentMethodService],
+  providers: [BillingService, PlanLimitsService, PaymentMethodService, StripeService],
   controllers: [BillingController, PaymentMethodController],
-  exports: [BillingService, PlanLimitsService, PaymentMethodService],
+  exports: [BillingService, PlanLimitsService, PaymentMethodService, StripeService],
 })
 export class BillingModule {}

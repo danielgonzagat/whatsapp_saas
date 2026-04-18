@@ -52,7 +52,6 @@ const GLOBAL_KEY_PATTERNS = [
   // Webhook dedup keys are scoped by (provider, externalId), not workspace
   /^webhook:payment:/,
   /^webhook:stripe:/,
-  /^webhook:asaas:/,
   /^webhook:meta:/,
   // System health and metrics
   /^health:/,

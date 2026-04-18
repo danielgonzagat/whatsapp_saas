@@ -20,9 +20,9 @@ Frontend (Next.js 16 / Vercel)
 Backend (NestJS 11 / Railway)
   ├─ 89 controllers, 107 models Prisma
   ├─ Auth (JWT + Google OAuth + Apple + WhatsApp OTP)
-  ├─ Checkout (planos, pagamentos — Asaas + MercadoPago)
+  ├─ Checkout (planos, pagamentos Stripe-only com Pix e card)
   ├─ Wallet (saldo, saques, antecipacoes)
-  ├─ Billing (assinaturas da plataforma — Stripe)
+  ├─ Billing (setup de cobrança e meios de pagamento via Stripe)
   ├─ WhatsApp engine (WAHA + Meta Cloud API providers)
   ├─ Unified AI Agent (OpenAI + Anthropic)
   ├─ Sentry + Prometheus metrics
@@ -59,7 +59,7 @@ Infra
 
 - **Auth** — JWT + refresh + Google + Apple + WhatsApp OTP + anonymous + magic link
 - **Products** — CRUD completo, editor com 10 tabs (dados, planos, checkouts, URLs, comissionamento, cupons, campanhas, avaliacoes, after pay, IA)
-- **Checkout** — Temas Blanc/Noir com cores dinamicas do config, Asaas + MercadoPago (PKCE OAuth), coupon popup automatico
+- **Checkout** — Temas Blanc/Noir com cores dinamicas do config, Stripe-only (Pix + card), coupon popup automatico
 - **WhatsApp** — Dual provider (Meta Cloud API + WAHA, configurable via WHATSAPP_PROVIDER_DEFAULT), inbox real, autopilot com LLM, flow engine. Ver `docs/adr/0001-whatsapp-source-of-truth.md` para a arquitetura completa.
 - **Kloel AI** — SSE streaming, tool calling, conversation store, context formatter, modulos extraidos (StreamWriter, ToolRouter, ConversationStore)
 - **CRM** — Pipeline, contacts, neuro-CRM, segmentation, deals
@@ -84,7 +84,7 @@ Infra
 - RBAC com `@Roles` decorator (36 endpoints protegidos)
 - SSRF protection (`url-validator.ts`) em fetch calls dinamicos — bloqueia localhost, IPs privados, cloud metadata, IPv6 interno
 - DOMPurify sanitization em todo conteudo HTML dinamico
-- Webhook signature verification (Asaas, Stripe, Meta)
+- Webhook signature verification (Stripe, Meta)
 - Idempotency guards em endpoints de pagamento
 - `forbidNonWhitelisted: true` no ValidationPipe global
 - DTOs com class-validator em auth, billing, team, KYC, sales, wallet

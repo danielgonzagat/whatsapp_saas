@@ -256,7 +256,7 @@
         "frontend/src/app/(main)/webinarios/page.tsx (4)",
         "backend/src/whatsapp/providers/waha.provider.ts (3)",
         "frontend/src/app/(main)/funnels/page.tsx (3)",
-        "backend/src/webhooks/asaas-webhook.controller.ts (2)",
+        "backend/src/webhook/payment/stripe-webhook.controller.ts (2)",
         "frontend/src/app/(main)/autopilot/page.tsx (2)",
         "frontend/src/app/(main)/followups/page.tsx (2)"
       ],
@@ -528,7 +528,7 @@
         "backend/src/kloel/mercado-pago-wallet.controller.ts (2)",
         "backend/src/kloel/mercado-pago.service.ts (2)",
         "backend/src/media/media.controller.ts (2)",
-        "backend/src/webhooks/asaas-webhook.controller.ts (2)"
+        "backend/src/webhook/payment/stripe-webhook.controller.ts (2)"
       ],
       "validationArtifacts": [
         "PULSE_ADMIN_EVIDENCE.json",
@@ -676,7 +676,7 @@
         "backend/src/kloel/kloel.service.ts (3)",
         "frontend/src/app/(main)/funnels/page.tsx (3)",
         "backend/src/campaigns/campaigns.service.ts (2)",
-        "backend/src/webhooks/asaas-webhook.controller.ts (2)",
+        "backend/src/webhook/payment/stripe-webhook.controller.ts (2)",
         "frontend/src/app/(main)/autopilot/page.tsx (2)",
         "frontend/src/app/(main)/followups/page.tsx (2)"
       ],

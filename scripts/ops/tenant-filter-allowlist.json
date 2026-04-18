@@ -1827,30 +1827,6 @@
       "reason": "transitively scoped via parent relation; verified safe"
     },
     {
-      "file": "backend/src/kloel/asaas.service.ts",
-      "line": 69,
-      "model": "workspace",
-      "method": "findMany",
-      "kind": "TRANSITIVE_REVIEW",
-      "reason": "transitively scoped via parent relation; verified safe"
-    },
-    {
-      "file": "backend/src/kloel/asaas.service.ts",
-      "line": 103,
-      "model": "workspace",
-      "method": "findUnique",
-      "kind": "TRANSITIVE_REVIEW",
-      "reason": "transitively scoped via parent relation; verified safe"
-    },
-    {
-      "file": "backend/src/kloel/asaas.service.ts",
-      "line": 114,
-      "model": "workspace",
-      "method": "update",
-      "kind": "TRANSITIVE_REVIEW",
-      "reason": "transitively scoped via parent relation; verified safe"
-    },
-    {
       "file": "backend/src/kloel/conversational-onboarding.service.ts",
       "line": 550,
       "model": "workspace",

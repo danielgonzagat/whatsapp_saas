@@ -16,7 +16,6 @@ import { LLMBudgetService } from './llm-budget.service';
 import { MemoryManagementService } from './memory-management.service';
 import { MemoryController } from './memory.controller';
 import { MemoryService } from './memory.service';
-import { MercadoPagoWalletController } from './mercado-pago-wallet.controller';
 import { PdfProcessorController } from './pdf-processor.controller';
 import { PdfProcessorService } from './pdf-processor.service';
 import { WalletLedgerService } from './wallet-ledger.service';
@@ -32,7 +31,6 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { AdRulesEngineService } from './ad-rules-engine.service';
 import { AdRulesController } from './ad-rules.controller';
-import { AsaasService } from './asaas.service';
 import { AudioController } from './audio.controller';
 import { AudioService } from './audio.service';
 import { CanvasController } from './canvas.controller';
@@ -41,7 +39,6 @@ import { DiagnosticsController } from './diagnostics.controller';
 import { EmailCampaignService } from './email-campaign.service';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
-import { MercadoPagoService } from './mercado-pago.service';
 import { OrderAlertsService } from './order-alerts.service';
 import {
   ProductAIConfigController,
@@ -84,7 +81,6 @@ import { WebinarController } from './webinar.controller';
     MemoryController,
     PdfProcessorController,
     WalletController,
-    MercadoPagoWalletController,
     AudioController,
     UnifiedAgentController,
     SmartPaymentController,
@@ -121,8 +117,6 @@ import { WebinarController } from './webinar.controller';
     WalletService,
     WalletLedgerService,
     LLMBudgetService,
-    AsaasService,
-    MercadoPagoService,
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,
@@ -146,8 +140,6 @@ import { WebinarController } from './webinar.controller';
     WalletService,
     WalletLedgerService,
     LLMBudgetService,
-    AsaasService,
-    MercadoPagoService,
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,

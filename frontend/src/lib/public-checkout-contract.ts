@@ -127,7 +127,7 @@ export interface PublicCheckoutConfig {
 }
 
 export interface PublicCheckoutPaymentProvider {
-  provider: 'mercado_pago';
+  provider: 'stripe';
   connected: boolean;
   checkoutEnabled: boolean;
   publicKey?: string | null;

@@ -13,10 +13,11 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { StripeService } from '../billing/stripe.service';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
-import { AsaasService } from './asaas.service';
 import { ChangeSubscriptionPlanDto, ShipOrderDto } from './dto/sales-actions.dto';
 import { OrderAlertsService } from './order-alerts.service';
 
@@ -30,8 +31,19 @@ export class SalesController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly orderAlertsService: OrderAlertsService,
-    private readonly asaasService: AsaasService,
+    private readonly stripeService: StripeService,
   ) {}
+
+  private readJsonRecord(value: Prisma.JsonValue | null | undefined) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return { ...value };
+    }
+    return {} as Prisma.JsonObject;
+  }
+
+  private readText(value: unknown) {
+    return typeof value === 'string' && value.trim() ? value : null;
+  }
 
   // ═══════════════════════════════════════
   // VENDAS (KloelSale)
@@ -202,21 +214,6 @@ export class SalesController {
     });
     if (!sub) throw new NotFoundException('Subscription not found');
 
-    // If subscription is linked to Asaas, update via gateway first
-    if (sub.externalId) {
-      try {
-        await this.asaasService.updateSubscription(workspaceId, sub.externalId, {
-          status: 'INACTIVE',
-        });
-      } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-        throw new BadRequestException(
-          `Falha ao pausar assinatura no gateway: ${errInstanceofError.message}`,
-        );
-      }
-    }
-
     await this.prisma.customerSubscription.updateMany({
       where: { id, workspaceId },
       data: { status: 'PAUSED', pausedAt: new Date() },
@@ -249,21 +246,6 @@ export class SalesController {
     });
     if (!sub) throw new NotFoundException('Subscription not found');
 
-    // If subscription is linked to Asaas, reactivate via gateway first
-    if (sub.externalId) {
-      try {
-        await this.asaasService.updateSubscription(workspaceId, sub.externalId, {
-          status: 'ACTIVE',
-        });
-      } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-        throw new BadRequestException(
-          `Falha ao reativar assinatura no gateway: ${errInstanceofError.message}`,
-        );
-      }
-    }
-
     await this.prisma.customerSubscription.updateMany({
       where: { id, workspaceId },
       data: { status: 'ACTIVE', pausedAt: null },
@@ -295,19 +277,6 @@ export class SalesController {
       where: { id, workspaceId },
     });
     if (!sub) throw new NotFoundException('Subscription not found');
-
-    // If subscription is linked to Asaas, cancel via gateway first
-    if (sub.externalId) {
-      try {
-        await this.asaasService.cancelSubscription(workspaceId, sub.externalId);
-      } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-        throw new BadRequestException(
-          `Falha ao cancelar assinatura no gateway: ${errInstanceofError.message}`,
-        );
-      }
-    }
 
     await this.prisma.customerSubscription.updateMany({
       where: { id, workspaceId },
@@ -352,17 +321,24 @@ export class SalesController {
       where: { id: dto.newPlanId },
     });
     if (!newPlan) throw new NotFoundException('Plan not found');
+    const planChangedAt = new Date();
+    const previousPlanId = this.readText(sub.planId);
+    const metadata = this.readJsonRecord(sub.metadata);
     await this.prisma.customerSubscription.updateMany({
       where: { id, workspaceId },
       data: {
         planName: newPlan.name,
         amount: newPlan.price,
+        planId: dto.newPlanId,
+        previousPlanId,
+        planChangedAt,
         metadata: {
+          ...metadata,
           planId: dto.newPlanId,
-          planChangedAt: new Date().toISOString(),
-          previousPlanId: (sub as any).planId,
+          planChangedAt: planChangedAt.toISOString(),
+          previousPlanId,
         },
-      } as any,
+      },
     });
     return {
       subscription: {
@@ -566,10 +542,17 @@ export class SalesController {
 
     if (sale.status !== 'paid') throw new BadRequestException('Only paid sales can be refunded');
 
-    // If the sale has an external payment (Asaas), process refund via gateway first
     if (sale.externalPaymentId) {
       try {
-        await this.asaasService.refundPayment(workspaceId, sale.externalPaymentId);
+        if (sale.externalPaymentId.startsWith('pi_')) {
+          await this.stripeService.stripe.refunds.create({
+            payment_intent: sale.externalPaymentId,
+          });
+        } else {
+          throw new BadRequestException(
+            'Somente pagamentos Stripe são suportados para estorno nesta versão.',
+          );
+        }
       } catch (err: unknown) {
         const errInstanceofError =
           err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');

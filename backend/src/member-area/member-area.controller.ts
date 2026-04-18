@@ -82,6 +82,24 @@ interface UpdateLessonDto {
   active?: boolean;
 }
 
+interface EnrollStudentDto {
+  studentName?: string;
+  studentEmail?: string;
+  studentPhone?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+function readText(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 /**
  * MEMBER AREAS CONTROLLER
  *
@@ -989,12 +1007,7 @@ export class MemberAreaController {
   async enrollStudent(
     @Request() req: AuthenticatedRequest,
     @Param('id') areaId: string,
-    @Body()
-    dto: {
-      studentName: string;
-      studentEmail: string;
-      studentPhone?: string;
-    },
+    @Body() dto: EnrollStudentDto,
   ) {
     const workspaceId = req.user.workspaceId;
     const area = await this.prisma.memberArea.findFirst({
@@ -1002,9 +1015,9 @@ export class MemberAreaController {
     });
     if (!area) throw new NotFoundException('Area not found');
 
-    const studentName = dto.studentName || (dto as any).name;
-    const studentEmail = dto.studentEmail || (dto as any).email;
-    const studentPhone = dto.studentPhone || (dto as any).phone;
+    const studentName = readText(dto.studentName) ?? readText(dto.name);
+    const studentEmail = readText(dto.studentEmail) ?? readText(dto.email);
+    const studentPhone = readText(dto.studentPhone) ?? readText(dto.phone);
 
     if (!studentName || !studentEmail) {
       throw new BadRequestException('Nome e e-mail do aluno são obrigatórios');

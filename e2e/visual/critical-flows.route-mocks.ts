@@ -10,7 +10,6 @@ import {
   VISUAL_INBOX_AGENTS_FIXTURE,
   VISUAL_INBOX_CONVERSATIONS_FIXTURE,
   VISUAL_INBOX_MESSAGES_FIXTURE,
-  VISUAL_MERCADO_PAGO_STATUS_FIXTURE,
   VISUAL_PRODUCT_EDIT_FIXTURE,
   VISUAL_PRODUCT_EDIT_ID,
   VISUAL_WALLET_ANTICIPATIONS_FIXTURE,
@@ -138,14 +137,6 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(VISUAL_WALLET_ANTICIPATIONS_FIXTURE),
-      });
-    });
-    await page.route('**/kloel/wallet/*/mercado-pago/status', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
-      await requestRoute.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(VISUAL_MERCADO_PAGO_STATUS_FIXTURE),
       });
     });
     return;

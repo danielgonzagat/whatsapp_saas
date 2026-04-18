@@ -1,4 +1,6 @@
-import Stripe from 'stripe';
+// Stripe v22 requires CJS-style import — `default` no longer exists at runtime.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import Stripe = require('stripe');
 import { prisma } from '../db';
 import { CRM } from './crm';
 
@@ -12,7 +14,7 @@ export type ToolDefinition = {
 };
 
 export class ToolsRegistry {
-  private static stripe: Stripe | null = process.env.STRIPE_SECRET_KEY
+  private static stripe: Stripe.Stripe | null = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY)
     : null;
 
