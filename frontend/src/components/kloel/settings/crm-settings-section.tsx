@@ -151,8 +151,12 @@ export function CrmSettingsSection() {
       if (firstPreset && !selectedPreset) {
         setSelectedPreset(firstPreset.name);
       }
-    } catch (loadError: any) {
-      setError(loadError?.message || 'Nao foi possivel carregar CRM e pipeline.');
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : 'Nao foi possivel carregar CRM e pipeline.',
+      );
     } finally {
       setLoading(false);
     }
@@ -193,9 +197,13 @@ export function CrmSettingsSection() {
         );
         setPresetTotal(response.data?.total || 0);
       })
-      .catch((presetError: any) => {
+      .catch((presetError: unknown) => {
         if (!active) return;
-        setError(presetError?.message || 'Nao foi possivel carregar o segmento selecionado.');
+        setError(
+          presetError instanceof Error
+            ? presetError.message
+            : 'Nao foi possivel carregar o segmento selecionado.',
+        );
       });
 
     return () => {
@@ -223,8 +231,10 @@ export function CrmSettingsSection() {
       setContactForm({ name: '', phone: '', email: '', notes: '' });
       setSuccess('Contato criado no CRM.');
       await loadData();
-    } catch (createError: any) {
-      setError(createError?.message || 'Nao foi possivel criar o contato.');
+    } catch (createError) {
+      setError(
+        createError instanceof Error ? createError.message : 'Nao foi possivel criar o contato.',
+      );
     } finally {
       setSaving(false);
     }
@@ -249,8 +259,10 @@ export function CrmSettingsSection() {
       }
       setSuccess('Pipeline criado com sucesso.');
       await loadData();
-    } catch (createError: any) {
-      setError(createError?.message || 'Nao foi possivel criar o pipeline.');
+    } catch (createError) {
+      setError(
+        createError instanceof Error ? createError.message : 'Nao foi possivel criar o pipeline.',
+      );
     } finally {
       setSaving(false);
     }
@@ -276,8 +288,10 @@ export function CrmSettingsSection() {
       setDealForm((current) => ({ ...current, title: '', value: '' }));
       setSuccess('Deal criado no pipeline.');
       await loadData();
-    } catch (createError: any) {
-      setError(createError?.message || 'Nao foi possivel criar o deal.');
+    } catch (createError) {
+      setError(
+        createError instanceof Error ? createError.message : 'Nao foi possivel criar o deal.',
+      );
     } finally {
       setSaving(false);
     }
@@ -297,8 +311,8 @@ export function CrmSettingsSection() {
       await crmApi.moveDeal(deal.id, nextStage.id);
       setSuccess(`Deal movido para ${nextStage.name}.`);
       await loadData();
-    } catch (moveError: any) {
-      setError(moveError?.message || 'Nao foi possivel mover o deal.');
+    } catch (moveError) {
+      setError(moveError instanceof Error ? moveError.message : 'Nao foi possivel mover o deal.');
     } finally {
       setSaving(false);
     }
@@ -314,8 +328,12 @@ export function CrmSettingsSection() {
       const processed = response.data?.processed ?? 0;
       setSuccess(`Auto-segmentacao concluida para ${processed} contatos.`);
       await loadData();
-    } catch (segmentError: any) {
-      setError(segmentError?.message || 'Nao foi possivel rodar a auto-segmentacao.');
+    } catch (segmentError) {
+      setError(
+        segmentError instanceof Error
+          ? segmentError.message
+          : 'Nao foi possivel rodar a auto-segmentacao.',
+      );
     } finally {
       setSaving(false);
     }

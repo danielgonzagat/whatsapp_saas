@@ -27,6 +27,7 @@ interface Deal {
 }
 
 interface Contact {
+  id?: string;
   name?: string;
   phone?: string;
   email?: string;
@@ -172,7 +173,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
   };
 
   const handleNeuroAnalyze = useCallback(async () => {
-    const contactId = (contact as any)?.id;
+    const contactId = contact?.id;
     if (!contactId) return;
     setNeuroLoading(true);
     setNeuroError(null);
@@ -187,8 +188,8 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
         | undefined;
       setNeuroResult(nba ?? null);
       mutate();
-    } catch (err: any) {
-      setNeuroError(err?.message || 'Falha na análise');
+    } catch (err) {
+      setNeuroError(err instanceof Error ? err.message : 'Falha na análise');
     } finally {
       setNeuroLoading(false);
     }
@@ -454,7 +455,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                 <button
                   type="button"
                   onClick={handleNeuroAnalyze}
-                  disabled={neuroLoading || !(contact as any)?.id}
+                  disabled={neuroLoading || !contact?.id}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -465,9 +466,9 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                     padding: '7px 14px',
                     fontSize: 12,
                     fontWeight: 600,
-                    cursor: neuroLoading || !(contact as any)?.id ? 'not-allowed' : 'pointer',
+                    cursor: neuroLoading || !contact?.id ? 'not-allowed' : 'pointer',
                     color: '#fff',
-                    opacity: neuroLoading || !(contact as any)?.id ? 0.6 : 1,
+                    opacity: neuroLoading || !contact?.id ? 0.6 : 1,
                     fontFamily: C.sora,
                     marginBottom: 10,
                   }}

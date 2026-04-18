@@ -2,78 +2,87 @@
 import { mutate } from 'swr';
 import { apiFetch, resolveWorkspaceFromAuthPayload, tokenStorage } from './core';
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  name?: string | null;
+  workspaceId?: string | null;
+  [k: string]: unknown;
+}
+
+export interface AuthWorkspaceSummary {
+  id: string;
+  name?: string | null;
+  [k: string]: unknown;
+}
+
+export interface AuthPayload {
+  access_token?: string;
+  accessToken?: string;
+  refresh_token?: string;
+  refreshToken?: string;
+  user?: AuthUser;
+  workspace?: AuthWorkspaceSummary;
+  workspaces?: AuthWorkspaceSummary[];
+  subscription?: Record<string, unknown> | null;
+  onboardingCompleted?: boolean;
+  [k: string]: unknown;
+}
+
+type AuthResponse = { data?: AuthPayload | null; error?: string | null };
+
+function persistAuthPayload(res: AuthResponse): void {
+  const payload = res.data ?? null;
+  const token = payload?.access_token || payload?.accessToken;
+  const refresh = payload?.refresh_token || payload?.refreshToken;
+  if (!token) return;
+
+  tokenStorage.setToken(token);
+  if (refresh) {
+    tokenStorage.setRefreshToken(refresh);
+  }
+  const wsId = resolveWorkspaceFromAuthPayload(payload as Record<string, unknown> | null)?.id;
+  if (wsId) {
+    tokenStorage.setWorkspaceId(wsId);
+  }
+}
+
 export const authApi = {
   signUp: async (email: string, name: string, password: string) => {
-    const res = await apiFetch<any>('/api/auth/register', {
+    const res = await apiFetch<AuthPayload>('/api/auth/register', {
       method: 'POST',
       body: { email, name, password },
     });
 
-    const token = res.data?.access_token || res.data?.accessToken;
-    const refresh = res.data?.refresh_token || res.data?.refreshToken;
-    if (token) {
-      tokenStorage.setToken(token);
-      if (refresh) {
-        tokenStorage.setRefreshToken(refresh);
-      }
-      const wsId = resolveWorkspaceFromAuthPayload(res.data)?.id;
-      if (wsId) {
-        tokenStorage.setWorkspaceId(wsId);
-      }
-    }
-
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
+    persistAuthPayload(res);
+    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
     return res;
   },
 
   signIn: async (email: string, password: string) => {
-    const res = await apiFetch<any>('/api/auth/login', {
+    const res = await apiFetch<AuthPayload>('/api/auth/login', {
       method: 'POST',
       body: { email, password },
     });
 
-    const token = res.data?.access_token || res.data?.accessToken;
-    const refresh = res.data?.refresh_token || res.data?.refreshToken;
-    if (token) {
-      tokenStorage.setToken(token);
-      if (refresh) {
-        tokenStorage.setRefreshToken(refresh);
-      }
-      const wsId = resolveWorkspaceFromAuthPayload(res.data)?.id;
-      if (wsId) {
-        tokenStorage.setWorkspaceId(wsId);
-      }
-    }
-
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
+    persistAuthPayload(res);
+    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
     return res;
   },
 
   signInWithGoogle: async (credential: string) => {
-    const res = await apiFetch<any>('/api/auth/google', {
+    const res = await apiFetch<AuthPayload>('/api/auth/google', {
       method: 'POST',
       body: { credential },
     });
 
-    const token = res.data?.access_token || res.data?.accessToken;
-    const refresh = res.data?.refresh_token || res.data?.refreshToken;
-    if (token) {
-      tokenStorage.setToken(token);
-      if (refresh) {
-        tokenStorage.setRefreshToken(refresh);
-      }
-      const wsId = resolveWorkspaceFromAuthPayload(res.data)?.id;
-      if (wsId) {
-        tokenStorage.setWorkspaceId(wsId);
-      }
-    }
-
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
+    persistAuthPayload(res);
+    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
     return res;
   },
 
   forgotPassword: async (email: string) => {
-    return apiFetch<any>('/api/auth/forgot-password', {
+    return apiFetch<{ ok?: boolean }>('/api/auth/forgot-password', {
       method: 'POST',
       body: { email },
     });
@@ -91,5 +100,5 @@ export const authApi = {
     tokenStorage.clear();
   },
 
-  getMe: () => apiFetch<any>('/api/workspace/me'),
+  getMe: () => apiFetch<AuthPayload>('/api/workspace/me'),
 };

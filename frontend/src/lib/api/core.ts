@@ -395,7 +395,9 @@ function syncBrowserStorageFromCookies(options?: { clearLocalIfMissing?: boolean
   return Boolean(accessToken);
 }
 
-export function resolveWorkspaceFromAuthPayload(payload: Record<string, unknown> | null): {
+export function resolveWorkspaceFromAuthPayload(
+  payload: Record<string, unknown> | null | undefined,
+): {
   id: string;
   name?: string;
 } | null {

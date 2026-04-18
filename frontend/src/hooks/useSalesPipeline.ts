@@ -4,24 +4,59 @@ import { type CreateDealPayload, createSalesDeal, moveSalesDeal } from '@/lib/ap
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
 
+interface RawPipelineStage {
+  id?: string;
+  _id?: string;
+  name?: string;
+  [k: string]: unknown;
+}
+
+interface RawPipelineDeal {
+  id?: string;
+  _id?: string;
+  value?: number;
+  stageId?: string | null;
+  stage?: string | { id?: string; _id?: string } | null;
+  [k: string]: unknown;
+}
+
+interface RawPipeline {
+  id?: string;
+  _id?: string;
+  name?: string;
+  stages?: RawPipelineStage[];
+  [k: string]: unknown;
+}
+
+export interface PipelineStage extends RawPipelineStage {
+  id: string;
+  deals: PipelineDeal[];
+}
+
+export interface PipelineDeal extends RawPipelineDeal {
+  id: string;
+}
+
+type DealsPayload = RawPipelineDeal[] | { deals?: RawPipelineDeal[] } | null | undefined;
+
 export function useSalesPipeline() {
   const {
     data: pipelinesData,
     isLoading: pipelinesLoading,
     error: pipelinesError,
     mutate,
-  } = useSWR('/crm/pipelines', swrFetcher, {
+  } = useSWR<RawPipeline[]>('/crm/pipelines', swrFetcher, {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });
   const pipelines = Array.isArray(pipelinesData) ? pipelinesData : [];
-  const pipeline = pipelines[0] as Record<string, any> | undefined;
+  const pipeline: RawPipeline | undefined = pipelines[0];
   const pipelineId = String(pipeline?.id || pipeline?._id || '');
   const {
     data: dealsData,
     isLoading: dealsLoading,
     error: dealsError,
-  } = useSWR(
+  } = useSWR<DealsPayload>(
     pipelineId ? `/crm/deals?pipeline=${encodeURIComponent(pipelineId)}` : null,
     swrFetcher,
     {
@@ -29,19 +64,34 @@ export function useSalesPipeline() {
       revalidateOnFocus: false,
     },
   );
-  const deals = Array.isArray(dealsData)
+  const rawDeals: RawPipelineDeal[] = Array.isArray(dealsData)
     ? dealsData
-    : Array.isArray((dealsData as any)?.deals)
-      ? (dealsData as any).deals
+    : Array.isArray(dealsData?.deals)
+      ? dealsData.deals
       : [];
-  const stages = Array.isArray(pipeline?.stages)
-    ? pipeline!.stages.map((stage: any) => ({
-        ...stage,
-        deals: deals.filter((deal: any) => {
-          const dealStageId = deal?.stageId || deal?.stage?._id || deal?.stage?.id || deal?.stage;
-          return String(dealStageId || '') === String(stage?.id || stage?._id || '');
-        }),
-      }))
+  const deals: PipelineDeal[] = rawDeals
+    .filter((deal): deal is RawPipelineDeal & { id: string } => Boolean(deal?.id || deal?._id))
+    .map((deal) => ({ ...deal, id: String(deal.id || deal._id || '') }));
+  const stages: PipelineStage[] = Array.isArray(pipeline?.stages)
+    ? pipeline.stages
+        .filter((stage): stage is RawPipelineStage => Boolean(stage?.id || stage?._id))
+        .map((stage) => {
+          const stageId = String(stage.id || stage._id || '');
+          return {
+            ...stage,
+            id: stageId,
+            deals: deals.filter((deal) => {
+              const stageRef = deal?.stage;
+              const dealStageId =
+                deal?.stageId ||
+                (typeof stageRef === 'object' && stageRef !== null
+                  ? stageRef._id || stageRef.id
+                  : stageRef) ||
+                '';
+              return String(dealStageId || '') === stageId;
+            }),
+          };
+        })
     : [];
 
   return {

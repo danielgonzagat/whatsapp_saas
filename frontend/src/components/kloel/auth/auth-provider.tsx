@@ -439,7 +439,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
         fallbackEmail: res.data.user.email,
-        fallbackName: res.data.user.name,
+        fallbackName: res.data.user.name ?? undefined,
       });
     }
 

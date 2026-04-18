@@ -2,20 +2,20 @@
 import { mutate } from 'swr';
 import { apiFetch } from './core';
 
-const invalidateInbox = () =>
-  mutate((key: string) => typeof key === 'string' && key.startsWith('/inbox'));
+const invalidateInbox = () => mutate((key) => typeof key === 'string' && key.startsWith('/inbox'));
 
 export interface Conversation {
   id: string;
   contactId?: string;
   status?: string;
+  channel?: string;
   lastMessageAt?: string;
   unreadCount?: number;
   contact?: { id: string; name?: string; phone?: string };
   assignedAgent?: { id: string; name?: string } | null;
   lastMessageStatus?: string | null;
   lastMessageErrorCode?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface InboxAgent {
@@ -34,8 +34,10 @@ export interface Message {
   status?: string;
   mediaUrl?: string | null;
   createdAt?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
+
+type MutationResult = Record<string, unknown> | undefined;
 
 export async function listConversations(workspaceId: string): Promise<Conversation[]> {
   const res = await apiFetch<Conversation[]>(
@@ -59,8 +61,8 @@ export async function getConversationMessages(conversationId: string): Promise<M
   return res.data ?? [];
 }
 
-export async function closeConversation(conversationId: string): Promise<any> {
-  const res = await apiFetch<any>(
+export async function closeConversation(conversationId: string): Promise<MutationResult> {
+  const res = await apiFetch<Record<string, unknown>>(
     `/inbox/conversations/${encodeURIComponent(conversationId)}/close`,
     { method: 'POST' },
   );
@@ -69,8 +71,11 @@ export async function closeConversation(conversationId: string): Promise<any> {
   return res.data;
 }
 
-export async function assignConversation(conversationId: string, agentId: string): Promise<any> {
-  const res = await apiFetch<any>(
+export async function assignConversation(
+  conversationId: string,
+  agentId: string,
+): Promise<MutationResult> {
+  const res = await apiFetch<Record<string, unknown>>(
     `/inbox/conversations/${encodeURIComponent(conversationId)}/assign`,
     {
       method: 'POST',
