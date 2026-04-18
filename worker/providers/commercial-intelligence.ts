@@ -346,10 +346,52 @@ export function shouldAutonomousSend(decision: CommercialDecisionEnvelope, mode:
   return false;
 }
 
-export function extractMarketSignals(messages: Array<string | null | undefined>) {
-  const signalMap = new Map<string, MarketSignal>();
+type MessageSignalHit = { signalType: string; normalizedKey: string };
 
-  const registerSignal = (signalType: string, normalizedKey: string, text: string) => {
+const MESSAGE_SIGNAL_RULES: Array<{
+  signalType: string;
+  normalizedKey: string;
+  keywords: string[];
+}> = [
+  {
+    signalType: 'TRACKING',
+    normalizedKey: 'tracking_confidence',
+    keywords: ['rastreio', 'codigo', 'código', 'entrega'],
+  },
+  {
+    signalType: 'PRICE_RESISTANCE',
+    normalizedKey: 'price_resistance',
+    keywords: ['preco', 'preço', 'valor', 'caro', 'desconto', 'quanto', 'custa'],
+  },
+  {
+    signalType: 'PAYMENT_FLEXIBILITY',
+    normalizedKey: 'payment_flexibility',
+    keywords: ['parcel', 'boleto', 'pix', 'cartao', 'cartão'],
+  },
+  {
+    signalType: 'BUNDLE_DEMAND',
+    normalizedKey: 'bundle_demand',
+    keywords: ['kit', 'combo', '3 unidades', '5 unidades'],
+  },
+];
+
+function detectMessageSignals(text: string): MessageSignalHit[] {
+  const hits: MessageSignalHit[] = [];
+  for (const rule of MESSAGE_SIGNAL_RULES) {
+    if (includesAny(text, rule.keywords)) {
+      hits.push({ signalType: rule.signalType, normalizedKey: rule.normalizedKey });
+    }
+  }
+  for (const product of PRODUCT_TERMS) {
+    if (text.includes(product)) {
+      hits.push({ signalType: 'PRODUCT_DEMAND', normalizedKey: `product:${product}` });
+    }
+  }
+  return hits;
+}
+
+function createMarketSignalRegistrar(signalMap: Map<string, MarketSignal>) {
+  return (signalType: string, normalizedKey: string, text: string) => {
     const current = signalMap.get(normalizedKey) || {
       signalType,
       normalizedKey,
@@ -362,31 +404,48 @@ export function extractMarketSignals(messages: Array<string | null | undefined>)
     }
     signalMap.set(normalizedKey, current);
   };
+}
+
+export function extractMarketSignals(messages: Array<string | null | undefined>) {
+  const signalMap = new Map<string, MarketSignal>();
+  const registerSignal = createMarketSignalRegistrar(signalMap);
 
   for (const rawMessage of messages) {
     const text = normalized(rawMessage);
     if (!text) continue;
-
-    if (includesAny(text, ['rastreio', 'codigo', 'código', 'entrega'])) {
-      registerSignal('TRACKING', 'tracking_confidence', text);
-    }
-    if (includesAny(text, ['preco', 'preço', 'valor', 'caro', 'desconto', 'quanto', 'custa'])) {
-      registerSignal('PRICE_RESISTANCE', 'price_resistance', text);
-    }
-    if (includesAny(text, ['parcel', 'boleto', 'pix', 'cartao', 'cartão'])) {
-      registerSignal('PAYMENT_FLEXIBILITY', 'payment_flexibility', text);
-    }
-    if (includesAny(text, ['kit', 'combo', '3 unidades', '5 unidades'])) {
-      registerSignal('BUNDLE_DEMAND', 'bundle_demand', text);
-    }
-    for (const product of PRODUCT_TERMS) {
-      if (text.includes(product)) {
-        registerSignal('PRODUCT_DEMAND', `product:${product}`, text);
-      }
+    for (const hit of detectMessageSignals(text)) {
+      registerSignal(hit.signalType, hit.normalizedKey, text);
     }
   }
 
   return [...signalMap.values()].sort((a, b) => b.frequency - a.frequency);
+}
+
+function resolveHumanTaskUrgency(
+  decision: CommercialDecisionEnvelope,
+  hasCritical: boolean,
+): HumanTaskPayload['urgency'] {
+  if (hasCritical) return 'CRITICAL';
+  return decision.confidence < 0.45 ? 'HIGH' : 'MEDIUM';
+}
+
+function resolveHumanTaskReason(decision: CommercialDecisionEnvelope): string {
+  if (decision.riskFlags.length > 0) {
+    return `A IA detectou risco operacional: ${decision.riskFlags.join(', ')}`;
+  }
+  return 'Confiança baixa para agir com autonomia total.';
+}
+
+function resolveHumanTaskBusinessImpact(decision: CommercialDecisionEnvelope): string {
+  return decision.intent === 'BUYING'
+    ? 'Venda potencial em risco'
+    : 'Contato sensível requer validação humana';
+}
+
+function resolveHumanTaskSuggestedReply(decision: CommercialDecisionEnvelope): string | undefined {
+  return decision.tone === 'explain'
+    ? 'Posso revisar esse caso e te responder com segurança em instantes.'
+    : undefined;
 }
 
 export function buildHumanTask(input: {
@@ -402,24 +461,14 @@ export function buildHumanTask(input: {
   const hasCritical = decision.riskFlags.some((flag) =>
     ['LEGAL_RISK', 'MEDICAL_RISK'].includes(flag),
   );
-  const urgency = hasCritical ? 'CRITICAL' : decision.confidence < 0.45 ? 'HIGH' : 'MEDIUM';
 
   return {
     id: randomUUID(),
     taskType: hasCritical ? 'HANDLE_RISK' : 'APPROVE_SPECIAL_CASE',
-    urgency,
-    reason:
-      decision.riskFlags.length > 0
-        ? `A IA detectou risco operacional: ${decision.riskFlags.join(', ')}`
-        : 'Confiança baixa para agir com autonomia total.',
-    suggestedReply:
-      decision.tone === 'explain'
-        ? 'Posso revisar esse caso e te responder com segurança em instantes.'
-        : undefined,
-    businessImpact:
-      decision.intent === 'BUYING'
-        ? 'Venda potencial em risco'
-        : 'Contato sensível requer validação humana',
+    urgency: resolveHumanTaskUrgency(decision, hasCritical),
+    reason: resolveHumanTaskReason(decision),
+    suggestedReply: resolveHumanTaskSuggestedReply(decision),
+    businessImpact: resolveHumanTaskBusinessImpact(decision),
     contactId: input.contactId,
     phone: input.phone,
     createdAt: new Date().toISOString(),

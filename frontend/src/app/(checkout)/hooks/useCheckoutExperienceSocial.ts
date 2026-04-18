@@ -4,9 +4,11 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import {
   EMPTY_CHECKOUT_EXPERIENCE_FORM,
+  computeFinalizeOrderPrecheckError,
   deriveCheckoutExperienceState,
   isCheckoutAddressStepValid,
   isCheckoutIdentityStepValid,
+  resolveCheckoutCouponCode,
   type CheckoutExperienceForm,
   type UseCheckoutExperienceSocialOptions,
 } from './checkout-experience-social-helpers';
@@ -249,14 +251,31 @@ export function useCheckoutExperienceSocial({
     ],
   );
 
+  const rejectCoupon = useCallback((message: string) => {
+    setCouponApplied(false);
+    setDiscount(0);
+    setCouponError(message);
+    return false as const;
+  }, []);
+
+  const acceptCoupon = useCallback(
+    (result: { valid: boolean; discountAmount?: number; code?: string }, nextCode: string) => {
+      setDiscount(Math.max(0, Math.round(Number(result.discountAmount || 0))));
+      setCouponApplied(true);
+      setCouponCode((result.code || nextCode).toUpperCase());
+      setCouponPopupHandled(true);
+      setShowCouponPopup(false);
+      return true as const;
+    },
+    [],
+  );
+
   const applyCoupon = useCallback(
     async (explicitCode?: string) => {
       setCouponError('');
       if (config?.enableCoupon === false || !workspaceId || !plan?.id) return false;
 
-      const nextCode = String(explicitCode || couponCode || '')
-        .trim()
-        .toUpperCase();
+      const nextCode = resolveCheckoutCouponCode(couponCode, explicitCode);
       if (!nextCode) {
         setCouponError('Digite um cupom.');
         return false;
@@ -264,27 +283,13 @@ export function useCheckoutExperienceSocial({
 
       try {
         const result = await validateCoupon(workspaceId, nextCode, plan.id, subtotal);
-        if (!result.valid) {
-          setCouponApplied(false);
-          setDiscount(0);
-          setCouponError(result.message || 'Cupom inválido ou expirado.');
-          return false;
-        }
-
-        setDiscount(Math.max(0, Math.round(Number(result.discountAmount || 0))));
-        setCouponApplied(true);
-        setCouponCode((result.code || nextCode).toUpperCase());
-        setCouponPopupHandled(true);
-        setShowCouponPopup(false);
-        return true;
+        if (!result.valid) return rejectCoupon(result.message || 'Cupom inválido ou expirado.');
+        return acceptCoupon(result, nextCode);
       } catch (error) {
-        setCouponApplied(false);
-        setDiscount(0);
-        setCouponError(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
-        return false;
+        return rejectCoupon(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
       }
     },
-    [config?.enableCoupon, couponCode, plan?.id, subtotal, workspaceId],
+    [acceptCoupon, config?.enableCoupon, couponCode, plan?.id, rejectCoupon, subtotal, workspaceId],
   );
 
   const resetStripeConfirmation = useCallback(() => {
@@ -308,62 +313,8 @@ export function useCheckoutExperienceSocial({
     setSubmitError(message || 'Erro ao confirmar o pagamento no Stripe.');
   }, []);
 
-  const finalizeOrder = useCallback(async () => {
-    if (!validateStep1()) {
-      setSubmitError('Revise os dados pessoais antes de finalizar.');
-      setStep(1);
-      return;
-    }
-    if (!validateStep2()) {
-      setSubmitError('Revise o endereço antes de finalizar.');
-      setStep(2);
-      return;
-    }
-    if (!workspaceId || !plan?.id) {
-      setSubmitError('Checkout sem vínculo com workspace ou plano.');
-      return;
-    }
-    if (checkoutUnavailableReason) {
-      setSubmitError(checkoutUnavailableReason);
-      return;
-    }
-    if (
-      (payMethod === 'card' && !supportsCard) ||
-      (payMethod === 'pix' && !supportsPix) ||
-      (payMethod === 'boleto' && !supportsBoleto)
-    ) {
-      setSubmitError('Forma de pagamento indisponível neste checkout.');
-      return;
-    }
-    if (payMethod === 'boleto' && form.cpf.replace(D_RE, '').length < 11) {
-      setSubmitError('CPF válido é obrigatório para gerar boleto.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError('');
-    resetStripeConfirmation();
-
-    try {
-      const result = await finalizeCheckoutOrder({
-        affiliateContext,
-        capturedLeadId: social.socialIdentity?.leadId,
-        checkoutCode,
-        deviceFingerprint: social.deviceFingerprint,
-        discount,
-        form,
-        installments,
-        payMethod,
-        paymentProvider,
-        planId: plan.id,
-        qty,
-        shippingInCents,
-        shippingMode,
-        subtotal,
-        total,
-        workspaceId,
-      });
-
+  const applyFinalizedCheckoutResult = useCallback(
+    (result: Awaited<ReturnType<typeof finalizeCheckoutOrder>>) => {
       const safeSuccessUrl = new URL(result.successPath, window.location.origin);
       if (safeSuccessUrl.origin !== window.location.origin) {
         throw new Error('Redirecionamento bloqueado: destino externo detectado.');
@@ -381,6 +332,54 @@ export function useCheckoutExperienceSocial({
       }
 
       window.location.href = safeHref;
+    },
+    [],
+  );
+
+  const finalizeOrder = useCallback(async () => {
+    const planId = plan?.id;
+    const precheckError = computeFinalizeOrderPrecheckError({
+      identityValid: validateStep1(),
+      addressValid: validateStep2(),
+      hasWorkspaceAndPlan: Boolean(workspaceId && planId),
+      checkoutUnavailableReason,
+      payMethod,
+      supportsCard,
+      supportsPix,
+      supportsBoleto,
+      cpfDigits: form.cpf.replace(D_RE, '').length,
+    });
+    if (precheckError) {
+      setSubmitError(precheckError.message);
+      if (precheckError.targetStep) setStep(precheckError.targetStep);
+      return;
+    }
+    if (!workspaceId || !planId) return;
+
+    setIsSubmitting(true);
+    setSubmitError('');
+    resetStripeConfirmation();
+
+    try {
+      const result = await finalizeCheckoutOrder({
+        affiliateContext,
+        capturedLeadId: social.socialIdentity?.leadId,
+        checkoutCode,
+        deviceFingerprint: social.deviceFingerprint,
+        discount,
+        form,
+        installments,
+        payMethod,
+        paymentProvider,
+        planId,
+        qty,
+        shippingInCents,
+        shippingMode,
+        subtotal,
+        total,
+        workspaceId,
+      });
+      applyFinalizedCheckoutResult(result);
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : 'Erro ao processar o checkout. Tente novamente.',
@@ -390,6 +389,7 @@ export function useCheckoutExperienceSocial({
     }
   }, [
     affiliateContext,
+    applyFinalizedCheckoutResult,
     checkoutCode,
     checkoutUnavailableReason,
     discount,

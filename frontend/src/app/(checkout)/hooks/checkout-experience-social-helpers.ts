@@ -246,3 +246,55 @@ export function isCheckoutAddressStepValid(form: CheckoutExperienceForm) {
     form.state.trim(),
   );
 }
+
+/**
+ * Normalize an incoming coupon code (explicit > current state), uppercased and trimmed.
+ * Returns an empty string when neither source yielded a usable code.
+ */
+export function resolveCheckoutCouponCode(currentCode: string, explicitCode?: string) {
+  return String(explicitCode || currentCode || '')
+    .trim()
+    .toUpperCase();
+}
+
+/**
+ * Pure precondition check for finalize-order. Returns the first error encountered
+ * (so the hook can set submitError / bounce the user back) or null when every
+ * precondition holds. Kept as a small data-only function to tame the cyclomatic
+ * complexity of the orchestrator.
+ */
+export function computeFinalizeOrderPrecheckError(input: {
+  identityValid: boolean;
+  addressValid: boolean;
+  hasWorkspaceAndPlan: boolean;
+  checkoutUnavailableReason: string;
+  payMethod: 'card' | 'pix' | 'boleto';
+  supportsCard: boolean;
+  supportsPix: boolean;
+  supportsBoleto: boolean;
+  cpfDigits: number;
+}): { message: string; targetStep?: 1 | 2 } | null {
+  if (!input.identityValid) {
+    return { message: 'Revise os dados pessoais antes de finalizar.', targetStep: 1 };
+  }
+  if (!input.addressValid) {
+    return { message: 'Revise o endereço antes de finalizar.', targetStep: 2 };
+  }
+  if (!input.hasWorkspaceAndPlan) {
+    return { message: 'Checkout sem vínculo com workspace ou plano.' };
+  }
+  if (input.checkoutUnavailableReason) {
+    return { message: input.checkoutUnavailableReason };
+  }
+  const methodUnsupported =
+    (input.payMethod === 'card' && !input.supportsCard) ||
+    (input.payMethod === 'pix' && !input.supportsPix) ||
+    (input.payMethod === 'boleto' && !input.supportsBoleto);
+  if (methodUnsupported) {
+    return { message: 'Forma de pagamento indisponível neste checkout.' };
+  }
+  if (input.payMethod === 'boleto' && input.cpfDigits < 11) {
+    return { message: 'CPF válido é obrigatório para gerar boleto.' };
+  }
+  return null;
+}
