@@ -37,6 +37,17 @@ interface MemberArea {
   modules: Module[];
 }
 
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function readString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
 function SkeletonBlock({
   width = '100%',
   height = 12,
@@ -60,9 +71,10 @@ function SkeletonBlock({
   );
 }
 
-function normalizeMemberAreaPayload(payload: any): MemberArea | null {
-  const raw = payload?.area || payload;
-  if (!raw || typeof raw !== 'object') return null;
+function normalizeMemberAreaPayload(payload: unknown): MemberArea | null {
+  const payloadRecord = readRecord(payload);
+  const raw = readRecord(payloadRecord?.area) ?? payloadRecord;
+  if (!raw) return null;
 
   const rawModules = Array.isArray(raw.modules)
     ? raw.modules
@@ -71,26 +83,37 @@ function normalizeMemberAreaPayload(payload: any): MemberArea | null {
       : [];
 
   return {
-    id: String(raw.id || ''),
-    name: String(raw.name || 'Area de membros'),
+    id: readString(raw.id),
+    name: readString(raw.name, 'Area de membros'),
     description: typeof raw.description === 'string' ? raw.description : undefined,
     logoUrl: typeof raw.logoUrl === 'string' ? raw.logoUrl : undefined,
     primaryColor: typeof raw.primaryColor === 'string' ? raw.primaryColor : undefined,
-    modules: rawModules.map((module: any, moduleIndex: number) => ({
-      id: String(module.id || module._id || `module-${moduleIndex}`),
-      name: String(module.name || `Modulo ${moduleIndex + 1}`),
-      description: typeof module.description === 'string' ? module.description : undefined,
-      position: Number(module.position ?? moduleIndex) || moduleIndex,
-      lessons: Array.isArray(module.lessons)
-        ? module.lessons.map((lesson: any, lessonIndex: number) => ({
-            id: String(lesson.id || lesson._id || `lesson-${moduleIndex}-${lessonIndex}`),
-            name: String(lesson.name || `Aula ${lessonIndex + 1}`),
-            description: typeof lesson.description === 'string' ? lesson.description : undefined,
-            videoUrl: typeof lesson.videoUrl === 'string' ? lesson.videoUrl : undefined,
-            position: Number(lesson.position ?? lessonIndex) || lessonIndex,
-          }))
-        : [],
-    })),
+    modules: rawModules.map((moduleValue, moduleIndex) => {
+      const moduleRecord = readRecord(moduleValue);
+      const rawLessons = Array.isArray(moduleRecord?.lessons) ? moduleRecord.lessons : [];
+
+      return {
+        id:
+          readString(moduleRecord?.id) || readString(moduleRecord?._id) || `module-${moduleIndex}`,
+        name: readString(moduleRecord?.name, `Modulo ${moduleIndex + 1}`),
+        description:
+          typeof moduleRecord?.description === 'string' ? moduleRecord.description : undefined,
+        position: Number(moduleRecord?.position ?? moduleIndex) || moduleIndex,
+        lessons: rawLessons.map((lessonValue, lessonIndex) => {
+          const lesson = readRecord(lessonValue);
+          return {
+            id:
+              readString(lesson?.id) ||
+              readString(lesson?._id) ||
+              `lesson-${moduleIndex}-${lessonIndex}`,
+            name: readString(lesson?.name, `Aula ${lessonIndex + 1}`),
+            description: typeof lesson?.description === 'string' ? lesson.description : undefined,
+            videoUrl: typeof lesson?.videoUrl === 'string' ? lesson.videoUrl : undefined,
+            position: Number(lesson?.position ?? lessonIndex) || lessonIndex,
+          };
+        }),
+      };
+    }),
   };
 }
 
@@ -105,8 +128,8 @@ export default function MemberAreaPreviewPage() {
   useEffect(() => {
     if (!areaId) return;
     apiFetch(`/member-areas/${areaId}`)
-      .then((res: any) => {
-        const data = normalizeMemberAreaPayload(res);
+      .then((res) => {
+        const data = normalizeMemberAreaPayload(res.data ?? null);
         setArea(data);
         if (data?.modules?.[0]) {
           setActiveModuleId(data.modules[0].id);

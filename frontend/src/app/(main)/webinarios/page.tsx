@@ -34,6 +34,25 @@ interface Webinar {
   createdAt: string;
 }
 
+interface WebinarListResponse {
+  webinars?: Webinar[];
+}
+
+function readErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = error.message;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
+
+  return fallback;
+}
+
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
@@ -122,12 +141,11 @@ export default function WebinariosPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await apiFetch<any>('/webinars');
+      const res = await apiFetch<WebinarListResponse>('/webinars');
       if (res.error) throw new Error(res.error);
-      const data = res.data as any;
-      setWebinars(Array.isArray(data?.webinars) ? data.webinars : []);
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao carregar webinarios');
+      setWebinars(Array.isArray(res.data?.webinars) ? res.data.webinars : []);
+    } catch (error: unknown) {
+      setError(readErrorMessage(error, 'Falha ao carregar webinarios'));
     } finally {
       setLoading(false);
     }
@@ -141,7 +159,7 @@ export default function WebinariosPage() {
     if (!formTitle.trim() || !formUrl.trim() || !formDate) return;
     setSaving(true);
     try {
-      const res = await apiFetch<any>('/webinars', {
+      const res = await apiFetch<{ id: string }>('/webinars', {
         method: 'POST',
         body: {
           title: formTitle.trim(),
@@ -158,8 +176,8 @@ export default function WebinariosPage() {
       setFormDescription('');
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
       fetchWebinars();
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao criar webinario');
+    } catch (error: unknown) {
+      setError(readErrorMessage(error, 'Falha ao criar webinario'));
     } finally {
       setSaving(false);
     }
@@ -193,8 +211,8 @@ export default function WebinariosPage() {
       setEditingWebinar(null);
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
       fetchWebinars();
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao editar webinario');
+    } catch (error: unknown) {
+      setError(readErrorMessage(error, 'Falha ao editar webinario'));
     } finally {
       setEditSaving(false);
     }
@@ -208,8 +226,8 @@ export default function WebinariosPage() {
       setConfirmDeleteId(null);
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
       fetchWebinars();
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao deletar webinario');
+    } catch (error: unknown) {
+      setError(readErrorMessage(error, 'Falha ao deletar webinario'));
     } finally {
       setDeletingId(null);
     }
