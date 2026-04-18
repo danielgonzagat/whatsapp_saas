@@ -11,6 +11,7 @@ import {
   CONVERSATION_ACTION_REGISTRY,
   CONVERSATION_ACTION_REGISTRY_VERSION,
 } from './account-agent.registry';
+import { asProviderSettings } from './provider-settings.types';
 import {
   buildProductDescription,
   buildProductFaq,
@@ -175,8 +176,7 @@ export class AccountAgentService {
       : null;
 
     const now = new Date().toISOString();
-    const previous = ((existing?.value as Record<string, any> | null) ||
-      null) as AccountApprovalPayload | null;
+    const previous = this.parseApprovalPayload(existing?.value);
 
     const approval: AccountApprovalPayload = {
       id: previous?.id || randomUUID(),
@@ -455,7 +455,7 @@ export class AccountAgentService {
       data: {
         value: this.toJson(nextApproval),
         metadata: {
-          ...((record.metadata as Record<string, any>) || {}),
+          ...(this.asRecord(record.metadata) ?? {}),
           status: nextApproval.status,
           inputSessionId: session.id,
         },
@@ -529,7 +529,7 @@ export class AccountAgentService {
       data: {
         value: this.toJson(nextApproval),
         metadata: {
-          ...((record.metadata as Record<string, any>) || {}),
+          ...(this.asRecord(record.metadata) ?? {}),
           status: nextApproval.status,
         },
       },
@@ -640,7 +640,7 @@ export class AccountAgentService {
       data: {
         value: this.toJson(next),
         metadata: {
-          ...((record.metadata as Record<string, any>) || {}),
+          ...(this.asRecord(record.metadata) ?? {}),
           status: next.status,
         },
       },
@@ -776,9 +776,9 @@ export class AccountAgentService {
       new Set(
         [
           ...products.map((item) => item.name),
-          ...(memoryProducts
-            .map((item) => (item.value as Record<string, any> | null)?.name)
-            .filter(Boolean) as string[]),
+          ...memoryProducts
+            .map((item) => this.readString(this.asRecord(item.value)?.name))
+            .filter((item): item is string => Boolean(item)),
         ]
           .map((item) => String(item || '').trim())
           .filter(Boolean),
@@ -1186,7 +1186,7 @@ export class AccountAgentService {
       data: {
         value: this.toJson(nextApproval),
         metadata: {
-          ...((record.metadata as Record<string, any>) || {}),
+          ...(this.asRecord(record.metadata) ?? {}),
           status: nextApproval.status,
           productId,
         },
@@ -1343,8 +1343,8 @@ export class AccountAgentService {
       this.prisma.product.count({ where: { workspaceId, active: true } }),
     ]);
 
-    const settings = (workspace?.providerSettings as Record<string, any> | null) || {};
-    const billingSuspended = settings?.billingSuspended === true;
+    const billingSuspended =
+      asProviderSettings(workspace?.providerSettings).billingSuspended === true;
 
     await Promise.all([
       this.upsertAccountWorkItem(workspaceId, {
@@ -1590,9 +1590,9 @@ export class AccountAgentService {
       requiresInput: boolean;
       approvalState?: string | null;
       inputState?: string | null;
-      blockedBy?: Record<string, any> | null;
-      evidence?: Record<string, any> | null;
-      metadata?: Record<string, any> | null;
+      blockedBy?: Record<string, unknown> | null;
+      evidence?: Record<string, unknown> | null;
+      metadata?: Record<string, unknown> | null;
     },
   ) {
     const entityKey = String(input.entityId || 'global');
