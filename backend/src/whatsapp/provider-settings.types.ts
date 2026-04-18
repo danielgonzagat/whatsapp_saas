@@ -86,6 +86,7 @@ export interface ProviderCalendarSettings {
 
 export interface ProviderPlanLimitSettings {
   plan?: string;
+  aiRequestsPerDay?: number;
 
   [key: string]: unknown;
 }
