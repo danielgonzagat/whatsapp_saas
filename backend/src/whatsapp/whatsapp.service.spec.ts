@@ -529,7 +529,8 @@ describe('WhatsappService', () => {
         days: 30,
         page: 1,
         limit: 10,
-        total: 2,
+        total: 1,
+        onlyCataloged: true,
       }),
     );
     expect(report.items).toEqual([
@@ -542,18 +543,6 @@ describe('WhatsappService', () => {
         conversationCount: 1,
         unreadCount: 5,
         intent: 'BUY',
-      }),
-      expect.objectContaining({
-        phone: '5511999993333',
-        cataloged: true,
-        buyerStatus: 'BOUGHT',
-        purchasedProduct: 'Mentoria Premium',
-        purchaseValue: 2497,
-        purchaseProbability: 'MEDIUM',
-        purchaseProbabilityScore: 0.31,
-        conversationCount: 1,
-        unreadCount: 0,
-        intent: 'INFO',
       }),
     ]);
   });
@@ -569,7 +558,10 @@ describe('WhatsappService', () => {
         workspaceId: 'ws-1',
         days: 30,
         limit: 10,
-        total: 2,
+        total: 1,
+        onlyCataloged: true,
+        minProbabilityScore: 0,
+        minLeadScore: 0,
       }),
     );
     expect(ranking.items).toEqual([
@@ -579,13 +571,6 @@ describe('WhatsappService', () => {
         purchaseProbabilityScore: 0.92,
         purchaseProbabilityPercent: 92,
         leadScore: 92,
-      }),
-      expect.objectContaining({
-        rank: 2,
-        phone: '5511999993333',
-        buyerStatus: 'BOUGHT',
-        purchaseProbabilityScore: 0.31,
-        purchaseProbabilityPercent: 31,
       }),
     ]);
   });
@@ -614,7 +599,10 @@ describe('WhatsappService', () => {
       expect.objectContaining({
         scheduled: true,
         workspaceId: 'ws-1',
-        count: 2,
+        count: 1,
+        days: 30,
+        limit: 2,
+        contactId: null,
         reason: 'manual_rescore',
       }),
     );
