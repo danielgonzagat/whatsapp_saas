@@ -1452,7 +1452,7 @@ function AffiliateDetailModal({
 function TabColaboradores({
   search,
   setSearch,
-  showInviteModal,
+  showInviteModal: _showInviteModal,
   setShowInviteModal,
 }: {
   search: string;

@@ -49,7 +49,7 @@ const CSS_FONT_RE = /font-size\s*:\s*['"`]?(\d{1,2})px/gi;
 const INLINE_FONT_RE = /fontSize\s*:\s*['"`]?(\d{1,2})px/gi;
 const EMOJI_RE = /\p{Extended_Pictographic}/gu;
 const CHAT_FILE_HINT_RE =
-  /(chat|inbox|conversation|composer|assistant|thread|onboarding-chat|kloel-message|kloel-chat)/i;
+  /(?:chat|inbox|conversation|composer|assistant|thread|onboarding-chat|kloel-message|kloel-chat)/i;
 const AI_SPEECH_PATTERNS = [
   /Entendendo sua/i,
   /Redigindo a resposta/i,
@@ -97,10 +97,10 @@ const IGNORED_TRACKED_SEGMENTS = new Set([
   '__mocks__',
   'test',
 ]);
-const SPEC_OR_TEST_FILE_RE = /\.(spec|test)\.[jt]sx?$/;
+const SPEC_OR_TEST_FILE_RE = /\.(?:spec|test)\.[jt]sx?$/;
 const PATH_SEPARATOR_RE = /[\\/]/;
-const PRISMA_TOKEN_RE = /(prisma|prismaAny|Prisma)/;
-const COMMENT_MARKERS_RE = /(\/\/|\/\*|\*\/|\{\/\*|\* )/;
+const PRISMA_TOKEN_RE = /(?:prisma|prismaAny|Prisma)/;
+const COMMENT_MARKERS_RE = /(?:\/\/|\/\*|\*\/|\{\/\*|\* )/;
 const LINE_SUFFIX_COMMENT_RE = /\/\/.*$/;
 const STRING_OR_JSX_CHAR_RE = /['"`<>]/;
 const TS_IGNORE_RE = /@ts-ignore\b/;

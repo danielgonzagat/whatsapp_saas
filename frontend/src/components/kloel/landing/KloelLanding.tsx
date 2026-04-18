@@ -352,7 +352,7 @@ function HeroLoop() {
             </div>
           </>
         )}
-        {gx.slices.map((s, i) => (
+        {gx.slices.map((s, _i) => (
           <div
             key={`slice-${s.off}-${s.top}`}
             style={{
@@ -529,7 +529,7 @@ function MultiChannel() {
         </span>
       </div>
       <div style={{ padding: 8, minHeight: 120, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {(msgs[ch] || []).map((msg, i) =>
+        {(msgs[ch] || []).map((msg, _i) =>
           msg.f === 'ok' ? (
             <div
               key={`${msg.f}-${msg.ch}-${msg.t}-${msg.text}`}

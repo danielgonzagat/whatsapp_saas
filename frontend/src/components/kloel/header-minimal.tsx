@@ -18,7 +18,7 @@ interface HeaderMinimalProps {
 
 export function HeaderMinimal({
   isWhatsAppConnected,
-  onOpenSettings,
+  onOpenSettings: _onOpenSettings,
   subscriptionStatus = 'none',
   trialDaysLeft = 7,
 }: HeaderMinimalProps) {

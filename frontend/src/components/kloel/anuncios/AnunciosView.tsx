@@ -335,7 +335,7 @@ const TABS = [
 // ── WarRoom ──
 function WarRoom({
   onGoToRules,
-  onGoToTab,
+  onGoToTab: _onGoToTab,
   metaAccessToken,
 }: {
   onGoToRules: () => void;

@@ -51,7 +51,7 @@ const TOOL_UUID = {
 const ES_X_PATTERN_RE = /^ESLint8?_es-x_/;
 const FP_PATTERN_RE = /^ESLint8?_fp_/;
 const NO_UNSAFE_PATTERN_RE =
-  /^ESLint8?_@typescript-eslint_no-unsafe-(call|assignment|member-access|argument|return)$/;
+  /^ESLint8?_@typescript-eslint_no-unsafe-(?:call|assignment|member-access|argument|return)$/;
 const BIOME_NURSERY_PATTERN_RE = /^Biome_lint_nursery_/;
 
 const FAMILIES = [

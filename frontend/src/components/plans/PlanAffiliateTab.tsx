@@ -16,7 +16,7 @@ const card: React.CSSProperties = {
 };
 
 export function PlanAffiliateTab({
-  planId,
+  planId: _planId,
   productId,
   priceInCents,
 }: {

@@ -75,8 +75,8 @@ interface FlowBuilderProps {
 }
 
 export default function FlowBuilder({
-  flowId,
-  workspaceId,
+  flowId: _flowId,
+  workspaceId: _workspaceId,
   onSave,
   initialNodes = [],
   initialEdges = [],

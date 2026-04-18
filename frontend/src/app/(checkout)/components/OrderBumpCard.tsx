@@ -39,7 +39,7 @@ export default function OrderBumpCard({
   accentColor = '#D4AF37',
   cardBg = '#141416',
   mutedColor = '#8A8A8E',
-  textColor = '#E8E6E1',
+  textColor: _textColor = '#E8E6E1',
 }: OrderBumpCardProps) {
   const borderCol = bump.highlightColor || accentColor;
 

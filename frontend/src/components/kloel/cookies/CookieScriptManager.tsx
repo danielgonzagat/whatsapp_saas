@@ -103,11 +103,13 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
     <>
       {googleTagIds.length ? (
         <>
+          {/* biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication across renders; a useId()-generated value would re-inject Google Tag on every mount. */}
           <Script
             id="kloel-google-tag-src"
             src={`https://www.googletagmanager.com/gtag/js?id=${googleTagIds[0]}`}
             strategy="afterInteractive"
           />
+          {/* biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication across renders; a useId()-generated value would re-inject Google Tag config on every mount. */}
           <Script id="kloel-google-tag-config" strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
@@ -127,6 +129,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
       ) : null}
 
       {marketingEnabled && metaPixelId ? (
+        // biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication; a useId()-generated value would re-inject Meta Pixel on every mount.
         <Script id="kloel-meta-pixel" strategy="afterInteractive">
           {`
             !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -141,6 +144,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
       ) : null}
 
       {marketingEnabled && tiktokPixelId ? (
+        // biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication; a useId()-generated value would re-inject TikTok Pixel on every mount.
         <Script id="kloel-tiktok-pixel" strategy="afterInteractive">
           {`
             !function (w, d, t) {
