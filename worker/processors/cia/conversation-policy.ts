@@ -50,24 +50,21 @@ function normalizeText(value?: string | null): string {
     .replace(DIACRITICS_RE, '');
 }
 
+const EMOTIONAL_TONE_RULES: Array<{
+  pattern: RegExp;
+  tone: ActiveListeningSignals['emotionalTone'];
+}> = [
+  { pattern: ANSIOS_INSEGUR_MEDO_REC_RE, tone: 'anxious' },
+  { pattern: FRUSTR_CANSAD_IRRIT_RAI_RE, tone: 'frustrated' },
+  { pattern: AMEI_PERFEITO_ANIMAD_GO_RE, tone: 'excited' },
+  { pattern: NAO_ENTENDI_N_A__O_ENTE_RE, tone: 'confused' },
+  { pattern: OBRIGAD_VALEU__TIMO_OTI_RE, tone: 'positive' },
+  { pattern: NAO_N_A__O_RUIM_CARO_DE_RE, tone: 'negative' },
+];
+
 function inferEmotionalTone(text: string): ActiveListeningSignals['emotionalTone'] {
-  if (ANSIOS_INSEGUR_MEDO_REC_RE.test(text)) {
-    return 'anxious';
-  }
-  if (FRUSTR_CANSAD_IRRIT_RAI_RE.test(text)) {
-    return 'frustrated';
-  }
-  if (AMEI_PERFEITO_ANIMAD_GO_RE.test(text)) {
-    return 'excited';
-  }
-  if (NAO_ENTENDI_N_A__O_ENTE_RE.test(text)) {
-    return 'confused';
-  }
-  if (OBRIGAD_VALEU__TIMO_OTI_RE.test(text)) {
-    return 'positive';
-  }
-  if (NAO_N_A__O_RUIM_CARO_DE_RE.test(text)) {
-    return 'negative';
+  for (const rule of EMOTIONAL_TONE_RULES) {
+    if (rule.pattern.test(text)) return rule.tone;
   }
   return 'neutral';
 }
@@ -185,6 +182,54 @@ function buildActionDirective(
   return `${base}\nTATICA: ${tacticHint[tactic] || tactic}`;
 }
 
+function needsValidation(
+  complaintDetected: boolean,
+  wordCount: number,
+  emotionalTone: ActiveListeningSignals['emotionalTone'],
+): boolean {
+  return (
+    complaintDetected ||
+    wordCount > 18 ||
+    emotionalTone === 'frustrated' ||
+    emotionalTone === 'anxious' ||
+    emotionalTone === 'confused'
+  );
+}
+
+function inferNeed(normalized: string, personalDetailShared: boolean): string | null {
+  if (PRECO_VALOR_PARCELA_RE.test(normalized)) return 'seguranca sobre investimento';
+  if (PRAZO_URGENTE_HOJE_AGOR_RE.test(normalized)) return 'agilidade';
+  if (FUNCIONA_GARANTIA_RESUL_RE.test(normalized)) return 'confianca';
+  if (personalDetailShared) return 'ser compreendido';
+  return null;
+}
+
+function buildDeepeningQuestion(
+  emotionalTone: ActiveListeningSignals['emotionalTone'],
+  inferredNeed: string | null,
+  personalDetailShared: boolean,
+): string | null {
+  if (emotionalTone === 'frustrated') return 'O que mais te trava nisso hoje?';
+  if (emotionalTone === 'anxious') return 'Qual parte te deixa mais inseguro agora?';
+  if (inferredNeed === 'agilidade') return 'O que voce precisa resolver primeiro?';
+  if (personalDetailShared) return 'Quando isso acontece, o que pesa mais no seu dia a dia?';
+  return null;
+}
+
+function buildOpenLoopOpportunity(
+  normalized: string,
+  contactName: string | null | undefined,
+): string {
+  if (RESULTADO_FUNCIONA_PREC_RE.test(normalized)) {
+    return 'Tem um detalhe nisso que costuma mudar a decisao.';
+  }
+  if (contactName) {
+    const firstName = String(contactName).trim().split(WHITESPACE_RE)[0];
+    return `${firstName}, tem um ponto aqui que quase sempre passa despercebido.`;
+  }
+  return 'Tem um ponto aqui que quase sempre passa despercebido.';
+}
+
 export function analyzeForActiveListening(
   messageContent: string,
   contactName?: string | null,
@@ -196,39 +241,14 @@ export function analyzeForActiveListening(
 
   const personalDetailShared = B_MEU_MINHA_MEUS_MINHAS_RE.test(normalized) && wordCount >= 8;
   const complaintDetected = PROBLEMA_ERRO_RECLAMA_N_RE.test(normalized);
-  const validationNeeded =
-    complaintDetected ||
-    wordCount > 18 ||
-    emotionalTone === 'frustrated' ||
-    emotionalTone === 'anxious' ||
-    emotionalTone === 'confused';
-
-  const inferredNeed = PRECO_VALOR_PARCELA_RE.test(normalized)
-    ? 'seguranca sobre investimento'
-    : PRAZO_URGENTE_HOJE_AGOR_RE.test(normalized)
-      ? 'agilidade'
-      : FUNCIONA_GARANTIA_RESUL_RE.test(normalized)
-        ? 'confianca'
-        : personalDetailShared
-          ? 'ser compreendido'
-          : null;
-
-  const deepeningQuestion =
-    emotionalTone === 'frustrated'
-      ? 'O que mais te trava nisso hoje?'
-      : emotionalTone === 'anxious'
-        ? 'Qual parte te deixa mais inseguro agora?'
-        : inferredNeed === 'agilidade'
-          ? 'O que voce precisa resolver primeiro?'
-          : personalDetailShared
-            ? 'Quando isso acontece, o que pesa mais no seu dia a dia?'
-            : null;
-
-  const openLoopOpportunity = RESULTADO_FUNCIONA_PREC_RE.test(normalized)
-    ? 'Tem um detalhe nisso que costuma mudar a decisao.'
-    : contactName
-      ? `${String(contactName).trim().split(WHITESPACE_RE)[0]}, tem um ponto aqui que quase sempre passa despercebido.`
-      : 'Tem um ponto aqui que quase sempre passa despercebido.';
+  const validationNeeded = needsValidation(complaintDetected, wordCount, emotionalTone);
+  const inferredNeed = inferNeed(normalized, personalDetailShared);
+  const deepeningQuestion = buildDeepeningQuestion(
+    emotionalTone,
+    inferredNeed,
+    personalDetailShared,
+  );
+  const openLoopOpportunity = buildOpenLoopOpportunity(normalized, contactName);
 
   return {
     emotionalTone,

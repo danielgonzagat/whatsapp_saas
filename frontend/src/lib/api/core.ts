@@ -176,6 +176,23 @@ function emitStorageChange() {
   window.dispatchEvent(new Event(STORAGE_EVENT));
 }
 
+function scoreTokenCandidate(token: string): number {
+  const payload = decodeKloelJwtPayload(token);
+  const authenticatedScore = hasAuthenticatedKloelToken(token) ? 1000 : 0;
+  const anonymousPenalty = isAnonymousKloelToken(token) ? -1000 : 0;
+  const nameScore = String(payload?.name || '').trim() ? 100 : 0;
+  const expScore = typeof payload?.exp === 'number' ? payload.exp : 0;
+  return authenticatedScore + anonymousPenalty + nameScore + expScore;
+}
+
+function pickBestTokenCandidate(candidates: string[]): string | null {
+  return (
+    [...candidates].sort(
+      (left, right) => scoreTokenCandidate(right) - scoreTokenCandidate(left),
+    )[0] || null
+  );
+}
+
 function readBrowserCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
 
@@ -190,22 +207,7 @@ function readBrowserCookie(name: string): string | null {
   if (candidates.length === 1) return candidates[0] || null;
 
   if (name === TOKEN_KEY || name === LEGACY_TOKEN_COOKIE_KEY) {
-    return [...candidates].sort((left, right) => {
-      const leftPayload = decodeKloelJwtPayload(left);
-      const rightPayload = decodeKloelJwtPayload(right);
-      const leftScore =
-        (hasAuthenticatedKloelToken(left) ? 1000 : 0) +
-        (isAnonymousKloelToken(left) ? -1000 : 0) +
-        (String(leftPayload?.name || '').trim() ? 100 : 0) +
-        (typeof leftPayload?.exp === 'number' ? leftPayload.exp : 0);
-      const rightScore =
-        (hasAuthenticatedKloelToken(right) ? 1000 : 0) +
-        (isAnonymousKloelToken(right) ? -1000 : 0) +
-        (String(rightPayload?.name || '').trim() ? 100 : 0) +
-        (typeof rightPayload?.exp === 'number' ? rightPayload.exp : 0);
-
-      return rightScore - leftScore;
-    })[0];
+    return pickBestTokenCandidate(candidates);
   }
 
   return candidates[candidates.length - 1] || null;
@@ -306,30 +308,46 @@ function reconcileFreshSharedAuthSession() {
   emitStorageChange();
 }
 
+function readStoredAccessToken(): string | null {
+  return (
+    localStorage.getItem(TOKEN_KEY) ||
+    readBrowserCookie(TOKEN_KEY) ||
+    readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY)
+  );
+}
+
+function extractTokenWorkspaceId(token: string | null): string {
+  const payload = decodeKloelJwtPayload(token);
+  return String(payload?.workspaceId || '').trim();
+}
+
+function persistWorkspaceIfChanged(
+  currentWorkspaceId: string | null,
+  tokenWorkspaceId: string,
+): void {
+  if (currentWorkspaceId !== tokenWorkspaceId) {
+    localStorage.setItem(WORKSPACE_KEY, tokenWorkspaceId);
+    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
+    emitStorageChange();
+    return;
+  }
+  if (readBrowserCookie(WORKSPACE_KEY) !== tokenWorkspaceId) {
+    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
+  }
+}
+
 function syncWorkspaceFromToken(): string | null {
   if (typeof window === 'undefined') return null;
 
-  const token =
-    localStorage.getItem(TOKEN_KEY) ||
-    readBrowserCookie(TOKEN_KEY) ||
-    readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY);
-
-  const payload = decodeKloelJwtPayload(token);
-  const tokenWorkspaceId = String(payload?.workspaceId || '').trim();
+  const token = readStoredAccessToken();
+  const tokenWorkspaceId = extractTokenWorkspaceId(token);
   const currentWorkspaceId = localStorage.getItem(WORKSPACE_KEY);
 
   if (!tokenWorkspaceId) {
     return currentWorkspaceId;
   }
 
-  if (currentWorkspaceId !== tokenWorkspaceId) {
-    localStorage.setItem(WORKSPACE_KEY, tokenWorkspaceId);
-    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
-    emitStorageChange();
-  } else if (readBrowserCookie(WORKSPACE_KEY) !== tokenWorkspaceId) {
-    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
-  }
-
+  persistWorkspaceIfChanged(currentWorkspaceId, tokenWorkspaceId);
   return tokenWorkspaceId;
 }
 

@@ -110,9 +110,14 @@ function actionUtility(input: ActionOption, strategy?: CiaStrategyHints | null) 
   return Number((input.rewardScore - input.riskScore + familyBoost + confidenceBoost).toFixed(3));
 }
 
-function buildOptions(candidate: CiaCandidate) {
+interface OptionBaseline {
+  baseConfidence: number;
+  baseReward: number;
+  baseRisk: number;
+}
+
+function computeOptionBaseline(candidate: CiaCandidate): OptionBaseline {
   const state = candidate.cognitiveState;
-  const options: ActionOption[] = [];
   const baseConfidence = Number(state.classificationConfidence || 0.58) || 0.58;
   const baseReward =
     candidate.priority / 100 +
@@ -123,127 +128,162 @@ function buildOptions(candidate: CiaCandidate) {
     state.riskFlags.length * 0.22 +
     (state.intent === 'SUPPORT' ? 0.18 : 0) +
     (state.priceSensitivity > 0.75 ? 0.07 : 0);
+  return { baseConfidence, baseReward, baseRisk };
+}
 
-  options.push(
-    option(
-      'WAIT',
-      'timing_hold',
-      Math.max(0.05, baseReward * 0.3),
-      Math.max(0.02, baseRisk * 0.2),
-      clamp(baseConfidence - 0.05, 0.1, 0.8),
-    ),
+function buildWaitOption(baseline: OptionBaseline): ActionOption {
+  return option(
+    'WAIT',
+    'timing_hold',
+    Math.max(0.05, baseline.baseReward * 0.3),
+    Math.max(0.02, baseline.baseRisk * 0.2),
+    clamp(baseline.baseConfidence - 0.05, 0.1, 0.8),
   );
+}
 
-  if (state.riskFlags.length > 0) {
-    options.push(
+function buildRiskFlagOption(baseline: OptionBaseline): ActionOption {
+  return option(
+    'ESCALATE_HUMAN',
+    'risk_flagged_case',
+    baseline.baseReward * 0.9,
+    Math.max(0.05, baseline.baseRisk * 0.15),
+    clamp(baseline.baseConfidence, 0.2, 0.92),
+  );
+}
+
+function buildUnreadOptions(candidate: CiaCandidate, baseline: OptionBaseline): ActionOption[] {
+  return [
+    option(
+      'RESPOND',
+      'reactive_backlog_detected',
+      baseline.baseReward + 0.28 + candidate.unreadCount * 0.04,
+      baseline.baseRisk,
+      clamp(baseline.baseConfidence + 0.1),
+    ),
+    option(
+      'ASK_CLARIFYING',
+      'clarify_to_reduce_uncertainty',
+      baseline.baseReward + 0.12,
+      Math.max(0.01, baseline.baseRisk * 0.55),
+      clamp(baseline.baseConfidence - 0.04),
+    ),
+  ];
+}
+
+function buildPriceObjectionOption(
+  state: CustomerCognitiveState,
+  baseline: OptionBaseline,
+): ActionOption {
+  return option(
+    'SOCIAL_PROOF',
+    'price_objection_requires_trust',
+    baseline.baseReward + 0.22 + (state.trustScore < 0.55 ? 0.08 : 0),
+    baseline.baseRisk * 0.72,
+    clamp(baseline.baseConfidence + 0.04),
+  );
+}
+
+function isPaymentIntent(state: CustomerCognitiveState): boolean {
+  return state.paymentState === 'PENDING' || state.intent === 'PAYMENT';
+}
+
+function buildHighIntentOption(
+  state: CustomerCognitiveState,
+  baseline: OptionBaseline,
+): ActionOption {
+  const paymentIntent = isPaymentIntent(state);
+  return option(
+    paymentIntent ? 'PAYMENT_RECOVERY' : 'OFFER',
+    paymentIntent ? 'payment_recovery_priority' : 'high_intent_offer',
+    baseline.baseReward + (paymentIntent ? 0.45 : 0.35),
+    baseline.baseRisk + (state.priceSensitivity > 0.8 ? 0.04 : 0),
+    clamp(baseline.baseConfidence + 0.12),
+    paymentIntent ? 'payment_recovery' : undefined,
+  );
+}
+
+function buildPendingPaymentOption(baseline: OptionBaseline): ActionOption {
+  return option(
+    'PAYMENT_RECOVERY',
+    'pending_payment_detected',
+    baseline.baseReward + 0.42,
+    Math.max(0.01, baseline.baseRisk * 0.6),
+    clamp(baseline.baseConfidence + 0.1),
+    'payment_recovery',
+  );
+}
+
+function buildFollowupOptions(
+  state: CustomerCognitiveState,
+  baseline: OptionBaseline,
+): ActionOption[] {
+  const followups: ActionOption[] = [];
+  if (state.silenceMinutes >= 24 * 60 || state.urgencyScore >= 0.72) {
+    followups.push(
       option(
-        'ESCALATE_HUMAN',
-        'risk_flagged_case',
-        baseReward * 0.9,
-        Math.max(0.05, baseRisk * 0.15),
-        clamp(baseConfidence, 0.2, 0.92),
+        'FOLLOWUP_URGENT',
+        'urgent_reengagement_window',
+        baseline.baseReward + 0.24,
+        baseline.baseRisk + 0.12,
+        clamp(baseline.baseConfidence + 0.02),
+        'followup',
       ),
     );
   }
-
-  if (candidate.unreadCount > 0) {
-    options.push(
+  if (state.silenceMinutes >= 6 * 60 || state.stage === 'WARM') {
+    followups.push(
       option(
-        'RESPOND',
-        'reactive_backlog_detected',
-        baseReward + 0.28 + candidate.unreadCount * 0.04,
-        baseRisk,
-        clamp(baseConfidence + 0.1),
-      ),
-    );
-    options.push(
-      option(
-        'ASK_CLARIFYING',
-        'clarify_to_reduce_uncertainty',
-        baseReward + 0.12,
-        Math.max(0.01, baseRisk * 0.55),
-        clamp(baseConfidence - 0.04),
+        'FOLLOWUP_SOFT',
+        'warm_reengagement_window',
+        baseline.baseReward + 0.15,
+        baseline.baseRisk + 0.06,
+        clamp(baseline.baseConfidence, 0.1, 0.95),
+        'followup',
       ),
     );
   }
+  return followups;
+}
 
-  if (state.objections.includes('price')) {
-    options.push(
-      option(
-        'SOCIAL_PROOF',
-        'price_objection_requires_trust',
-        baseReward + 0.22 + (state.trustScore < 0.55 ? 0.08 : 0),
-        baseRisk * 0.72,
-        clamp(baseConfidence + 0.04),
-      ),
-    );
-  }
-
-  if (
+function shouldAddHighIntent(state: CustomerCognitiveState): boolean {
+  return (
     state.stage === 'HOT' ||
     state.stage === 'CHECKOUT' ||
     state.desires.includes('resultado_rapido')
-  ) {
-    options.push(
-      option(
-        state.paymentState === 'PENDING' || state.intent === 'PAYMENT'
-          ? 'PAYMENT_RECOVERY'
-          : 'OFFER',
-        state.paymentState === 'PENDING' || state.intent === 'PAYMENT'
-          ? 'payment_recovery_priority'
-          : 'high_intent_offer',
-        baseReward + (state.paymentState === 'PENDING' || state.intent === 'PAYMENT' ? 0.45 : 0.35),
-        baseRisk + (state.priceSensitivity > 0.8 ? 0.04 : 0),
-        clamp(baseConfidence + 0.12),
-        state.paymentState === 'PENDING' || state.intent === 'PAYMENT'
-          ? 'payment_recovery'
-          : undefined,
-      ),
-    );
-  }
+  );
+}
 
-  if (
+function shouldAddPendingPayment(candidate: CiaCandidate): boolean {
+  const state = candidate.cognitiveState;
+  return (
     state.paymentState === 'PENDING' ||
     state.paymentState === 'READY_TO_PAY' ||
     candidate.cluster === 'PAYMENT'
-  ) {
-    options.push(
-      option(
-        'PAYMENT_RECOVERY',
-        'pending_payment_detected',
-        baseReward + 0.42,
-        Math.max(0.01, baseRisk * 0.6),
-        clamp(baseConfidence + 0.1),
-        'payment_recovery',
-      ),
-    );
-  }
+  );
+}
 
+function buildOptions(candidate: CiaCandidate) {
+  const state = candidate.cognitiveState;
+  const baseline = computeOptionBaseline(candidate);
+  const options: ActionOption[] = [buildWaitOption(baseline)];
+
+  if (state.riskFlags.length > 0) {
+    options.push(buildRiskFlagOption(baseline));
+  }
+  if (candidate.unreadCount > 0) {
+    options.push(...buildUnreadOptions(candidate, baseline));
+  }
+  if (state.objections.includes('price')) {
+    options.push(buildPriceObjectionOption(state, baseline));
+  }
+  if (shouldAddHighIntent(state)) {
+    options.push(buildHighIntentOption(state, baseline));
+  }
+  if (shouldAddPendingPayment(candidate)) {
+    options.push(buildPendingPaymentOption(baseline));
+  }
   if (candidate.unreadCount === 0) {
-    if (state.silenceMinutes >= 24 * 60 || state.urgencyScore >= 0.72) {
-      options.push(
-        option(
-          'FOLLOWUP_URGENT',
-          'urgent_reengagement_window',
-          baseReward + 0.24,
-          baseRisk + 0.12,
-          clamp(baseConfidence + 0.02),
-          'followup',
-        ),
-      );
-    }
-    if (state.silenceMinutes >= 6 * 60 || state.stage === 'WARM') {
-      options.push(
-        option(
-          'FOLLOWUP_SOFT',
-          'warm_reengagement_window',
-          baseReward + 0.15,
-          baseRisk + 0.06,
-          clamp(baseConfidence, 0.1, 0.95),
-          'followup',
-        ),
-      );
-    }
+    options.push(...buildFollowupOptions(state, baseline));
   }
 
   return options;
@@ -321,17 +361,13 @@ function applyGovernor(selected: ActionOption, candidate: CiaCandidate): CiaActi
   };
 }
 
-function toDecision(
+function buildActionUniverse(
+  options: ActionOption[],
   candidate: CiaCandidate,
-  strategy?: CiaStrategyHints | null,
-): CiaActionDecision {
-  const options = buildOptions(candidate).sort((left, right) => {
-    return actionUtility(right, strategy) - actionUtility(left, strategy);
-  });
-  const selected = options[0] || option('WAIT', 'timing_hold', 0.1, 0.01, 0.5);
-  const selectedDecision = applyGovernor(selected, candidate);
-  const bestUtility = actionUtility(selected, strategy);
-  const actionUniverse = options.map((candidateOption, index) => {
+  strategy: CiaStrategyHints | null | undefined,
+  bestUtility: number,
+): ConversationActionCandidate[] {
+  return options.map((candidateOption, index) => {
     const projected = applyGovernor(candidateOption, candidate);
     const utility = actionUtility(candidateOption, strategy);
     return {
@@ -350,11 +386,30 @@ function toDecision(
       variantFamily: projected.variantFamily,
     } satisfies ConversationActionCandidate;
   });
+}
+
+function countBetterExecutableActions(
+  universe: ConversationActionCandidate[],
+  selected: ConversationActionCandidate | undefined,
+): number {
+  const limit = selected ? selected.rank - 1 : 0;
+  return universe.slice(0, limit).filter((item) => item.executable).length;
+}
+
+function toDecision(
+  candidate: CiaCandidate,
+  strategy?: CiaStrategyHints | null,
+): CiaActionDecision {
+  const options = buildOptions(candidate).sort((left, right) => {
+    return actionUtility(right, strategy) - actionUtility(left, strategy);
+  });
+  const selected = options[0] || option('WAIT', 'timing_hold', 0.1, 0.01, 0.5);
+  const selectedDecision = applyGovernor(selected, candidate);
+  const bestUtility = actionUtility(selected, strategy);
+  const actionUniverse = buildActionUniverse(options, candidate, strategy, bestUtility);
   const selectedAction = actionUniverse[0];
   const nextBestAction = actionUniverse[1];
-  const betterExecutableActionCount = actionUniverse
-    .slice(0, selectedAction ? selectedAction.rank - 1 : 0)
-    .filter((item) => item.executable).length;
+  const betterExecutableActionCount = countBetterExecutableActions(actionUniverse, selectedAction);
 
   return {
     ...selectedDecision,
@@ -416,30 +471,24 @@ function actionLabel(action: CiaActionType) {
   }
 }
 
-export function planCiaActions(
+function resolveMaxActions(
+  maxActionsPerCycle: number | undefined,
+  strategy: CiaStrategyHints | null,
+): number {
+  const base = Number(maxActionsPerCycle || 5) || 5;
+  let adjusted = base;
+  if (strategy?.aggressiveness === 'HIGH') adjusted = base + 1;
+  else if (strategy?.aggressiveness === 'LOW') adjusted = base - 1;
+  return Math.max(1, Math.min(10, adjusted));
+}
+
+function collectPriorityActions(
   state: CiaWorkspaceState,
-  options?: {
-    maxActionsPerCycle?: number;
-    strategy?: CiaStrategyHints | null;
-  },
-): CiaDecisionBatch {
-  const strategy = options?.strategy || null;
-  const strategyAdjustedMaxActions = (() => {
-    const base = Number(options?.maxActionsPerCycle || 5) || 5;
-    if (strategy?.aggressiveness === 'HIGH') return base + 1;
-    if (strategy?.aggressiveness === 'LOW') return base - 1;
-    return base;
-  })();
-  const maxActions = Math.max(1, Math.min(10, strategyAdjustedMaxActions));
-  const chosen = new Map<string, CiaActionDecision>();
-  const actions: CiaActionDecision[] = [];
-
-  const hot = takeBest(state.clusters.HOT, chosen, strategy);
-  if (hot) actions.push(hot);
-
-  const payment = takeBest(state.clusters.PAYMENT, chosen, strategy);
-  if (payment) actions.push(payment);
-
+  strategy: CiaStrategyHints | null,
+  chosen: Map<string, CiaActionDecision>,
+  actions: CiaActionDecision[],
+  maxActions: number,
+): void {
   const ordered = [...state.candidates]
     .map((candidate) => toDecision(candidate, strategy))
     .filter((decision) => decision.type !== 'WAIT')
@@ -452,15 +501,17 @@ export function planCiaActions(
     chosen.set(key, decision);
     actions.push(decision);
   }
+}
 
-  const byPriority = actions.sort((a, b) => b.priority - a.priority).slice(0, maxActions);
-
-  const counts = byPriority.reduce<Record<string, number>>((acc, action) => {
+function buildActionCounts(actions: CiaActionDecision[]): Record<string, number> {
+  return actions.reduce<Record<string, number>>((acc, action) => {
     acc[action.type] = (acc[action.type] || 0) + 1;
     return acc;
   }, {});
+}
 
-  const summaryParts = [
+function buildSummaryParts(counts: Record<string, number>): string[] {
+  return [
     counts.RESPOND ? `${counts.RESPOND} respostas` : null,
     counts.ASK_CLARIFYING ? `${counts.ASK_CLARIFYING} perguntas de qualificação` : null,
     counts.OFFER ? `${counts.OFFER} ofertas` : null,
@@ -470,7 +521,32 @@ export function planCiaActions(
       ? `${(counts.FOLLOWUP_SOFT || 0) + (counts.FOLLOWUP_URGENT || 0)} follow-ups`
       : null,
     counts.ESCALATE_HUMAN ? `${counts.ESCALATE_HUMAN} exceções humanas` : null,
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
+}
+
+export function planCiaActions(
+  state: CiaWorkspaceState,
+  options?: {
+    maxActionsPerCycle?: number;
+    strategy?: CiaStrategyHints | null;
+  },
+): CiaDecisionBatch {
+  const strategy = options?.strategy || null;
+  const maxActions = resolveMaxActions(options?.maxActionsPerCycle, strategy);
+  const chosen = new Map<string, CiaActionDecision>();
+  const actions: CiaActionDecision[] = [];
+
+  const hot = takeBest(state.clusters.HOT, chosen, strategy);
+  if (hot) actions.push(hot);
+
+  const payment = takeBest(state.clusters.PAYMENT, chosen, strategy);
+  if (payment) actions.push(payment);
+
+  collectPriorityActions(state, strategy, chosen, actions, maxActions);
+
+  const byPriority = actions.sort((a, b) => b.priority - a.priority).slice(0, maxActions);
+  const counts = buildActionCounts(byPriority);
+  const summaryParts = buildSummaryParts(counts);
 
   return {
     actions: byPriority,
