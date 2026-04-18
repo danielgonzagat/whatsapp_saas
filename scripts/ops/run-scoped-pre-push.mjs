@@ -4,6 +4,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
 const ZERO_SHA = /^0+$/;
+const WHITESPACE_SPLIT_RE = /\s+/;
 
 function exec(command, { capture = true } = {}) {
   if (capture) {
@@ -36,7 +37,7 @@ function collectPushRanges() {
 
   return stdin
     .split('\n')
-    .map((line) => line.trim().split(/\s+/))
+    .map((line) => line.trim().split(WHITESPACE_SPLIT_RE))
     .filter((parts) => parts.length === 4)
     .map(([, localSha, , remoteSha]) => ({ localSha, remoteSha }))
     .filter(({ localSha }) => !ZERO_SHA.test(localSha));

@@ -13,13 +13,16 @@ const REPORTS = [
   { file: 'worker/coverage/lcov.info', workspace: 'worker' },
 ];
 
+const BACKSLASH_RE = /\\/g;
+const LEADING_DOT_SLASH_RE = /^\.?\//;
+
 function normalizeSfPath(rawPath, workspace) {
   const trimmed = String(rawPath || '').trim();
   if (!trimmed) return trimmed;
 
-  const unixPath = trimmed.replace(/\\/g, '/');
+  const unixPath = trimmed.replace(BACKSLASH_RE, '/');
   if (path.isAbsolute(unixPath)) {
-    const relative = path.relative(repoRoot, unixPath).replace(/\\/g, '/');
+    const relative = path.relative(repoRoot, unixPath).replace(BACKSLASH_RE, '/');
     return relative.startsWith('..') ? unixPath : relative;
   }
 
@@ -36,7 +39,7 @@ function normalizeSfPath(rawPath, workspace) {
     return `frontend/${unixPath}`;
   }
 
-  return `${workspace}/${unixPath.replace(/^\.?\//, '')}`;
+  return `${workspace}/${unixPath.replace(LEADING_DOT_SLASH_RE, '')}`;
 }
 
 let touchedReports = 0;

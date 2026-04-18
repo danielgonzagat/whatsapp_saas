@@ -46,6 +46,8 @@ const BASE = 'https://api.codacy.com/api/v3';
 const DRY_RUN = process.argv.includes('--dry-run');
 const KEEP_DRAFT = process.argv.includes('--keep-draft');
 const PRINT_DIFF = process.argv.includes('--print-diff');
+const CODACY_ACCOUNT_TOKEN_LINE_RE = /^CODACY_ACCOUNT_TOKEN=(.+)$/m;
+const KLOEL_CONVERGENCE_RE = /^kloel-convergence-/;
 
 /**
  * Noise patterns to disable. Each entry is a Codacy pattern id exactly as
@@ -305,7 +307,7 @@ function loadToken() {
   if (process.env.CODACY_ACCOUNT_TOKEN) return process.env.CODACY_ACCOUNT_TOKEN;
   try {
     const content = readFileSync(resolve(REPO_ROOT, '.env.pulse.local'), 'utf8');
-    const match = content.match(/^CODACY_ACCOUNT_TOKEN=(.+)$/m);
+    const match = content.match(CODACY_ACCOUNT_TOKEN_LINE_RE);
     if (match) return match[1].trim();
   } catch {
     /* missing is OK */
@@ -681,7 +683,6 @@ async function main() {
   // means a noise pattern disabled in the new draft would still fire from
   // the older convergence standards. Walk preLinkStandards and unlink
   // anything matching the convergence prefix EXCEPT the new draft.
-  const KLOEL_CONVERGENCE_RE = /^kloel-convergence-/;
   const stragglerStandards = preLinkStandards.filter(
     (s) => s.id !== draft.id && KLOEL_CONVERGENCE_RE.test(s.name || ''),
   );

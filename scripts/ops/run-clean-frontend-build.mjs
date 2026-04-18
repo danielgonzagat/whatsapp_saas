@@ -11,6 +11,8 @@ const frontendRoot = resolve(repoRoot, 'frontend');
 const frontendNextDir = resolve(frontendRoot, '.next');
 const frontendNodeModules = resolve(frontendRoot, 'node_modules');
 const BUILD_TIMEOUT_MS = Number(process.env.KLOEL_FRONTEND_BUILD_TIMEOUT_MS || 180000);
+const WHITESPACE_SPLIT_RE = /\s+/;
+const FLAG_ARG_RE = /^--[a-z0-9-]+$/i;
 
 function run(command, args, cwd = repoRoot, { stdio = 'inherit', encoding } = {}) {
   return execFileSync(command, args, {
@@ -23,11 +25,11 @@ function run(command, args, cwd = repoRoot, { stdio = 'inherit', encoding } = {}
 
 function resolveBuildArgs() {
   const rawArgs = String(process.env.KLOEL_FRONTEND_BUILD_ARGS || '--webpack')
-    .split(/\s+/)
+    .split(WHITESPACE_SPLIT_RE)
     .map((item) => item.trim())
     .filter(Boolean);
 
-  const allowedArgs = rawArgs.filter((item) => /^--[a-z0-9-]+$/i.test(item));
+  const allowedArgs = rawArgs.filter((item) => FLAG_ARG_RE.test(item));
   return allowedArgs.length > 0 ? allowedArgs : ['--webpack'];
 }
 

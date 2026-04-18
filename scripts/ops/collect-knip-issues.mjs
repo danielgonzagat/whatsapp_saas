@@ -8,10 +8,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 const knipBin = path.join(repoRoot, 'node_modules', '.bin', 'knip');
 const ISSUE_TYPES = ['files', 'dependencies', 'unlisted', 'unresolved', 'exports', 'types'];
+const PATH_SEPARATOR_RE = /[\\/]/;
 
 function inferWorkspace(file) {
   if (typeof file !== 'string' || file.length === 0) return 'root';
-  const [segment] = file.split(/[\\/]/);
+  const [segment] = file.split(PATH_SEPARATOR_RE);
   if (['backend', 'frontend', 'worker', 'e2e', 'scripts'].includes(segment)) {
     return segment;
   }

@@ -97,6 +97,14 @@ const IGNORED_TRACKED_SEGMENTS = new Set([
   '__mocks__',
   'test',
 ]);
+const SPEC_OR_TEST_FILE_RE = /\.(spec|test)\.[jt]sx?$/;
+const PATH_SEPARATOR_RE = /[\\/]/;
+const PRISMA_TOKEN_RE = /(prisma|prismaAny|Prisma)/;
+const COMMENT_MARKERS_RE = /(\/\/|\/\*|\*\/|\{\/\*|\* )/;
+const LINE_SUFFIX_COMMENT_RE = /\/\/.*$/;
+const STRING_OR_JSX_CHAR_RE = /['"`<>]/;
+const TS_IGNORE_RE = /@ts-ignore\b/;
+const ESLINT_DISABLE_RE = /eslint-disable(?:-next-line|-line)?\b/;
 
 function runGit(args) {
   return execFileSync('git', args, {
@@ -104,6 +112,15 @@ function runGit(args) {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
+}
+
+function shouldIgnoreTrackedFile(relPath) {
+  if (SPEC_OR_TEST_FILE_RE.test(relPath)) {
+    return true;
+  }
+
+  const segments = relPath.split(PATH_SEPARATOR_RE);
+  return segments.some((segment) => IGNORED_TRACKED_SEGMENTS.has(segment));
 }
 
 function getTrackedFiles(prefixes, allowedExtensions) {
@@ -115,15 +132,6 @@ function getTrackedFiles(prefixes, allowedExtensions) {
     .filter((relPath) => existsSync(path.join(repoRoot, relPath)))
     .filter((relPath) => !shouldIgnoreTrackedFile(relPath))
     .filter((relPath) => allowedExtensions.has(path.extname(relPath)));
-}
-
-function shouldIgnoreTrackedFile(relPath) {
-  if (/\.(spec|test)\.[jt]sx?$/.test(relPath)) {
-    return true;
-  }
-
-  const segments = relPath.split(/[\\/]/);
-  return segments.some((segment) => IGNORED_TRACKED_SEGMENTS.has(segment));
 }
 
 function readLines(relPath) {
@@ -179,9 +187,7 @@ function countExplicitAnyMetrics(files) {
         samples.push(sampleEntry(relPath, index + 1, line));
       }
 
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: literal alternation regex applied to a line from repo source files (readLines over git-tracked code). No user input, no nested quantifiers.
-      if (/(prisma|prismaAny|Prisma)/.test(line)) {
+      if (PRISMA_TOKEN_RE.test(line)) {
         prismaTotal += lineCount;
         if (prismaSamples.length < 20) {
           prismaSamples.push(sampleEntry(relPath, index + 1, line));
@@ -206,9 +212,7 @@ function countCommentDirective(files, directive) {
       // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
       // Safe: `directive` is a call-site literal RegExp passed from collectRatchetMetrics; `line` is a repo-source line. No user input.
       if (!directive.test(line)) return;
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: literal char-class alternation regex applied to a repo-source line. No user input, no nested quantifiers.
-      if (!/(\/\/|\/\*|\*\/|\{\/\*|\* )/.test(line)) return;
+      if (!COMMENT_MARKERS_RE.test(line)) return;
       total += 1;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line));
@@ -248,10 +252,8 @@ function countEmojiOccurrences(files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
       if (COMMENT_ONLY_RE.test(line)) return;
-      const sanitizedLine = line.replace(/\/\/.*$/, '');
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: literal char-class regex applied to a repo-source line. No user input, no nested quantifiers.
-      if (!/['"`<>]/.test(sanitizedLine)) return;
+      const sanitizedLine = line.replace(LINE_SUFFIX_COMMENT_RE, '');
+      if (!STRING_OR_JSX_CHAR_RE.test(sanitizedLine)) return;
       const matches = sanitizedLine.match(EMOJI_RE);
       if (!matches || matches.length === 0) return;
       total += matches.length;
@@ -383,6 +385,19 @@ function readPulseArtifacts() {
   const health = JSON.parse(readFileSync(pulseHealthPath, 'utf8'));
   const certificate = JSON.parse(readFileSync(pulseCertificatePath, 'utf8'));
   return { health, certificate };
+}
+
+function readRatchetBaseline() {
+  if (!existsSync(ratchetBaselinePath)) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(ratchetBaselinePath, 'utf8'));
+    return parsed?.ratchet || {};
+  } catch {
+    return {};
+  }
 }
 
 function collectPulseMetrics({ refreshPulse = false } = {}) {
@@ -557,19 +572,6 @@ function collectCodacyMetrics() {
   }
 }
 
-function readRatchetBaseline() {
-  if (!existsSync(ratchetBaselinePath)) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(readFileSync(ratchetBaselinePath, 'utf8'));
-    return parsed?.ratchet || {};
-  } catch {
-    return {};
-  }
-}
-
 export function collectRatchetMetrics(options = {}) {
   const codeFiles = getTrackedFiles(CODE_PATHS, SOURCE_EXTENSIONS);
   const productFiles = getTrackedFiles(PRODUCT_CODE_PATHS, SOURCE_EXTENSIONS);
@@ -577,11 +579,8 @@ export function collectRatchetMetrics(options = {}) {
   const lineCountFiles = getTrackedFiles([...CODE_PATHS, 'backend/prisma'], LINE_COUNT_EXTENSIONS);
 
   const anyMetrics = countExplicitAnyMetrics(codeFiles);
-  const tsIgnoreMetric = countCommentDirective(codeFiles, /@ts-ignore\b/);
-  const eslintDisableMetric = countCommentDirective(
-    codeFiles,
-    /eslint-disable(?:-next-line|-line)?\b/,
-  );
+  const tsIgnoreMetric = countCommentDirective(codeFiles, TS_IGNORE_RE);
+  const eslintDisableMetric = countCommentDirective(codeFiles, ESLINT_DISABLE_RE);
   const hardcodedAiSpeechMetric = countHardcodedAiSpeech(productFiles);
   const emojiMetric = countEmojiOccurrences(productFiles);
   const hardcodedHexMetric = countHardcodedHexColors(frontendFiles);
