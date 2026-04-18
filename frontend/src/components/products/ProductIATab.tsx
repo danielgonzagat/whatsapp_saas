@@ -122,8 +122,25 @@ export function ProductIATab({ productId }: { productId: string }) {
   });
 
   useEffect(() => {
-    apiFetch(`/products/${productId}/ai-config`)
-      .then((res: any) => {
+    interface AIConfigPayload {
+      customerProfile?: {
+        idealCustomer?: string;
+        painPoints?: string;
+        promisedResult?: string;
+      };
+      objections?: Array<{ q: string; a: string }>;
+      tone?: string;
+      persistenceLevel?: number;
+      messageLimit?: number;
+      followUpConfig?: { schedule?: string };
+      salesArguments?: {
+        autoCheckoutLink?: boolean;
+        offerDiscount?: boolean;
+        useUrgency?: boolean;
+      };
+    }
+    apiFetch<AIConfigPayload>(`/products/${productId}/ai-config`)
+      .then((res) => {
         const d = res?.data;
         if (d) {
           setConfig((prev) => ({

@@ -21,8 +21,8 @@ export async function register() {
   });
 }
 
-export async function onRequestError(...args: any[]) {
+export async function onRequestError(...args: unknown[]) {
   const Sentry = await getSentry();
   if (!Sentry) return;
-  return (Sentry.captureRequestError as (...params: any[]) => any)(...args);
+  return (Sentry.captureRequestError as (...params: unknown[]) => unknown)(...args);
 }

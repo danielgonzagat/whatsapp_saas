@@ -1,6 +1,7 @@
 'use client';
 
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import type { HTMLAttributes } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
@@ -120,7 +121,7 @@ export function KloelMarkdown({ content }: { content: string }) {
               }}
             />
           ),
-          code: ({ className, children, ...props }: any) => {
+          code: ({ className, children, ...props }: HTMLAttributes<HTMLElement>) => {
             const inline = !className;
 
             if (inline) {

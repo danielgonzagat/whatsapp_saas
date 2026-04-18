@@ -96,7 +96,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   );
 
   const fetch_ = () => {
-    apiFetch<any>(`/products/${productId}/urls`)
+    apiFetch<ProductUrlItem[] | { data?: ProductUrlItem[] }>(`/products/${productId}/urls`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));

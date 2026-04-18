@@ -177,14 +177,14 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
     }
   };
 
-  const handleEdit = (bump: any) => {
+  const handleEdit = (bump: { id: string } & Record<string, unknown>) => {
     setForm({
-      productName: bump.productName || '',
-      title: bump.title || '',
-      priceInCents: bump.priceInCents || 0,
-      compareAtPrice: bump.compareAtPrice || 0,
-      checkboxLabel: bump.checkboxLabel || 'Sim, eu quero!',
-      description: bump.description || '',
+      productName: typeof bump.productName === 'string' ? bump.productName : '',
+      title: typeof bump.title === 'string' ? bump.title : '',
+      priceInCents: typeof bump.priceInCents === 'number' ? bump.priceInCents : 0,
+      compareAtPrice: typeof bump.compareAtPrice === 'number' ? bump.compareAtPrice : 0,
+      checkboxLabel: typeof bump.checkboxLabel === 'string' ? bump.checkboxLabel : 'Sim, eu quero!',
+      description: typeof bump.description === 'string' ? bump.description : '',
     });
     setEditingId(bump.id);
     setShowForm(true);
@@ -452,149 +452,162 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {bumps.map((bump: any) => (
-            <div
-              key={bump.id}
-              style={{
-                background: BG_SURFACE,
-                border: `1px solid ${BORDER}`,
-                borderRadius: '6px',
-                borderLeft: `3px solid ${EMBER}`,
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-              }}
-            >
-              {/* Gift Icon */}
-              <div style={{ color: EMBER, flexShrink: 0 }}>
-                <GiftIcon />
-              </div>
-
-              {/* Content */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}
-                >
-                  <span
-                    style={{
-                      fontFamily: FONT_BODY,
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      color: TEXT_PRIMARY,
-                    }}
-                  >
-                    {bump.productName}
-                  </span>
-                  {/* Active badge */}
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      fontWeight: 600,
-                      fontFamily: FONT_BODY,
-                      letterSpacing: '0.05em',
-                      textTransform: 'uppercase' as const,
-                      background: bump.active !== false ? `${GREEN}15` : `${TEXT_DIM}20`,
-                      color: bump.active !== false ? GREEN : TEXT_MUTED,
-                    }}
-                  >
-                    {bump.active !== false ? 'Ativo' : 'Inativo'}
-                  </span>
+          {bumps.map((bump) => {
+            const productName = typeof bump.productName === 'string' ? bump.productName : '';
+            const title = typeof bump.title === 'string' ? bump.title : '';
+            const priceInCents = typeof bump.priceInCents === 'number' ? bump.priceInCents : 0;
+            const compareAtPrice =
+              typeof bump.compareAtPrice === 'number' ? bump.compareAtPrice : 0;
+            const isActive = bump.active !== false;
+            return (
+              <div
+                key={bump.id}
+                style={{
+                  background: BG_SURFACE,
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: '6px',
+                  borderLeft: `3px solid ${EMBER}`,
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                }}
+              >
+                {/* Gift Icon */}
+                <div style={{ color: EMBER, flexShrink: 0 }}>
+                  <GiftIcon />
                 </div>
-                <p
-                  style={{
-                    fontFamily: FONT_BODY,
-                    fontSize: '12px',
-                    color: TEXT_MUTED,
-                    margin: 0,
-                  }}
-                >
-                  {bump.title}
-                </p>
-              </div>
 
-              {/* Prices */}
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexShrink: 0 }}>
-                {bump.compareAtPrice > 0 && (
+                {/* Content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: FONT_BODY,
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: TEXT_PRIMARY,
+                      }}
+                    >
+                      {productName}
+                    </span>
+                    {/* Active badge */}
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        fontFamily: FONT_BODY,
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase' as const,
+                        background: isActive ? `${GREEN}15` : `${TEXT_DIM}20`,
+                        color: isActive ? GREEN : TEXT_MUTED,
+                      }}
+                    >
+                      {isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                  </div>
+                  <p
+                    style={{
+                      fontFamily: FONT_BODY,
+                      fontSize: '12px',
+                      color: TEXT_MUTED,
+                      margin: 0,
+                    }}
+                  >
+                    {title}
+                  </p>
+                </div>
+
+                {/* Prices */}
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexShrink: 0 }}>
+                  {compareAtPrice > 0 && (
+                    <span
+                      style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: '12px',
+                        color: TEXT_DIM,
+                        textDecoration: 'line-through',
+                      }}
+                    >
+                      {formatCents(compareAtPrice)}
+                    </span>
+                  )}
                   <span
                     style={{
                       fontFamily: FONT_MONO,
-                      fontSize: '12px',
-                      color: TEXT_DIM,
-                      textDecoration: 'line-through',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: EMBER,
                     }}
                   >
-                    {formatCents(bump.compareAtPrice)}
+                    {formatCents(priceInCents)}
                   </span>
-                )}
-                <span
-                  style={{
-                    fontFamily: FONT_MONO,
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: EMBER,
-                  }}
-                >
-                  {formatCents(bump.priceInCents)}
-                </span>
-              </div>
+                </div>
 
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                <button
-                  type="button"
-                  onClick={() => handleEdit(bump)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: TEXT_MUTED,
-                    cursor: 'pointer',
-                    padding: '6px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'color 150ms ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = TEXT_PRIMARY;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = TEXT_MUTED;
-                  }}
-                >
-                  <EditIcon />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(bump.id)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: TEXT_MUTED,
-                    cursor: 'pointer',
-                    padding: '6px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'color 150ms ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = RED;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = TEXT_MUTED;
-                  }}
-                >
-                  <TrashIcon />
-                </button>
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(bump)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: TEXT_MUTED,
+                      cursor: 'pointer',
+                      padding: '6px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'color 150ms ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = TEXT_PRIMARY;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = TEXT_MUTED;
+                    }}
+                  >
+                    <EditIcon />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(bump.id)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: TEXT_MUTED,
+                      cursor: 'pointer',
+                      padding: '6px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'color 150ms ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = RED;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = TEXT_MUTED;
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -134,8 +134,8 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
       if (res.error) throw new Error(res.error);
       onCreated();
       onClose();
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao criar launcher');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao criar launcher');
     } finally {
       setLoading(false);
     }
@@ -352,8 +352,8 @@ function AddGroupModal({
       if (res.error) throw new Error(res.error);
       onAdded();
       onClose();
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao adicionar grupo');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao adicionar grupo');
     } finally {
       setLoading(false);
     }

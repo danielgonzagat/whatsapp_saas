@@ -35,10 +35,50 @@ export interface ProductEditorCheckoutView {
   linkedPlans: unknown[];
 }
 
+interface RawPlan {
+  id: string;
+  name?: string;
+  slug?: string | null;
+  referenceCode?: string | null;
+  priceInCents?: number;
+  quantity?: number;
+  isActive?: boolean;
+  active?: boolean;
+  salesCount?: number;
+  maxInstallments?: number;
+  visibleToAffiliates?: boolean;
+  freeShipping?: boolean;
+  planLinks?: unknown[];
+}
+
+interface RawCheckoutConfig {
+  enablePix?: boolean;
+  enableCreditCard?: boolean;
+  enableBoleto?: boolean;
+  enableCoupon?: boolean;
+  enableTimer?: boolean;
+  showStockCounter?: boolean;
+  showCouponPopup?: boolean;
+}
+
+interface RawCheckout {
+  id: string;
+  name?: string;
+  slug?: string | null;
+  referenceCode?: string | null;
+  checkoutConfig?: RawCheckoutConfig;
+  salesCount?: number;
+  isActive?: boolean;
+  active?: boolean;
+  maxInstallments?: number;
+  quantity?: number;
+  checkoutLinks?: unknown[];
+}
+
 export function mapProductEditorPlans(rawPlans: unknown): ProductEditorPlanView[] {
   if (!Array.isArray(rawPlans)) return [];
 
-  return rawPlans.map((plan: any) => ({
+  return (rawPlans as RawPlan[]).map((plan) => ({
     id: plan.id,
     name: plan.name || 'Sem nome',
     slug: plan.slug || null,
@@ -59,8 +99,8 @@ export function mapProductEditorPlans(rawPlans: unknown): ProductEditorPlanView[
 export function mapProductEditorCheckouts(rawCheckouts: unknown): ProductEditorCheckoutView[] {
   if (!Array.isArray(rawCheckouts)) return [];
 
-  return rawCheckouts.map((checkout: any) => {
-    const cfg = checkout.checkoutConfig || {};
+  return (rawCheckouts as RawCheckout[]).map((checkout) => {
+    const cfg: RawCheckoutConfig = checkout.checkoutConfig || {};
     const paymentMethods: string[] = [];
     if (cfg.enablePix !== false) paymentMethods.push('PIX');
     if (cfg.enableCreditCard !== false) paymentMethods.push('CARTÃO');

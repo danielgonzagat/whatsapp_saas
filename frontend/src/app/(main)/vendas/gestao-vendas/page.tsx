@@ -174,7 +174,15 @@ export default function GestaoVendasPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(contacts || []).map((c: any, i: number) => {
+                  {(contacts || []).map((raw: unknown, i: number) => {
+                    const c = (raw ?? {}) as {
+                      phone?: string;
+                      id?: string;
+                      _id?: string;
+                      name?: string;
+                      email?: string;
+                      tags?: string[];
+                    };
                     const phone = c.phone || c.id || c._id || '';
                     return (
                       <tr

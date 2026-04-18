@@ -25,12 +25,12 @@ export interface AssistantProcessingTraceEntry {
 
 export function normalizeAssistantMessageMetadata(
   metadata: unknown,
-): Record<string, any> | undefined {
+): Record<string, unknown> | undefined {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
     return undefined;
   }
 
-  return metadata as Record<string, any>;
+  return metadata as Record<string, unknown>;
 }
 
 export function getAssistantResponseVersions(
@@ -112,7 +112,7 @@ export function summarizeAssistantProcessingTrace(
 export function appendAssistantTraceFromEvent(
   metadata: unknown,
   event: KloelStreamEvent,
-): Record<string, any> | undefined {
+): Record<string, unknown> | undefined {
   const normalizedMetadata = normalizeAssistantMessageMetadata(metadata) || {};
   const nextEntry = createAssistantTraceEntryFromStreamEvent(event);
 
@@ -133,7 +133,9 @@ export function appendAssistantTraceFromEvent(
       ...normalizedMetadata,
       processingSummary: summarizeAssistantProcessingTrace(
         currentEntries,
-        normalizedMetadata.processingSummary,
+        typeof normalizedMetadata.processingSummary === 'string'
+          ? normalizedMetadata.processingSummary
+          : undefined,
       ),
     };
   }

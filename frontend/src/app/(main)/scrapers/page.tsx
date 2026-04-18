@@ -142,8 +142,8 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       });
       onCreated();
       onClose();
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao criar job');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao criar job');
     } finally {
       setLoading(false);
     }

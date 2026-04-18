@@ -6,7 +6,7 @@ import type { Node } from 'reactflow';
 
 interface NodePropertiesProps {
   node: Node | null;
-  onUpdate: (nodeId: string, data: any) => void;
+  onUpdate: (nodeId: string, data: Record<string, unknown>) => void;
   onClose: () => void;
 }
 
@@ -14,7 +14,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
   const id = useId();
   if (!node) return null;
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: unknown) => {
     onUpdate(node.id, { ...node.data, [field]: value });
   };
 

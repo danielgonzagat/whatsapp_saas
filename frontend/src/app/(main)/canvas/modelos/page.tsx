@@ -29,7 +29,7 @@ export default function CanvasModelos() {
     if (!aiPrompt.trim() || generating) return;
     setGenerating(true);
     try {
-      const res: any = await apiFetch('/canvas/generate', {
+      const res = await apiFetch<{ imageUrl?: string }>('/canvas/generate', {
         method: 'POST',
         body: { prompt: aiPrompt, width: 1080, height: 1080 },
       });

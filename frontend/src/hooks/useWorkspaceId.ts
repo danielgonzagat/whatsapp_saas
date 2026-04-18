@@ -35,7 +35,7 @@ export function useWorkspace(): {
   workspaceId: string;
   isLoading: boolean;
   isAuthenticated: boolean;
-  user: any;
+  user: Record<string, unknown> | null;
   error: string | null;
 } {
   const workspaceId = useWorkspaceId();

@@ -3,7 +3,7 @@ import { API_BASE } from '@/lib/http';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type Socket, io } from 'socket.io-client';
 
-type EventHandler = (data: any) => void;
+type EventHandler = (data: Record<string, unknown>) => void;
 
 /**
  * WebSocket hook for real-time updates via Socket.IO.

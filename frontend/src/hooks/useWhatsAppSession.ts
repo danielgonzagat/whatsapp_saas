@@ -316,8 +316,8 @@ export function useWhatsAppSession({
       }
       setIsPaused(true);
       setStatusMessage('IA pausada. O WhatsApp continua conectado.');
-    } catch (err: any) {
-      setError(err?.message || 'Falha ao pausar a IA.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao pausar a IA.');
     } finally {
       setLoading(false);
     }
@@ -331,8 +331,8 @@ export function useWhatsAppSession({
       await autostartCia(current.workspaceId);
       setIsPaused(false);
       setStatusMessage('IA retomada. O atendimento automático voltou a agir.');
-    } catch (err: any) {
-      setError(err?.message || 'Falha ao retomar a IA.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao retomar a IA.');
     } finally {
       setLoading(false);
     }
@@ -350,7 +350,7 @@ export function useWhatsAppSession({
     try {
       const surface = await ciaApi.getSurface(workspaceId);
       const autonomy = (surface.error ? null : surface.data?.autonomy) as
-        | Record<string, any>
+        | Record<string, unknown>
         | null
         | undefined;
 

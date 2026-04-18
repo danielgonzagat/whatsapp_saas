@@ -26,11 +26,15 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
       const full = await Promise.all(
         conversations.map(async (conv) => {
           try {
-            const msgs: any = await apiFetch(`/kloel/threads/${conv.id}/messages`);
-            const payload = Array.isArray(msgs) ? msgs : Array.isArray(msgs?.data) ? msgs.data : [];
+            const msgs = await apiFetch<unknown>(`/kloel/threads/${conv.id}/messages`);
+            const payload: Array<Record<string, unknown>> = Array.isArray(msgs)
+              ? (msgs as Array<Record<string, unknown>>)
+              : Array.isArray((msgs as { data?: unknown })?.data)
+                ? (msgs as { data: Array<Record<string, unknown>> }).data
+                : [];
             return {
               ...conv,
-              messages: payload.map((m: any) => ({
+              messages: payload.map((m) => ({
                 role: m.role,
                 content: m.content,
                 createdAt: m.createdAt,

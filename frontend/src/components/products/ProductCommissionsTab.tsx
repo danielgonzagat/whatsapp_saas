@@ -35,7 +35,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   const [creating, setCreating] = useState(false);
 
   const fetch_ = () => {
-    apiFetch<any>(`/products/${productId}/commissions`)
+    apiFetch<Commission[] | { data?: Commission[] }>(`/products/${productId}/commissions`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));

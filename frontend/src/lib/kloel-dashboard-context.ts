@@ -86,17 +86,17 @@ export function buildDashboardContextMetadata(
   return { dashboardContext: normalized };
 }
 
-export function readDashboardContextFromMetadata(value: any): DashboardContextMetadata | null {
-  const candidate =
-    value?.dashboardContext && typeof value.dashboardContext === 'object'
-      ? value.dashboardContext
-      : value && typeof value === 'object'
-        ? value
-        : null;
+export function readDashboardContextFromMetadata(value: unknown): DashboardContextMetadata | null {
+  const source = value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+  const nested =
+    source && source.dashboardContext && typeof source.dashboardContext === 'object'
+      ? (source.dashboardContext as Record<string, unknown>)
+      : null;
+  const candidate = nested ?? source;
 
   if (!candidate) return null;
 
-  return normalizeDashboardContext(candidate);
+  return normalizeDashboardContext(candidate as DashboardContextParams);
 }
 
 export function getDashboardSourceLabel(source?: string | null): string {

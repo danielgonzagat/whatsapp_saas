@@ -113,7 +113,7 @@ export const kloelApi = {
         } finally {
           if (timeoutId !== undefined) clearTimeout(timeoutId);
         }
-      } catch (err: any) {
+      } catch (err) {
         if (controller.signal.aborted) {
           onError(
             typeof controller.signal.reason === 'string'
@@ -122,7 +122,7 @@ export const kloelApi = {
           );
           return;
         }
-        onError(err.message || 'Connection failed');
+        onError(err instanceof Error ? err.message : 'Connection failed');
       }
     };
 
@@ -141,6 +141,6 @@ export const kloelApi = {
 
   // Get conversation history
   getHistory: () => {
-    return apiFetch<{ messages: any[] }>(`/kloel/history`);
+    return apiFetch<{ messages: Array<Record<string, unknown>> }>(`/kloel/history`);
   },
 };

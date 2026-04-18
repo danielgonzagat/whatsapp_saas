@@ -97,9 +97,15 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
   const [shippingProvider, setShippingProvider] = useState('');
 
   useEffect(() => {
-    apiFetch(`/products/${productId}`)
-      .then((res: any) => {
-        const p = res?.data || res;
+    interface ProductAfterPayPayload {
+      afterPayDuplicateAddress?: boolean;
+      afterPayAffiliateCharge?: boolean;
+      afterPayChargeValue?: number;
+      afterPayShippingProvider?: string;
+    }
+    apiFetch<ProductAfterPayPayload>(`/products/${productId}`)
+      .then((res) => {
+        const p = res?.data;
         if (p) {
           setDuplicateAddress(p.afterPayDuplicateAddress ?? false);
           setAffiliateCharge(p.afterPayAffiliateCharge ?? false);

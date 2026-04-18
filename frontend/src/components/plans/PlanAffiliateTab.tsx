@@ -41,9 +41,15 @@ export function PlanAffiliateTab({
   );
 
   useEffect(() => {
-    apiFetch(`/products/${productId}`)
-      .then((res: any) => {
-        const p = res?.data || res;
+    interface ProductAffiliatePayload {
+      affiliateEnabled?: boolean;
+      commissionPercent?: number;
+      commissionCookieDays?: number;
+      affiliateAutoApprove?: boolean;
+    }
+    apiFetch<ProductAffiliatePayload>(`/products/${productId}`)
+      .then((res) => {
+        const p = res?.data;
         if (p) {
           setEnabled(p.affiliateEnabled ?? false);
           setCommissionPercent(p.commissionPercent ?? 30);

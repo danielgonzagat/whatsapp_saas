@@ -68,8 +68,10 @@ export function AnalyticsSettingsSection() {
       setStats(dashboard);
       setActivity(Array.isArray(daily) ? daily : []);
       setAdvanced(advancedResponse || null);
-    } catch (loadError: any) {
-      setError(loadError?.message || 'Nao foi possivel carregar analytics.');
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error ? loadError.message : 'Nao foi possivel carregar analytics.',
+      );
     } finally {
       setLoading(false);
     }

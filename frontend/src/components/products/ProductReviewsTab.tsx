@@ -37,7 +37,7 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
 
   const fetch_ = () => {
-    apiFetch<any>(`/products/${productId}/reviews`)
+    apiFetch<Review[] | { data?: Review[] }>(`/products/${productId}/reviews`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
