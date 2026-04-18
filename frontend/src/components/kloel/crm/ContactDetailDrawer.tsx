@@ -208,10 +208,9 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
   return (
     <>
       {/* Backdrop */}
-      <div
+      <button
+        type="button"
         onClick={onClose}
-        role="button"
-        tabIndex={0}
         aria-label="Fechar detalhes do contato"
         style={{
           position: 'fixed',
@@ -219,12 +218,9 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
           zIndex: 99,
           background: 'rgba(0,0,0,0.55)',
           backdropFilter: 'blur(4px)',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
         }}
       />
 

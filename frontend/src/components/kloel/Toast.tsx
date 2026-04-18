@@ -68,6 +68,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
   const label = TOAST_LABELS[toast.type];
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
       style={{
         background: 'var(--app-bg-card)',

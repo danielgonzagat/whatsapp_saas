@@ -540,6 +540,7 @@ export function Modal({
   const { isMobile } = useResponsiveViewport();
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
       role="button"
       tabIndex={0}

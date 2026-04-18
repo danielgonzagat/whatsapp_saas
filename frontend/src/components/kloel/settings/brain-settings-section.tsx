@@ -1502,6 +1502,7 @@ export function BrainSettingsSection() {
                 {kbUploadError || kbUploadSuccess}
               </div>
             )}
+            {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
             <div
               onDragOver={(e) => {
                 e.preventDefault();

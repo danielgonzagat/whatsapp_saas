@@ -1344,6 +1344,7 @@ export default function CheckoutNoir({
               ) : null}
 
               {supportsPix ? (
+                // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
                 <div
                   onClick={() => setPayMethod('pix')}
                   role="button"

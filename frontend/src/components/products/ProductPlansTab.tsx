@@ -262,6 +262,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
 
       {/* Modal Links de Checkout */}
       {linkModalPlan && (
+        // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           role="button"

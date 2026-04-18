@@ -619,6 +619,7 @@ export default function CanvasEditor() {
         return (
           <div>
             <p style={panelHeading}>Uploads</p>
+            {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
             <div
               onDragOver={(e) => {
                 e.preventDefault();

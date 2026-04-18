@@ -2032,6 +2032,7 @@ function VisaoGeral({
           const isLive = data?.status === 'live';
           const intensity = data?.sales ?? 0;
           return (
+            // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
             <div
               key={key}
               onClick={() => switchTab(key)}

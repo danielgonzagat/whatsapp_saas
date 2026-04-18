@@ -2071,6 +2071,7 @@ export default function WhatsAppExperience({
                     style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}
                   >
                     {TONE_OPTIONS.map(([value, label, description]) => (
+                      // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
                       <div
                         key={value}
                         role="button"

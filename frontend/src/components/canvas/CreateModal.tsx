@@ -44,6 +44,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
   };
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
       style={{
         position: 'fixed',

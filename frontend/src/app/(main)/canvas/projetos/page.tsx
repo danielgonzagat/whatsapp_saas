@@ -190,6 +190,7 @@ function ProjectCard({
         cursor: 'pointer',
       }}
     >
+      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
       <div
         onClick={onClick}
         role="button"

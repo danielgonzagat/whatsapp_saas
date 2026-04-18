@@ -121,6 +121,7 @@ export function MediaPreviewBox({
         </label>
       ) : null}
 
+      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
       <div
         aria-busy={uploading}
         role="button"

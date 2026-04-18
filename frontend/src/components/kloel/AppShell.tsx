@@ -354,19 +354,17 @@ export function AppShell({ children }: AppShellProps) {
       {/* Mobile Sidebar Overlay */}
       {!isDesktop && mobileMenuOpen && (
         <div className="fixed inset-0 lg:hidden" style={{ zIndex: 300 }}>
-          <div
+          <button
+            type="button"
             className="absolute inset-0"
-            style={{ background: KLOEL_THEME.bgOverlay }}
-            onClick={() => setMobileMenuOpen(false)}
-            role="button"
-            tabIndex={0}
-            aria-label="Fechar menu"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).click();
-              }
+            style={{
+              background: KLOEL_THEME.bgOverlay,
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
             }}
+            onClick={() => setMobileMenuOpen(false)}
+            aria-label="Fechar menu"
           />
           <div className="relative h-full" style={{ width: 'min(86vw, 320px)' }}>
             <KloelSidebar

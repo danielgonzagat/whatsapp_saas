@@ -1133,17 +1133,10 @@ export default function ProductNerveCenter({
             flexDirection: isMobile ? 'column' : 'row',
           }}
         >
-          <div
+          <button
+            type="button"
             onClick={() => imgInputRef.current?.click()}
-            role="button"
-            tabIndex={0}
             aria-label="Selecionar imagem do produto"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).click();
-              }
-            }}
             style={{
               width: 80,
               height: 80,
@@ -1189,7 +1182,7 @@ export default function ProductNerveCenter({
                 <span style={{ fontSize: 7, color: V.t3, marginTop: 2 }}>Foto</span>
               </span>
             )}
-          </div>
+          </button>
           <input
             ref={imgInputRef}
             type="file"

@@ -152,22 +152,18 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
         justifyContent: 'center',
       }}
     >
-      <div
+      <button
+        type="button"
         onClick={onClose}
-        role="button"
-        tabIndex={0}
         aria-label="Fechar modal"
         style={{
           position: 'absolute',
           inset: 0,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
         }}
       />
       <div
@@ -373,22 +369,18 @@ function AddGroupModal({
         justifyContent: 'center',
       }}
     >
-      <div
+      <button
+        type="button"
         onClick={onClose}
-        role="button"
-        tabIndex={0}
         aria-label="Fechar modal"
         style={{
           position: 'absolute',
           inset: 0,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
         }}
       />
       <div

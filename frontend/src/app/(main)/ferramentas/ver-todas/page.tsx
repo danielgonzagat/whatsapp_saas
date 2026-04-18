@@ -168,6 +168,7 @@ export default function VerTodasPage() {
         {CATEGORY_CARDS.map((cat) => {
           const isActive = category === cat.key;
           return (
+            // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
             <div
               key={cat.key}
               onClick={() => setCategory(isActive ? 'all' : cat.key)}

@@ -1836,6 +1836,7 @@ function GestaoVendas({
                 </div>
               </button>
             ) : (
+              // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
               <div
                 key={s.id}
                 onClick={() => onOpenDetail(s.id, 'sale')}

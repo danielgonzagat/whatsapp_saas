@@ -23,18 +23,11 @@ export function TrialPaywallModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm border-none p-0 cursor-pointer"
         onClick={onClose}
-        role="button"
-        tabIndex={0}
         aria-label="Fechar modal"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
-        }}
       />
 
       {/* Modal */}

@@ -582,6 +582,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
 
       {/* Create modal */}
       {showNew && (
+        // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
         <div
           style={{
             position: 'fixed',

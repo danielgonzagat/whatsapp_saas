@@ -1970,19 +1970,12 @@ function DadosBancariosSection({
             >
               Banco <span style={{ color: EMBER, fontSize: 8 }}>*</span>
             </span>
-            <div
+            <button
+              type="button"
               onClick={() => setBankDropdownOpen(true)}
-              role="button"
-              tabIndex={0}
               aria-haspopup="listbox"
               aria-expanded={bankDropdownOpen}
               aria-label="Selecionar banco"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  (e.currentTarget as HTMLElement).click();
-                }
-              }}
               style={{
                 width: '100%',
                 padding: '11px 14px',
@@ -1999,6 +1992,7 @@ function DadosBancariosSection({
                 justifyContent: 'space-between',
                 transition: 'border-color .15s, box-shadow .15s',
                 boxSizing: 'border-box' as const,
+                textAlign: 'inherit' as const,
               }}
             >
               <span
@@ -2027,7 +2021,7 @@ function DadosBancariosSection({
               >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
-            </div>
+            </button>
             {bankDropdownOpen && (
               <div
                 style={{

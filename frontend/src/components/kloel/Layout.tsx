@@ -142,22 +142,18 @@ export function ModalSurface({ children, className, open = true, onClose }: Moda
       style={{ zIndex: zIndex.modal }}
     >
       {/* Backdrop */}
-      <div
+      <button
+        type="button"
         className="absolute inset-0"
-        role="button"
-        tabIndex={0}
         aria-label="Fechar modal"
         style={{
           backgroundColor: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
         }}
         onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
-        }}
       />
 
       {/* Content */}

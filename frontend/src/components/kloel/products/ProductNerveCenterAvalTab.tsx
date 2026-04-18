@@ -107,23 +107,19 @@ export function ProductNerveCenterAvalTab() {
             <Fd label="Nota">
               <div style={{ display: 'flex', gap: 4 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <span
+                  <button
+                    type="button"
                     key={star}
                     onClick={() => setNewRevRating(star)}
-                    role="button"
-                    tabIndex={0}
                     aria-label={`Avaliar com ${star} estrela${star > 1 ? 's' : ''}`}
                     aria-pressed={star <= newRevRating}
                     style={{
                       cursor: 'pointer',
                       fontSize: 18,
                       color: star <= newRevRating ? V.y : V.t3,
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        (e.currentTarget as HTMLElement).click();
-                      }
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
                     }}
                   >
                     <svg
@@ -136,7 +132,7 @@ export function ProductNerveCenterAvalTab() {
                     >
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
                     </svg>
-                  </span>
+                  </button>
                 ))}
               </div>
             </Fd>

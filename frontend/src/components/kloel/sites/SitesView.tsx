@@ -2019,6 +2019,7 @@ function EditarSite({ mode }: { mode?: string }) {
                 >
                   {IC.site(20)}
                 </span>
+                {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
                 <div
                   style={{ flex: 1, cursor: 'pointer' }}
                   onClick={() => setSelectedSite(site)}

@@ -92,6 +92,7 @@ export function CookiePreferencesModal({
   }, [onClose]);
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
       ref={overlayRef}
       className="kloel-cookie-modal__overlay"

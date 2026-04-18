@@ -2407,6 +2407,7 @@ function TabAfiliados({
       {/* Affiliates list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {filtered.map((a) => (
+          // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
           <div
             key={a.id || a.email}
             onClick={() => setDetailId(a.id || null)}

@@ -186,6 +186,7 @@ export function FlowSidebar() {
               {expandedCategories.has(categoryKey) && (
                 <div className="mt-1 space-y-1">
                   {nodes.map((node) => (
+                    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
                     <div
                       key={node.type}
                       className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg cursor-grab hover:bg-gray-100 transition-colors active:cursor-grabbing"
