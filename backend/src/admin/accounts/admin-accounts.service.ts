@@ -18,6 +18,8 @@ import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminAccountStateAction } from './dto/update-account-state.dto';
 
+const PATTERN_RE = /-/g;
+
 export interface ListAccountsResponse {
   items: AdminAccountRow[];
   total: number;
@@ -170,7 +172,7 @@ export class AdminAccountsService {
 
     const nextPassword =
       temporaryPassword?.trim() ||
-      `Kloel${randomInt(1000, 9999)}!${randomUUID().replace(/-/g, '').slice(0, 8)}`;
+      `Kloel${randomInt(1000, 9999)}!${randomUUID().replace(PATTERN_RE, '').slice(0, 8)}`;
 
     const passwordHash = await bcryptHash(nextPassword, BCRYPT_ROUNDS);
     await this.prisma.agent.update({

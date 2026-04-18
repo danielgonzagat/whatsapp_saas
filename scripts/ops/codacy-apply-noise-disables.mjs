@@ -134,6 +134,91 @@ const NOISE_PATTERNS = [
     id: 'ESLint8_es-x_no-classes',
     reason: 'WRONG_RULE — ES5 rule. NestJS controllers/services are classes by design.',
   },
+  {
+    id: 'ESLint8_es-x_no-for-of-loops',
+    reason: 'WRONG_RULE — ES5 rule forbidding `for...of`. Standard ES2015+ iteration.',
+  },
+  {
+    id: 'ESLint8_es-x_no-set',
+    reason: 'WRONG_RULE — ES5 rule forbidding `Set`. Core ES2015 collection used everywhere.',
+  },
+  {
+    id: 'ESLint8_es-x_no-import-meta',
+    reason:
+      'WRONG_RULE — ES5 rule forbidding `import.meta`. Standard ESM feature used by scripts/Vite/Next tooling.',
+  },
+  {
+    id: 'ESLint8_es-x_no-json',
+    reason:
+      'WRONG_RULE — ES5 rule forbidding the global `JSON` object. JSON has been ECMA-standard since ES5 (year 2009).',
+  },
+  {
+    id: 'ESLint8_es-x_no-nullish-coalescing-operators',
+    reason: 'WRONG_RULE — ES5 rule forbidding `??`. Standard ES2020 operator, used pervasively.',
+  },
+  {
+    id: 'ESLint8_es-x_no-spread-elements',
+    reason: 'WRONG_RULE — ES5 rule forbidding array spread. Standard ES2015 syntax.',
+  },
+  {
+    id: 'ESLint8_es-x_no-rest-spread-properties',
+    reason: 'WRONG_RULE — ES5 rule forbidding object rest/spread. Standard ES2018 syntax.',
+  },
+  {
+    id: 'ESLint8_es-x_no-array-isarray',
+    reason:
+      'WRONG_RULE — rule forbids `Array.isArray`, which is part of ES5 (year 2009). Used everywhere for type narrowing.',
+  },
+  {
+    id: 'ESLint8_es-x_no-hashbang',
+    reason:
+      'WRONG_RULE — forbids `#!` shebang lines in .mjs scripts. Valid in Node.js CLI tooling; our scripts/ops/ uses them correctly.',
+  },
+  // ── Duplicate hashbang rule from eslint-plugin-n ──
+  {
+    id: 'ESLint8_n_hashbang',
+    reason:
+      'WRONG_RULE — duplicate of `ESLint8_es-x_no-hashbang`. Fires on legitimate CLI tool shebangs.',
+  },
+  // ── Salesforce Lightning / Aura rules in a Next.js + NestJS repo ──
+  {
+    id: 'ESLint8_@lwc_lwc_no-for-of',
+    reason:
+      'WRONG_RULE — Salesforce Lightning Web Components plugin. Not applicable to React/NestJS.',
+  },
+  {
+    id: 'ESLint8_@salesforce_aura_ecma-intrinsics',
+    reason:
+      'WRONG_RULE — Salesforce Aura framework plugin. Targets Aura components, not JS/TS source.',
+  },
+  // ── eslint-plugin-import in a fullstack Node monorepo ──
+  {
+    id: 'ESLint8_import_no-nodejs-modules',
+    reason:
+      'WRONG_RULE — flags every `import fs from "node:fs"` / `node:path` / `node:url`. Node.js is the runtime target for backend, worker, and scripts/ — these imports are mandatory, not antipatterns.',
+  },
+  // ── eslint-plugin-n (Node) rules that only apply to scripts/CLI tooling in this repo ──
+  {
+    id: 'ESLint8_n_no-sync',
+    reason:
+      'WRONG_RULE — forbids `fs.readFileSync` / `fs.existsSync`. Fires exclusively on scripts/ops/*.mjs (CI/CD tooling) where sync fs is idiomatic. Backend services already use async fs by convention.',
+  },
+  {
+    id: 'ESLint8_n_no-process-exit',
+    reason:
+      'WRONG_RULE — forbids `process.exit()`. Fires on scripts/ops/*.mjs CLI tooling that needs explicit exit codes for CI gating. Backend services do not call process.exit.',
+  },
+  // ── Overly naive security rules producing near-100% false-positives ──
+  {
+    id: 'ESLint8_security-node_detect-crlf',
+    reason:
+      'WRONG_RULE — flags any string concatenation touching `\\n` / `\\r`. Fires on `.join("\\n")` lines, template strings, and formatted log output. Used by triage 2026-04-18: 48/48 findings are intentional formatting, zero real CRLF injection.',
+  },
+  {
+    id: 'ESLint8_security_detect-non-literal-fs-filename',
+    reason:
+      'WRONG_RULE — flags `fs.readFile(path)` whenever `path` comes from a variable. Fires on scripts/ops/ and frontend/scripts/ where the path is constructed from package.json / computed constants. Real traversal is enforced separately by Semgrep `pathtraversal` rule which remains enabled.',
+  },
   // ── Flow-type rules applied to a TypeScript repo — WRONG_RULE noise ──
   {
     id: 'ESLint8_flowtype_no-types-missing-file-annotation',

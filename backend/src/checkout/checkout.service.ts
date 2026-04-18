@@ -26,6 +26,8 @@ import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
 import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
+
+const D_RE = /\D/g;
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const CHECKOUT_ORDER_STATUSES = [
@@ -1675,7 +1677,7 @@ export class CheckoutService {
         ? Math.max(1, Math.round(Number(orderData.installments || 1)))
         : 1;
     const qualityGate = {
-      documentDigits: String(orderData.customerCPF || '').replace(/\D/g, ''),
+      documentDigits: String(orderData.customerCPF || '').replace(D_RE, ''),
       phoneDigits: this.orderSupport.normalizePhoneDigits(orderData.customerPhone),
       payerAddress:
         orderData.shippingAddress && typeof orderData.shippingAddress === 'object'

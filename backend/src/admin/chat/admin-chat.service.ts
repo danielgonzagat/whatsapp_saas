@@ -11,6 +11,21 @@ import { AdminPermissionsService } from '../permissions/admin-permissions.servic
 import { adminErrors } from '../common/admin-api-errors';
 import { ChatToolRegistry } from './chat-tool.registry';
 
+const BUSCAR_PROCURAR_ENCON_RE =
+  /(?:buscar|procurar|encontrar)\s+(?:workspace|conta|produtor|cliente)\s+(.+)/i;
+const WORKSPACE_CONTA_PRODU_RE = /(?:workspace|conta|produtor|cliente)\s+(.+)/i;
+const OVERVIEW_RESUMO_DASHBOA_RE = /(overview|resumo|dashboard|home|gmv|receita)/i;
+const MARKETING_CANAL_CONVERSA_RE = /marketing|canal|conversa|lead/i;
+const VENDAS_ASSINATURAS_PIPEL_RE = /vendas|assinaturas|pipeline|transa/i;
+const COMPLIANCE_CHARGEBACK_KY_RE = /compliance|chargeback|kyc|fraude|reembolso/i;
+const RELAT_O__RIO_EXPORT_FUNN_RE = /relat[oó]rio|export|funnel|cohort/i;
+const CONFIG_FEATURE_FLAG_DOM_RE = /config|feature flag|dom[ií]nio|webhook|seguran/i;
+const SUPORTE_TICKET_SLA_MACRO_RE = /suporte|ticket|sla|macro/i;
+const ALERTA_NOTIFICA_RE = /alerta|notifica/i;
+const PRODUTO_RE = /produto/i;
+const CONTA_WORKSPACE_PRODUTOR_RE = /conta|workspace|produtor/i;
+const CLIENTE_RE = /cliente/i;
+
 const TOOL_S____W_____S_RE = /^\/tool\s+([\w-]+)\s*(\{.*\})?$/s;
 const LIST_RE = /^\/list\b/i;
 
@@ -309,47 +324,45 @@ function inferToolInvocation(
   content: string,
 ): { name: string; args: Record<string, unknown> } | null {
   const trimmed = content.trim();
-  const explicitSearch = trimmed.match(
-    /(?:buscar|procurar|encontrar)\s+(?:workspace|conta|produtor|cliente)\s+(.+)/i,
-  );
+  const explicitSearch = trimmed.match(BUSCAR_PROCURAR_ENCON_RE);
   if (explicitSearch?.[1]) {
     return { name: 'searchWorkspaces', args: { query: explicitSearch[1].trim() } };
   }
 
-  const contextualSearch = trimmed.match(/(?:workspace|conta|produtor|cliente)\s+(.+)/i);
+  const contextualSearch = trimmed.match(WORKSPACE_CONTA_PRODU_RE);
   if (contextualSearch?.[1] && contextualSearch[1].trim().length >= 2) {
     return { name: 'searchWorkspaces', args: { query: contextualSearch[1].trim() } };
   }
 
-  if (/(overview|resumo|dashboard|home|gmv|receita)/i.test(trimmed)) {
-    if (/marketing|canal|conversa|lead/i.test(trimmed)) {
+  if (OVERVIEW_RESUMO_DASHBOA_RE.test(trimmed)) {
+    if (MARKETING_CANAL_CONVERSA_RE.test(trimmed)) {
       return { name: 'marketingOverview', args: {} };
     }
-    if (/vendas|assinaturas|pipeline|transa/i.test(trimmed)) {
+    if (VENDAS_ASSINATURAS_PIPEL_RE.test(trimmed)) {
       return { name: 'salesOverview', args: {} };
     }
-    if (/compliance|chargeback|kyc|fraude|reembolso/i.test(trimmed)) {
+    if (COMPLIANCE_CHARGEBACK_KY_RE.test(trimmed)) {
       return { name: 'complianceOverview', args: {} };
     }
-    if (/relat[oó]rio|export|funnel|cohort/i.test(trimmed)) {
+    if (RELAT_O__RIO_EXPORT_FUNN_RE.test(trimmed)) {
       return { name: 'reportsOverview', args: {} };
     }
-    if (/config|feature flag|dom[ií]nio|webhook|seguran/i.test(trimmed)) {
+    if (CONFIG_FEATURE_FLAG_DOM_RE.test(trimmed)) {
       return { name: 'configOverview', args: {} };
     }
-    if (/suporte|ticket|sla|macro/i.test(trimmed)) {
+    if (SUPORTE_TICKET_SLA_MACRO_RE.test(trimmed)) {
       return { name: 'supportOverview', args: {} };
     }
-    if (/alerta|notifica/i.test(trimmed)) {
+    if (ALERTA_NOTIFICA_RE.test(trimmed)) {
       return { name: 'notificationsOverview', args: {} };
     }
-    if (/produto/i.test(trimmed)) {
+    if (PRODUTO_RE.test(trimmed)) {
       return { name: 'productsOverview', args: {} };
     }
-    if (/conta|workspace|produtor/i.test(trimmed)) {
+    if (CONTA_WORKSPACE_PRODUTOR_RE.test(trimmed)) {
       return { name: 'accountsOverview', args: {} };
     }
-    if (/cliente/i.test(trimmed)) {
+    if (CLIENTE_RE.test(trimmed)) {
       return { name: 'clientsOverview', args: {} };
     }
     return { name: 'dashboardOverview', args: {} };

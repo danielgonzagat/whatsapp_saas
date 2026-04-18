@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-04-15T16:03:22.832Z",
-  "newStandardId": 151565,
-  "newStandardName": "kloel-convergence-2026-04-15T16-00-17",
+  "timestamp": "2026-04-18T11:13:36.236Z",
+  "newStandardId": 151816,
+  "newStandardName": "kloel-convergence-2026-04-18T05-55-54",
   "oldStandardId": 151337,
   "oldStandardName": "Default coding standard",
   "appliedNoisePatterns": [
@@ -23,6 +23,23 @@
     "ESLint8_es-x_no-destructuring",
     "ESLint8_es-x_no-async-functions",
     "ESLint8_es-x_no-classes",
+    "ESLint8_es-x_no-for-of-loops",
+    "ESLint8_es-x_no-set",
+    "ESLint8_es-x_no-import-meta",
+    "ESLint8_es-x_no-json",
+    "ESLint8_es-x_no-nullish-coalescing-operators",
+    "ESLint8_es-x_no-spread-elements",
+    "ESLint8_es-x_no-rest-spread-properties",
+    "ESLint8_es-x_no-array-isarray",
+    "ESLint8_es-x_no-hashbang",
+    "ESLint8_n_hashbang",
+    "ESLint8_@lwc_lwc_no-for-of",
+    "ESLint8_@salesforce_aura_ecma-intrinsics",
+    "ESLint8_import_no-nodejs-modules",
+    "ESLint8_n_no-sync",
+    "ESLint8_n_no-process-exit",
+    "ESLint8_security-node_detect-crlf",
+    "ESLint8_security_detect-non-literal-fs-filename",
     "ESLint8_flowtype_no-types-missing-file-annotation",
     "ESLint8_flowtype_require-parameter-type",
     "ESLint8_fp_no-nil",
@@ -31,6 +48,9 @@
     "Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check",
     "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
     "Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator",
+    "Agentlinter_clarity_undefined-term",
+    "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+    "Semgrep_codacy.javascript.security.hard-coded-password",
     "Biome_lint_security_noSecrets"
   ],
   "rollback": {
@@ -41,7 +61,7 @@
       "  -d '{\"link\":[\"whatsapp_saas\"],\"unlink\":[]}'",
       "",
       "curl -X PATCH -H \"api-token: $CODACY_ACCOUNT_TOKEN\" -H \"Content-Type: application/json\" \\",
-      "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151565/repositories\" \\",
+      "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151816/repositories\" \\",
       "  -d '{\"link\":[],\"unlink\":[\"whatsapp_saas\"]}'"
     ]
   }

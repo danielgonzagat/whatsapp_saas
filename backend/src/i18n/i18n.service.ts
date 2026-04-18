@@ -4,6 +4,8 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
+const PATTERN_RE = /[.*+?^${}()|[\]\\]/g;
+
 const D_RE = /\D/g;
 
 /**
@@ -277,7 +279,7 @@ export class I18nService {
       for (const [param, value] of Object.entries(params)) {
         // Escape param key to prevent ReDoS — params are developer-controlled
         // but we escape defensively as defense-in-depth.
-        const escaped = param.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escaped = param.replace(PATTERN_RE, '\\$&');
         text = text.replace(new RegExp(`\\{${escaped}\\}`, 'g'), String(value));
       }
     }
