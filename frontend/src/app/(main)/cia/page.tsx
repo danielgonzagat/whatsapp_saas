@@ -195,6 +195,7 @@ export default function CiaPage() {
     return () => clearInterval(interval);
   }, [workspaceId]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadSurface is recreated every render with stable behavior; only surface/workspaceId should drive the autostart check
   useEffect(() => {
     if (!workspaceId || workspaceLoading || !surface || autoStartRef.current) return;
 

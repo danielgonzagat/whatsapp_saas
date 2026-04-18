@@ -456,6 +456,7 @@ function UploadPanel() {
         gap: 16,
       }}
     >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: hover handlers toggle border color only; drop/click behavior sits on the inner interactive controls */}
       <div
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = '#E85D3040';

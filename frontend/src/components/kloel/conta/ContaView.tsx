@@ -978,6 +978,7 @@ function DadosPessoaisSection({
               {initials}
             </span>
           )}
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: hover-only overlay that reveals the camera icon; not an interactive target */}
           <div
             style={{
               position: 'absolute' as const,

@@ -218,6 +218,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // ─── Auto-scroll during typing ───
+  // biome-ignore lint/correctness/useExhaustiveDependencies: displayedText change is the intentional trigger to scroll each new character into view; ref is read imperatively
   useEffect(() => {
     if (isTyping && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -1096,6 +1097,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             padding: '12px 0 16px',
           }}
         >
+          {/* biome-ignore lint/a11y/useSemanticElements: a native <search> element lacks broad support; role="search" is the recommended fallback for a custom composite search bar */}
           <div
             role="search"
             style={{

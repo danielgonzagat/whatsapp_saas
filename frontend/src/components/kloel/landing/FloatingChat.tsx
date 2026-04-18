@@ -475,6 +475,7 @@ export function FloatingChat({
 
             {messages.map((msg) =>
               msg.role === 'user' ? (
+                // biome-ignore lint/a11y/useSemanticElements: no native element groups block-level chat bubble + action affordances; role="group" is the correct ARIA mapping
                 <div
                   key={msg.id}
                   role="group"

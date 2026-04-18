@@ -17,6 +17,7 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
   const interactive = typeof onClick === 'function';
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: role/tabIndex applied when interactive; hover handlers are decorative and do not require keyboard parity
     <div
       onClick={interactive ? onClick : undefined}
       onMouseEnter={() => setHovered(true)}

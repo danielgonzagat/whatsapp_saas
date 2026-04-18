@@ -693,6 +693,7 @@ function FinalManifestLoop() {
   const [text, setText] = useState('');
   const [tone, setTone] = useState<'light' | 'ember'>('light');
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: FIRST/SECOND/SECOND_PREFIX/SECOND_EMPHASIS are component-local constants that never change; only prefersReducedMotion should restart the typewriter loop
   useEffect(() => {
     if (prefersReducedMotion) {
       setTone('ember');

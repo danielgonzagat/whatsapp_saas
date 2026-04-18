@@ -569,6 +569,7 @@ export default function ProductNerveCenter({
     currentPlanRaw.shippingPrice,
   ]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only re-run when planCheckoutConfig changes (one-shot init guarded by planConfigInitRef); other reads are latest-value reads, not triggers
   useEffect(() => {
     if (!planCheckoutConfig) return;
     if (planConfigInitRef.current) return;
@@ -610,7 +611,6 @@ export default function ProductNerveCenter({
         planCheckoutConfig.affiliateCustomCommissionPercent ?? p.commissionPercent ?? 30,
       ).replace('.', ','),
     );
-    // biome-ignore lint/correctness/useExhaustiveDependencies: only re-run when planCheckoutConfig changes (one-shot init guarded by planConfigInitRef); other reads are latest-value reads, not triggers
   }, [planCheckoutConfig]);
 
   useEffect(() => {

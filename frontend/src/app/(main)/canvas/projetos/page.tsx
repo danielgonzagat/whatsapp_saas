@@ -175,6 +175,7 @@ function ProjectCard({
   const dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: wrapper groups thumbnail, title, and inline delete button; role="group" is the correct ARIA mapping
     <div
       role="group"
       onMouseEnter={() => setH(true)}
@@ -243,7 +244,11 @@ function ProjectCard({
           </div>
         )}
       </div>
+      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Abrir ${design.name ?? 'projeto'}`}
         onClick={onClick}
         style={{ padding: '8px 10px' }}
         onKeyDown={(e) => {

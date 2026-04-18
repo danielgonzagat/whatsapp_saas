@@ -13,6 +13,7 @@ export function Card({ children, style, onClick, className }: CardProps) {
   const [hovered, setHovered] = useState(false);
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: role/tabIndex applied when onClick is provided; hover handlers are decorative and do not require keyboard parity
     <div
       className={className}
       onClick={onClick}

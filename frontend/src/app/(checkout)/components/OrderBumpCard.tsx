@@ -44,6 +44,7 @@ export default function OrderBumpCard({
   const borderCol = bump.highlightColor || accentColor;
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: card contains block-level marketing copy and imagery, so native <input type="checkbox"> cannot wrap it; div+role="checkbox" is the correct ARIA mapping
     <div
       onClick={() => onToggle(bump.id)}
       role="checkbox"

@@ -126,6 +126,7 @@ export default function CanvasEditor() {
   const currentId = useRef<string | null>(designId || null);
 
   /* ═══ Initialize editor ═══ */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deliberately run once on mount to instantiate the editor; canvas dims (w/h) are only consumed for initial sizing
   useEffect(() => {
     if (!canvasRef.current) return;
     const editor = new KloelEditor(canvasRef.current, w, h);
@@ -227,7 +228,6 @@ export default function CanvasEditor() {
       editorRef.current = null;
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-    // biome-ignore lint/correctness/useExhaustiveDependencies: deliberately run once on mount to instantiate the editor; canvas dims (w/h) are only consumed for initial sizing
   }, []);
 
   /* ═══ Handlers ═══ */
@@ -1249,6 +1249,7 @@ export default function CanvasEditor() {
         </div>
 
         {/* ── Canvas viewport ── */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: drop zone receives HTML5 drag events; no click/key interaction needed */}
         <div
           style={{
             flex: 1,

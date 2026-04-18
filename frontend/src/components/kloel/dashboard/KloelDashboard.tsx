@@ -529,6 +529,7 @@ function MessageBlock({
 
   if (message.role === 'user') {
     return (
+      // biome-ignore lint/a11y/noStaticElementInteractions: hover handlers toggle visibility of action buttons only; container itself is non-interactive
       <div
         style={{ display: 'flex', justifyContent: 'flex-end' }}
         onMouseEnter={() => setIsHovered(true)}
@@ -1635,6 +1636,7 @@ export default function KloelDashboard() {
   const composerPlaceholder = capabilityPromptLabel(activeCapability, hasMessages);
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: chat area needs role="region" with explicit aria-label; no native section/article fits this scrollable drop-zone container
     <div
       role="region"
       aria-label="Área de chat"

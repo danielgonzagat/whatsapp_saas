@@ -280,6 +280,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
             }
           }}
         >
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
           <div
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-lg rounded-md p-6"

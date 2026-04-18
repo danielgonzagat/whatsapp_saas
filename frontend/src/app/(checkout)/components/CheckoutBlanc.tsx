@@ -1483,6 +1483,9 @@ export default function CheckoutBlanc({
 
               {supportsBoleto ? (
                 <div
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={payMethod === 'boleto'}
                   onClick={() => setPayMethod('boleto')}
                   style={{
                     border: `1px solid ${payMethod === 'boleto' ? '#1a1a1a' : BLANC.softLine}`,

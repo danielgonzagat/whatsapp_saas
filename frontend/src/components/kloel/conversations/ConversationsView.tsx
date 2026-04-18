@@ -293,6 +293,7 @@ export function ConversationsView() {
               const isHovered = hoveredId === conversation.id;
 
               return (
+                // biome-ignore lint/a11y/useSemanticElements: conversation row groups block-level content (avatar + text + actions); role="group" is the correct ARIA mapping
                 <div
                   key={conversation.id}
                   role="group"

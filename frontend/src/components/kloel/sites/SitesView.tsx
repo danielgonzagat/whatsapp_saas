@@ -1610,6 +1610,9 @@ function CriarSite({ mode }: { mode?: string }) {
                   }}
                 >
                   <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Abrir site salvo"
                     style={{ color: EMBER }}
                     onClick={() => loadSavedSite(site)}
                     onKeyDown={(e) => {
@@ -2004,6 +2007,7 @@ function EditarSite({ mode }: { mode?: string }) {
                   padding: '12px 16px',
                 }}
               >
+                {/* biome-ignore lint/a11y/useSemanticElements: span carries an SVG icon trigger alongside an adjacent native button; role="button" is the correct ARIA mapping without disrupting inline flow */}
                 <span
                   style={{ color: EMBER }}
                   onClick={() => setSelectedSite(site)}

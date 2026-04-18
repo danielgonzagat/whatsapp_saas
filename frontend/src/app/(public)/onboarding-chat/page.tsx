@@ -61,6 +61,7 @@ function OnboardingChatContent() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Scroll para a última mensagem
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages change is the intentional trigger to scroll the newest message into view; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -84,6 +85,7 @@ function OnboardingChatContent() {
     ]);
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: addMessage is a stable local setter wrapper and mutate is the SWR global mutator; only workspaceId should drive recomputation
   const startOnboarding = useCallback(async () => {
     if (!workspaceId) return;
     setLoading(true);

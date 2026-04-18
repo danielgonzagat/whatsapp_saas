@@ -1133,6 +1133,9 @@ export default function CheckoutNoir({
 
               {supportsCard ? (
                 <div
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={payMethod === 'card'}
                   onClick={() => setPayMethod('card')}
                   style={{
                     border: `1px solid ${payMethod === 'card' ? C.accent : C.border2}`,

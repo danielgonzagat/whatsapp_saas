@@ -246,6 +246,7 @@ function DesignCard({
   const dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: hover handlers toggle visibility of action buttons only; container itself is non-interactive
     <div
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}

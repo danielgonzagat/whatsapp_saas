@@ -468,6 +468,7 @@ export default function CRMPipelineView() {
             const total = stageTotal(sid);
 
             return (
+              // biome-ignore lint/a11y/noStaticElementInteractions: drag-drop column receives HTML5 drag events; no click/key interaction needed
               <div
                 key={sid}
                 onDragOver={onDragOver}

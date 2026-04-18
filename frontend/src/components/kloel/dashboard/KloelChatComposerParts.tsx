@@ -320,6 +320,7 @@ export function ComposerPopover({
               }}
             />
 
+            {/* biome-ignore lint/a11y/useSemanticElements: wrapper groups action button and its hover-triggered submenu; role="group" is the correct ARIA mapping */}
             <div
               role="group"
               style={{ position: 'relative' }}

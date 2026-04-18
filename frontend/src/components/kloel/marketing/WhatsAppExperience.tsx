@@ -647,6 +647,7 @@ function ProductCard({
         };
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: contains block-level children (nested flex layouts with badge), so native <button> would produce invalid HTML; div+role retained
     <div
       role="button"
       tabIndex={0}

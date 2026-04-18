@@ -1342,6 +1342,7 @@ function VendasTab({
             const st = stMap[s.status ?? ''] || { c: V.bl, l: s.status };
             const FI = formIcon[s.paymentMethod ?? ''] || IC.card;
             return (
+              // biome-ignore lint/a11y/useSemanticElements: grid-based report layout needs role="row" without table semantics; native <tr> requires <table> ancestry not used here
               <div
                 key={s.id}
                 role="row"
@@ -2424,6 +2425,7 @@ function RecusaTab({
           <EmptyState message="Nenhuma recusa no período" />
         ) : (
           rows.map((r: ReportRow, i: number) => (
+            // biome-ignore lint/a11y/noStaticElementInteractions: hover handlers are purely decorative; row has no click behavior
             <div
               key={r.id || i}
               style={{

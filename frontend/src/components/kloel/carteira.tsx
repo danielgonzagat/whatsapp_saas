@@ -521,6 +521,7 @@ function WithdrawModal({
         }
       }}
     >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
@@ -820,6 +821,7 @@ function AntecipateModal({
         }
       }}
     >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
@@ -1580,6 +1582,7 @@ function TabExtrato({
           filtered.map((t, i) => {
             const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale;
             return (
+              // biome-ignore lint/a11y/useSemanticElements: grid-based transactions layout needs role="row" without table semantics; native <tr> requires <table> ancestry not used here
               <div
                 key={t.id}
                 role="row"

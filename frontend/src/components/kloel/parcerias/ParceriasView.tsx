@@ -730,6 +730,9 @@ function InviteModal({ onClose }: { onClose: () => void }) {
       }}
     >
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Fechar modal"
         onClick={onClose}
         style={{
           position: 'absolute',
@@ -990,6 +993,9 @@ function AffiliateDetailModal({
       }}
     >
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Fechar modal"
         onClick={onClose}
         style={{
           position: 'absolute',

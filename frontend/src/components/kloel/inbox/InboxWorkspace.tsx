@@ -321,6 +321,7 @@ export function InboxWorkspace({
   const selectedIdRef = useRef(selectedConversationId);
   selectedIdRef.current = selectedConversationId;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshConversations is the SWR mutator (stable); selectedIdRef is read imperatively. Resubscribing on those identities would churn the socket.
   useEffect(() => {
     if (!isConnected || !workspaceId) return;
 
