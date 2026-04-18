@@ -24,6 +24,7 @@
  * dynamically import ./processor which starts the BullMQ worker.
  */
 
+// biome-ignore lint/performance/noNamespaceImport: @sentry/node is consumed as a namespace per Sentry docs
 import * as Sentry from '@sentry/node';
 
 Sentry.init({

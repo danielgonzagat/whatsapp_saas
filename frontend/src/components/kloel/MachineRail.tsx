@@ -18,7 +18,7 @@ export function MachineRail({
   const rail = getMachineRail(shell);
   const capabilityCards = rail.capabilities
     .map((title) => findCapabilityByTitle(title))
-    .filter(Boolean);
+    .filter((capability): capability is NonNullable<typeof capability> => Boolean(capability));
 
   return (
     <div
@@ -128,11 +128,11 @@ export function MachineRail({
           }}
         >
           {capabilityCards.map((capability) => {
-            const href = getCapabilityHref(capability!);
+            const href = getCapabilityHref(capability);
             return (
               <button
                 type="button"
-                key={capability!.title}
+                key={capability.title}
                 onClick={() => {
                   if (href) router.push(href);
                 }}
@@ -155,7 +155,7 @@ export function MachineRail({
                     marginBottom: 6,
                   }}
                 >
-                  <span style={{ fontSize: 18 }}>{capability!.icon}</span>
+                  <span style={{ fontSize: 18 }}>{capability.icon}</span>
                   <span
                     style={{
                       fontFamily: SORA,
@@ -164,7 +164,7 @@ export function MachineRail({
                       color: 'var(--app-text-primary)',
                     }}
                   >
-                    {capability!.title}
+                    {capability.title}
                   </span>
                 </div>
                 <div
@@ -175,7 +175,7 @@ export function MachineRail({
                     color: 'var(--app-text-secondary)',
                   }}
                 >
-                  {capability!.desc}
+                  {capability.desc}
                 </div>
               </button>
             );

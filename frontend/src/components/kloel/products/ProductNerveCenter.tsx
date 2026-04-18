@@ -1470,8 +1470,9 @@ export default function ProductNerveCenter({
                 label="Disponível para venda?"
                 checked={plan.active}
                 onChange={async (v: boolean) => {
+                  if (!selPlan) return;
                   try {
-                    await updatePlan(selPlan!, { isActive: v });
+                    await updatePlan(selPlan, { isActive: v });
                   } catch (e) {
                     console.error(e);
                   }
@@ -2385,6 +2386,9 @@ export default function ProductNerveCenter({
             setPlanSaving(true);
             setPlanError('');
             try {
+              if (!selPlan) {
+                throw new Error('Selecione um plano antes de salvar.');
+              }
               if (planSub === 'pagamento' && planCheckoutLoading) {
                 throw new Error('Aguarde a configuração comercial terminar de carregar.');
               }
@@ -2410,7 +2414,7 @@ export default function ProductNerveCenter({
                 }
               }
 
-              await updatePlan(selPlan!, {
+              await updatePlan(selPlan, {
                 name: planName,
                 priceInCents: Math.max(0, Math.round(planPriceCents)),
                 quantity: Math.max(1, Math.round(Number(planQty || 1))),

@@ -102,6 +102,6 @@ function main() {
 try {
   main();
 } catch (error) {
-  console.error(`[seatbelt] ${(error && error.message) || String(error)}`);
+  console.error(`[seatbelt] ${error?.message || String(error)}`);
   process.exit(1);
 }

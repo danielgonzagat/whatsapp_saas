@@ -89,7 +89,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     main();
   } catch (error) {
-    console.error(`[madge-cycles] ${(error && error.message) || String(error)}`);
+    console.error(`[madge-cycles] ${error?.message || String(error)}`);
     process.exit(1);
   }
 }

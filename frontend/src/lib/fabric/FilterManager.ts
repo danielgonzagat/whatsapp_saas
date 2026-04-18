@@ -1,4 +1,5 @@
 import { type Canvas, FabricImage } from 'fabric';
+// biome-ignore lint/performance/noNamespaceImport: fabric.filters subnamespace access is only viable via namespace import
 import * as fabric from 'fabric';
 
 type FilterInstance = InstanceType<typeof fabric.filters.BaseFilter>;

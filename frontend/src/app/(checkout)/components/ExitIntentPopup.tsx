@@ -135,7 +135,7 @@ export default function ExitIntentPopup({
         <button
           type="button"
           onClick={() => {
-            onApplyCoupon?.(couponCode!);
+            if (couponCode) onApplyCoupon?.(couponCode);
             setVisible(false);
           }}
           style={{

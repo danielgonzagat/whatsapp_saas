@@ -1115,9 +1115,11 @@ export default function KloelDashboard() {
 
       setAttachments((current) => [...current, ...staged]);
       await Promise.all(
-        staged.map((attachment, index) =>
-          uploadAttachmentFile(attachment.id, acceptedFiles[index]!),
-        ),
+        staged.map((attachment, index) => {
+          const file = acceptedFiles[index];
+          if (!file) return Promise.resolve();
+          return uploadAttachmentFile(attachment.id, file);
+        }),
       );
     },
     [attachments.length, uploadAttachmentFile],

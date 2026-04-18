@@ -663,7 +663,9 @@ function SmartPaymentModal({
                       />
                       <button
                         type="button"
-                        onClick={() => copyToClipboard(result.paymentLink!)}
+                        onClick={() => {
+                          if (result.paymentLink) copyToClipboard(result.paymentLink);
+                        }}
                         style={{
                           padding: '8px 12px',
                           background: 'none',
@@ -713,7 +715,9 @@ function SmartPaymentModal({
                       />
                       <button
                         type="button"
-                        onClick={() => copyToClipboard(result.pixCode!)}
+                        onClick={() => {
+                          if (result.pixCode) copyToClipboard(result.pixCode);
+                        }}
                         style={{
                           padding: '8px 12px',
                           background: 'none',

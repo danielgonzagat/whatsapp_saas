@@ -40,7 +40,7 @@ function writeRatchetFile(measurement, existing = null) {
     ratchet: measurement.ratchet,
   };
 
-  if (existing && existing.version) {
+  if (existing?.version) {
     next.version = existing.version;
   }
 
@@ -177,6 +177,6 @@ function main() {
 try {
   main();
 } catch (error) {
-  console.error(`[ratchet] ${(error && error.message) || String(error)}`);
+  console.error(`[ratchet] ${error?.message || String(error)}`);
   process.exit(1);
 }

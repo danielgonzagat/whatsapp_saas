@@ -304,11 +304,10 @@ export default function VerTodasPage() {
                     title={tool.title}
                     desc={tool.desc}
                     badge={getCapabilityBadge(tool)}
-                    onClick={
-                      getCapabilityHref(tool)
-                        ? () => router.push(getCapabilityHref(tool)!)
-                        : undefined
-                    }
+                    onClick={(() => {
+                      const href = getCapabilityHref(tool);
+                      return href ? () => router.push(href) : undefined;
+                    })()}
                   />
                 ))}
               </div>

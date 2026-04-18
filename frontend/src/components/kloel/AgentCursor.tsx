@@ -193,7 +193,7 @@ export function AgentCursor({
     const viewportWidth = Math.max(1, Number(viewport?.width || 1440));
     const viewportHeight = Math.max(1, Number(viewport?.height || 900));
 
-    if (!rect || !rect.width || !rect.height) {
+    if (!rect?.width || !rect.height) {
       return;
     }
 

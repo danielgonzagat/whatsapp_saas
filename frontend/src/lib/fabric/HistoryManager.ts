@@ -33,18 +33,18 @@ export class HistoryManager {
   }
 
   async undo(): Promise<void> {
-    if (!this.canUndo) return;
+    const state = this.undoStack.pop();
+    if (!state) return;
     const current = JSON.stringify(this.canvas.toJSON());
     this.redoStack.push(current);
-    const state = this.undoStack.pop()!;
     await this._loadState(state);
   }
 
   async redo(): Promise<void> {
-    if (!this.canRedo) return;
+    const state = this.redoStack.pop();
+    if (!state) return;
     const current = JSON.stringify(this.canvas.toJSON());
     this.undoStack.push(current);
-    const state = this.redoStack.pop()!;
     await this._loadState(state);
   }
 

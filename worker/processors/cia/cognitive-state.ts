@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { DemandState } from '../../providers/commercial-intelligence';
+// biome-ignore lint/performance/noNamespaceImport: RX aggregates ~20 regex constants consumed as RX.*_RE — listing all named imports is noisier
 import * as RX from './cognitive-state-patterns';
 
 const U0300__U036F_RE = /[\u0300-\u036f]/g;

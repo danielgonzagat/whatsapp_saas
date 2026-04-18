@@ -1,7 +1,9 @@
 'use client';
 
+// biome-ignore lint/performance/noNamespaceImport: shadcn/ui convention uses Radix namespace to avoid colliding with wrapper component names
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import { CheckIcon } from 'lucide-react';
+// biome-ignore lint/performance/noNamespaceImport: React type namespace has no per-type named export alternative
 import type * as React from 'react';
 
 import { cn } from '@/lib/utils';

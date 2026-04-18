@@ -1,6 +1,8 @@
 'use client';
 
+// biome-ignore lint/performance/noNamespaceImport: shadcn/ui convention uses Radix namespace to avoid colliding with wrapper component names
 import * as SwitchPrimitive from '@radix-ui/react-switch';
+// biome-ignore lint/performance/noNamespaceImport: React type namespace has no per-type named export alternative
 import type * as React from 'react';
 
 import { cn } from '@/lib/utils';

@@ -46,7 +46,7 @@ export default function AuthImpersonatePage() {
     if (workspaceId) tokenStorage.setWorkspaceId(workspaceId);
     tokenStorage.ensureAuthCookie();
 
-    const next = payload.next && payload.next.startsWith('/') ? payload.next : fallbackNext;
+    const next = payload.next?.startsWith('/') ? payload.next : fallbackNext;
     window.history.replaceState(null, '', '/auth/impersonate');
     setStatus('done');
     window.location.replace(next);

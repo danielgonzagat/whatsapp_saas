@@ -115,11 +115,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           justSignedUp: false,
           hasCompletedOnboarding: localStorage.getItem(ONBOARDING_KEY) === 'true',
           user: { id: payload.sub, email: payload.email, name: payload.name || '' },
-          workspace: tokenStorage.getWorkspaceId()
-            ? { id: tokenStorage.getWorkspaceId()!, name: '' }
-            : payload.workspaceId
-              ? { id: payload.workspaceId, name: '' }
-              : null,
+          workspace: (() => {
+            const storedWorkspaceId = tokenStorage.getWorkspaceId();
+            if (storedWorkspaceId) return { id: storedWorkspaceId, name: '' };
+            if (payload.workspaceId) return { id: payload.workspaceId, name: '' };
+            return null;
+          })(),
           subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
         });
       }
@@ -266,14 +267,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!authState.workspace?.id) return;
 
     const res = await billingApi.getSubscription();
-    if (res.data) {
+    const subscriptionData = res.data;
+    if (subscriptionData) {
       setAuthState((prev) => ({
         ...prev,
         subscription: {
-          status: res.data!.status || 'none',
-          trialDaysLeft: res.data!.trialDaysLeft || 0,
-          creditsBalance: res.data!.creditsBalance || 0,
-          plan: res.data!.plan,
+          status: subscriptionData.status || 'none',
+          trialDaysLeft: subscriptionData.trialDaysLeft || 0,
+          creditsBalance: subscriptionData.creditsBalance || 0,
+          plan: subscriptionData.plan,
         },
       }));
     }
