@@ -291,6 +291,12 @@ const NOISE_PATTERNS = [
     reason:
       'WRONG_RULE — Biome 1.9 nursery rule. Triage 2026-04-15 (docs/security/nosecrets-triage-2026-04-15.md): 145/145 findings are false positives (Next.js route literals in nav maps, console banners, Portuguese error messages, audit log enum literals, DOM/CSS selectors, LLM prompt schema descriptors, public CDN URLs). Zero real leaks. Should be re-enabled when Biome ships content-aware secret detection.',
   },
+  // ── Lizard parameter-count misreads JSX destructured props as positional params ──
+  {
+    id: 'Lizard_parameter-count-medium',
+    reason:
+      'WRONG_RULE — Lizard counts destructured props (`function Field({a,b,c,...})`) and inline-style object keys inside `.map()` callbacks as positional parameters. 75/78 findings are in React .tsx components where the convention is exactly one destructured props object. Real-signal parameter-count in non-JSX code is still visible via typecheck and code review. nloc-medium and ccn-medium stay enabled for the real complexity signal.',
+  },
 ];
 
 // -------------------- Env --------------------
