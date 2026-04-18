@@ -666,7 +666,7 @@ export class AsaasService implements OnModuleInit {
       }
 
       case 'PAYMENT_OVERDUE':
-        await (this.prisma as any).kloelSale
+        await this.prisma.kloelSale
           .updateMany({
             where: { externalPaymentId: payment.id },
             data: { status: 'overdue' },
@@ -680,7 +680,7 @@ export class AsaasService implements OnModuleInit {
         break;
 
       case 'PAYMENT_REFUNDED':
-        await (this.prisma as any).kloelSale
+        await this.prisma.kloelSale
           .updateMany({
             where: { externalPaymentId: payment.id },
             data: { status: 'refunded' },
