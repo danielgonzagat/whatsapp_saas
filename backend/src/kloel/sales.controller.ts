@@ -13,6 +13,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,6 +33,17 @@ export class SalesController {
     private readonly orderAlertsService: OrderAlertsService,
     private readonly asaasService: AsaasService,
   ) {}
+
+  private readJsonRecord(value: Prisma.JsonValue | null | undefined) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return { ...value };
+    }
+    return {} as Prisma.JsonObject;
+  }
+
+  private readText(value: unknown) {
+    return typeof value === 'string' && value.trim() ? value : null;
+  }
 
   // ═══════════════════════════════════════
   // VENDAS (KloelSale)
@@ -352,17 +364,24 @@ export class SalesController {
       where: { id: dto.newPlanId },
     });
     if (!newPlan) throw new NotFoundException('Plan not found');
+    const planChangedAt = new Date();
+    const previousPlanId = this.readText(sub.planId);
+    const metadata = this.readJsonRecord(sub.metadata);
     await this.prisma.customerSubscription.updateMany({
       where: { id, workspaceId },
       data: {
         planName: newPlan.name,
         amount: newPlan.price,
+        planId: dto.newPlanId,
+        previousPlanId,
+        planChangedAt,
         metadata: {
+          ...metadata,
           planId: dto.newPlanId,
-          planChangedAt: new Date().toISOString(),
-          previousPlanId: (sub as any).planId,
+          planChangedAt: planChangedAt.toISOString(),
+          previousPlanId,
         },
-      } as any,
+      },
     });
     return {
       subscription: {
