@@ -197,3 +197,45 @@ Before saying "done", "fixed", or "complete":
 4. Check for regressions in related features
 
 "It should work" is not evidence. Show the output.
+
+---
+
+## 13. Stripe Migration (active mandate)
+
+KLOEL is migrating ALL payment infrastructure from Asaas + Mercado Pago to **Stripe Connect Platform Model with Custom Accounts**. This is an active multi-phase mandate authorized by the repo owner on 2026-04-17.
+
+**Founding ADR**: [docs/adr/0003-stripe-connect-platform-model.md](docs/adr/0003-stripe-connect-platform-model.md).
+**Executable plan (read before touching any payment code)**: [docs/plans/STRIPE_MIGRATION_PLAN.md](docs/plans/STRIPE_MIGRATION_PLAN.md).
+
+### Non-negotiable rules for any agent touching payment code
+
+1. **Money in `bigint` cents always**. Never `number`. Stripe rejects float-rounding errors in splits.
+2. **Coverage ≥ 95% in SplitEngine, LedgerEngine, FraudEngine**. Bug here = real loss + legal exposure.
+3. **Idempotent webhooks**. The `WebhookEvent` table with `@@unique([provider, externalId])` stays. Re-delivered webhooks must be no-ops.
+4. **Immutable ledger**. `LedgerEntry` rows are never UPDATEd. Corrections add a new ADJUSTMENT entry.
+5. **Preserve the UX shell** (CLAUDE.md master rule). Migration replaces the engine under the hood; visible checkout UX stays.
+6. **Test keys in dev, live keys only in production via Railway secret manager**. `sk_live_*` never appears in tests, .env files, screenshots, or chat.
+7. **ADR-driven**. Any deviation from the plan requires a new ADR. No improvisation. If you discover a constraint that invalidates ADR 0003, stop and report.
+8. **Phase gates**. Don't skip phases. Each phase has criteria-of-done in the plan. Don't mark complete without evidence (commit hash, test output).
+
+### Where each piece will live (target tree)
+
+```
+backend/src/payments/
+  ├── split/             # FASE 1: pure SplitEngine (no Prisma, no Stripe deps)
+  ├── ledger/            # FASE 2: dual-balance + maturation
+  ├── connect/           # FASE 3: Custom Account creation + KYC custom UI backend
+  ├── fraud/             # FASE 5: pre-PaymentIntent fraud evaluation
+  └── providers/         # FASE 6: PaymentProvider interface + Stripe / Asaas-Legacy adapters
+backend/src/wallet/      # FASE 4: prepaid credits for API/AI/WhatsApp usage
+backend/src/billing/stripe.service.ts  # FASE 0: single SDK wrapper (apiVersion pinned)
+```
+
+### How to resume the work (any agent, any session)
+
+1. Read `docs/plans/STRIPE_MIGRATION_PLAN.md` top to bottom.
+2. Find the next phase with `[ ]` items in "Critérios de pronto".
+3. Verify prerequisites (prior phase entregáveis are `[x]`).
+4. If PULSE or tests of prior phase are red, stop and report. Do not skip.
+5. On completion, mark `[x]` with evidence (commit hash, test output, PR link).
+6. Re-read this file periodically. Treat it as durable instruction, not chat history.

@@ -315,4 +315,48 @@ Toggle components em `frontend/src/components/kloel/Forms.tsx`.
 
 ### ENV VARS necessarias para producao
 
-- `ASAAS_WEBHOOK_TOKEN` — token de verificacao de webhooks Asaas
+- `ASAAS_WEBHOOK_TOKEN` — token de verificacao de webhooks Asaas (DEPRECADO — ver STRIPE MIGRATION abaixo)
+
+---
+
+## STRIPE MIGRATION — substitui Asaas e Mercado Pago
+
+> **Decisão arquitetural ativa**. Autorizada pelo dono do repo em 2026-04-17.
+> ADR fundador: [docs/adr/0003-stripe-connect-platform-model.md](docs/adr/0003-stripe-connect-platform-model.md).
+> **Plano executável (ler antes de tocar qualquer código de pagamento)**: [docs/plans/STRIPE_MIGRATION_PLAN.md](docs/plans/STRIPE_MIGRATION_PLAN.md).
+
+KLOEL adota **Stripe Connect Platform Model com Custom Accounts** como única infra de pagamento. Asaas e Mercado Pago são removidos via Adapter pattern + feature flag por workspace (sem kill-switch — ordens legacy continuam resolvíveis para refund/audit).
+
+**Não-negociáveis** (qualquer agente que tocar este código):
+
+- Centavos em `bigint`. Nunca `number` para dinheiro.
+- Coverage ≥ 95% em SplitEngine, LedgerEngine, FraudEngine.
+- Idempotência em todo webhook handler.
+- Audit trail em LedgerEntry (sem UPDATE).
+- Casca de UX preservada — só o motor por baixo é trocado.
+- `sk_test_*` em dev, `sk_live_*` apenas em produção via Railway secret.
+- ADR-driven: desvios exigem novo ADR. Sem improviso.
+
+**Fases ordenadas** (ver plano para entregáveis e critérios de pronto):
+
+```
+0. Foundation (SDK + ADR + secrets + smoke)
+1. SplitEngine (motor puro de cálculo, isolado)
+2. LedgerEngine (dual-balance + maturação + payout manual)
+3. Connect Onboarding (Custom Accounts + KYC custom)
+4. Wallet prepaid (créditos de uso de API/AI/WhatsApp)
+5. FraudEngine (motor antifraude unificado)
+6. PaymentProvider Adapter + cutover (feature flag)
+7. Checkout migration (backend reescrito)
+8. Frontend migration (AsaasTokenizer → Stripe Elements)
+9. Cleanup (delete Asaas/MP code morto)
+10. PULSE & docs (parsers + CLAUDE.md + VALIDATION_LOG)
+```
+
+**FASE 1 do DAG (Motor Comercial)** lá em cima passa a ser implementada via Stripe; remova mentalmente "Asaas" das frases originais.
+
+**Bloqueios conhecidos** (manter sincronizado com `docs/plans/STRIPE_MIGRATION_PLAN.md`):
+
+- `railway login` deslogado — Daniel precisa rodar interativo.
+- PIX capability na conta Stripe live — Daniel precisa solicitar via dashboard.
+- Webhook endpoint live em produção — criar via dashboard ou API após FASE 0.

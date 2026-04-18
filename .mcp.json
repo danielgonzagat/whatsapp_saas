@@ -6,6 +6,10 @@
     },
     "mercadopago-mcp-server": {
       "url": "https://mcp.mercadopago.com/mcp"
+    },
+    "stripe": {
+      "command": "bash",
+      "args": ["scripts/mcp/stripe-mcp-launcher.sh"]
     }
   }
 }
