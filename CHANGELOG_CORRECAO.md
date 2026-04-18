@@ -60,7 +60,7 @@
 - A autopsia afirmava que TODOS os 14 settings components tinham "0 API calls"
 - **FALSO.** Verificacao confirma que a maioria ja tem integracao API completa:
   - account-settings-section: workspaceApi, authApi
-  - billing-settings-section: billingApi, asaas, external payments
+  - billing-settings-section: billingApi, legacy-payment, external payments
   - brain-settings-section: productApi, autopilotApi, knowledgeBaseApi
   - crm-settings-section: crmApi, segmentationApi
   - analytics-settings-section: analytics APIs
@@ -86,7 +86,7 @@
 
 **Commit:** `498f158` — fix(payment): remover fallback que criava registros falsos no banco
 
-- **Antes:** Quando Asaas indisponivel, gerava ID fake `pay_${timestamp}`, criava KloelSale real no banco com URL inexistente
+- **Antes:** Quando legacy payment provider indisponivel, gerava ID fake `pay_${timestamp}`, criava KloelSale real no banco com URL inexistente
 - **Depois:** Lanca erro claro "Provedor de pagamento nao configurado"
 - Evita poluicao da tabela de vendas com dados falsos
 
@@ -101,27 +101,27 @@
 - **Antes:** 3.368 linhas em 1 arquivo, 15 namespaces, 40+ interfaces
 - **Depois:** 19 modulos em `frontend/src/lib/api/`:
 
-| Modulo | Conteudo |
-|--------|----------|
-| `core.ts` | apiFetch, tokenStorage, tipos base, wallet, memory, leads |
-| `whatsapp.ts` | Funcoes WhatsApp + templates + messaging |
-| `analytics.ts` | Dashboard stats, daily activity, advanced |
-| `kloel.ts` | KloelHealth, uploadPdf, createPaymentLink |
-| `campaigns.ts` | CRUD de campanhas |
-| `asaas.ts` | Asaas + external payment links |
-| `autopilot.ts` | Todas funcoes de autopilot |
-| `flows.ts` | CRUD de flows + execucoes |
-| `conversations.ts` | Inbox, mensagens, agentes |
-| `auth.ts` | authApi object |
-| `whatsapp-api.ts` | whatsappApi object |
-| `cia.ts` | ciaApi + autostartCia |
-| `kloel-api.ts` | kloelApi (SSE streaming) |
-| `billing.ts` | billingApi object |
-| `workspace.ts` | workspaceApi + settings + API keys |
-| `products.ts` | productApi, externalPaymentApi, knowledgeBaseApi |
-| `crm.ts` | crmApi, segmentationApi |
-| `misc.ts` | memberAreaApi, affiliateApi, calendar, dashboard, etc. |
-| `index.ts` | Barrel re-export de tudo |
+| Modulo              | Conteudo                                                  |
+| ------------------- | --------------------------------------------------------- |
+| `core.ts`           | apiFetch, tokenStorage, tipos base, wallet, memory, leads |
+| `whatsapp.ts`       | Funcoes WhatsApp + templates + messaging                  |
+| `analytics.ts`      | Dashboard stats, daily activity, advanced                 |
+| `kloel.ts`          | KloelHealth, uploadPdf, createPaymentLink                 |
+| `campaigns.ts`      | CRUD de campanhas                                         |
+| `legacy-payment.ts` | legacy payment provider + external payment links          |
+| `autopilot.ts`      | Todas funcoes de autopilot                                |
+| `flows.ts`          | CRUD de flows + execucoes                                 |
+| `conversations.ts`  | Inbox, mensagens, agentes                                 |
+| `auth.ts`           | authApi object                                            |
+| `whatsapp-api.ts`   | whatsappApi object                                        |
+| `cia.ts`            | ciaApi + autostartCia                                     |
+| `kloel-api.ts`      | kloelApi (SSE streaming)                                  |
+| `billing.ts`        | billingApi object                                         |
+| `workspace.ts`      | workspaceApi + settings + API keys                        |
+| `products.ts`       | productApi, externalPaymentApi, knowledgeBaseApi          |
+| `crm.ts`            | crmApi, segmentationApi                                   |
+| `misc.ts`           | memberAreaApi, affiliateApi, calendar, dashboard, etc.    |
+| `index.ts`          | Barrel re-export de tudo                                  |
 
 - `api.ts` original agora e um shim de 4 linhas
 - Todos os 42+ imports existentes continuam funcionando sem mudanca
@@ -152,13 +152,13 @@
 
 ## RESUMO DE IMPACTO
 
-| Acao | Quantidade |
-|------|-----------|
-| Linhas de codigo fake removidas | ~800 |
-| Linhas de codigo morto removidas | ~200 |
-| Linhas refatoradas (api.ts split) | ~3.400 |
-| Novas paginas funcionais | 2 |
-| Novos hooks SWR | 1 |
-| Modulos backend deletados | 2 |
-| Queries fake corrigidas para reais | 2 |
-| Commits atomicos | 8 |
+| Acao                               | Quantidade |
+| ---------------------------------- | ---------- |
+| Linhas de codigo fake removidas    | ~800       |
+| Linhas de codigo morto removidas   | ~200       |
+| Linhas refatoradas (api.ts split)  | ~3.400     |
+| Novas paginas funcionais           | 2          |
+| Novos hooks SWR                    | 1          |
+| Modulos backend deletados          | 2          |
+| Queries fake corrigidas para reais | 2          |
+| Commits atomicos                   | 8          |

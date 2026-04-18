@@ -45,6 +45,9 @@ export function useCheckoutExperienceSocial({
   const [showCouponPopup, setShowCouponPopup] = useState(false);
   const [couponPopupHandled, setCouponPopupHandled] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+  const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
+  const [stripeReturnUrl, setStripeReturnUrl] = useState('');
   const [dynamicShippingInCents, setDynamicShippingInCents] = useState<number | null>(null);
   const [pixelEvent, setPixelEvent] = useState<
     'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null
@@ -115,7 +118,6 @@ export function useCheckoutExperienceSocial({
     headerSecondary,
     mobileCanOpenStep1,
     mobileCanOpenStep2,
-    mercadoPagoPublicKey,
   } = derivedState;
 
   useCheckoutExperienceAutomation({
@@ -285,6 +287,27 @@ export function useCheckoutExperienceSocial({
     [config?.enableCoupon, couponCode, plan?.id, subtotal, workspaceId],
   );
 
+  const resetStripeConfirmation = useCallback(() => {
+    setStripeClientSecret(null);
+    setStripePaymentIntentId(null);
+    setStripeReturnUrl('');
+  }, []);
+
+  const handleStripePaymentSuccess = useCallback(() => {
+    if (!stripeReturnUrl) {
+      return;
+    }
+
+    setShowSuccess(true);
+    redirectTimer.current = window.setTimeout(() => {
+      window.location.href = stripeReturnUrl;
+    }, 1200);
+  }, [stripeReturnUrl]);
+
+  const handleStripePaymentError = useCallback((message: string) => {
+    setSubmitError(message || 'Erro ao confirmar o pagamento no Stripe.');
+  }, []);
+
   const finalizeOrder = useCallback(async () => {
     if (!validateStep1()) {
       setSubmitError('Revise os dados pessoais antes de finalizar.');
@@ -319,9 +342,10 @@ export function useCheckoutExperienceSocial({
 
     setIsSubmitting(true);
     setSubmitError('');
+    resetStripeConfirmation();
 
     try {
-      const { successPath, orderNumber } = await finalizeCheckoutOrder({
+      const result = await finalizeCheckoutOrder({
         affiliateContext,
         capturedLeadId: social.socialIdentity?.leadId,
         checkoutCode,
@@ -329,7 +353,6 @@ export function useCheckoutExperienceSocial({
         discount,
         form,
         installments,
-        mercadoPagoPublicKey,
         payMethod,
         paymentProvider,
         planId: plan.id,
@@ -341,23 +364,23 @@ export function useCheckoutExperienceSocial({
         workspaceId,
       });
 
-      setPixelEvent('Purchase');
-      // Validate successPath is a safe relative path (starts with /)
-      // and does not redirect to an external origin.
-      const safeSuccessUrl = new URL(successPath, window.location.origin);
+      const safeSuccessUrl = new URL(result.successPath, window.location.origin);
       if (safeSuccessUrl.origin !== window.location.origin) {
         throw new Error('Redirecionamento bloqueado: destino externo detectado.');
       }
       const safeHref = safeSuccessUrl.href;
-      if (payMethod === 'card') {
-        setSuccessOrderNumber(orderNumber);
-        setShowSuccess(true);
-        redirectTimer.current = window.setTimeout(() => {
-          window.location.href = safeHref;
-        }, 1200);
-      } else {
-        window.location.href = safeHref;
+
+      setPixelEvent('Purchase');
+
+      if (result.mode === 'stripe_confirmation') {
+        setSuccessOrderNumber(result.orderNumber);
+        setStripeClientSecret(result.clientSecret);
+        setStripePaymentIntentId(result.paymentIntentId);
+        setStripeReturnUrl(safeHref);
+        return;
       }
+
+      window.location.href = safeHref;
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : 'Erro ao processar o checkout. Tente novamente.',
@@ -372,10 +395,10 @@ export function useCheckoutExperienceSocial({
     discount,
     form,
     installments,
-    mercadoPagoPublicKey,
     payMethod,
     paymentProvider,
     plan?.id,
+    resetStripeConfirmation,
     qty,
     shippingInCents,
     shippingMode,
@@ -438,10 +461,15 @@ export function useCheckoutExperienceSocial({
     headerPrimary,
     headerSecondary,
     popupCouponCode,
+    stripeClientSecret,
+    stripePaymentIntentId,
+    stripeReturnUrl,
     updateField,
     goStep,
     applyCoupon,
     finalizeOrder,
+    handleStripePaymentSuccess,
+    handleStripePaymentError,
     socialIdentity: social.socialIdentity,
     socialLoadingProvider: social.loadingProvider,
     socialError: social.socialError,

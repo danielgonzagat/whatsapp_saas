@@ -28,6 +28,7 @@ let planId = '';
 let planSlug = '';
 let orderId = '';
 let paymentId = '';
+let paymentExternalId = '';
 
 async function api(method: string, path: string, body?: any, authToken?: string) {
   const headers: Record<string, string> = {
@@ -374,7 +375,9 @@ async function main() {
       const order = data.order || data;
       orderId = order.id;
       paymentId = order.payments?.[0]?.id || order.paymentId || '';
-      return `orderId=${orderId}, paymentId=${paymentId}`;
+      paymentExternalId =
+        order.payments?.[0]?.externalId || order.paymentIntentId || order.paymentId || '';
+      return `orderId=${orderId}, paymentId=${paymentId}, paymentExternalId=${paymentExternalId}`;
     }
     return `Order creation returned ${status}: ${JSON.stringify(data).slice(0, 300)}`;
   });
@@ -382,30 +385,27 @@ async function main() {
   // ═══════════════════════════════════════
   // WEBHOOK: SIMULATE PAYMENT
   // ═══════════════════════════════════════
-  await runTest('13. Asaas webhook (payment confirmed)', async () => {
-    if (!orderId && !paymentId) return 'SKIPPED - no order';
+  await runTest('13. Stripe webhook (payment confirmed)', async () => {
+    if (!orderId && !paymentId && !paymentExternalId) return 'SKIPPED - no order';
 
-    // Get the checkout payment record to find its ID (webhook looks up by externalId)
-    const orderRes = await api('GET', `/checkout/orders/${orderId}`, undefined, token);
-    const payments = orderRes.data?.payments || [];
-    const checkoutPaymentId = payments[0]?.id || '';
-    const externalId = payments[0]?.externalId || `pay_sim_${TS}`;
+    const externalId = paymentExternalId || `pi_sim_${TS}`;
 
-    const { status, data } = await api('POST', '/checkout/webhooks/asaas', {
-      event: 'PAYMENT_CONFIRMED',
-      payment: {
-        id: externalId, // webhook looks up CheckoutPayment by this field
-        customer: 'cus_sim',
-        value: 99.9,
-        netValue: 94.9,
-        status: 'CONFIRMED',
-        billingType: 'PIX',
-        externalReference: checkoutPaymentId || orderId,
-        confirmedDate: new Date().toISOString(),
+    const { status, data } = await api('POST', '/webhook/payment/stripe', {
+      id: `evt_sim_${TS}`,
+      type: 'payment_intent.succeeded',
+      data: {
+        object: {
+          id: externalId,
+          status: 'succeeded',
+          metadata: {
+            workspaceId,
+            kloel_order_id: orderId,
+          },
+        },
       },
     });
     assert(status === 200, `Webhook should return 200, got ${status}: ${JSON.stringify(data)}`);
-    return `Webhook: ${status}, paymentId=${checkoutPaymentId}, externalId=${externalId}, response=${JSON.stringify(data).slice(0, 150)}`;
+    return `Webhook: ${status}, externalId=${externalId}, response=${JSON.stringify(data).slice(0, 150)}`;
   });
 
   // ═══════════════════════════════════════
@@ -414,10 +414,9 @@ async function main() {
   await runTest('14. List sales', async () => {
     const { status, data } = await api('GET', '/sales', undefined, token);
     assert(status === 200, `Sales failed: ${status}`);
-    // If webhook couldn't find payment (no real Asaas), sales will be 0
-    // This is expected — the webhook flow requires real payment provider
+    // Revenue sync can still lag behind in simulation mode; the endpoint shape is the contract here.
     const sales = Array.isArray(data) ? data : data.data || data.sales || [];
-    return `Found ${sales.length} sale(s) — ${sales.length === 0 ? '(expected without real Asaas)' : 'webhook flow works!'}`;
+    return `Found ${sales.length} sale(s)`;
   });
 
   await runTest('15. Sales stats', async () => {

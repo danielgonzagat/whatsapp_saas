@@ -91,7 +91,6 @@ async function bootstrap() {
     `  WhatsApp provider default: ${process.env.WHATSAPP_PROVIDER_DEFAULT || 'meta-cloud'}`,
   );
   console.log(`  Stripe:                    ${integrationStatus('STRIPE_SECRET_KEY')}`);
-  console.log(`  Asaas (webhook auth):      ${integrationStatus('ASAAS_WEBHOOK_TOKEN')}`);
   console.log(
     `  Meta (WhatsApp Business):  ${integrationStatus(['META_APP_ID', 'META_APP_SECRET'])}`,
   );
@@ -241,7 +240,7 @@ async function bootstrap() {
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, X-Meli-Session-Id, x-meli-session-id, x-workspace-id, X-Requested-With',
+      'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id, X-Requested-With',
     );
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
@@ -274,8 +273,6 @@ async function bootstrap() {
       'Cache-Control',
       'Pragma',
       'X-Session-Id',
-      'X-Meli-Session-Id',
-      'x-meli-session-id',
       'x-workspace-id',
       'X-Requested-With',
     ],

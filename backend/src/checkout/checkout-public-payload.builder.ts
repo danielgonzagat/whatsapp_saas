@@ -1,12 +1,10 @@
-import { MercadoPagoService } from '../kloel/mercado-pago.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { applyMercadoPagoPublicCheckoutRestrictions } from './mercado-pago-checkout-policy.util';
+
+const DEFAULT_PLATFORM_FEE_PERCENT = 9.9;
+const DEFAULT_INSTALLMENT_INTEREST_MONTHLY_PERCENT = 3.99;
 
 export class CheckoutPublicPayloadBuilder {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly mercadoPago: MercadoPagoService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async build(
     plan: Record<string, unknown> & {
@@ -24,10 +22,11 @@ export class CheckoutPublicPayloadBuilder {
     const affiliateLink = options?.affiliateLink || null;
     const checkoutLink = options?.checkoutLink || null;
     const checkoutConfig = options?.checkoutConfigOverride || plan.checkoutConfig;
-    const [publicCheckoutConfig, workspace] = await Promise.all([
-      this.mercadoPago.getPublicCheckoutConfig(plan.product.workspaceId),
+    const workspaceId = plan.product.workspaceId;
+
+    const [workspace, sellerStripeAccount] = await Promise.all([
       this.prisma.workspace.findUnique({
-        where: { id: plan.product.workspaceId },
+        where: { id: workspaceId },
         select: {
           id: true,
           name: true,
@@ -49,10 +48,19 @@ export class CheckoutPublicPayloadBuilder {
           },
         },
       }),
+      this.prisma.connectAccountBalance.findFirst({
+        where: {
+          workspaceId,
+          accountType: 'SELLER',
+        },
+        select: {
+          id: true,
+          stripeAccountId: true,
+        },
+      }),
     ]);
-    const paymentProvider = applyMercadoPagoPublicCheckoutRestrictions(publicCheckoutConfig, {
-      hasAffiliateContext: Boolean(affiliateLink),
-    });
+
+    const publishableKey = String(process.env.STRIPE_PUBLISHABLE_KEY || '').trim() || null;
     const branding =
       workspace?.branding && typeof workspace.branding === 'object'
         ? (workspace.branding as Record<string, unknown>)
@@ -77,9 +85,24 @@ export class CheckoutPublicPayloadBuilder {
       checkoutTemplateName:
         (checkoutLink?.checkout as Record<string, unknown> | undefined)?.name || null,
       checkoutConfig,
-      paymentProvider,
+      paymentProvider: {
+        provider: 'stripe',
+        connected: Boolean(sellerStripeAccount?.stripeAccountId),
+        checkoutEnabled: Boolean(publishableKey),
+        publicKey: publishableKey,
+        unavailableReason: publishableKey
+          ? null
+          : 'Stripe não está configurado no ambiente atual do checkout.',
+        marketplaceFeePercent: DEFAULT_PLATFORM_FEE_PERCENT,
+        installmentInterestMonthlyPercent: DEFAULT_INSTALLMENT_INTEREST_MONTHLY_PERCENT,
+        availablePaymentMethodIds: ['card', 'pix'],
+        availablePaymentMethodTypes: ['card', 'pix'],
+        supportsCreditCard: true,
+        supportsPix: true,
+        supportsBoleto: false,
+      },
       merchant: {
-        workspaceId: workspace?.id || plan.product.workspaceId,
+        workspaceId: workspace?.id || workspaceId,
         workspaceName:
           workspace?.name || checkoutConfig?.brandName || plan.product?.name || 'Kloel',
         companyName:

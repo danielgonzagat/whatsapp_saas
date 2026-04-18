@@ -301,7 +301,7 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
       : undefined,
     paymentProvider: providerRecord
       ? {
-          provider: 'mercado_pago',
+          provider: 'stripe',
           connected: asBoolean(providerRecord.connected),
           checkoutEnabled: asBoolean(providerRecord.checkoutEnabled),
           publicKey: asOptionalString(providerRecord.publicKey) || null,

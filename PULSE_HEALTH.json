@@ -561,7 +561,7 @@
       "file": "backend/src/kloel/mercado-pago.service.ts",
       "line": 331,
       "description": "fetch() call without AbortController/signal timeout",
-      "detail": "const response = await fetch('https://api.mercadopago.com/oauth/token', { — wrap with AbortController and setTimeout to avoid hanging requests",
+      "detail": "const response = await fetch('https://api.legacy-provider.com/oauth/token', { — wrap with AbortController and setTimeout to avoid hanging requests",
       "source": "http-timeout-checker"
     },
     {
@@ -570,7 +570,7 @@
       "file": "backend/src/kloel/mercado-pago.service.ts",
       "line": 636,
       "description": "fetch() call without AbortController/signal timeout",
-      "detail": "const response = await fetch('https://api.mercadopago.com/v1/payment_methods', { — wrap with AbortController and setTimeout to avoid hanging requests",
+      "detail": "const response = await fetch('https://api.legacy-provider.com/v1/payment_methods', { — wrap with AbortController and setTimeout to avoid hanging requests",
       "source": "http-timeout-checker"
     },
     {
@@ -612,7 +612,7 @@
     {
       "type": "IDEMPOTENCY_MISSING",
       "severity": "high",
-      "file": "backend/src/webhooks/asaas-webhook.controller.ts",
+      "file": "backend/src/webhook/payment/stripe-webhook.controller.ts",
       "line": 0,
       "description": "Webhook handler without idempotency check — duplicate webhooks will be processed twice",
       "detail": "Store processed webhook IDs in WebhookEvent model; reject duplicates with 200 (not 409)",
@@ -738,7 +738,7 @@
     {
       "type": "ORDERING_WEBHOOK_OOO",
       "severity": "high",
-      "file": "backend/src/webhooks/asaas-webhook.controller.ts",
+      "file": "backend/src/webhook/payment/stripe-webhook.controller.ts",
       "line": 0,
       "description": "Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state",
       "detail": "Check event.dateCreated/timestamp before applying; reject events older than current entity state",
@@ -2817,7 +2817,7 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/asaas.service.ts",
+      "file": "backend/src/kloel/legacy-payment.service.ts",
       "line": 339,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const dueDate = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
@@ -2826,7 +2826,7 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/asaas.service.ts",
+      "file": "backend/src/kloel/legacy-payment.service.ts",
       "line": 436,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const dueDate = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
@@ -2835,7 +2835,7 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/asaas.service.ts",
+      "file": "backend/src/kloel/legacy-payment.service.ts",
       "line": 538,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "dueDate: new Date().toISOString().split('T')[0], — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
@@ -2844,7 +2844,7 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/asaas.service.ts",
+      "file": "backend/src/kloel/legacy-payment.service.ts",
       "line": 638,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "paidAt: new Date(payment.confirmedDate || payment.paymentDate), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
@@ -4707,19 +4707,19 @@
     {
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
-      "file": "backend/src/kloel/asaas.service.ts",
+      "file": "backend/src/kloel/legacy-payment.service.ts",
       "line": 105,
-      "description": "Environment variable ASAAS_API_KEY is referenced but not documented in .env.example",
-      "detail": "Add ASAAS_API_KEY= to .env.example with a description comment",
+      "description": "Environment variable STRIPE_SECRET_KEY is referenced but not documented in .env.example",
+      "detail": "Add STRIPE_SECRET_KEY= to .env.example with a description comment",
       "source": "env-checker"
     },
     {
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
-      "file": "backend/src/kloel/asaas.service.ts",
+      "file": "backend/src/kloel/legacy-payment.service.ts",
       "line": 110,
-      "description": "Environment variable ASAAS_ENVIRONMENT is referenced but not documented in .env.example",
-      "detail": "Add ASAAS_ENVIRONMENT= to .env.example with a description comment",
+      "description": "Environment variable STRIPE_ENVIRONMENT is referenced but not documented in .env.example",
+      "detail": "Add STRIPE_ENVIRONMENT= to .env.example with a description comment",
       "source": "env-checker"
     },
     {
@@ -5805,7 +5805,7 @@
     {
       "type": "PRISMA_ANY_ACCESS",
       "severity": "medium",
-      "file": "backend/src/kloel/asaas.service.ts",
+      "file": "backend/src/kloel/legacy-payment.service.ts",
       "line": 670,
       "description": "Prisma accessed via untyped `prismaAny` or `(this.prisma as any)` — model not yet in generated schema",
       "detail": "await (this.prisma as any).kloelSale",
@@ -5814,7 +5814,7 @@
     {
       "type": "PRISMA_ANY_ACCESS",
       "severity": "medium",
-      "file": "backend/src/kloel/asaas.service.ts",
+      "file": "backend/src/kloel/legacy-payment.service.ts",
       "line": 679,
       "description": "Prisma accessed via untyped `prismaAny` or `(this.prisma as any)` — model not yet in generated schema",
       "detail": "await (this.prisma as any).kloelSale",

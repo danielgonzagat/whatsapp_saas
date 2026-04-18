@@ -119,21 +119,6 @@ export const VISUAL_WALLET_ANTICIPATIONS_FIXTURE = {
   },
 };
 
-export const VISUAL_MERCADO_PAGO_STATUS_FIXTURE = {
-  connected: false,
-  provider: 'mercado_pago',
-  checkoutEnabled: false,
-  platformManaged: true,
-  reason: 'not_connected',
-  marketplaceFeePercent: 0,
-  seller: null,
-  publicKey: null,
-  liveMode: false,
-  connectedAt: null,
-  expiresAt: null,
-  integrationId: null,
-};
-
 export const VISUAL_DASHBOARD_HOME_FIXTURE = {
   generatedAt: VISUAL_FIXED_TIME_ISO,
   range: {

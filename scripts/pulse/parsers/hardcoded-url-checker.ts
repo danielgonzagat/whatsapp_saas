@@ -7,7 +7,8 @@ import { walkFiles } from './utils';
 const URL_RE = /https?:\/\/([a-zA-Z0-9.\-]+)/g;
 
 // Internal / infrastructure hostnames — these must not appear in source code
-const INTERNAL_DOMAIN_RE = /\b(railway\.app|vercel\.app|herokuapp\.com|localhost|127\.0\.0\.1|0\.0\.0\.0)\b/i;
+const INTERNAL_DOMAIN_RE =
+  /\b(railway\.app|vercel\.app|herokuapp\.com|localhost|127\.0\.0\.1|0\.0\.0\.0)\b/i;
 
 // Production / branded URLs — lower severity but still worth flagging
 const PROD_DOMAIN_RE = /\b(kloel\.com|api\.kloel\.com)\b/i;
@@ -24,7 +25,6 @@ const ALLOWED_EXTERNAL_RE = new RegExp(
     'openai\\.com',
     'anthropic\\.com',
     'stripe\\.com',
-    'asaas\\.com',
     'twilio\\.com',
     'meta\\.com',
     'facebook\\.com',
@@ -36,7 +36,7 @@ const ALLOWED_EXTERNAL_RE = new RegExp(
     'prisma\\.io',
     'nestjs\\.com',
     'nextjs\\.org',
-    'vercel\\.com',       // vercel.com docs ≠ vercel.app deployment
+    'vercel\\.com', // vercel.com docs ≠ vercel.app deployment
     'cloudflare\\.com',
     'sentry\\.io',
     'datadog\\.com',
@@ -76,11 +76,18 @@ function shouldSkipFile(file: string): boolean {
 }
 
 function isCommentLine(trimmed: string): boolean {
-  return trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*') || trimmed.startsWith('#');
+  return (
+    trimmed.startsWith('//') ||
+    trimmed.startsWith('*') ||
+    trimmed.startsWith('/*') ||
+    trimmed.startsWith('#')
+  );
 }
 
 function isImportLine(trimmed: string): boolean {
-  return /^\s*(?:import|export)\s+/.test(trimmed) || /^\s*(?:from|require)\s*\(?\s*['"`]/.test(trimmed);
+  return (
+    /^\s*(?:import|export)\s+/.test(trimmed) || /^\s*(?:from|require)\s*\(?\s*['"`]/.test(trimmed)
+  );
 }
 
 function isConfigDocLine(file: string): boolean {
@@ -138,12 +145,14 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
               // Explicit fallback patterns: `|| 'http://localhost'` or `?? 'http://localhost'`
               /\|\|\s*['"`]|(?:\?\?)\s*['"`]/.test(raw) ||
               // Process.env usage on same line or within preceding lines (multi-line fallback chain)
-              /process\.env/.test(raw) || /process\.env/.test(prevLines) ||
+              /process\.env/.test(raw) ||
+              /process\.env/.test(prevLines) ||
               // new URL(path, base) — 127.0.0.1 as base for URL parsing (standard Node.js pattern)
               /new\s+URL\s*\(/.test(raw) ||
               // ConfigService/config.get() with default — `.get('KEY', 'http://localhost')`
               // Single-line: `.get('KEY', 'http://localhost')` OR multi-line split
-              /\.get\s*\([^)]+,\s*['"`]http/.test(raw) || /configService\.get|this\.config\.get|config\.get/.test(prevLines) ||
+              /\.get\s*\([^)]+,\s*['"`]http/.test(raw) ||
+              /configService\.get|this\.config\.get|config\.get/.test(prevLines) ||
               // Joi schema defaults — `Joi.string().default('http://localhost')`
               /Joi\.|\.default\s*\(/.test(raw) ||
               // CORS allowed origins list / gateway configuration (current or preceding lines)
@@ -155,10 +164,13 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
               /hostname.*localhost|localhost.*hostname/i.test(raw) ||
               /hostname.*localhost|localhost.*hostname/i.test(prevLines) ||
               // Stripe/external tool URL construction with env fallback
-              /NEXT_PUBLIC_APP_URL|FRONTEND_URL|APP_URL|BACKEND_URL|API_URL|SERVICE_BASE/i.test(raw) ||
+              /NEXT_PUBLIC_APP_URL|FRONTEND_URL|APP_URL|BACKEND_URL|API_URL|SERVICE_BASE/i.test(
+                raw,
+              ) ||
               // Return statement inside a getServerApiBase-style function (check prev lines for function name)
               /getServerApiBase|getApiBase|getBackendBase/i.test(prevLines)
-            ) continue;
+            )
+              continue;
           }
 
           // Skip vercel.app / railway.app deployment URLs in CORS configuration context
@@ -167,7 +179,8 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
             if (
               /cors|allowedOrigins|Set\s*\(\[/i.test(prevLines4) ||
               /cors|origin|allowedOrigins/i.test(raw)
-            ) continue;
+            )
+              continue;
           }
 
           if (INTERNAL_DOMAIN_RE.test(domain)) {
@@ -187,7 +200,8 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
               // Explicit fallback operator on same line: `|| 'https://kloel.com'` or `?? 'https://kloel.com'`
               /\|\|\s*['"`]|(?:\?\?)\s*['"`]/.test(raw) ||
               // process.env reference on same line or preceding lines
-              /process\.env/.test(raw) || /process\.env/.test(prevLinesProd) ||
+              /process\.env/.test(raw) ||
+              /process\.env/.test(prevLinesProd) ||
               // ConfigService / Joi schema defaults
               /\.get\s*\([^)]+,\s*['"`]http/.test(raw) ||
               /configService\.get|this\.config\.get|config\.get/.test(prevLinesProd) ||
@@ -195,7 +209,8 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
               // CORS / gateway allowed origins
               /cors|origin|gateway|allowedOrigins|Set\s*\(/i.test(raw) ||
               /cors|allowedOrigins|Set\s*\(\[/i.test(prevLinesProd)
-            ) continue;
+            )
+              continue;
 
             breaks.push({
               type: 'HARDCODED_PROD_URL',

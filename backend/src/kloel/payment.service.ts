@@ -1,9 +1,28 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
+import { StripeService } from '../billing/stripe.service';
+import type { StripePaymentIntent } from '../billing/stripe-types';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { AsaasService } from './asaas.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
+
+interface PixDisplayQrCode {
+  data?: string | null;
+  image_url_png?: string | null;
+  hosted_instructions_url?: string | null;
+}
+
+interface PixNextAction {
+  type?: string | null;
+  pix_display_qr_code?: PixDisplayQrCode | null;
+}
+
+type KloelSaleMetadata = {
+  companyName?: string;
+  pixQrCodeUrl?: string | null;
+  pixCopyPaste?: string | null;
+  pixHostedInstructionsUrl?: string | null;
+};
 
 interface PaymentWebhookPayload {
   id?: string;
@@ -19,7 +38,7 @@ export class PaymentService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly asaas: AsaasService,
+    private readonly stripeService: StripeService,
     private readonly auditService: AuditService,
     private readonly financialAlert: FinancialAlertService,
   ) {
@@ -34,6 +53,7 @@ export class PaymentService {
     leadId: string;
     customerName: string;
     customerPhone: string;
+    customerEmail?: string;
     amount: number;
     description: string;
   }): Promise<{
@@ -44,16 +64,35 @@ export class PaymentService {
     paymentLink?: string;
     status: string;
   }> {
-    // Primeiro tenta Asaas (real). Se não estiver conectado, cai para fallback interno.
     try {
-      const payment = await this.asaas.createPixPayment(data.workspaceId, {
-        customerName: data.customerName,
-        customerPhone: data.customerPhone,
-        amount: data.amount,
+      const amountInCents = Math.round(data.amount * 100);
+      const paymentIntent = (await this.stripeService.stripe.paymentIntents.create({
+        amount: amountInCents,
+        currency: 'brl',
+        confirm: true,
+        payment_method_types: ['pix'],
+        payment_method_data: {
+          type: 'pix',
+        },
+        metadata: {
+          type: 'kloel_payment',
+          workspaceId: data.workspaceId,
+          leadId: data.leadId,
+          customerName: data.customerName,
+          customerPhone: data.customerPhone,
+          customerEmail: data.customerEmail || '',
+        },
         description: data.description,
-        externalReference: data.leadId,
-        idempotencyKey: `kloel-pay:${data.workspaceId}:${data.leadId}`,
+      })) as StripePaymentIntent;
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: data.workspaceId },
+        select: { name: true },
       });
+      const nextAction = paymentIntent.next_action as PixNextAction | null | undefined;
+      const pixData =
+        nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
+      const paymentLink =
+        pixData?.hosted_instructions_url || pixData?.image_url_png || pixData?.data || undefined;
 
       await this.prisma.kloelSale.create({
         data: {
@@ -61,24 +100,30 @@ export class PaymentService {
           status: 'pending',
           amount: data.amount,
           paymentMethod: 'PIX',
-          paymentLink: payment.pixQrCodeUrl || payment.pixCopyPaste,
-          externalPaymentId: payment.id,
+          paymentLink,
+          externalPaymentId: paymentIntent.id,
           workspaceId: data.workspaceId,
+          metadata: {
+            companyName: workspace?.name || undefined,
+            pixQrCodeUrl: pixData?.image_url_png || null,
+            pixCopyPaste: pixData?.data || null,
+            pixHostedInstructionsUrl: pixData?.hosted_instructions_url || null,
+          },
         },
       });
 
       return {
-        id: payment.id,
-        invoiceUrl: payment.pixQrCodeUrl,
-        pixQrCodeUrl: payment.pixQrCodeUrl,
-        pixCopyPaste: payment.pixCopyPaste,
-        paymentLink: payment.pixQrCodeUrl || payment.pixCopyPaste,
-        status: payment.status,
+        id: paymentIntent.id,
+        invoiceUrl: pixData?.hosted_instructions_url || undefined,
+        pixQrCodeUrl: pixData?.image_url_png || undefined,
+        pixCopyPaste: pixData?.data || undefined,
+        paymentLink,
+        status: paymentIntent.status,
       };
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Asaas indisponível: ${errInstanceofError?.message}`);
+      this.logger.error(`Stripe indisponível: ${errInstanceofError?.message}`);
       this.financialAlert.paymentFailed(errInstanceofError, {
         workspaceId: data.workspaceId,
       });
@@ -96,6 +141,7 @@ export class PaymentService {
     });
 
     if (!sale) return null;
+    const metadata = ((sale.metadata as Record<string, unknown> | null) || {}) as KloelSaleMetadata;
 
     const status =
       typeof sale.status === 'string'
@@ -114,10 +160,12 @@ export class PaymentService {
       createdAt: sale.createdAt,
       paidAt: sale.paidAt,
       // Campos de pagamento só quando ainda faz sentido expor
-      pixQrCodeUrl: includePaymentDetails ? sale.paymentLink : undefined,
-      pixCopyPaste: includePaymentDetails ? sale.paymentLink : undefined,
-      paymentLink: includePaymentDetails ? sale.paymentLink : undefined,
-      companyName: ((sale.metadata as Record<string, unknown>)?.companyName as string) || undefined,
+      pixQrCodeUrl: includePaymentDetails ? metadata.pixQrCodeUrl || undefined : undefined,
+      pixCopyPaste: includePaymentDetails ? metadata.pixCopyPaste || undefined : undefined,
+      paymentLink: includePaymentDetails
+        ? metadata.pixHostedInstructionsUrl || sale.paymentLink || undefined
+        : undefined,
+      companyName: metadata.companyName || undefined,
     };
   }
 

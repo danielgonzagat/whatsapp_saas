@@ -112,7 +112,6 @@ export class CheckoutPublicController {
     @Body() dto: CreateOrderDto,
     @Ip() ip: string,
     @Headers('user-agent') userAgent: string,
-    @Headers('x-meli-session-id') meliSessionId: string,
     @Headers('x-request-id') requestId?: string,
     @Headers('x-correlation-id') correlationId?: string,
   ) {
@@ -121,7 +120,6 @@ export class CheckoutPublicController {
       shippingAddress: dto.shippingAddress as Prisma.InputJsonValue,
       ipAddress: ip,
       userAgent,
-      meliSessionId,
       correlationId: this.resolveCorrelationId(requestId, correlationId),
     });
   }

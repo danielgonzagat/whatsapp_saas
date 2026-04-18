@@ -125,60 +125,6 @@ const envSchema = z.object({
     .optional()
     .describe('Stripe restricted key (rk_test_* or rk_live_*) for scoped automation'),
   STRIPE_WEBHOOK_SECRET: z.string().optional().describe('Stripe webhook signing secret'),
-  ASAAS_API_KEY: z
-    .string()
-    .optional()
-    .describe('Platform-managed Asaas API key used internally by Kloel'),
-  ASAAS_ENVIRONMENT: z
-    .enum(['sandbox', 'production'])
-    .optional()
-    .describe('Environment for the platform-managed Asaas integration'),
-  MERCADOPAGO_ACCESS_TOKEN: z.string().optional().describe('Mercado Pago access token'),
-  MERCADOPAGO_PUBLIC_KEY: z.string().optional().describe('Mercado Pago public key'),
-  MERCADOPAGO_CLIENT_ID: z.string().optional().describe('Mercado Pago OAuth client id'),
-  MERCADOPAGO_CLIENT_SECRET: z.string().optional().describe('Mercado Pago OAuth client secret'),
-  MERCADOPAGO_CONNECTION_MODE: z
-    .enum(['oauth', 'platform_managed'])
-    .optional()
-    .describe('Mercado Pago connection mode for Kloel checkout'),
-  MERCADOPAGO_OAUTH_REDIRECT_URI: z
-    .string()
-    .url()
-    .optional()
-    .describe('Fixed public OAuth callback URL for Mercado Pago'),
-  MERCADOPAGO_NOTIFICATION_URL: z
-    .string()
-    .url()
-    .optional()
-    .describe('Fixed public notification URL for Mercado Pago payment events'),
-  MERCADOPAGO_PLATFORM_ID: z
-    .string()
-    .optional()
-    .describe('Mercado Pago platform id for marketplace-grade integrations'),
-  MERCADOPAGO_INTEGRATOR_ID: z
-    .string()
-    .optional()
-    .describe('Mercado Pago integrator id provided by Mercado Pago'),
-  MERCADOPAGO_CORPORATION_ID: z
-    .string()
-    .optional()
-    .describe('Mercado Pago corporation id when required by the account'),
-  MERCADOPAGO_3DS_VALIDATION: z
-    .enum(['always', 'on_fraud_risk', 'never'])
-    .optional()
-    .describe('Mercado Pago 3DS validation policy'),
-  MERCADOPAGO_3DS_LIABILITY_SHIFT: z
-    .enum(['required', 'preferred'])
-    .optional()
-    .describe('Mercado Pago 3DS liability shift policy'),
-  MERCADOPAGO_PAYMENT_3DS_MODE: z
-    .enum(['optional', 'mandatory'])
-    .optional()
-    .describe('Mercado Pago Payment API 3DS mode'),
-  MERCADOPAGO_WEBHOOK_SECRET: z
-    .string()
-    .optional()
-    .describe('Mercado Pago webhook secret signature key'),
 
   // ========================
   // WEBHOOKS

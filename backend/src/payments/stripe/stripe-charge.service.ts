@@ -65,6 +65,11 @@ export class StripeChargeService {
         amount,
         currency: input.currency.toLowerCase(),
         payment_method_types: paymentMethodTypes,
+        ...(input.confirm ? { confirm: true } : {}),
+        ...(input.paymentMethodData ? { payment_method_data: input.paymentMethodData } : {}),
+        ...(input.paymentMethodOptions
+          ? { payment_method_options: input.paymentMethodOptions }
+          : {}),
         on_behalf_of: input.sellerStripeAccountId,
         application_fee_amount: applicationFee,
         transfer_data: { destination: input.sellerStripeAccountId },
@@ -103,6 +108,7 @@ export class StripeChargeService {
       transferGroup,
       split,
       splitInput,
+      stripePaymentIntent: intent,
     };
   }
 }

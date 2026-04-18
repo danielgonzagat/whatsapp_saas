@@ -6,7 +6,7 @@
  * No live infrastructure required.
  *
  * BREAK TYPES:
- *   CHAOS_ASAAS_NO_FALLBACK (high)   — Asaas calls have no error/catch handling
+ *   CHAOS_STRIPE_NO_FALLBACK (high)  — Stripe calls have no error/catch handling
  *   CHAOS_LLM_NO_FALLBACK (high)     — LLM calls lack timeout or fallback response
  *   CHAOS_WHATSAPP_MSG_LOST (high)   — no WhatsApp disconnect/reconnect handler found
  */
@@ -28,60 +28,60 @@ export function checkChaosThirdParty(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const backendFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    f => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
+    (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
   );
   const workerFiles = walkFiles(config.workerDir, ['.ts']).filter(
-    f => !/\.(spec|test)\.ts$|__tests__|__mocks__/.test(f),
+    (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__/.test(f),
   );
 
-  // ── CHECK 1: Asaas error handling ────────────────────────────────────────────
-  // Find files that interact with Asaas (payment gateway)
-  const asaasFiles = backendFiles.filter(f => {
+  // ── CHECK 1: Stripe error handling ───────────────────────────────────────────
+  // Find files that interact with Stripe (payment rail)
+  const stripeFiles = backendFiles.filter((f) => {
     const content = readSafe(f);
-    return /asaas|ASAAS/i.test(content) && /fetch\s*\(|axios\.|httpService/i.test(content);
+    return /stripe|STRIPE/i.test(content) && /fetch\s*\(|axios\.|httpService/i.test(content);
   });
 
-  const hasAsaasFallback = asaasFiles.some(f => {
+  const hasStripeFallback = stripeFiles.some((f) => {
     const content = readSafe(f);
-    // Check for try/catch around Asaas calls, or .catch() chaining
+    // Check for try/catch around Stripe calls, or .catch() chaining
     return (
-      /try\s*\{[\s\S]{0,1000}asaas[\s\S]{0,500}\}\s*catch/i.test(content) ||
-      /asaas[\s\S]{0,200}\.catch\s*\(/i.test(content) ||
-      /catch\s*\([^)]*\)[\s\S]{0,200}asaas/i.test(content)
+      /try\s*\{[\s\S]{0,1000}stripe[\s\S]{0,500}\}\s*catch/i.test(content) ||
+      /stripe[\s\S]{0,200}\.catch\s*\(/i.test(content) ||
+      /catch\s*\([^)]*\)[\s\S]{0,200}stripe/i.test(content)
     );
   });
 
-  if (asaasFiles.length > 0 && !hasAsaasFallback) {
+  if (stripeFiles.length > 0 && !hasStripeFallback) {
     breaks.push({
-      type: 'CHAOS_ASAAS_NO_FALLBACK',
+      type: 'CHAOS_STRIPE_NO_FALLBACK',
       severity: 'high',
-      file: path.relative(config.rootDir, asaasFiles[0]),
+      file: path.relative(config.rootDir, stripeFiles[0]),
       line: 1,
-      description: 'Asaas payment calls found without error/catch fallback',
+      description: 'Stripe payment calls found without error/catch fallback',
       detail:
-        'Wrap all Asaas HTTP calls in try/catch. On failure, set Order status=PENDING ' +
+        'Wrap all Stripe HTTP calls in try/catch. On failure, set Order status=PENDING ' +
         'and enqueue a retry job with exponential backoff instead of failing the request.',
     });
   }
 
   // ── CHECK 2: LLM timeout and fallback ────────────────────────────────────────
   // Find files that call OpenAI / Anthropic
-  const llmFiles = backendFiles.filter(f => {
+  const llmFiles = backendFiles.filter((f) => {
     const content = readSafe(f);
     return /openai|anthropic|completions\.create|chat\.completions/i.test(content);
   });
 
-  const hasLlmTimeout = llmFiles.some(f => {
+  const hasLlmTimeout = llmFiles.some((f) => {
     const content = readSafe(f);
     // Check for explicit timeout configuration
     return /timeout\s*:|max_tokens\s*:|AbortSignal|AbortController|signal\s*:/i.test(content);
   });
 
-  const hasLlmFallback = llmFiles.some(f => {
+  const hasLlmFallback = llmFiles.some((f) => {
     const content = readSafe(f);
     // Check for fallback response / degraded state handling
-    return (
-      /fallback|degraded|indispon[íi]vel|catch\s*\([^)]*\)[\s\S]{0,300}(?:return|throw)/i.test(content)
+    return /fallback|degraded|indispon[íi]vel|catch\s*\([^)]*\)[\s\S]{0,300}(?:return|throw)/i.test(
+      content,
     );
   });
 
@@ -113,17 +113,19 @@ export function checkChaosThirdParty(config: PulseConfig): Break[] {
 
   // ── CHECK 3: WhatsApp disconnect handler ─────────────────────────────────────
   // Find files that manage WhatsApp sessions and check for disconnect handling
-  const waFiles = [...workerFiles, ...backendFiles].filter(f => {
+  const waFiles = [...workerFiles, ...backendFiles].filter((f) => {
     const content = readSafe(f);
     return /whatsapp|wppconnect|baileys|puppeteer.*browser/i.test(content);
   });
 
-  const hasDisconnectHandler = waFiles.some(f => {
+  const hasDisconnectHandler = waFiles.some((f) => {
     const content = readSafe(f);
     return (
       /disconnect|DISCONNECTED|onDisconnect|reconnect/i.test(content) &&
       // Must actually handle it (not just detect the type)
-      /(?:disconnect|DISCONNECTED)[\s\S]{0,500}(?:reconnect|retry|queue|emit|logger|throw)/i.test(content)
+      /(?:disconnect|DISCONNECTED)[\s\S]{0,500}(?:reconnect|retry|queue|emit|logger|throw)/i.test(
+        content,
+      )
     );
   });
 

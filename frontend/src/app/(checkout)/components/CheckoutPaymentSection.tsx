@@ -2,6 +2,7 @@
 
 import { useId, type Dispatch, type SetStateAction } from 'react';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
+import { StripePaymentElement } from './StripePaymentElement';
 import { Bc, Cc, Px, ValidationInput } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 
@@ -35,6 +36,10 @@ type Props = {
   submitError: string;
   isSubmitting: boolean;
   finalizeOrder: () => void | Promise<void>;
+  stripeClientSecret?: string | null;
+  stripeReturnUrl?: string;
+  onStripeSuccess?: () => void;
+  onStripeError?: (message: string) => void;
 };
 
 export function CheckoutPaymentSection(props: Props) {
@@ -56,6 +61,10 @@ export function CheckoutPaymentSection(props: Props) {
     submitError,
     isSubmitting,
     finalizeOrder,
+    stripeClientSecret,
+    stripeReturnUrl,
+    onStripeSuccess,
+    onStripeError,
   } = props;
   const labelStyle = {
     display: 'block',
@@ -101,7 +110,16 @@ export function CheckoutPaymentSection(props: Props) {
             title="Cartão de crédito"
             onClick={() => setPayMethod('card')}
           >
-            {renderCardForm(theme, labelStyle, form, updateField, installmentOptions, fid)}
+            {payMethod === 'card' && stripeClientSecret && stripeReturnUrl ? (
+              <StripePaymentElement
+                clientSecret={stripeClientSecret}
+                returnUrl={stripeReturnUrl}
+                onSuccess={onStripeSuccess}
+                onError={onStripeError}
+              />
+            ) : (
+              renderCardForm(theme, labelStyle, form, updateField, installmentOptions, fid)
+            )}
           </PaymentOption>
         ) : null}
         {supportsPix ? (
@@ -137,23 +155,25 @@ export function CheckoutPaymentSection(props: Props) {
         {submitError && step === 3 ? (
           <div style={{ marginTop: 14, fontSize: 13, color: theme.errorText }}>{submitError}</div>
         ) : null}
-        <button
-          type="button"
-          onClick={() => void finalizeOrder()}
-          style={{
-            width: '100%',
-            marginTop: 20,
-            padding: 16,
-            background: theme.accent,
-            border: 'none',
-            borderRadius: theme.input.radius,
-            color: theme.buttonText,
-            fontSize: 18,
-            fontWeight: 700,
-          }}
-        >
-          {isSubmitting ? 'Processando...' : config?.btnFinalizeText || 'Finalizar compra'}
-        </button>
+        {!(payMethod === 'card' && stripeClientSecret && stripeReturnUrl) ? (
+          <button
+            type="button"
+            onClick={() => void finalizeOrder()}
+            style={{
+              width: '100%',
+              marginTop: 20,
+              padding: 16,
+              background: theme.accent,
+              border: 'none',
+              borderRadius: theme.input.radius,
+              color: theme.buttonText,
+              fontSize: 18,
+              fontWeight: 700,
+            }}
+          >
+            {isSubmitting ? 'Processando...' : config?.btnFinalizeText || 'Finalizar compra'}
+          </button>
+        ) : null}
       </div>
     </div>
   );

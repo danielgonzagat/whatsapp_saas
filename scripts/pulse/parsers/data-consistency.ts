@@ -51,7 +51,7 @@ const FINANCIAL_SERVICE_PATTERNS = [
   /billing.*\.service\.ts$/i,
   /payment.*\.service\.ts$/i,
   /order.*\.service\.ts$/i,
-  /asaas.*\.service\.ts$/i,
+  /stripe.*\.service\.ts$/i,
 ];
 
 // Patterns that indicate Prisma CREATE operations (prisma accessor pattern, not Stripe/external APIs)
@@ -69,7 +69,9 @@ const VALIDATION_READS = ['findFirst(', 'findUnique(', 'findMany(', 'count('];
  * Extract function bodies from TypeScript source.
  * Simple heuristic: find async method declarations and track brace depth.
  */
-function extractFunctionBodies(content: string): Array<{ name: string; body: string; startLine: number }> {
+function extractFunctionBodies(
+  content: string,
+): Array<{ name: string; body: string; startLine: number }> {
   const functions: Array<{ name: string; body: string; startLine: number }> = [];
   const lines = content.split('\n');
 
@@ -89,7 +91,10 @@ function extractFunctionBodies(content: string): Array<{ name: string; body: str
       while (j < lines.length) {
         const l = lines[j];
         for (const ch of l) {
-          if (ch === '{') { braceDepth++; started = true; }
+          if (ch === '{') {
+            braceDepth++;
+            started = true;
+          }
           if (ch === '}') braceDepth--;
         }
         body += l + '\n';
@@ -111,23 +116,27 @@ function extractFunctionBodies(content: string): Array<{ name: string; body: str
  * Check if a function body performs a create operation without a prior read/validation.
  * writePatterns are regex strings; readKeywords are plain strings.
  */
-function hasWriteWithoutValidation(body: string, writePatterns: string[], readKeywords: string[]): boolean {
-  const hasWrite = writePatterns.some(pattern => new RegExp(pattern).test(body));
+function hasWriteWithoutValidation(
+  body: string,
+  writePatterns: string[],
+  readKeywords: string[],
+): boolean {
+  const hasWrite = writePatterns.some((pattern) => new RegExp(pattern).test(body));
   if (!hasWrite) return false;
 
   // Determine the index of the first write operation in the body
   const firstWriteIdx = Math.min(
     ...writePatterns
-      .map(pattern => {
+      .map((pattern) => {
         const m = body.search(new RegExp(pattern));
         return m === -1 ? Infinity : m;
       })
-      .filter(idx => idx !== Infinity)
+      .filter((idx) => idx !== Infinity),
   );
   if (firstWriteIdx === Infinity) return false;
 
   // Check for validation reads that happen before the first write
-  const hasValidation = readKeywords.some(kw => {
+  const hasValidation = readKeywords.some((kw) => {
     const readIdx = body.indexOf(kw);
     return readIdx !== -1 && readIdx < firstWriteIdx;
   });
@@ -139,10 +148,11 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
-  const financialFiles = backendFiles.filter(file =>
-    FINANCIAL_SERVICE_PATTERNS.some(p => p.test(file)) &&
-    !file.includes('.spec.') &&
-    !file.includes('.test.')
+  const financialFiles = backendFiles.filter(
+    (file) =>
+      FINANCIAL_SERVICE_PATTERNS.some((p) => p.test(file)) &&
+      !file.includes('.spec.') &&
+      !file.includes('.test.'),
   );
 
   for (const file of financialFiles) {
@@ -169,22 +179,26 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
         if (/checkout|order/i.test(fileName)) {
           breakType = 'DATA_PRODUCT_NO_PLAN';
           description = `Checkout/order creation without prior plan/product validation in ${fileName}`;
-          detail = `Function '${fn.name}' performs a write operation without a findFirst/findUnique guard. ` +
+          detail =
+            `Function '${fn.name}' performs a write operation without a findFirst/findUnique guard. ` +
             `An order could be created for a non-existent or inactive plan.`;
         } else if (/wallet|payment/i.test(fileName)) {
           breakType = 'DATA_ORDER_NO_PAYMENT';
           description = `Financial write without existence check in ${fileName}`;
-          detail = `Function '${fn.name}' creates or updates a financial record without first validating ` +
+          detail =
+            `Function '${fn.name}' creates or updates a financial record without first validating ` +
             `the referenced entity exists. This can create orphaned payment records.`;
         } else if (/billing|subscription/i.test(fileName)) {
           breakType = 'DATA_PRODUCT_NO_PLAN';
           description = `Billing operation without plan validation in ${fileName}`;
-          detail = `Function '${fn.name}' creates a subscription or billing record without first checking ` +
+          detail =
+            `Function '${fn.name}' creates a subscription or billing record without first checking ` +
             `the plan exists and is active. Subscriptions may reference deleted plans.`;
         } else {
           breakType = 'DATA_WORKSPACE_NO_OWNER';
           description = `Financial write without validation in ${fileName}`;
-          detail = `Function '${fn.name}' in ${fileName} performs write operation(s) without ` +
+          detail =
+            `Function '${fn.name}' in ${fileName} performs write operation(s) without ` +
             `a prior findFirst/findUnique validation. May violate business rule constraints.`;
         }
 
@@ -201,9 +215,7 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
 
     // Check wallet service specifically: withdrawal must validate balance
     if (/wallet/i.test(fileName)) {
-      const withdrawFns = functions.filter(fn =>
-        /withdraw|saque|debit|deduct/i.test(fn.name)
-      );
+      const withdrawFns = functions.filter((fn) => /withdraw|saque|debit|deduct/i.test(fn.name));
       for (const fn of withdrawFns) {
         const hasBalanceCheck =
           /balance|saldo|amount.*<=|>=.*amount|findFirst|findUnique/i.test(fn.body) &&
@@ -215,7 +227,8 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
             file,
             line: fn.startLine,
             description: `Withdrawal function '${fn.name}' may not validate balance atomically`,
-            detail: `wallet.service: '${fn.name}' does not appear to use a Prisma $transaction with balance validation. ` +
+            detail:
+              `wallet.service: '${fn.name}' does not appear to use a Prisma $transaction with balance validation. ` +
               `Race conditions can cause overdraft — two concurrent withdrawals may both pass the balance check.`,
           });
         }
@@ -224,7 +237,7 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
 
     // Check workspace creation: must create OWNER member record
     if (/workspace.*service/i.test(fileName)) {
-      const createFns = functions.filter(fn => /create/i.test(fn.name));
+      const createFns = functions.filter((fn) => /create/i.test(fn.name));
       for (const fn of createFns) {
         const hasOwnerCreation = /OWNER|role.*owner|owner.*role/i.test(fn.body);
         if (!hasOwnerCreation && fn.body.includes('create(')) {
@@ -234,7 +247,8 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
             file,
             line: fn.startLine,
             description: `Workspace creation in '${fn.name}' does not create an OWNER member`,
-            detail: `workspace.service: '${fn.name}' creates a workspace but does not appear to create a ` +
+            detail:
+              `workspace.service: '${fn.name}' creates a workspace but does not appear to create a ` +
               `WorkspaceMember with role=OWNER. The workspace will be orphaned with no admin.`,
           });
         }

@@ -617,7 +617,7 @@ model Vector {
 // --- OMNICHANNEL INTEGRATIONS ---
 model Integration {
   id          String   @id @default(uuid())
-  type        String   // INSTAGRAM, MERCADO_PAGO, STRIPE, GOOGLE_CALENDAR
+  type        String   // INSTAGRAM, STRIPE, GOOGLE_CALENDAR
   name        String
   credentials Json     // Encrypted keys
   isActive    Boolean  @default(true)
@@ -1227,7 +1227,7 @@ model WebhookSubscription {
 
 model WebhookEvent {
   id          String   @id @default(uuid())
-  provider    String   // asaas, stripe, checkout
+  provider    String   // stripe, checkout
   eventType   String
   externalId  String
   payload     Json
@@ -2136,7 +2136,7 @@ model Payment {
   workspaceId    String
   workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   externalId     String
-  provider       String    // "asaas", "stripe", etc.
+  provider       String    // "stripe", etc.
   status         String    @default("PENDING") // PENDING, CONFIRMED, RECEIVED, REFUNDED, CANCELLED
   amount         Float
   currency       String    @default("BRL")

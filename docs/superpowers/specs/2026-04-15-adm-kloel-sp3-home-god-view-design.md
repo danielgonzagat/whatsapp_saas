@@ -87,7 +87,7 @@ GET /admin/dashboard/home?period=TODAY|7D|30D|90D|12M|CUSTOM&from=ISO&to=ISO&com
     "churnRate": { "value": null, "unavailableReason": "cohort_definition_pending" }
   },
   "breakdowns": {
-    "byGateway": [ { "gateway": "asaas", "gmvInCents": 98765400 }, ... ],
+    "byGateway": [ { "gateway": "legacy-payment", "gmvInCents": 98765400 }, ... ],
     "byMethod": [ { "method": "PIX", "gmvInCents": 73400000, "count": 84 }, ... ]
   },
   "series": {

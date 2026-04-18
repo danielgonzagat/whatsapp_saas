@@ -6,13 +6,7 @@ import { useCallback, useMemo, useState, type FormEvent, type ReactElement } fro
 import { getStripeClient } from '@/lib/stripe-client';
 
 /**
- * Stripe Payment Element wrapper.
- *
- * Mirrors the prop surface of the legacy `AsaasTokenizer.tsx` so the
- * containing checkout shell can switch implementations without restructuring
- * its layout (regra mestra do CLAUDE.md: preservar a casca). The actual
- * AsaasTokenizer file is kept until FASE 9 cleanup so both paths can coexist
- * during the cutover window.
+ * Stripe Payment Element wrapper for the hosted Kloel checkout runtime.
  *
  * Usage:
  *   <StripePaymentElement

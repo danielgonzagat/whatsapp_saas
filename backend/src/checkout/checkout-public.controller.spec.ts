@@ -69,7 +69,7 @@ describe('CheckoutPublicController', () => {
     expect(correlationId).toBeTruthy();
   });
 
-  it('prefers the explicit correlation header when creating an order', async () => {
+  it('prefers the explicit correlation header when creating an order without forwarding legacy gateway headers', async () => {
     const dto: CreateOrderDto = {
       planId: 'plan_1',
       workspaceId: 'ws_1',
@@ -81,14 +81,7 @@ describe('CheckoutPublicController', () => {
       paymentMethod: 'PIX' as CreateOrderDto['paymentMethod'],
     };
 
-    await controller.createOrder(
-      dto,
-      '127.0.0.1',
-      'Mozilla/5.0',
-      'meli-session-1',
-      'req-header',
-      'corr-header',
-    );
+    await controller.createOrder(dto, '127.0.0.1', 'Mozilla/5.0', 'req-header', 'corr-header');
 
     expect(checkoutService.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -97,7 +90,6 @@ describe('CheckoutPublicController', () => {
         correlationId: 'corr-header',
         ipAddress: '127.0.0.1',
         userAgent: 'Mozilla/5.0',
-        meliSessionId: 'meli-session-1',
       }),
     );
   });

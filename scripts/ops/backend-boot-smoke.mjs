@@ -63,8 +63,8 @@ const STUB_ENV = {
   REDIS_URL: 'redis://127.0.0.1:6379',
   JWT_SECRET: 'boot-smoke-test-secret-32-characters-long-xxx',
   JWT_REFRESH_SECRET: 'boot-smoke-test-refresh-32-characters-long-xx',
-  ASAAS_API_KEY: 'stub',
-  ASAAS_WEBHOOK_TOKEN: 'stub',
+  STRIPE_SECRET_KEY: 'sk_test_boot_smoke_stub',
+  STRIPE_WEBHOOK_SECRET: 'whsec_boot_smoke_stub',
   OPENAI_API_KEY: 'stub',
   PORT: '0',
 };

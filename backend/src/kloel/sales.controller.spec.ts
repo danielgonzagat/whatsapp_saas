@@ -2,6 +2,7 @@ import { SalesController } from './sales.controller';
 
 describe('SalesController', () => {
   let prisma: any;
+  let stripeService: any;
   let controller: SalesController;
 
   beforeEach(() => {
@@ -13,9 +14,23 @@ describe('SalesController', () => {
       productPlan: {
         findUnique: jest.fn(),
       },
+      kloelSale: {
+        findFirst: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      auditLog: {
+        create: jest.fn().mockResolvedValue({}),
+      },
+    };
+    stripeService = {
+      stripe: {
+        refunds: {
+          create: jest.fn().mockResolvedValue({ id: 're_1' }),
+        },
+      },
     };
 
-    controller = new SalesController(prisma, {} as any, {} as any);
+    controller = new SalesController(prisma, {} as any, stripeService);
   });
 
   it('persists normalized plan transition fields when changing a subscription plan', async () => {
@@ -81,5 +96,30 @@ describe('SalesController', () => {
         }),
       }),
     );
+  });
+
+  it('refunds Stripe-backed sales via payment_intent instead of a legacy gateway client', async () => {
+    prisma.kloelSale.findFirst.mockResolvedValue({
+      id: 'sale-1',
+      status: 'paid',
+      externalPaymentId: 'pi_stripe_123',
+      amount: 139.9,
+    });
+
+    await controller.refundSale(
+      {
+        user: { workspaceId: 'ws-1', sub: 'agent-1' },
+      } as any,
+      'sale-1',
+      'idem-1',
+    );
+
+    expect(stripeService.stripe.refunds.create).toHaveBeenCalledWith({
+      payment_intent: 'pi_stripe_123',
+    });
+    expect(prisma.kloelSale.updateMany).toHaveBeenCalledWith({
+      where: { id: 'sale-1', workspaceId: 'ws-1' },
+      data: { status: 'refunded' },
+    });
   });
 });

@@ -16,9 +16,9 @@ import { flowQueue } from '../queue/queue';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/whatsapp-normalization.util';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { AsaasService } from './asaas.service';
 import { AudioService } from './audio.service';
 import { buildKloelLeadPrompt } from './kloel.prompts';
+import { PaymentService } from './payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 
 type UnknownRecord = Record<string, unknown>;
@@ -1037,7 +1037,7 @@ export class UnifiedAgentService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
-    private asaasService: AsaasService,
+    private paymentService: PaymentService,
     private audioService: AudioService,
     private readonly storageService: StorageService,
     @Inject(forwardRef(() => WhatsappService))
@@ -1929,98 +1929,59 @@ Mensagem: ${message}`,
       const amount = this.num(args.amount);
       const productName = this.str(args.productName);
       const description = this.str(args.description, `Pagamento - ${productName}`);
+      const contact = await this.prisma.contact.findFirst({
+        where: { workspaceId, phone },
+      });
+      const payment = await this.paymentService.createPayment({
+        workspaceId,
+        leadId: contact?.id || phone,
+        customerName: contact?.name || 'Cliente',
+        customerPhone: phone,
+        customerEmail: contact?.email || undefined,
+        amount,
+        description,
+      });
 
-      // Verificar se Asaas está configurado para o workspace
-      const status = await this.asaasService.getConnectionStatus(workspaceId);
+      this.logger.log(
+        `[AGENT] Link de pagamento criado: ${payment.paymentLink || payment.invoiceUrl}`,
+      );
 
-      if (status.connected) {
-        // Buscar ou criar cliente no Asaas
-        const contact = await this.prisma.contact.findFirst({
-          where: { workspaceId, phone },
-        });
-
-        // Criar pagamento PIX via Asaas
-        const payment = await this.asaasService.createPixPayment(workspaceId, {
-          customerName: contact?.name || 'Cliente',
-          customerPhone: phone,
-          customerEmail: contact?.email || undefined,
-          amount,
-          description,
-        });
-
-        this.logger.log(`[AGENT] Link de pagamento criado: ${payment.pixQrCodeUrl}`);
-
-        // Enviar link via WhatsApp
-        // messageLimit: enforced via PlanLimitsService.trackMessageSend
-        const paymentMessage = `Seu pagamento de R$ ${Number(amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
-        await this.actionSendMessage(
-          workspaceId,
-          phone,
-          {
-            message: paymentMessage,
-          },
-          context,
-        );
-
-        await this.prisma
-          .$transaction(async (tx) => {
-            await this.auditService.logWithTx(tx, {
-              workspaceId,
-              action: 'PAYMENT_LINK_CREATED',
-              resource: 'UnifiedAgent',
-              resourceId: payment.id,
-              details: {
-                amount,
-                phone,
-                method: 'PIX',
-                provider: 'asaas',
-              },
-            });
-          })
-          .catch(() => {});
-
-        return {
-          success: true,
-          paymentId: payment.id,
-          paymentLink: payment.pixQrCodeUrl,
-          pixCopyPaste: payment.pixCopyPaste,
-          amount,
-          sent: true,
-        };
-      }
-
-      // Fallback: gerar link interno
-      const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
-
-      // Salvar venda pendente
-      await this.prisma.kloelSale
-        .create({
-          data: {
-            workspaceId,
-            externalPaymentId: paymentId,
-            leadPhone: phone,
-            productName,
-            amount,
-            status: 'pending',
-            paymentMethod: 'INTERNAL',
-          },
-        })
-        .catch(() => {
-          // Tabela pode não existir ainda
-          this.logger.warn('kloelSale table not available');
-        });
-
-      const message = `Link de pagamento: ${paymentLink}\n\nValor: R$ ${Number(amount.toFixed(2))}`;
+      // Enviar link via WhatsApp
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
-      await this.actionSendMessage(workspaceId, phone, { message }, context);
+      const paymentMessage = `Seu pagamento de R$ ${Number(amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste || payment.paymentLink || payment.invoiceUrl}`;
+      await this.actionSendMessage(
+        workspaceId,
+        phone,
+        {
+          message: paymentMessage,
+        },
+        context,
+      );
+
+      await this.prisma
+        .$transaction(async (tx) => {
+          await this.auditService.logWithTx(tx, {
+            workspaceId,
+            action: 'PAYMENT_LINK_CREATED',
+            resource: 'UnifiedAgent',
+            resourceId: payment.id,
+            details: {
+              amount,
+              phone,
+              method: 'PIX',
+              provider: 'stripe',
+            },
+          });
+        })
+        .catch(() => {});
 
       return {
         success: true,
-        paymentId,
-        paymentLink,
+        paymentId: payment.id,
+        paymentLink: payment.paymentLink || payment.invoiceUrl,
+        pixCopyPaste: payment.pixCopyPaste,
         amount,
-        method: 'internal',
+        sent: true,
       };
     } catch (error: unknown) {
       const errorInstanceofError =
@@ -2028,7 +1989,37 @@ Mensagem: ${message}`,
           ? error
           : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(`Erro ao criar link de pagamento: ${errorInstanceofError.message}`);
-      return { success: false, error: errorInstanceofError.message };
+
+      const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
+
+      await this.prisma.kloelSale
+        .create({
+          data: {
+            workspaceId,
+            externalPaymentId: paymentId,
+            leadPhone: phone,
+            productName: this.str(args.productName),
+            amount: this.num(args.amount),
+            status: 'pending',
+            paymentMethod: 'INTERNAL',
+          },
+        })
+        .catch(() => {
+          this.logger.warn('kloelSale table not available');
+        });
+
+      const message = `Link de pagamento: ${paymentLink}\n\nValor: R$ ${Number(this.num(args.amount).toFixed(2))}`;
+      await this.actionSendMessage(workspaceId, phone, { message }, context).catch(() => {});
+
+      return {
+        success: true,
+        paymentId,
+        paymentLink,
+        amount: this.num(args.amount),
+        method: 'internal',
+        fallback: true,
+      };
     }
   }
 

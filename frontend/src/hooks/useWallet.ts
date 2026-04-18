@@ -40,28 +40,6 @@ interface WalletBalanceResponse {
   nextRelease?: string;
 }
 
-interface MercadoPagoConnectionStatus {
-  connected: boolean;
-  provider: 'mercado_pago';
-  checkoutEnabled: boolean;
-  platformManaged?: boolean;
-  reason?: string;
-  marketplaceFeePercent?: number;
-  seller?: {
-    id?: number | string;
-    nickname?: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    countryId?: string;
-  } | null;
-  publicKey?: string | null;
-  liveMode?: boolean | null;
-  connectedAt?: string | null;
-  expiresAt?: string | null;
-  integrationId?: string | null;
-}
-
 export interface WalletBankAccount {
   id: string;
   bankName?: string;
@@ -83,45 +61,6 @@ export function useWalletBalance() {
     { keepPreviousData: true },
   );
   return { balance: data as WalletBalanceResponse | undefined, isLoading, error, mutate };
-}
-
-/* ── Mercado Pago connection ── */
-export function useMercadoPagoConnection() {
-  const wsId = useWorkspaceId();
-  const { data, error, isLoading, mutate } = useSWR(
-    wsId ? `/kloel/wallet/${wsId}/mercado-pago/status` : null,
-    swrFetcher,
-    { keepPreviousData: true },
-  );
-
-  const connect = async (returnUrl?: string) => {
-    if (!wsId) return null;
-    const res = await apiFetch<{ authUrl?: string }>(`/kloel/wallet/${wsId}/mercado-pago/connect`, {
-      method: 'POST',
-      body: returnUrl ? { returnUrl } : {},
-    });
-    if (res.error) throw new Error(res.error);
-    return (res.data as { authUrl?: string } | undefined)?.authUrl || null;
-  };
-
-  const disconnect = async () => {
-    if (!wsId) return null;
-    const res = await apiFetch(`/kloel/wallet/${wsId}/mercado-pago/disconnect`, {
-      method: 'DELETE',
-    });
-    if (res.error) throw new Error(res.error);
-    await mutate();
-    return res.data;
-  };
-
-  return {
-    mercadoPago: (data as MercadoPagoConnectionStatus | undefined) || undefined,
-    isLoading,
-    error,
-    mutate,
-    connect,
-    disconnect,
-  };
 }
 
 /* ── Wallet transactions ── */

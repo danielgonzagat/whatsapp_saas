@@ -28,8 +28,9 @@ interface PaymentDetails {
   createdAt: string;
   paidAt?: string;
   companyName: string;
-  pixKey?: string;
-  pixKeyType?: string;
+  pixQrCodeUrl?: string;
+  pixCopyPaste?: string;
+  paymentLink?: string;
   bankInfo?: {
     bank?: string;
     agency?: string;
@@ -89,7 +90,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
   useEffect(() => {
     const fetchPayment = async () => {
       try {
-        const res = await fetch(apiUrl(`/kloel/payment/public/${resolvedParams.id}`));
+        const res = await fetch(apiUrl(`/kloel/payments/public/${resolvedParams.id}`));
         if (!res.ok) {
           if (res.status === 404) {
             setError('Pagamento não encontrado');
@@ -110,9 +111,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
     fetchPayment();
   }, [resolvedParams.id]);
 
-  const copyPixKey = () => {
-    if (payment?.pixKey) {
-      navigator.clipboard.writeText(payment.pixKey);
+  const copyPixCode = () => {
+    if (payment?.pixCopyPaste) {
+      navigator.clipboard.writeText(payment.pixCopyPaste);
       setCopied(true);
       if (copiedTimer.current) clearTimeout(copiedTimer.current);
       copiedTimer.current = setTimeout(() => setCopied(false), 2000);
@@ -203,66 +204,89 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
           {payment.status === 'pending' && (
             <div className="p-6 space-y-4">
               {/* PIX Payment */}
-              {payment.paymentMethod === 'PIX' && payment.pixKey && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-blue-500">
-                    <QrCode className="w-5 h-5" aria-hidden="true" />
-                    <span className="font-medium">Pagamento via PIX</span>
-                  </div>
+              {payment.paymentMethod === 'PIX' &&
+                (payment.pixCopyPaste || payment.pixQrCodeUrl || payment.paymentLink) && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-blue-500">
+                      <QrCode className="w-5 h-5" aria-hidden="true" />
+                      <span className="font-medium">Pagamento via PIX</span>
+                    </div>
 
-                  {/* PIX Key Display */}
-                  <div className="bg-gray-100 rounded-xl p-4">
-                    <p className="text-gray-600 text-xs mb-2">
-                      Chave PIX ({payment.pixKeyType || 'Aleatória'})
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 text-gray-900 text-sm bg-gray-200 px-3 py-2 rounded-lg font-mono break-all">
-                        {payment.pixKey}
-                      </code>
-                      <button
-                        type="button"
-                        onClick={copyPixKey}
-                        className="p-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        {copied ? (
-                          <Check className="w-5 h-5" aria-hidden="true" />
-                        ) : (
-                          <Copy className="w-5 h-5" aria-hidden="true" />
+                    {payment.pixQrCodeUrl && (
+                      <div className="bg-white border border-gray-200 rounded-xl p-4 flex justify-center">
+                        { }
+                        <img
+                          src={payment.pixQrCodeUrl}
+                          alt="QR Code PIX"
+                          className="w-56 h-56 object-contain"
+                        />
+                      </div>
+                    )}
+
+                    {payment.pixCopyPaste && (
+                      <div className="bg-gray-100 rounded-xl p-4">
+                        <p className="text-gray-600 text-xs mb-2">Código PIX copia e cola</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-gray-900 text-sm bg-gray-200 px-3 py-2 rounded-lg font-mono break-all">
+                            {payment.pixCopyPaste}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={copyPixCode}
+                            className="p-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors"
+                          >
+                            {copied ? (
+                              <Check className="w-5 h-5" aria-hidden="true" />
+                            ) : (
+                              <Copy className="w-5 h-5" aria-hidden="true" />
+                            )}
+                          </button>
+                        </div>
+                        {copied && (
+                          <p className="text-blue-500 text-xs mt-2">Código PIX copiado!</p>
                         )}
-                      </button>
-                    </div>
-                    {copied && <p className="text-blue-500 text-xs mt-2">Chave PIX copiada!</p>}
-                  </div>
+                      </div>
+                    )}
 
-                  {/* Instructions */}
-                  <div className="bg-gray-100 rounded-xl p-4">
-                    <p className="text-gray-600 text-sm font-medium mb-3">Como pagar:</p>
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-3 text-gray-700 text-sm">
-                        <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
-                          1
-                        </span>
-                        <span>Abra o app do seu banco</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-gray-700 text-sm">
-                        <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
-                          2
-                        </span>
-                        <span>Vá em PIX → Pagar com chave</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-gray-700 text-sm">
-                        <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
-                          3
-                        </span>
-                        <span>
-                          Cole a chave copiada e confirme o valor de{' '}
-                          <strong>{formatCurrency(payment.amount)}</strong>
-                        </span>
+                    {!payment.pixCopyPaste && payment.paymentLink && (
+                      <a
+                        href={payment.paymentLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block w-full text-center bg-blue-500 text-white font-medium rounded-xl px-4 py-3 hover:bg-blue-600 transition-colors"
+                      >
+                        Abrir instruções de pagamento
+                      </a>
+                    )}
+
+                    {/* Instructions */}
+                    <div className="bg-gray-100 rounded-xl p-4">
+                      <p className="text-gray-600 text-sm font-medium mb-3">Como pagar:</p>
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-3 text-gray-700 text-sm">
+                          <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            1
+                          </span>
+                          <span>Abra o app do seu banco</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-gray-700 text-sm">
+                          <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            2
+                          </span>
+                          <span>Vá em PIX → Copia e Cola ou escaneie o QR Code</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-gray-700 text-sm">
+                          <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            3
+                          </span>
+                          <span>
+                            Confirme o valor de <strong>{formatCurrency(payment.amount)}</strong>
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Bank Transfer */}
               {payment.bankInfo && (
@@ -306,7 +330,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               )}
 
               {/* No payment info available */}
-              {!payment.pixKey && !payment.bankInfo && (
+              {!payment.pixCopyPaste && !payment.pixQrCodeUrl && !payment.bankInfo && (
                 <div className="text-center py-4">
                   <Smartphone className="w-12 h-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
                   <p className="text-gray-600">

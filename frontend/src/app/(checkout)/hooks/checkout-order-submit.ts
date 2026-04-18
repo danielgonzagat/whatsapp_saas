@@ -1,10 +1,10 @@
 'use client';
 
-import { getMercadoPagoDeviceSessionId, tokenizeMercadoPagoCard } from '@/lib/mercado-pago';
 import type {
   PublicCheckoutAffiliateContext,
   PublicCheckoutPaymentProvider,
 } from '@/lib/public-checkout-contract';
+
 import { createOrder, type CreateOrderData } from './useCheckout';
 
 type FormState = {
@@ -36,7 +36,6 @@ type FinalizeCheckoutOrderArgs = {
   discount: number;
   form: FormState;
   installments: number;
-  mercadoPagoPublicKey: string;
   payMethod: 'card' | 'pix' | 'boleto';
   paymentProvider?: PublicCheckoutPaymentProvider;
   planId: string;
@@ -48,7 +47,26 @@ type FinalizeCheckoutOrderArgs = {
   workspaceId: string;
 };
 
-export async function finalizeCheckoutOrder(args: FinalizeCheckoutOrderArgs) {
+type RedirectFinalizeResult = {
+  mode: 'redirect';
+  successPath: string;
+  orderNumber: string;
+};
+
+type StripeConfirmationFinalizeResult = {
+  mode: 'stripe_confirmation';
+  successPath: string;
+  orderNumber: string;
+  orderId: string;
+  clientSecret: string;
+  paymentIntentId: string;
+};
+
+export type FinalizeCheckoutOrderResult = RedirectFinalizeResult | StripeConfirmationFinalizeResult;
+
+export async function finalizeCheckoutOrder(
+  args: FinalizeCheckoutOrderArgs,
+): Promise<FinalizeCheckoutOrderResult> {
   const {
     affiliateContext,
     capturedLeadId,
@@ -57,7 +75,6 @@ export async function finalizeCheckoutOrder(args: FinalizeCheckoutOrderArgs) {
     discount,
     form,
     installments,
-    mercadoPagoPublicKey,
     payMethod,
     paymentProvider,
     planId,
@@ -68,15 +85,6 @@ export async function finalizeCheckoutOrder(args: FinalizeCheckoutOrderArgs) {
     total,
     workspaceId,
   } = args;
-
-  const meliSessionId =
-    paymentProvider?.provider === 'mercado_pago' ? await getMercadoPagoDeviceSessionId() : null;
-
-  if (paymentProvider?.provider === 'mercado_pago' && !meliSessionId) {
-    throw new Error(
-      'Não foi possível validar este dispositivo para o Mercado Pago. Atualize a página e tente novamente.',
-    );
-  }
 
   const payload: CreateOrderData = {
     planId,
@@ -110,52 +118,62 @@ export async function finalizeCheckoutOrder(args: FinalizeCheckoutOrderArgs) {
     affiliateId: affiliateContext?.affiliateWorkspaceId,
   };
 
-  if (payMethod === 'card') {
-    const [expMonth = '', expYearSuffix = ''] = form.cardExp.split('/');
-    const token = await tokenizeMercadoPagoCard(mercadoPagoPublicKey, {
-      cardNumber: form.cardNumber,
-      cardholderName: form.cardName || form.name,
-      identificationNumber: form.cardCpf || form.cpf,
-      securityCode: form.cardCvv,
-      cardExpirationMonth: expMonth,
-      cardExpirationYear: `20${expYearSuffix}`,
-    });
-
-    Object.assign(payload, {
-      cardHolderName: form.cardName || form.name,
-      mercadoPagoToken: token.token,
-      mercadoPagoPaymentMethodId: token.paymentMethodId,
-      mercadoPagoPaymentType: token.paymentType,
-      mercadoPagoCardLast4: token.last4,
-    });
+  const result = await createOrder(payload);
+  const orderId = resolveOrderId(result);
+  if (!orderId) {
+    throw new Error('Pedido criado sem ID.');
   }
 
-  const result = await createOrder(payload, { meliSessionId });
-  const successPath = resolveSuccessPath(payMethod, result);
+  const orderNumber = resolveOrderNumber(result);
+  const successPath = resolveSuccessPath(payMethod, result, orderId);
   if (!successPath) {
     throw new Error('Pedido criado sem rota de continuidade.');
   }
 
+  if (payMethod === 'card' && paymentProvider?.provider === 'stripe') {
+    const clientSecret = readNestedString(asRecord(result), ['paymentData', 'clientSecret']);
+    const paymentIntentId = readNestedString(asRecord(result), ['paymentData', 'paymentIntentId']);
+    if (!clientSecret || !paymentIntentId) {
+      throw new Error('Pedido criado sem dados do Stripe para confirmação do cartão.');
+    }
+    return {
+      mode: 'stripe_confirmation',
+      successPath,
+      orderNumber,
+      orderId,
+      clientSecret,
+      paymentIntentId,
+    };
+  }
+
   return {
+    mode: 'redirect',
     successPath,
-    orderNumber: resolveOrderNumber(result),
+    orderNumber,
   };
 }
 
-function resolveSuccessPath(payMethod: 'card' | 'pix' | 'boleto', result: unknown) {
-  const record = isRecord(result) ? result : null;
-  const orderId = readString(record, 'id') || readNestedString(record, ['data', 'id']);
-  if (!orderId) return null;
+function resolveSuccessPath(
+  payMethod: 'card' | 'pix' | 'boleto',
+  result: unknown,
+  orderId: string,
+) {
   if (payMethod === 'pix') return `/order/${orderId}/pix`;
   if (payMethod === 'boleto') return `/order/${orderId}/boleto`;
+  const record = asRecord(result);
   const hasUpsells = Array.isArray(readNestedValue(record, ['plan', 'upsells']));
   const approved = readNestedValue(record, ['paymentData', 'approved']) === true;
   if (approved && hasUpsells) return `/order/${orderId}/upsell`;
   return `/order/${orderId}/success`;
 }
 
+function resolveOrderId(result: unknown) {
+  const record = asRecord(result);
+  return readString(record, 'id') || readNestedString(record, ['data', 'id']);
+}
+
 function resolveOrderNumber(result: unknown) {
-  const record = isRecord(result) ? result : null;
+  const record = asRecord(result);
   return readString(record, 'orderNumber') || readNestedString(record, ['data', 'orderNumber']);
 }
 
@@ -169,20 +187,20 @@ function readNestedString(value: Record<string, unknown> | null, path: string[])
   return typeof candidate === 'string' ? candidate : '';
 }
 
-/** Blocked property names to prevent prototype pollution */
 const BLOCKED_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
 function readNestedValue(value: Record<string, unknown> | null, path: string[]) {
   let current: unknown = value;
   for (const segment of path) {
-    if (!isRecord(current)) return undefined;
+    const record = asRecord(current);
+    if (!record) return undefined;
     if (BLOCKED_SEGMENTS.has(segment)) return undefined;
-    if (!Object.prototype.hasOwnProperty.call(current, segment)) return undefined;
-    current = current[segment];
+    if (!Object.prototype.hasOwnProperty.call(record, segment)) return undefined;
+    current = record[segment];
   }
   return current;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
 }

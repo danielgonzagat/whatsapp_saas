@@ -4,12 +4,14 @@ import { UnifiedAgentService } from './unified-agent.service';
 describe('UnifiedAgentService', () => {
   let prisma: any;
   let whatsappService: any;
+  let paymentService: any;
   let service: UnifiedAgentService;
 
   beforeEach(() => {
     process.env.NODE_ENV = 'test';
 
     prisma = {
+      $transaction: jest.fn(async (cb: (tx: unknown) => unknown) => cb({})),
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
           name: 'Workspace Test',
@@ -38,6 +40,16 @@ describe('UnifiedAgentService', () => {
       sendMessage: jest.fn().mockResolvedValue({ error: false, delivery: 'sent', direct: true }),
     };
 
+    paymentService = {
+      createPayment: jest.fn().mockResolvedValue({
+        id: 'pi_pix_1',
+        paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
+        pixQrCodeUrl: 'data:image/png;base64,qr',
+        pixCopyPaste: '000201pixcopy',
+        status: 'requires_action',
+      }),
+    };
+
     service = new UnifiedAgentService(
       prisma,
       {
@@ -51,7 +63,7 @@ describe('UnifiedAgentService', () => {
           return undefined;
         }),
       } as unknown as ConfigService,
-      {} as any,
+      paymentService,
       {} as any,
       {} as any,
       whatsappService,
@@ -183,5 +195,51 @@ describe('UnifiedAgentService', () => {
     );
     expect(reply?.endsWith('.')).toBe(true);
     expect(reply).not.toMatch(/pr[óo]ximos$/i);
+  });
+
+  it('creates payment links through the payment kernel and sends the pix payload to WhatsApp', async () => {
+    prisma.contact.findFirst.mockResolvedValue({
+      id: 'contact-1',
+      name: 'Cliente Pix',
+      email: 'cliente@example.com',
+    });
+
+    const result = await service.executeTool(
+      'create_payment_link',
+      {
+        amount: 139.9,
+        productName: 'Produto X',
+      },
+      {
+        workspaceId: 'ws-1',
+        phone: '5511999999999',
+      },
+    );
+
+    expect(paymentService.createPayment).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      leadId: 'contact-1',
+      customerName: 'Cliente Pix',
+      customerPhone: '5511999999999',
+      customerEmail: 'cliente@example.com',
+      amount: 139.9,
+      description: 'Pagamento - Produto X',
+    });
+    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '5511999999999',
+      expect.stringContaining('000201pixcopy'),
+      expect.objectContaining({
+        complianceMode: 'proactive',
+        forceDirect: false,
+      }),
+    );
+    expect(result).toMatchObject({
+      success: true,
+      paymentId: 'pi_pix_1',
+      paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
+      pixCopyPaste: '000201pixcopy',
+      sent: true,
+    });
   });
 });

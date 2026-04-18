@@ -32,25 +32,6 @@ function redirect(url: string) {
   return NextResponse.redirect(url);
 }
 
-function isMercadoPagoNotificationRootRequest(request: NextRequest) {
-  if (request.method !== 'POST') {
-    return false;
-  }
-
-  if (request.nextUrl.pathname !== '/') {
-    return false;
-  }
-
-  const hasTopic =
-    request.nextUrl.searchParams.has('topic') || request.nextUrl.searchParams.has('type');
-  const hasResourceId =
-    request.nextUrl.searchParams.has('id') || request.nextUrl.searchParams.has('data.id');
-  const hasWebhookSignature =
-    request.headers.has('x-signature') || request.headers.has('x-request-id');
-
-  return (hasTopic && hasResourceId) || hasWebhookSignature;
-}
-
 function redirectToLogin(_request: NextRequest, host: string, nextPath?: string) {
   const loginUrl = new URL(buildAuthUrl('/login', host));
   loginUrl.searchParams.set(FORCE_AUTH_QUERY_KEY, '1');
@@ -227,12 +208,6 @@ function handleUnknownHost(request: NextRequest, isAuthenticated: boolean) {
 export function proxy(request: NextRequest) {
   const host = request.headers.get('host') || request.nextUrl.host || '';
   const { pathname } = request.nextUrl;
-
-  if (isMercadoPagoNotificationRootRequest(request)) {
-    const rewrittenUrl = request.nextUrl.clone();
-    rewrittenUrl.pathname = '/api/mercado-pago/ipn';
-    return NextResponse.rewrite(rewrittenUrl);
-  }
 
   if (isStaticOrApiPath(pathname)) {
     return NextResponse.next();

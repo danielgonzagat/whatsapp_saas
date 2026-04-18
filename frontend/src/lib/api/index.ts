@@ -120,7 +120,7 @@ export {
 } from './campaigns';
 
 // Shared finance and knowledge types
-export type { SalesReportSummary, KnowledgeSourceItem, KnowledgeBaseItem } from './asaas';
+export type { SalesReportSummary, KnowledgeSourceItem, KnowledgeBaseItem } from './shared-types';
 
 // Autopilot
 export {

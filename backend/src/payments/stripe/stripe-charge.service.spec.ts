@@ -135,6 +135,62 @@ describe('StripeChargeService.createSaleCharge', () => {
     expect(callArgs.payment_method_types).toEqual(['card', 'pix']);
   });
 
+  it('forwards confirm + payment_method_data for server-confirmed pix flows', async () => {
+    const stripe = makeStripeStub();
+    stripe.stripe.paymentIntents.create.mockResolvedValue({
+      id: 'pi_pix_confirmed',
+      client_secret: 'pi_pix_confirmed_secret',
+      status: 'requires_action',
+      next_action: {
+        type: 'pix_display_qr_code',
+        pix_display_qr_code: {
+          data: '000201pix',
+          image_url_png: 'data:image/png;base64,qr',
+        },
+      },
+    });
+    const service = await buildService(stripe);
+
+    const result = await service.createSaleCharge(
+      baseInput({
+        paymentMethodTypes: ['pix'],
+        confirm: true,
+        paymentMethodData: {
+          type: 'pix',
+          billing_details: {
+            name: 'Cliente Pix',
+            email: 'pix@example.com',
+          },
+        },
+        paymentMethodOptions: {
+          pix: { expires_after_seconds: 1800 },
+        },
+      }),
+    );
+
+    expect(stripe.stripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payment_method_types: ['pix'],
+        confirm: true,
+        payment_method_data: expect.objectContaining({
+          type: 'pix',
+          billing_details: expect.objectContaining({
+            name: 'Cliente Pix',
+            email: 'pix@example.com',
+          }),
+        }),
+        payment_method_options: {
+          pix: { expires_after_seconds: 1800 },
+        },
+      }),
+      expect.anything(),
+    );
+    expect(result.stripePaymentIntent).toMatchObject({
+      id: 'pi_pix_confirmed',
+      status: 'requires_action',
+    });
+  });
+
   it('forwards the idempotency key as a Stripe-level idempotencyKey request option', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({ id: 'pi_idem', client_secret: null });

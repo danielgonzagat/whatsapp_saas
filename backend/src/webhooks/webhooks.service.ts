@@ -34,7 +34,7 @@ type InstagramWebhookBody = Record<string, unknown>;
 
 /**
  * Loose shape consumed by {@link WebhooksService.extractPhone} — arbitrary
- * JSON bag from an upstream provider (Stripe, Hotmart, Asaas, etc.).
+ * JSON bag from an upstream provider (Stripe, Hotmart, Shopify, etc.).
  */
 type PhoneBearingPayload = Record<string, unknown>;
 

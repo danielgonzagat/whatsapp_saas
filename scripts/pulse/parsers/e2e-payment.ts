@@ -79,7 +79,10 @@ export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
         file: 'backend/src/kloel/wallet.controller.ts',
         line: 1,
         description: `${orphanRows.length} PAID orders have no corresponding wallet transaction (orphaned)`,
-        detail: `Sample orphan order IDs: ${orphanRows.slice(0, 3).map((r: any) => r.id).join(', ')}`,
+        detail: `Sample orphan order IDs: ${orphanRows
+          .slice(0, 3)
+          .map((r: any) => r.id)
+          .join(', ')}`,
       });
     }
   } catch (err: any) {
@@ -137,7 +140,7 @@ export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
   try {
     const webhookRows = await dbQuery(
       `SELECT COUNT(*) as count FROM "WebhookEvent"
-       WHERE provider = 'asaas' AND status = 'processed'`,
+       WHERE provider = 'stripe' AND status = 'processed'`,
     );
     const paidRows = await dbQuery(
       `SELECT COUNT(*) as count FROM "CheckoutOrder" WHERE status = 'PAID'`,
@@ -146,15 +149,15 @@ export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
     const processedWebhooks = parseInt(webhookRows[0]?.count || '0', 10);
     const paidOrders = parseInt(paidRows[0]?.count || '0', 10);
 
-    // If there are paid orders but zero processed asaas webhooks, that's suspicious
+    // If there are paid orders but zero processed Stripe webhooks, that's suspicious
     if (paidOrders > 0 && processedWebhooks === 0) {
       breaks.push({
         type: 'E2E_PAYMENT_BROKEN',
         severity: 'critical',
         file: 'backend/src/kloel/wallet.controller.ts',
         line: 1,
-        description: `${paidOrders} PAID orders exist but no processed asaas WebhookEvents — webhook audit trail missing`,
-        detail: `PAID orders: ${paidOrders}, processed asaas webhooks: ${processedWebhooks}`,
+        description: `${paidOrders} PAID orders exist but no processed Stripe WebhookEvents — webhook audit trail missing`,
+        detail: `PAID orders: ${paidOrders}, processed Stripe webhooks: ${processedWebhooks}`,
       });
     }
   } catch {

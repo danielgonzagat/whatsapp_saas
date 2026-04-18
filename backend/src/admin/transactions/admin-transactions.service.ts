@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
-import { AsaasService } from '../../kloel/asaas.service';
-import { MercadoPagoService } from '../../kloel/mercado-pago.service';
+import { StripeService } from '../../billing/stripe.service';
 import { WalletLedgerService } from '../../kloel/wallet-ledger.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
@@ -34,9 +33,8 @@ export class AdminTransactionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
-    private readonly asaas: AsaasService,
-    private readonly mercadoPago: MercadoPagoService,
     private readonly walletLedger: WalletLedgerService,
+    private readonly stripeService: StripeService,
   ) {}
 
   async list(input: ListTransactionsInput): Promise<ListTransactionsResult> {
@@ -96,18 +94,13 @@ export class AdminTransactionsService {
     if (!externalId) return;
 
     const gateway = this.normalizeGateway(order.payment?.gateway);
-    if (gateway === 'asaas') {
-      await this.asaas.refundPayment(order.workspaceId, externalId);
-      return;
-    }
-
-    if (gateway === 'mercadopago') {
-      await this.mercadoPago.refundPayment(order.workspaceId, externalId, order.totalInCents);
+    if (gateway === 'stripe') {
+      await this.stripeService.stripe.refunds.create({ payment_intent: externalId });
       return;
     }
 
     throw new BadRequestException(
-      `Gateway ${order.payment?.gateway} ainda não suporta refund admin.`,
+      `Gateway ${order.payment?.gateway} não é suportado no runtime Stripe-only.`,
     );
   }
 
@@ -300,12 +293,9 @@ export class AdminTransactionsService {
   }
 
   private normalizeGateway(value?: string | null) {
-    const gateway = String(value || '')
+    return String(value || '')
       .trim()
       .toLowerCase();
-    if (!gateway) return '';
-    if (gateway.includes('mercado')) return 'mercadopago';
-    return gateway;
   }
 }
 

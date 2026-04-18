@@ -19,7 +19,7 @@ These pages are mandatory and must remain publicly accessible.
 
 ## Financial Processing Baseline
 
-- Payment webhooks must verify `ASAAS_WEBHOOK_TOKEN`.
+- Payment webhooks must verify `STRIPE_WEBHOOK_SECRET`.
 - Production and staging must use distinct payment credentials.
 - Refund and chargeback handling must be documented and supportable.
 - Financial alerts must route into `OPS_WEBHOOK_URL` or `DLQ_WEBHOOK_URL`.
@@ -32,13 +32,13 @@ Before operating with real money, the following must remain defined and reviewab
 - Privacy policy
 - Refund policy
 - Chargeback handling process
-- Asaas contract and account standing
+- Stripe account standing and capability status
 - Split and intermediary payment compliance review
 - Nota fiscal issuance flow
 
 ## Operational Commitments
 
-- No unverified Asaas webhook endpoint in production.
+- No unverified Stripe webhook endpoint in production.
 - No unlogged refund or chargeback handling.
 - No launch without a clear owner for nota fiscal issuance.
 - No launch without a defined support path for refund and chargeback disputes.
@@ -53,7 +53,7 @@ Before operating with real money, the following must remain defined and reviewab
 
 If the platform performs split or intermediary settlement:
 
-- confirm contractual allowance with Asaas,
+- confirm contractual allowance with Stripe,
 - confirm tax and legal treatment of the intermediary role,
 - confirm ledger and reconciliation behavior,
 - confirm what is emitted as nota fiscal and by whom.

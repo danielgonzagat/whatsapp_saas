@@ -149,7 +149,6 @@ function redisInProductionValidator(value: Record<string, unknown>): Record<stri
         // PAGAMENTOS (webhooks externos)
         // ============================================
         PAYMENT_WEBHOOK_SECRET: Joi.string().optional(),
-        ASAAS_WEBHOOK_TOKEN: Joi.string().optional(),
         PAGHIPER_WEBHOOK_TOKEN: Joi.string().optional(),
         WC_WEBHOOK_SECRET: Joi.string().optional(),
         SHOPIFY_WEBHOOK_SECRET: Joi.string().optional(),

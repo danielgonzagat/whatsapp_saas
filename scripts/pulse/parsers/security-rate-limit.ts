@@ -15,7 +15,7 @@
  * Financial endpoints:
  * 5. POST /wallet/withdraw — fire 20 requests in 10s → expect 429 after limit
  * 6. POST /checkout/init — fire 20 requests in 10s → expect 429 after limit
- * 7. POST /webhook/asaas — fire 250 requests in 60s (Asaas burst) → must still accept (limit ≥ 200/min)
+ * 7. POST /webhook/payment/stripe — fire 250 requests in 60s (provider burst) → must still accept (limit ≥ 200/min)
  *
  * Public endpoints:
  * 8. Global rate limit: fire 110 requests in 60s to any public endpoint → expect 429 after 100
@@ -49,7 +49,7 @@ async function fireRequests(
   path: string,
   body: any,
   count: number,
-  extraHeaders: Record<string, string> = {}
+  extraHeaders: Record<string, string> = {},
 ): Promise<number[]> {
   const backendUrl = getBackendUrl();
   const requests = Array.from({ length: count }, () =>
@@ -63,7 +63,7 @@ async function fireRequests(
       signal: AbortSignal.timeout(10000),
     })
       .then((r) => r.status)
-      .catch(() => 0)
+      .catch(() => 0),
   );
   return Promise.all(requests);
 }
@@ -80,11 +80,16 @@ export async function checkSecurityRateLimit(config: PulseConfig): Promise<Break
   // The throttler is configured as 5 req/min per IP for auth/login.
   // So we expect at least some 429 responses out of 20 rapid requests.
   try {
-    const loginBody = { email: 'brute-force-test@pulse.kloel.com', password: 'wrong-password-pulse' };
+    const loginBody = {
+      email: 'brute-force-test@pulse.kloel.com',
+      password: 'wrong-password-pulse',
+    };
     const statuses = await fireRequests('POST', '/auth/login', loginBody, 20);
 
     const count429 = statuses.filter((s) => s === 429).length;
-    const countNonAuth = statuses.filter((s) => s !== 401 && s !== 400 && s !== 429 && s !== 0).length;
+    const countNonAuth = statuses.filter(
+      (s) => s !== 401 && s !== 400 && s !== 429 && s !== 0,
+    ).length;
 
     if (count429 === 0) {
       breaks.push({
@@ -124,13 +129,13 @@ export async function checkSecurityRateLimit(config: PulseConfig): Promise<Break
       fetch(`${backendUrl}${walletPath}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${jwt}`,
+          Authorization: `Bearer ${jwt}`,
           'Content-Type': 'application/json',
         },
         signal: AbortSignal.timeout(10000),
       })
         .then((r) => r.status)
-        .catch(() => 0)
+        .catch(() => 0),
     );
 
     const walletStatuses = await Promise.all(walletRequests);

@@ -432,20 +432,16 @@ requireIncludes(
   'Backend wires prompt sanitization middleware',
 );
 
-const checkoutWebhookPath = path.join(
-  rootDir,
-  'backend/src/checkout/checkout-webhook.controller.ts',
-);
-const legacyWebhookPath = path.join(rootDir, 'backend/src/webhooks/asaas-webhook.controller.ts');
+const paymentWebhookPath = path.join(rootDir, 'backend/src/webhooks/payment-webhook.controller.ts');
 requireIncludes(
-  checkoutWebhookPath,
-  'ASAAS_WEBHOOK_TOKEN',
-  'Checkout webhook verifies Asaas token',
+  paymentWebhookPath,
+  'STRIPE_WEBHOOK_SECRET',
+  'Payment webhook verifies Stripe signature secret',
 );
 requireIncludes(
-  legacyWebhookPath,
-  'HttpStatus.GONE',
-  'Legacy Asaas webhook is permanently disabled',
+  paymentWebhookPath,
+  "@Post('stripe')",
+  'Payment webhook exposes the Stripe endpoint',
 );
 
 const metricsPath = path.join(rootDir, 'backend/src/metrics/metrics.controller.ts');
@@ -457,7 +453,7 @@ requireIncludes(diagPath, "@Get('health')", 'Backend exposes liveness health end
 
 const rootEnvPath = path.join(rootDir, '.env.example');
 for (const variable of [
-  'ASAAS_WEBHOOK_TOKEN',
+  'STRIPE_WEBHOOK_SECRET',
   'METRICS_TOKEN',
   'WORKER_METRICS_TOKEN',
   'DIAG_TOKEN',
@@ -470,7 +466,7 @@ for (const variable of [
 
 const backendEnvPath = path.join(rootDir, 'backend/.env.example');
 for (const variable of [
-  'ASAAS_WEBHOOK_TOKEN',
+  'STRIPE_WEBHOOK_SECRET',
   'METRICS_TOKEN',
   'WORKER_METRICS_TOKEN',
   'DIAG_TOKEN',

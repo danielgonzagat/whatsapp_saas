@@ -3,7 +3,6 @@ import { CheckoutService } from './checkout.service';
 describe('CheckoutService public resolution', () => {
   let service: CheckoutService;
   let prisma: any;
-  let mercadoPago: any;
   let loggerSpy: jest.SpyInstance;
 
   beforeEach(() => {
@@ -25,15 +24,7 @@ describe('CheckoutService public resolution', () => {
       $transaction: jest.fn(),
     };
 
-    mercadoPago = {
-      getPublicCheckoutConfig: jest.fn(),
-      assertPaymentMethodAvailable: jest.fn(),
-      buildChargeSummary: jest.fn(),
-    };
-
-    service = new CheckoutService(prisma, { processPayment: jest.fn() } as any, {} as any, {
-      ...mercadoPago,
-    });
+    service = new CheckoutService(prisma, { processPayment: jest.fn() } as any, {} as any);
     loggerSpy = jest.spyOn((service as any).logger, 'log').mockImplementation(() => undefined);
 
     (service as any).planLinkManager.ensurePlanReferenceCode = jest
@@ -48,6 +39,15 @@ describe('CheckoutService public resolution', () => {
         id: plan.id,
         slug: plan.slug,
         checkoutCode: plan.referenceCode,
+        paymentProvider: {
+          provider: 'stripe',
+          connected: true,
+          checkoutEnabled: true,
+          publicKey: 'pk_test_checkout',
+          supportsCreditCard: true,
+          supportsPix: true,
+          supportsBoleto: false,
+        },
       }));
   });
 
@@ -94,6 +94,15 @@ describe('CheckoutService public resolution', () => {
       expect.objectContaining({
         id: 'plan_1',
         referenceCode: 'MPX9Q2Z7',
+      }),
+    );
+    expect(bySlug.paymentProvider).toEqual(
+      expect.objectContaining({
+        provider: 'stripe',
+        checkoutEnabled: true,
+        supportsCreditCard: true,
+        supportsPix: true,
+        supportsBoleto: false,
       }),
     );
 

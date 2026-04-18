@@ -63,20 +63,24 @@ export function checkIdempotency(config: PulseConfig): Break[] {
           severity: 'critical',
           file: relFile,
           line: 0,
-          description: 'Payment creation endpoint without idempotency key — network retry causes double charge',
-          detail: 'Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key',
+          description:
+            'Payment creation endpoint without idempotency key — network retry causes double charge',
+          detail:
+            'Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key',
         });
       }
 
-      // Specifically verify Asaas calls pass idempotency key
-      if (/asaas/i.test(content) && !IDEMPOTENCY_KEY_RE.test(content)) {
+      // Specifically verify Stripe calls pass idempotency key
+      if (/stripe/i.test(content) && !IDEMPOTENCY_KEY_RE.test(content)) {
         breaks.push({
           type: 'IDEMPOTENCY_FINANCIAL',
           severity: 'critical',
           file: relFile,
           line: 0,
-          description: 'Asaas payment call without idempotency key — Asaas supports idempotency but it is not used',
-          detail: 'Pass the idempotency key to Asaas via X-Idempotency-Key header to prevent double-charge at provider level',
+          description:
+            'Stripe payment call without idempotency key — provider retry can create duplicate financial operations',
+          detail:
+            'Pass the idempotency key to Stripe requests to prevent duplicate financial operations at provider level',
         });
       }
     }
@@ -89,7 +93,10 @@ export function checkIdempotency(config: PulseConfig): Break[] {
         if (/@Post\s*\(/.test(line)) {
           // Check surrounding method for idempotency handling
           const context = lines.slice(i, Math.min(lines.length, i + 30)).join('\n');
-          const hasIdempotency = IDEMPOTENCY_KEY_RE.test(context) || UPSERT_RE.test(context) || DUPLICATE_CHECK_RE.test(context);
+          const hasIdempotency =
+            IDEMPOTENCY_KEY_RE.test(context) ||
+            UPSERT_RE.test(context) ||
+            DUPLICATE_CHECK_RE.test(context);
           // Only flag if the POST creates a resource (create/save/add in method body)
           const createsResource = /\.create\s*\(|\.save\s*\(|\.insert\s*\(/.test(context);
           if (createsResource && !hasIdempotency) {
@@ -98,8 +105,10 @@ export function checkIdempotency(config: PulseConfig): Break[] {
               severity: 'high',
               file: relFile,
               line: i + 1,
-              description: 'POST endpoint creates resource without idempotency — safe retry not possible',
-              detail: 'Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent',
+              description:
+                'POST endpoint creates resource without idempotency — safe retry not possible',
+              detail:
+                'Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent',
             });
           }
         }
@@ -115,15 +124,18 @@ export function checkIdempotency(config: PulseConfig): Break[] {
           severity: 'high',
           file: relFile,
           line: 0,
-          description: 'BullMQ job enqueued without deduplication jobId — same job may run multiple times on retry',
-          detail: 'Pass { jobId: uniqueKey } option when adding jobs; BullMQ will skip duplicate jobIds',
+          description:
+            'BullMQ job enqueued without deduplication jobId — same job may run multiple times on retry',
+          detail:
+            'Pass { jobId: uniqueKey } option when adding jobs; BullMQ will skip duplicate jobIds',
         });
       }
     }
 
     // CHECK 4: Webhook idempotency (at-most-once processing)
     if (/webhook/i.test(file) && /controller/i.test(file)) {
-      const hasIdempotencyCheck = DUPLICATE_CHECK_RE.test(content) || IDEMPOTENCY_KEY_RE.test(content);
+      const hasIdempotencyCheck =
+        DUPLICATE_CHECK_RE.test(content) || IDEMPOTENCY_KEY_RE.test(content);
       const hasWebhookEventModel = /WebhookEvent|webhookEvent/i.test(content);
 
       if (!hasIdempotencyCheck && !hasWebhookEventModel) {
@@ -132,8 +144,10 @@ export function checkIdempotency(config: PulseConfig): Break[] {
           severity: 'high',
           file: relFile,
           line: 0,
-          description: 'Webhook handler without idempotency check — duplicate webhooks will be processed twice',
-          detail: 'Store processed webhook IDs in WebhookEvent model; reject duplicates with 200 (not 409)',
+          description:
+            'Webhook handler without idempotency check — duplicate webhooks will be processed twice',
+          detail:
+            'Store processed webhook IDs in WebhookEvent model; reject duplicates with 200 (not 409)',
         });
       }
     }
@@ -141,15 +155,19 @@ export function checkIdempotency(config: PulseConfig): Break[] {
     // CHECK 5: Retry-unsafe operations (operations with side effects that are not guarded)
     if (/retry|Retry|maxRetries|backoff/i.test(content)) {
       // Check if retried operations are marked as idempotent or have guards
-      if (!/idempotent|once.*retry|retryOnce|skipDuplicate/i.test(content) &&
-          /sendEmail|sendSMS|sendWhatsApp|charge|processPayment/i.test(content)) {
+      if (
+        !/idempotent|once.*retry|retryOnce|skipDuplicate/i.test(content) &&
+        /sendEmail|sendSMS|sendWhatsApp|charge|processPayment/i.test(content)
+      ) {
         breaks.push({
           type: 'IDEMPOTENCY_MISSING',
           severity: 'high',
           file: relFile,
           line: 0,
-          description: 'Retry logic around operations with external side effects without idempotency guard',
-          detail: 'Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries',
+          description:
+            'Retry logic around operations with external side effects without idempotency guard',
+          detail:
+            'Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries',
         });
       }
     }

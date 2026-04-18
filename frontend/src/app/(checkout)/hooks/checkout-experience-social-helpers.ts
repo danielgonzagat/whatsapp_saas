@@ -147,7 +147,7 @@ export function deriveCheckoutExperienceState({
       : '');
   const checkoutUnavailableReason =
     paymentProvider?.checkoutEnabled === false
-      ? paymentProvider.unavailableReason || 'Conecte seu Mercado Pago para começar a vender.'
+      ? paymentProvider.unavailableReason || 'Conecte sua conta Stripe para começar a vender.'
       : '';
   const testimonials = normalizeTestimonials(
     brandName,
@@ -194,9 +194,6 @@ export function deriveCheckoutExperienceState({
   const headerSecondary = config?.headerSubMessage || 'OFERTA ESPECIAL DO MÊS!!!';
   const mobileCanOpenStep1 = step > 1;
   const mobileCanOpenStep2 = step > 2;
-  const mercadoPagoPublicKey =
-    paymentProvider?.publicKey || process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || '';
-
   return {
     productName,
     brandName,
@@ -224,7 +221,6 @@ export function deriveCheckoutExperienceState({
     headerSecondary,
     mobileCanOpenStep1,
     mobileCanOpenStep2,
-    mercadoPagoPublicKey,
   };
 }
 

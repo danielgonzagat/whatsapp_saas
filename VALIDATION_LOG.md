@@ -63,7 +63,7 @@
 2. `frontend/src/components/kloel/carteira.tsx:80` — path `/kyc/bank-account` → `/kyc/bank`
 3. `frontend/src/lib/api/misc.ts:341-342` — proxy removido em KYC status/completion (`/api/kyc/status` → `/kyc/status`)
 4. `frontend/src/hooks/useCheckoutEditor.ts:227` — PUT → PATCH (bug critico de checkout config)
-5. `frontend/src/components/kloel/conta/ContaView.tsx:1553,1563` — workspaceId adicionado nas URLs do Asaas
+5. `frontend/src/components/kloel/conta/ContaView.tsx:1553,1563` — workspaceId adicionado nas URLs do legacy payment provider
 6. `frontend/src/components/kloel/settings/billing-settings-section.tsx:280` — handleSaveCard conectado a billingApi.createSetupIntent (Stripe)
 7. `frontend/src/components/products/ProductIATab.tsx` — reescrito inteiro: hardcoded data → backend GET/PUT /products/:id/ai-config
 8. `frontend/src/components/products/ProductAfterPayTab.tsx:25` — fake save documentado como pending backend
@@ -96,7 +96,7 @@
 - ProductIATab: shell 100% preservada, mesma estrutura visual (banner, grid perfil+objecoes, comportamento, toggles, botao salvar). Diferenca: dados carregam do backend e save faz PUT real.
 - billing-settings handleSaveCard: botao "Salvar cartao" agora redireciona para Stripe Setup Intent em vez de simular save local.
 - PlanAffiliateTab, PlanThankYouTab, ProductAfterPayTab: shells preservadas com comentarios honestos sobre pending backend.
-- ContaView Asaas section: mesma UI, URLs agora incluem workspaceId.
+- ContaView legacy payment provider section: mesma UI, URLs agora incluem workspaceId.
 
 ---
 
@@ -141,8 +141,8 @@ Branch: `feat/stripe-migration` (10 commits, 0 regressions in unrelated modules)
 
 ### Trabalho remanescente (deferido — exige sessão dedicada por fase)
 
-- **FASE 7 legacy refactor**: integrar `backend/src/checkout/checkout.service.ts` (~2.100 LOC) e `checkout-webhook.controller.ts` (~1.029 LOC) com StripeChargeService + StripeWebhookProcessor. Atualmente o motor novo coexiste com Asaas/MP; chamadas reais ainda passam pelo legado.
+- **FASE 7 legacy refactor**: integrar `backend/src/checkout/checkout.service.ts` (~2.100 LOC) e `checkout-webhook.controller.ts` (~1.029 LOC) com StripeChargeService + StripeWebhookProcessor. Atualmente o motor novo coexiste com legacy payment provider/MP; chamadas reais ainda passam pelo legado.
 - **FASE 8 UI integration**: trocar AsaasTokenizer por StripePaymentElement no `CheckoutShell.tsx` com feature flag, depois remover.
-- **FASE 9 cleanup**: deletar `asaas.service.ts`, `mercado-pago.service.ts`, `mercado-pago-*.util.ts`, `payment.service.ts`, `smart-payment.service.ts`, `mercado-pago-wallet.controller.ts`, `frontend/src/app/api/mercado-pago/ipn/route.ts`, `frontend/src/lib/mercado-pago.ts`, `frontend/src/app/(checkout)/components/AsaasTokenizer.tsx`. Deps `mercadopago` em backend/package.json. Schema migration: `CheckoutPayment.gateway` + `Payment.provider` viram enum `PaymentProvider { STRIPE }` (DB vazia em prod, migration é noop em dados — só estabelece o constraint).
-- **FASE 10 PULSE parsers**: 10 parsers em `scripts/pulse/parsers/` referenciam Asaas/MP. PULSE é read-only por contrato (memória `feedback_pulse_readonly.md`); atualização exige Daniel ou outro humano.
-- **CLAUDE.md FASE 1 do DAG**: troca "via Asaas" por "via Stripe Connect". É arquivo protegido; aguarda Daniel ou autorização explícita.
+- **FASE 9 cleanup**: deletar `legacy-payment.service.ts`, `mercado-pago.service.ts`, `mercado-pago-*.util.ts`, `payment.service.ts`, `smart-payment.service.ts`, `mercado-pago-wallet.controller.ts`, `frontend/src/app/webhook/payment/stripe/route.ts`, `frontend/src/lib/mercado-pago.ts`, `frontend/src/app/(checkout)/components/AsaasTokenizer.tsx`. Deps `legacy-provider` em backend/package.json. Schema migration: `CheckoutPayment.gateway` + `Payment.provider` viram enum `PaymentProvider { STRIPE }` (DB vazia em prod, migration é noop em dados — só estabelece o constraint).
+- **FASE 10 PULSE parsers**: 10 parsers em `scripts/pulse/parsers/` referenciam legacy payment provider/MP. PULSE é read-only por contrato (memória `feedback_pulse_readonly.md`); atualização exige Daniel ou outro humano.
+- **CLAUDE.md FASE 1 do DAG**: troca "via legacy payment provider" por "via Stripe Connect". É arquivo protegido; aguarda Daniel ou autorização explícita.

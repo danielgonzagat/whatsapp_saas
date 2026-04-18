@@ -288,19 +288,19 @@ Toggle components em `frontend/src/components/kloel/Forms.tsx`.
 
 ### Webhook Verification
 
-- Asaas: header `asaas-access-token` verificado contra `ASAAS_WEBHOOK_TOKEN` (asaas-webhook.controller.ts + checkout-webhook.controller.ts)
-- Webhooks sem token valido: rejeitados com 403
+- Stripe: header `stripe-signature` validado contra `STRIPE_WEBHOOK_SECRET` em `backend/src/webhooks/payment-webhook.controller.ts`
+- Webhooks sem assinatura valida: rejeitados com 400/403
 
 ### Idempotencia
 
 - Checkout webhooks verificam `externalId` antes de processar — duplicatas ignoradas
-- Asaas webhooks verificam status do Payment — ja processado = skip
+- Stripe webhooks verificam evento/intent e ignoram duplicatas
 
 ### Rate Limiting
 
 - `@nestjs/throttler` global: 100 req/min
 - Auth login: 5 req/min por IP
-- Webhook endpoints: 200 req/min (rajadas do Asaas)
+- Webhook endpoints: 200 req/min
 
 ### Wallet Protection
 
@@ -315,17 +315,17 @@ Toggle components em `frontend/src/components/kloel/Forms.tsx`.
 
 ### ENV VARS necessarias para producao
 
-- `ASAAS_WEBHOOK_TOKEN` — token de verificacao de webhooks Asaas (DEPRECADO — ver STRIPE MIGRATION abaixo)
+- `STRIPE_WEBHOOK_SECRET` — secret de verificacao do webhook Stripe
 
 ---
 
-## STRIPE MIGRATION — substitui Asaas e Mercado Pago
+## STRIPE PAYMENT BASELINE
 
 > **Decisão arquitetural ativa**. Autorizada pelo dono do repo em 2026-04-17.
 > ADR fundador: [docs/adr/0003-stripe-connect-platform-model.md](docs/adr/0003-stripe-connect-platform-model.md).
 > **Plano executável (ler antes de tocar qualquer código de pagamento)**: [docs/plans/STRIPE_MIGRATION_PLAN.md](docs/plans/STRIPE_MIGRATION_PLAN.md).
 
-KLOEL adota **Stripe Connect Platform Model com Custom Accounts** como única infra de pagamento. Asaas e Mercado Pago são removidos via Adapter pattern + feature flag por workspace (sem kill-switch — ordens legacy continuam resolvíveis para refund/audit).
+KLOEL adota **Stripe Connect Platform Model** como única infraestrutura ativa de pagamento. O cutover para Stripe-only está concluído no runtime ativo; qualquer evolução nova deve partir dessa base única.
 
 **Não-negociáveis** (qualquer agente que tocar este código):
 
@@ -337,26 +337,18 @@ KLOEL adota **Stripe Connect Platform Model com Custom Accounts** como única in
 - `sk_test_*` em dev, `sk_live_*` apenas em produção via Railway secret.
 - ADR-driven: desvios exigem novo ADR. Sem improviso.
 
-**Fases ordenadas** (ver plano para entregáveis e critérios de pronto):
+**Próximas camadas** (ver plano para direção atual):
 
 ```
-0. Foundation (SDK + ADR + secrets + smoke)
-1. SplitEngine (motor puro de cálculo, isolado)
-2. LedgerEngine (dual-balance + maturação + payout manual)
-3. Connect Onboarding (Custom Accounts + KYC custom)
-4. Wallet prepaid (créditos de uso de API/AI/WhatsApp)
-5. FraudEngine (motor antifraude unificado)
-6. PaymentProvider Adapter + cutover (feature flag)
-7. Checkout migration (backend reescrito)
-8. Frontend migration (AsaasTokenizer → Stripe Elements)
-9. Cleanup (delete Asaas/MP code morto)
-10. PULSE & docs (parsers + CLAUDE.md + VALIDATION_LOG)
+1. SplitEngine
+2. LedgerEngine
+3. Connect onboarding
+4. Wallet prepaid
+5. FraudEngine
+6. Payment Kernel multi-stakeholder
 ```
-
-**FASE 1 do DAG (Motor Comercial)** lá em cima passa a ser implementada via Stripe; remova mentalmente "Asaas" das frases originais.
 
 **Bloqueios conhecidos** (manter sincronizado com `docs/plans/STRIPE_MIGRATION_PLAN.md`):
 
-- `railway login` deslogado — Daniel precisa rodar interativo.
 - PIX capability na conta Stripe live — Daniel precisa solicitar via dashboard.
 - Webhook endpoint live em produção — criar via dashboard ou API após FASE 0.

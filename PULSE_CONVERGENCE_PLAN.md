@@ -96,7 +96,7 @@
 - Flows: whatsapp-message-send
 - Async Expectations: conversation-reload, message-persistence
 - Break Types: VISUAL_CONTRACT_GENERIC_SPINNER (38), VISUAL_CONTRACT_EMOJI_UI (9), CACHE_STALE_AFTER_WRITE (3), FINANCIAL_ERROR_SWALLOWED (3), FLOATING_PROMISE (3), IDEMPOTENCY_MISSING (3)
-- Related Files: frontend/src/app/(main)/flow/page.tsx (5), frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), backend/src/kloel/kloel.service.ts (4), backend/src/kloel/mercado-pago.service.ts (4), frontend/src/app/(main)/webinarios/page.tsx (4), backend/src/whatsapp/providers/waha.provider.ts (3), frontend/src/app/(main)/funnels/page.tsx (3), backend/src/webhooks/asaas-webhook.controller.ts (2), frontend/src/app/(main)/autopilot/page.tsx (2), frontend/src/app/(main)/followups/page.tsx (2)
+- Related Files: frontend/src/app/(main)/flow/page.tsx (5), frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), backend/src/kloel/kloel.service.ts (4), backend/src/kloel/mercado-pago.service.ts (4), frontend/src/app/(main)/webinarios/page.tsx (4), backend/src/whatsapp/providers/waha.provider.ts (3), frontend/src/app/(main)/funnels/page.tsx (3), backend/src/webhook/payment/stripe-webhook.controller.ts (2), frontend/src/app/(main)/autopilot/page.tsx (2), frontend/src/app/(main)/followups/page.tsx (2)
 - Artifacts: PULSE_BROWSER_EVIDENCE.json, PULSE_CERTIFICATE.json, PULSE_CUSTOMER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 - Validation Artifacts: PULSE_BROWSER_EVIDENCE.json, PULSE_CERTIFICATE.json, PULSE_CUSTOMER_EVIDENCE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 - Exit Criteria:
@@ -185,7 +185,7 @@
 - Flows: —
 - Async Expectations: provider-status-sync, session-reconnect
 - Break Types: EDGE_CASE_FILE (11), VISUAL_CONTRACT_EMOJI_UI (5), VISUAL_CONTRACT_GENERIC_SPINNER (4), EDGE_CASE_PAGINATION (3), IDEMPOTENCY_MISSING (3), AUDIT_ADMIN_NO_LOG (2)
-- Related Files: frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), backend/src/kloel/product-sub-resources.controller.ts (3), backend/src/kyc/kyc.controller.ts (3), backend/src/whatsapp/providers/waha.provider.ts (3), backend/src/kloel/audio.controller.ts (2), backend/src/kloel/kloel.controller.ts (2), backend/src/kloel/mercado-pago-wallet.controller.ts (2), backend/src/kloel/mercado-pago.service.ts (2), backend/src/media/media.controller.ts (2), backend/src/webhooks/asaas-webhook.controller.ts (2)
+- Related Files: frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), backend/src/kloel/product-sub-resources.controller.ts (3), backend/src/kyc/kyc.controller.ts (3), backend/src/whatsapp/providers/waha.provider.ts (3), backend/src/kloel/audio.controller.ts (2), backend/src/kloel/kloel.controller.ts (2), backend/src/kloel/mercado-pago-wallet.controller.ts (2), backend/src/kloel/mercado-pago.service.ts (2), backend/src/media/media.controller.ts (2), backend/src/webhook/payment/stripe-webhook.controller.ts (2)
 - Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_CERTIFICATE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 - Validation Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_CERTIFICATE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 - Exit Criteria:
@@ -230,7 +230,7 @@
 - Flows: —
 - Async Expectations: flow-resume-after-wait
 - Break Types: VISUAL_CONTRACT_GENERIC_SPINNER (38), VISUAL_CONTRACT_EMOJI_UI (9), QUEUE_NO_PROCESSOR (4), FINANCIAL_ERROR_SWALLOWED (3), FLOATING_PROMISE (3), ORDERING_WEBHOOK_OOO (3)
-- Related Files: frontend/src/app/(main)/flow/page.tsx (5), frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), backend/src/kloel/mercado-pago.service.ts (4), frontend/src/app/(main)/webinarios/page.tsx (4), backend/src/kloel/kloel.service.ts (3), frontend/src/app/(main)/funnels/page.tsx (3), backend/src/campaigns/campaigns.service.ts (2), backend/src/webhooks/asaas-webhook.controller.ts (2), frontend/src/app/(main)/autopilot/page.tsx (2), frontend/src/app/(main)/followups/page.tsx (2)
+- Related Files: frontend/src/app/(main)/flow/page.tsx (5), frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), backend/src/kloel/mercado-pago.service.ts (4), frontend/src/app/(main)/webinarios/page.tsx (4), backend/src/kloel/kloel.service.ts (3), frontend/src/app/(main)/funnels/page.tsx (3), backend/src/campaigns/campaigns.service.ts (2), backend/src/webhook/payment/stripe-webhook.controller.ts (2), frontend/src/app/(main)/autopilot/page.tsx (2), frontend/src/app/(main)/followups/page.tsx (2)
 - Artifacts: PULSE_CERTIFICATE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json
 - Validation Artifacts: PULSE_CERTIFICATE.json, PULSE_OPERATOR_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json
 - Exit Criteria:

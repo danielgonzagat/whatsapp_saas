@@ -299,14 +299,6 @@
       "expiresAt": "2026-07-13"
     },
     {
-      "path": "backend/src/kloel/asaas.service.ts",
-      "rule": "max_touched_file_lines",
-      "maxLines": 905,
-      "owner": "@danielgonzagat",
-      "reason": "The Asaas integration remains oversized; this branch only touched localized payment and compliance behavior.",
-      "expiresAt": "2026-07-13"
-    },
-    {
       "path": "backend/src/kloel/conversational-onboarding.service.ts",
       "rule": "max_touched_file_lines",
       "maxLines": 1126,

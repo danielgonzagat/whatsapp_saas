@@ -4,7 +4,7 @@ import { apiFetch, tokenStorage } from './core';
 
 const invalidateProducts = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/products'));
-import type { KnowledgeBaseItem, KnowledgeSourceItem } from './asaas';
+import type { KnowledgeBaseItem, KnowledgeSourceItem } from './shared-types';
 
 export interface CatalogProduct {
   id: string;

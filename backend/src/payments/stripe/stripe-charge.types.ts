@@ -1,9 +1,12 @@
+import type { StripeClient, StripePaymentIntent } from '../../billing/stripe-types';
 import type {
   PercentRoleInput,
   SplitInput,
   SplitOutput,
   SupplierInput,
 } from '../split/split.types';
+
+type StripePaymentIntentCreateParams = Parameters<StripeClient['paymentIntents']['create']>[0];
 
 export interface CreateSaleChargeInput {
   /** Workspace owning the sale (used for audit + idempotency). */
@@ -33,6 +36,12 @@ export interface CreateSaleChargeInput {
     coproducer?: PercentRoleInput;
     manager?: PercentRoleInput;
   };
+  /** Optional server-side confirmation for payment methods like Pix. */
+  confirm?: boolean;
+  /** Optional payment_method_data forwarded to PaymentIntent create. */
+  paymentMethodData?: StripePaymentIntentCreateParams['payment_method_data'];
+  /** Optional payment method options forwarded to PaymentIntent create. */
+  paymentMethodOptions?: StripePaymentIntentCreateParams['payment_method_options'];
   /**
    * Optional: payment_method_types override. Defaults to ['card', 'boleto'].
    * Add 'pix' once Stripe BR enables PIX capability for the platform.
@@ -53,4 +62,6 @@ export interface CreateSaleChargeResult {
   split: SplitOutput;
   /** SplitEngine input snapshot (post-validation). Persisted for audit. */
   splitInput: SplitInput;
+  /** Raw PaymentIntent returned by Stripe after create/confirm. */
+  stripePaymentIntent: StripePaymentIntent;
 }

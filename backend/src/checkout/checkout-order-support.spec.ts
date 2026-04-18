@@ -13,8 +13,8 @@ describe('CheckoutOrderSupport', () => {
     ]);
   });
 
-  it('builds Mercado Pago line items with normalized quantity and accepted bumps only', () => {
-    const items = support.buildMercadoPagoLineItems(
+  it('builds checkout line items with normalized quantity and accepted bumps only', () => {
+    const items = support.buildCheckoutLineItems(
       {
         id: 'plan_coreamy',
         name: '1 Frasco Coreamy PDRN',
