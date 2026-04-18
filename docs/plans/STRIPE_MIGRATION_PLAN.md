@@ -89,7 +89,6 @@ Cada fase abaixo tem: **Objetivo**, **Entregáveis**, **Critérios de pronto** (
 ### Entregáveis (commit `6c73000d`)
 
 - [x] Diretório `backend/src/payments/split/`.
-- [ ] `split.types.ts` — tipos puros:
 - [x] `split.types.ts` — tipos puros: ✅ implementado (vide arquivo).
 - [x] `split.engine.ts` — função pura `calculateSplit(input: SplitInput): SplitOutput` ✅.
 - [x] `split.engine.spec.ts` — 17 testes, 4 hipóteses + 7 edges + 4 validações + 2 property tests (1500 runs total) ✅.
@@ -139,7 +138,26 @@ interface SplitOutput {
 
 **Objetivo**: livro-razão dual-balance (`pending_cents`/`available_cents`) com maturação por role. Define quando saldo Stripe vira "sacável" no dashboard Kloel.
 
-### Entregáveis
+### Entregáveis (commit `913342a9`)
+
+- [x] Migration Prisma `20260417220000_connect_ledger`: enums `ConnectAccountType` + `ConnectLedgerEntryType`; tabelas `connect_account_balances` + `connect_ledger_entries` + `connect_maturation_rules`; indexes + FK + `@@unique(reference_type, reference_id, type)` para idempotência DB-level.
+- [x] `ledger.types.ts` — DTOs + erros tipados (`InsufficientAvailableBalanceError`, `AccountBalanceNotFoundError`).
+- [x] `ledger.service.ts` (NestJS Injectable) com 5 métodos: `creditPending`, `moveFromPendingToAvailable`, `debitAvailableForPayout`, `debitForChargeback`, `getBalance`. Todas as escritas dentro de `prisma.$transaction`.
+- [x] `ledger.service.spec.ts` — 17 testes (in-memory Prisma stub) cobrindo idempotência, maturação, payout-clamp, chargeback cascade (PENDING→AVAILABLE→negative), invariante de conservação (`pending + available == lifetimeReceived - lifetimePaidOut - lifetimeChargebacks`).
+
+**Deferido (será adicionado em fase posterior conforme necessidade):**
+
+- [ ] Cron `MaturationScheduler` (BullMQ worker). Service já está pronto pra ser chamado de qualquer scheduler; o wiring do job entra junto com FASE 4 (Wallet) ou FASE 7 (Checkout) quando o consumer real existir.
+- [ ] Seed default `ConnectMaturationRule` por role (SELLER 30d, COPRODUCER/SUPPLIER 14d, AFFILIATE/MANAGER 7d). Entra junto com FASE 3 (onboarding) — quando contas Connect começam a ser criadas.
+
+### Critérios de pronto
+
+- [x] `npm --prefix backend test -- --testPathPatterns=payments/ledger` verde (17/17).
+- [x] Coverage `≥ 95%` em `ledger.service.ts` (lines 95.65%, branches 84.21%, functions 100%, statements 92.1%; branches abaixo reflete logs de idempotency-skip e metadata-undefined).
+- [x] Migration aplicada em sandbox sem erro (validate verde; aplicação em prod via `migrate deploy` no próximo deploy).
+- [x] Backend build verde (`nest build && tsc -p tsconfig.build.json`).
+
+### Entregáveis originais (referência histórica)
 
 - [ ] Migration Prisma adicionando:
   ```prisma
