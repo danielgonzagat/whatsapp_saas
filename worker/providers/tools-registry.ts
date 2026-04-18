@@ -13,10 +13,169 @@ export type ToolDefinition = {
   };
 };
 
+type ToolContext = { workspaceId: string; user: string };
+type ToolArgs = Record<string, unknown>;
+type ToolHandler = (args: ToolArgs, ctx: ToolContext) => Promise<string> | string;
+
+function asString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  return String(value ?? '');
+}
+
+async function handleUpdateContactField(args: ToolArgs, ctx: ToolContext): Promise<string> {
+  const field = asString(args.field);
+  const value = asString(args.value);
+  const updateData: Record<string, unknown> = {};
+  if (field.startsWith('customFields.')) {
+    const key = field.split('.')[1];
+    updateData.customFields = { [key]: value };
+  } else {
+    updateData[field] = value;
+  }
+  await CRM.updateContact(ctx.workspaceId, ctx.user, updateData);
+  return `Successfully updated ${field} to ${value}`;
+}
+
+async function handleAddTag(args: ToolArgs, ctx: ToolContext): Promise<string> {
+  const tag = asString(args.tag);
+  await CRM.addTag(ctx.workspaceId, ctx.user, tag);
+  return `Tag ${tag} added.`;
+}
+
+function handleCheckAvailability(args: ToolArgs): string {
+  const dateStr = asString(args.date);
+  const day = new Date(dateStr).getDay();
+  if (day === 0 || day === 6) return 'No slots available (Weekend).';
+  return 'Available slots: 10:00, 14:00, 16:00';
+}
+
+async function createStripePaymentLink(
+  stripe: Stripe.Stripe,
+  productName: string,
+  amount: number,
+): Promise<string> {
+  try {
+    const frontendUrl =
+      process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'brl',
+            product_data: { name: productName },
+            unit_amount: Math.round(amount * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${frontendUrl}/checkout/success`,
+      cancel_url: `${frontendUrl}/checkout/cancel`,
+    });
+    return session.url || 'Error generating link';
+  } catch (stripeError: unknown) {
+    const err =
+      stripeError instanceof Error
+        ? stripeError
+        : new Error(typeof stripeError === 'string' ? stripeError : 'unknown error');
+    console.error('Stripe Error:', stripeError);
+    return `Stripe Error: ${err.message}`;
+  }
+}
+
+function mockPaymentLink(productName: string, amount: number): string {
+  const linkId = Math.random().toString(36).substring(7);
+  return `(MOCK) https://checkout.stripe.com/pay/${linkId}?amount=${amount}&product=${encodeURIComponent(productName)}`;
+}
+
+async function handleCreatePaymentLink(args: ToolArgs): Promise<string> {
+  const productName = asString(args.productName);
+  const amount = Number(args.amount) || 0;
+  const stripe = ToolsRegistry.getStripe();
+  if (stripe) {
+    return createStripePaymentLink(stripe, productName, amount);
+  }
+  return mockPaymentLink(productName, amount);
+}
+
+async function resolveDefaultStageId(workspaceId: string): Promise<string | undefined> {
+  const pipeline = await prisma.pipeline.findFirst({
+    where: { workspaceId, isDefault: true },
+    include: { stages: { orderBy: { order: 'asc' }, take: 1 } },
+  });
+  const stageId = pipeline?.stages[0]?.id;
+  if (stageId) return stageId;
+
+  const anyStage = await prisma.stage.findFirst({
+    where: { pipeline: { workspaceId } },
+  });
+  return anyStage?.id;
+}
+
+async function handleCreateCrmDeal(args: ToolArgs, ctx: ToolContext): Promise<string> {
+  const dealTitle = asString(args.title);
+  const dealValue = Number(args.value) || 0;
+  const contact = await CRM.getContact(ctx.workspaceId, ctx.user);
+  if (!contact) return 'Contact not found.';
+
+  const stageId = await resolveDefaultStageId(ctx.workspaceId);
+  if (!stageId) return 'No CRM pipeline configured.';
+
+  await prisma.deal.create({
+    data: {
+      title: dealTitle,
+      value: dealValue,
+      contactId: contact.id,
+      stageId,
+      priority: 'MEDIUM',
+      status: 'OPEN',
+    },
+  });
+  return `Deal '${dealTitle}' created successfully.`;
+}
+
+async function handleUpdateDealStage(args: ToolArgs, ctx: ToolContext): Promise<string> {
+  const stageNameArg = asString(args.stageName);
+  const stageName = stageNameArg.toLowerCase();
+  const contact = await CRM.getContact(ctx.workspaceId, ctx.user);
+  if (!contact) return 'Contact not found.';
+
+  const stages = await prisma.stage.findMany({
+    where: { pipeline: { workspaceId: ctx.workspaceId } },
+  });
+
+  const targetStage = stages.find((s) => s.name.toLowerCase().includes(stageName));
+  if (!targetStage) {
+    return `Stage '${stageNameArg}' not found. Available: ${stages.map((s) => s.name).join(', ')}`;
+  }
+
+  const { count } = await prisma.deal.updateMany({
+    where: { contactId: contact.id, status: 'OPEN' },
+    data: { stageId: targetStage.id },
+  });
+
+  return `Moved ${count} deal(s) to stage '${targetStage.name}'.`;
+}
+
+const TOOL_HANDLERS: Record<string, ToolHandler> = {
+  get_current_time: () => new Date().toISOString(),
+  update_contact_field: handleUpdateContactField,
+  add_tag: handleAddTag,
+  check_availability: (args) => handleCheckAvailability(args),
+  create_payment_link: (args) => handleCreatePaymentLink(args),
+  create_crm_deal: handleCreateCrmDeal,
+  update_deal_stage: handleUpdateDealStage,
+};
+
 export class ToolsRegistry {
   private static stripe: Stripe.Stripe | null = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY)
     : null;
+
+  static getStripe(): Stripe.Stripe | null {
+    return ToolsRegistry.stripe;
+  }
 
   static getDefinitions(): ToolDefinition[] {
     return [
@@ -135,152 +294,9 @@ export class ToolsRegistry {
     console.log('[Tools] Executing %s with args: %O', name, args);
 
     try {
-      switch (name) {
-        case 'get_current_time':
-          return new Date().toISOString();
-
-        case 'update_contact_field': {
-          const field = typeof args.field === 'string' ? args.field : '';
-          const value = typeof args.value === 'string' ? args.value : String(args.value ?? '');
-          // Simple mapping for custom fields vs root fields
-          const updateData: Record<string, unknown> = {};
-          if (field.startsWith('customFields.')) {
-            const key = field.split('.')[1];
-            updateData.customFields = { [key]: value };
-          } else {
-            updateData[field] = value;
-          }
-          await CRM.updateContact(context.workspaceId, context.user, updateData);
-          return `Successfully updated ${field} to ${value}`;
-        }
-
-        case 'add_tag': {
-          const tag = typeof args.tag === 'string' ? args.tag : String(args.tag ?? '');
-          await CRM.addTag(context.workspaceId, context.user, tag);
-          return `Tag ${tag} added.`;
-        }
-
-        case 'check_availability': {
-          // Mock availability logic
-          const dateStr = typeof args.date === 'string' ? args.date : String(args.date ?? '');
-          const day = new Date(dateStr).getDay();
-          if (day === 0 || day === 6) return 'No slots available (Weekend).';
-          return 'Available slots: 10:00, 14:00, 16:00';
-        }
-
-        case 'create_payment_link': {
-          const productName =
-            typeof args.productName === 'string'
-              ? args.productName
-              : String(args.productName ?? '');
-          const amount = Number(args.amount) || 0;
-          if (ToolsRegistry.stripe) {
-            try {
-              const frontendUrl =
-                process.env.FRONTEND_URL ||
-                process.env.NEXT_PUBLIC_APP_URL ||
-                'http://localhost:3000';
-              const session = await ToolsRegistry.stripe.checkout.sessions.create({
-                payment_method_types: ['card'],
-                line_items: [
-                  {
-                    price_data: {
-                      currency: 'brl',
-                      product_data: {
-                        name: productName,
-                      },
-                      unit_amount: Math.round(amount * 100), // Stripe expects cents
-                    },
-                    quantity: 1,
-                  },
-                ],
-                mode: 'payment',
-                success_url: `${frontendUrl}/checkout/success`,
-                cancel_url: `${frontendUrl}/checkout/cancel`,
-              });
-              return session.url || 'Error generating link';
-            } catch (stripeError: unknown) {
-              const stripeErrorInstanceofError =
-                stripeError instanceof Error
-                  ? stripeError
-                  : new Error(typeof stripeError === 'string' ? stripeError : 'unknown error');
-              console.error('Stripe Error:', stripeError);
-              return `Stripe Error: ${stripeErrorInstanceofError.message}`;
-            }
-          } else {
-            // Mock Fallback
-            const linkId = Math.random().toString(36).substring(7);
-            return `(MOCK) https://checkout.stripe.com/pay/${linkId}?amount=${amount}&product=${encodeURIComponent(productName)}`;
-          }
-        }
-
-        case 'create_crm_deal': {
-          const dealTitle = typeof args.title === 'string' ? args.title : String(args.title ?? '');
-          const dealValue = Number(args.value) || 0;
-          const contact = await CRM.getContact(context.workspaceId, context.user);
-          if (!contact) return 'Contact not found.';
-
-          // Get default pipeline stage
-          const pipeline = await prisma.pipeline.findFirst({
-            where: { workspaceId: context.workspaceId, isDefault: true },
-            include: { stages: { orderBy: { order: 'asc' }, take: 1 } },
-          });
-
-          let stageId = pipeline?.stages[0]?.id;
-          if (!stageId) {
-            // Fallback: find any stage
-            const anyStage = await prisma.stage.findFirst({
-              where: { pipeline: { workspaceId: context.workspaceId } },
-            });
-            stageId = anyStage?.id;
-          }
-
-          if (!stageId) return 'No CRM pipeline configured.';
-
-          await prisma.deal.create({
-            data: {
-              title: dealTitle,
-              value: dealValue,
-              contactId: contact.id,
-              stageId: stageId,
-              priority: 'MEDIUM',
-              status: 'OPEN',
-            },
-          });
-          return `Deal '${dealTitle}' created successfully.`;
-        }
-
-        case 'update_deal_stage': {
-          const stageNameArg =
-            typeof args.stageName === 'string' ? args.stageName : String(args.stageName ?? '');
-          const stageName = stageNameArg.toLowerCase();
-          const contact = await CRM.getContact(context.workspaceId, context.user);
-          if (!contact) return 'Contact not found.';
-
-          // Find target stage by fuzzy name matching
-          const stages = await prisma.stage.findMany({
-            where: { pipeline: { workspaceId: context.workspaceId } },
-          });
-
-          const targetStage = stages.find((s) => s.name.toLowerCase().includes(stageName));
-          if (!targetStage)
-            return `Stage '${stageNameArg}' not found. Available: ${stages.map((s) => s.name).join(', ')}`;
-
-          // Update all open deals for this contact
-          const { count } = await prisma.deal.updateMany({
-            where: {
-              contactId: contact.id,
-              status: 'OPEN',
-            },
-            data: { stageId: targetStage.id },
-          });
-
-          return `Moved ${count} deal(s) to stage '${targetStage.name}'.`;
-        }
-
-        default:
-          return 'Tool not found.';
-      }
+      const handler = TOOL_HANDLERS[name];
+      if (!handler) return 'Tool not found.';
+      return await handler(args, context);
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');

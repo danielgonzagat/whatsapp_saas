@@ -76,6 +76,8 @@ const BLOCKED_HOSTNAMES = [
   'kubernetes.default.svc',
 ];
 
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
 function normalizeHost(host: string): string {
   const trimmed = String(host || '')
     .trim()
@@ -144,76 +146,85 @@ function isPrivateIP(ip: string): boolean {
   return false;
 }
 
-/**
- * Valida se uma URL é segura para fazer requisições
- */
-export async function validateUrl(urlString: string): Promise<{
+type UrlValidation = {
   valid: boolean;
   error?: string;
   resolvedIP?: string;
-}> {
+};
+
+function parseUrl(urlString: string): { url: URL } | { error: string } {
   try {
-    // Parse da URL
-    const url = new URL(urlString);
-
-    // 1. Verifica protocolo
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      return { valid: false, error: `Protocolo não permitido: ${url.protocol}` };
-    }
-
-    // 2. Verifica hostname bloqueado
-    const hostname = normalizeHost(url.hostname);
-    if (BLOCKED_HOSTNAMES.includes(hostname)) {
-      return { valid: false, error: `Hostname bloqueado: ${hostname}` };
-    }
-
-    // 3. Verifica se é IP direto
-    const directIpVersion = isIP(hostname);
-    if (directIpVersion) {
-      if (isPrivateIP(hostname)) {
-        return { valid: false, error: `IP privado bloqueado: ${hostname}` };
-      }
-    }
-
-    // 4. Verifica porta
-    const port = url.port ? Number.parseInt(url.port, 10) : url.protocol === 'https:' ? 443 : 80;
-    if (BLOCKED_PORTS.includes(port)) {
-      return { valid: false, error: `Porta bloqueada: ${port}` };
-    }
-
-    // 5. Resolve DNS e verifica IP resultante
-    if (!directIpVersion) {
-      try {
-        const results = await lookup(hostname, { all: true, verbatim: true });
-        if (!Array.isArray(results) || results.length === 0) {
-          return { valid: false, error: `Falha ao resolver DNS: ${hostname}` };
-        }
-
-        for (const result of results) {
-          const resolvedIP = normalizeHost(result.address);
-          if (isPrivateIP(resolvedIP)) {
-            return {
-              valid: false,
-              error: `DNS resolve para IP privado: ${hostname} -> ${resolvedIP}`,
-              resolvedIP,
-            };
-          }
-        }
-
-        return { valid: true, resolvedIP: normalizeHost(results[0].address) };
-      } catch {
-        return { valid: false, error: `Falha ao resolver DNS: ${hostname}` };
-      }
-    }
-
-    return { valid: true, resolvedIP: hostname };
+    return { url: new URL(urlString) };
   } catch (error: unknown) {
-    const errorInstanceofError =
-      error instanceof Error
-        ? error
-        : new Error(typeof error === 'string' ? error : 'unknown error');
-    return { valid: false, error: `URL inválida: ${errorInstanceofError.message}` };
+    const msg = error instanceof Error ? error.message : 'erro desconhecido';
+    return { error: `URL inválida: ${msg}` };
   }
+}
+
+function validateBasicRules(url: URL): UrlValidation | null {
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    return { valid: false, error: `Protocolo não permitido: ${url.protocol}` };
+  }
+
+  const hostname = normalizeHost(url.hostname);
+  if (BLOCKED_HOSTNAMES.includes(hostname)) {
+    return { valid: false, error: `Hostname bloqueado: ${hostname}` };
+  }
+
+  if (isIP(hostname) && isPrivateIP(hostname)) {
+    return { valid: false, error: `IP privado bloqueado: ${hostname}` };
+  }
+
+  const port = url.port ? Number.parseInt(url.port, 10) : url.protocol === 'https:' ? 443 : 80;
+  if (BLOCKED_PORTS.includes(port)) {
+    return { valid: false, error: `Porta bloqueada: ${port}` };
+  }
+
+  return null;
+}
+
+async function validateDnsResolution(hostname: string): Promise<UrlValidation> {
+  try {
+    const results = await lookup(hostname, { all: true, verbatim: true });
+    if (!Array.isArray(results) || results.length === 0) {
+      return { valid: false, error: `Falha ao resolver DNS: ${hostname}` };
+    }
+
+    for (const result of results) {
+      const resolvedIP = normalizeHost(result.address);
+      if (isPrivateIP(resolvedIP)) {
+        return {
+          valid: false,
+          error: `DNS resolve para IP privado: ${hostname} -> ${resolvedIP}`,
+          resolvedIP,
+        };
+      }
+    }
+
+    return { valid: true, resolvedIP: normalizeHost(results[0].address) };
+  } catch {
+    return { valid: false, error: `Falha ao resolver DNS: ${hostname}` };
+  }
+}
+
+/**
+ * Valida se uma URL é segura para fazer requisições
+ */
+export async function validateUrl(urlString: string): Promise<UrlValidation> {
+  const parsed = parseUrl(urlString);
+  if ('error' in parsed) {
+    return { valid: false, error: parsed.error };
+  }
+
+  const basic = validateBasicRules(parsed.url);
+  if (basic) return basic;
+
+  const hostname = normalizeHost(parsed.url.hostname);
+  if (isIP(hostname)) {
+    return { valid: true, resolvedIP: hostname };
+  }
+
+  return validateDnsResolution(hostname);
 }
 
 /**
@@ -227,6 +238,35 @@ export interface SafeRequestOptions {
   timeout?: number;
   maxRedirects?: number;
   allowlist?: string[];
+}
+
+function sanitizeHeaders(headers: Record<string, string>): Record<string, string> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { 'X-Forwarded-For': _xff, 'X-Real-IP': _xri, ...safeHeaders } = headers;
+  return safeHeaders;
+}
+
+async function handleRedirect(
+  response: Response,
+  options: SafeRequestOptions,
+  currentUrl: string,
+  maxRedirects: number,
+): Promise<Response | null> {
+  if (!REDIRECT_STATUSES.has(response.status)) return null;
+
+  const location = response.headers.get('location');
+  if (location && maxRedirects > 0) {
+    const redirectUrl = new URL(location, currentUrl).toString();
+    return safeRequest({
+      ...options,
+      url: redirectUrl,
+      maxRedirects: maxRedirects - 1,
+    });
+  }
+  if (maxRedirects <= 0) {
+    throw new Error('Número máximo de redirects excedido');
+  }
+  return null;
 }
 
 /**
@@ -243,54 +283,29 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
     allowlist = [],
   } = options;
 
-  // Se há allowlist, verifica primeiro
-  if (allowlist.length > 0) {
-    const allowed = allowlist.some((prefix) => url.startsWith(prefix));
-    if (!allowed) {
-      throw new Error(`URL não está na allowlist: ${url}`);
-    }
+  if (allowlist.length > 0 && !allowlist.some((prefix) => url.startsWith(prefix))) {
+    throw new Error(`URL não está na allowlist: ${url}`);
   }
 
-  // Valida URL
   const validation = await validateUrl(url);
   if (!validation.valid) {
     throw new Error(`SSRF bloqueado: ${validation.error}`);
   }
 
-  // Faz a requisição com timeout e sem seguir redirects automaticamente
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
     const response = await fetch(url, {
       method,
-      headers: (() => {
-        // Remove headers que podem vazar informações
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { 'X-Forwarded-For': _xff, 'X-Real-IP': _xri, ...safeHeaders } = headers;
-        return safeHeaders;
-      })(),
+      headers: sanitizeHeaders(headers),
       body: body || undefined,
       signal: controller.signal,
-      redirect: 'manual', // Não segue redirects automaticamente
+      redirect: 'manual',
     });
 
-    // Verifica redirects manualmente
-    if ([301, 302, 303, 307, 308].includes(response.status)) {
-      const location = response.headers.get('location');
-      if (location && maxRedirects > 0) {
-        // Valida URL de redirect
-        const redirectUrl = new URL(location, url).toString();
-        return safeRequest({
-          ...options,
-          url: redirectUrl,
-          maxRedirects: maxRedirects - 1,
-        });
-      }
-      if (maxRedirects <= 0) {
-        throw new Error('Número máximo de redirects excedido');
-      }
-    }
+    const redirected = await handleRedirect(response, options, url, maxRedirects);
+    if (redirected) return redirected;
 
     return response;
   } finally {

@@ -51,6 +51,15 @@ export interface CheckoutVisualTheme {
   input: CheckoutThemeInputTokens;
 }
 
+export type CheckoutThemeOverrides = {
+  accentColor?: string;
+  accentColor2?: string;
+  backgroundColor?: string;
+  cardColor?: string;
+  textColor?: string;
+  mutedTextColor?: string;
+};
+
 const BLANC_BASE = {
   white: '#FFFFFF',
   dark: '#1A1A1A',
@@ -83,22 +92,62 @@ const NOIR_BASE = {
   successText: 'rgb(134, 239, 172)',
 } as const;
 
-export function buildBlancTheme(config?: {
-  accentColor?: string;
-  accentColor2?: string;
-  backgroundColor?: string;
-  cardColor?: string;
-  textColor?: string;
-  mutedTextColor?: string;
-}): CheckoutVisualTheme {
+type BlancResolved = {
+  accent: string;
+  accentSecondary: string;
+  background: string;
+  cardBackground: string;
+  text: string;
+  mutedText: string;
+};
+
+function resolveBlanc(config?: CheckoutThemeOverrides): BlancResolved {
   const accent = config?.accentColor || BLANC_BASE.accent;
-  const cardBackground = config?.cardColor || BLANC_BASE.white;
-  const text = config?.textColor || BLANC_BASE.dark;
-  const mutedText = config?.mutedTextColor || BLANC_BASE.muted;
+  return {
+    accent,
+    accentSecondary: config?.accentColor2 || accent,
+    background: config?.backgroundColor || BLANC_BASE.surface,
+    cardBackground: config?.cardColor || BLANC_BASE.white,
+    text: config?.textColor || BLANC_BASE.dark,
+    mutedText: config?.mutedTextColor || BLANC_BASE.muted,
+  };
+}
+
+function buildBlancStep(accent: string): CheckoutThemeStepTokens {
+  return {
+    activeBubbleBg: BLANC_BASE.dark,
+    lockedBubbleBg: BLANC_BASE.stroke,
+    activeLabelColor: BLANC_BASE.dark,
+    lockedLabelColor: BLANC_BASE.softMuted,
+    activeShadow: '0 2px 10px rgba(0,0,0,0.2)',
+    lineActive: accent,
+    lineInactive: BLANC_BASE.softLine,
+  };
+}
+
+function buildBlancInput(
+  cardBackground: string,
+  text: string,
+  accent: string,
+): CheckoutThemeInputTokens {
+  return {
+    background: cardBackground,
+    border: BLANC_BASE.stroke,
+    text,
+    radius: 8,
+    focusBorder: accent,
+    focusShadow: '0 0 0 2px rgba(232, 93, 48, 0.12)',
+    tagStroke: 'rgba(58, 58, 63, 0.4)',
+    editStroke: 'rgba(58, 58, 63, 0.56)',
+  };
+}
+
+export function buildBlancTheme(config?: CheckoutThemeOverrides): CheckoutVisualTheme {
+  const r = resolveBlanc(config);
 
   return {
     mode: 'BLANC',
-    pageBackground: config?.backgroundColor || BLANC_BASE.surface,
+    pageBackground: r.background,
     headerBackground: BLANC_BASE.dark,
     headerText: BLANC_BASE.white,
     headerMutedText: 'rgba(255,255,255,0.68)',
@@ -106,27 +155,27 @@ export function buildBlancTheme(config?: {
     subHeaderBorder: BLANC_BASE.softLine,
     subHeaderText: BLANC_BASE.dark,
     subHeaderMutedText: BLANC_BASE.dark,
-    cardBackground,
+    cardBackground: r.cardBackground,
     cardBorder: BLANC_BASE.softLine,
     cardShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
     mutedCardBackground: BLANC_BASE.successBg,
-    text,
-    mutedText,
+    text: r.text,
+    mutedText: r.mutedText,
     softMutedText: BLANC_BASE.softMuted,
     divider: BLANC_BASE.softLine,
-    accent,
-    accentSecondary: config?.accentColor2 || accent,
+    accent: r.accent,
+    accentSecondary: r.accentSecondary,
     successBackground: BLANC_BASE.successBg,
     successBorder: BLANC_BASE.successBorder,
     successText: BLANC_BASE.successText,
-    successBadgeBackground: accent,
+    successBadgeBackground: r.accent,
     fieldDisabledBackground: BLANC_BASE.surface2,
     fieldDisabledText: BLANC_BASE.muted,
     phonePrefixBackground: BLANC_BASE.surface2,
     phonePrefixBorder: BLANC_BASE.stroke,
     phonePrefixText: BLANC_BASE.muted,
     quantityBackground: 'rgba(58, 58, 63, 0.06)',
-    quantityText: text,
+    quantityText: r.text,
     summaryBackground: 'rgba(58, 58, 63, 0.06)',
     totalAccent: BLANC_BASE.totalAccent,
     paymentBadgeBackground: 'rgba(58, 58, 63, 0.06)',
@@ -134,49 +183,70 @@ export function buildBlancTheme(config?: {
     paymentBadgeText: BLANC_BASE.muted,
     modalOverlay: 'rgba(0,0,0,0.4)',
     modalBackground: BLANC_BASE.white,
-    modalText: text,
+    modalText: r.text,
     buttonText: BLANC_BASE.white,
     spinnerTrack: 'rgba(255,255,255,0.3)',
     spinnerForeground: BLANC_BASE.white,
     socialApple: BLANC_BASE.dark,
     socialDivider: BLANC_BASE.softLine,
     errorText: 'rgb(209, 67, 67)',
-    step: {
-      activeBubbleBg: BLANC_BASE.dark,
-      lockedBubbleBg: BLANC_BASE.stroke,
-      activeLabelColor: BLANC_BASE.dark,
-      lockedLabelColor: BLANC_BASE.softMuted,
-      activeShadow: '0 2px 10px rgba(0,0,0,0.2)',
-      lineActive: accent,
-      lineInactive: BLANC_BASE.softLine,
-    },
-    input: {
-      background: cardBackground,
-      border: BLANC_BASE.stroke,
-      text,
-      radius: 8,
-      focusBorder: accent,
-      focusShadow: '0 0 0 2px rgba(232, 93, 48, 0.12)',
-      tagStroke: 'rgba(58, 58, 63, 0.4)',
-      editStroke: 'rgba(58, 58, 63, 0.56)',
-    },
+    step: buildBlancStep(r.accent),
+    input: buildBlancInput(r.cardBackground, r.text, r.accent),
   };
 }
 
-export function buildNoirTheme(config?: {
-  accentColor?: string;
-  accentColor2?: string;
-  backgroundColor?: string;
-  cardColor?: string;
-  textColor?: string;
-  mutedTextColor?: string;
-}): CheckoutVisualTheme {
+type NoirResolved = {
+  accent: string;
+  accentSecondary: string;
+  background: string;
+  cardBackground: string;
+  text: string;
+  mutedText: string;
+};
+
+function resolveNoir(config?: CheckoutThemeOverrides): NoirResolved {
   const accent = config?.accentColor || NOIR_BASE.accent;
-  const text = config?.textColor || NOIR_BASE.text;
+  return {
+    accent,
+    accentSecondary: config?.accentColor2 || accent,
+    background: config?.backgroundColor || NOIR_BASE.void,
+    cardBackground: config?.cardColor || NOIR_BASE.surface,
+    text: config?.textColor || NOIR_BASE.text,
+    mutedText: config?.mutedTextColor || NOIR_BASE.text2,
+  };
+}
+
+function buildNoirStep(accent: string, text: string): CheckoutThemeStepTokens {
+  return {
+    activeBubbleBg: accent,
+    lockedBubbleBg: NOIR_BASE.surface2,
+    activeLabelColor: text,
+    lockedLabelColor: NOIR_BASE.text3,
+    activeShadow: `0 2px 12px ${accent}4d`,
+    lineActive: accent,
+    lineInactive: NOIR_BASE.border2,
+  };
+}
+
+function buildNoirInput(accent: string, text: string): CheckoutThemeInputTokens {
+  return {
+    background: NOIR_BASE.surface2,
+    border: NOIR_BASE.border2,
+    text,
+    radius: 6,
+    focusBorder: accent,
+    focusShadow: '0 0 0 2px rgba(232, 93, 48, 0.14)',
+    tagStroke: NOIR_BASE.text3,
+    editStroke: NOIR_BASE.text3,
+  };
+}
+
+export function buildNoirTheme(config?: CheckoutThemeOverrides): CheckoutVisualTheme {
+  const r = resolveNoir(config);
 
   return {
     mode: 'NOIR',
-    pageBackground: config?.backgroundColor || NOIR_BASE.void,
+    pageBackground: r.background,
     headerBackground: NOIR_BASE.surface,
     headerText: NOIR_BASE.text,
     headerMutedText: NOIR_BASE.text2,
@@ -184,59 +254,42 @@ export function buildNoirTheme(config?: {
     subHeaderBorder: NOIR_BASE.border,
     subHeaderText: NOIR_BASE.accent2,
     subHeaderMutedText: NOIR_BASE.text2,
-    cardBackground: config?.cardColor || NOIR_BASE.surface,
+    cardBackground: r.cardBackground,
     cardBorder: NOIR_BASE.border2,
     cardShadow: '0 2px 12px rgba(0,0,0,0.3)',
     mutedCardBackground: 'rgba(16,185,129,0.04)',
-    text,
-    mutedText: config?.mutedTextColor || NOIR_BASE.text2,
+    text: r.text,
+    mutedText: r.mutedText,
     softMutedText: NOIR_BASE.text3,
     divider: NOIR_BASE.border2,
-    accent,
-    accentSecondary: config?.accentColor2 || accent,
+    accent: r.accent,
+    accentSecondary: r.accentSecondary,
     successBackground: NOIR_BASE.successBg,
     successBorder: NOIR_BASE.successBorder,
     successText: NOIR_BASE.successText,
-    successBadgeBackground: accent,
+    successBadgeBackground: r.accent,
     fieldDisabledBackground: 'rgba(255, 255, 255, 0.06)',
     fieldDisabledText: NOIR_BASE.text2,
     phonePrefixBackground: NOIR_BASE.surface2,
     phonePrefixBorder: NOIR_BASE.border2,
     phonePrefixText: NOIR_BASE.text2,
     quantityBackground: NOIR_BASE.surface2,
-    quantityText: text,
+    quantityText: r.text,
     summaryBackground: NOIR_BASE.surface2,
-    totalAccent: accent,
+    totalAccent: r.accent,
     paymentBadgeBackground: NOIR_BASE.surface2,
     paymentBadgeBorder: NOIR_BASE.border2,
     paymentBadgeText: NOIR_BASE.text2,
     modalOverlay: 'rgba(0,0,0,0.56)',
     modalBackground: NOIR_BASE.surface,
-    modalText: text,
+    modalText: r.text,
     buttonText: NOIR_BASE.void,
     spinnerTrack: 'rgba(0,0,0,0.2)',
     spinnerForeground: NOIR_BASE.void,
     socialApple: 'rgb(255, 255, 255)',
     socialDivider: NOIR_BASE.border2,
     errorText: 'rgb(248, 113, 113)',
-    step: {
-      activeBubbleBg: accent,
-      lockedBubbleBg: NOIR_BASE.surface2,
-      activeLabelColor: text,
-      lockedLabelColor: NOIR_BASE.text3,
-      activeShadow: `0 2px 12px ${accent}4d`,
-      lineActive: accent,
-      lineInactive: NOIR_BASE.border2,
-    },
-    input: {
-      background: NOIR_BASE.surface2,
-      border: NOIR_BASE.border2,
-      text,
-      radius: 6,
-      focusBorder: accent,
-      focusShadow: '0 0 0 2px rgba(232, 93, 48, 0.14)',
-      tagStroke: NOIR_BASE.text3,
-      editStroke: NOIR_BASE.text3,
-    },
+    step: buildNoirStep(r.accent, r.text),
+    input: buildNoirInput(r.accent, r.text),
   };
 }

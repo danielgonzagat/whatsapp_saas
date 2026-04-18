@@ -15,6 +15,7 @@ import {
 import { type NextRequest, NextResponse } from 'next/server';
 
 const FORCE_AUTH_QUERY_KEY = 'forceAuth';
+const LEGAL_PATHS = new Set(['/terms', '/privacy', '/cookies']);
 
 function hasSharedAuth(request: NextRequest): boolean {
   const accessToken =
@@ -30,6 +31,14 @@ function currentPath(request: NextRequest): string {
 
 function redirect(url: string) {
   return NextResponse.redirect(url);
+}
+
+function isLegalPath(pathname: string): boolean {
+  return LEGAL_PATHS.has(pathname);
+}
+
+function isPublicAuthPath(pathname: string): boolean {
+  return isAuthPath(pathname) || isLegalPath(pathname);
 }
 
 function redirectToLogin(_request: NextRequest, host: string, nextPath?: string) {
@@ -89,52 +98,48 @@ function handleMarketingHost(request: NextRequest, host: string, isAuthenticated
   return redirect(buildMarketingUrl('/', host));
 }
 
-function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boolean) {
+function handleForceAuth(request: NextRequest, host: string) {
+  const { pathname, searchParams } = request.nextUrl;
+
+  if (pathname === '/') {
+    const loginUrl = new URL(buildAuthUrl('/login', host));
+    loginUrl.searchParams.set(FORCE_AUTH_QUERY_KEY, '1');
+    const requestedNext = searchParams.get('next');
+    if (requestedNext) {
+      loginUrl.searchParams.set('next', sanitizeNextPath(requestedNext));
+    }
+    return redirect(loginUrl.toString());
+  }
+
+  if (isPublicAuthPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  return null;
+}
+
+function handleAuthenticatedOnAuthHost(request: NextRequest, host: string) {
   const targetPath = currentPath(request);
   const { pathname, searchParams } = request.nextUrl;
-  const forceAuth = searchParams.get(FORCE_AUTH_QUERY_KEY) === '1';
+  const requestedNext = searchParams.get('next');
 
-  if (forceAuth) {
-    if (pathname === '/') {
-      const loginUrl = new URL(buildAuthUrl('/login', host));
-      loginUrl.searchParams.set(FORCE_AUTH_QUERY_KEY, '1');
-      const requestedNext = searchParams.get('next');
-      if (requestedNext) {
-        loginUrl.searchParams.set('next', sanitizeNextPath(requestedNext));
-      }
-      return redirect(loginUrl.toString());
-    }
+  const destination = requestedNext
+    ? sanitizeNextPath(requestedNext)
+    : isKnownAppPath(pathname)
+      ? sanitizeNextPath(targetPath)
+      : '/';
+  return redirect(buildAppUrl(destination, host));
+}
 
-    if (
-      isAuthPath(pathname) ||
-      pathname === '/terms' ||
-      pathname === '/privacy' ||
-      pathname === '/cookies'
-    ) {
-      return NextResponse.next();
-    }
-  }
-
-  if (isAuthenticated) {
-    const requestedNext = searchParams.get('next');
-    const destination = requestedNext
-      ? sanitizeNextPath(requestedNext)
-      : isKnownAppPath(pathname)
-        ? sanitizeNextPath(targetPath)
-        : '/';
-    return redirect(buildAppUrl(destination, host));
-  }
+function handleAnonymousOnAuthHost(request: NextRequest, host: string) {
+  const targetPath = currentPath(request);
+  const { pathname } = request.nextUrl;
 
   if (pathname === '/') {
     return redirect(buildAuthUrl('/login?forceAuth=1', host));
   }
 
-  if (
-    isAuthPath(pathname) ||
-    pathname === '/terms' ||
-    pathname === '/privacy' ||
-    pathname === '/cookies'
-  ) {
+  if (isPublicAuthPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -143,6 +148,22 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
   }
 
   return redirect(buildAuthUrl('/login?forceAuth=1', host));
+}
+
+function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boolean) {
+  const { searchParams } = request.nextUrl;
+  const forceAuth = searchParams.get(FORCE_AUTH_QUERY_KEY) === '1';
+
+  if (forceAuth) {
+    const forced = handleForceAuth(request, host);
+    if (forced) return forced;
+  }
+
+  if (isAuthenticated) {
+    return handleAuthenticatedOnAuthHost(request, host);
+  }
+
+  return handleAnonymousOnAuthHost(request, host);
 }
 
 function handleAppHost(request: NextRequest, host: string, isAuthenticated: boolean) {
@@ -175,7 +196,7 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
     return NextResponse.next();
   }
 
-  if (pathname === '/terms' || pathname === '/privacy' || pathname === '/cookies') {
+  if (isLegalPath(pathname)) {
     return redirect(buildMarketingUrl(targetPath, host));
   }
 
@@ -185,13 +206,7 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
 function handleUnknownHost(request: NextRequest, isAuthenticated: boolean) {
   const { pathname } = request.nextUrl;
 
-  if (
-    pathname === '/' ||
-    isAuthPath(pathname) ||
-    pathname === '/terms' ||
-    pathname === '/privacy' ||
-    pathname === '/cookies'
-  ) {
+  if (pathname === '/' || isPublicAuthPath(pathname)) {
     return NextResponse.next();
   }
 
