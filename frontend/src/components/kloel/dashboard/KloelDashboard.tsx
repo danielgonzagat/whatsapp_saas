@@ -309,9 +309,12 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
               textDecoration: 'none',
             }}
           >
+            {/* biome-ignore lint/performance/noImgElement: AI-generated ephemeral image URL, not hosted on configured CDN, next/image adds no benefit */}
             <img
               src={generatedImageUrl}
               alt="Imagem criada pelo Kloel"
+              width={800}
+              height={600}
               style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
             />
           </a>
@@ -981,6 +984,7 @@ export default function KloelDashboard() {
     return () => window.removeEventListener('kloel:new-chat', handler);
   }, [resetToNewChat]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: new message or thinking state flipping are the intentional scroll triggers; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages.length, isThinking]);

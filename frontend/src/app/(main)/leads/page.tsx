@@ -106,12 +106,14 @@ export default function LeadsPage() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshLeads is recreated every render and depends on these same values; we intentionally re-run only when auth/workspace readiness flips
   useEffect(() => {
     if (!isLoading && isAuthenticated && workspaceId) {
       refreshLeads();
     }
   }, [isLoading, isAuthenticated, workspaceId]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: debounce re-fetch only when search/status change; isAuthenticated and workspaceId are read as latest values inside the effect
   useEffect(() => {
     if (!isAuthenticated || !workspaceId) return;
     const handle = setTimeout(() => {

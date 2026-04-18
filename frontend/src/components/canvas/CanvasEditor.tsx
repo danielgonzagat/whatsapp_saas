@@ -227,6 +227,7 @@ export default function CanvasEditor() {
       editorRef.current = null;
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
+    // biome-ignore lint/correctness/useExhaustiveDependencies: deliberately run once on mount to instantiate the editor; canvas dims (w/h) are only consumed for initial sizing
   }, []);
 
   /* ═══ Handlers ═══ */

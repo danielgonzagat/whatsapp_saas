@@ -321,6 +321,7 @@ async function req(method, path, body, { retries = 3 } = {}) {
   let lastErr;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff — each attempt must observe the previous attempt's outcome
       const r = await fetch(BASE + path, {
         method,
         headers: {
@@ -367,6 +368,7 @@ async function listAllPatterns(standardId, toolUuid) {
   let more = true;
   while (more) {
     const qs = `limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
+    // biome-ignore lint/performance/noAwaitInLoops: cursor pagination depends on the previous page's cursor, parallelism impossible
     const j = await getJson(
       `/organizations/${ORG}/coding-standards/${standardId}/tools/${toolUuid}/patterns?${qs}`,
     );
@@ -387,6 +389,7 @@ async function patchPatterns(standardId, toolUuid, patternIdsEnabled) {
   let applied = 0;
   for (let i = 0; i < patternIdsEnabled.length; i += BATCH_SIZE) {
     const batch = patternIdsEnabled.slice(i, i + BATCH_SIZE);
+    // biome-ignore lint/performance/noAwaitInLoops: Codacy API rejects concurrent PATCHes on the same tool; batches must land serially
     const r = await req(
       'PATCH',
       `/organizations/${ORG}/coding-standards/${standardId}/tools/${toolUuid}`,
@@ -489,6 +492,7 @@ async function main() {
   let sourceEnabledTotal = 0;
   for (const t of enabledSourceTools) {
     process.stdout.write(`[codacy-noise]   fetching 151337 tool=${t.uuid.slice(0, 8)} ... `);
+    // biome-ignore lint/performance/noAwaitInLoops: Codacy API rate-limits aggressive parallel reads; sequential keeps CLI predictable
     const map = await listAllPatterns(SOURCE_STANDARD_ID, t.uuid);
     sourcePatternsByTool.set(t.uuid, map);
     const enabled = [...map.values()].filter(Boolean).length;
@@ -525,6 +529,7 @@ async function main() {
       // spawn a temp draft, inspect, then delete.
       draftMap = new Map();
     } else {
+      // biome-ignore lint/performance/noAwaitInLoops: per-tool enumeration; paginator inside listAllPatterns already serializes cursor reads
       draftMap = await listAllPatterns(draft.id, t.uuid);
     }
     const patches = planToolMirror(sourceMap, draftMap);
@@ -538,6 +543,7 @@ async function main() {
       if (patches.length > 10) console.log(`      ... and ${patches.length - 10} more`);
     }
     if (!DRY_RUN && patches.length > 0) {
+      // biome-ignore lint/performance/noAwaitInLoops: Codacy API rejects concurrent PATCHes on the same tool; serial per-tool keeps drafts consistent
       const applied = await patchPatterns(draft.id, t.uuid, patches);
       console.log(`[codacy-noise]   tool=${t.uuid.slice(0, 8)} applied ${applied} mirror patches`);
     }
@@ -586,6 +592,7 @@ async function main() {
 
   if (!DRY_RUN && totalToApply > 0) {
     for (const [toolUuid, patches] of noiseByTool.entries()) {
+      // biome-ignore lint/performance/noAwaitInLoops: Codacy API rejects concurrent PATCHes on the same tool; serial per-tool keeps drafts consistent
       const applied = await patchPatterns(draft.id, toolUuid, patches);
       console.log(
         `[codacy-noise] Applied ${applied} noise disables on draft ${draft.id} for tool=${toolUuid.slice(0, 8)}`,
@@ -679,6 +686,7 @@ async function main() {
       `[codacy-noise] Unlinking straggler convergence standard ${straggler.id} (${straggler.name})...`,
     );
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: Codacy repository-link mutations must be serial; parallel unlinks race and leave dangling links
       await unlinkStandardFromRepo(straggler.id, REPO_NAME);
     } catch (err) {
       console.log(`[codacy-noise]   unlink call returned: ${err.message} — continuing`);

@@ -3,7 +3,7 @@ import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState, useId } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
 
 interface CheckoutConfig {
@@ -33,15 +33,15 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const [form, setForm] = useState({ name: '', paymentMethods: ['PIX', 'CARTAO'], active: true });
   const [creating, setCreating] = useState(false);
 
-  const fetch_ = () => {
+  const fetch_ = useCallback(() => {
     apiFetch<Checkout[]>(`/products/${productId}/checkouts`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  };
+  }, [productId]);
   useEffect(() => {
     fetch_();
-  }, [productId]);
+  }, [fetch_]);
 
   const resetForm = () => {
     setForm({ name: '', paymentMethods: ['PIX', 'CARTAO'], active: true });

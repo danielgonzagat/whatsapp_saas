@@ -13,7 +13,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import { useEffect, useRef, useState, useId } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
 interface ProductUrlItem {
@@ -95,15 +95,15 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
     [],
   );
 
-  const fetch_ = () => {
+  const fetch_ = useCallback(() => {
     apiFetch<ProductUrlItem[] | { data?: ProductUrlItem[] }>(`/products/${productId}/urls`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  };
+  }, [productId]);
   useEffect(() => {
     fetch_();
-  }, [productId]);
+  }, [fetch_]);
 
   const handleCreate = async () => {
     setCreating(true);

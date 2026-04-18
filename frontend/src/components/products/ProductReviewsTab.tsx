@@ -2,7 +2,7 @@
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Star, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
 interface Review {
@@ -36,15 +36,15 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
   const [items, setItems] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetch_ = () => {
+  const fetch_ = useCallback(() => {
     apiFetch<Review[] | { data?: Review[] }>(`/products/${productId}/reviews`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  };
+  }, [productId]);
   useEffect(() => {
     fetch_();
-  }, [productId]);
+  }, [fetch_]);
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir avaliacao?')) return;
     await apiFetch(`/products/${productId}/reviews/${id}`, { method: 'DELETE' });

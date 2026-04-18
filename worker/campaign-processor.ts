@@ -107,10 +107,10 @@ export const campaignWorker = new Worker(
         sentCount = contacts.length;
 
         // Atribuição básica: marcar último campaignId no contato
-        // biome-ignore lint/performance/noAwaitInLoops: sequential per-contact processing
         for (const contact of contacts) {
           if (!contact.id) continue;
           const cf = (contact.customFields || {}) as Record<string, unknown>;
+          // biome-ignore lint/performance/noAwaitInLoops: per-contact customField merge must read its latest cf snapshot to avoid clobbering concurrent writes
           await prisma.contact.updateMany({
             where: { id: contact.id, workspaceId },
             data: { customFields: { ...cf, lastCampaignId: campaignId } },
@@ -145,10 +145,10 @@ export const campaignWorker = new Worker(
         await flowQueue.addBulk(jobs);
         sentCount = contacts.length;
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential per-contact processing
         for (const contact of contacts) {
           if (!contact.id) continue;
           const cf = (contact.customFields || {}) as Record<string, unknown>;
+          // biome-ignore lint/performance/noAwaitInLoops: per-contact customField merge must read its latest cf snapshot to avoid clobbering concurrent writes
           await prisma.contact.updateMany({
             where: { id: contact.id, workspaceId },
             data: { customFields: { ...cf, lastCampaignId: campaignId } },

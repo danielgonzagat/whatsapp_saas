@@ -183,6 +183,7 @@ export default function CiaPage() {
     if (actionRes.data) setConversationActionRegistry(actionRes.data);
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: poll the CIA surfaces only when workspace becomes available; loadSurface/loadAdvancedData are recreated every render with stable behavior
   useEffect(() => {
     if (!workspaceId) return;
     void loadSurface();

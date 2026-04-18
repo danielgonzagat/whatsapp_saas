@@ -3,7 +3,7 @@ import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState, useId } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
 
 interface Commission {
@@ -34,15 +34,15 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   });
   const [creating, setCreating] = useState(false);
 
-  const fetch_ = () => {
+  const fetch_ = useCallback(() => {
     apiFetch<Commission[] | { data?: Commission[] }>(`/products/${productId}/commissions`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  };
+  }, [productId]);
   useEffect(() => {
     fetch_();
-  }, [productId]);
+  }, [fetch_]);
   const openEditModal = (commission: Commission) => {
     setEditingId(commission.id);
     setForm({

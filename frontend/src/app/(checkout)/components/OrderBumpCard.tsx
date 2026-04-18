@@ -94,9 +94,12 @@ export default function OrderBumpCard({
 
         {/* Image */}
         {bump.image && (
+          // biome-ignore lint/performance/noImgElement: merchant-configured bump image URL, no need to optimize via next/image
           <img
             src={bump.image}
             alt={bump.productName}
+            width={44}
+            height={44}
             style={{
               width: '44px',
               height: '44px',

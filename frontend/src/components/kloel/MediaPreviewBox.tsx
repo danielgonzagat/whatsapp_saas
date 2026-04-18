@@ -149,9 +149,12 @@ export function MediaPreviewBox({
       >
         {displayUrl ? (
           <>
+            {/* biome-ignore lint/performance/noImgElement: user-selected preview blob URL or arbitrary CDN, sized by container layout */}
             <img
               src={displayUrl}
               alt={alt}
+              width={320}
+              height={240}
               style={{
                 maxWidth: mergedLayout.imageMaxWidth,
                 maxHeight: mergedLayout.imageMaxHeight,

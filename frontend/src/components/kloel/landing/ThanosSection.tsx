@@ -610,7 +610,6 @@ export default function ThanosSection() {
       });
 
     const runCycle = async () => {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
       while (alive) {
         setShowReveal(false);
         setShowSales(false);
@@ -623,6 +622,7 @@ export default function ThanosSection() {
         canvas.style.opacity = '1';
         drawScene(ctx, layout, imgsLoaded);
 
+        // biome-ignore lint/performance/noAwaitInLoops: thanos animation cycle is sequential — each phase depends on the previous canvas state
         await wait(STATIC_HOLD_MS);
         if (!alive) return;
 

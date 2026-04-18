@@ -429,6 +429,7 @@ function WhatsAppConsoleInner({
     void connect();
   }, [autoConnect, connect, connected, connecting, isOpen, loading]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages.length or activities.length change is the intentional trigger to scroll list to bottom; ref is read imperatively
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -624,9 +625,12 @@ function WhatsAppConsoleInner({
 
                 <div className="rounded-3xl bg-slate-50 px-4 py-4">
                   {qrCode ? (
+                    // biome-ignore lint/performance/noImgElement: dynamic data URL QR code from WAHA session, ephemeral and not worth next/image optimization
                     <img
                       src={qrCode}
                       alt="QR Code do WhatsApp"
+                      width={224}
+                      height={224}
                       className="mx-auto h-56 w-56 rounded-md bg-white p-3 shadow-sm"
                     />
                   ) : (

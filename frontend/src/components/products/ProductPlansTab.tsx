@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Eye, Link2, Loader2, Pencil, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, useId } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
 interface Plan {
@@ -50,16 +50,16 @@ export function ProductPlansTab({ productId }: { productId: string }) {
     copiedTimer.current = setTimeout(() => setCopied(null), 2000);
   };
 
-  const fetchPlans = () => {
+  const fetchPlans = useCallback(() => {
     apiFetch<any>(`/products/${productId}/plans`)
       .then((res) => setPlans(Array.isArray(res) ? res : []))
       .catch(() => setPlans([]))
       .finally(() => setLoading(false));
-  };
+  }, [productId]);
 
   useEffect(() => {
     fetchPlans();
-  }, [productId]);
+  }, [fetchPlans]);
 
   const handleCreate = async () => {
     setCreating(true);

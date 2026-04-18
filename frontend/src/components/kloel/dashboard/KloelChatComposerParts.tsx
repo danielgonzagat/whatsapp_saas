@@ -123,9 +123,12 @@ function ProductMenuContent({
           }}
         >
           {product.imageUrl ? (
+            // biome-ignore lint/performance/noImgElement: dynamic product image from merchant-configured URL, no need to optimize via next/image
             <img
               src={product.imageUrl}
               alt=""
+              width={30}
+              height={30}
               style={{
                 width: 30,
                 height: 30,

@@ -335,9 +335,12 @@ function SummaryProductRow({
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
       {productImage ? (
+        // biome-ignore lint/performance/noImgElement: dynamic product image from merchant-configured URL, no need to optimize via next/image
         <img
           src={productImage}
           alt={productName}
+          width={72}
+          height={72}
           style={{
             width: 72,
             height: 72,

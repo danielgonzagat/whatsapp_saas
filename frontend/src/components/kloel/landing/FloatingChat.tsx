@@ -78,6 +78,7 @@ export function FloatingChat({
     } catch {}
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages and isStreaming changes are the intentional triggers to auto-scroll; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isStreaming]);

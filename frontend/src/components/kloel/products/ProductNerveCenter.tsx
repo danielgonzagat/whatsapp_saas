@@ -610,6 +610,7 @@ export default function ProductNerveCenter({
         planCheckoutConfig.affiliateCustomCommissionPercent ?? p.commissionPercent ?? 30,
       ).replace('.', ','),
     );
+    // biome-ignore lint/correctness/useExhaustiveDependencies: only re-run when planCheckoutConfig changes (one-shot init guarded by planConfigInitRef); other reads are latest-value reads, not triggers
   }, [planCheckoutConfig]);
 
   useEffect(() => {
@@ -1155,9 +1156,12 @@ export default function ProductNerveCenter({
             }}
           >
             {currentImageUrl ? (
+              // biome-ignore lint/performance/noImgElement: user-uploaded/preview image, intrinsic size derived from file, sized by container
               <img
                 src={currentImageUrl}
                 alt=""
+                width={400}
+                height={400}
                 style={{
                   objectFit: 'contain',
                   maxWidth: '100%',

@@ -160,6 +160,7 @@ export default function FollowupsPage() {
     return phone;
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: getStatusLabel is a pure local helper over a static switch; including it would needlessly invalidate the memo
   const filteredFollowups = useMemo(() => {
     const query = search.trim().toLowerCase();
     return followups.filter((followup) => {

@@ -1364,9 +1364,12 @@ export function HomeView() {
                           }}
                         >
                           {product.imageUrl ? (
+                            // biome-ignore lint/performance/noImgElement: merchant-configured product image from arbitrary URL, sized by container
                             <img
                               src={product.imageUrl}
                               alt={product.name}
+                              width={40}
+                              height={40}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                           ) : (

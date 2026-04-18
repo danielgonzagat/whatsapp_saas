@@ -149,33 +149,32 @@ function HeroLoop() {
         setResurrected(false);
         setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
         // TYPE
-        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i <= L1.length; i++) {
           if (!m.current) return;
           setVis({ text: L1.slice(0, i), strike: 0, suffix: '', phase: 'typing' });
+          // biome-ignore lint/performance/noAwaitInLoops: sequential typing animation — each character renders after the previous frame's delay
           await wait(L1[i] === ' ' ? 45 : 55 + Math.random() * 35);
         }
         await wait(450);
         // STRIKE
         setVis((d) => ({ ...d, phase: 'strike' }));
-        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i <= 100; i += 3) {
           if (!m.current) return;
           setVis((d) => ({ ...d, strike: i }));
+          // biome-ignore lint/performance/noAwaitInLoops: sequential strike animation frames — each tick paints after the previous
           await wait(7);
         }
         await wait(250);
         // MORREU
-        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i <= DEATH.length; i++) {
           if (!m.current) return;
           setVis((d) => ({ ...d, suffix: DEATH.slice(0, i), phase: 'death' }));
+          // biome-ignore lint/performance/noAwaitInLoops: sequential death-suffix typing animation
           await wait(75 + Math.random() * 35);
         }
         await wait(700);
         // GLITCH BUILD
         const full = L1 + DEATH;
-        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i < 8; i++) {
           if (!m.current) return;
           setGx({
@@ -186,10 +185,10 @@ function HeroLoop() {
             slices: i > 4 ? mkSlices() : [],
             flash: false,
           });
+          // biome-ignore lint/performance/noAwaitInLoops: sequential glitch-build animation frames
           await wait(45);
         }
         // CHAOS
-        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i < 16; i++) {
           if (!m.current) return;
           setGx({
@@ -200,6 +199,7 @@ function HeroLoop() {
             slices: mkSlices(),
             flash: i === 8,
           });
+          // biome-ignore lint/performance/noAwaitInLoops: sequential chaos-phase animation frames
           await wait(38);
         }
         // FLASH
@@ -229,7 +229,6 @@ function HeroLoop() {
         setResurrected(true);
         await wait(3200);
         // GLITCH BACK
-        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
         for (let i = 0; i < 6; i++) {
           if (!m.current) return;
           setGx({
@@ -240,6 +239,7 @@ function HeroLoop() {
             slices: i > 3 ? mkSlices() : [],
             flash: false,
           });
+          // biome-ignore lint/performance/noAwaitInLoops: sequential glitch-back animation frames
           await wait(45);
         }
         setGx((g) => ({ ...g, flash: true }));
@@ -464,6 +464,7 @@ function MultiChannel() {
     o.observe(el);
     return () => o.disconnect();
   }, [prefersReducedMotion]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: flow is a module-level static literal, length never changes at runtime; go/prefersReducedMotion are the real triggers
   useEffect(() => {
     if (!go) return;
     if (prefersReducedMotion) {
@@ -477,9 +478,9 @@ function MultiChannel() {
 
     let c = false;
     const run = async () => {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
       for (let i = 0; i < flow.length; i++) {
         if (c) return;
+        // biome-ignore lint/performance/noAwaitInLoops: sequential message-drop animation — each bubble appears after its predecessor's dwell time
         await wait(flow[i].f === 'ai' ? 1100 : flow[i].f === 'ok' ? 1400 : 650);
         if (c) return;
         const msg = flow[i];
@@ -729,10 +730,10 @@ function FinalManifestLoop() {
 
     const typePhrase = async (phrase: string, nextTone: 'light' | 'ember') => {
       setTone(nextTone);
-      // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
       for (let i = 1; i <= phrase.length; i++) {
         if (!alive) return;
         setText(phrase.slice(0, i));
+        // biome-ignore lint/performance/noAwaitInLoops: sequential typing animation — each character renders after the previous frame's delay
         await wait(delayFor(phrase[i - 1], 'type', i - 1, phrase));
         if (phrase === SECOND && i === SECOND_PREFIX.length) {
           await wait(320);
@@ -742,19 +743,19 @@ function FinalManifestLoop() {
 
     const deletePhrase = async (phrase: string, nextTone: 'light' | 'ember') => {
       setTone(nextTone);
-      // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
       for (let i = phrase.length - 1; i >= 0; i--) {
         if (!alive) return;
         setText(phrase.slice(0, i));
+        // biome-ignore lint/performance/noAwaitInLoops: sequential delete animation — characters disappear one-by-one in order
         await wait(delayFor(phrase[i], 'delete', i, phrase));
       }
     };
 
     const run = async () => {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
       while (alive) {
         setText('');
         setTone('light');
+        // biome-ignore lint/performance/noAwaitInLoops: headline cycle is intentionally sequential; each phase depends on the previous state transition
         await wait(420);
         await typePhrase(FIRST, 'light');
         await wait(1600);

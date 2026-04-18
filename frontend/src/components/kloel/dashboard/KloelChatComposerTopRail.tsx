@@ -119,9 +119,12 @@ export function ComposerTopRail({
               }}
             >
               {visualSource ? (
+                // biome-ignore lint/performance/noImgElement: user-uploaded attachment preview from blob URL, sized by parent layout
                 <img
                   src={visualSource}
                   alt={attachment.name}
+                  width={56}
+                  height={56}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (

@@ -3,7 +3,7 @@ import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState, useId } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
 
 interface Coupon {
@@ -31,15 +31,15 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
   });
   const [creating, setCreating] = useState(false);
 
-  const fetch_ = () => {
+  const fetch_ = useCallback(() => {
     apiFetch<any>(`/products/${productId}/coupons`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  };
+  }, [productId]);
   useEffect(() => {
     fetch_();
-  }, [productId]);
+  }, [fetch_]);
   const handleCreate = async () => {
     setCreating(true);
     try {

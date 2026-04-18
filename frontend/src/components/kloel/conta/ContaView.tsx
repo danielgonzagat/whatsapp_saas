@@ -952,9 +952,12 @@ function DadosPessoaisSection({
           }}
         >
           {avatarPreviewUrl || profile?.avatarUrl ? (
+            // biome-ignore lint/performance/noImgElement: user-selected avatar blob or arbitrary CDN URL, sized by container
             <img
               src={avatarPreviewUrl || profile?.avatarUrl || undefined}
               alt=""
+              width={120}
+              height={120}
               style={{
                 objectFit: 'contain',
                 maxWidth: '100%',

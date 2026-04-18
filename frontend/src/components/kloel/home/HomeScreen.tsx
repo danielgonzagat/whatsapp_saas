@@ -579,6 +579,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   }, [conversationTitleMap, setActiveConversation]);
 
   // ─── Auto-scroll on new messages ───
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages.length change is the intentional trigger to auto-scroll; ref is read imperatively
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });

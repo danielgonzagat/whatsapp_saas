@@ -165,7 +165,7 @@ export function useCheckoutExperienceSocial({
         requireCPF: config?.requireCPF ?? true,
         requirePhone: config?.requirePhone ?? true,
       }),
-    [config?.requireCPF, config?.requirePhone, form.cpf, form.email, form.name, form.phone],
+    [config?.requireCPF, config?.requirePhone, form],
   );
 
   const validateStep2 = useCallback(() => isCheckoutAddressStepValid(form), [form]);

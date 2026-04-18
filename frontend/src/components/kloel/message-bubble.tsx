@@ -92,6 +92,7 @@ export function MessageBubble({
     }
   }, [isEditing, message.content]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset active version when message or latest version changes; assistantVersions.length is derived from those
   useEffect(() => {
     setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0));
   }, [message.id, latestVersionId]);

@@ -227,6 +227,7 @@ export function useCheckoutExperience({
     [],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: qty change is the intentional trigger to drop any applied coupon; couponApplied is read as latest value inside the effect
   useEffect(() => {
     if (!couponApplied) return;
     setCouponApplied(false);
@@ -547,11 +548,7 @@ export function useCheckoutExperience({
     couponApplied,
     couponCode,
     discount,
-    form.cardCpf,
-    form.cardCvv,
-    form.cardExp,
     form.cardName,
-    form.cardNumber,
     form.cep,
     form.city,
     form.complement,
@@ -566,7 +563,6 @@ export function useCheckoutExperience({
     form.street,
     installments,
     payMethod,
-    paymentProvider?.provider,
     plan?.id,
     qty,
     resolveSuccessRedirect,

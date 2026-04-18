@@ -18,7 +18,6 @@ async function main() {
   const jobs: Job[] = await dlq.getJobs(['waiting', 'delayed', 'failed'], 0, limit - 1);
   console.log(`Found ${jobs.length} jobs in ${dlqName}. Requeueing to ${targetQueueName}...`);
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential job processing
   for (const job of jobs) {
     try {
       const data = job.data as Record<string, unknown>;
@@ -26,6 +25,7 @@ async function main() {
       const payload = data?.data ?? data;
       const opts = (data?.opts || {}) as Record<string, unknown>;
 
+      // biome-ignore lint/performance/noAwaitInLoops: requeue must succeed before removing the original job to avoid losing work on crash mid-loop
       await target.add(name, payload, {
         attempts: Math.max(Number(opts?.attempts || 0), attempts),
         backoff: (opts?.backoff as { type: string; delay: number }) || {

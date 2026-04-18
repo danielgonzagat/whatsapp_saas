@@ -90,6 +90,7 @@ async function fetchWithRetry(url, init) {
   let lastErr;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt += 1) {
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff — each attempt must observe the previous attempt's outcome before deciding to retry
       const response = await fetch(url, init);
       if (response.status === 429 || response.status >= 500) {
         lastErr = new Error(`Codacy responded ${response.status} on attempt ${attempt + 1}`);
@@ -206,6 +207,7 @@ async function syncCodacyIssues() {
   let seen = 0;
 
   while (pages < MAX_PAGES) {
+    // biome-ignore lint/performance/noAwaitInLoops: cursor pagination depends on the previous page's cursor, parallelism impossible
     const page = await fetchIssuesPage(token.value, cursor);
     pages += 1;
     const rows = Array.isArray(page?.data) ? page.data : [];

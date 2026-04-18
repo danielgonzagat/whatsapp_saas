@@ -1139,11 +1139,11 @@ async function autopilotScanner() {
       select: { id: true, providerSettings: true, jitterMin: true, jitterMax: true },
     });
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential workspace processing
     for (const workspace of workspaces) {
       const settings = parseAutopilotSettings(workspace.providerSettings);
       if (!isAutonomyActive(settings)) continue;
 
+      // biome-ignore lint/performance/noAwaitInLoops: sequential per-workspace DB fetch avoids hammering Postgres with a burst of parallel queries
       const convs = await prisma.conversation.findMany({
         where: { workspaceId: workspace.id, status: 'OPEN' },
         orderBy: { updatedAt: 'desc' },
@@ -1154,7 +1154,6 @@ async function autopilotScanner() {
         },
       });
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential conversation processing
       for (const conv of convs) {
         const lastMsg = conv.messages[0];
         if (!lastMsg) continue;
@@ -1188,7 +1187,8 @@ async function autopilotScanner() {
             ? { intent: 'BUYING_SIGNAL', action: 'GHOST_CLOSER', reason: 'silent_buying_signal' }
             : shouldFollowUp
               ? { intent: 'REENGAGE', action: 'FOLLOW_UP_STRONG', reason: 'silent_24h' }
-              : await decideAction(lastMsg.content || '', settings);
+              : // biome-ignore lint/performance/noAwaitInLoops: LLM decision must be computed per-conversation with prior context; parallelism would reorder autopilot decisions
+                await decideAction(lastMsg.content || '', settings);
         const action = decision.action || 'FOLLOW_UP';
 
         try {

@@ -1139,6 +1139,7 @@ export function ChatContainer({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages.length change is the intentional trigger to scroll-to-bottom; scrollToBottom reads ref imperatively
   useEffect(() => {
     scrollToBottom();
   }, [scrollToBottom, messages.length]);

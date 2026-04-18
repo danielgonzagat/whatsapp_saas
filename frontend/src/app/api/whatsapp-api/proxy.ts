@@ -70,11 +70,11 @@ async function fetchWhatsAppUpstream(
   });
   let lastError: unknown;
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const baseUrl of getBackendCandidateUrls()) {
     const url = `${baseUrl}${upstreamPath}`;
 
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential fallback across backend candidates — parallel would waste upstream quota and defeat failover ordering
       const response = await fetch(url, {
         method,
         headers,

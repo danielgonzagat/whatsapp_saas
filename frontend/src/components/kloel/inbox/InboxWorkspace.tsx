@@ -313,6 +313,7 @@ export function InboxWorkspace({
     }
   }, [requestedDraft, replyText]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages.length change is the intentional trigger to auto-scroll; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);

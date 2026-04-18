@@ -143,9 +143,12 @@ export default function PixPaymentPage() {
               Carregando QR Code...
             </div>
           ) : (
+            // biome-ignore lint/performance/noImgElement: dynamic data URL from PIX provider, no need to optimize via next/image
             <img
               src={data.payment.pixQrCode}
               alt="Pix QR Code"
+              width={220}
+              height={220}
               style={{ width: '220px', height: '220px', imageRendering: 'pixelated' }}
             />
           )}

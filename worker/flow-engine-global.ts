@@ -360,6 +360,7 @@ export class FlowEngineGlobal {
           nodeId: state.nodeId,
           iterations,
         });
+        // biome-ignore lint/performance/noAwaitInLoops: terminal failure path writes state and exits the iteration loop; cannot be parallelized
         await this.failExecution(
           state,
           `Flow execution aborted: exceeded ${MAX_ITERATIONS} iterations (possible infinite loop)`,
@@ -890,6 +891,7 @@ export class FlowEngineGlobal {
           iterations++;
 
           // Call AI
+          // biome-ignore lint/performance/noAwaitInLoops: LLM reasoning loop — each turn depends on the previous turn's tool outputs and assistant message
           const responseMessage = await ai.generateChatResponse(messages, aiRole, tools);
 
           // Add assistant response to history
@@ -914,6 +916,7 @@ export class FlowEngineGlobal {
               }
 
               // Execute Tool
+              // biome-ignore lint/performance/noAwaitInLoops: tool-call results must be appended to the conversation in order before the next AI turn
               const toolResult = await ToolsRegistry.execute(functionName, args, {
                 workspaceId: state.workspaceId,
                 user: state.user,
@@ -1319,6 +1322,7 @@ export class FlowEngineGlobal {
     while (attempt < MAX_RETRIES) {
       const start = Date.now();
       try {
+        // biome-ignore lint/performance/noAwaitInLoops: health probe must precede every send attempt; parallelism would bypass circuit-breaker semantics
         if (!(await Watchdog.isHealthy(workspace.id))) {
           throw new Error('Instância instável (Circuit Breaker)');
         }
@@ -1659,10 +1663,10 @@ export class FlowEngineGlobal {
     const now = Date.now();
     const expiredMembers = await this.context.zrangeByScore('timeouts', 0, now);
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
     for (const member of expiredMembers) {
       const { user, workspaceId } = this.parseTimeoutMember(member);
       this.log.warn('timeout_detected', { user, workspaceId });
+      // biome-ignore lint/performance/noAwaitInLoops: zrem must commit before resuming flow state read to avoid re-processing the same expired timeout
       await this.context.zrem('timeouts', member);
 
       let state = await this.context.get<ExecutionState>(this.key(user, workspaceId));

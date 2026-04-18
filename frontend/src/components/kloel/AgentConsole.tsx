@@ -314,6 +314,7 @@ export function AgentConsole({
   const listRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom on new activities
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activities change is the intentional trigger to scroll list to bottom; ref is read imperatively
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;

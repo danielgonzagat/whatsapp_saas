@@ -155,6 +155,7 @@ async function ensureCheckoutProduct(product: DashboardProduct): Promise<string 
 export function useCheckoutPlans(product: DashboardProductInput | null | undefined) {
   const [checkoutProductId, setCheckoutProductId] = useState<string | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-sync checkout product only when identifying fields change; product object identity churns on every render
   useEffect(() => {
     if (product?.id && product?.name) {
       ensureCheckoutProduct(product as DashboardProduct)

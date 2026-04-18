@@ -218,9 +218,12 @@ export default function CheckoutBlanc({
 
   const renderProductThumb = (size = 72) =>
     productImage ? (
+      // biome-ignore lint/performance/noImgElement: merchant-configured product image from arbitrary URL, no need to optimize via next/image
       <img
         src={productImage}
         alt={productName}
+        width={size}
+        height={size}
         style={{
           width: size,
           height: size,

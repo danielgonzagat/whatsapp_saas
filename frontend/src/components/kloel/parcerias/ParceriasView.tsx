@@ -3111,6 +3111,7 @@ function TabChat({
   const displayMessages: PartnerMessage[] =
     (realMsgs as PartnerMessage[]).length > 0 ? (realMsgs as PartnerMessage[]) : messages;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: message count change is the intentional trigger to auto-scroll; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages.length]);

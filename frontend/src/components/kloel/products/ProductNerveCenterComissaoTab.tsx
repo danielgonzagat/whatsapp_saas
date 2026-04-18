@@ -689,7 +689,7 @@ function CoprodSubTab({
   });
   const [creating, setCreating] = useState(false);
 
-  const fetchCommissions = () => {
+  const fetchCommissions = useCallback(() => {
     apiFetch<JsonRecord>(`/products/${productId}/commissions`)
       .then((r) => {
         const d = unwrapApiPayload<JsonRecord[]>(r);
@@ -701,11 +701,11 @@ function CoprodSubTab({
       })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  };
+  }, [productId]);
 
   useEffect(() => {
     fetchCommissions();
-  }, [productId]);
+  }, [fetchCommissions]);
 
   const handleCreate = async () => {
     setCreating(true);

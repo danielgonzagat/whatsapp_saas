@@ -75,11 +75,11 @@ async function proxyMarketing(request: NextRequest, pathSegments: string[]) {
 
   let lastError: unknown;
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
   for (const baseUrl of candidates) {
     const url = `${baseUrl}${upstreamPath}`;
 
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential fallback across backend candidates — parallel would waste upstream quota and defeat failover ordering
       const response = await fetch(url, {
         method: request.method,
         headers,

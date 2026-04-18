@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
 interface Message {
@@ -84,7 +84,7 @@ function OnboardingChatContent() {
     ]);
   };
 
-  const startOnboarding = async () => {
+  const startOnboarding = useCallback(async () => {
     if (!workspaceId) return;
     setLoading(true);
     try {
@@ -114,14 +114,14 @@ function OnboardingChatContent() {
     }
     setLoading(false);
     inputRef.current?.focus();
-  };
+  }, [workspaceId]);
 
   // Iniciar onboarding automaticamente quando o workspaceId estiver definido
   useEffect(() => {
     if (workspaceId) {
       startOnboarding();
     }
-  }, [workspaceId]);
+  }, [workspaceId, startOnboarding]);
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;

@@ -73,6 +73,7 @@ async function checkInactivity(workspaceId: string) {
 
     // Trigger Nudge Flow
     // Ideally, we should have a configured "Nudge Flow ID" in workspace settings
+    // biome-ignore lint/performance/noAwaitInLoops: per-lead lookup avoids re-reading workspace settings before deciding whether to enqueue; parallelizing would duplicate writes in the same tick
     const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
     const nudgeFlowId = (workspace?.providerSettings as Record<string, unknown> | null)
       ?.nudgeFlowId as string | undefined;

@@ -423,6 +423,7 @@ export function useWhatsAppSession({
     void syncConnectedSessionRuntime();
   }, [status?.connected, syncConnectedSessionRuntime]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: workspaceId change is the intentional trigger to reset the bootstrap guard ref so the new workspace can bootstrap
   useEffect(() => {
     bootstrapGuardRef.current = null;
   }, [workspaceId]);

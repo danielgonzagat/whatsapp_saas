@@ -151,6 +151,7 @@ export default function WebinariosPage() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refetch webinars only when auth/workspace readiness flips; fetchWebinars is recreated every render with stable behavior
   useEffect(() => {
     if (isAuthenticated && workspaceId) fetchWebinars();
   }, [isAuthenticated, workspaceId]);
