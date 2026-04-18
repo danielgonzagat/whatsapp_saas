@@ -299,6 +299,29 @@ const NOISE_PATTERNS = [
     reason:
       'WRONG_RULE — Lizard counts destructured props (`function Field({a,b,c,...})`) and inline-style object keys inside `.map()` callbacks as positional parameters. 75/78 findings are in React .tsx components where the convention is exactly one destructured props object. Real-signal parameter-count in non-JSX code is still visible via typecheck and code review. nloc-medium and ccn-medium stay enabled for the real complexity signal.',
   },
+  // ── More ES5-era polyfill rules revealed in later scans ──
+  {
+    id: 'ESLint8_es-x_no-default-parameters',
+    reason:
+      'WRONG_RULE — ES5 rule forbidding `function f(a = 1)`. Default parameters are ES2015+ and idiomatic across the codebase.',
+  },
+  {
+    id: 'ESLint8_es-x_no-map',
+    reason:
+      'WRONG_RULE — ES5 rule forbidding the `Map` constructor. Core ES2015 collection used pervasively.',
+  },
+  // ── Duplicate of Biome noAwaitInLoops (same findings, double-counted) ──
+  {
+    id: 'ESLint8_no-await-in-loop',
+    reason:
+      'WRONG_RULE — duplicate of Biome_lint_performance_noAwaitInLoops. Same findings are reported by both tools; keep Biome (which offers biome-ignore per-line), disable the ESLint8 duplicate.',
+  },
+  // ── eslint-plugin-security object-injection is a regex heuristic with ~100% false positives ──
+  {
+    id: 'ESLint8_security_detect-object-injection',
+    reason:
+      'WRONG_RULE — flags any `obj[variable]` lookup as "object injection". False positives on Map/Record access, form lookups, i18n key lookups. True object-injection is caught by architecture review and input validation layers.',
+  },
 ];
 
 // -------------------- Env --------------------
