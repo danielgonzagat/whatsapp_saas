@@ -366,7 +366,7 @@ function inferConfidence(input: {
   return Number(clamp(confidence, 0.1, 0.98).toFixed(3));
 }
 
-function inferNextBestAction(input: {
+interface NextActionInput {
   intent: CustomerIntent;
   stage: CustomerStage;
   unreadCount: number;
@@ -379,41 +379,53 @@ function inferNextBestAction(input: {
   objections: string[];
   desires: string[];
   confidence: number;
-}) {
-  if (input.riskFlags.length > 0) {
-    return 'ESCALATE_HUMAN' as const;
-  }
+}
+
+function nextActionForEscalation(input: NextActionInput): CognitiveActionType | null {
+  if (input.riskFlags.length > 0) return 'ESCALATE_HUMAN';
   if (input.intent === 'UNKNOWN' && input.unreadCount > 0 && input.confidence < 0.68) {
-    return 'ASK_CLARIFYING' as const;
+    return 'ASK_CLARIFYING';
   }
   if (
     input.paymentState === 'PENDING' ||
     input.paymentState === 'READY_TO_PAY' ||
     input.intent === 'PAYMENT'
   ) {
-    return 'PAYMENT_RECOVERY' as const;
+    return 'PAYMENT_RECOVERY';
   }
-  if (input.unreadCount > 0) {
-    if (input.objections.includes('price') && input.trustScore < 0.62) {
-      return 'SOCIAL_PROOF' as const;
-    }
-    if (
-      input.stage === 'HOT' ||
-      input.stage === 'CHECKOUT' ||
-      input.urgencyScore >= 0.7 ||
-      input.desires.includes('resultado_rapido')
-    ) {
-      return 'OFFER' as const;
-    }
-    return 'RESPOND' as const;
+  return null;
+}
+
+function nextActionForUnread(input: NextActionInput): CognitiveActionType | null {
+  if (input.unreadCount <= 0) return null;
+  if (input.objections.includes('price') && input.trustScore < 0.62) {
+    return 'SOCIAL_PROOF';
   }
+  if (
+    input.stage === 'HOT' ||
+    input.stage === 'CHECKOUT' ||
+    input.urgencyScore >= 0.7 ||
+    input.desires.includes('resultado_rapido')
+  ) {
+    return 'OFFER';
+  }
+  return 'RESPOND';
+}
+
+function nextActionForSilence(input: NextActionInput): CognitiveActionType {
   if (input.silenceMinutes >= 24 * 60 || (input.urgencyScore >= 0.72 && input.stage === 'HOT')) {
-    return 'FOLLOWUP_URGENT' as const;
+    return 'FOLLOWUP_URGENT';
   }
   if (input.silenceMinutes >= 6 * 60 || input.stage === 'WARM') {
-    return 'FOLLOWUP_SOFT' as const;
+    return 'FOLLOWUP_SOFT';
   }
-  return 'WAIT' as const;
+  return 'WAIT';
+}
+
+function inferNextBestAction(input: NextActionInput): CognitiveActionType {
+  return (
+    nextActionForEscalation(input) ?? nextActionForUnread(input) ?? nextActionForSilence(input)
+  );
 }
 
 function summarizeState(input: {
@@ -445,7 +457,7 @@ function summarizeState(input: {
   return parts.join(' • ');
 }
 
-export function buildSeedCognitiveState(input: {
+interface SeedCognitiveStateInput {
   conversationId?: string | null;
   contactId?: string | null;
   phone?: string | null;
@@ -458,20 +470,98 @@ export function buildSeedCognitiveState(input: {
   demandState?: DemandState | null;
   lastOutcome?: string | null;
   lastAction?: string | null;
-}) {
+}
+
+function computeSilenceMinutes(lastMessageAt?: Date | string | null): number {
+  if (!lastMessageAt) return 0;
+  return Math.max(0, Math.round((Date.now() - new Date(lastMessageAt).getTime()) / 60_000));
+}
+
+function computeTrustScore(params: {
+  previous: Partial<CustomerCognitiveState> | null;
+  leadScore?: number | null;
+  trustSignals: string[];
+  objections: string[];
+}): number {
+  const previousTrust = Number(params.previous?.trustScore || 0.45) || 0.45;
+  const leadScoreNorm = clamp((Number(params.leadScore || 0) || 0) / 100, 0, 1);
+  const base =
+    previousTrust * 0.45 +
+    leadScoreNorm * 0.3 +
+    (params.trustSignals.includes('positive_ack') ? 0.12 : 0) +
+    (params.trustSignals.includes('buying_signal') ? 0.1 : 0) -
+    (params.objections.includes('trust') ? 0.08 : 0);
+  return Number(clamp(base, 0, 1).toFixed(3));
+}
+
+function computeUrgencyScore(params: {
+  previous: Partial<CustomerCognitiveState> | null;
+  text: string;
+  unreadCount: number;
+  demandState?: DemandState | null;
+}): number {
+  const previousUrgency = Number(params.previous?.urgencyScore || 0.2) || 0.2;
+  const base =
+    previousUrgency * 0.35 +
+    (includesAny(params.text, URGENCY_HINTS) ? 0.35 : 0) +
+    Math.min(params.unreadCount / 4, 0.2) +
+    (params.demandState?.attentionScore || 0) * 0.25;
+  return Number(clamp(base, 0, 1).toFixed(3));
+}
+
+function computePriceSensitivity(params: {
+  previous: Partial<CustomerCognitiveState> | null;
+  text: string;
+  objections: string[];
+}): number {
+  const previousPrice = Number(params.previous?.priceSensitivity || 0.15) || 0.15;
+  const base =
+    previousPrice * 0.45 +
+    (params.objections.includes('price') ? 0.4 : 0) +
+    (params.text.includes('parcel') ? 0.15 : 0) +
+    (params.text.includes('desconto') ? 0.15 : 0);
+  return Number(clamp(base, 0, 1).toFixed(3));
+}
+
+function computeLtvEstimate(params: {
+  leadScore?: number | null;
+  trustScore: number;
+  urgencyScore: number;
+  stage: CustomerStage;
+}): number {
+  const stageBonus = params.stage === 'CHECKOUT' ? 140 : params.stage === 'HOT' ? 90 : 30;
+  const base =
+    (Number(params.leadScore || 0) || 0) * 4 +
+    params.trustScore * 180 +
+    params.urgencyScore * 120 +
+    stageBonus;
+  return Number(base.toFixed(2));
+}
+
+interface DerivedSignals {
+  text: string;
+  unreadCount: number;
+  silenceMinutes: number;
+  previous: Partial<CustomerCognitiveState> | null;
+  paymentState: CustomerCognitiveState['paymentState'];
+  intent: CustomerIntent;
+  objections: string[];
+  desires: string[];
+  trustSignals: string[];
+  riskFlags: string[];
+  emotionalTone: NonNullable<CustomerCognitiveState['emotionalTone']>;
+  disclosureLevel: number;
+  corePain: string | null;
+  preferredStyle: NonNullable<CustomerCognitiveState['preferredStyle']>;
+}
+
+function deriveSignals(input: SeedCognitiveStateInput): DerivedSignals {
   const text = normalizeText(input.lastMessageText);
   const unreadCount = Number(input.unreadCount || 0) || 0;
-  const silenceMinutes = input.lastMessageAt
-    ? Math.max(0, Math.round((Date.now() - new Date(input.lastMessageAt).getTime()) / 60_000))
-    : 0;
+  const silenceMinutes = computeSilenceMinutes(input.lastMessageAt);
   const previous = input.previousState || null;
   const paymentState = inferPaymentState(text);
-  const intent = inferIntent({
-    text,
-    unreadCount,
-    paymentState,
-    leadScore: input.leadScore,
-  });
+  const intent = inferIntent({ text, unreadCount, paymentState, leadScore: input.leadScore });
   const objections = uniqueTokens([...(previous?.objections || []), ...inferObjections(text)]);
   const desires = uniqueTokens([...(previous?.desires || []), ...inferDesires(text)]);
   const trustSignals = uniqueTokens([
@@ -483,103 +573,110 @@ export function buildSeedCognitiveState(input: {
   const disclosureLevel = inferDisclosureLevel(text);
   const corePain = inferCorePain(text, objections, desires);
   const preferredStyle = inferPreferredStyle(text, emotionalTone);
-  const trustScore = Number(
-    clamp(
-      (Number(previous?.trustScore || 0.45) || 0.45) * 0.45 +
-        clamp((Number(input.leadScore || 0) || 0) / 100, 0, 1) * 0.3 +
-        (trustSignals.includes('positive_ack') ? 0.12 : 0) +
-        (trustSignals.includes('buying_signal') ? 0.1 : 0) -
-        (objections.includes('trust') ? 0.08 : 0),
-      0,
-      1,
-    ).toFixed(3),
-  );
-  const urgencyScore = Number(
-    clamp(
-      (Number(previous?.urgencyScore || 0.2) || 0.2) * 0.35 +
-        (includesAny(text, URGENCY_HINTS) ? 0.35 : 0) +
-        Math.min(unreadCount / 4, 0.2) +
-        (input.demandState?.attentionScore || 0) * 0.25,
-      0,
-      1,
-    ).toFixed(3),
-  );
-  const priceSensitivity = Number(
-    clamp(
-      (Number(previous?.priceSensitivity || 0.15) || 0.15) * 0.45 +
-        (objections.includes('price') ? 0.4 : 0) +
-        (text.includes('parcel') ? 0.15 : 0) +
-        (text.includes('desconto') ? 0.15 : 0),
-      0,
-      1,
-    ).toFixed(3),
-  );
-  const stage = inferStage({
-    intent,
+  return {
+    text,
+    unreadCount,
+    silenceMinutes,
+    previous,
     paymentState,
+    intent,
+    objections,
+    desires,
+    trustSignals,
+    riskFlags,
+    emotionalTone,
+    disclosureLevel,
+    corePain,
+    preferredStyle,
+  };
+}
+
+function assembleCognitiveState(
+  input: SeedCognitiveStateInput,
+  signals: DerivedSignals,
+): CustomerCognitiveState {
+  const { previous } = signals;
+  const trustScore = computeTrustScore({
+    previous,
+    leadScore: input.leadScore,
+    trustSignals: signals.trustSignals,
+    objections: signals.objections,
+  });
+  const urgencyScore = computeUrgencyScore({
+    previous,
+    text: signals.text,
+    unreadCount: signals.unreadCount,
+    demandState: input.demandState,
+  });
+  const priceSensitivity = computePriceSensitivity({
+    previous,
+    text: signals.text,
+    objections: signals.objections,
+  });
+  const stage = inferStage({
+    intent: signals.intent,
+    paymentState: signals.paymentState,
     trustScore,
     urgencyScore,
   });
   const confidence = inferConfidence({
-    intent,
-    riskFlags,
-    objections,
-    unreadCount,
+    intent: signals.intent,
+    riskFlags: signals.riskFlags,
+    objections: signals.objections,
+    unreadCount: signals.unreadCount,
   });
   const nextBestAction = inferNextBestAction({
-    intent,
+    intent: signals.intent,
     stage,
-    unreadCount,
-    silenceMinutes,
+    unreadCount: signals.unreadCount,
+    silenceMinutes: signals.silenceMinutes,
     trustScore,
     urgencyScore,
     priceSensitivity,
-    paymentState,
-    riskFlags,
-    objections,
-    desires,
+    paymentState: signals.paymentState,
+    riskFlags: signals.riskFlags,
+    objections: signals.objections,
+    desires: signals.desires,
     confidence,
   });
   const nextBestQuestion = inferNextBestQuestion({
     stage,
-    emotionalTone,
-    objections,
-    corePain,
+    emotionalTone: signals.emotionalTone,
+    objections: signals.objections,
+    corePain: signals.corePain,
   });
-  const ltvEstimate = Number(
-    (
-      (Number(input.leadScore || 0) || 0) * 4 +
-      trustScore * 180 +
-      urgencyScore * 120 +
-      (stage === 'CHECKOUT' ? 140 : stage === 'HOT' ? 90 : 30)
-    ).toFixed(2),
-  );
+  const ltvEstimate = computeLtvEstimate({
+    leadScore: input.leadScore,
+    trustScore,
+    urgencyScore,
+    stage,
+  });
 
   const state: CustomerCognitiveState = {
     conversationId: input.conversationId || previous?.conversationId || null,
     contactId: input.contactId || previous?.contactId || null,
     phone: input.phone || previous?.phone || null,
     contactName: input.contactName || previous?.contactName || null,
-    intent,
+    intent: signals.intent,
     stage,
     trustScore,
     urgencyScore,
     priceSensitivity,
-    objections,
-    desires,
-    trustSignals,
+    objections: signals.objections,
+    desires: signals.desires,
+    trustSignals: signals.trustSignals,
     lastOffer: previous?.lastOffer || null,
     lastAction: input.lastAction || previous?.lastAction || null,
     nextBestAction,
-    silenceMinutes,
+    silenceMinutes: signals.silenceMinutes,
     ltvEstimate,
-    paymentState,
+    paymentState: signals.paymentState,
     lastOutcome: input.lastOutcome || previous?.lastOutcome || null,
-    riskFlags,
-    emotionalTone,
-    disclosureLevel,
-    corePain,
-    preferredStyle,
+    riskFlags: signals.riskFlags,
+    emotionalTone: signals.emotionalTone,
+    disclosureLevel: signals.disclosureLevel,
+    corePain: signals.corePain,
+    preferredStyle: signals.preferredStyle,
     nextBestQuestion,
     classificationConfidence: confidence,
     summary: '',
@@ -598,6 +695,11 @@ export function buildSeedCognitiveState(input: {
   });
 
   return state;
+}
+
+export function buildSeedCognitiveState(input: SeedCognitiveStateInput): CustomerCognitiveState {
+  const signals = deriveSignals(input);
+  return assembleCognitiveState(input, signals);
 }
 
 function buildStateKey(input: {
@@ -633,35 +735,18 @@ export async function loadCustomerCognitiveState(
   return ((record?.value || null) as CustomerCognitiveState | null) || null;
 }
 
-export async function persistCustomerCognitiveState(
-  prisma: PrismaClient,
-  input: {
-    workspaceId: string;
-    conversationId?: string | null;
-    contactId?: string | null;
-    phone?: string | null;
-    contactName?: string | null;
-    state: CustomerCognitiveState;
-    source?: string;
-  },
-) {
-  if (!prisma?.kloelMemory?.upsert) return input.state;
+interface PersistCognitiveStateInput {
+  workspaceId: string;
+  conversationId?: string | null;
+  contactId?: string | null;
+  phone?: string | null;
+  contactName?: string | null;
+  state: CustomerCognitiveState;
+  source?: string;
+}
 
-  const key = buildStateKey(input);
-  const previous = prisma?.kloelMemory?.findUnique
-    ? await prisma.kloelMemory
-        .findUnique({
-          where: {
-            workspaceId_key: {
-              workspaceId: input.workspaceId,
-              key,
-            },
-          },
-        })
-        .catch(() => null /* not found */)
-    : null;
-
-  const normalizedState = {
+function normalizeStateForPersist(input: PersistCognitiveStateInput): CustomerCognitiveState {
+  return {
     ...input.state,
     conversationId: input.conversationId || input.state.conversationId || null,
     contactId: input.contactId || input.state.contactId || null,
@@ -669,104 +754,148 @@ export async function persistCustomerCognitiveState(
     contactName: input.contactName || input.state.contactName || null,
     updatedAt: new Date().toISOString(),
   } satisfies CustomerCognitiveState;
+}
 
+function buildPersistMetadata(normalizedState: CustomerCognitiveState, source: string) {
+  return {
+    source,
+    contactId: normalizedState.contactId || null,
+    conversationId: normalizedState.conversationId || null,
+    phone: normalizedState.phone || null,
+    nextBestAction: normalizedState.nextBestAction,
+    intent: normalizedState.intent,
+    stage: normalizedState.stage,
+  };
+}
+
+async function fetchPreviousMemory(prisma: PrismaClient, workspaceId: string, key: string) {
+  if (!prisma?.kloelMemory?.findUnique) return null;
+  return prisma.kloelMemory
+    .findUnique({ where: { workspaceId_key: { workspaceId, key } } })
+    .catch(() => null /* not found */);
+}
+
+async function upsertCognitiveMemory(
+  prisma: PrismaClient,
+  args: {
+    workspaceId: string;
+    key: string;
+    normalizedState: CustomerCognitiveState;
+    source: string;
+  },
+) {
+  const metadata = buildPersistMetadata(args.normalizedState, args.source);
+  const stateValue = args.normalizedState as unknown as Prisma.InputJsonValue;
   await prisma.kloelMemory.upsert({
-    where: {
-      workspaceId_key: {
-        workspaceId: input.workspaceId,
-        key,
-      },
-    },
+    where: { workspaceId_key: { workspaceId: args.workspaceId, key: args.key } },
     update: {
-      value: normalizedState,
-      metadata: {
-        source: input.source || 'autonomy',
-        contactId: normalizedState.contactId || null,
-        conversationId: normalizedState.conversationId || null,
-        phone: normalizedState.phone || null,
-        nextBestAction: normalizedState.nextBestAction,
-        intent: normalizedState.intent,
-        stage: normalizedState.stage,
-      },
-      content: normalizedState.summary,
+      value: stateValue,
+      metadata,
+      content: args.normalizedState.summary,
     },
     create: {
-      workspaceId: input.workspaceId,
-      key,
+      workspaceId: args.workspaceId,
+      key: args.key,
       category: 'cognitive_state',
-      type: normalizedState.intent,
-      content: normalizedState.summary,
-      value: normalizedState,
-      metadata: {
-        source: input.source || 'autonomy',
-        contactId: normalizedState.contactId || null,
-        conversationId: normalizedState.conversationId || null,
-        phone: normalizedState.phone || null,
-        nextBestAction: normalizedState.nextBestAction,
-        intent: normalizedState.intent,
-        stage: normalizedState.stage,
-      },
+      type: args.normalizedState.intent,
+      content: args.normalizedState.summary,
+      value: stateValue,
+      metadata,
     },
   });
+}
 
-  if (
-    prisma?.kloelMemory?.create &&
-    JSON.stringify(previous?.value || null) !== JSON.stringify(normalizedState)
-  ) {
-    await prisma.kloelMemory
-      .create({
-        data: {
-          workspaceId: input.workspaceId,
-          key: `cognitive_delta:${normalizedState.contactId || normalizedState.phone || 'workspace'}:${Date.now()}:${randomUUID()}`,
-          category: 'cognitive_delta',
-          type: normalizedState.nextBestAction,
-          content: normalizedState.summary,
-          value: {
-            previous: previous?.value || null,
-            current: normalizedState,
-            source: input.source || 'autonomy',
-          },
-          metadata: {
-            contactId: normalizedState.contactId || null,
-            conversationId: normalizedState.conversationId || null,
-            phone: normalizedState.phone || null,
-          },
-        },
-      })
-      .catch(() => null /* non-critical: best-effort cognitive delta persistence */);
-  }
+async function writeCognitiveDelta(
+  prisma: PrismaClient,
+  args: {
+    workspaceId: string;
+    previousValue: unknown;
+    normalizedState: CustomerCognitiveState;
+    source: string;
+  },
+) {
+  if (!prisma?.kloelMemory?.create) return;
+  if (JSON.stringify(args.previousValue || null) === JSON.stringify(args.normalizedState)) return;
 
-  if (normalizedState.contactId && prisma?.contact?.update) {
-    await prisma.contact
-      .update({
-        where: { id: normalizedState.contactId },
-        data: {
-          leadScore: Math.max(
-            0,
-            Math.min(
-              100,
-              Math.round(normalizedState.trustScore * 55 + normalizedState.urgencyScore * 45),
-            ),
-          ),
-          purchaseProbability: String(
-            clamp(
-              normalizedState.stage === 'CHECKOUT'
-                ? 0.86
-                : normalizedState.stage === 'HOT'
-                  ? 0.7
-                  : normalizedState.stage === 'WARM'
-                    ? 0.42
-                    : 0.18,
-              0,
-              1,
-            ).toFixed(3),
-          ),
-          nextBestAction: normalizedState.nextBestAction,
-          aiSummary: normalizedState.summary,
+  const { normalizedState } = args;
+  const deltaKey = `cognitive_delta:${normalizedState.contactId || normalizedState.phone || 'workspace'}:${Date.now()}:${randomUUID()}`;
+
+  const deltaValue = {
+    previous: (args.previousValue as Prisma.InputJsonValue) || null,
+    current: normalizedState as unknown as Prisma.InputJsonValue,
+    source: args.source,
+  } as unknown as Prisma.InputJsonValue;
+
+  await prisma.kloelMemory
+    .create({
+      data: {
+        workspaceId: args.workspaceId,
+        key: deltaKey,
+        category: 'cognitive_delta',
+        type: normalizedState.nextBestAction,
+        content: normalizedState.summary,
+        value: deltaValue,
+        metadata: {
+          contactId: normalizedState.contactId || null,
+          conversationId: normalizedState.conversationId || null,
+          phone: normalizedState.phone || null,
         },
-      })
-      .catch(() => null /* non-critical: best-effort contact score update */);
-  }
+      },
+    })
+    .catch(() => null /* non-critical: best-effort cognitive delta persistence */);
+}
+
+function computePurchaseProbability(stage: CustomerStage): string {
+  const raw = stage === 'CHECKOUT' ? 0.86 : stage === 'HOT' ? 0.7 : stage === 'WARM' ? 0.42 : 0.18;
+  return clamp(raw, 0, 1).toFixed(3);
+}
+
+async function projectStateToContact(
+  prisma: PrismaClient,
+  normalizedState: CustomerCognitiveState,
+) {
+  if (!normalizedState.contactId || !prisma?.contact?.update) return;
+  const leadScore = Math.max(
+    0,
+    Math.min(100, Math.round(normalizedState.trustScore * 55 + normalizedState.urgencyScore * 45)),
+  );
+  await prisma.contact
+    .update({
+      where: { id: normalizedState.contactId },
+      data: {
+        leadScore,
+        purchaseProbability: computePurchaseProbability(normalizedState.stage),
+        nextBestAction: normalizedState.nextBestAction,
+        aiSummary: normalizedState.summary,
+      },
+    })
+    .catch(() => null /* non-critical: best-effort contact score update */);
+}
+
+export async function persistCustomerCognitiveState(
+  prisma: PrismaClient,
+  input: PersistCognitiveStateInput,
+) {
+  if (!prisma?.kloelMemory?.upsert) return input.state;
+
+  const key = buildStateKey(input);
+  const source = input.source || 'autonomy';
+  const previous = await fetchPreviousMemory(prisma, input.workspaceId, key);
+  const normalizedState = normalizeStateForPersist(input);
+
+  await upsertCognitiveMemory(prisma, {
+    workspaceId: input.workspaceId,
+    key,
+    normalizedState,
+    source,
+  });
+  await writeCognitiveDelta(prisma, {
+    workspaceId: input.workspaceId,
+    previousValue: previous?.value,
+    normalizedState,
+    source,
+  });
+  await projectStateToContact(prisma, normalizedState);
 
   return normalizedState;
 }
