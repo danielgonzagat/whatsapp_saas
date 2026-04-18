@@ -3263,3 +3263,71 @@ model ConnectMaturationRule {
   @@unique([productId, accountType])
   @@map("connect_maturation_rules")
 }
+
+// ============================================================================
+// SP-STRIPE-4 — Prepaid Wallet (FASE 4 of stripe migration plan).
+//
+// Per-workspace prepaid balance for usage-metered services (AI agent
+// messages, WhatsApp sends, generic API calls). Independent of Connect:
+// the wallet is funded by direct PaymentIntents on the platform's own
+// Stripe account, then debited atomically as services are consumed.
+//
+// Append-only transactions table mirrors the LedgerEntry pattern so
+// every change has an audit row and the running balance is recomputable
+// from history at any time.
+// ============================================================================
+
+enum PrepaidWalletTxType {
+  TOPUP
+  USAGE
+  REFUND
+  ADJUSTMENT
+}
+
+model PrepaidWallet {
+  id                         String                     @id @default(cuid())
+  workspaceId                String                     @unique @map("workspace_id")
+  balanceCents               BigInt                     @default(0) @map("balance_cents")
+  currency                   String                     @default("BRL")
+  autoRechargeEnabled        Boolean                    @default(false) @map("auto_recharge_enabled")
+  autoRechargeThresholdCents BigInt?                    @map("auto_recharge_threshold_cents")
+  autoRechargeAmountCents    BigInt?                    @map("auto_recharge_amount_cents")
+  defaultPaymentMethodId     String?                    @map("default_payment_method_id")
+  stripeCustomerId           String?                    @map("stripe_customer_id")
+  createdAt                  DateTime                   @default(now()) @map("created_at")
+  updatedAt                  DateTime                   @updatedAt @map("updated_at")
+  transactions               PrepaidWalletTransaction[]
+
+  @@index([stripeCustomerId])
+  @@map("prepaid_wallets")
+}
+
+model PrepaidWalletTransaction {
+  id                String              @id @default(cuid())
+  walletId          String              @map("wallet_id")
+  wallet            PrepaidWallet       @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  type              PrepaidWalletTxType
+  amountCents       BigInt              @map("amount_cents")
+  balanceAfterCents BigInt              @map("balance_after_cents")
+  referenceType     String              @map("reference_type")
+  referenceId       String              @map("reference_id")
+  metadata          Json?               @db.JsonB
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  @@index([walletId, createdAt])
+  @@unique([referenceType, referenceId, type])
+  @@map("prepaid_wallet_transactions")
+}
+
+model UsagePrice {
+  id                  String   @id @default(cuid())
+  operation           String   @unique
+  pricePerUnitCents   BigInt   @map("price_per_unit_cents")
+  unit                String
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@index([active])
+  @@map("usage_prices")
+}
