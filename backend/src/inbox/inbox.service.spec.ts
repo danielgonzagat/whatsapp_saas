@@ -73,11 +73,13 @@ describe('InboxService', () => {
   let prisma: any;
   let gateway: any;
   let dispatcher: any;
+  let moduleRef: { get: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       conversation: {
         findFirst: jest.fn(),
+        findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
       },
@@ -86,18 +88,19 @@ describe('InboxService', () => {
     };
     gateway = { emitToWorkspace: jest.fn() };
     dispatcher = { dispatch: jest.fn().mockResolvedValue(undefined) };
+    moduleRef = { get: jest.fn() };
 
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    const testingModule: TestingModule = await Test.createTestingModule({
       providers: [
         InboxService,
         { provide: PrismaService, useValue: prisma },
         { provide: InboxGateway, useValue: gateway },
         { provide: WebhookDispatcherService, useValue: dispatcher },
-        { provide: ModuleRef, useValue: { get: jest.fn() } },
+        { provide: ModuleRef, useValue: moduleRef },
       ],
     }).compile();
 
-    service = moduleRef.get(InboxService);
+    service = testingModule.get(InboxService);
   });
 
   describe('getOrCreateConversation (I14 — Conversation Singleton-Open)', () => {
@@ -294,6 +297,55 @@ describe('InboxService', () => {
 
       expect(gateway.emitToWorkspace).not.toHaveBeenCalled();
       expect(dispatcher.dispatch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('replyToConversation', () => {
+    it('ignores malformed queued flags from WhatsApp send results', async () => {
+      prisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        channel: 'WHATSAPP',
+        contact: { phone: '5511999999999' },
+      });
+      moduleRef.get.mockReturnValue({
+        sendMessage: jest.fn().mockResolvedValue({ queued: { provider: 'waha' } }),
+      });
+      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue({
+        id: 'msg-1',
+      } as any);
+
+      await service.replyToConversation('ws-1', 'conv-1', 'oi');
+
+      expect(saveMessageSpy).not.toHaveBeenCalled();
+    });
+
+    it('persists a pending outbound message when WhatsApp confirms queueing', async () => {
+      prisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        channel: 'WHATSAPP',
+        contact: { phone: '5511999999999' },
+      });
+      moduleRef.get.mockReturnValue({
+        sendMessage: jest.fn().mockResolvedValue({ queued: true, jobId: 'job-1' }),
+      });
+      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue({
+        id: 'msg-1',
+      } as any);
+
+      await service.replyToConversation('ws-1', 'conv-1', 'oi');
+
+      expect(saveMessageSpy).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        content: 'oi',
+        direction: 'OUTBOUND',
+        channel: 'WHATSAPP',
+        status: 'PENDING',
+      });
     });
   });
 });

@@ -3,6 +3,16 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
+type CartRecoveryMetadata = Record<string, unknown>;
+
+function readCartRecoveryMetadata(value: unknown): CartRecoveryMetadata {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as CartRecoveryMetadata;
+}
+
 @Injectable()
 export class CartRecoveryService {
   private readonly logger = new Logger(CartRecoveryService.name);
@@ -25,8 +35,8 @@ export class CartRecoveryService {
 
       // Filter out orders that already had recovery email sent (stored in metadata)
       const toRecover = abandoned.filter((order) => {
-        const meta = (order.metadata as any) || {};
-        return !meta.recoveryEmailSent;
+        const metadata = readCartRecoveryMetadata(order.metadata);
+        return metadata.recoveryEmailSent !== true;
       });
 
       if (toRecover.length === 0) return;
@@ -68,7 +78,7 @@ export class CartRecoveryService {
             where: { id: order.id },
             data: {
               metadata: {
-                ...((order.metadata as any) || {}),
+                ...readCartRecoveryMetadata(order.metadata),
                 recoveryEmailSent: true,
                 recoveryEmailSentAt: new Date().toISOString(),
               },
