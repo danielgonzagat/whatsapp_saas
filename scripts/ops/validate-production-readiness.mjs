@@ -14,6 +14,8 @@ function relative(filePath) {
 }
 
 function readText(filePath) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: every call site derives filePath from path.join(rootDir, <hardcoded-literal>); rootDir is this script's resolved dirname. No user input.
   return fs.readFileSync(filePath, 'utf8');
 }
 
@@ -39,11 +41,15 @@ function isTracked(relPath) {
 
 function requireFile(relPath, title) {
   const absPath = path.join(rootDir, relPath);
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: absPath = path.join(rootDir, <hardcoded relPath>); relPath comes from requiredFiles literal table. No user input.
   check(fs.existsSync(absPath), title, relPath);
   return absPath;
 }
 
 function requireIncludes(filePath, needle, title) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: filePath is always path.join(rootDir, <hardcoded literal>). No user input.
   if (!fs.existsSync(filePath)) {
     check(false, title, `missing ${relative(filePath)}`);
     return;
@@ -53,20 +59,28 @@ function requireIncludes(filePath, needle, title) {
 }
 
 function requireRegex(filePath, regex, title, detail) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: filePath is always path.join(rootDir, <hardcoded literal>). No user input.
   if (!fs.existsSync(filePath)) {
     check(false, title, `missing ${relative(filePath)}`);
     return;
   }
   const content = readText(filePath);
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+  // Safe: `regex` comes from call-site literal RegExps defined in this script; `content` is the repo's own tracked file contents. No user input.
   check(regex.test(content), title, detail || `${relative(filePath)} must match ${regex}`);
 }
 
 function requireNotRegex(filePath, regex, title, detail) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: filePath is always path.join(rootDir, <hardcoded literal>). No user input.
   if (!fs.existsSync(filePath)) {
     check(false, title, `missing ${relative(filePath)}`);
     return;
   }
   const content = readText(filePath);
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+  // Safe: `regex` comes from call-site literal RegExps defined in this script; `content` is the repo's own tracked file contents. No user input.
   check(!regex.test(content), title, detail || `${relative(filePath)} must not match ${regex}`);
 }
 
@@ -206,6 +220,8 @@ for (const requiredScript of [
 }
 
 const backupManifestPath = path.join(rootDir, '.backup-manifest.json');
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: path is path.join(rootDir, '.backup-manifest.json') — hardcoded; no user input.
 if (fs.existsSync(backupManifestPath)) {
   try {
     const manifest = JSON.parse(readText(backupManifestPath));
@@ -252,6 +268,8 @@ if (fs.existsSync(backupManifestPath)) {
 }
 
 const drLogPath = path.join(rootDir, '.dr-test.log');
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: path is path.join(rootDir, '.dr-test.log') — hardcoded; no user input.
 if (fs.existsSync(drLogPath)) {
   const drLog = readText(drLogPath);
   check(
@@ -521,6 +539,8 @@ for (const keyword of [
 }
 
 const mcpConfigPath = path.join(rootDir, '.mcp.json');
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: path is path.join(rootDir, '.mcp.json') — hardcoded; no user input.
 if (!fs.existsSync(mcpConfigPath)) {
   check(false, 'Codacy MCP server is configured', 'missing .mcp.json');
 } else {
@@ -535,6 +555,8 @@ if (!fs.existsSync(mcpConfigPath)) {
 }
 
 const branchProtectionPath = path.join(rootDir, '.github/branch-protection.json');
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: path is path.join(rootDir, '.github/branch-protection.json') — hardcoded; no user input.
 if (fs.existsSync(branchProtectionPath)) {
   try {
     const branchProtection = JSON.parse(readText(branchProtectionPath));
@@ -584,9 +606,13 @@ if (fs.existsSync(branchProtectionPath)) {
 }
 
 const backendPackagePath = path.join(rootDir, 'backend/package.json');
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: path is path.join(rootDir, 'backend/package.json') — hardcoded; no user input.
 if (fs.existsSync(backendPackagePath)) {
   const backendPackage = JSON.parse(readText(backendPackagePath));
   check(
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+    // Safe: literal anchored regex scanning the repo's own backend/package.json start:prod script string. No user input, no nested quantifiers.
     !/prisma\s+db\s+push/i.test(backendPackage.scripts?.['start:prod'] || ''),
     'Backend production start script no longer uses prisma db push',
     'backend/package.json start:prod must not execute prisma db push',
@@ -594,6 +620,8 @@ if (fs.existsSync(backendPackagePath)) {
 }
 
 const rootPackagePath = path.join(rootDir, 'package.json');
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: path is path.join(rootDir, 'package.json') — hardcoded; no user input.
 if (fs.existsSync(rootPackagePath)) {
   const rootPackage = JSON.parse(readText(rootPackagePath));
   check(
@@ -610,6 +638,8 @@ if (fs.existsSync(rootPackagePath)) {
 }
 
 const railwayTomlPath = path.join(rootDir, 'railway.toml');
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: path is path.join(rootDir, 'railway.toml') — hardcoded; no user input.
 if (fs.existsSync(railwayTomlPath)) {
   const railwayToml = readText(railwayTomlPath);
   requireIncludes(
@@ -628,6 +658,8 @@ if (fs.existsSync(railwayTomlPath)) {
     'Railway healthcheck uses liveness endpoint',
   );
   check(
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+    // Safe: literal regex applied to the repo's own railway.toml contents. No user input, no nested quantifiers.
     !/Command\s*=\s*".*\bcd\b/i.test(railwayToml),
     'Railway commands avoid shell builtin cd',
     'railway.toml build/start commands must not depend on shell builtin cd.',

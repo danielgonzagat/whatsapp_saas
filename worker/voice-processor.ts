@@ -13,7 +13,11 @@ const PATTERN_RE = /\/+$/;
 // SECURITY: UPLOAD_DIR is derived from __dirname (server binary location), not user input.
 // All file writes within this directory use safePath() to guard against path traversal.
 const UPLOAD_DIR = path.resolve(__dirname, '../backend/public/audio');
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: UPLOAD_DIR = path.resolve(__dirname, '../backend/public/audio') — derived from the worker binary location, no user input.
 if (!fs.existsSync(UPLOAD_DIR)) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: UPLOAD_DIR is __dirname-derived; no user input.
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
@@ -92,6 +96,8 @@ async function handleGenerateAudio(job: Job) {
     const buffer = Buffer.from(await response.arrayBuffer());
     const fileName = `${jobId}.mp3`;
     const filePath = safePath(UPLOAD_DIR, fileName);
+    // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+    // Safe: filePath passed through safePath() which asserts containment in UPLOAD_DIR (__dirname-derived). jobId is a DB primary key, not user free-form input.
     fs.writeFileSync(filePath, buffer);
 
     const publicUrl = `${resolvePublicBackendBaseUrl()}/audio/${fileName}`;
@@ -135,12 +141,16 @@ async function handleTranscription(job: Job) {
 
     // Use randomUUID for temp filename to prevent path traversal via phone
     const tempFile = safePath(UPLOAD_DIR, `temp_${randomUUID()}.mp3`);
+    // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+    // Safe: tempFile is safePath(UPLOAD_DIR, `temp_${randomUUID()}.mp3`) — UPLOAD_DIR is __dirname-derived, randomUUID() is crypto-generated. No user input.
     fs.writeFileSync(tempFile, Buffer.from(await response.arrayBuffer()));
 
     const openai = getOpenAIClient();
     let transcription: OpenAI.Audio.Transcriptions.TranscriptionVerbose;
     try {
       transcription = await openai.audio.transcriptions.create({
+        // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+        // Safe: tempFile is safePath(UPLOAD_DIR, randomUUID-based name). No user input.
         file: fs.createReadStream(tempFile),
         model: resolveWorkerOpenAIModel('audio_understanding'),
         language: 'pt',
@@ -148,6 +158,8 @@ async function handleTranscription(job: Job) {
       });
     } catch {
       transcription = await openai.audio.transcriptions.create({
+        // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+        // Safe: tempFile is safePath(UPLOAD_DIR, randomUUID-based name). No user input.
         file: fs.createReadStream(tempFile),
         model: resolveWorkerOpenAIModel('audio_understanding_fallback'),
         language: 'pt',
@@ -156,7 +168,11 @@ async function handleTranscription(job: Job) {
     }
 
     const transcribedText = transcription.text || '';
+    // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+    // Safe: tempFile is safePath(UPLOAD_DIR, randomUUID-based name). No user input.
     if (fs.existsSync(tempFile)) {
+      // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+      // Safe: tempFile is safePath(UPLOAD_DIR, randomUUID-based name). No user input.
       fs.unlinkSync(tempFile);
     }
 

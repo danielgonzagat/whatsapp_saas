@@ -710,6 +710,8 @@ function FinalManifestLoop() {
     ) => {
       const prev = phrase[index - 1] ?? '';
       const next = phrase[index + 1] ?? '';
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: PATTERN_RE is a module-scope literal /[.,!?]/ char-class regex; `character` is a single character from a hardcoded phrase prop used for typewriter animation. No user input, no nested quantifiers.
       const isPauseMark = PATTERN_RE.test(character);
 
       if (mode === 'delete') {

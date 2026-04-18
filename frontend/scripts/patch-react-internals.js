@@ -29,8 +29,12 @@ const reactDevPath = path.join(
 const reactIndexMain = path.join(__dirname, '..', 'node_modules', 'react', 'index.js');
 
 function patchFile(filePath) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: filePath is path.join(__dirname, '..', 'node_modules', 'react', ...) — derived from this script's own directory, no user input. This is an npm postinstall script.
   if (!fs.existsSync(filePath)) return false;
 
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: filePath is path.join(__dirname, '..', 'node_modules', 'react', ...) — derived from this script's own directory, no user input.
   let content = fs.readFileSync(filePath, 'utf8');
 
   // Check if already patched
@@ -63,6 +67,8 @@ if (typeof exports !== 'undefined' && exports.${newInternalsName} && !exports.__
 `;
 
   content += patchCode;
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: filePath is path.join(__dirname, '..', 'node_modules', 'react', ...) — derived from this script's own directory, no user input.
   fs.writeFileSync(filePath, content);
   console.log(`  Patched: ${path.basename(filePath)}`);
   return true;
@@ -73,7 +79,11 @@ patchFile(reactIndexPath);
 patchFile(reactDevPath);
 
 // Also patch the main index.js if it's a re-export
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: reactIndexMain = path.join(__dirname, '..', 'node_modules', 'react', 'index.js') — derived from this script's own directory, no user input.
 if (fs.existsSync(reactIndexMain)) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: reactIndexMain is path.join(__dirname, '..', 'node_modules', 'react', 'index.js') — derived from this script's own directory, no user input.
   let main = fs.readFileSync(reactIndexMain, 'utf8');
   if (!main.includes('__SECRET_INTERNALS')) {
     // The main index.js usually just re-exports from cjs/

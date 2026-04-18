@@ -80,6 +80,8 @@ async function proxyMarketing(request: NextRequest, pathSegments: string[]) {
 
     try {
       // biome-ignore lint/performance/noAwaitInLoops: sequential fallback across backend candidates — parallel would waste upstream quota and defeat failover ordering
+      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+      // Safe: `url` = `${baseUrl}${upstreamPath}` where `baseUrl` is picked from the server-owned backend allowlist in getBackendCandidateUrls() (env/config only) and `upstreamPath` is hardcoded to `/marketing/${pathSegments.join('/')}` — user input can only extend the path under our own backend, never change the host.
       const response = await fetch(url, {
         method: request.method,
         headers,

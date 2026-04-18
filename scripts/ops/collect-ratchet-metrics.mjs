@@ -179,6 +179,8 @@ function countExplicitAnyMetrics(files) {
         samples.push(sampleEntry(relPath, index + 1, line));
       }
 
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: literal alternation regex applied to a line from repo source files (readLines over git-tracked code). No user input, no nested quantifiers.
       if (/(prisma|prismaAny|Prisma)/.test(line)) {
         prismaTotal += lineCount;
         if (prismaSamples.length < 20) {
@@ -201,7 +203,11 @@ function countCommentDirective(files, directive) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: `directive` is a call-site literal RegExp passed from collectRatchetMetrics; `line` is a repo-source line. No user input.
       if (!directive.test(line)) return;
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: literal char-class alternation regex applied to a repo-source line. No user input, no nested quantifiers.
       if (!/(\/\/|\/\*|\*\/|\{\/\*|\* )/.test(line)) return;
       total += 1;
       if (samples.length < 20) {
@@ -220,6 +226,8 @@ function countHardcodedAiSpeech(files) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: AI_SPEECH_PATTERNS are module-scope literal RegExps; `line` is a repo-source line. No user input, no nested quantifiers.
       const matched = AI_SPEECH_PATTERNS.some((pattern) => pattern.test(line));
       if (!matched) return;
       total += 1;
@@ -241,6 +249,8 @@ function countEmojiOccurrences(files) {
     lines.forEach((line, index) => {
       if (COMMENT_ONLY_RE.test(line)) return;
       const sanitizedLine = line.replace(/\/\/.*$/, '');
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: literal char-class regex applied to a repo-source line. No user input, no nested quantifiers.
       if (!/['"`<>]/.test(sanitizedLine)) return;
       const matches = sanitizedLine.match(EMOJI_RE);
       if (!matches || matches.length === 0) return;

@@ -248,6 +248,8 @@ function scanViolations(file, lines, tokens, exceptions) {
       });
     }
 
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+    // Safe: IMPORTANT_RE is a module-scope literal regex; `line` is a line of the repo's own tracked source file. No user input, no nested quantifiers.
     if (IMPORTANT_RE.test(line) && !matchesException(exceptions, file, 'important', '!important')) {
       violations.push({
         file,
@@ -259,6 +261,8 @@ function scanViolations(file, lines, tokens, exceptions) {
 
     if (
       !tokens.allowGradients &&
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: GRADIENT_RE is a module-scope literal regex; `line` is a tracked-source line. No user input, no nested quantifiers.
       GRADIENT_RE.test(line) &&
       !matchesException(exceptions, file, 'gradient', 'any')
     ) {
@@ -270,6 +274,8 @@ function scanViolations(file, lines, tokens, exceptions) {
       });
     }
 
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+    // Safe: literal char-class regex applied to a line of the repo's own tracked source. No user input, no nested quantifiers.
     if (/['"`<>]/.test(line)) {
       const emojiMatches = line.match(EMOJI_RE) || [];
       if (
@@ -286,8 +292,14 @@ function scanViolations(file, lines, tokens, exceptions) {
     }
 
     if (
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: SPINNER_RE is a module-scope literal regex; `line` is a tracked-source line. No user input, no nested quantifiers.
       SPINNER_RE.test(line) &&
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: SPINNER_ICON_RE is a module-scope literal regex; `line` is a tracked-source line. No user input, no nested quantifiers.
       SPINNER_ICON_RE.test(line) &&
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: literal alternation regex applied to a tracked-source line. No user input, no nested quantifiers.
       !/PulseLoader|KloelBrand|brand/i.test(line)
     ) {
       violations.push({
@@ -298,6 +310,8 @@ function scanViolations(file, lines, tokens, exceptions) {
       });
     }
 
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+    // Safe: CHAT_FILE_HINT_RE is a module-scope literal alternation regex; `file` is a repo-relative path from the git diff. No user input, no nested quantifiers.
     if (!CHAT_FILE_HINT_RE.test(file)) {
       return;
     }
