@@ -6,7 +6,7 @@ import type React from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 
 /** Recursive JSON-safe record type — allows property access without `any` */
- 
+
 export type JsonValue =
   | string
   | number
@@ -540,6 +540,9 @@ export function Modal({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Fechar ${title}`}
       style={{
         position: 'fixed',
         inset: 0,

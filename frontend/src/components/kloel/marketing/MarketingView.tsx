@@ -403,21 +403,29 @@ function Ticker({ items }: { items: string[] }) {
 
 // ── LiveStream ──
 function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string }) {
-  const [feed, setFeed] = useState<string[]>([]);
+  const [feed, setFeed] = useState<Array<{ id: string; text: string }>>([]);
   const idx = useRef(0);
   useEffect(() => {
     if (msgs.length === 0 || (msgs.length === 1 && msgs[0] === 'Aguardando mensagens...')) return;
     const iv = setInterval(() => {
-      setFeed((p) => [msgs[idx.current % msgs.length], ...p].slice(0, 8));
+      setFeed((p) =>
+        [
+          {
+            id: `feed-${Date.now()}-${idx.current}`,
+            text: msgs[idx.current % msgs.length],
+          },
+          ...p,
+        ].slice(0, 8),
+      );
       idx.current++;
     }, 2000);
     return () => clearInterval(iv);
   }, [msgs]);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {feed.map((m, i) => (
+      {feed.map((entry, i) => (
         <div
-          key={`feed-${m}-${i}`}
+          key={entry.id}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -433,7 +441,7 @@ function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string })
           }}
         >
           <NP w={24} h={12} color={color} />
-          <span>{m}</span>
+          <span>{entry.text}</span>
         </div>
       ))}
     </div>
@@ -2065,6 +2073,15 @@ function VisaoGeral({
             <div
               key={key}
               onClick={() => switchTab(key)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Abrir canal ${ch.label ?? key}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -2078,12 +2095,6 @@ function VisaoGeral({
                 cursor: 'pointer',
                 transition: 'all .2s',
                 overflow: 'hidden',
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  (e.currentTarget as HTMLElement).click();
-                }
               }}
             >
               <div

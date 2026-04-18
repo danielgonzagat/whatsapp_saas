@@ -1273,8 +1273,9 @@ export default function CheckoutEditorPage() {
               {config.enableTrustBadges && (
                 <>
                   {config.trustBadges.map((b, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — trustBadges is `{label:string}[]` with user-editable duplicate labels; refactoring state shape is out of scope for this a11y pass.
                     <div
-                      key={`trust-badge-${i}`}
+                      key={`trust-badge-${i}-${b.label.slice(0, 10)}`}
                       style={{
                         display: 'flex',
                         alignItems: 'center',

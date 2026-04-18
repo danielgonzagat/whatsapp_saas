@@ -477,6 +477,7 @@ export function FloatingChat({
               msg.role === 'user' ? (
                 <div
                   key={msg.id}
+                  role="group"
                   style={{ display: 'flex', justifyContent: 'flex-end' }}
                   onMouseEnter={() => setHoveredMessageId(msg.id)}
                   onMouseLeave={() =>

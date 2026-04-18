@@ -805,6 +805,9 @@ function WhatsAppConsoleInner({
         <div
           className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
           onClick={onClose}
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar console"
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();

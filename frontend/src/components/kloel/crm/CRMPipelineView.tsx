@@ -762,6 +762,8 @@ export default function CRMPipelineView() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
             style={{
               background: 'var(--app-bg-card)',
               border: '1px solid var(--app-border-primary)',

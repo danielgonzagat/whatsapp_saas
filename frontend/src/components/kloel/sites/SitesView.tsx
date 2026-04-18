@@ -2007,6 +2007,9 @@ function EditarSite({ mode }: { mode?: string }) {
                 <span
                   style={{ color: EMBER }}
                   onClick={() => setSelectedSite(site)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Abrir ${site.name || 'site'}`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -2019,6 +2022,9 @@ function EditarSite({ mode }: { mode?: string }) {
                 <div
                   style={{ flex: 1, cursor: 'pointer' }}
                   onClick={() => setSelectedSite(site)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Abrir ${site.name || 'site'}`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();

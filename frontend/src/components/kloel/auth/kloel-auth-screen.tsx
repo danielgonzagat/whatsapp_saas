@@ -17,6 +17,15 @@ type Mode = 'login' | 'register';
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+const HORIZONTAL_GRID_LINES = Array.from({ length: 12 }, (_, i) => ({
+  id: `h-${i + 1}`,
+  top: ((i + 1) / 13) * 100,
+}));
+const VERTICAL_GRID_LINES = Array.from({ length: 8 }, (_, i) => ({
+  id: `v-${i + 1}`,
+  left: ((i + 1) / 9) * 100,
+}));
+
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
 
@@ -326,14 +335,14 @@ function TheMachine() {
       {/* grid lines */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         {/* horizontal */}
-        {Array.from({ length: 12 }).map((_, i) => (
+        {HORIZONTAL_GRID_LINES.map((line) => (
           <div
-            key={`h${i}`}
+            key={line.id}
             style={{
               position: 'absolute',
               left: 0,
               right: 0,
-              top: `${((i + 1) / 13) * 100}%`,
+              top: `${line.top}%`,
               height: 1,
               background: '#E0DDD8',
               opacity: 0.03,
@@ -341,14 +350,14 @@ function TheMachine() {
           />
         ))}
         {/* vertical */}
-        {Array.from({ length: 8 }).map((_, i) => (
+        {VERTICAL_GRID_LINES.map((line) => (
           <div
-            key={`v${i}`}
+            key={line.id}
             style={{
               position: 'absolute',
               top: 0,
               bottom: 0,
-              left: `${((i + 1) / 9) * 100}%`,
+              left: `${line.left}%`,
               width: 1,
               background: '#E0DDD8',
               opacity: 0.03,

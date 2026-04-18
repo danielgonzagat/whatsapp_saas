@@ -122,6 +122,21 @@ const FONT = {
   mono: "'JetBrains Mono', monospace",
 };
 
+const MONTH_LABELS = [
+  'jan',
+  'feb',
+  'mar',
+  'apr',
+  'may',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'oct',
+  'nov',
+  'dec',
+] as const;
+
 /* ═══════════════════════════════════════════════
    INLINE SVG ICONS (IC object)
    ═══════════════════════════════════════════════ */
@@ -947,8 +962,13 @@ function AffiliateDetailModal({
   ];
 
   // Performance chart — use real data from performance endpoint or fall back to empty
-  const chartData = perfData?.monthlyPerformance || a.monthlyPerformance || new Array(12).fill(0);
-  const chartMax = Math.max(...chartData, 1);
+  const rawChartData: number[] =
+    perfData?.monthlyPerformance || a.monthlyPerformance || new Array(12).fill(0);
+  const chartData = rawChartData.map((value, idx) => ({
+    value,
+    label: MONTH_LABELS[idx] ?? `m${idx}`,
+  }));
+  const chartMax = Math.max(...rawChartData, 1);
 
   const handleCopyLink = () => {
     navigator.clipboard
@@ -1185,9 +1205,9 @@ function AffiliateDetailModal({
               padding: '12px 14px',
             }}
           >
-            {chartData.map((v: number, i: number) => (
+            {chartData.map((point) => (
               <div
-                key={`chart-bar-${i}`}
+                key={`chart-bar-${point.label}`}
                 style={{
                   flex: 1,
                   display: 'flex',
@@ -1199,10 +1219,10 @@ function AffiliateDetailModal({
                 <div
                   style={{
                     width: '100%',
-                    height: `${(v / chartMax) * 56}px`,
+                    height: `${(point.value / chartMax) * 56}px`,
                     background: C.ember,
                     borderRadius: 2,
-                    opacity: 0.6 + (v / chartMax) * 0.4,
+                    opacity: 0.6 + (point.value / chartMax) * 0.4,
                     transition: 'height 300ms ease',
                   }}
                 />
@@ -2390,6 +2410,15 @@ function TabAfiliados({
           <div
             key={a.id || a.email}
             onClick={() => setDetailId(a.id || null)}
+            role="button"
+            tabIndex={0}
+            aria-label={`Abrir detalhes de ${a.name || a.email || 'afiliado'}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
+            }}
             style={{
               display: 'grid',
               gridTemplateColumns: '46px 1fr 90px 70px 110px 90px 60px 100px',
@@ -2407,12 +2436,6 @@ function TabAfiliados({
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLElement).style.borderColor = C.border;
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).click();
-              }
             }}
           >
             {/* Avatar */}

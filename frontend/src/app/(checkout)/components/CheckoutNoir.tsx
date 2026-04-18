@@ -77,6 +77,8 @@ const normalizeTestimonials = (
   enabled?: boolean,
 ) => normalizeThemeTestimonials(brandName, DEFAULT_TESTIMONIALS, testimonials, enabled);
 
+const NOIR_STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
+
 export default function CheckoutNoir({
   product,
   config,
@@ -1344,6 +1346,10 @@ export default function CheckoutNoir({
               {supportsPix ? (
                 <div
                   onClick={() => setPayMethod('pix')}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Pagar com PIX"
+                  aria-pressed={payMethod === 'pix'}
                   style={{
                     border: `1px solid ${payMethod === 'pix' ? C.accent : C.border2}`,
                     borderRadius: 6,
@@ -1713,9 +1719,9 @@ export default function CheckoutNoir({
             </div>
           </div>
 
-          {testimonials.map((testimonial, index) => (
+          {testimonials.map((testimonial) => (
             <div
-              key={`${testimonial.name}-${index}`}
+              key={`${testimonial.name}-${testimonial.text.slice(0, 24)}`}
               style={{
                 background: C.surface,
                 border: `1px solid ${C.border}`,
@@ -1744,8 +1750,8 @@ export default function CheckoutNoir({
                 </div>
                 <div>
                   <div style={{ display: 'flex', gap: 2, marginBottom: 2 }}>
-                    {Array.from({ length: testimonial.stars }).map((_, starIndex) => (
-                      <Star key={starIndex} />
+                    {NOIR_STAR_SLOTS.slice(0, testimonial.stars).map((slot) => (
+                      <Star key={`${testimonial.name}-${slot}`} />
                     ))}
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{testimonial.name}</div>

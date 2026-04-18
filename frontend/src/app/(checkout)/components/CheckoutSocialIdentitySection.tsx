@@ -98,6 +98,7 @@ function GoogleIconButton({
 
   return (
     <div
+      role="group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{

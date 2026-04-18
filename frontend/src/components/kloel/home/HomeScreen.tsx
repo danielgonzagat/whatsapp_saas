@@ -87,15 +87,20 @@ function PaperclipIcon({ size = 16 }: { size?: number }) {
 
 function renderMessageText(text: string) {
   const parts = text.split(PATTERN_RE);
-  return parts.map((part, i) => {
+  // Build stable keys by aggregating preceding parts — collisions only occur when the
+  // same part appears with the exact same prior context, which cannot happen in a split().
+  let cumulative = '';
+  return parts.map((part) => {
+    cumulative += `|${part}`;
+    const key = cumulative;
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
-        <strong key={`bold-${part}-${i}`} style={{ color: '#E85D30', fontWeight: 600 }}>
+        <strong key={key} style={{ color: '#E85D30', fontWeight: 600 }}>
           {part.slice(2, -2)}
         </strong>
       );
     }
-    return <span key={`text-${part}-${i}`}>{part}</span>;
+    return <span key={key}>{part}</span>;
   });
 }
 
@@ -1094,6 +1099,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           }}
         >
           <div
+            role="search"
             style={{
               display: 'flex',
               alignItems: 'center',

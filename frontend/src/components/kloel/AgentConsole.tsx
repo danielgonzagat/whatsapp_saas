@@ -611,6 +611,9 @@ export function AgentConsole({
             zIndex: 44,
           }}
           onClick={onClose}
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar console"
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();

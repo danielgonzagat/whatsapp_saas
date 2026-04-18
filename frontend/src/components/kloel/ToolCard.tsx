@@ -21,6 +21,9 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
       onClick={interactive ? onClick : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-disabled={disabled || undefined}
       style={{
         position: 'relative',
         display: 'flex',
@@ -35,7 +38,7 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
         transition: 'all 150ms ease',
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (interactive && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault();
           (e.currentTarget as HTMLElement).click();
         }

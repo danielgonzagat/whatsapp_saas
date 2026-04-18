@@ -264,6 +264,9 @@ export function ProductPlansTab({ productId }: { productId: string }) {
       {linkModalPlan && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar modal"
           style={{
             backgroundColor: 'var(--cookie-overlay, rgba(0,0,0,0.6))',
             backdropFilter: 'blur(4px)',

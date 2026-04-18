@@ -295,6 +295,7 @@ export function ConversationsView() {
               return (
                 <div
                   key={conversation.id}
+                  role="group"
                   onMouseEnter={() => setHoveredId(conversation.id)}
                   onMouseLeave={() =>
                     setHoveredId((current) => (current === conversation.id ? null : current))

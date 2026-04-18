@@ -532,7 +532,7 @@ function MultiChannel() {
         {(msgs[ch] || []).map((msg, i) =>
           msg.f === 'ok' ? (
             <div
-              key={`${msg.f}-${msg.text}-${i}`}
+              key={`${msg.f}-${msg.ch}-${msg.t}-${msg.text}`}
               style={{ textAlign: 'center', padding: '5px 0', animation: 'fm .3s ease both' }}
             >
               <span
@@ -552,7 +552,7 @@ function MultiChannel() {
             </div>
           ) : (
             <div
-              key={`${msg.f}-${msg.text}-${i}`}
+              key={`${msg.f}-${msg.ch}-${msg.t}-${msg.text}`}
               style={{
                 alignSelf: msg.f === 'ai' ? 'flex-end' : 'flex-start',
                 maxWidth: '88%',

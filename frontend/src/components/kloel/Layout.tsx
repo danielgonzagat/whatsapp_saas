@@ -144,6 +144,9 @@ export function ModalSurface({ children, className, open = true, onClose }: Moda
       {/* Backdrop */}
       <div
         className="absolute inset-0"
+        role="button"
+        tabIndex={0}
+        aria-label="Fechar modal"
         style={{
           backgroundColor: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',

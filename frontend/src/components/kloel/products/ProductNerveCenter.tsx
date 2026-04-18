@@ -1085,8 +1085,8 @@ export default function ProductNerveCenter({
               overflow: 'hidden',
             }}
           >
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div key={`tab-skeleton-${index}`} style={{ padding: '8px 14px' }}>
+            {['alpha', 'beta', 'gamma', 'delta', 'epsilon'].map((slot) => (
+              <div key={`tab-skeleton-${slot}`} style={{ padding: '8px 14px' }}>
                 <SkeletonBlock width={72} height={10} />
               </div>
             ))}
@@ -1135,6 +1135,15 @@ export default function ProductNerveCenter({
         >
           <div
             onClick={() => imgInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            aria-label="Selecionar imagem do produto"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
+            }}
             style={{
               width: 80,
               height: 80,
@@ -1147,12 +1156,6 @@ export default function ProductNerveCenter({
               cursor: 'pointer',
               flexShrink: 0,
               padding: 6,
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).click();
-              }
             }}
           >
             {currentImageUrl ? (

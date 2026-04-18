@@ -892,7 +892,8 @@ export function BrainSettingsSection() {
           <div className="space-y-2">
             <Label className="text-sm text-gray-700">Diferenciais competitivos</Label>
             {company.differentials.map((diff, i) => (
-              <div key={`differential-${i}`} className="flex gap-2">
+              // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — differentials is `string[]` with user-editable duplicates; refactor out of a11y pass scope.
+              <div key={`differential-${i}-${diff.slice(0, 10)}`} className="flex gap-2">
                 <Input
                   placeholder={`Diferencial ${i + 1}`}
                   value={diff}
@@ -1225,8 +1226,9 @@ export function BrainSettingsSection() {
           {rules.length > 0 && (
             <div className="space-y-2">
               {rules.map((rule, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — rules is `string[]` with user-editable duplicates; refactor out of a11y pass scope.
                 <div
-                  key={`rule-${i}`}
+                  key={`rule-${i}-${rule.slice(0, 10)}`}
                   className="flex items-center gap-3 rounded-xl bg-gray-50 p-3"
                 >
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-700">
@@ -1508,6 +1510,9 @@ export function BrainSettingsSection() {
               onDragLeave={() => setKbDragOver(false)}
               onDrop={handleKbDrop}
               onClick={() => kbFileRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              aria-label="Selecionar arquivo para base de conhecimento"
               className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-6 text-center ${kbDragOver ? 'border-[#E85D30] bg-[#E85D30]/5' : 'border-gray-200 hover:border-gray-300'}`}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {

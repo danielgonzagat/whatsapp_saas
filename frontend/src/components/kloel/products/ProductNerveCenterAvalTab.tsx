@@ -110,6 +110,10 @@ export function ProductNerveCenterAvalTab() {
                   <span
                     key={star}
                     onClick={() => setNewRevRating(star)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Avaliar com ${star} estrela${star > 1 ? 's' : ''}`}
+                    aria-pressed={star <= newRevRating}
                     style={{
                       cursor: 'pointer',
                       fontSize: 18,

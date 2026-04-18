@@ -47,7 +47,12 @@ export function KloelChatBubble({
 }: KloelChatBubbleProps) {
   const [show, setShow] = useState(false);
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Array<{ role: string; text: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: string; role: string; text: string }>>([]);
+  const msgIdRef = useRef(0);
+  const nextMsgId = () => {
+    msgIdRef.current += 1;
+    return `msg-${Date.now()}-${msgIdRef.current}`;
+  };
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [discountOffered, setDiscountOffered] = useState(false);
@@ -95,7 +100,8 @@ export function KloelChatBubble({
       .then((threadMessages) => {
         if (cancelled || threadMessages.length === 0) return;
         setMessages(
-          threadMessages.map((message) => ({
+          threadMessages.map((message, idx) => ({
+            id: `thread-${message.id ?? idx}`,
             role: message.role,
             text: message.content,
           })),
@@ -116,7 +122,7 @@ export function KloelChatBubble({
     if (!input.trim() || loading) return;
     const userMsg = input.trim();
     setInput('');
-    setMessages((prev) => [...prev, { role: 'user', text: userMsg }]);
+    setMessages((prev) => [...prev, { id: nextMsgId(), role: 'user', text: userMsg }]);
     setLoading(true);
 
     // Detect hesitation keywords for discount offer
@@ -190,11 +196,15 @@ export function KloelChatBubble({
         setDiscountOffered(true);
       }
 
-      setMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
+      setMessages((prev) => [...prev, { id: nextMsgId(), role: 'assistant', text: reply }]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', text: 'Desculpe, tive uma instabilidade. Tente novamente.' },
+        {
+          id: nextMsgId(),
+          role: 'assistant',
+          text: 'Desculpe, tive uma instabilidade. Tente novamente.',
+        },
       ]);
     }
     setLoading(false);
@@ -382,9 +392,9 @@ export function KloelChatBubble({
           {welcomeMessage}
         </div>
 
-        {messages.map((m, i) => (
+        {messages.map((m) => (
           <div
-            key={`${m.role}-${i}`}
+            key={m.id}
             style={{
               alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
               maxWidth: '80%',

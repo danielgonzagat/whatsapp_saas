@@ -123,6 +123,9 @@ export function MediaPreviewBox({
 
       <div
         aria-busy={uploading}
+        role="button"
+        tabIndex={0}
+        aria-label="Selecionar arquivo de mídia"
         onClick={() => {
           if (!uploading) inputRef.current?.click();
         }}

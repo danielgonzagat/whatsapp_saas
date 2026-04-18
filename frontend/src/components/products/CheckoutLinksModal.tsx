@@ -113,6 +113,9 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label="Fechar modal de links de checkout"
       style={{
         position: 'fixed',
         top: 0,

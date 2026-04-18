@@ -15,6 +15,8 @@ import { mutate } from 'swr';
 const S = "var(--font-sora), 'Sora', sans-serif";
 const _M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+const SKELETON_SLOTS = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'] as const;
+
 function RecentSkeletonGrid() {
   return (
     <div
@@ -24,9 +26,9 @@ function RecentSkeletonGrid() {
         gap: 12,
       }}
     >
-      {Array.from({ length: 6 }).map((_, index) => (
+      {SKELETON_SLOTS.map((slot) => (
         <div
-          key={`canvas-skeleton-${index}`}
+          key={`canvas-skeleton-${slot}`}
           style={{
             background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
@@ -302,6 +304,9 @@ function DesignCard({
       )}
       <div
         onClick={onClick}
+        role="button"
+        tabIndex={0}
+        aria-label="Abrir template"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();

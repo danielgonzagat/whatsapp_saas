@@ -162,6 +162,9 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     >
       <div
         onClick={onClose}
+        role="button"
+        tabIndex={0}
+        aria-label="Fechar modal"
         style={{
           position: 'absolute',
           inset: 0,

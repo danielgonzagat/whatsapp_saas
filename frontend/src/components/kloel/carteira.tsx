@@ -1584,6 +1584,7 @@ function TabExtrato({
             return (
               <div
                 key={t.id}
+                role="row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: isMobile ? '1fr' : '36px 2fr 0.8fr 0.6fr 1fr 0.6fr',

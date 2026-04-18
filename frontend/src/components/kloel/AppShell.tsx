@@ -358,6 +358,9 @@ export function AppShell({ children }: AppShellProps) {
             className="absolute inset-0"
             style={{ background: KLOEL_THEME.bgOverlay }}
             onClick={() => setMobileMenuOpen(false)}
+            role="button"
+            tabIndex={0}
+            aria-label="Fechar menu"
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();

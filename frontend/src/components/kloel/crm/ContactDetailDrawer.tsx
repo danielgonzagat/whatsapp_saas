@@ -210,6 +210,9 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
       {/* Backdrop */}
       <div
         onClick={onClose}
+        role="button"
+        tabIndex={0}
+        aria-label="Fechar detalhes do contato"
         style={{
           position: 'fixed',
           inset: 0,

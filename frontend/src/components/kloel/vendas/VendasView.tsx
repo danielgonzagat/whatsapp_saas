@@ -467,16 +467,21 @@ function TH({ children }: { children: React.ReactNode }) {
 
 function MiniChart({ data, color = '#E85D30' }: { data: number[]; color?: string }) {
   const max = Math.max(...data, 1);
+  const bars = data.map((value, idx) => ({
+    id: `bar-${idx}-of-${data.length}-${value}`,
+    value,
+    isLast: idx === data.length - 1,
+  }));
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
-      {data.map((v, i) => (
+      {bars.map((bar) => (
         <div
-          key={`bar-${i}`}
+          key={bar.id}
           style={{
             flex: 1,
-            height: `${(v / max) * 100}%`,
+            height: `${(bar.value / max) * 100}%`,
             minHeight: 2,
-            background: i === data.length - 1 ? color : 'var(--app-accent-light)',
+            background: bar.isLast ? color : 'var(--app-accent-light)',
             borderRadius: '2px 2px 0 0',
           }}
         />
@@ -1841,6 +1846,15 @@ function GestaoVendas({
               <div
                 key={s.id}
                 onClick={() => onOpenDetail(s.id, 'sale')}
+                role="button"
+                tabIndex={0}
+                aria-label={`Abrir detalhes da venda ${s.id}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).click();
+                  }
+                }}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr',
@@ -1856,12 +1870,6 @@ function GestaoVendas({
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'none';
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    (e.currentTarget as HTMLElement).click();
-                  }
                 }}
               >
                 <div>

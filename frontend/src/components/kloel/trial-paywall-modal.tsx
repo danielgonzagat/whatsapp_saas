@@ -26,6 +26,9 @@ export function TrialPaywallModal({
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
+        role="button"
+        tabIndex={0}
+        aria-label="Fechar modal"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();

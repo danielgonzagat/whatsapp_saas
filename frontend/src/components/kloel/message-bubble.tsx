@@ -107,6 +107,7 @@ export function MessageBubble({
 
   return (
     <div
+      role="group"
       style={{
         display: 'flex',
         flexDirection: 'column',

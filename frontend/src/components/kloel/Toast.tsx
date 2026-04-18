@@ -86,6 +86,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
         gap: 12,
       }}
       onClick={() => onRemove(toast.id)}
+      role="button"
+      tabIndex={0}
+      aria-label={`Fechar notificação ${label}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();

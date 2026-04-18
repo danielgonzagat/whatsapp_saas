@@ -190,6 +190,9 @@ export function FlowSidebar() {
                       key={node.type}
                       className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg cursor-grab hover:bg-gray-100 transition-colors active:cursor-grabbing"
                       draggable
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Arrastar nó ${node.label}`}
                       onDragStart={(e) => onDragStart(e, node.type)}
                     >
                       <div className={`p-2 rounded-md ${node.color} text-white`}>{node.icon}</div>

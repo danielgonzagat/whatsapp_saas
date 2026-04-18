@@ -590,6 +590,9 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
       <div
         className="kloel-search-shell"
         onClick={onClose}
+        role="button"
+        tabIndex={0}
+        aria-label="Fechar busca"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();

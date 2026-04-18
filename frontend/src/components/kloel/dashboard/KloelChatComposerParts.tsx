@@ -321,6 +321,7 @@ export function ComposerPopover({
             />
 
             <div
+              role="group"
               style={{ position: 'relative' }}
               onMouseEnter={() => onProductMenuOpenChange(true)}
               onMouseLeave={() => onProductMenuOpenChange(false)}

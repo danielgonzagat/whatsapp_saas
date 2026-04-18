@@ -171,6 +171,16 @@ export default function VerTodasPage() {
             <div
               key={cat.key}
               onClick={() => setCategory(isActive ? 'all' : cat.key)}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isActive}
+              aria-label={`Filtrar por categoria ${cat.title ?? cat.key}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -183,12 +193,6 @@ export default function VerTodasPage() {
                 borderRadius: 6,
                 cursor: 'pointer',
                 transition: `all ${motion.duration.normal} ${motion.easing.gravity}`,
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  (e.currentTarget as HTMLElement).click();
-                }
               }}
             >
               <span style={{ fontSize: 22 }}>{cat.icon}</span>

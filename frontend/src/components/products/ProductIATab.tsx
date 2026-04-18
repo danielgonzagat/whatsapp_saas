@@ -41,6 +41,10 @@ function Toggle({
   return (
     <div
       onClick={() => onChange(!checked)}
+      role="switch"
+      tabIndex={0}
+      aria-checked={checked}
+      aria-label={label}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -337,8 +341,9 @@ export function ProductIATab({ productId }: { productId: string }) {
             </p>
           )}
           {objections.map((o, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — `objections` is `{q,a}[]` with user-editable duplicate text; state shape refactor is out of scope here.
             <div
-              key={`objection-${i}`}
+              key={`objection-${i}-${o.q.slice(0, 10)}`}
               style={{
                 padding: '8px 0',
                 borderBottom: i < objections.length - 1 ? `1px solid ${V.b}` : 'none',

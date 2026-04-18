@@ -1637,6 +1637,8 @@ export default function KloelDashboard() {
 
   return (
     <div
+      role="region"
+      aria-label="Área de chat"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

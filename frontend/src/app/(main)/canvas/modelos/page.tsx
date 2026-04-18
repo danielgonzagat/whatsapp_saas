@@ -207,8 +207,8 @@ export default function CanvasModelos() {
           gap: 10,
         }}
       >
-        {(FORMAT_DATA['para-voce'] || []).map((f, i) => (
-          <FormatCard key={f.l + i} item={f} onClick={openEditor} />
+        {(FORMAT_DATA['para-voce'] || []).map((f) => (
+          <FormatCard key={`${f.l}-${f.w}-${f.h}`} item={f} onClick={openEditor} />
         ))}
       </div>
     </div>

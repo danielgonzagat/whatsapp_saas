@@ -46,6 +46,10 @@ export default function OrderBumpCard({
   return (
     <div
       onClick={() => onToggle(bump.id)}
+      role="checkbox"
+      tabIndex={0}
+      aria-checked={checked}
+      aria-label={bump.productName ?? 'Order bump'}
       style={{
         border: `2px dashed ${checked ? borderCol : `${borderCol}44`}`,
         background: checked ? `${borderCol}08` : cardBg,

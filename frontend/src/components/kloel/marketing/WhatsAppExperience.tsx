@@ -524,9 +524,9 @@ export function QRCodePane({
           />
         ) : (
           <svg viewBox="0 0 250 250" width="196" height="196" aria-hidden="true">
-            {dots.map((dot, index) => (
+            {dots.map((dot) => (
               <rect
-                key={`${dot.x}-${dot.y}-${index}`}
+                key={`${dot.x}-${dot.y}`}
                 x={dot.x * 10}
                 y={dot.y * 10}
                 width="8"
@@ -1211,9 +1211,7 @@ export default function WhatsAppExperience({
   }, [effectiveConnection.connected]);
 
   const requestQrCodeRef = useRef<
-    (opts?: {
-      silent?: boolean;
-    }) => Promise<{
+    (opts?: { silent?: boolean }) => Promise<{
       qrCode: string | null;
       connected: boolean;
       status?: string;

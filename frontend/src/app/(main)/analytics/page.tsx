@@ -1344,6 +1344,7 @@ function VendasTab({
             return (
               <div
                 key={s.id}
+                role="row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '0.7fr 1.4fr 0.5fr 0.8fr 0.7fr 0.4fr',
@@ -3157,10 +3158,9 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                 {h}h
               </span>
             ))}
-            {DAYS.map((day, di) => (
-              <>
+            {DAYS.map((day) => (
+              <React.Fragment key={day}>
                 <span
-                  key={`d-${di}`}
                   style={{
                     fontSize: 9,
                     color: V.t2,
@@ -3177,7 +3177,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                   const opacity = Math.min(score, 1);
                   return (
                     <div
-                      key={`${di}-${h}`}
+                      key={`${day}-${h}`}
                       title={`${day} ${h}h — score: ${(score * 100).toFixed(0)}%`}
                       style={{
                         height: 16,
@@ -3188,7 +3188,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                     />
                   );
                 })}
-              </>
+              </React.Fragment>
             ))}
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 12 }}>
