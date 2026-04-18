@@ -526,7 +526,6 @@ async function main() {
   }
 
   // Mirror each tool into the draft
-  let totalMirrorPatches = 0;
   for (const t of enabledSourceTools) {
     const sourceMap = sourcePatternsByTool.get(t.uuid);
     let draftMap;
@@ -553,7 +552,6 @@ async function main() {
       const applied = await patchPatterns(draft.id, t.uuid, patches);
       console.log(`[codacy-noise]   tool=${t.uuid.slice(0, 8)} applied ${applied} mirror patches`);
     }
-    totalMirrorPatches += patches.length;
   }
 
   // Apply noise disables across ALL enabled tools.

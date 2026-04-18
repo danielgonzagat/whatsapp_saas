@@ -1454,7 +1454,7 @@ function TabColaboradores({
   showInviteModal: boolean;
   setShowInviteModal: (v: boolean) => void;
 }) {
-  const { agents, invites, mutate } = useCollaborators();
+  const { agents, invites } = useCollaborators();
   const { stats } = useCollaboratorStats();
   const displayAgents = agents as Agent[];
 

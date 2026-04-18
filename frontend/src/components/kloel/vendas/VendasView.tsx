@@ -94,13 +94,6 @@ interface OrderPipelineData {
   returned?: number;
 }
 
-interface OrderAlertItem {
-  id: string;
-  message: string;
-  type?: string;
-  severity?: string;
-}
-
 interface PipelineStage {
   id: string;
   name?: string;

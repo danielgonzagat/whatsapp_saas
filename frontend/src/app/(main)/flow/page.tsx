@@ -37,7 +37,7 @@ function FlowPageContent() {
   const requestedLeadId = searchParams.get('leadId') || '';
   const workspaceId = useWorkspaceId();
 
-  const { saveFlow, loading, error } = useFlows(workspaceId);
+  const { saveFlow, error } = useFlows(workspaceId);
   const [activeTab, setActiveTab] = useState<'editor' | 'executions' | 'templates'>(
     requestedTab === 'templates' || requestedTab === 'executions' || requestedTab === 'editor'
       ? requestedTab

@@ -134,9 +134,10 @@ export function AccountSettingsSection() {
           jitterMax: (workspace.jitterMax as number) || 15,
           emailEnabled: !!channelData.email,
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
-        setError(err?.message || 'Não foi possível carregar as configurações da conta.');
+        const msg = err instanceof Error ? err.message : undefined;
+        setError(msg || 'Não foi possível carregar as configurações da conta.');
       } finally {
         if (!cancelled) {
           setLoadingAccount(false);

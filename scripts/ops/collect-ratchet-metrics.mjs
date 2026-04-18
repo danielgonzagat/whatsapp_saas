@@ -194,26 +194,6 @@ function countExplicitAnyMetrics(files) {
   };
 }
 
-function countLiteralMatches(files, regex, comparator = 'max') {
-  let total = 0;
-  const samples = [];
-
-  for (const relPath of files) {
-    const lines = readLines(relPath);
-    lines.forEach((line, index) => {
-      if (COMMENT_ONLY_RE.test(line)) return;
-      const matches = countRegexMatches(line, regex);
-      if (matches === 0) return;
-      total += matches;
-      if (samples.length < 20) {
-        samples.push(sampleEntry(relPath, index + 1, line));
-      }
-    });
-  }
-
-  return createMetric(total, comparator, samples);
-}
-
 function countCommentDirective(files, directive) {
   let total = 0;
   const samples = [];

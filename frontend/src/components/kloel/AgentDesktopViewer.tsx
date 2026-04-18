@@ -96,8 +96,9 @@ export function AgentDesktopViewer({
         setStatus(nextStatus);
         setError(null);
         onConnectionChange?.(nextStatus.connected);
-      } catch (nextError: any) {
-        setError(nextError?.message || 'Falha ao carregar o status da Meta Cloud.');
+      } catch (nextError: unknown) {
+        const msg = nextError instanceof Error ? nextError.message : undefined;
+        setError(msg || 'Falha ao carregar o status da Meta Cloud.');
       } finally {
         setWorking(false);
       }

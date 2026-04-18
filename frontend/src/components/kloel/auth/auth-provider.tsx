@@ -283,15 +283,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hydrateFromAuthResponse = useCallback(
     async (
-      payload: any,
+      payload: unknown,
       options?: { justSignedUp?: boolean; fallbackEmail?: string; fallbackName?: string },
     ) => {
-      const user = payload?.user;
+      const envelope = payload as
+        | { user?: { id: string; email: string; name?: string }; isNewUser?: boolean }
+        | null
+        | undefined;
+      const user = envelope?.user;
       if (!user) {
         return { success: false as const, error: 'Resposta de autenticação inválida.' };
       }
 
-      const workspace = resolveWorkspaceFromAuthPayload(payload);
+      const workspace = resolveWorkspaceFromAuthPayload(
+        envelope as Record<string, unknown> | null | undefined,
+      );
 
       if (workspace?.id) {
         tokenStorage.setWorkspaceId(workspace.id);
@@ -320,7 +326,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const justSignedUp = options?.justSignedUp === true || payload?.isNewUser === true;
+      const justSignedUp = options?.justSignedUp === true || envelope?.isNewUser === true;
 
       setAuthState({
         isAuthenticated: true,

@@ -448,44 +448,6 @@ function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string })
   );
 }
 
-// ── LiveFeed ──
-function LiveFeed({
-  events,
-  color = EMBER,
-}: {
-  events: { text: string; time: string }[];
-  color?: string;
-}) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {events.map((ev) => (
-        <div
-          key={`${ev.text}-${ev.time}`}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '8px 12px',
-            background: BG_CARD,
-            borderRadius: 6,
-            border: `1px solid ${BORDER}`,
-          }}
-        >
-          <NP w={24} h={12} color={color} />
-          <span
-            style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)', flex: 1 }}
-          >
-            {ev.text}
-          </span>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-tertiary)' }}>
-            {ev.time}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ── ConnBadge ──
 function ConnBadge({ connected }: { connected: boolean }) {
   return (

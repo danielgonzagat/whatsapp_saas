@@ -1172,7 +1172,7 @@ function VendasTab({
   const gid = useId();
 
   const { data: summary, isLoading: ls } = useReport<VendasSummary>('vendas/summary', filters);
-  const { data: daily, isLoading: ld } = useReport<ReportRow[]>('vendas/daily', filters);
+  const { data: daily } = useReport<ReportRow[]>('vendas/daily', filters);
   const { data: vendas, isLoading: lv } = useReport<PaginatedReport>('vendas', baseFilters);
   const rows = vendas?.data || [];
   const dailyData = Array.isArray(daily) ? daily : [];

@@ -156,12 +156,6 @@ function buildSuccessResponse<T>(payload: T, status: number): ApiResponse<T> {
   return { data: payload, status };
 }
 
-interface AuthTokens {
-  accessToken: string;
-  refreshToken?: string;
-  expiresIn?: number;
-}
-
 // ============================================
 // Storage keys & helpers
 // ============================================

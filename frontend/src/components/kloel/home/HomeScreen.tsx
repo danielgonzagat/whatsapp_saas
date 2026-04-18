@@ -3,7 +3,6 @@
 // Legacy home shell kept aligned with the persisted Kloel thread model.
 
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { tokenStorage } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
@@ -190,7 +189,6 @@ interface HomeScreenProps {
 // ════════════════════════════════════════════
 
 export function HomeScreen({ onSendMessage }: HomeScreenProps) {
-  const { userName } = useAuth();
   const { conversations, setActiveConversation, upsertConversation, refreshConversations } =
     useConversationHistory();
 

@@ -84,15 +84,6 @@ interface AffiliateStatsRecord {
   [key: string]: unknown;
 }
 
-interface CoproducerRecord {
-  id: string;
-  agentName?: string;
-  agentEmail?: string;
-  role?: string;
-  percentage?: number;
-  [key: string]: unknown;
-}
-
 /* ── Shared prop types for sub-tabs ── */
 interface SubTabProps {
   productId: string;
@@ -129,7 +120,7 @@ function AfiliadosSubTab({
   const handleRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
     setRequestActionId(`${action}-${requestId}`);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates/requests/${requestId}/${action}`, {
           method: 'POST',
         }),
@@ -145,7 +136,7 @@ function AfiliadosSubTab({
   const handleLinkToggle = async (linkId: string, active: boolean) => {
     setLinkActionId(linkId);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates/links/${linkId}`, {
           method: 'PUT',
           body: { active },
@@ -437,7 +428,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
   const handleSaveMerchan = async () => {
     setMSaving(true);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates`, {
           method: 'PUT',
           body: { merchandContent: edRef.current?.innerHTML || merchan },
@@ -556,7 +547,7 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
   const handleSaveTerms = async () => {
     setTSaving(true);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates`, {
           method: 'PUT',
           body: { affiliateTerms: edRef.current?.innerHTML || terms },
@@ -1100,7 +1091,7 @@ export function ProductNerveCenterComissaoTab() {
   const handleComSave = async () => {
     setComSaving(true);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates`, {
           method: 'PUT',
           body: {

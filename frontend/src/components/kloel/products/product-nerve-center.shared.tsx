@@ -80,12 +80,13 @@ export const ls: React.CSSProperties = {
 export const formatBrlCents = (value: number) =>
   (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export function unwrapApiPayload<T = any>(response: any): T {
-  if (response?.error) {
-    throw new Error(response.error);
+export function unwrapApiPayload<T = unknown>(response: unknown): T {
+  const envelope = response as { error?: string; data?: unknown } | null | undefined;
+  if (envelope?.error) {
+    throw new Error(envelope.error);
   }
 
-  return (response?.data ?? response) as T;
+  return (envelope?.data ?? response) as T;
 }
 
 export function NP({

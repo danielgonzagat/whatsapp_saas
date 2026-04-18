@@ -51,7 +51,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   };
 
   const fetchPlans = useCallback(() => {
-    apiFetch<any>(`/products/${productId}/plans`)
+    apiFetch<Plan[]>(`/products/${productId}/plans`)
       .then((res) => setPlans(Array.isArray(res) ? res : []))
       .catch(() => setPlans([]))
       .finally(() => setLoading(false));

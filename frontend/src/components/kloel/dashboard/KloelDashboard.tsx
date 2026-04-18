@@ -513,7 +513,6 @@ function MessageBlock({
       ),
     [message.metadata, processingTrace],
   );
-  const latestVersionId = assistantVersions[assistantVersions.length - 1]?.id || message.id;
   const [activeVersionIndex, setActiveVersionIndex] = useState(
     Math.max(assistantVersions.length - 1, 0),
   );

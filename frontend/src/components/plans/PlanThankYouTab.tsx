@@ -124,12 +124,13 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
 
   useEffect(() => {
     apiFetch(`/products/${productId}`)
-      .then((res: any) => {
-        const p = res?.data || res;
+      .then((res: unknown) => {
+        const envelope = res as { data?: Record<string, unknown> } | undefined;
+        const p = (envelope?.data ?? envelope) as Record<string, unknown> | undefined;
         if (p) {
-          setUrlCard(p.thankyouUrl ?? '');
-          setUrlBoleto(p.thankyouBoletoUrl ?? '');
-          setUrlPix(p.thankyouPixUrl ?? '');
+          setUrlCard((p.thankyouUrl as string | undefined) ?? '');
+          setUrlBoleto((p.thankyouBoletoUrl as string | undefined) ?? '');
+          setUrlPix((p.thankyouPixUrl as string | undefined) ?? '');
         }
       })
       .catch(() => {})

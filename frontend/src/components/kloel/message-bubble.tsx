@@ -24,12 +24,6 @@ const CHAT_THEME = {
   iconTraceColor: KLOEL_THEME.textPrimary,
 } as const;
 
-function readMetaRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
 interface MessageBubbleProps {
   message: Message;
   onQuickAction?: (actionId: string, label: string) => void;
