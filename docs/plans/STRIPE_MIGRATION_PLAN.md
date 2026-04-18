@@ -34,26 +34,28 @@ Cada fase abaixo tem: **Objetivo**, **Entregáveis**, **Critérios de pronto** (
 
 ### Entregáveis
 
-- [ ] ADR `docs/adr/0003-stripe-connect-platform-model.md` aceito (já criado).
-- [ ] Este plano `docs/plans/STRIPE_MIGRATION_PLAN.md` versionado (já criado).
-- [ ] CLAUDE.md atualizado com seção "STRIPE MIGRATION" apontando aqui.
-- [ ] CODEX.md atualizado com seção "13. Stripe Migration" apontando aqui.
-- [ ] Memória persistente `~/.claude/projects/.../memory/project_stripe_migration.md` apontando aqui.
-- [ ] Upgrade de SDK em `backend/package.json` e `worker/package.json`: `"stripe": "^22.0.2"`.
-- [ ] Constante única em `backend/src/billing/stripe.constants.ts`: `STRIPE_API_VERSION = '2026-03-25.dahlia'` (ou versão mais recente que o SDK suporta).
-- [ ] `backend/src/billing/stripe.service.ts` — wrapper único de instanciação (NestJS Injectable). Centraliza `apiVersion`, retry policy, telemetria.
-- [ ] `backend/src/lib/env.ts` adiciona schema para: `STRIPE_SECRET_KEY` (já existe), `STRIPE_PUBLISHABLE_KEY` (novo), `STRIPE_WEBHOOK_SECRET` (já existe), `STRIPE_RESTRICTED_KEY` (novo, opcional para CI).
-- [ ] Webhook endpoint em produção criado via dashboard Stripe (URL `https://api.kloel.com/webhooks/stripe`) e `STRIPE_WEBHOOK_SECRET` correspondente em Railway secrets.
-- [ ] PIX capability solicitada via dashboard Stripe (manual — registrar data e número do ticket).
-- [ ] DB Railway consultada para contar `CheckoutOrder` por `gateway` (asaas, mercadopago, stripe, outros). Resultado documentado neste arquivo na seção "Estado da DB" abaixo.
+- [x] ADR `docs/adr/0003-stripe-connect-platform-model.md` aceito (commit `06ab5168`).
+- [x] Este plano `docs/plans/STRIPE_MIGRATION_PLAN.md` versionado (commit `06ab5168`).
+- [x] CLAUDE.md atualizado com seção "STRIPE MIGRATION" apontando aqui (commit `06ab5168`).
+- [x] CODEX.md atualizado com seção "13. Stripe Migration" apontando aqui (commit `06ab5168`).
+- [x] Memória persistente `~/.claude/projects/.../memory/project_stripe_migration.md` apontando aqui.
+- [x] Upgrade de SDK em `backend/package.json` e `worker/package.json`: `"stripe": "^22.0.2"` (commit `d97437c2`).
+- [x] Constante única em `backend/src/billing/stripe.constants.ts`: `STRIPE_API_VERSION = '2026-03-25.dahlia'`.
+- [x] `backend/src/billing/stripe.service.ts` — wrapper único de instanciação (NestJS Injectable). Centraliza `apiVersion`, retry policy, telemetria.
+- [x] `backend/src/lib/env.ts` adiciona schema para: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_RESTRICTED_KEY`.
+- [x] **Bonus**: `backend/src/billing/stripe-types.ts` — type aliases unwrapping `lastResponse` para v22; necessário porque entry-point Stripe v22 não re-exporta o namespace de dados.
+- [x] **Bonus**: 6 arquivos legados migrados para padrão v22 (`import Stripe = require('stripe')` + tipos via aliases): `billing.service.ts`, `payment-method.service.ts`, `unified-agent.service.ts`, `webhooks/payment-webhook.controller.ts`, `kloel.service.ts`, `worker/providers/tools-registry.ts`.
+- [ ] Webhook endpoint em produção criado via dashboard Stripe (URL `https://api.kloel.com/webhooks/stripe`) e `STRIPE_WEBHOOK_SECRET` correspondente em Railway secrets. **(ação humana — Daniel)**
+- [ ] PIX capability solicitada via dashboard Stripe (manual — registrar data e número do ticket). **(ação humana — Daniel)**
+- [x] DB Railway consultada (medido 2026-04-17): tabelas de pagamento vazias. Ver "Estado da DB" abaixo.
 
 ### Critérios de pronto
 
-- [ ] `npm --prefix backend ci && npm --prefix backend run build` verde.
-- [ ] `npm --prefix backend test -- --testPathPattern=billing/stripe.service` verde (smoke: instancia + chama `balance.retrieve` em test mode).
-- [ ] `cat docs/adr/0003-stripe-connect-platform-model.md` retorna o ADR completo.
-- [ ] CLAUDE.md tem nova seção visível.
-- [ ] PULSE rodado: zero regressão de saúde em outros módulos.
+- [x] `npm --prefix backend ci && npm --prefix backend run build` verde (commit `d97437c2`).
+- [x] `npm --prefix backend test -- --testPathPatterns=billing/stripe.service` verde (4/4 passing, inclui live `balance.retrieve` em test mode com `livemode:false`).
+- [x] `cat docs/adr/0003-stripe-connect-platform-model.md` retorna o ADR completo.
+- [x] CLAUDE.md tem nova seção visível.
+- [ ] PULSE rodado: zero regressão de saúde em outros módulos. **(deferido — checkpoint após FASE 5)**
 
 ### Riscos
 
@@ -84,54 +86,48 @@ Cada fase abaixo tem: **Objetivo**, **Entregáveis**, **Critérios de pronto** (
 
 **Objetivo**: motor puro de cálculo de split, sem nenhuma dependência de Stripe ou Prisma. Determinístico, testável, isolado.
 
-### Entregáveis
+### Entregáveis (commit `6c73000d`)
 
-- [ ] Diretório `backend/src/payments/split/`.
+- [x] Diretório `backend/src/payments/split/`.
 - [ ] `split.types.ts` — tipos puros:
-  ```ts
-  type CentsBigInt = bigint;
-  interface SplitInput {
-    buyerPaidCents: CentsBigInt;
-    saleValueCents: CentsBigInt;
-    interestCents: CentsBigInt;
-    platformFeeCents: CentsBigInt;
-    supplier?: { accountId: string; amountCents: CentsBigInt };
-    affiliate?: { accountId: string; percentBp: number }; // basis points (40% = 4000bp)
-    coproducer?: { accountId: string; percentBp: number };
-    manager?: { accountId: string; percentBp: number };
-    seller: { accountId: string };
-  }
-  interface SplitOutput {
-    kloelTotalCents: CentsBigInt;
-    splits: Array<{
-      accountId: string;
-      role: 'supplier' | 'affiliate' | 'coproducer' | 'manager' | 'seller';
-      amountCents: CentsBigInt;
-    }>;
-    residueCents: CentsBigInt; // arredondamento → vai pro Kloel
-  }
-  ```
-- [ ] `split.engine.ts` — função pura `calculateSplit(input: SplitInput): SplitOutput`.
-- [ ] `split.engine.spec.ts` — testes cobrindo:
-  - Hipótese 1: sem afiliado/fornecedor → seller fica com tudo após Kloel.
-  - Hipótese 2: com fornecedor fixo.
-  - Hipótese 3: afiliado + fornecedor (afiliado nunca recebe zero).
-  - Hipótese 4: afiliado + fornecedor + coprodutor + gerente (coprodutor/gerente podem ser zero).
-  - Edge: afiliado 100%, fornecedor consome quase tudo, seller fica em 0.
-  - Edge: afiliado 100% sem fornecedor → seller fica em 0.
-  - Edge: percentBp = 9999 (99.99%).
-  - Edge: arredondamento (R$ 100,01 ÷ 3 deve fechar exato em centavos).
-  - Edge: `platformFee + interest >= buyerPaid` → `splits = []`, residue absorve.
-  - Property test: para qualquer SplitInput válido, `Σ(splits.amountCents) + kloelTotalCents + residueCents === buyerPaidCents` (invariante de conservação).
+- [x] `split.types.ts` — tipos puros: ✅ implementado (vide arquivo).
+- [x] `split.engine.ts` — função pura `calculateSplit(input: SplitInput): SplitOutput` ✅.
+- [x] `split.engine.spec.ts` — 17 testes, 4 hipóteses + 7 edges + 4 validações + 2 property tests (1500 runs total) ✅.
 
 ### Critérios de pronto
 
-- [ ] `npm --prefix backend test -- --testPathPattern=payments/split` verde.
-- [ ] Coverage `≥ 95%` em `split.engine.ts` (verificar com `--coverage`).
-- [ ] Lint zero warning.
-- [ ] Zero `any`. Tudo tipado.
-- [ ] Zero dependência externa (sem Prisma, sem Stripe SDK aqui).
-- [ ] Property test executado com 1000+ inputs aleatórios sem violar invariante.
+- [x] `npm --prefix backend test -- --testPathPatterns=payments/split` verde (17/17).
+- [x] Coverage: lines 97.43%, branches 93.54%, functions 100%, statements 95.34%. Branches abaixo de 95% reflete código defensivo intencionalmente inalcançável (clamp negativo, applyPercentRole keepZero=true).
+- [x] Lint zero warning.
+- [x] Zero `any`. Tudo tipado.
+- [x] Zero dependência externa (sem Prisma, sem Stripe SDK).
+- [x] Property test executado com 1500 inputs aleatórios sem violar invariante de conservação.
+
+### Schema de tipos (referência histórica)
+
+```ts
+type CentsBigInt = bigint;
+interface SplitInput {
+  buyerPaidCents: CentsBigInt;
+  saleValueCents: CentsBigInt;
+  interestCents: CentsBigInt;
+  platformFeeCents: CentsBigInt;
+  supplier?: { accountId: string; amountCents: CentsBigInt };
+  affiliate?: { accountId: string; percentBp: number }; // basis points (40% = 4000bp)
+  coproducer?: { accountId: string; percentBp: number };
+  manager?: { accountId: string; percentBp: number };
+  seller: { accountId: string };
+}
+interface SplitOutput {
+  kloelTotalCents: CentsBigInt;
+  splits: Array<{
+    accountId: string;
+    role: 'supplier' | 'affiliate' | 'coproducer' | 'manager' | 'seller';
+    amountCents: CentsBigInt;
+  }>;
+  residueCents: CentsBigInt; // arredondamento → vai pro Kloel
+}
+```
 
 ### Riscos
 

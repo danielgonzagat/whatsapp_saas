@@ -3172,3 +3172,94 @@ model AdminChatMessage {
   @@index([sessionId, createdAt])
   @@map("admin_chat_messages")
 }
+
+// ============================================================================
+// SP-STRIPE-2 — Connect Ledger (FASE 2 of stripe migration plan).
+//
+// Per-Connected-Account dual-balance ledger. Distinct from PlatformWallet
+// (which tracks the Kloel platform's own balance buckets). This ledger
+// tracks each seller/affiliate/supplier/coproducer/manager Stripe account's
+// pending vs available cents inside KLOEL's view, independently of what
+// Stripe says the connected account technically holds.
+//
+// All payouts to seller/role bank accounts go through Kloel-orchestrated
+// stripe.payouts.create() calls — never automatic. The available_balance
+// here is what the dashboard shows as "withdrawable", not what Stripe's
+// own balance API reports.
+//
+// Append-only: LedgerEntry rows are never UPDATEd. Corrections are new
+// ADJUSTMENT entries. The two balances on ConnectAccountBalance are the
+// running materialized views, recomputable from the ledger at any time.
+// ============================================================================
+
+enum ConnectAccountType {
+  SELLER
+  AFFILIATE
+  SUPPLIER
+  COPRODUCER
+  MANAGER
+}
+
+enum ConnectLedgerEntryType {
+  CREDIT_PENDING
+  MATURE
+  DEBIT_PAYOUT
+  DEBIT_CHARGEBACK
+  DEBIT_REFUND
+  ADJUSTMENT
+}
+
+model ConnectAccountBalance {
+  id                       String              @id @default(cuid())
+  workspaceId              String              @map("workspace_id")
+  stripeAccountId          String              @unique @map("stripe_account_id")
+  accountType              ConnectAccountType  @map("account_type")
+  pendingBalanceCents      BigInt              @default(0) @map("pending_balance_cents")
+  availableBalanceCents    BigInt              @default(0) @map("available_balance_cents")
+  lifetimeReceivedCents    BigInt              @default(0) @map("lifetime_received_cents")
+  lifetimePaidOutCents     BigInt              @default(0) @map("lifetime_paid_out_cents")
+  lifetimeChargebacksCents BigInt              @default(0) @map("lifetime_chargebacks_cents")
+  createdAt                DateTime            @default(now()) @map("created_at")
+  updatedAt                DateTime            @updatedAt @map("updated_at")
+
+  ledger ConnectLedgerEntry[]
+
+  @@index([workspaceId])
+  @@index([accountType])
+  @@map("connect_account_balances")
+}
+
+model ConnectLedgerEntry {
+  id                         String                 @id @default(cuid())
+  accountBalanceId           String                 @map("account_balance_id")
+  accountBalance             ConnectAccountBalance  @relation(fields: [accountBalanceId], references: [id], onDelete: Restrict)
+  type                       ConnectLedgerEntryType
+  amountCents                BigInt                 @map("amount_cents")
+  balanceAfterPendingCents   BigInt                 @map("balance_after_pending_cents")
+  balanceAfterAvailableCents BigInt                 @map("balance_after_available_cents")
+  referenceType              String                 @map("reference_type")
+  referenceId                String                 @map("reference_id")
+  scheduledFor               DateTime?              @map("scheduled_for")
+  matured                    Boolean                @default(false)
+  metadata                   Json?                  @db.JsonB
+  createdAt                  DateTime               @default(now()) @map("created_at")
+
+  @@index([accountBalanceId, createdAt])
+  @@index([scheduledFor, matured])
+  @@unique([referenceType, referenceId, type])
+  @@map("connect_ledger_entries")
+}
+
+model ConnectMaturationRule {
+  id          String              @id @default(cuid())
+  productId   String?             @map("product_id")
+  accountType ConnectAccountType  @map("account_type")
+  delayDays   Int                 @map("delay_days")
+  active      Boolean             @default(true)
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  @@index([productId, accountType])
+  @@unique([productId, accountType])
+  @@map("connect_maturation_rules")
+}
