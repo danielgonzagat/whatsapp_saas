@@ -22,6 +22,8 @@ import {
   useProfile,
   useProfileMutations,
   useSecurityMutations,
+  type KycCompletion,
+  type KycDocument,
 } from '@/hooks/useKyc';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -81,16 +83,7 @@ interface KycFiscal {
   state?: string | null;
 }
 
-type KycDocumentStatus = 'pending' | 'approved' | 'rejected' | 'review';
-
-interface KycDocument {
-  id: string;
-  type: string;
-  fileName?: string | null;
-  originalName?: string | null;
-  status?: KycDocumentStatus | string | null;
-  createdAt?: string | null;
-}
+// KycDocument type now imported from @/hooks/useKyc to avoid duplication.
 
 interface KycBankAccount {
   bankName?: string | null;
@@ -104,15 +97,7 @@ interface KycBankAccount {
   holderDocument?: string | null;
 }
 
-interface KycCompletionSection {
-  name: string;
-  complete?: boolean;
-}
-
-interface KycCompletion {
-  percentage: number;
-  sections?: KycCompletionSection[];
-}
+// KycCompletion type now imported from @/hooks/useKyc to avoid duplication.
 
 // Meta Platform (Instagram / Messenger / Ads) OAuth status.
 interface MetaAuthStatus {

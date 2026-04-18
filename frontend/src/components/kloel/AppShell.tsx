@@ -278,7 +278,7 @@ export function AppShell({ children }: AppShellProps) {
     pathname.startsWith('/settings') ||
     pathname.startsWith('/account') ||
     pathname.startsWith('/canvas');
-  const kycComplete = completion?.percentage >= 100;
+  const kycComplete = (completion?.percentage ?? 0) >= 100;
   const showKycBanner =
     !kycLoading &&
     !kycError &&
