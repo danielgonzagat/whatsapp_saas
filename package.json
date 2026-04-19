@@ -33,6 +33,7 @@
     "check:models": "node scripts/ops/check-model-strings.mjs",
     "format": "prettier --write .",
     "format:check": "node scripts/ops/check-formatting.mjs",
+    "commit-msg:check": "node scripts/ops/check-codacy-skip-tags.mjs",
     "backend:typecheck": "npm --prefix backend run typecheck",
     "backend:boot-smoke": "node scripts/ops/backend-boot-smoke.mjs",
     "codacy:apply-noise-disables": "node scripts/ops/codacy-apply-noise-disables.mjs",

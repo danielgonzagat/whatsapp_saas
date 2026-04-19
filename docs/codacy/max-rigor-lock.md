@@ -10,6 +10,8 @@ triage.
 
 - Codacy must analyze the widest possible versioned surface of the repository.
 - Only generated/vendor/build outputs are excluded in `.codacy.yml`.
+- Because this repository uses `.codacy.yml`, Codacy UI file-ignore toggles do not
+  apply; exclusions must go through the protected config file.
 - The canonical coding standard linked to `whatsapp_saas` must keep all tools
   and all patterns enabled.
 - Repository quality thresholds are hard-set to:
@@ -47,6 +49,7 @@ triage.
 - Relaxing quality gates / coverage / duplication / complexity thresholds
 - Adding new exclude paths for versioned source
 - Using suppression comments to satisfy Codacy or its underlying engines
+- Using commit skip tags to bypass Codacy or CI analysis
 
 Forbidden suppression forms include:
 
@@ -60,6 +63,13 @@ Forbidden suppression forms include:
 - `codacy:ignore`
 - `NOSONAR`
 - `noqa`
+
+Forbidden commit skip tags include:
+
+- `[codacy skip]`
+- `[skip codacy]`
+- `[ci skip]`
+- `[skip ci]`
 
 ## Governance
 

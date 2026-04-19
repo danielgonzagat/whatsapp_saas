@@ -17,6 +17,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Guard Codacy skip tags (push)
+        if: github.event_name == 'push'
+        run: npm run commit-msg:check -- --revset "${{ github.event.before }}..${{ github.sha }}"
+
+      - name: Guard Codacy skip tags (pull request)
+        if: github.event_name == 'pull_request'
+        run: npm run commit-msg:check -- --revset "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@562ee3e92b8e92df8b67e0a5ff8aa8e261919c08 # v4.4.7
         with:

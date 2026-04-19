@@ -133,5 +133,14 @@
     "approved_by": "usuario",
     "date": "2026-04-19",
     "expires": "2026-04-26"
+  },
+  {
+    "file": ".husky/commit-msg",
+    "rule": "governanceChange",
+    "reason": "Usuario aprovou explicitamente endurecer o fluxo do Codacy para impedir bypass por skip tags de commit.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "usuario",
+    "date": "2026-04-19",
+    "expires": "2026-04-26"
   }
 ]

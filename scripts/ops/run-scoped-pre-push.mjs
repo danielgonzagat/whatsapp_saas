@@ -161,6 +161,7 @@ const workerChanged =
   hasPrefix(changedFiles, ['worker/']);
 
 runStep('Guard DB push', 'npm run guard:db-push');
+runStep('Guard commit messages', 'npm run commit-msg:check');
 runStep('Changed-code hard gates', 'npm run guard:new-code');
 
 if (backendChanged) {

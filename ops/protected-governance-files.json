@@ -5,6 +5,7 @@
     ".codacy.yml",
     "ratchet.json",
     "package.json",
+    ".husky/commit-msg",
     ".husky/pre-push",
     "backend/eslint.config.mjs",
     "frontend/eslint.config.mjs",
