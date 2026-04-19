@@ -34,6 +34,11 @@ import {
   updateAutopilotConfig,
 } from '@/lib/api';
 import type { AskInsightsResult, MoneyMachineResult, RuntimeConfig } from '@/lib/api';
+import {
+  unwrapArrayEnvelope,
+  unwrapDataEnvelope,
+  unwrapSettled,
+} from './page.helpers';
 import { colors } from '@/lib/design-tokens';
 import {
   Activity,
@@ -530,94 +535,58 @@ export default function AutopilotPage() {
         getAutopilotRuntimeConfig(),
       ]);
 
-      const statusData: AutopilotStatus | null =
-        statusResult.status === 'fulfilled'
-          ? (statusResult.value as unknown as AutopilotStatus)
-          : null;
+      const statusData = unwrapSettled<AutopilotStatus | null>(
+        statusResult,
+        (v) => (v as AutopilotStatus) || null,
+        null,
+      );
       setStatus(statusData);
 
-      if (statsResult.status === 'fulfilled') {
-        setStats((statsResult.value as unknown as AutopilotStats) || null);
-      } else {
-        setStats(null);
-      }
+      setStats(
+        unwrapSettled<AutopilotStats | null>(statsResult, (v) => (v as AutopilotStats) || null, null),
+      );
+      setImpact(
+        unwrapSettled<AutopilotImpact | null>(
+          impactResult,
+          (v) => (v as AutopilotImpact) || null,
+          null,
+        ),
+      );
+      setActions(unwrapSettled<AutopilotAction[]>(actionsResult, unwrapArrayEnvelope, []));
+      setPipeline(
+        unwrapSettled<AutopilotPipeline | null>(
+          pipelineResult,
+          (v) => (v as AutopilotPipeline) || null,
+          null,
+        ),
+      );
+      setSystemHealth(
+        unwrapSettled<SystemHealth | null>(
+          systemHealthResult,
+          (v) => (v as SystemHealth) || null,
+          null,
+        ),
+      );
+      setMoneyReport(unwrapSettled<MoneyReport | null>(moneyReportResult, unwrapDataEnvelope, null));
+      setRevenueEvents(unwrapSettled<RevenueEvent[]>(revenueEventsResult, unwrapArrayEnvelope, []));
+      setInsights(unwrapSettled<AutopilotInsight[]>(insightsResult, unwrapArrayEnvelope, []));
+      setQueueStats(unwrapSettled<QueueStats | null>(queueStatsResult, unwrapDataEnvelope, null));
 
-      if (impactResult.status === 'fulfilled') {
-        setImpact((impactResult.value as unknown as AutopilotImpact) || null);
-      } else {
-        setImpact(null);
-      }
+      const cfgData = unwrapSettled<AutopilotConfigData | null>(
+        configResult,
+        unwrapDataEnvelope,
+        null,
+      );
+      setConfig(cfgData);
+      if (cfgData) setConfigDraft(cfgData);
 
-      if (actionsResult.status === 'fulfilled') {
-        setActions(
-          Array.isArray(actionsResult.value) ? (actionsResult.value as AutopilotAction[]) : [],
-        );
-      } else {
-        setActions([]);
-      }
-
-      if (pipelineResult.status === 'fulfilled') {
-        setPipeline((pipelineResult.value as unknown as AutopilotPipeline) || null);
-      } else {
-        setPipeline(null);
-      }
-
-      if (systemHealthResult.status === 'fulfilled') {
-        setSystemHealth((systemHealthResult.value as unknown as SystemHealth) || null);
-      } else {
-        setSystemHealth(null);
-      }
-
-      if (moneyReportResult.status === 'fulfilled') {
-        const mrVal = moneyReportResult.value as unknown as Record<string, unknown> | undefined;
-        setMoneyReport(((mrVal as { data?: MoneyReport })?.data ?? mrVal) as MoneyReport | null);
-      } else {
-        setMoneyReport(null);
-      }
-
-      if (revenueEventsResult.status === 'fulfilled') {
-        const reVal = revenueEventsResult.value as unknown as
-          | Record<string, unknown>
-          | RevenueEvent[]
-          | undefined;
-        const eventsData = Array.isArray(reVal)
-          ? reVal
-          : ((reVal as { data?: RevenueEvent[] })?.data ?? reVal);
-        setRevenueEvents(Array.isArray(eventsData) ? (eventsData as RevenueEvent[]) : []);
-      } else {
-        setRevenueEvents([]);
-      }
-
-      if (insightsResult.status === 'fulfilled') {
-        const insVal = insightsResult.value as unknown as Record<string, unknown> | undefined;
-        const insData = (insVal as { data?: AutopilotInsight[] })?.data ?? insVal;
-        setInsights(Array.isArray(insData) ? (insData as AutopilotInsight[]) : []);
-      } else {
-        setInsights([]);
-      }
-
-      if (queueStatsResult.status === 'fulfilled') {
-        const qsVal = queueStatsResult.value as unknown as Record<string, unknown> | undefined;
-        setQueueStats(((qsVal as { data?: QueueStats })?.data ?? qsVal) as QueueStats | null);
-      } else {
-        setQueueStats(null);
-      }
-
-      if (configResult.status === 'fulfilled') {
-        const cfgVal = configResult.value as unknown as Record<string, unknown> | undefined;
-        const cfgData = ((cfgVal as { data?: AutopilotConfigData })?.data ??
-          cfgVal) as AutopilotConfigData;
-        setConfig(cfgData);
-        setConfigDraft(cfgData || {});
-      } else {
-        setConfig(null);
-      }
-
-      if (runtimeConfigResult.status === 'fulfilled') {
-        setRuntimeConfig(runtimeConfigResult.value as RuntimeConfig);
-      } else {
-        setRuntimeConfig(null);
-      }
+      setRuntimeConfig(
+        unwrapSettled<RuntimeConfig | null>(
+          runtimeConfigResult,
+          (v) => (v as RuntimeConfig) || null,
+          null,
+        ),
+      );
 
       const partialError =
         statsResult.status === 'rejected' ||
