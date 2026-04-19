@@ -7,6 +7,27 @@
 
 ---
 
+## REGRA DE AUTONOMIA (2026-04-18)
+
+Quando Daniel pedir para trabalhar autonomamente (ex.: "trabalhe autonomamente", "continue autonomo", "até completar 100%"):
+
+1. **NÃO pare para relatar** progresso intermediário.
+2. **NÃO pare para pedir confirmação** ou tirar dúvidas — o escopo já está completo.
+3. **Trabalhe continuamente** até esgotar o que é tecnicamente seguro fazer ou até completar 100% do escopo.
+4. **Commits e pushes frequentes**, sem interrupções narrativas. Use apenas mensagens curtas entre commits quando houver um sinal importante (falha real de build, bloqueio intransponível).
+5. **Relatório final só no fim do escopo** ou quando um bloqueio objetivo impedir continuação.
+
+Parar sem necessidade quando Daniel pediu autonomia é violação desta regra.
+
+## REGRA DE CODACY (2026-04-18)
+
+1. **PROIBIDO atualizar qualquer política, regra, coding standard, pattern, noise list, draft ou configuração do Codacy** (via API, UI, ou scripts que modifiquem o estado Codacy).
+2. **Permitido apenas**: `npm run codacy:sync` (read-only snapshot) e leitura da API para diagnóstico.
+3. Para reduzir issues, **apenas corrigir código de produto** — narrow types, decompose functions, extract helpers, add/remove lines, etc.
+4. Se uma regra Codacy fizer sentido como WRONG_RULE, **documentar em `docs/codacy/`** mas **não aplicar** — aguarda autorização explícita do dono.
+
+---
+
 ## IDENTIDADE
 
 KLOEL é uma plataforma AI-native de marketing digital e vendas. Monorepo com:
