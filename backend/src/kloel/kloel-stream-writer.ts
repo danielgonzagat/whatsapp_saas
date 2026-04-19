@@ -37,6 +37,25 @@ interface StreamWriterModelResponseResult {
   estimatedTokens: number;
 }
 
+function serializeSsePayload(payload: KloelStreamEvent): string {
+  return JSON.stringify(payload).replace(U2028_U2029_RE, (char) => {
+    switch (char) {
+      case '<':
+        return '\\u003c';
+      case '>':
+        return '\\u003e';
+      case '&':
+        return '\\u0026';
+      case '\u2028':
+        return '\\u2028';
+      case '\u2029':
+        return '\\u2029';
+      default:
+        return char;
+    }
+  });
+}
+
 export class KloelStreamWriter {
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private closed = false;
@@ -225,23 +244,4 @@ export class KloelStreamWriter {
       estimatedTokens: Math.ceil(fullResponse.length / 4 + 200),
     };
   }
-}
-
-function serializeSsePayload(payload: KloelStreamEvent): string {
-  return JSON.stringify(payload).replace(U2028_U2029_RE, (char) => {
-    switch (char) {
-      case '<':
-        return '\\u003c';
-      case '>':
-        return '\\u003e';
-      case '&':
-        return '\\u0026';
-      case '\u2028':
-        return '\\u2028';
-      case '\u2029':
-        return '\\u2029';
-      default:
-        return char;
-    }
-  });
 }

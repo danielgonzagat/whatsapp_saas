@@ -48,27 +48,23 @@ export function normalizeWahaSessionStatus(raw: unknown): string | null {
   return normalized || null;
 }
 
+const WAHA_SESSION_STATUS_MAP: Record<string, NonNullable<SessionStatus['state']>> = {
+  WORKING: 'CONNECTED',
+  CONNECTED: 'CONNECTED',
+  SCAN_QR_CODE: 'SCAN_QR_CODE',
+  QR: 'SCAN_QR_CODE',
+  QRCODE: 'SCAN_QR_CODE',
+  STARTING: 'STARTING',
+  OPENING: 'STARTING',
+  FAILED: 'FAILED',
+  STOPPED: 'DISCONNECTED',
+  DISCONNECTED: 'DISCONNECTED',
+  LOGGED_OUT: 'DISCONNECTED',
+};
+
 export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
-  switch (rawStatus) {
-    case 'WORKING':
-    case 'CONNECTED':
-      return 'CONNECTED';
-    case 'SCAN_QR_CODE':
-    case 'QR':
-    case 'QRCODE':
-      return 'SCAN_QR_CODE';
-    case 'STARTING':
-    case 'OPENING':
-      return 'STARTING';
-    case 'FAILED':
-      return 'FAILED';
-    case 'STOPPED':
-    case 'DISCONNECTED':
-    case 'LOGGED_OUT':
-      return 'DISCONNECTED';
-    default:
-      return null;
-  }
+  if (!rawStatus) return null;
+  return WAHA_SESSION_STATUS_MAP[rawStatus] ?? null;
 }
 
 export function resolveWahaSessionState(data: Record<string, unknown>): {

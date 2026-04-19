@@ -156,25 +156,6 @@ export function findProductMatches(messageContent: string, productNames: string[
   );
 }
 
-export function detectCatalogGap(params: {
-  messageContent: string;
-  productNames: string[];
-}): CatalogGapDetection {
-  const messageContent = String(params.messageContent || '').trim();
-  const normalizedMessage = normalizeCatalogText(messageContent);
-  const matchedProducts = findProductMatches(messageContent, params.productNames);
-  const buyingIntent = BUYING_SIGNALS.some((keyword) => normalizedMessage.includes(keyword));
-
-  return {
-    buyingIntent,
-    matchedProducts,
-    missingProductName:
-      matchedProducts.length === 0 && buyingIntent
-        ? extractMissingProductCandidate(messageContent)
-        : null,
-  };
-}
-
 export function extractMissingProductCandidate(messageContent: string): string | null {
   const rawTokens =
     String(messageContent || '')
@@ -217,6 +198,25 @@ export function extractMissingProductCandidate(messageContent: string): string |
     .trim();
 
   return fallback || null;
+}
+
+export function detectCatalogGap(params: {
+  messageContent: string;
+  productNames: string[];
+}): CatalogGapDetection {
+  const messageContent = String(params.messageContent || '').trim();
+  const normalizedMessage = normalizeCatalogText(messageContent);
+  const matchedProducts = findProductMatches(messageContent, params.productNames);
+  const buyingIntent = BUYING_SIGNALS.some((keyword) => normalizedMessage.includes(keyword));
+
+  return {
+    buyingIntent,
+    matchedProducts,
+    missingProductName:
+      matchedProducts.length === 0 && buyingIntent
+        ? extractMissingProductCandidate(messageContent)
+        : null,
+  };
 }
 
 export function extractUrls(value: string): string[] {

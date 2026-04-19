@@ -2,106 +2,22 @@
 
 import { useCRMMutations, useDeals, usePipelines } from '@/hooks/useCRM';
 import { type DragEvent, type FormEvent, useCallback, useState } from 'react';
+import { CRM_ICONS } from './crm-pipeline-icons';
+import {
+  type CRMDeal,
+  type CRMPipeline,
+  type CRMStage,
+  MONO,
+  SORA,
+  fmtBRL,
+} from './crm-pipeline-utils';
 
-interface CRMPipeline {
-  _id?: string;
-  id?: string;
-  name: string;
-  stages?: CRMStage[];
-}
-
-interface CRMStage {
-  _id?: string;
-  id?: string;
-  name: string;
-}
-
-interface CRMDeal {
-  _id?: string;
-  id?: string;
-  title: string;
-  value?: number;
-  priority?: string;
-  stage?: { _id?: string; id?: string; name?: string } | string;
-  contact?: { name?: string; phone?: string };
-  contactName?: string;
-  description?: string;
-  expectedCloseDate?: string;
-  createdAt?: string;
-  notes?: string;
-}
-
-const SORA = "var(--font-sora), 'Sora', sans-serif";
-const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-
-/* ── helpers ── */
-function fmtBRL(v: number) {
-  return `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-}
+const IC = CRM_ICONS;
 
 const PRIORITY_CFG: Record<string, { label: string; color: string }> = {
   high: { label: 'Alta', color: '#EF4444' },
   medium: { label: 'Média', color: '#F59E0B' },
   low: { label: 'Baixa', color: 'var(--app-text-secondary)' },
-};
-
-/* ── tiny icons ── */
-const IC = {
-  chevron: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  ),
-  plus: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  ),
-  x: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  ),
-  deal: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <rect x="2" y="7" width="20" height="14" rx="2" />
-      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-    </svg>
-  ),
 };
 
 function LoadingStrip({

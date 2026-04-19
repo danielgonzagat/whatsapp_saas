@@ -96,6 +96,11 @@ describe.skip('KloelService bounded autonomy proof', () => {
     trace.push({ cycle: activeCycle, ...entry });
   };
 
+  const world = {
+    connected: false,
+    qrCode: 'qr-proof-2026',
+  };
+
   const currentBacklog = () => {
     if (!world.connected) {
       return {
@@ -125,11 +130,6 @@ describe.skip('KloelService bounded autonomy proof', () => {
       ),
       chats: pendingChats,
     };
-  };
-
-  const world = {
-    connected: false,
-    qrCode: 'qr-proof-2026',
   };
 
   const upsertChat = (phone: string, name: string, unreadCount: number, timestamp: number) => {

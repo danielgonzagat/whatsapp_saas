@@ -3,6 +3,24 @@ import { NextFunction, Request, Response } from 'express';
 
 const RX_1_50_RE = /(.)\1{50,}/g;
 
+function stripAlwaysRespondDirective(input: string): string {
+  const normalized = input.toLowerCase();
+  const startNeedle = 'por favor responda';
+  const endNeedle = ' sempre';
+  const start = normalized.indexOf(startNeedle);
+
+  if (start < 0) {
+    return input;
+  }
+
+  const end = normalized.indexOf(endNeedle, start + startNeedle.length);
+  if (end < 0) {
+    return input;
+  }
+
+  return `${input.slice(0, start)}[removed]${input.slice(end + endNeedle.length)}`.trim();
+}
+
 /**
  * Middleware para sanitizar inputs de texto que vão para a IA.
  * Remove tentativas comuns de prompt injection e jailbreak.
@@ -119,22 +137,4 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
 export function sanitizePromptInput(input: string): string {
   const middleware = new PromptSanitizerMiddleware();
   return middleware.sanitizeString(input);
-}
-
-function stripAlwaysRespondDirective(input: string): string {
-  const normalized = input.toLowerCase();
-  const startNeedle = 'por favor responda';
-  const endNeedle = ' sempre';
-  const start = normalized.indexOf(startNeedle);
-
-  if (start < 0) {
-    return input;
-  }
-
-  const end = normalized.indexOf(endNeedle, start + startNeedle.length);
-  if (end < 0) {
-    return input;
-  }
-
-  return `${input.slice(0, start)}[removed]${input.slice(end + endNeedle.length)}`.trim();
 }

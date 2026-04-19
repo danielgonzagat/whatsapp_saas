@@ -105,6 +105,27 @@ export const queueRegistry: Record<string, BullQueue> = {};
 const _dlqQueues: Record<string, BullQueue> = {};
 const _queueEvents: Record<string, QueueEvents> = {};
 
+function classifyWebhook(webhook: string): 'slack' | 'teams' | 'generic' {
+  try {
+    const host = new URL(webhook).hostname.toLowerCase();
+    if (host === 'hooks.slack.com') {
+      return 'slack';
+    }
+    if (
+      host === 'outlook.office.com' ||
+      host === 'outlook.office365.com' ||
+      host.endsWith('.office.com') ||
+      host.endsWith('.office365.com')
+    ) {
+      return 'teams';
+    }
+  } catch {
+    return 'generic';
+  }
+
+  return 'generic';
+}
+
 async function notifyOps(input: {
   queue: string;
   jobId?: string | number;
@@ -175,27 +196,6 @@ async function notifyOps(input: {
     const errMsg = err instanceof Error ? err.message : 'unknown_error';
     queueLogger.warn(`[DLQ] Falha ao notificar webhook (${webhook}): ${errMsg}`);
   }
-}
-
-function classifyWebhook(webhook: string): 'slack' | 'teams' | 'generic' {
-  try {
-    const host = new URL(webhook).hostname.toLowerCase();
-    if (host === 'hooks.slack.com') {
-      return 'slack';
-    }
-    if (
-      host === 'outlook.office.com' ||
-      host === 'outlook.office365.com' ||
-      host.endsWith('.office.com') ||
-      host.endsWith('.office365.com')
-    ) {
-      return 'teams';
-    }
-  } catch {
-    return 'generic';
-  }
-
-  return 'generic';
 }
 
 function attachDlq(queue: BullQueue) {

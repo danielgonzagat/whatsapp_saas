@@ -180,27 +180,33 @@ function buildCommissionPayload(body: LooseObject, current?: LooseObject) {
   };
 }
 
+function findSingleAtIndex(email: string): number {
+  const atIndex = email.indexOf('@');
+  if (atIndex <= 0) return -1;
+  if (atIndex !== email.lastIndexOf('@')) return -1;
+  if (atIndex === email.length - 1) return -1;
+  return atIndex;
+}
+
+function isValidEmailDomain(domain: string): boolean {
+  if (!domain || domain.startsWith('.') || domain.endsWith('.')) return false;
+  const dotIndex = domain.lastIndexOf('.');
+  return dotIndex > 0 && dotIndex < domain.length - 1;
+}
+
 function isValidEmail(value: string): boolean {
   const email = String(value || '')
     .trim()
     .toLowerCase();
-  if (!email || email.includes(' ')) {
-    return false;
-  }
+  if (!email || email.includes(' ')) return false;
 
-  const atIndex = email.indexOf('@');
-  if (atIndex <= 0 || atIndex !== email.lastIndexOf('@') || atIndex === email.length - 1) {
-    return false;
-  }
+  const atIndex = findSingleAtIndex(email);
+  if (atIndex < 0) return false;
 
   const local = email.slice(0, atIndex);
-  const domain = email.slice(atIndex + 1);
-  if (!local || !domain || domain.startsWith('.') || domain.endsWith('.')) {
-    return false;
-  }
+  if (!local) return false;
 
-  const dotIndex = domain.lastIndexOf('.');
-  return dotIndex > 0 && dotIndex < domain.length - 1;
+  return isValidEmailDomain(email.slice(atIndex + 1));
 }
 
 async function ensureNoDuplicateCommission(

@@ -43,6 +43,40 @@ export interface AdminProductDetail {
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const APPROVED: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
+function toDetail(
+  product: Awaited<ReturnType<PrismaService['product']['findUnique']>>,
+  workspaceName: string | null,
+  commerce: AdminProductDetail['commerce'],
+  moderationHistory: AdminProductDetail['moderationHistory'],
+): AdminProductDetail | null {
+  if (!product) return null;
+  return {
+    id: product.id,
+    workspaceId: product.workspaceId,
+    workspaceName,
+    name: product.name,
+    description: product.description,
+    priceInCents: Math.round(product.price * 100),
+    currency: product.currency,
+    category: product.category,
+    sku: product.sku,
+    tags: product.tags,
+    format: product.format,
+    imageUrl: product.imageUrl,
+    status: product.status,
+    active: product.active,
+    featured: product.featured,
+    stockQuantity: product.stockQuantity,
+    trackStock: product.trackStock,
+    salesPageUrl: product.salesPageUrl,
+    supportEmail: product.supportEmail,
+    createdAt: product.createdAt.toISOString(),
+    updatedAt: product.updatedAt.toISOString(),
+    moderationHistory,
+    commerce,
+  };
+}
+
 /**
  * Single-product detail with commerce KPIs. The Product → CheckoutOrder
  * relation goes through CheckoutProductPlan, so we aggregate by matching
@@ -155,38 +189,4 @@ export async function getAdminProductDetail(
       adminUserName: entry.adminUser?.name ?? null,
     })),
   );
-}
-
-function toDetail(
-  product: Awaited<ReturnType<PrismaService['product']['findUnique']>>,
-  workspaceName: string | null,
-  commerce: AdminProductDetail['commerce'],
-  moderationHistory: AdminProductDetail['moderationHistory'],
-): AdminProductDetail | null {
-  if (!product) return null;
-  return {
-    id: product.id,
-    workspaceId: product.workspaceId,
-    workspaceName,
-    name: product.name,
-    description: product.description,
-    priceInCents: Math.round(product.price * 100),
-    currency: product.currency,
-    category: product.category,
-    sku: product.sku,
-    tags: product.tags,
-    format: product.format,
-    imageUrl: product.imageUrl,
-    status: product.status,
-    active: product.active,
-    featured: product.featured,
-    stockQuantity: product.stockQuantity,
-    trackStock: product.trackStock,
-    salesPageUrl: product.salesPageUrl,
-    supportEmail: product.supportEmail,
-    createdAt: product.createdAt.toISOString(),
-    updatedAt: product.updatedAt.toISOString(),
-    moderationHistory,
-    commerce,
-  };
 }

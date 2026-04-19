@@ -3,47 +3,39 @@
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
-import { KLOEL_THEME } from '@/lib/kloel-theme';
-import { ArrowUpRight, CheckSquare2, Plus, Search, Square, Trash2, X } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import { ConversationsIcon } from '../sidebar/ConversationsIcon';
+import { useCallback, useMemo, useState } from 'react';
+import { ConversationRow } from './ConversationRow';
+import { ConversationsEmpty } from './ConversationsEmpty';
+import { SelectionToolbar } from './SelectionToolbar';
+import { DIVIDER, EMBER, F, M, MUTED, MUTED_2, SURFACE, TEXT, VOID } from './conversations-utils';
 
-const SURFACE = KLOEL_THEME.bgCard;
-const SURFACE_HOVER = KLOEL_THEME.bgHover;
-const DIVIDER = KLOEL_THEME.borderSubtle;
-const MUTED = KLOEL_THEME.textSecondary;
-const MUTED_2 = KLOEL_THEME.textTertiary;
-const TEXT = KLOEL_THEME.textPrimary;
-const EMBER = KLOEL_THEME.accent;
-const VOID = KLOEL_THEME.bgPrimary;
-const F = "'Sora', sans-serif";
-const M = "'JetBrains Mono', monospace";
+function useConversationSelection() {
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-function formatRelativeTime(value?: string) {
-  if (!value) return 'Última mensagem agora';
+  const toggleSelection = useCallback((conversationId: string) => {
+    setSelectedIds((current) =>
+      current.includes(conversationId)
+        ? current.filter((id) => id !== conversationId)
+        : [...current, conversationId],
+    );
+  }, []);
 
-  const diffMs = Date.now() - new Date(value).getTime();
-  if (!Number.isFinite(diffMs) || diffMs < 0) return 'Última mensagem agora';
+  const resetSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds([]);
+  }, []);
 
-  const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return 'Última mensagem agora';
-  if (minutes < 60) return `Última mensagem há ${minutes} min`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Última mensagem há ${hours} h`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `Última mensagem há ${days} d`;
-
-  const weeks = Math.floor(days / 7);
-  if (weeks < 5) return `Última mensagem há ${weeks} sem`;
-
-  const months = Math.floor(days / 30);
-  if (months < 12) return `Última mensagem há ${months} mês${months > 1 ? 'es' : ''}`;
-
-  const years = Math.floor(days / 365);
-  return `Última mensagem há ${years} ano${years > 1 ? 's' : ''}`;
+  return {
+    selectionMode,
+    setSelectionMode,
+    selectedIds,
+    setSelectedIds,
+    toggleSelection,
+    resetSelection,
+  };
 }
 
 export function ConversationsView() {
@@ -52,9 +44,15 @@ export function ConversationsView() {
   const { conversations, deleteConversation, setActiveConversation } = useConversationHistory();
 
   const [query, setQuery] = useState('');
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const {
+    selectionMode,
+    setSelectionMode,
+    selectedIds,
+    setSelectedIds,
+    toggleSelection,
+    resetSelection,
+  } = useConversationSelection();
 
   const filteredConversations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -67,31 +65,24 @@ export function ConversationsView() {
     });
   }, [conversations, query]);
 
-  const openConversation = (conversationId: string) => {
-    setActiveConversation(conversationId);
-    router.push(`${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(conversationId)}`);
-  };
+  const openConversation = useCallback(
+    (conversationId: string) => {
+      setActiveConversation(conversationId);
+      router.push(`${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(conversationId)}`);
+    },
+    [router, setActiveConversation],
+  );
 
-  const toggleSelection = (conversationId: string) => {
-    setSelectedIds((current) =>
-      current.includes(conversationId)
-        ? current.filter((id) => id !== conversationId)
-        : [...current, conversationId],
-    );
-  };
+  const deleteOne = useCallback(
+    (conversationId: string) => {
+      if (!window.confirm('Excluir esta conversa permanentemente?')) return;
+      deleteConversation(conversationId);
+      setSelectedIds((current) => current.filter((id) => id !== conversationId));
+    },
+    [deleteConversation, setSelectedIds],
+  );
 
-  const resetSelection = () => {
-    setSelectionMode(false);
-    setSelectedIds([]);
-  };
-
-  const deleteOne = (conversationId: string) => {
-    if (!window.confirm('Excluir esta conversa permanentemente?')) return;
-    deleteConversation(conversationId);
-    setSelectedIds((current) => current.filter((id) => id !== conversationId));
-  };
-
-  const deleteSelected = () => {
+  const deleteSelected = useCallback(() => {
     if (selectedIds.length === 0) return;
     const approved = window.confirm(
       selectedIds.length === 1
@@ -104,7 +95,13 @@ export function ConversationsView() {
       deleteConversation(conversationId);
     });
     resetSelection();
-  };
+  }, [deleteConversation, resetSelection, selectedIds]);
+
+  const handleHoverEnter = useCallback((id: string) => setHoveredId(id), []);
+  const handleHoverLeave = useCallback(
+    (id: string) => setHoveredId((current) => (current === id ? null : current)),
+    [],
+  );
 
   return (
     <div
@@ -290,311 +287,32 @@ export function ConversationsView() {
           }}
         >
           {filteredConversations.length > 0 ? (
-            filteredConversations.map((conversation) => {
-              const isSelected = selectedIds.includes(conversation.id);
-              const isHovered = hoveredId === conversation.id;
-
-              return (
-                // biome-ignore lint/a11y/useSemanticElements: conversation row groups block-level content (avatar + text + actions); role="group" is the correct ARIA mapping
-                <div
-                  key={conversation.id}
-                  role="group"
-                  onMouseEnter={() => setHoveredId(conversation.id)}
-                  onMouseLeave={() =>
-                    setHoveredId((current) => (current === conversation.id ? null : current))
-                  }
-                  style={{
-                    display: 'flex',
-                    alignItems: isMobile ? 'flex-start' : 'center',
-                    flexDirection: isMobile ? 'column' : 'row',
-                    gap: 14,
-                    minHeight: 78,
-                    padding: '16px 14px',
-                    borderRadius: 6,
-                    background: isSelected
-                      ? 'rgba(232,93,48,0.08)'
-                      : isHovered
-                        ? SURFACE_HOVER
-                        : 'transparent',
-                    border: `1px solid ${isSelected ? 'rgba(232,93,48,0.28)' : 'transparent'}`,
-                    transition: 'background 150ms ease, border-color 150ms ease',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      selectionMode
-                        ? toggleSelection(conversation.id)
-                        : openConversation(conversation.id)
-                    }
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 14,
-                      flex: 1,
-                      minWidth: 0,
-                      border: 'none',
-                      background: 'transparent',
-                      padding: 0,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 22,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        color: isSelected ? EMBER : MUTED,
-                      }}
-                    >
-                      {selectionMode ? (
-                        isSelected ? (
-                          <CheckSquare2 size={18} aria-hidden="true" />
-                        ) : (
-                          <Square size={18} aria-hidden="true" />
-                        )
-                      ) : (
-                        <ConversationsIcon size={18} color={isHovered ? TEXT : MUTED} aria-hidden />
-                      )}
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: isMobile ? 'flex-start' : 'center',
-                          justifyContent: 'space-between',
-                          flexDirection: isMobile ? 'column' : 'row',
-                          gap: 16,
-                          marginBottom: 6,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: TEXT,
-                            whiteSpace: isMobile ? 'normal' : 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {conversation.title}
-                        </span>
-                        <span
-                          style={{
-                            flexShrink: 0,
-                            fontSize: 10,
-                            color: MUTED_2,
-                            fontFamily: M,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {formatRelativeTime(conversation.updatedAt)}
-                        </span>
-                      </div>
-
-                      <p
-                        style={{
-                          margin: 0,
-                          color: MUTED,
-                          fontSize: 12,
-                          lineHeight: 1.55,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {conversation.lastMessagePreview ||
-                          'Sem prévia disponível para esta conversa.'}
-                      </p>
-                    </div>
-                  </button>
-
-                  {!selectionMode && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        opacity: isHovered ? 1 : 0,
-                        pointerEvents: isHovered ? 'auto' : 'none',
-                        transition: 'opacity 150ms ease',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => openConversation(conversation.id)}
-                        title="Abrir conversa"
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 6,
-                          border: `1px solid ${DIVIDER}`,
-                          background: SURFACE,
-                          color: MUTED,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <ArrowUpRight size={15} aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteOne(conversation.id)}
-                        title="Excluir conversa"
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 6,
-                          border: `1px solid rgba(232,93,48,0.16)`,
-                          background: 'rgba(232,93,48,0.08)',
-                          color: EMBER,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Trash2 size={15} aria-hidden="true" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })
+            filteredConversations.map((conversation) => (
+              <ConversationRow
+                key={conversation.id}
+                conversation={conversation}
+                isMobile={isMobile}
+                isSelected={selectedIds.includes(conversation.id)}
+                isHovered={hoveredId === conversation.id}
+                selectionMode={selectionMode}
+                onHoverEnter={handleHoverEnter}
+                onHoverLeave={handleHoverLeave}
+                onToggleSelect={toggleSelection}
+                onOpen={openConversation}
+                onDelete={deleteOne}
+              />
+            ))
           ) : (
-            <div
-              style={{
-                minHeight: 320,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 16,
-                textAlign: 'center',
-                borderRadius: 6,
-                border: `1px dashed ${DIVIDER}`,
-                background: KLOEL_THEME.bgSecondary,
-                padding: '32px 24px',
-              }}
-            >
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 6,
-                  background: SURFACE,
-                  border: `1px solid ${DIVIDER}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ConversationsIcon size={20} color={TEXT} aria-hidden />
-              </div>
-              <div style={{ maxWidth: 420 }}>
-                <h2
-                  style={{
-                    margin: '0 0 8px',
-                    fontSize: 18,
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                  }}
-                >
-                  {query.trim()
-                    ? 'Nenhuma conversa encontrada'
-                    : 'Nenhuma conversa registrada ainda'}
-                </h2>
-                <p
-                  style={{
-                    margin: 0,
-                    color: MUTED,
-                    fontSize: 13,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {query.trim()
-                    ? 'Refine a busca ou abra um novo chat para começar outra thread.'
-                    : 'Abra um novo chat para iniciar a primeira thread e o histórico aparecerá aqui.'}
-                </p>
-              </div>
-            </div>
+            <ConversationsEmpty hasQuery={query.trim().length > 0} />
           )}
         </div>
 
         {selectionMode && selectedIds.length > 0 && (
-          <div
-            style={{
-              position: 'sticky',
-              bottom: 24,
-              alignSelf: 'center',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '10px 12px',
-              borderRadius: 6,
-              border: `1px solid ${DIVIDER}`,
-              background: 'color-mix(in srgb, var(--app-bg-card) 96%, transparent)',
-              backdropFilter: 'blur(12px)',
-            }}
-          >
-            <span
-              style={{
-                color: TEXT,
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {selectedIds.length} selecionada{selectedIds.length > 1 ? 's' : ''}
-            </span>
-            <button
-              type="button"
-              onClick={deleteSelected}
-              style={{
-                height: 34,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                borderRadius: 6,
-                border: `1px solid rgba(232,93,48,0.18)`,
-                background: 'rgba(232,93,48,0.08)',
-                color: EMBER,
-                padding: '0 12px',
-                fontFamily: F,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              <Trash2 size={14} aria-hidden="true" />
-              Excluir
-            </button>
-            <button
-              type="button"
-              onClick={resetSelection}
-              title="Cancelar seleção"
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 6,
-                border: `1px solid ${DIVIDER}`,
-                background: SURFACE,
-                color: MUTED,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <X size={14} aria-hidden="true" />
-            </button>
-          </div>
+          <SelectionToolbar
+            count={selectedIds.length}
+            onDelete={deleteSelected}
+            onCancel={resetSelection}
+          />
         )}
       </div>
     </div>

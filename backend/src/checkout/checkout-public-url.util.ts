@@ -2,6 +2,21 @@ import { getRequestOrigin } from '../common/storage/public-storage-url.util';
 
 const PATTERN_RE = /\/+$/;
 
+const KLOEL_HOSTNAMES = new Set(['kloel.com', 'www.kloel.com', 'app.kloel.com', 'auth.kloel.com']);
+
+const LOCAL_ROOTS = new Set(['localhost', '127.0.0.1']);
+
+function resolvePayHostname(hostname: string): string | null {
+  if (KLOEL_HOSTNAMES.has(hostname)) return 'pay.kloel.com';
+  if (LOCAL_ROOTS.has(hostname)) return `pay.${hostname}`;
+  if (hostname.endsWith('.localhost') || hostname.endsWith('.127.0.0.1')) {
+    const [, ...rest] = hostname.split('.');
+    const rootHost = rest.join('.') || 'localhost';
+    return `pay.${rootHost}`;
+  }
+  return null;
+}
+
 function normalizePayOrigin(candidate?: string | null) {
   const raw = String(candidate || '').trim();
   if (!raw) return null;
@@ -9,29 +24,10 @@ function normalizePayOrigin(candidate?: string | null) {
   try {
     const url = new URL(raw);
     const hostname = url.hostname.toLowerCase();
-
-    if (
-      hostname === 'kloel.com' ||
-      hostname === 'www.kloel.com' ||
-      hostname === 'app.kloel.com' ||
-      hostname === 'auth.kloel.com'
-    ) {
-      url.hostname = 'pay.kloel.com';
-      return url.toString().replace(PATTERN_RE, '');
+    const remapped = resolvePayHostname(hostname);
+    if (remapped) {
+      url.hostname = remapped;
     }
-
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      url.hostname = `pay.${hostname}`;
-      return url.toString().replace(PATTERN_RE, '');
-    }
-
-    if (hostname.endsWith('.localhost') || hostname.endsWith('.127.0.0.1')) {
-      const [, ...rest] = hostname.split('.');
-      const rootHost = rest.join('.') || 'localhost';
-      url.hostname = `pay.${rootHost}`;
-      return url.toString().replace(PATTERN_RE, '');
-    }
-
     return url.toString().replace(PATTERN_RE, '');
   } catch {
     return null;

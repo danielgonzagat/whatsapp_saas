@@ -19,6 +19,29 @@ export interface ProcessSaleSucceededResult {
   skippedReason?: 'no_metadata' | 'already_processed' | 'no_lines';
 }
 
+function parseLines(json: string): PersistedSplitLine[] {
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (line): line is PersistedSplitLine =>
+          typeof line === 'object' &&
+          line !== null &&
+          typeof (line as PersistedSplitLine).role === 'string' &&
+          typeof (line as PersistedSplitLine).accountId === 'string' &&
+          typeof (line as PersistedSplitLine).amountCents === 'string',
+      )
+      .map((line) => ({
+        role: line.role,
+        accountId: line.accountId,
+        amountCents: line.amountCents,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Webhook-side counterpart to StripeChargeService. When a sale-side
  * `payment_intent.succeeded` event arrives, this processor:
@@ -200,28 +223,5 @@ export class StripeWebhookProcessor {
       );
       throw err;
     }
-  }
-}
-
-function parseLines(json: string): PersistedSplitLine[] {
-  try {
-    const parsed: unknown = JSON.parse(json);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter(
-        (line): line is PersistedSplitLine =>
-          typeof line === 'object' &&
-          line !== null &&
-          typeof (line as PersistedSplitLine).role === 'string' &&
-          typeof (line as PersistedSplitLine).accountId === 'string' &&
-          typeof (line as PersistedSplitLine).amountCents === 'string',
-      )
-      .map((line) => ({
-        role: line.role,
-        accountId: line.accountId,
-        amountCents: line.amountCents,
-      }));
-  } catch {
-    return [];
   }
 }

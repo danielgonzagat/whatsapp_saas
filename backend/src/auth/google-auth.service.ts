@@ -12,6 +12,14 @@ const W_RE = /[\W_]+/g;
 const AUDIENCE_ISSUER_TOKEN_US_RE =
   /audience|issuer|token used too late|wrong number of segments|invalid token|No pem found|Token used too early|Wrong recipient/i;
 
+function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T[]) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return null;
+  }
+
+  return entries.find((entry) => entry?.metadata?.primary) || entries[0];
+}
+
 export interface GoogleVerifiedProfile {
   provider: 'google' | 'apple';
   providerId: string;
@@ -211,12 +219,4 @@ export class GoogleAuthService {
     const candidate = cleaned || 'User';
     return candidate.charAt(0).toUpperCase() + candidate.slice(1);
   }
-}
-
-function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T[]) {
-  if (!Array.isArray(entries) || entries.length === 0) {
-    return null;
-  }
-
-  return entries.find((entry) => entry?.metadata?.primary) || entries[0];
 }

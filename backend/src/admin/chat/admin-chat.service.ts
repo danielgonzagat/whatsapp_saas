@@ -32,6 +32,137 @@ const LIST_RE = /^\/list\b/i;
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 4000;
 
+const ACTIVE_RESPONSE =
+  'Assistente administrativo ativo. Hoje eu já consigo consultar ferramentas diretas do painel. ' +
+  'Use /list para ver o catálogo disponível ou peça algo como "buscar workspace acme".';
+
+function parseToolInvocation(
+  content: string,
+): { name: string; args: Record<string, unknown> } | null {
+  const match = content.trim().match(TOOL_S____W_____S_RE);
+  if (!match) return null;
+  const name = match[1];
+  let args: Record<string, unknown> = {};
+  if (match[2]) {
+    try {
+      const parsed: unknown = JSON.parse(match[2]);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        args = parsed as Record<string, unknown>;
+      }
+    } catch {
+      return null;
+    }
+  }
+  return { name, args };
+}
+
+function inferToolInvocation(
+  content: string,
+): { name: string; args: Record<string, unknown> } | null {
+  const trimmed = content.trim();
+  const explicitSearch = trimmed.match(BUSCAR_PROCURAR_ENCON_RE);
+  if (explicitSearch?.[1]) {
+    return { name: 'searchWorkspaces', args: { query: explicitSearch[1].trim() } };
+  }
+
+  const contextualSearch = trimmed.match(WORKSPACE_CONTA_PRODU_RE);
+  if (contextualSearch?.[1] && contextualSearch[1].trim().length >= 2) {
+    return { name: 'searchWorkspaces', args: { query: contextualSearch[1].trim() } };
+  }
+
+  if (OVERVIEW_RESUMO_DASHBOA_RE.test(trimmed)) {
+    if (MARKETING_CANAL_CONVERSA_RE.test(trimmed)) {
+      return { name: 'marketingOverview', args: {} };
+    }
+    if (VENDAS_ASSINATURAS_PIPEL_RE.test(trimmed)) {
+      return { name: 'salesOverview', args: {} };
+    }
+    if (COMPLIANCE_CHARGEBACK_KY_RE.test(trimmed)) {
+      return { name: 'complianceOverview', args: {} };
+    }
+    if (RELAT_O__RIO_EXPORT_FUNN_RE.test(trimmed)) {
+      return { name: 'reportsOverview', args: {} };
+    }
+    if (CONFIG_FEATURE_FLAG_DOM_RE.test(trimmed)) {
+      return { name: 'configOverview', args: {} };
+    }
+    if (SUPORTE_TICKET_SLA_MACRO_RE.test(trimmed)) {
+      return { name: 'supportOverview', args: {} };
+    }
+    if (ALERTA_NOTIFICA_RE.test(trimmed)) {
+      return { name: 'notificationsOverview', args: {} };
+    }
+    if (PRODUTO_RE.test(trimmed)) {
+      return { name: 'productsOverview', args: {} };
+    }
+    if (CONTA_WORKSPACE_PRODUTOR_RE.test(trimmed)) {
+      return { name: 'accountsOverview', args: {} };
+    }
+    if (CLIENTE_RE.test(trimmed)) {
+      return { name: 'clientsOverview', args: {} };
+    }
+    return { name: 'dashboardOverview', args: {} };
+  }
+
+  return null;
+}
+
+function summarizeToolResult(toolName: string, result: Record<string, unknown>): string {
+  if (toolName === 'searchWorkspaces') {
+    const items = Array.isArray(result.items) ? result.items : [];
+    if (items.length === 0) {
+      return 'Nenhuma workspace encontrada para o termo informado.';
+    }
+
+    return [
+      `Encontrei ${items.length} workspace(s):`,
+      ...items.slice(0, 5).map((item) => {
+        const row = item as Record<string, unknown>;
+        const name = typeof row.name === 'string' ? row.name : 'Sem nome';
+        const id = typeof row.id === 'string' ? row.id : 'sem-id';
+        return `- ${name} (${id})`;
+      }),
+    ].join('\n');
+  }
+
+  const preview = JSON.stringify(result, null, 2);
+  return preview.length > 1800 ? `${preview.slice(0, 1800)}…` : preview;
+}
+
+function toSessionView(session: {
+  id: string;
+  title: string | null;
+  createdAt: Date;
+  lastUsedAt: Date;
+  expiresAt: Date;
+  messages: Array<{
+    id: string;
+    role: AdminChatRole;
+    content: string;
+    toolName: string | null;
+    toolArgs: unknown;
+    toolResult: unknown;
+    createdAt: Date;
+  }>;
+}): ChatSessionView {
+  return {
+    id: session.id,
+    title: session.title,
+    createdAt: session.createdAt.toISOString(),
+    lastUsedAt: session.lastUsedAt.toISOString(),
+    expiresAt: session.expiresAt.toISOString(),
+    messages: session.messages.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      toolName: m.toolName,
+      toolArgs: (m.toolArgs as Record<string, unknown> | null) ?? null,
+      toolResult: (m.toolResult as Record<string, unknown> | null) ?? null,
+      createdAt: m.createdAt.toISOString(),
+    })),
+  };
+}
+
 export interface SendMessageInput {
   adminUserId: string;
   adminRole: AdminRole;
@@ -294,137 +425,6 @@ export class AdminChatService {
     }
     return toSessionView(session);
   }
-}
-
-const ACTIVE_RESPONSE =
-  'Assistente administrativo ativo. Hoje eu já consigo consultar ferramentas diretas do painel. ' +
-  'Use /list para ver o catálogo disponível ou peça algo como "buscar workspace acme".';
-
-function parseToolInvocation(
-  content: string,
-): { name: string; args: Record<string, unknown> } | null {
-  const match = content.trim().match(TOOL_S____W_____S_RE);
-  if (!match) return null;
-  const name = match[1];
-  let args: Record<string, unknown> = {};
-  if (match[2]) {
-    try {
-      const parsed: unknown = JSON.parse(match[2]);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        args = parsed as Record<string, unknown>;
-      }
-    } catch {
-      return null;
-    }
-  }
-  return { name, args };
-}
-
-function inferToolInvocation(
-  content: string,
-): { name: string; args: Record<string, unknown> } | null {
-  const trimmed = content.trim();
-  const explicitSearch = trimmed.match(BUSCAR_PROCURAR_ENCON_RE);
-  if (explicitSearch?.[1]) {
-    return { name: 'searchWorkspaces', args: { query: explicitSearch[1].trim() } };
-  }
-
-  const contextualSearch = trimmed.match(WORKSPACE_CONTA_PRODU_RE);
-  if (contextualSearch?.[1] && contextualSearch[1].trim().length >= 2) {
-    return { name: 'searchWorkspaces', args: { query: contextualSearch[1].trim() } };
-  }
-
-  if (OVERVIEW_RESUMO_DASHBOA_RE.test(trimmed)) {
-    if (MARKETING_CANAL_CONVERSA_RE.test(trimmed)) {
-      return { name: 'marketingOverview', args: {} };
-    }
-    if (VENDAS_ASSINATURAS_PIPEL_RE.test(trimmed)) {
-      return { name: 'salesOverview', args: {} };
-    }
-    if (COMPLIANCE_CHARGEBACK_KY_RE.test(trimmed)) {
-      return { name: 'complianceOverview', args: {} };
-    }
-    if (RELAT_O__RIO_EXPORT_FUNN_RE.test(trimmed)) {
-      return { name: 'reportsOverview', args: {} };
-    }
-    if (CONFIG_FEATURE_FLAG_DOM_RE.test(trimmed)) {
-      return { name: 'configOverview', args: {} };
-    }
-    if (SUPORTE_TICKET_SLA_MACRO_RE.test(trimmed)) {
-      return { name: 'supportOverview', args: {} };
-    }
-    if (ALERTA_NOTIFICA_RE.test(trimmed)) {
-      return { name: 'notificationsOverview', args: {} };
-    }
-    if (PRODUTO_RE.test(trimmed)) {
-      return { name: 'productsOverview', args: {} };
-    }
-    if (CONTA_WORKSPACE_PRODUTOR_RE.test(trimmed)) {
-      return { name: 'accountsOverview', args: {} };
-    }
-    if (CLIENTE_RE.test(trimmed)) {
-      return { name: 'clientsOverview', args: {} };
-    }
-    return { name: 'dashboardOverview', args: {} };
-  }
-
-  return null;
-}
-
-function summarizeToolResult(toolName: string, result: Record<string, unknown>): string {
-  if (toolName === 'searchWorkspaces') {
-    const items = Array.isArray(result.items) ? result.items : [];
-    if (items.length === 0) {
-      return 'Nenhuma workspace encontrada para o termo informado.';
-    }
-
-    return [
-      `Encontrei ${items.length} workspace(s):`,
-      ...items.slice(0, 5).map((item) => {
-        const row = item as Record<string, unknown>;
-        const name = typeof row.name === 'string' ? row.name : 'Sem nome';
-        const id = typeof row.id === 'string' ? row.id : 'sem-id';
-        return `- ${name} (${id})`;
-      }),
-    ].join('\n');
-  }
-
-  const preview = JSON.stringify(result, null, 2);
-  return preview.length > 1800 ? `${preview.slice(0, 1800)}…` : preview;
-}
-
-function toSessionView(session: {
-  id: string;
-  title: string | null;
-  createdAt: Date;
-  lastUsedAt: Date;
-  expiresAt: Date;
-  messages: Array<{
-    id: string;
-    role: AdminChatRole;
-    content: string;
-    toolName: string | null;
-    toolArgs: unknown;
-    toolResult: unknown;
-    createdAt: Date;
-  }>;
-}): ChatSessionView {
-  return {
-    id: session.id,
-    title: session.title,
-    createdAt: session.createdAt.toISOString(),
-    lastUsedAt: session.lastUsedAt.toISOString(),
-    expiresAt: session.expiresAt.toISOString(),
-    messages: session.messages.map((m) => ({
-      id: m.id,
-      role: m.role,
-      content: m.content,
-      toolName: m.toolName,
-      toolArgs: (m.toolArgs as Record<string, unknown> | null) ?? null,
-      toolResult: (m.toolResult as Record<string, unknown> | null) ?? null,
-      createdAt: m.createdAt.toISOString(),
-    })),
-  };
 }
 
 // Silence unused-import lints if this file is the last consumer in a

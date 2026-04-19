@@ -46,6 +46,54 @@ export function extractPhoneFromChatId(value: unknown): string {
   return extractAsciiDigits(core);
 }
 
+function looksLikePhoneDoePlaceholder(value: string): boolean {
+  const parts = collapseWhitespace(value).split(' ');
+  if (parts.length < 2) {
+    return false;
+  }
+
+  const last = parts[parts.length - 1].toLowerCase();
+  if (last !== 'doe') {
+    return false;
+  }
+
+  const prefix = parts.slice(0, -1).join('');
+  if (!prefix) {
+    return false;
+  }
+
+  for (const char of prefix) {
+    if (char === '+' || char === '-' || char === '(' || char === ')' || char === ' ') {
+      continue;
+    }
+    if (!isDigit(char)) {
+      return false;
+    }
+  }
+
+  return extractAsciiDigits(prefix).length > 0;
+}
+
+function trimTrailingPunctuation(value: string): string {
+  let end = value.length;
+  while (end > 0) {
+    const char = value[end - 1];
+    if (
+      char === '?' ||
+      char === '!' ||
+      char === '.' ||
+      char === ',' ||
+      char === ';' ||
+      char === ':'
+    ) {
+      end -= 1;
+      continue;
+    }
+    break;
+  }
+  return value.slice(0, end).trim();
+}
+
 export function isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
   const normalized = collapseWhitespace(value);
   if (!normalized) {
@@ -118,52 +166,4 @@ export function normalizeIntentText(message: string): string {
 
 export function includesAnyPhrase(haystack: string, phrases: readonly string[]): boolean {
   return phrases.some((phrase) => haystack.includes(phrase));
-}
-
-function looksLikePhoneDoePlaceholder(value: string): boolean {
-  const parts = collapseWhitespace(value).split(' ');
-  if (parts.length < 2) {
-    return false;
-  }
-
-  const last = parts[parts.length - 1].toLowerCase();
-  if (last !== 'doe') {
-    return false;
-  }
-
-  const prefix = parts.slice(0, -1).join('');
-  if (!prefix) {
-    return false;
-  }
-
-  for (const char of prefix) {
-    if (char === '+' || char === '-' || char === '(' || char === ')' || char === ' ') {
-      continue;
-    }
-    if (!isDigit(char)) {
-      return false;
-    }
-  }
-
-  return extractAsciiDigits(prefix).length > 0;
-}
-
-function trimTrailingPunctuation(value: string): string {
-  let end = value.length;
-  while (end > 0) {
-    const char = value[end - 1];
-    if (
-      char === '?' ||
-      char === '!' ||
-      char === '.' ||
-      char === ',' ||
-      char === ';' ||
-      char === ':'
-    ) {
-      end -= 1;
-      continue;
-    }
-    break;
-  }
-  return value.slice(0, end).trim();
 }

@@ -5,6 +5,8 @@ import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useRef, useState, useId } from 'react';
 import { useAuth } from './auth-provider';
+import { HORIZONTAL_GRID_LINES, VERTICAL_GRID_LINES, typingDelayFor } from './auth-screen-data';
+import { usePrefersReducedMotion } from './use-prefers-reduced-motion';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
@@ -16,34 +18,6 @@ type Mode = 'login' | 'register';
 /* ─── constants ─── */
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-
-const HORIZONTAL_GRID_LINES = Array.from({ length: 12 }, (_, i) => ({
-  id: `h-${i + 1}`,
-  top: ((i + 1) / 13) * 100,
-}));
-const VERTICAL_GRID_LINES = Array.from({ length: 8 }, (_, i) => ({
-  id: `v-${i + 1}`,
-  left: ((i + 1) / 9) * 100,
-}));
-
-function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    apply();
-    mediaQuery.addEventListener?.('change', apply);
-    return () => mediaQuery.removeEventListener?.('change', apply);
-  }, []);
-
-  return prefersReducedMotion;
-}
 
 /* ────────────────────────────────────────────────────────────
    GOOGLE SIGN-IN HOOK
@@ -221,13 +195,6 @@ function AuthManifestTyping() {
       timeoutId = window.setTimeout(fn, delay);
     };
 
-    const delayFor = (character: string) => {
-      if (character === ' ') return 52 + Math.floor(Math.random() * 28);
-      if (character === ',') return 220 + Math.floor(Math.random() * 60);
-      if (character === '.') return 320 + Math.floor(Math.random() * 110);
-      return 64 + Math.floor(Math.random() * 38);
-    };
-
     const typePhrase = (source: string) => {
       let index = 0;
       const step = () => {
@@ -242,7 +209,7 @@ function AuthManifestTyping() {
           }, 8000);
           return;
         }
-        schedule(step, delayFor(source[index - 1]));
+        schedule(step, typingDelayFor(source[index - 1]));
       };
       schedule(step, 220);
     };

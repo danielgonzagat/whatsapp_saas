@@ -363,31 +363,6 @@ CONVITE CERTO:
 - Sempre explique o benefício concreto do cadastro.
 - Exemplo de tom: "Consigo te ajudar com isso agora. Se você criar sua conta, eu já te levo direto para a parte útil e a gente conecta o WhatsApp sem enrolação."`;
 
-export function buildKloelLeadPrompt(params: {
-  companyName: string;
-  brandVoice?: string | null;
-  productList?: string | null;
-  extraContext?: string | null;
-  productAIConfig?: Record<string, unknown> | null;
-}) {
-  const aiConfigBlock = params.productAIConfig
-    ? buildProductAIConfigPrompt(params.productAIConfig)
-    : null;
-
-  return KLOEL_SALES_PROMPT(
-    params.companyName,
-    [
-      `EMPRESA: ${params.companyName}`,
-      `TOM DA MARCA: ${params.brandVoice || 'Direto, humano e focado em conversão'}`,
-      params.productList ? `PRODUTOS:\n${params.productList}` : null,
-      params.extraContext ? `CONTEXTO OPERACIONAL:\n${params.extraContext}` : null,
-      aiConfigBlock ? `INTELIGÊNCIA DE VENDAS (Marketing Artificial):\n${aiConfigBlock}` : null,
-    ]
-      .filter(Boolean)
-      .join('\n\n'),
-  );
-}
-
 /**
  * Builds a natural-language prompt section from ProductAIConfig data.
  * This is the "Marketing Artificial" secret weapon — it teaches the AI
@@ -476,4 +451,29 @@ export function buildProductAIConfigPrompt(
   }
 
   return parts.join('\n');
+}
+
+export function buildKloelLeadPrompt(params: {
+  companyName: string;
+  brandVoice?: string | null;
+  productList?: string | null;
+  extraContext?: string | null;
+  productAIConfig?: Record<string, unknown> | null;
+}) {
+  const aiConfigBlock = params.productAIConfig
+    ? buildProductAIConfigPrompt(params.productAIConfig)
+    : null;
+
+  return KLOEL_SALES_PROMPT(
+    params.companyName,
+    [
+      `EMPRESA: ${params.companyName}`,
+      `TOM DA MARCA: ${params.brandVoice || 'Direto, humano e focado em conversão'}`,
+      params.productList ? `PRODUTOS:\n${params.productList}` : null,
+      params.extraContext ? `CONTEXTO OPERACIONAL:\n${params.extraContext}` : null,
+      aiConfigBlock ? `INTELIGÊNCIA DE VENDAS (Marketing Artificial):\n${aiConfigBlock}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n\n'),
+  );
 }

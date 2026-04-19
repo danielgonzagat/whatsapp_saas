@@ -163,6 +163,28 @@ interface StripeEventLike {
   };
 }
 
+function mapStripeIntentStatusForCheckout(
+  eventType?: string,
+  intentStatus?: string,
+): 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED' {
+  const event = String(eventType || '').toLowerCase();
+  const status = String(intentStatus || '').toLowerCase();
+
+  if (event === 'payment_intent.succeeded' || status === 'succeeded') {
+    return 'APPROVED';
+  }
+  if (event === 'payment_intent.payment_failed') {
+    return 'DECLINED';
+  }
+  if (event === 'payment_intent.processing' || status === 'processing') {
+    return 'PROCESSING';
+  }
+  if (event === 'payment_intent.canceled' || status === 'canceled') {
+    return 'CANCELED';
+  }
+  return 'PENDING';
+}
+
 /**
  * Webhook genérico de pagamento/loja para marcar conversões reais no Autopilot.
  * Use header X-Webhook-Secret para autenticar.
@@ -1027,26 +1049,4 @@ export class PaymentWebhookController {
       // ignore
     }
   }
-}
-
-function mapStripeIntentStatusForCheckout(
-  eventType?: string,
-  intentStatus?: string,
-): 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED' {
-  const event = String(eventType || '').toLowerCase();
-  const status = String(intentStatus || '').toLowerCase();
-
-  if (event === 'payment_intent.succeeded' || status === 'succeeded') {
-    return 'APPROVED';
-  }
-  if (event === 'payment_intent.payment_failed') {
-    return 'DECLINED';
-  }
-  if (event === 'payment_intent.processing' || status === 'processing') {
-    return 'PROCESSING';
-  }
-  if (event === 'payment_intent.canceled' || status === 'canceled') {
-    return 'CANCELED';
-  }
-  return 'PENDING';
 }

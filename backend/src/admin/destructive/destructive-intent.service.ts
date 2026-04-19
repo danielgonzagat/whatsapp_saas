@@ -41,6 +41,30 @@ export interface UndoDestructiveIntentInput {
   userAgent: string;
 }
 
+function clampTtl(requested: number | undefined): number {
+  if (requested === undefined) return DEFAULT_TTL_SECONDS;
+  if (requested < 30) return 30;
+  if (requested > MAX_TTL_SECONDS) return MAX_TTL_SECONDS;
+  return Math.floor(requested);
+}
+
+function generateChallenge(): string {
+  // Use crypto.randomInt for guaranteed unbiased index selection.
+  // Reading a byte and applying `% alphabetLen` would bias the
+  // distribution unless alphabetLen divides 256 evenly — CodeQL's
+  // js/biased-cryptographic-random can't prove that at build time
+  // and flags the pattern, so we use the explicit unbiased helper.
+  let out = '';
+  for (let i = 0; i < CHALLENGE_LENGTH; i += 1) {
+    out += CHALLENGE_ALPHABET.charAt(randomInt(0, CHALLENGE_ALPHABET.length));
+  }
+  return out;
+}
+
+function generateUndoToken(): string {
+  return randomBytes(UNDO_TOKEN_BYTES).toString('base64url');
+}
+
 /**
  * DestructiveIntentService is the single authorised entry point for
  * creating and executing destructive admin actions. See SP-8 design
@@ -269,28 +293,4 @@ export class DestructiveIntentService {
       });
     }
   }
-}
-
-function clampTtl(requested: number | undefined): number {
-  if (requested === undefined) return DEFAULT_TTL_SECONDS;
-  if (requested < 30) return 30;
-  if (requested > MAX_TTL_SECONDS) return MAX_TTL_SECONDS;
-  return Math.floor(requested);
-}
-
-function generateChallenge(): string {
-  // Use crypto.randomInt for guaranteed unbiased index selection.
-  // Reading a byte and applying `% alphabetLen` would bias the
-  // distribution unless alphabetLen divides 256 evenly — CodeQL's
-  // js/biased-cryptographic-random can't prove that at build time
-  // and flags the pattern, so we use the explicit unbiased helper.
-  let out = '';
-  for (let i = 0; i < CHALLENGE_LENGTH; i += 1) {
-    out += CHALLENGE_ALPHABET.charAt(randomInt(0, CHALLENGE_ALPHABET.length));
-  }
-  return out;
-}
-
-function generateUndoToken(): string {
-  return randomBytes(UNDO_TOKEN_BYTES).toString('base64url');
 }

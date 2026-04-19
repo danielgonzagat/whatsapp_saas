@@ -20,8 +20,7 @@ import {
 } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { type CSSProperties, useCallback, useEffect, useRef, useState, useId } from 'react';
-
-const A_Z0_9_RE = /[^A-Z0-9]/g;
+import { normalizeCheckoutCode } from './checkout-editor-utils';
 
 // ════════════════════════════════════════════
 // DESIGN TOKENS (inline — Kloel Monitor DNA)
@@ -115,14 +114,6 @@ const removeBtnStyle: CSSProperties = {
   border: 'none',
   padding: '4px 8px',
 };
-
-function normalizeCheckoutCode(value?: string | null) {
-  return String(value || '')
-    .trim()
-    .toUpperCase()
-    .replace(A_Z0_9_RE, '')
-    .slice(0, 8);
-}
 
 // ════════════════════════════════════════════
 // TOGGLE COMPONENT

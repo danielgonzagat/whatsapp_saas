@@ -1,24 +1,13 @@
 'use client';
 
-import DOMPurify from 'dompurify';
-import { ArrowRight, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback } from 'react';
 
-import { useConversationHistory } from '@/hooks/useConversationHistory';
-import { type ThreadSearchPayload, searchKloelThreads } from '@/lib/kloel-conversations';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { cn } from '@/lib/utils';
-import {
-  type ConversationSearchResult,
-  formatConversationSearchTime,
-  groupConversationSearchResults,
-  highlightPlainText,
-  sanitizeMarkedHtml,
-} from './search/conversation-search-utils';
-import { ConversationsIcon } from './sidebar/ConversationsIcon';
-
-const S_RE = /\s+/g;
+import { CommandPaletteItem } from './search/CommandPaletteItem';
+import { useCommandPalette } from './search/use-command-palette';
 
 export type CommandType = 'fill_chat' | 'execute' | 'execute_gate' | 'navigate';
 export type CommandRisk = 'auto' | 'confirm' | 'sensitive';
@@ -55,157 +44,20 @@ export interface CommandPaletteProps {
   mode?: 'full' | 'conversations';
 }
 
-function buildRecentPreview(input?: string): string {
-  const text = String(input || '')
-    .replace(S_RE, ' ')
-    .trim();
-  return text || 'Abra a conversa para retomar o contexto.';
-}
-
-function mapRecentConversation(conversation: {
-  id: string;
-  title: string;
-  updatedAt?: string;
-  lastMessagePreview?: string;
-}): ConversationSearchResult {
-  return {
-    id: conversation.id,
-    title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
-    updatedAt: conversation.updatedAt,
-    matchedContent: buildRecentPreview(conversation.lastMessagePreview),
-    previewHtml: buildRecentPreview(conversation.lastMessagePreview),
-    tags: [],
-  };
-}
-
-function mapSearchPayload(payload: ThreadSearchPayload): ConversationSearchResult {
-  return {
-    id: payload.id,
-    title: String(payload.title || 'Nova conversa').trim() || 'Nova conversa',
-    updatedAt: payload.updatedAt,
-    matchedContent: buildRecentPreview(payload.matchedContent),
-    previewHtml: payload.previewHtml || payload.matchedContent || '',
-    tags: Array.isArray(payload.tags) ? payload.tags.filter(Boolean).slice(0, 3) : [],
-  };
-}
-
 export function CommandPalette({ open, onClose, initialSearch, className }: CommandPaletteProps) {
   const router = useRouter();
-  const { conversations, setActiveConversation } = useConversationHistory();
-
-  const [query, setQuery] = useState(initialSearch || '');
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [remoteResults, setRemoteResults] = useState<ConversationSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
-
-  const recentResults = useMemo(
-    () => conversations.slice(0, 20).map((conversation) => mapRecentConversation(conversation)),
-    [conversations],
-  );
-
-  const localMatches = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    if (!normalizedQuery) {
-      return recentResults;
-    }
-
-    return recentResults
-      .filter(
-        (item) =>
-          item.title.toLowerCase().includes(normalizedQuery) ||
-          String(item.matchedContent || '')
-            .toLowerCase()
-            .includes(normalizedQuery),
-      )
-      .slice(0, 8);
-  }, [query, recentResults]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    setQuery(initialSearch || '');
-    setSelectedIndex(0);
-    setRemoteResults([]);
-    setIsSearching(false);
-  }, [initialSearch, open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 32);
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const normalizedQuery = query.trim();
-    if (normalizedQuery.length < 2) {
-      setRemoteResults([]);
-      setIsSearching(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsSearching(true);
-    setRemoteResults([]);
-
-    const timer = window.setTimeout(async () => {
-      try {
-        const results = await searchKloelThreads(normalizedQuery, 20);
-        if (cancelled) return;
-        setRemoteResults(results.map((result) => mapSearchPayload(result)));
-      } catch {
-        if (cancelled) return;
-        setRemoteResults([]);
-      } finally {
-        if (!cancelled) {
-          setIsSearching(false);
-        }
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [open, query]);
-
-  const results = useMemo(() => {
-    const normalizedQuery = query.trim();
-
-    if (!normalizedQuery) {
-      return recentResults;
-    }
-
-    const primary = remoteResults.length > 0 ? remoteResults : localMatches;
-    const seen = new Set(primary.map((item) => item.id));
-    const extras = localMatches.filter((item) => !seen.has(item.id));
-    return [...primary, ...extras].slice(0, 20);
-  }, [localMatches, query, recentResults, remoteResults]);
-
-  useEffect(() => {
-    setSelectedIndex((current) => {
-      if (results.length === 0) return 0;
-      return Math.min(current, results.length - 1);
-    });
-  }, [results]);
-
-  useEffect(() => {
-    const selectedNode = itemRefs.current[selectedIndex];
-    selectedNode?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [selectedIndex]);
-
-  const groupedResults = useMemo(() => groupConversationSearchResults(results), [results]);
+  const {
+    query,
+    setQuery,
+    selectedIndex,
+    setSelectedIndex,
+    isSearching,
+    results,
+    groupedResults,
+    inputRef,
+    itemRefsRef,
+    setActiveConversation,
+  } = useCommandPalette({ open, initialSearch });
 
   const openConversation = useCallback(
     (conversationId: string) => {
@@ -241,7 +93,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
         onClose();
       }
     },
-    [onClose, openConversation, results, selectedIndex],
+    [onClose, openConversation, results, selectedIndex, setSelectedIndex],
   );
 
   if (!open) return null;
@@ -251,7 +103,8 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
     ? `${results.length} conversa${results.length === 1 ? '' : 's'}`
     : `${results.length} recente${results.length === 1 ? '' : 's'}`;
 
-  itemRefs.current = [];
+  // itemRefsRef.current slots are set by per-item ref callbacks below;
+  // stale indices are harmless because navigation only reads current[selectedIndex].
   let flatIndex = -1;
 
   return (
@@ -665,58 +518,20 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
                   {group.items.map((item) => {
                     flatIndex += 1;
                     const itemIndex = flatIndex;
-                    const isSelected = selectedIndex === itemIndex;
-                    const titleMarkup = hasQuery
-                      ? highlightPlainText(item.title, query)
-                      : sanitizeMarkedHtml(item.title);
-                    const rawPreview = item.previewHtml || item.matchedContent || item.title;
-                    const previewMarkup = hasQuery
-                      ? rawPreview.includes('<mark>')
-                        ? sanitizeMarkedHtml(rawPreview)
-                        : highlightPlainText(rawPreview, query)
-                      : sanitizeMarkedHtml(rawPreview);
-
                     return (
-                      <button
+                      <CommandPaletteItem
                         key={item.id}
                         ref={(node) => {
-                          itemRefs.current[itemIndex] = node;
+                          itemRefsRef.current[itemIndex] = node;
                         }}
-                        type="button"
-                        className="kloel-search-result"
-                        data-selected={isSelected}
-                        onMouseEnter={() => setSelectedIndex(itemIndex)}
-                        onClick={() => openConversation(item.id)}
-                      >
-                        <div className="kloel-search-result-icon" aria-hidden="true">
-                          <ConversationsIcon size={16} color="currentColor" />
-                        </div>
-
-                        <div style={{ minWidth: 0 }}>
-                          <p
-                            className="kloel-search-result-title"
-                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(titleMarkup) }}
-                          />
-                          <p
-                            className="kloel-search-result-preview"
-                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewMarkup) }}
-                          />
-                          {hasQuery && item.tags && item.tags.length > 0 && (
-                            <div className="kloel-search-tags">
-                              {item.tags.map((tag) => (
-                                <span key={`${item.id}-${tag}`} className="kloel-search-tag">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="kloel-search-meta">
-                          <span>{formatConversationSearchTime(item.updatedAt) || group.label}</span>
-                          <ArrowRight size={14} className="kloel-search-arrow" aria-hidden="true" />
-                        </div>
-                      </button>
+                        item={item}
+                        isSelected={selectedIndex === itemIndex}
+                        hasQuery={hasQuery}
+                        query={query}
+                        groupLabel={group.label}
+                        onHover={() => setSelectedIndex(itemIndex)}
+                        onSelect={() => openConversation(item.id)}
+                      />
                     );
                   })}
                 </div>

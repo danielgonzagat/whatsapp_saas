@@ -114,33 +114,54 @@ export function getLastConversationMessage(
   return message || null;
 }
 
+function normalizeUpperOrNull(value: string | null | undefined): string | null {
+  return (
+    String(value || '')
+      .trim()
+      .toUpperCase() || null
+  );
+}
+
+type BlockedReasonContext = {
+  status: string | null;
+  mode: string | null;
+  owner: ConversationOwner;
+  lastMessageDirection: 'INBOUND' | 'OUTBOUND' | null;
+  unreadCount: number;
+  unansweredInbound: boolean;
+};
+
+function resolveBlockedReason(ctx: BlockedReasonContext): string | null {
+  if (ctx.status === 'CLOSED') return 'conversation_closed';
+  if (ctx.owner === 'HUMAN') {
+    return ctx.mode === 'HUMAN' || ctx.mode === 'PAUSED' ? 'human_mode_lock' : 'assigned_to_human';
+  }
+  if (!ctx.lastMessageDirection && ctx.unreadCount === 0) return 'no_messages';
+  if (!ctx.unansweredInbound && ctx.lastMessageDirection === 'OUTBOUND' && ctx.unreadCount === 0) {
+    return 'already_replied';
+  }
+  return null;
+}
+
 export function buildConversationOperationalState(
   conversation: ConversationOperationalLike,
 ): ConversationOperationalState {
   const lastMessage = getLastConversationMessage(conversation);
   const lastMessageDirection = normalizeDirection(lastMessage?.direction);
   const owner = resolveConversationOwner(conversation);
-  const status =
-    String(conversation.status || '')
-      .trim()
-      .toUpperCase() || null;
-  const mode =
-    String(conversation.mode || '')
-      .trim()
-      .toUpperCase() || null;
+  const status = normalizeUpperOrNull(conversation.status);
+  const mode = normalizeUpperOrNull(conversation.mode);
   const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
   const unansweredInbound = hasUnansweredInbound(conversation.messages);
 
-  let blockedReason: string | null = null;
-  if (status === 'CLOSED') {
-    blockedReason = 'conversation_closed';
-  } else if (owner === 'HUMAN') {
-    blockedReason = mode === 'HUMAN' || mode === 'PAUSED' ? 'human_mode_lock' : 'assigned_to_human';
-  } else if (!lastMessageDirection && unreadCount === 0) {
-    blockedReason = 'no_messages';
-  } else if (!unansweredInbound && lastMessageDirection === 'OUTBOUND' && unreadCount === 0) {
-    blockedReason = 'already_replied';
-  }
+  const blockedReason = resolveBlockedReason({
+    status,
+    mode,
+    owner,
+    lastMessageDirection,
+    unreadCount,
+    unansweredInbound,
+  });
 
   const pending = blockedReason === null && (unansweredInbound || unreadCount > 0);
   const pendingMessages = pending
