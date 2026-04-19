@@ -163,6 +163,8 @@ export default function PricingPage() {
         if (!isKloelDomain) {
           throw new Error('Redirecionamento bloqueado: destino externo desconhecido.');
         }
+        // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
+        // Safe: target is validated above to be same-origin or *.kloel.com before this assignment.
         window.location.href = target.href;
       } else {
         throw new Error('No checkout URL returned');

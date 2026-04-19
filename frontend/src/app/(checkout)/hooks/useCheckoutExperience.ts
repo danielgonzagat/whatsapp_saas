@@ -737,15 +737,21 @@ export function useCheckoutExperience({
 
   const dispatchOrderCompletion = useCallback(
     (result: Record<string, unknown>, successPath: string) => {
+      // successPath is built locally by resolveSuccessRedirect() as `/order/${orderId}/...` —
+      // always a same-origin relative path with orderId from our own backend response.
       if (payMethod === 'card') {
         const resultData = result?.data as Record<string, unknown> | undefined;
         setSuccessOrderNumber(String(result?.orderNumber || resultData?.orderNumber || ''));
         setShowSuccess(true);
         redirectTimer.current = window.setTimeout(() => {
+          // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
+          // Safe: successPath is a relative /order/:id/* path built by resolveSuccessRedirect.
           window.location.href = successPath;
         }, 1200);
         return;
       }
+      // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
+      // Safe: successPath is a relative /order/:id/* path built by resolveSuccessRedirect.
       window.location.href = successPath;
     },
     [payMethod],

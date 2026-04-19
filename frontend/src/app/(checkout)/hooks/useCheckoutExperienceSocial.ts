@@ -334,6 +334,8 @@ export function useCheckoutExperienceSocial({
         return;
       }
 
+      // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
+      // Safe: safeSuccessUrl.origin was validated to match window.location.origin above (same-origin enforced).
       window.location.href = safeHref;
     },
     [],

@@ -526,6 +526,9 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       const nextPath = resolveNextPath(fallbackPath);
       const destination = new URL(buildAppUrl(nextPath, window.location.host));
       destination.searchParams.set('auth', '1');
+      // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
+      // Safe: fallbackPath/nextPath routed through sanitizeNextPath (rejects //, requires /, blocks auth paths);
+      // buildAppUrl constrains the host to the kloel app subdomain.
       window.location.replace(destination.toString());
     },
     [resolveNextPath],

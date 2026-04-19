@@ -2471,6 +2471,9 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
         );
         const url = String(res?.data?.url || '').trim();
         if (!url) throw new Error('Nao foi possivel iniciar a conexao oficial da Meta.');
+        // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
+        // Safe: url is a Meta OAuth URL returned by our own /meta/auth/url backend endpoint;
+        // channelKey is a 3-value union ('whatsapp' | 'instagram' | 'facebook') and not user-controlled.
         window.location.href = url;
       } catch (error: unknown) {
         setConnectingKey(null);

@@ -4,10 +4,14 @@
  * Patches React 19 to re-expose __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
  * for backward compatibility with libraries compiled against React 18 (like Polotno).
  *
- * This runs as a postinstall script after npm install.
+ * This runs as a postinstall script after npm install. CommonJS is required because
+ * the frontend package is not declared as ESM (no "type": "module" in package.json),
+ * and converting to ESM without that flag would break postinstall execution.
  */
 
+ 
 const fs = require('node:fs');
+ 
 const path = require('node:path');
 
 const reactIndexPath = path.join(

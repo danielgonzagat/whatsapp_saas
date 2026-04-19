@@ -1634,6 +1634,9 @@ export default function CheckoutEditorPage() {
                 readOnly
                 value={[
                   '<div style="width:100%;max-width:560px;margin:0 auto;">',
+                  // nosemgrep: javascript.lang.security.html-in-template-string.html-in-template-string
+                  // Safe: rendered only as text in a read-only textarea for copy-to-clipboard.
+                  // checkoutPublicUrl is built server-side from the authenticated product owner's checkout slug.
                   `  <iframe src="${checkoutPublicUrl}"`,
                   '    loading="lazy"',
                   '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',

@@ -164,6 +164,10 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   const selectClass = 'w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none';
 
   const WIDGET_URL = process.env.NEXT_PUBLIC_WIDGET_URL || 'https://widget.kloel.com';
+  // nosemgrep: javascript.lang.security.html-in-template-string.html-in-template-string
+  // Safe: this string is embed code rendered only as text in a read-only textarea
+  // and copied to clipboard. Not used with any HTML-injection sink in this app.
+  // The interpolated fields are owner-controlled widget configuration for their own site.
   const widgetCode = `<script src="${WIDGET_URL}/chat.js"
   data-product-id="${productId}"
   data-position="${widgetPosition}"
