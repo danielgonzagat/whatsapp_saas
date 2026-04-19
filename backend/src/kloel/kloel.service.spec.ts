@@ -11,6 +11,7 @@ describe('KloelService', () => {
   let prisma: any;
   let whatsappService: any;
   let unifiedAgentService: any;
+  let marketingSkillService: any;
 
   beforeEach(() => {
     process.env.OPENAI_API_KEY = 'test-key';
@@ -85,6 +86,10 @@ describe('KloelService', () => {
       executeTool: jest.fn().mockResolvedValue({ error: 'Unknown tool' }),
     };
 
+    marketingSkillService = {
+      buildPacket: jest.fn().mockResolvedValue(null),
+    };
+
     service = new KloelService(
       prisma,
       { createSmartPayment: jest.fn() } as any,
@@ -104,6 +109,7 @@ describe('KloelService', () => {
         upload: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
         uploadFromUrl: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
       } as never,
+      marketingSkillService,
     );
 
     jest.spyOn(service as any, 'getWorkspaceContext').mockResolvedValue('');
@@ -211,6 +217,65 @@ describe('KloelService', () => {
       ]),
     );
     expect(response.end).toHaveBeenCalled();
+  });
+
+  it('injects the selected marketing framework into seller chat prompts', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({});
+    marketingSkillService.buildPacket.mockResolvedValue({
+      isMarketingRequest: true,
+      selectedSkills: [],
+      snapshot: {},
+      promptAddendum: 'MODO MARKETING ATIVADO\n- priorize framework de paid-ads.',
+    });
+
+    (chatCompletionWithFallback as jest.Mock).mockResolvedValueOnce({
+      choices: [{ message: { content: 'Plano pronto.' } }],
+      usage: { total_tokens: 21 },
+    });
+
+    const reply = await (service as any).buildAssistantReply({
+      message: 'Meu ROAS caiu e preciso de ajuda com as campanhas',
+      workspaceId: 'ws-1',
+      mode: 'chat',
+      conversationState: { recentMessages: [], totalMessages: 0 },
+    });
+
+    expect(marketingSkillService.buildPacket).toHaveBeenCalledWith(
+      'ws-1',
+      'Meu ROAS caiu e preciso de ajuda com as campanhas',
+    );
+    expect((chatCompletionWithFallback as jest.Mock).mock.calls[0][1].messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: 'system',
+          content: expect.stringContaining('MODO MARKETING ATIVADO'),
+        }),
+      ]),
+    );
+    expect(reply).toBe('Plano pronto.');
+  });
+
+  it('implicitly routes landing-page requests to the site composer capability', async () => {
+    const executeComposerCapability = jest
+      .spyOn(service as any, 'executeComposerCapability')
+      .mockResolvedValue({
+        content: 'Site gerado e pronto para revisão.',
+        metadata: { generatedSiteHtml: '<html><body>Oferta</body></html>' },
+      });
+
+    const result = await service.thinkSync({
+      workspaceId: 'ws-1',
+      message: 'Crie uma landing page para vender meu ebook de R$47',
+      mode: 'chat',
+    });
+
+    expect(executeComposerCapability).toHaveBeenCalledWith(
+      expect.objectContaining({
+        capability: 'create_site',
+        workspaceId: 'ws-1',
+      }),
+    );
+    expect(result.response).toBe('Site gerado e pronto para revisão.');
   });
 
   it('streams long-form prompts directly, skipping the extra planning pass and persisting the user first', async () => {
