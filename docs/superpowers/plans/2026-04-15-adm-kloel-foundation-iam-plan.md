@@ -66,7 +66,7 @@ matches the matrix.
 
 ### Step 5 — Backend auth module
 
-**What.**
+### What.
 
 - `admin-auth.service.ts` : bcrypt, JWT (separate `JwtService` instance),
   refresh rotation, login
@@ -85,7 +85,7 @@ matches the matrix.
 
 **Why.** Core identity. Nothing else in the admin module runs without this.
 
-**Verify.**
+### Verify.
 
 - Unit tests on guards, on bcrypt flow, on TOTP verify (fixed time + fixed
   secret).
@@ -340,7 +340,7 @@ filled-in template.
 
 ### Step 26 — Vercel project `kloel-admin`
 
-**What.**
+### What.
 
 ```
 vercel link --project kloel-admin --yes --token $VERCEL_TOKEN \

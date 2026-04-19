@@ -37,13 +37,13 @@ Detailed implementation guide for Google Analytics 4.
 
 Use Google's predefined events when possible for enhanced reporting:
 
-**All properties:**
+### All properties:
 
 - login, sign_up
 - share
 - search
 
-**E-commerce:**
+### E-commerce:
 
 - view_item, view_item_list
 - add_to_cart, remove_from_cart
@@ -51,7 +51,7 @@ Use Google's predefined events when possible for enhanced reporting:
 - add_payment_info
 - purchase, refund
 
-**Games:**
+### Games:
 
 - level_up, unlock_achievement
 - post_score, spend_virtual_currency
@@ -172,13 +172,13 @@ Or set default value in GA4 Admin when marking conversion.
 
 ### When to Use
 
-**Custom dimensions:**
+### Custom dimensions:
 
 - Properties you want to segment/filter by
 - User attributes (plan type, industry)
 - Content attributes (author, category)
 
-**Custom metrics:**
+### Custom metrics:
 
 - Numeric values to aggregate
 - Scores, counts, durations
@@ -209,7 +209,7 @@ Or set default value in GA4 Admin when marking conversion.
 
 Admin > Data display > Audiences
 
-**Use cases:**
+### Use cases:
 
 - Remarketing audiences (export to Ads)
 - Segment analysis
@@ -217,18 +217,18 @@ Admin > Data display > Audiences
 
 ### Audience Examples
 
-**High-intent visitors:**
+### High-intent visitors:
 
 - Viewed pricing page
 - Did not convert
 - In last 7 days
 
-**Engaged users:**
+### Engaged users:
 
 - 3+ sessions
 - Or 5+ minutes total engagement
 
-**Purchasers:**
+### Purchasers:
 
 - Purchase event
 - For exclusion or lookalike
@@ -254,19 +254,19 @@ Reports > Real-time
 
 ### Common Issues
 
-**Events not appearing:**
+### Events not appearing:
 
 - Check DebugView first
 - Verify gtag/GTM firing
 - Check filter exclusions
 
-**Parameter values missing:**
+### Parameter values missing:
 
 - Custom dimension not created
 - Parameter name mismatch
 - Data still processing (24-48 hrs)
 
-**Conversions not recording:**
+### Conversions not recording:
 
 - Event not marked as conversion
 - Event name doesn't match
@@ -281,7 +281,7 @@ Reports > Real-time
 Admin > Data streams > [Stream] > Configure tag settings > Define internal
 traffic
 
-**Exclude:**
+### Exclude:
 
 - Internal IP addresses
 - Developer traffic

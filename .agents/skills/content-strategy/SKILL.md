@@ -305,7 +305,7 @@ Use web search to analyze competitor content:
 
 **Find their content:** `site:competitor.com/blog`
 
-**Analyze:**
+### Analyze:
 
 - Top-performing posts (comments, shares)
 - Topics covered repeatedly
@@ -313,7 +313,7 @@ Use web search to analyze competitor content:
 - Case studies (customer problems, use cases, results)
 - Content structure (pillars, categories, formats)
 
-**Identify opportunities:**
+### Identify opportunities:
 
 - Topics you can cover better
 - Angles they're missing

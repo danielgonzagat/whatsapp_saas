@@ -62,13 +62,13 @@ Gather this context (ask if not provided):
 
 ### Customer Referral Programs
 
-**Best for:**
+### Best for:
 
 - Existing customers recommending to their network
 - Products with natural word-of-mouth
 - Lower-ticket or self-serve products
 
-**Characteristics:**
+### Characteristics:
 
 - Referrer is an existing customer
 - One-time or limited rewards
@@ -76,13 +76,13 @@ Gather this context (ask if not provided):
 
 ### Affiliate Programs
 
-**Best for:**
+### Best for:
 
 - Reaching audiences you don't have access to
 - Content creators, influencers, bloggers
 - Higher-ticket products that justify commissions
 
-**Characteristics:**
+### Characteristics:
 
 - Affiliates may not be customers
 - Ongoing commission relationship
@@ -100,7 +100,7 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 ### Step 1: Identify Trigger Moments
 
-**High-intent moments:**
+### High-intent moments:
 
 - Right after first "aha" moment
 - After achieving a milestone
@@ -109,7 +109,7 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 ### Step 2: Design Share Mechanism
 
-**Ranked by effectiveness:**
+### Ranked by effectiveness:
 
 1. In-product sharing (highest conversion)
 2. Personalized link
@@ -134,14 +134,14 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 ### Improving Referral Rate
 
-**If few customers are referring:**
+### If few customers are referring:
 
 - Ask at better moments
 - Simplify sharing process
 - Test different incentive types
 - Make referral prominent in product
 
-**If referrals aren't converting:**
+### If referrals aren't converting:
 
 - Improve landing experience for referred users
 - Strengthen incentive for new users
@@ -171,13 +171,13 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 ### Key Metrics
 
-**Program health:**
+### Program health:
 
 - Active referrers (referred someone in last 30 days)
 - Referral conversion rate
 - Rewards earned/paid
 
-**Business impact:**
+### Business impact:
 
 - % of new customers from referrals
 - CAC via referral vs. other channels

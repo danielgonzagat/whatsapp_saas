@@ -48,7 +48,7 @@ If the user gives an app name instead of a URL, search the web for:
 
 Use WebFetch to retrieve the listing page. Extract every available field:
 
-**Apple App Store fields:**
+### Apple App Store fields:
 
 - App name (title) — 30 char limit
 - Subtitle — 30 char limit
@@ -68,7 +68,7 @@ Use WebFetch to retrieve the listing page. Extract every available field:
 - Languages / localizations listed
 - In-app events (if any visible)
 
-**Google Play fields:**
+### Google Play fields:
 
 - App name (title) — 30 char limit
 - Short description — 80 char limit
@@ -310,7 +310,7 @@ Flag these if found. Items marked _(tier-dependent)_ should be evaluated against
 the app's brand maturity tier — they may be deliberate choices for Dominant
 apps.
 
-**Always flag (all tiers):**
+### Always flag (all tiers):
 
 - [ ] Rating below 4.0
 - [ ] Last update > 3 months ago
@@ -337,7 +337,7 @@ apps.
 - [ ] No in-app events or promotional content _(Dominant utility apps may not
       need discovery help)_
 
-**Flag for all tiers but note context:**
+### Flag for all tiers but note context:
 
 - [ ] No developer responses to negative reviews _(note volume — responding at
       10M+ reviews is a different challenge than at 1K)_

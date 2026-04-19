@@ -85,7 +85,7 @@
 "relation does not exist"
 errors.
 
-**Steps:**
+### Steps:
 
 1. **Confirm the issue**
 
@@ -130,7 +130,7 @@ errors.
 working, stale cache
 data.
 
-**Steps:**
+### Steps:
 
 1. **Confirm Redis is down**
 
@@ -168,7 +168,7 @@ data.
 **Symptoms:** 502/503 errors from Railway, health check failing, no logs being
 produced.
 
-**Steps:**
+### Steps:
 
 1. **Check Railway deployment status**
 
@@ -210,7 +210,7 @@ produced.
 **Symptoms:** Domain not resolving, SSL certificate errors, "site can't be
 reached".
 
-**Steps:**
+### Steps:
 
 1. **Check DNS resolution**
 
@@ -247,7 +247,7 @@ reached".
 **Symptoms:** Multiple services down simultaneously, provider status page shows
 incident.
 
-**Steps:**
+### Steps:
 
 1. **Check provider status pages**
    - Railway: https://status.railway.app

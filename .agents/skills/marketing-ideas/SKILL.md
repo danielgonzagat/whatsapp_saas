@@ -66,25 +66,25 @@ When asked for marketing ideas:
 
 ### By Stage
 
-**Pre-launch:**
+### Pre-launch:
 
 - Waitlist referrals (#79)
 - Early access pricing (#81)
 - Product Hunt prep (#78)
 
-**Early stage:**
+### Early stage:
 
 - Content & SEO (#1-10)
 - Community (#35)
 - Founder-led sales (#47)
 
-**Growth stage:**
+### Growth stage:
 
 - Paid acquisition (#23-34)
 - Partnerships (#54-64)
 - Events (#65-72)
 
-**Scale:**
+### Scale:
 
 - Brand campaigns
 - International (#131-132)
@@ -92,26 +92,26 @@ When asked for marketing ideas:
 
 ### By Budget
 
-**Free:**
+### Free:
 
 - Content & SEO
 - Community building
 - Social media
 - Comment marketing
 
-**Low budget:**
+### Low budget:
 
 - Targeted ads
 - Sponsorships
 - Free tools
 
-**Medium budget:**
+### Medium budget:
 
 - Events
 - Partnerships
 - PR
 
-**High budget:**
+### High budget:
 
 - Acquisitions
 - Conferences
@@ -119,15 +119,15 @@ When asked for marketing ideas:
 
 ### By Timeline
 
-**Quick wins:**
+### Quick wins:
 
 - Ads, email, social posts
 
-**Medium-term:**
+### Medium-term:
 
 - Content, SEO, community
 
-**Long-term:**
+### Long-term:
 
 - Brand, thought leadership, platform effects
 

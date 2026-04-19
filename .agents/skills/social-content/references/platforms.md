@@ -17,7 +17,7 @@ Detailed strategies for each major social platform.
 **Posting frequency:** 3-5x per week
 **Best times:** Tuesday-Thursday, 7-8am, 12pm, 5-6pm
 
-**What works:**
+### What works:
 
 - Personal stories with business lessons
 - Contrarian takes on industry topics
@@ -26,14 +26,14 @@ Detailed strategies for each major social platform.
 - Carousel posts (document format)
 - Polls that spark discussion
 
-**What doesn't:**
+### What doesn't:
 
 - Overly promotional content
 - Generic motivational quotes
 - Links in the main post (kills reach)
 - Corporate speak without personality
 
-**Format tips:**
+### Format tips:
 
 - First line is everything (hook before "see more")
 - Use line breaks for readability
@@ -41,7 +41,7 @@ Detailed strategies for each major social platform.
 - Put links in comments, not post body
 - Tag people sparingly and genuinely
 
-**Algorithm tips:**
+### Algorithm tips:
 
 - First hour engagement matters most
 - Comments > reactions > clicks
@@ -59,7 +59,7 @@ Detailed strategies for each major social platform.
 **Posting frequency:** 3-10x per day (including replies)
 **Best times:** Varies by audience; test and measure
 
-**What works:**
+### What works:
 
 - Hot takes and opinions
 - Threads that teach something
@@ -68,21 +68,21 @@ Detailed strategies for each major social platform.
 - Memes and humor (if on-brand)
 - Real-time commentary on events
 
-**What doesn't:**
+### What doesn't:
 
 - Pure self-promotion
 - Threads without a strong hook
 - Ignoring replies and mentions
 - Scheduling everything (no real-time presence)
 
-**Format tips:**
+### Format tips:
 
 - Tweets under 100 characters get more engagement
 - Threads: Hook in tweet 1, promise value, deliver
 - Quote tweets with added insight beat plain retweets
 - Use visuals to stop the scroll
 
-**Algorithm tips:**
+### Algorithm tips:
 
 - Replies and quote tweets build authority
 - Threads keep people on platform (rewarded)
@@ -99,7 +99,7 @@ Detailed strategies for each major social platform.
 **Posting frequency:** 1-2 feed posts per day, 3-10 Stories per day
 **Best times:** 11am-1pm, 7-9pm
 
-**What works:**
+### What works:
 
 - High-quality visuals
 - Behind-the-scenes Stories
@@ -108,21 +108,21 @@ Detailed strategies for each major social platform.
 - User-generated content
 - Interactive Stories (polls, questions)
 
-**What doesn't:**
+### What doesn't:
 
 - Low-quality images
 - Too much text in images
 - Ignoring Stories and Reels
 - Only promotional content
 
-**Format tips:**
+### Format tips:
 
 - Reels get 2x reach of static posts
 - First frame of Reels must hook
 - Carousels: 10 slides with educational content
 - Use all Story features (polls, links, etc.)
 
-**Algorithm tips:**
+### Algorithm tips:
 
 - Reels heavily prioritized over static posts
 - Saves and shares > likes
@@ -139,7 +139,7 @@ Detailed strategies for each major social platform.
 **Posting frequency:** 1-4x per day
 **Best times:** 7-9am, 12-3pm, 7-11pm
 
-**What works:**
+### What works:
 
 - Native, unpolished content
 - Trending sounds and formats
@@ -148,14 +148,14 @@ Detailed strategies for each major social platform.
 - Responding to comments with videos
 - Duets and stitches
 
-**What doesn't:**
+### What doesn't:
 
 - Overly produced content
 - Ignoring trends
 - Hard selling
 - Repurposed horizontal video
 
-**Format tips:**
+### Format tips:
 
 - Hook in first 1-2 seconds
 - Keep it under 30 seconds to start
@@ -172,7 +172,7 @@ Detailed strategies for each major social platform.
 **Posting frequency:** 1-2x per day
 **Best times:** 1-4pm weekdays
 
-**What works:**
+### What works:
 
 - Facebook Groups (community)
 - Native video
@@ -180,7 +180,7 @@ Detailed strategies for each major social platform.
 - Local content and events
 - Discussion-prompting questions
 
-**What doesn't:**
+### What doesn't:
 
 - Links to external sites (reach killer)
 - Pure promotional content

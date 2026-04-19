@@ -14,25 +14,25 @@ Detailed guidance for building and managing affiliate programs.
 
 ## Commission Structures
 
-**Percentage of sale:**
+### Percentage of sale:
 
 - Standard: 10-30% of first sale or first year
 - Works for: E-commerce, SaaS with clear pricing
 - Example: "Earn 25% of every sale you refer"
 
-**Flat fee per action:**
+### Flat fee per action:
 
 - Standard: $5-500 depending on value
 - Works for: Lead gen, trials, freemium
 - Example: "$50 for every qualified demo"
 
-**Recurring commission:**
+### Recurring commission:
 
 - Standard: 10-25% of recurring revenue
 - Works for: Subscription products
 - Example: "20% of subscription for 12 months"
 
-**Tiered commission:**
+### Tiered commission:
 
 - Works for: Motivating high performers
 - Example: "20% for 1-10 sales, 25% for 11-25, 30% for 26+"
@@ -108,7 +108,7 @@ Provide affiliates with:
 
 ### Referral Program Tools
 
-**Full-featured platforms:**
+### Full-featured platforms:
 
 - ReferralCandy — E-commerce focused
 - Ambassador — Enterprise referral programs
@@ -117,7 +117,7 @@ Provide affiliates with:
 - Mention Me — AI-powered referral marketing
 - Viral Loops — Template-based campaigns
 
-**Built-in options:**
+### Built-in options:
 
 - Stripe (basic referral tracking)
 - HubSpot (CRM-integrated)
@@ -125,7 +125,7 @@ Provide affiliates with:
 
 ### Affiliate Program Tools
 
-**Affiliate networks:**
+### Affiliate networks:
 
 - ShareASale — Large merchant network
 - Impact — Enterprise partnerships
@@ -133,13 +133,13 @@ Provide affiliates with:
 - Tapfiliate — Simple SaaS affiliate tracking
 - FirstPromoter — SaaS affiliate management
 
-**Partner Relationship Management (PRM):**
+### Partner Relationship Management (PRM):
 
 - Introw — Full PRM with deal registration, commissions, tiers, QBRs, and
   partner engagement
   tracking ([integration guide](../../../tools/integrations/introw.md))
 
-**Self-hosted:**
+### Self-hosted:
 
 - Rewardful — Stripe-integrated affiliates
 - Refersion — E-commerce affiliates
@@ -169,7 +169,7 @@ Consider:
 
 ### Prevention Measures
 
-**Technical:**
+### Technical:
 
 - Email verification required
 - Device fingerprinting
@@ -177,14 +177,14 @@ Consider:
 - Delayed reward payout (after activation)
 - Minimum activity threshold
 
-**Policy:**
+### Policy:
 
 - Clear terms of service
 - Maximum referrals per period
 - Reward clawback for refunds/chargebacks
 - Manual review for suspicious patterns
 
-**Structural:**
+### Structural:
 
 - Require referred user to take meaningful action
 - Cap lifetime rewards

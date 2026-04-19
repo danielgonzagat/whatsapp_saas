@@ -13,7 +13,7 @@ All data from support.google.com and developer.android.com as of March 2026.
 
 ## Prohibited in Metadata (enforced since Sept 2021)
 
-**Title, Icon, Developer Name:**
+### Title, Icon, Developer Name:
 
 - Emojis, emoticons, repeated special characters
 - ALL CAPS (unless registered brand)
@@ -21,13 +21,13 @@ All data from support.google.com and developer.android.com as of March 2026.
 - Misleading store performance or endorsement
 - Calls-to-action: "update now," "download now"
 
-**Short Description:**
+### Short Description:
 
 - Same performance claims as title
 - Calls-to-action
 - Unattributed testimonials
 
-**Screenshots, Feature Graphic, Video:**
+### Screenshots, Feature Graphic, Video:
 
 - Time-sensitive taglines
 - Calls-to-action ("Download now," "Play now")

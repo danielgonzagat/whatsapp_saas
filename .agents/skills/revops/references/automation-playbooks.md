@@ -216,7 +216,7 @@ for that stage]
 
 ### Round-Robin Meeting Scheduling
 
-**Calendly setup:**
+### Calendly setup:
 
 1. Create a team event type with all eligible reps
 2. Distribution: "Optimize for equal distribution"
@@ -224,7 +224,7 @@ for that stage]
 4. Buffer: 15 min before and after meetings
 5. Minimum notice: 4 hours (avoid last-minute bookings)
 
-**CRM integration:**
+### CRM integration:
 
 1. Calendly webhook fires on booking
 2. Match invitee email to CRM contact
@@ -235,13 +235,13 @@ for that stage]
 
 ### SavvyCal Setup
 
-**Advantages over Calendly:**
+### Advantages over Calendly:
 
 - Priority-based scheduling (prefer certain time slots)
 - Overlay calendars (show team availability in one view)
 - Personalized booking links per rep
 
-**Integration pattern:**
+### Integration pattern:
 
 1. Create team scheduling link with priority rules
 2. Webhook on booking → Zapier/Make → CRM

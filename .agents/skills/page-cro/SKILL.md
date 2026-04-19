@@ -45,14 +45,14 @@ Analyze the page across these dimensions, in order of impact:
 
 ### 1. Value Proposition Clarity (Highest Impact)
 
-**Check for:**
+### Check for:
 
 - Can a visitor understand what this is and why they should care within 5
   seconds?
 - Is the primary benefit clear, specific, and differentiated?
 - Is it written in the customer's language (not company jargon)?
 
-**Common issues:**
+### Common issues:
 
 - Feature-focused instead of benefit-focused
 - Too vague or too clever (sacrificing clarity)
@@ -60,13 +60,13 @@ Analyze the page across these dimensions, in order of impact:
 
 ### 2. Headline Effectiveness
 
-**Evaluate:**
+### Evaluate:
 
 - Does it communicate the core value proposition?
 - Is it specific enough to be meaningful?
 - Does it match the traffic source's messaging?
 
-**Strong headline patterns:**
+### Strong headline patterns:
 
 - Outcome-focused: "Get [desired outcome] without [pain point]"
 - Specificity: Include numbers, timeframes, or concrete details
@@ -74,7 +74,7 @@ Analyze the page across these dimensions, in order of impact:
 
 ### 3. CTA Placement, Copy, and Hierarchy
 
-**Primary CTA assessment:**
+### Primary CTA assessment:
 
 - Is there one clear primary action?
 - Is it visible without scrolling?
@@ -82,14 +82,14 @@ Analyze the page across these dimensions, in order of impact:
   - Weak: "Submit," "Sign Up," "Learn More"
   - Strong: "Start Free Trial," "Get My Report," "See Pricing"
 
-**CTA hierarchy:**
+### CTA hierarchy:
 
 - Is there a logical primary vs. secondary CTA structure?
 - Are CTAs repeated at key decision points?
 
 ### 4. Visual Hierarchy and Scannability
 
-**Check:**
+### Check:
 
 - Can someone scanning get the main message?
 - Are the most important elements visually prominent?
@@ -98,7 +98,7 @@ Analyze the page across these dimensions, in order of impact:
 
 ### 5. Trust Signals and Social Proof
 
-**Types to look for:**
+### Types to look for:
 
 - Customer logos (especially recognizable ones)
 - Testimonials (specific, attributed, with photos)
@@ -110,7 +110,7 @@ Analyze the page across these dimensions, in order of impact:
 
 ### 6. Objection Handling
 
-**Common objections to address:**
+### Common objections to address:
 
 - Price/value concerns
 - "Will this work for my situation?"
@@ -122,7 +122,7 @@ transparency
 
 ### 7. Friction Points
 
-**Look for:**
+### Look for:
 
 - Too many form fields
 - Unclear next steps

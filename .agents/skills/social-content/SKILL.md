@@ -168,7 +168,7 @@ work on their own:
 | Data/stat callout  | A surprising number or research finding                            | LinkedIn carousel, Twitter/X            |
 | Behind-the-scenes  | Authentic, unpolished moments                                      | Instagram Stories, TikTok               |
 
-**Podcast repurposing workflow:**
+### Podcast repurposing workflow:
 
 1. **Get transcript** — use Whisper, Descript, or your podcast host's
    transcription
@@ -181,7 +181,7 @@ work on their own:
 5. **Add subtitles** — most social video is watched without sound
 6. **Schedule across 1-2 weeks** — spread a single episode across multiple posts
 
-**Per episode, aim for:**
+### Per episode, aim for:
 
 - 3-5 short video clips or audiograms (15-60 sec) for Reels/TikTok/Shorts
 - 1-2 LinkedIn text posts from key insights
@@ -288,14 +288,14 @@ Shares/reposts, Saves
 
 ### Optimization Actions
 
-**If engagement is low:**
+### If engagement is low:
 
 - Test new hooks
 - Post at different times
 - Try different formats
 - Increase engagement with others
 
-**If reach is declining:**
+### If reach is declining:
 
 - Avoid external links in post body
 - Increase posting frequency

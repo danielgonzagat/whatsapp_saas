@@ -42,7 +42,7 @@ Day 14+:       Win-back sequence begins
 - **3 days before expiry** — in-app banner: "Payment method expiring
   soon."
 
-**Email template — Card expiring:**
+### Email template — Card expiring:
 
 ```
 Subject: Your card ending in 4242 expires soon
@@ -73,7 +73,7 @@ Major card networks offer automatic card update programs:
 
 **Impact:** Reduces hard declines from expired/replaced cards by 30-50%.
 
-**How to enable:**
+### How to enable:
 
 - **Stripe**: Automatic — enabled by default
 - **Chargebee**: Enabled through gateway settings
@@ -120,14 +120,14 @@ For annual plans or high-value subscriptions:
 
 ### Retry Schedule by Provider
 
-**Stripe (Smart Retries — recommended):**
+### Stripe (Smart Retries — recommended):
 
 - Enable "Smart Retries" in Stripe Dashboard → Billing → Settings
 - Stripe's ML model picks optimal retry timing based on billions of transactions
 - Typically 4-8 retry attempts over 3-4 weeks
 - Recovers ~15% more than fixed-schedule retries
 
-**Manual retry schedule (if no smart retries):**
+### Manual retry schedule (if no smart retries):
 
 | Retry     | Timing                    | Best Day/Time                         |
 | --------- | ------------------------- | ------------------------------------- |
@@ -137,7 +137,7 @@ For annual plans or high-value subscriptions:
 | 4         | Day 7                     | Morning of the next business day      |
 | 5 (final) | Day 10                    | Last attempt before grace period ends |
 
-**Retry timing insights:**
+### Retry timing insights:
 
 - Retry on the same day of month the original payment succeeded
 - Retry after common paydays (1st and 15th of the month)
@@ -298,13 +298,13 @@ will be paused automatically.
 
 ### Stripe
 
-**Enable Smart Retries:**
+### Enable Smart Retries:
 
 1. Dashboard → Settings → Billing → Subscriptions and emails
 2. Enable "Smart Retries" under retry rules
 3. Set failed payment emails in Dashboard → Settings → Emails
 
-**Custom retry rules (if not using Smart Retries):**
+### Custom retry rules (if not using Smart Retries):
 
 ```
 Retry 1: 3 days after failure
@@ -313,7 +313,7 @@ Retry 3: 7 days after failure
 Final:   Mark subscription as unpaid after last retry
 ```
 
-**Webhook events to handle:**
+### Webhook events to handle:
 
 - `invoice.payment_failed` — trigger dunning
 - `invoice.paid` — cancel dunning, restore access
@@ -322,13 +322,13 @@ Final:   Mark subscription as unpaid after last retry
 
 ### Chargebee
 
-**Built-in dunning:**
+### Built-in dunning:
 
 1. Settings → Configure Chargebee → Retry Settings
 2. Configure retry attempts and intervals
 3. Settings → Configure Chargebee → Email Notifications → Dunning
 
-**Dunning options:**
+### Dunning options:
 
 - Automatic retries with configurable schedule
 - Built-in dunning emails (customizable templates)
@@ -336,7 +336,7 @@ Final:   Mark subscription as unpaid after last retry
 
 ### Paddle
 
-**Managed dunning:**
+### Managed dunning:
 
 - Paddle handles retries and dunning automatically
 - Limited customization (Paddle manages the relationship)
@@ -345,13 +345,13 @@ Final:   Mark subscription as unpaid after last retry
 
 ### Recurly
 
-**Revenue Recovery:**
+### Revenue Recovery:
 
 1. Configuration → Dunning Management
 2. Set retry schedule per plan
 3. Configure grace period and final action (pause vs cancel)
 
-**Advanced features:**
+### Advanced features:
 
 - Machine-learning retry optimization
 - Per-plan dunning schedules
@@ -372,7 +372,7 @@ Don't rely on email alone. Show payment failures in the app:
 └──────────────────────────────────────────────────────┘
 ```
 
-**Rules:**
+### Rules:
 
 - Show on every page load during dunning period
 - Allow dismiss (but show again next session)
@@ -419,7 +419,7 @@ Don't rely on email alone. Show payment failures in the app:
 
 ### Benchmarking
 
-**By company stage:**
+### By company stage:
 
 | Stage               | Typical Involuntary Churn | Target After Optimization |
 | ------------------- | ------------------------- | ------------------------- |

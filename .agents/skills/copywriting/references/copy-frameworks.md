@@ -29,7 +29,7 @@ Headline formulas, page section types, and structural templates.
 
 > Turn your hard-earned sales into repeat customers
 
-**[Achieve outcome] in [timeframe]**
+### [Achieve outcome] in [timeframe]
 
 > Get your tax refund in 10 days
 
@@ -45,7 +45,7 @@ Headline formulas, page section types, and structural templates.
 
 > Hate returning stuff to Amazon?
 
-**Stop [pain]. Start [pleasure].**
+### Stop [pain]. Start [pleasure].
 
 > Stop chasing invoices. Start getting paid on time.
 
@@ -74,7 +74,7 @@ Headline formulas, page section types, and structural templates.
 
 > The easiest way to turn your passion into income
 
-**The [category] that [key differentiator]**
+### The [category] that [key differentiator]
 
 > The CRM that updates itself
 
@@ -82,7 +82,7 @@ Headline formulas, page section types, and structural templates.
 
 ### Proof-Focused
 
-**[Number] [people] use [product] to [outcome]**
+### [Number] [people] use [product] to [outcome]
 
 > 50,000 marketers use Drip to send better emails
 
@@ -114,7 +114,7 @@ Headline formulas, page section types, and structural templates.
 
 > Market your SaaS like a Fortune 500
 
-**What if you could {desirable outcome}?**
+### What if you could {desirable outcome}?
 
 > What if you could close deals 30% faster?
 

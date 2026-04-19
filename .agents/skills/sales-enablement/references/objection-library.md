@@ -37,14 +37,14 @@ For live calls. Find the objection, scan the response, reference the proof.
 negotiation tactic. Often means they don't yet see enough value to justify the
 cost.
 
-**Response approach:**
+### Response approach:
 
 1. Don't defend the price immediately. Ask "Compared to what?"
 2. Reframe from cost to investment — what does the problem cost them today?
 3. Walk through the ROI calculation together
 4. If budget is real, explore smaller starting points
 
-**Talk track:**
+### Talk track:
 
 > "I hear that. Let me ask — what's the cost of the problem we discussed? You
 > mentioned your team spends [X hours] on [task] every week. At your team's
@@ -63,14 +63,14 @@ prioritize this quarter?"
 **Why they say it:** Budget may genuinely be allocated. Or they haven't
 identified budget because priority isn't established.
 
-**Response approach:**
+### Response approach:
 
 1. Validate — budget constraints are real
 2. Understand timing — when does budget cycle reset?
 3. Explore alternatives — pilot, smaller scope, different budget line
 4. Help them build the business case to create budget
 
-**Talk track:**
+### Talk track:
 
 > "Totally understand. Two questions: When does your next budget cycle open? And
 > — if we could show clear ROI with a limited pilot, is that something you could
@@ -90,14 +90,14 @@ share with your finance team?"
 **Why they say it:** They're comparing prices, possibly without comparing
 capabilities. May be using competitor price as leverage.
 
-**Response approach:**
+### Response approach:
 
 1. Acknowledge the price difference — don't pretend it doesn't exist
 2. Shift to total cost of ownership and value delivered
 3. Highlight what they lose at the lower price point
 4. Share proof from customers who evaluated both
 
-**Talk track:**
+### Talk track:
 
 > "You're right, [Competitor] is less expensive. Here's what I've seen from
 > teams who evaluated both: [Competitor] works well for [their strength]. Where
@@ -120,14 +120,14 @@ or the best fit for [their specific need]?"
 **Why they say it:** Competing priorities, organizational change, genuine
 capacity constraint, or lack of urgency.
 
-**Response approach:**
+### Response approach:
 
 1. Understand what's competing for their attention
 2. Quantify the cost of waiting
 3. Explore low-commitment next steps that keep momentum
 4. Set a concrete follow-up date
 
-**Talk track:**
+### Talk track:
 
 > "I get it — timing matters. Can I ask what's taking priority right now? The
 > reason I bring up timing is that every month of [problem], based on our
@@ -147,14 +147,14 @@ priority?"
 **Why they say it:** Genuine scheduling, or a polite way of saying "not
 interested enough right now."
 
-**Response approach:**
+### Response approach:
 
 1. Accept the timeline gracefully
 2. Propose a small action now that maintains momentum
 3. Get a specific date for follow-up
 4. Send value in the meantime (content, benchmarks, insights)
 
-**Talk track:**
+### Talk track:
 
 > "Next quarter works. To make sure we hit the ground running, would it make
 > sense to do [small next step] now? That way when Q[X] starts, you're not
@@ -176,14 +176,14 @@ would be helpful?"
 **Why they say it:** They have an existing solution and switching has real
 costs. May be satisfied, or may have frustrations they haven't voiced.
 
-**Response approach:**
+### Response approach:
 
 1. Don't trash the competitor — ask how it's working
 2. Probe for specific pain points with their current solution
 3. Position as complementary if possible, replacement if not
 4. Offer a side-by-side comparison or trial
 
-**Talk track:**
+### Talk track:
 
 > "How's that working for you? Specifically, when it comes to
 > [area where you're stronger] — is that meeting your needs? The reason I ask is
@@ -202,7 +202,7 @@ what would it be?"
 **Why they say it:** They're evaluating options and want a clear differentiator.
 Sometimes a genuine question, sometimes a test.
 
-**Response approach:**
+### Response approach:
 
 1. Don't list features — give the one thing that matters most for their
    situation
@@ -210,7 +210,7 @@ Sometimes a genuine question, sometimes a test.
 3. Back it up with proof
 4. Offer to show, not just tell
 
-**Talk track:**
+### Talk track:
 
 > "For teams like yours — [their industry/size/use case] — the biggest
 > difference is [specific differentiator]. That matters because
@@ -231,14 +231,14 @@ Sometimes a genuine question, sometimes a test.
 **Why they say it:** They may not be the decision maker, or they need internal
 buy-in to proceed. Could also be a stall tactic.
 
-**Response approach:**
+### Response approach:
 
 1. Support them, don't pressure them
 2. Arm them with materials to sell internally
 3. Offer to join a meeting with their boss
 4. Understand what their boss cares about
 
-**Talk track:**
+### Talk track:
 
 > "Absolutely — what would help you make the case? I can put together a
 > one-pager that covers the ROI and addresses the concerns your boss is likely
@@ -257,14 +257,14 @@ buy-in to proceed. Could also be a stall tactic.
 **Why they say it:** Enterprise buying involves multiple stakeholders. Genuine
 process, not a brush-off.
 
-**Response approach:**
+### Response approach:
 
 1. Map the buying committee — who's involved and what each person cares about
 2. Provide persona-specific materials
 3. Offer to present to the committee
 4. Help your champion navigate the internal process
 
-**Talk track:**
+### Talk track:
 
 > "That makes sense. Can you walk me through who's on the committee and what
 > each person cares about? I can tailor materials for each stakeholder so you're
@@ -286,14 +286,14 @@ what would their concern be?"
 **Why they say it:** Inertia is real. The current solution may be adequate, and
 change has real costs.
 
-**Response approach:**
+### Response approach:
 
 1. Agree — don't argue with their experience
 2. Shift from "broken vs. fixed" to "good vs. great"
 3. Introduce the concept of opportunity cost
 4. Show what peers are achieving
 
-**Talk track:**
+### Talk track:
 
 > "It probably does work — and I wouldn't suggest changing something that's
 > truly meeting your needs. The question I'd ask is: is 'works fine' the bar?
@@ -314,19 +314,19 @@ could be better, what would it be?"
 **Why they say it:** Integration is a real requirement. They need to know your
 product fits their stack.
 
-**Response approach:**
+### Response approach:
 
 1. Answer directly — yes, no, or "let me check"
 2. If yes, provide specifics (native, API, Zapier, etc.)
 3. If no, explain alternatives or workarounds
 4. Never bluff — they'll find out during evaluation
 
-**Talk track (if yes):**
+### Talk track (if yes):
 
 > "Yes, we integrate with [X] natively. It takes about [time] to set up.
 > [Customer] runs the same stack and here's how they have it configured."
 
-**Talk track (if no):**
+### Talk track (if no):
 
 > "We don't have a native integration with [X] today. Here's what customers
 > typically do: [alternative]. We also have an open API that [description].
@@ -344,14 +344,14 @@ work with?"
 **Why they say it:** Legitimate concern, especially in regulated industries or
 enterprise. Non-negotiable for many buyers.
 
-**Response approach:**
+### Response approach:
 
 1. Take it seriously — never dismiss security concerns
 2. Provide documentation proactively (SOC 2, security whitepaper)
 3. Offer to loop in your security team
 4. Ask about their specific requirements
 
-**Talk track:**
+### Talk track:
 
 > "That's exactly the right question to ask. Here's our security overview —
 > we're [SOC 2 Type II / ISO 27001 / etc.] certified, and I can share our full

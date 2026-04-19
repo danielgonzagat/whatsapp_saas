@@ -60,7 +60,7 @@ to owned channels.
 You own the channel (though not the audience). Direct access without algorithms
 or platform rules.
 
-**Examples:**
+### Examples:
 
 - Email list
 - Blog
@@ -68,14 +68,14 @@ or platform rules.
 - Branded community (Slack, Discord)
 - Website/product
 
-**Why they matter:**
+### Why they matter:
 
 - Get more effective over time
 - No algorithm changes or pay-to-play
 - Direct relationship with audience
 - Compound value from content
 
-**Start with 1-2 based on audience:**
+### Start with 1-2 based on audience:
 
 - Industry lacks quality content → Start a blog
 - People want direct updates → Focus on email
@@ -95,14 +95,14 @@ Platforms that provide visibility but you don't control. Algorithms shift, rules
 change, pay-to-play
 increases.
 
-**Examples:**
+### Examples:
 
 - Social media (Twitter/X, LinkedIn, Instagram)
 - App stores and marketplaces
 - YouTube
 - Reddit
 
-**How to use correctly:**
+### How to use correctly:
 
 - Pick 1-2 platforms where your audience is active
 - Use them to drive traffic to owned channels
@@ -115,7 +115,7 @@ Encouraged community to share templates and workflows. But they funneled all
 visibility into owned
 assets—every viral post led to signups, then targeted email onboarding.
 
-**Platform-specific tactics:**
+### Platform-specific tactics:
 
 - Twitter/X: Threads that spark conversation → link to newsletter
 - LinkedIn: High-value posts → lead to gated content or email signup
@@ -129,14 +129,14 @@ ecosystem.
 
 Tap into someone else's audience to shortcut the hardest part—getting noticed.
 
-**Examples:**
+### Examples:
 
 - Guest content (blog posts, podcast interviews, newsletter features)
 - Collaborations (webinars, co-marketing, social takeovers)
 - Speaking engagements (conferences, panels, virtual summits)
 - Influencer partnerships
 
-**Be proactive, not passive:**
+### Be proactive, not passive:
 
 1. List industry leaders your audience follows
 2. Pitch win-win collaborations
@@ -166,7 +166,7 @@ Launching isn't a one-day event. It's a phased process that builds momentum.
 
 Gather initial feedback and iron out major issues before going public.
 
-**Actions:**
+### Actions:
 
 - Recruit early users one-on-one to test for free
 - Collect feedback on usability gaps and missing features
@@ -179,7 +179,7 @@ Gather initial feedback and iron out major issues before going public.
 
 Put the product in front of external users in a controlled way.
 
-**Actions:**
+### Actions:
 
 - Create landing page with early access signup form
 - Announce the product exists
@@ -192,13 +192,13 @@ Put the product in front of external users in a controlled way.
 
 Scale up early access while generating external buzz.
 
-**Actions:**
+### Actions:
 
 - Work through early access list (some free, some paid)
 - Start marketing with teasers about problems you solve
 - Recruit friends, investors, and influencers to test and share
 
-**Consider adding:**
+### Consider adding:
 
 - Coming soon landing page or waitlist
 - "Beta" sticker in dashboard navigation
@@ -211,14 +211,14 @@ Scale up early access while generating external buzz.
 
 Shift from small-scale testing to controlled expansion.
 
-**Actions:**
+### Actions:
 
 - Leak product details: screenshots, feature GIFs, demos
 - Gather quantitative usage data and qualitative feedback
 - Run user research with engaged users (incentivize with credits)
 - Optionally run product/market fit survey to refine messaging
 
-**Expansion options:**
+### Expansion options:
 
 - Option A: Throttle invites in batches (5-10% at a time)
 - Option B: Invite all users at once under "early access" framing
@@ -229,13 +229,13 @@ Shift from small-scale testing to controlled expansion.
 
 Open the floodgates.
 
-**Actions:**
+### Actions:
 
 - Open self-serve signups
 - Start charging (if not already)
 - Announce general availability across all channels
 
-**Launch touchpoints:**
+### Launch touchpoints:
 
 - Customer emails
 - In-app popups and product tours
@@ -269,7 +269,7 @@ preparation.
 
 ### How to Launch Successfully
 
-**Before launch day:**
+### Before launch day:
 
 1. Build relationships with influential supporters, content hubs, and
    communities
@@ -278,7 +278,7 @@ preparation.
 4. Engage in relevant communities—provide value before pitching
 5. Prepare your team for all-day engagement
 
-**On launch day:**
+### On launch day:
 
 1. Treat it as an all-day event
 2. Respond to every comment in real-time
@@ -286,7 +286,7 @@ preparation.
 4. Encourage your existing audience to engage
 5. Direct traffic back to your site to capture signups
 
-**After launch day:**
+### After launch day:
 
 1. Follow up with everyone who engaged
 2. Convert Product Hunt traffic into owned relationships (email signups)

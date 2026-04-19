@@ -35,13 +35,13 @@ check
 in `.agents/` ,
 offer to move it.
 
-**If it exists:**
+### If it exists:
 
 - Read it and summarize what's captured
 - Ask which sections they want to update
 - Only gather info for those sections
 
-**If it doesn't exist, offer two options:**
+### If it doesn't exist, offer two options:
 
 1. **Auto-draft from codebase** (recommended): You'll study the repo—README,
    landing pages,
@@ -59,7 +59,7 @@ missing?"
 
 ### Step 2: Gather Information
 
-**If auto-drafting:**
+### If auto-drafting:
 
 1. Read the codebase: README, landing pages, marketing copy, about pages, meta
    descriptions,

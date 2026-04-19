@@ -38,13 +38,13 @@ manager, revenue operator.
 checkout, affiliate orchestration, CRM, WhatsApp conversion, campaigns, and
 AI-assisted execution.
 
-**Jobs to be done:**
+### Jobs to be done:
 
 - replace fragmented revenue tooling with one operating layer
 - sell more through WhatsApp, pages, checkout, follow-up, and campaigns
 - launch and scale products with affiliate and automation support
 
-**Use cases:**
+### Use cases:
 
 - build checkout and offer structure for a digital product
 - create landing pages and dynamic pages connected to the Kloel checkout
@@ -73,7 +73,7 @@ AI-assisted execution.
 checkout tool, page builder, WhatsApp automation, spreadsheet ops, email tool,
 and affiliate back office that do not share context.
 
-**Why alternatives fall short:**
+### Why alternatives fall short:
 
 - checkout platforms stop at payment and don’t run the full commercial operation
 - generic CRMs don’t understand launch, affiliate, and info-product realities
@@ -98,7 +98,7 @@ checkout plugins — require stitching and ops overhead.
 
 ## Differentiation
 
-**Key differentiators:**
+### Key differentiators:
 
 - CIA as embedded commercial intelligence instead of external generic chat
 - WhatsApp-first revenue orchestration
@@ -139,14 +139,14 @@ current patchwork.
 
 ## Customer Language
 
-**How they describe the problem:**
+### How they describe the problem:
 
 - "Tá tudo espalhado."
 - "Meu checkout converte mal e eu não sei onde mexer."
 - "Eu vendo no WhatsApp, mas a operação é toda manual."
 - "Preciso lançar rápido sem depender de cinco ferramentas."
 
-**How they describe us:**
+### How they describe us:
 
 - "Uma operação de vendas inteira dentro de uma plataforma só."
 - "Uma IA que não só sugere, mas ajuda a executar."
@@ -186,7 +186,7 @@ translated into Portuguese.
 
 **Testimonials:** none captured yet.
 
-**Value themes:**
+### Value themes:
 
 - **Unified growth stack** — checkout, sites, campaigns, WhatsApp, CRM,
   affiliate, and wallet all exist in the product surface.

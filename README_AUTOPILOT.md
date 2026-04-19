@@ -8,7 +8,7 @@ revenue employee.
 
 ### 1. WhatsApp Autopilot™ (The Driver)
 
-**What it does:**
+### What it does:
 
 - Reads every incoming message 24/7.
 - Uses **GPT-4o** to analyze intent, sentiment, and urgency.
@@ -18,7 +18,7 @@ revenue employee.
   "Closing Message"
   for the next morning's "Golden Hour" (e.g., 10 AM) to maximize conversion.
 
-**How to use:**
+### How to use:
 
 1. Go to **Autopilot HQ** (/dashboard).
 2. Toggle the switch to **ONLINE**.
@@ -26,7 +26,7 @@ revenue employee.
 
 ### 2. Automated Money Machine™ (The Revenue Button)
 
-**What it does:**
+### What it does:
 
 - Scans your entire database for **"Dead Money"**:
   - Leads who haven't replied in 30 days.
@@ -35,7 +35,7 @@ revenue employee.
   bring them back.
 - Creates a Flow dynamically and queues it for sending.
 
-**How to use:**
+### How to use:
 
 1. Go to **Autopilot HQ**.
 2. Click the big glowing **"ATIVAR MÁQUINA AGORA"** button.
@@ -44,14 +44,14 @@ revenue employee.
 
 ### 3. NeuroCRM & Sentiment Analysis
 
-**What it does:**
+### What it does:
 
 - **Lead Scoring:** Assigns a score (0-100) based on activity and sentiment.
 - **Sentiment Tracking:** Detects `Positive`, `Negative`, or `Anxious` emotions.
 - **GhostCloser:** Automatically nudges high-score leads (>50) who stop
   responding for 2 hours.
 
-**How to use:**
+### How to use:
 
 - Go to **Contatos** (/dashboard/contacts) to see the Score Bar and Sentiment
   Badges.
@@ -59,7 +59,7 @@ revenue employee.
 
 ### 4. WhatsApp Copilot (Inbox AI)
 
-**What it does:**
+### What it does:
 
 - Inside the Inbox, when you open a chat, the AI analyzes the history +
   Knowledge Base.

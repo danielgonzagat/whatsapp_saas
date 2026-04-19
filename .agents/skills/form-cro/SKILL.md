@@ -152,14 +152,14 @@ For each field, ask:
 - Placeholders: Examples, not labels
 - Help text: Only when genuinely helpful
 
-**Good:**
+### Good:
 
 ```
 Email
 [name@company.com]
 ```
 
-**Bad:**
+### Bad:
 
 ```
 [Enter your email address]  ← Disappears on focus

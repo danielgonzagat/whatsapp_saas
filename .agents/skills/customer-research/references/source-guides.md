@@ -12,7 +12,7 @@ online watering holes.
 Start by identifying where your ICP spends time, not where your product is
 discussed.
 
-**Discovery methods:**
+### Discovery methods:
 
 - Search `site:reddit.com "[job title] tools"` or `site:reddit.com "[problem
 category] software"`
@@ -21,7 +21,7 @@ category] software"`
 - Look at what subreddits show up in Google results when you search ICP problems
 - Check what subreddits competitors' customers mention in reviews
 
-**Common high-value subreddits by category:**
+### Common high-value subreddits by category:
 
 - B2B SaaS: r/sales, r/marketing, r/entrepreneur, r/startups, r/smallbusiness
 - Dev tools: r/programming, r/devops, r/webdev, r/cscareerquestions
@@ -40,7 +40,7 @@ site:reddit.com "[competitor name]" "vs" OR "alternative" OR "switched"
 
 ### What to Look For
 
-**High-signal post types:**
+### High-signal post types:
 
 - "What tools do you use for X?" → reveals alternatives and vocab
 - "Frustrated with [competitor], looking for alternatives" → reveals pain and
@@ -49,7 +49,7 @@ site:reddit.com "[competitor name]" "vs" OR "alternative" OR "switched"
 - "Is [your category] worth it?" → reveals objections and evaluation criteria
 - Complaint threads about competitors → reveals gaps you might fill
 
-**What to extract:**
+### What to extract:
 
 - The exact problem described in the post
 - Top-voted solutions (what do practitioners actually recommend?)
@@ -79,7 +79,7 @@ Read in this order for maximum signal:
    proof points.
 4. **4-star reviews** — often contain "the only thing I wish…" buried in praise.
 
-**What to extract:**
+### What to extract:
 
 - What they say they use it _for_ (the job to be done)
 - What they say is hardest or most frustrating
@@ -91,7 +91,7 @@ Read in this order for maximum signal:
 The 4-star competitor reviews are gold — customers who like the product but
 still have complaints.
 
-**G2 structure to exploit:**
+### G2 structure to exploit:
 
 - "What do you like best?" → their strengths (your battlecard intel)
 - "What do you dislike?" → their weaknesses (your opportunities)
@@ -120,7 +120,7 @@ For each competitor's 4-star reviews, extract:
 
 Strong signal for founder/builder/SMB ICP.
 
-**Where to look:**
+### Where to look:
 
 - "Ask IH" posts: questions about problems your product solves
 - Milestone posts: when founders describe their stack, they reveal tool
@@ -144,13 +144,13 @@ Strong signal for founder/builder/SMB ICP.
 
 Strong signal for technical/developer ICP. Skews toward builders and skeptics.
 
-**High-value searches:**
+### High-value searches:
 
 - `site:news.ycombinator.com "[competitor or category]"`
 - HN "Ask HN: best tools for X" threads
 - "Show HN" posts for competitors — read the skeptical comments
 
-**What's different about HN:**
+### What's different about HN:
 
 - Users are more likely to critique underlying architecture and business model
 - Strong opinions about pricing models (especially anything subscription-based)
@@ -172,7 +172,7 @@ Search for posts by practitioners describing their workflows:
 
 A job posting is a company's admission of a pain point.
 
-**What to look for:**
+### What to look for:
 
 - What tools are listed as "nice to have" vs. "required"? (reveals stack and
   adjacent tools)
@@ -192,7 +192,7 @@ category]"`
 - "Best tools for X in [year]" roundup videos
 - Competitor product demos and walkthroughs
 
-**What to look for in comments:**
+### What to look for in comments:
 
 - "Does this work for [specific use case]?" → edge cases and unmet needs
 - "I tried this but…" → failure points
@@ -252,14 +252,14 @@ and communities built around the activity your product serves.
 
 One of the richest unfiltered sources for mobile/consumer products.
 
-**Read in this order:**
+### Read in this order:
 
 1. **1-2 star reviews** — failure modes, unmet expectations, frustration peaks
 2. **3-star reviews** — honest tradeoffs and "it's good but…" feedback
 3. **5-star reviews** — what they love in their own words (proof points and
    positioning)
 
-**What to extract:**
+### What to extract:
 
 - What job they hired the app to do ("I use this to…")
 - The moment it stopped working for them
@@ -281,7 +281,7 @@ review aggregators.
 B2C Reddit is highly vertical — go to the hobby/lifestyle subreddit, not the
 general ones.
 
-**Examples by product type:**
+### Examples by product type:
 
 - Fitness apps: r/running, r/loseit, r/fitness, r/MyFitnessPal
 - Personal finance: r/personalfinance, r/financialindependence, r/ynab
@@ -295,13 +295,13 @@ general ones.
 
 High-signal for consumer products with visual/lifestyle appeal.
 
-**How to find signal:**
+### How to find signal:
 
 - Search TikTok for "[product name] review" or "is [product] worth it"
 - Watch the top 5-10 videos; read ALL comments — not just likes
 - On Instagram, check tagged posts from real users (not brand posts)
 
-**What to extract:**
+### What to extract:
 
 - Questions in comments = unmet needs or unclear positioning
 - "Does this work for…?" = jobs they want to hire it for
@@ -350,17 +350,17 @@ search for.
 
 ### Key Queries to Run
 
-**By competitor:**
+### By competitor:
 
 - "People who follow @competitor" — reveals shared audience affinities
 - "People who visit competitor.com" — shows what else they consume
 
-**By audience description:**
+### By audience description:
 
 - "People who frequently talk about [topic]" — finds audience behaviors
 - "People whose bio contains [job title]" — profiles a role-based segment
 
-**By your own audience:**
+### By your own audience:
 
 - "People who visit yourdomain.com" — understand your actual audience
 - Compare against competitor audience profiles to find gaps

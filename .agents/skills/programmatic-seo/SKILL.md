@@ -139,13 +139,13 @@ You can layer multiple playbooks (e.g., "Best coworking spaces in San Diego").
 
 ### 1. Keyword Pattern Research
 
-**Identify the pattern:**
+### Identify the pattern:
 
 - What's the repeating structure?
 - What are the variables?
 - How many unique combinations exist?
 
-**Validate demand:**
+### Validate demand:
 
 - Aggregate search volume
 - Volume distribution (head vs. long tail)
@@ -153,7 +153,7 @@ You can layer multiple playbooks (e.g., "Best coworking spaces in San Diego").
 
 ### 2. Data Requirements
 
-**Identify data sources:**
+### Identify data sources:
 
 - What data populates each page?
 - Is it first-party, scraped, licensed, public?
@@ -161,7 +161,7 @@ You can layer multiple playbooks (e.g., "Best coworking spaces in San Diego").
 
 ### 3. Template Design
 
-**Page structure:**
+### Page structure:
 
 - Header with target keyword
 - Unique intro (not just variables swapped)
@@ -169,7 +169,7 @@ You can layer multiple playbooks (e.g., "Best coworking spaces in San Diego").
 - Related pages / internal links
 - CTAs appropriate to intent
 
-**Ensuring uniqueness:**
+### Ensuring uniqueness:
 
 - Each page needs unique value
 - Conditional content based on data
@@ -177,13 +177,13 @@ You can layer multiple playbooks (e.g., "Best coworking spaces in San Diego").
 
 ### 4. Internal Linking Architecture
 
-**Hub and spoke model:**
+### Hub and spoke model:
 
 - Hub: Main category page
 - Spokes: Individual programmatic pages
 - Cross-links between related spokes
 
-**Avoid orphan pages:**
+### Avoid orphan pages:
 
 - Every page reachable from main site
 - XML sitemap for all pages
@@ -202,26 +202,26 @@ You can layer multiple playbooks (e.g., "Best coworking spaces in San Diego").
 
 ### Pre-Launch Checklist
 
-**Content quality:**
+### Content quality:
 
 - [ ] Each page provides unique value
 - [ ] Answers search intent
 - [ ] Readable and useful
 
-**Technical SEO:**
+### Technical SEO:
 
 - [ ] Unique titles and meta descriptions
 - [ ] Proper heading structure
 - [ ] Schema markup implemented
 - [ ] Page speed acceptable
 
-**Internal linking:**
+### Internal linking:
 
 - [ ] Connected to site architecture
 - [ ] Related pages linked
 - [ ] No orphan pages
 
-**Indexation:**
+### Indexation:
 
 - [ ] In XML sitemap
 - [ ] Crawlable

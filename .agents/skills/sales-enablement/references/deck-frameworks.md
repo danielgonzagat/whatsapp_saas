@@ -24,13 +24,13 @@ better way.
 
 ### Slide 1: Current World Problem
 
-**What to include:**
+### What to include:
 
 - The challenge your buyer faces daily
 - A stat or data point that quantifies the problem
 - Visual: simple graphic or striking number
 
-**What to avoid:**
+### What to avoid:
 
 - Starting with your company or product
 - Generic industry trends that don't connect to pain
@@ -44,14 +44,14 @@ buyer say 'that's exactly my situation'?"
 
 ### Slide 2: Cost of the Problem
 
-**What to include:**
+### What to include:
 
 - Financial impact (revenue lost, costs incurred)
 - Time impact (hours wasted, delays)
 - Risk impact (what happens if they do nothing)
 - Specific numbers wherever possible
 
-**What to avoid:**
+### What to avoid:
 
 - Vague claims without data
 - Fear-mongering without substance
@@ -64,13 +64,13 @@ it cost them?"
 
 ### Slide 3: The Shift Happening
 
-**What to include:**
+### What to include:
 
 - Market trend or technology change creating a new opportunity
 - Why "the old way" no longer works
 - Why now is the right time to act
 
-**What to avoid:**
+### What to avoid:
 
 - Hype-driven trends without substance
 - Making it about your product yet
@@ -83,13 +83,13 @@ unsustainable?"
 
 ### Slide 4: Your Approach
 
-**What to include:**
+### What to include:
 
 - Your philosophy or unique point of view
 - How your approach differs from conventional solutions
 - The "aha" insight that led to your product
 
-**What to avoid:**
+### What to avoid:
 
 - Feature lists (too early)
 - Jargon or acronyms
@@ -102,13 +102,13 @@ people get wrong?"
 
 ### Slide 5: Product Walkthrough
 
-**What to include:**
+### What to include:
 
 - 3-4 key workflows that map to the pain from Slide 1
 - Screenshots or product visuals
 - Brief description of what each workflow accomplishes
 
-**What to avoid:**
+### What to avoid:
 
 - Showing every feature
 - Dense UI screenshots without callouts
@@ -121,13 +121,13 @@ their first week."
 
 ### Slide 6: Proof Points
 
-**What to include:**
+### What to include:
 
 - Customer logos (aim for recognizable names in their industry)
 - Key metrics: "X% improvement," "Y hours saved," "Z% increase"
 - Analyst recognition, awards, or certifications if relevant
 
-**What to avoid:**
+### What to avoid:
 
 - Unsubstantiated claims
 - Too many logos without context
@@ -139,14 +139,14 @@ their first week."
 
 ### Slide 7: Case Study
 
-**What to include:**
+### What to include:
 
 - One customer story told well: challenge, solution, results
 - Specific metrics (before and after)
 - Customer quote if available
 - Choose a customer similar to the prospect
 
-**What to avoid:**
+### What to avoid:
 
 - Multiple case studies crammed into one slide
 - Generic outcomes without specifics
@@ -160,14 +160,14 @@ product."
 
 ### Slide 8: Implementation / Timeline
 
-**What to include:**
+### What to include:
 
 - Clear phases with timeline (e.g., Week 1: Setup, Week 2-3: Integration, Week
   4: Live)
 - What's required from their side vs. yours
 - Support resources available
 
-**What to avoid:**
+### What to avoid:
 
 - Overcomplicating the process
 - Hiding time requirements
@@ -180,14 +180,14 @@ week look like?"
 
 ### Slide 9: ROI / Value
 
-**What to include:**
+### What to include:
 
 - Expected return based on their inputs or industry benchmarks
 - Payback period
 - Total value over 1-3 years
 - Comparison to cost of inaction
 
-**What to avoid:**
+### What to avoid:
 
 - Unrealistic projections
 - ROI without showing your math
@@ -200,13 +200,13 @@ dollars and hours?"
 
 ### Slide 10: Pricing Overview
 
-**What to include:**
+### What to include:
 
 - Pricing tiers or structure
 - What's included at each level
 - Recommended plan for their situation
 
-**What to avoid:**
+### What to avoid:
 
 - Burying the price or being cagey
 - Too many options (3 tiers max)
@@ -219,13 +219,13 @@ for them?"
 
 ### Slide 11: Next Steps / CTA
 
-**What to include:**
+### What to include:
 
 - Specific next action with timeline ("Start a pilot next week")
 - What happens after they say yes
 - Your contact information
 
-**What to avoid:**
+### What to avoid:
 
 - Vague CTAs ("Let's stay in touch")
 - Multiple competing next steps
@@ -239,14 +239,14 @@ for them?"
 
 ### Technical Buyer Deck
 
-**Add:**
+### Add:
 
 - Architecture diagram slide after Product Walkthrough
 - Security and compliance details
 - Integration ecosystem and API capabilities
 - Technical implementation requirements
 
-**Remove or minimize:**
+### Remove or minimize:
 
 - ROI calculations (they care about capability, not cost)
 - High-level market trends (they want specifics)
@@ -256,14 +256,14 @@ superlatives.
 
 ### Economic Buyer Deck
 
-**Add:**
+### Add:
 
 - Detailed ROI slide with calculations shown
 - Total cost of ownership comparison
 - Risk mitigation and compliance
 - Executive summary slide up front
 
-**Remove or minimize:**
+### Remove or minimize:
 
 - Technical details and architecture
 - Feature-level walkthroughs
@@ -274,14 +274,14 @@ percentages.
 
 ### Champion Deck
 
-**Add:**
+### Add:
 
 - "Internal selling" slide — key points for them to present to their team
 - Quick-win slide — what success looks like in 30 days
 - Peer proof — companies like theirs who succeeded
 - Objection pre-handling — common pushback they'll face internally
 
-**Remove or minimize:**
+### Remove or minimize:
 
 - Deep technical or financial detail
 - Anything that requires context they can't relay

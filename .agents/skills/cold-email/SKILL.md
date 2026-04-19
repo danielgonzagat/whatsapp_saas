@@ -92,13 +92,13 @@ per email. Make it easy to say yes with a one-line reply.
 sharing it.
 Conversational but not sloppy. Confident but not pushy.
 
-**Calibrate to the audience:**
+### Calibrate to the audience:
 
 - C-suite: ultra-brief, peer-level, understated
 - Mid-level: more specific value, slightly more detail
 - Technical: precise, no fluff, respect their intelligence
 
-**What it should NOT sound like:**
+### What it should NOT sound like:
 
 - A template with fields swapped in
 - A pitch deck compressed into paragraph form
@@ -114,7 +114,7 @@ Conversational but not sloppy. Confident but not pushy.
 There's no single right structure. Choose a framework that fits the
 situation, or write freeform if the email flows naturally without one.
 
-**Common shapes that work:**
+### Common shapes that work:
 
 - **Observation → Problem → Proof → Ask** — You noticed X, which usually
   means Y challenge. We helped Z with that. Interested?

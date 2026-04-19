@@ -69,7 +69,7 @@ público, Jest.
 
 ### Task 1: Move the checkout public contract to Stripe-only
 
-**Files:**
+### Files:
 
 - Modify: `frontend/src/lib/public-checkout-contract.ts`
 - Modify: `frontend/src/lib/public-checkout.ts`
@@ -90,7 +90,7 @@ público, Jest.
 
 ### Task 2: Rewire backend checkout payment processing to Stripe
 
-**Files:**
+### Files:
 
 - Modify: `backend/src/checkout/checkout-payment.service.ts`
 - Modify: `backend/src/checkout/checkout.module.ts`
@@ -125,7 +125,7 @@ público, Jest.
 
 ### Task 3: Make webhook completion update orders from Stripe PaymentIntents
 
-**Files:**
+### Files:
 
 - Modify: `backend/src/payments/stripe/stripe-webhook.processor.ts`
 - Modify: `backend/src/webhooks/payment-webhook.controller.ts`
@@ -143,7 +143,7 @@ público, Jest.
 
 ### Task 4: Replace Mercado Pago-only frontend checkout behavior
 
-**Files:**
+### Files:
 
 - Modify: `frontend/src/app/(checkout)/components/CheckoutShell.tsx`
 - Modify: `frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx`
@@ -166,7 +166,7 @@ público, Jest.
 
 ### Task 5: Validate the Stripe-only checkout path
 
-**Files:**
+### Files:
 
 - Test: `backend/src/checkout/checkout-public.controller.spec.ts`
 - Test: `backend/src/checkout/checkout.service.public.spec.ts`

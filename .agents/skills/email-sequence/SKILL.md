@@ -116,7 +116,7 @@ Consider:
 - 40-60 characters ideal
 - Test emoji (they're polarizing)
 
-**Patterns that work:**
+### Patterns that work:
 
 - Question: "Still struggling with X?"
 - How-to: "How to [achieve outcome] in [timeframe]"

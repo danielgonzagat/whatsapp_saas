@@ -110,7 +110,7 @@ visitors. We'll measure click-through rate from page view to signup start."
 | 5%       | 27k/variant  | 7k/variant  | 1.2k/variant |
 | 10%      | 12k/variant  | 3k/variant  | 550/variant  |
 
-**Calculators:**
+### Calculators:
 
 - [Evan Miller's](https://www.evanmiller.org/ab-testing/sample-size.html)
 - [Optimizely's](https://www.optimizely.com/sample-size-calculator/)
@@ -173,7 +173,7 @@ visitors. We'll measure click-through rate from page view to signup start."
 | Conservative | 90/10, 80/20          | Limit risk of bad variant |
 | Ramping      | Start small, increase | Technical risk mitigation |
 
-**Considerations:**
+### Considerations:
 
 - Consistency: Users see same variant on return
 - Balanced exposure across time of day/week
@@ -209,13 +209,13 @@ visitors. We'll measure click-through rate from page view to signup start."
 
 ### During the Test
 
-**DO:**
+### DO:
 
 - Monitor for technical issues
 - Check segment quality
 - Document external factors
 
-**Avoid:**
+### Avoid:
 
 - Peek at results and stop early
 - Make changes to variants

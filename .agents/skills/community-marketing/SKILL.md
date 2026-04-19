@@ -162,7 +162,7 @@ Track these signals weekly:
 - **Churn / lurker ratio** — Members who joined but haven't posted in 30+ days
 - **Content created by non-staff** — % of posts not written by the company team
 
-**Warning signs:**
+### Warning signs:
 
 - Most posts are from the company team, not members
 - Questions go unanswered for >24 hours

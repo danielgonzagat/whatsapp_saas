@@ -38,7 +38,7 @@ Files: `frontend/src/app/(main)/analytics/page.tsx` ,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`
 Status: 2 funciona, 7 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/analytics/reports/ai` (useSWR) — OK
 - `/analytics/smart-time` (useSWR) — OK
@@ -65,7 +65,7 @@ Files: `frontend/src/app/(main)/anuncios/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
@@ -94,7 +94,7 @@ Files: `frontend/src/app/(main)/anuncios/google/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
@@ -123,7 +123,7 @@ Files: `frontend/src/app/(main)/anuncios/meta/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
@@ -152,7 +152,7 @@ Files: `frontend/src/app/(main)/anuncios/rastreamento/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
@@ -181,7 +181,7 @@ Files: `frontend/src/app/(main)/anuncios/regras/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
@@ -210,7 +210,7 @@ Files: `frontend/src/app/(main)/anuncios/tiktok/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/ad-rules` (useSWR) — OK
 - `/meta/auth/status` (useSWR) — OK
@@ -426,7 +426,7 @@ Files: `frontend/src/app/(main)/carteira/page.tsx` ,
 `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
@@ -465,7 +465,7 @@ Files: `frontend/src/app/(main)/carteira/antecipacoes/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
@@ -504,7 +504,7 @@ Files: `frontend/src/app/(main)/carteira/extrato/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
@@ -543,7 +543,7 @@ Files: `frontend/src/app/(main)/carteira/movimentacoes/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
@@ -582,7 +582,7 @@ Files: `frontend/src/app/(main)/carteira/saldo/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
@@ -621,7 +621,7 @@ Files: `frontend/src/app/(main)/carteira/saques/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/kloel/wallet/:wsId/balance` (useSWR) — OK
 - `/kloel/wallet/:wsId/transactions` (useSWR) — OK
@@ -664,7 +664,7 @@ Files: `frontend/src/app/(main)/checkout/[planId]/page.tsx`,
 `frontend/src/lib/api.ts`
 Status: 2 funciona, 24 fachada, 2 quebrado, 0 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/checkout/plans/:planId/config` (useSWR) — OK
 
@@ -923,7 +923,7 @@ Files: `frontend/src/app/(main)/marketing/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
@@ -952,7 +952,7 @@ Files: `frontend/src/app/(main)/marketing/email/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
@@ -981,7 +981,7 @@ Files: `frontend/src/app/(main)/marketing/facebook/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
@@ -1010,7 +1010,7 @@ Files: `frontend/src/app/(main)/marketing/instagram/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
@@ -1039,7 +1039,7 @@ Files: `frontend/src/app/(main)/marketing/tiktok/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
@@ -1068,7 +1068,7 @@ Files: `frontend/src/app/(main)/marketing/whatsapp/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/meta/auth/status` (useSWR) — OK
 - `/meta/instagram/profile` (useSWR) — OK
@@ -1101,7 +1101,7 @@ Files: `frontend/src/app/(main)/parcerias/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/affiliate/my-links` (useSWR) — OK
 - `/partnerships/collaborators` (useSWR) — OK
@@ -1141,7 +1141,7 @@ Files: `frontend/src/app/(main)/parcerias/afiliados/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/affiliate/my-links` (useSWR) — OK
 - `/partnerships/collaborators` (useSWR) — OK
@@ -1181,7 +1181,7 @@ Files: `frontend/src/app/(main)/parcerias/chat/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/affiliate/my-links` (useSWR) — OK
 - `/partnerships/collaborators` (useSWR) — OK
@@ -1221,7 +1221,7 @@ Files: `frontend/src/app/(main)/parcerias/colaboradores/page.tsx`,
 `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/affiliate/my-links` (useSWR) — OK
 - `/partnerships/collaborators` (useSWR) — OK
@@ -1279,7 +1279,7 @@ Files: `frontend/src/app/(main)/products/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
 Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1338,7 +1338,7 @@ Files: `frontend/src/app/(main)/products/[id]/page.tsx`,
 more
 Status: 49 funciona, 0 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1424,7 +1424,7 @@ Files: `frontend/src/app/(main)/products/[id]/plans/[planId]/page.tsx`,
 more
 Status: 30 funciona, 3 fachada, 3 quebrado, 8 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/checkout/products/:checkoutProductId` (useSWR) — OK
 - `/checkout/plans/:planId/bumps` (useSWR) — OK
@@ -1512,7 +1512,7 @@ Files: `frontend/src/app/(main)/produtos/afiliar-se/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
 Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1570,7 +1570,7 @@ Files: `frontend/src/app/(main)/produtos/area-membros/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
 Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1644,7 +1644,7 @@ Files: `frontend/src/app/(main)/scrapers/page.tsx` ,
 `frontend/src/lib/fetcher.ts` +7 more
 Status: 7 funciona, 5 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/scrapers/jobs` (useSWR) — OK
 - `/scrapers/jobs/:id` (useSWR) — OK
@@ -1672,7 +1672,7 @@ Files: `frontend/src/app/(main)/settings/page.tsx`,
 `frontend/src/lib/http.ts`, `frontend/src/hooks/useKyc.ts` +3 more
 Status: 15 funciona, 0 fachada, 6 quebrado, 9 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/team` (useSWR) — OK
 - `/api/kyc/profile` (useSWR) — OK
@@ -1722,7 +1722,7 @@ Files: `frontend/src/app/(main)/sites/page.tsx`,
 `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1766,7 +1766,7 @@ Files: `frontend/src/app/(main)/sites/apps/page.tsx`,
 `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1810,7 +1810,7 @@ Files: `frontend/src/app/(main)/sites/criar/page.tsx`,
 `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1854,7 +1854,7 @@ Files: `frontend/src/app/(main)/sites/dominios/page.tsx`,
 `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1898,7 +1898,7 @@ Files: `frontend/src/app/(main)/sites/editar/page.tsx`,
 `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1942,7 +1942,7 @@ Files: `frontend/src/app/(main)/sites/hospedagem/page.tsx`,
 `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -1986,7 +1986,7 @@ Files: `frontend/src/app/(main)/sites/protecao/page.tsx`,
 `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/products` (useSWR) — OK
 - `/products/:id` (useSWR) — OK
@@ -2035,7 +2035,7 @@ Files: `frontend/src/app/(main)/vendas/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/sales` (useSWR) — OK
 - `/sales/stats` (useSWR) — OK
@@ -2100,7 +2100,7 @@ Files: `frontend/src/app/(main)/vendas/assinaturas/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/sales` (useSWR) — OK
 - `/sales/stats` (useSWR) — OK
@@ -2165,7 +2165,7 @@ Files: `frontend/src/app/(main)/vendas/fisicos/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/sales` (useSWR) — OK
 - `/sales/stats` (useSWR) — OK
@@ -2230,7 +2230,7 @@ Files: `frontend/src/app/(main)/vendas/gestao-vendas/page.tsx` ,
 `frontend/src/lib/normalizer.ts` +5 more
 Status: 5 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/crm/contacts` (useSWR) — OK
 - `/crm/contacts/:phone` (useSWR) — OK
@@ -2254,7 +2254,7 @@ Files: `frontend/src/app/(main)/vendas/pipeline/page.tsx`,
 `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/sales` (useSWR) — OK
 - `/sales/stats` (useSWR) — OK
@@ -2318,7 +2318,7 @@ Files: `frontend/src/app/(main)/video/page.tsx`, `frontend/src/lib/fetcher.ts`,
 `frontend/src/components/kloel/Card.tsx` +6 more
 Status: 6 funciona, 5 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
-**Data Sources:**
+### Data Sources:
 
 - `/video/jobs` (useSWR) — OK
 

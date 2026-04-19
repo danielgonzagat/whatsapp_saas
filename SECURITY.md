@@ -255,14 +255,14 @@ Encontrou uma vulnerabilidade?
 
 **Email:** security@kloel.com.br
 
-**Expectativas:**
+### Expectativas:
 
 - Resposta inicial em 24h
 - Triagem em 72h
 - Correção conforme severidade
 - Reconhecimento público (se desejado)
 
-**Não faça:**
+### Não faça:
 
 - Acessar dados de outros usuários
 - Interromper serviços
