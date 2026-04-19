@@ -102,7 +102,11 @@ export class GoogleAuthService {
     }
   }
 
-  private buildVerifiedProfile(payload: TokenPayload): GoogleVerifiedProfile {
+  private extractVerifiedGoogleIdentity(payload: TokenPayload): {
+    providerId: string;
+    email: string;
+    emailVerified: true;
+  } {
     const providerId = payload.sub?.trim();
     const email = payload.email?.trim().toLowerCase();
     const emailVerified = payload.email_verified === true;
@@ -111,14 +115,22 @@ export class GoogleAuthService {
       throw new UnauthorizedException('Perfil Google inválido ou email não verificado.');
     }
 
+    return { providerId, email, emailVerified };
+  }
+
+  private buildVerifiedProfile(payload: TokenPayload): GoogleVerifiedProfile {
+    const { providerId, email, emailVerified } = this.extractVerifiedGoogleIdentity(payload);
+
     const derivedName = this.deriveName(email);
+    const trimmedName = payload.name?.trim();
+    const trimmedPicture = payload.picture?.trim();
 
     return {
       provider: 'google',
       providerId,
       email,
-      name: payload.name?.trim() || derivedName,
-      image: payload.picture?.trim() || undefined,
+      name: trimmedName || derivedName,
+      image: trimmedPicture || undefined,
       emailVerified,
     };
   }

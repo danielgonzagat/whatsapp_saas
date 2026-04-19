@@ -5,6 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 
 import { ConnectService } from './connect/connect.service';
 import { FraudEngine } from './fraud/fraud.engine';
+import { ConnectLedgerMaturationService } from './ledger/connect-ledger-maturation.service';
 import { LedgerService } from './ledger/ledger.service';
 import { StripeChargeService } from './stripe/stripe-charge.service';
 import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
@@ -24,6 +25,7 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
   imports: [PrismaModule, BillingModule],
   providers: [
     LedgerService,
+    ConnectLedgerMaturationService,
     ConnectService,
     FraudEngine,
     StripeChargeService,
@@ -31,6 +33,7 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
   ],
   exports: [
     LedgerService,
+    ConnectLedgerMaturationService,
     ConnectService,
     FraudEngine,
     StripeChargeService,

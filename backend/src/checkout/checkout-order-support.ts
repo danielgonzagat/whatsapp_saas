@@ -16,6 +16,27 @@ type CheckoutLineItem = {
   warranty?: boolean;
 };
 
+const DIGITAL_GOODS_KEYWORDS: readonly string[] = [
+  'digital',
+  'ebook',
+  'curso',
+  'infoprod',
+  'software',
+  'app',
+  'assinatura',
+  'mentoria',
+  'consultoria',
+];
+
+function fingerprintIncludesDigitalGoodsKeyword(fingerprint: string): boolean {
+  for (const keyword of DIGITAL_GOODS_KEYWORDS) {
+    if (fingerprint.includes(keyword)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function resolveCheckoutItemCategory(input?: {
   productCategory?: string | null;
   productFormat?: string | null;
@@ -28,18 +49,7 @@ function resolveCheckoutItemCategory(input?: {
     .toLowerCase();
   const fingerprint = `${category} ${format}`;
 
-  if (
-    format === 'digital' ||
-    fingerprint.includes('digital') ||
-    fingerprint.includes('ebook') ||
-    fingerprint.includes('curso') ||
-    fingerprint.includes('infoprod') ||
-    fingerprint.includes('software') ||
-    fingerprint.includes('app') ||
-    fingerprint.includes('assinatura') ||
-    fingerprint.includes('mentoria') ||
-    fingerprint.includes('consultoria')
-  ) {
+  if (format === 'digital' || fingerprintIncludesDigitalGoodsKeyword(fingerprint)) {
     return 'digital_goods';
   }
 

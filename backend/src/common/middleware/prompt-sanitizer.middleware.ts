@@ -3,13 +3,16 @@ import { NextFunction, Request, Response } from 'express';
 
 const RX_1_50_RE = /(.)\1{50,}/g;
 
+const FORBIDDEN_CONTROL_CHAR_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [0x00, 0x08],
+  [0x0b, 0x0c],
+  [0x0e, 0x1f],
+  [0x7f, 0x9f],
+];
+
 function isForbiddenLatinControlChar(char: string): boolean {
   const codePoint = char.codePointAt(0) ?? 0;
-  if (codePoint >= 0x00 && codePoint <= 0x08) return true;
-  if (codePoint === 0x0b || codePoint === 0x0c) return true;
-  if (codePoint >= 0x0e && codePoint <= 0x1f) return true;
-  if (codePoint >= 0x7f && codePoint <= 0x9f) return true;
-  return false;
+  return FORBIDDEN_CONTROL_CHAR_RANGES.some(([lo, hi]) => codePoint >= lo && codePoint <= hi);
 }
 
 function stripForbiddenControlChars(input: string): string {

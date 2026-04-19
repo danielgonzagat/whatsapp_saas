@@ -33,26 +33,42 @@ function readHeader(req: MinimalRequest, name: string) {
   return headerValueToString(pickHeaderValue(headers, name));
 }
 
-export function getRequestOrigin(req: MinimalRequest | undefined | null) {
-  const forwardedProto = readHeader(req, 'x-forwarded-proto').split(',')[0].trim();
-  const forwardedHost = readHeader(req, 'x-forwarded-host').split(',')[0].trim();
-  const directHost = readHeader(req, 'host').trim();
-  const originHeader = readHeader(req, 'origin').trim();
+function firstListEntry(value: string): string {
+  return value.split(',')[0].trim();
+}
 
-  if (forwardedHost) {
-    return `${forwardedProto || 'https'}://${forwardedHost}`.replace(PATTERN_RE, '');
+type OriginComponents = {
+  forwardedProto: string;
+  forwardedHost: string;
+  directHost: string;
+  originHeader: string;
+  requestProtocol: string;
+};
+
+function readOriginComponents(req: MinimalRequest | undefined | null): OriginComponents {
+  return {
+    forwardedProto: firstListEntry(readHeader(req, 'x-forwarded-proto')),
+    forwardedHost: firstListEntry(readHeader(req, 'x-forwarded-host')),
+    directHost: readHeader(req, 'host').trim(),
+    originHeader: readHeader(req, 'origin').trim(),
+    requestProtocol: String(req?.protocol || ''),
+  };
+}
+
+function buildOriginFromComponents(parts: OriginComponents): string {
+  if (parts.forwardedHost) {
+    return `${parts.forwardedProto || 'https'}://${parts.forwardedHost}`.replace(PATTERN_RE, '');
   }
-
-  if (directHost) {
-    const protocol = forwardedProto || req?.protocol || 'http';
-    return `${protocol}://${directHost}`.replace(PATTERN_RE, '');
+  if (parts.directHost) {
+    const protocol = parts.forwardedProto || parts.requestProtocol || 'http';
+    return `${protocol}://${parts.directHost}`.replace(PATTERN_RE, '');
   }
-
-  if (originHeader) {
-    return originHeader.replace(PATTERN_RE, '');
-  }
-
+  if (parts.originHeader) return parts.originHeader.replace(PATTERN_RE, '');
   return '';
+}
+
+export function getRequestOrigin(req: MinimalRequest | undefined | null) {
+  return buildOriginFromComponents(readOriginComponents(req));
 }
 
 export function normalizeStorageUrlForRequest(

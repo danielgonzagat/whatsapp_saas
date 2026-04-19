@@ -94,6 +94,19 @@ function trimTrailingPunctuation(value: string): string {
   return value.slice(0, end).trim();
 }
 
+const LITERAL_PLACEHOLDER_NAMES: ReadonlySet<string> = new Set(['doe', 'unknown', 'desconhecido']);
+
+function matchesPhoneDerivedPlaceholder(
+  lowered: string,
+  normalized: string,
+  phoneDigits: string,
+): boolean {
+  if (!phoneDigits) return false;
+  if (lowered === `${phoneDigits} doe`) return true;
+  if (extractAsciiDigits(normalized) === phoneDigits) return true;
+  return false;
+}
+
 export function isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
   const normalized = collapseWhitespace(value);
   if (!normalized) {
@@ -101,9 +114,7 @@ export function isPlaceholderContactName(value: unknown, phone?: string | null):
   }
 
   const lowered = normalized.toLowerCase();
-  const phoneDigits = extractAsciiDigits(phone);
-
-  if (lowered === 'doe' || lowered === 'unknown' || lowered === 'desconhecido') {
+  if (LITERAL_PLACEHOLDER_NAMES.has(lowered)) {
     return true;
   }
 
@@ -111,15 +122,8 @@ export function isPlaceholderContactName(value: unknown, phone?: string | null):
     return true;
   }
 
-  if (phoneDigits && lowered === `${phoneDigits} doe`) {
-    return true;
-  }
-
-  if (phoneDigits && extractAsciiDigits(normalized) === phoneDigits) {
-    return true;
-  }
-
-  return false;
+  const phoneDigits = extractAsciiDigits(phone);
+  return matchesPhoneDerivedPlaceholder(lowered, normalized, phoneDigits);
 }
 
 export function extractFallbackTopic(message: string, maxWords = 8, maxExplicitWords = 6) {

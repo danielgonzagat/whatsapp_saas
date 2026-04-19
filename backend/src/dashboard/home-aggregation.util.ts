@@ -268,16 +268,20 @@ type NormalizedResponseTimeRow = {
   createdAt: Date;
 };
 
+function normalizeResponseTimeDirection(
+  raw: string | null | undefined,
+): NormalizedResponseTimeRow['direction'] {
+  const normalized = String(raw || '').toUpperCase();
+  if (normalized === 'INBOUND') return 'INBOUND';
+  if (normalized === 'OUTBOUND') return 'OUTBOUND';
+  return 'OTHER';
+}
+
 function normalizeResponseTimeRow(row: ResponseTimeRow): NormalizedResponseTimeRow | null {
   const conversationId = String(row.conversationId || '').trim();
   const createdAt = row.createdAt;
   if (!conversationId || !isValidDate(createdAt)) return null;
-
-  const rawDirection = String(row.direction || '').toUpperCase();
-  const direction: NormalizedResponseTimeRow['direction'] =
-    rawDirection === 'INBOUND' || rawDirection === 'OUTBOUND' ? rawDirection : 'OTHER';
-
-  return { conversationId, direction, createdAt };
+  return { conversationId, direction: normalizeResponseTimeDirection(row.direction), createdAt };
 }
 
 function measureOutboundResponseWindow(

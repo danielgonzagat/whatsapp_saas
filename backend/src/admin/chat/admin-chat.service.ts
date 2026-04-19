@@ -56,55 +56,52 @@ function parseToolInvocation(
   return { name, args };
 }
 
-function inferToolInvocation(
-  content: string,
+const OVERVIEW_DISPATCH_TABLE: ReadonlyArray<{ pattern: RegExp; tool: string }> = [
+  { pattern: MARKETING_CANAL_CONVERSA_RE, tool: 'marketingOverview' },
+  { pattern: VENDAS_ASSINATURAS_PIPEL_RE, tool: 'salesOverview' },
+  { pattern: COMPLIANCE_CHARGEBACK_KY_RE, tool: 'complianceOverview' },
+  { pattern: RELAT_O__RIO_EXPORT_FUNN_RE, tool: 'reportsOverview' },
+  { pattern: CONFIG_FEATURE_FLAG_DOM_RE, tool: 'configOverview' },
+  { pattern: SUPORTE_TICKET_SLA_MACRO_RE, tool: 'supportOverview' },
+  { pattern: ALERTA_NOTIFICA_RE, tool: 'notificationsOverview' },
+  { pattern: PRODUTO_RE, tool: 'productsOverview' },
+  { pattern: CONTA_WORKSPACE_PRODUTOR_RE, tool: 'accountsOverview' },
+  { pattern: CLIENTE_RE, tool: 'clientsOverview' },
+];
+
+function inferSearchInvocation(
+  trimmed: string,
 ): { name: string; args: Record<string, unknown> } | null {
-  const trimmed = content.trim();
   const explicitSearch = trimmed.match(BUSCAR_PROCURAR_ENCON_RE);
   if (explicitSearch?.[1]) {
     return { name: 'searchWorkspaces', args: { query: explicitSearch[1].trim() } };
   }
-
   const contextualSearch = trimmed.match(WORKSPACE_CONTA_PRODU_RE);
   if (contextualSearch?.[1] && contextualSearch[1].trim().length >= 2) {
     return { name: 'searchWorkspaces', args: { query: contextualSearch[1].trim() } };
   }
-
-  if (OVERVIEW_RESUMO_DASHBOA_RE.test(trimmed)) {
-    if (MARKETING_CANAL_CONVERSA_RE.test(trimmed)) {
-      return { name: 'marketingOverview', args: {} };
-    }
-    if (VENDAS_ASSINATURAS_PIPEL_RE.test(trimmed)) {
-      return { name: 'salesOverview', args: {} };
-    }
-    if (COMPLIANCE_CHARGEBACK_KY_RE.test(trimmed)) {
-      return { name: 'complianceOverview', args: {} };
-    }
-    if (RELAT_O__RIO_EXPORT_FUNN_RE.test(trimmed)) {
-      return { name: 'reportsOverview', args: {} };
-    }
-    if (CONFIG_FEATURE_FLAG_DOM_RE.test(trimmed)) {
-      return { name: 'configOverview', args: {} };
-    }
-    if (SUPORTE_TICKET_SLA_MACRO_RE.test(trimmed)) {
-      return { name: 'supportOverview', args: {} };
-    }
-    if (ALERTA_NOTIFICA_RE.test(trimmed)) {
-      return { name: 'notificationsOverview', args: {} };
-    }
-    if (PRODUTO_RE.test(trimmed)) {
-      return { name: 'productsOverview', args: {} };
-    }
-    if (CONTA_WORKSPACE_PRODUTOR_RE.test(trimmed)) {
-      return { name: 'accountsOverview', args: {} };
-    }
-    if (CLIENTE_RE.test(trimmed)) {
-      return { name: 'clientsOverview', args: {} };
-    }
-    return { name: 'dashboardOverview', args: {} };
-  }
-
   return null;
+}
+
+function inferOverviewInvocation(
+  trimmed: string,
+): { name: string; args: Record<string, unknown> } | null {
+  if (!OVERVIEW_RESUMO_DASHBOA_RE.test(trimmed)) {
+    return null;
+  }
+  for (const entry of OVERVIEW_DISPATCH_TABLE) {
+    if (entry.pattern.test(trimmed)) {
+      return { name: entry.tool, args: {} };
+    }
+  }
+  return { name: 'dashboardOverview', args: {} };
+}
+
+function inferToolInvocation(
+  content: string,
+): { name: string; args: Record<string, unknown> } | null {
+  const trimmed = content.trim();
+  return inferSearchInvocation(trimmed) ?? inferOverviewInvocation(trimmed);
 }
 
 function summarizeToolResult(toolName: string, result: Record<string, unknown>): string {

@@ -4,11 +4,16 @@ export interface UploadedFileLike {
   originalname?: string;
 }
 
+const ALLOWED_CONTROL_BYTES: ReadonlySet<number> = new Set([9, 10, 13]);
+
+function isTextSafeByte(byte: number): boolean {
+  if (ALLOWED_CONTROL_BYTES.has(byte)) return true;
+  if (byte >= 32 && byte <= 126) return true;
+  return byte >= 128;
+}
+
 function isSuspiciousControlByte(byte: number): boolean {
-  const isAllowedControl = byte === 9 || byte === 10 || byte === 13;
-  const isPrintable = byte >= 32 && byte <= 126;
-  const isExtended = byte >= 128;
-  return !isAllowedControl && !isPrintable && !isExtended;
+  return !isTextSafeByte(byte);
 }
 
 function countSuspiciousControlBytes(sample: Buffer): number {
@@ -50,17 +55,27 @@ const ZIP_SIG = [0x50, 0x4b, 0x03, 0x04] as const;
 const CFB_SIG = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1] as const;
 const MATROSKA_SIG = [0x1a, 0x45, 0xdf, 0xa3] as const;
 
+function isWebpContainer(buffer: Buffer): boolean {
+  return bufferSliceEquals(buffer, 0, 4, 'RIFF') && bufferSliceEquals(buffer, 8, 12, 'WEBP');
+}
+
+function isGifMarker(buffer: Buffer): boolean {
+  if (buffer.length < 6) return false;
+  return bufferSliceEquals(buffer, 0, 6, 'GIF87a') || bufferSliceEquals(buffer, 0, 6, 'GIF89a');
+}
+
+type ImageSignatureProbe = (buffer: Buffer) => boolean;
+
+const IMAGE_SIGNATURE_CHAIN: ReadonlyArray<readonly [ImageSignatureProbe, string]> = [
+  [(buffer) => bufferStartsWith(buffer, PNG_SIG), 'image/png'],
+  [(buffer) => bufferStartsWith(buffer, JPEG_SIG), 'image/jpeg'],
+  [isWebpContainer, 'image/webp'],
+  [isGifMarker, 'image/gif'],
+];
+
 function detectImageMime(buffer: Buffer): string | null {
-  if (bufferStartsWith(buffer, PNG_SIG)) return 'image/png';
-  if (bufferStartsWith(buffer, JPEG_SIG)) return 'image/jpeg';
-  if (bufferSliceEquals(buffer, 0, 4, 'RIFF') && bufferSliceEquals(buffer, 8, 12, 'WEBP')) {
-    return 'image/webp';
-  }
-  if (
-    buffer.length >= 6 &&
-    (bufferSliceEquals(buffer, 0, 6, 'GIF87a') || bufferSliceEquals(buffer, 0, 6, 'GIF89a'))
-  ) {
-    return 'image/gif';
+  for (const [probe, mime] of IMAGE_SIGNATURE_CHAIN) {
+    if (probe(buffer)) return mime;
   }
   return null;
 }

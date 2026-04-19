@@ -79,41 +79,53 @@ interface ResolveAdminHomeRangeInput {
   now?: Date;
 }
 
-export function resolveAdminHomeRange(input: ResolveAdminHomeRangeInput): ResolvedAdminHomeRange {
-  const now = input.now ?? new Date();
-  const compare: AdminHomeCompare = input.compare ?? 'PREVIOUS';
+function resolveCustomRange(
+  inputFrom: Date | undefined,
+  inputTo: Date | undefined,
+): { from: Date; to: Date } {
+  if (!inputFrom || !inputTo) {
+    throw new Error('CUSTOM period requires both `from` and `to`');
+  }
+  if (inputFrom.getTime() > inputTo.getTime()) {
+    throw new Error('CUSTOM period requires `from` <= `to`');
+  }
+  return { from: startOfDay(inputFrom), to: endOfDay(inputTo) };
+}
 
-  let from: Date;
-  let to: Date;
-
+function resolvePeriodRange(
+  input: ResolveAdminHomeRangeInput,
+  now: Date,
+): { from: Date; to: Date } {
   switch (input.period) {
     case 'TODAY':
-      from = startOfDay(now);
-      to = endOfDay(now);
-      break;
+      return { from: startOfDay(now), to: endOfDay(now) };
     case '30D':
-      from = startOfDay(addDays(now, -29));
-      to = endOfDay(now);
-      break;
+      return { from: startOfDay(addDays(now, -29)), to: endOfDay(now) };
     case 'CUSTOM':
-      if (!input.from || !input.to) {
-        throw new Error('CUSTOM period requires both `from` and `to`');
-      }
-      if (input.from.getTime() > input.to.getTime()) {
-        throw new Error('CUSTOM period requires `from` <= `to`');
-      }
-      from = startOfDay(input.from);
-      to = endOfDay(input.to);
-      break;
+      return resolveCustomRange(input.from, input.to);
     default: {
       const exhaustive: never = input.period;
       throw new Error(`Unhandled period: ${String(exhaustive)}`);
     }
   }
+}
 
-  let previous: { from: Date; to: Date } | null = null;
-  if (compare === 'PREVIOUS') previous = previousWindowOf(from, to);
-  else if (compare === 'YOY') previous = yoyWindowOf(from, to);
+function resolveComparisonWindow(
+  compare: AdminHomeCompare,
+  from: Date,
+  to: Date,
+): { from: Date; to: Date } | null {
+  if (compare === 'PREVIOUS') return previousWindowOf(from, to);
+  if (compare === 'YOY') return yoyWindowOf(from, to);
+  return null;
+}
+
+export function resolveAdminHomeRange(input: ResolveAdminHomeRangeInput): ResolvedAdminHomeRange {
+  const now = input.now ?? new Date();
+  const compare: AdminHomeCompare = input.compare ?? 'PREVIOUS';
+
+  const { from, to } = resolvePeriodRange(input, now);
+  const previous = resolveComparisonWindow(compare, from, to);
 
   return { period: input.period, compare, from, to, label: LABELS[input.period], previous };
 }

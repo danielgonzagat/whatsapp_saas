@@ -60,18 +60,18 @@ function toIsoTimestamp(value?: Date | string | null): string | null {
   return value.toISOString?.() || null;
 }
 
-function hasUnansweredInbound(messages?: ConversationMessageLike[] | null): boolean {
-  const orderedMessages = messages || [];
-  for (const message of orderedMessages) {
+function firstDirectionalMessage(
+  messages?: ConversationMessageLike[] | null,
+): 'INBOUND' | 'OUTBOUND' | null {
+  for (const message of messages || []) {
     const direction = normalizeDirection(message.direction);
-    if (direction === 'OUTBOUND') {
-      return false;
-    }
-    if (direction === 'INBOUND') {
-      return true;
-    }
+    if (direction) return direction;
   }
-  return false;
+  return null;
+}
+
+function hasUnansweredInbound(messages?: ConversationMessageLike[] | null): boolean {
+  return firstDirectionalMessage(messages) === 'INBOUND';
 }
 
 function countPendingInboundMessages(
@@ -131,59 +131,104 @@ type BlockedReasonContext = {
   unansweredInbound: boolean;
 };
 
+function isHumanModeLock(mode: string | null): boolean {
+  return mode === 'HUMAN' || mode === 'PAUSED';
+}
+
+function resolveHumanOwnerReason(mode: string | null): string {
+  return isHumanModeLock(mode) ? 'human_mode_lock' : 'assigned_to_human';
+}
+
+function isConversationEmpty(ctx: BlockedReasonContext): boolean {
+  return !ctx.lastMessageDirection && ctx.unreadCount === 0;
+}
+
+function isAlreadyReplied(ctx: BlockedReasonContext): boolean {
+  return !ctx.unansweredInbound && ctx.lastMessageDirection === 'OUTBOUND' && ctx.unreadCount === 0;
+}
+
 function resolveBlockedReason(ctx: BlockedReasonContext): string | null {
   if (ctx.status === 'CLOSED') return 'conversation_closed';
-  if (ctx.owner === 'HUMAN') {
-    return ctx.mode === 'HUMAN' || ctx.mode === 'PAUSED' ? 'human_mode_lock' : 'assigned_to_human';
-  }
-  if (!ctx.lastMessageDirection && ctx.unreadCount === 0) return 'no_messages';
-  if (!ctx.unansweredInbound && ctx.lastMessageDirection === 'OUTBOUND' && ctx.unreadCount === 0) {
-    return 'already_replied';
-  }
+  if (ctx.owner === 'HUMAN') return resolveHumanOwnerReason(ctx.mode);
+  if (isConversationEmpty(ctx)) return 'no_messages';
+  if (isAlreadyReplied(ctx)) return 'already_replied';
   return null;
+}
+
+type OperationalSignals = {
+  lastMessage: ConversationMessageLike | null;
+  lastMessageDirection: 'INBOUND' | 'OUTBOUND' | null;
+  owner: ConversationOwner;
+  status: string | null;
+  mode: string | null;
+  unreadCount: number;
+  unansweredInbound: boolean;
+};
+
+function deriveOperationalSignals(conversation: ConversationOperationalLike): OperationalSignals {
+  const lastMessage = getLastConversationMessage(conversation);
+  return {
+    lastMessage,
+    lastMessageDirection: normalizeDirection(lastMessage?.direction),
+    owner: resolveConversationOwner(conversation),
+    status: normalizeUpperOrNull(conversation.status),
+    mode: normalizeUpperOrNull(conversation.mode),
+    unreadCount: Math.max(0, Number(conversation.unreadCount || 0) || 0),
+    unansweredInbound: hasUnansweredInbound(conversation.messages),
+  };
+}
+
+function computePendingMessages(
+  conversation: ConversationOperationalLike,
+  pending: boolean,
+  unreadCount: number,
+): number {
+  if (!pending) return 0;
+  return Math.max(1, countPendingInboundMessages(conversation.messages, unreadCount));
+}
+
+function resolveLastMessageAt(
+  lastMessage: ConversationMessageLike | null,
+  conversation: ConversationOperationalLike,
+): string | null {
+  return (
+    toIsoTimestamp(lastMessage?.createdAt) || toIsoTimestamp(conversation.lastMessageAt) || null
+  );
+}
+
+function resolveContactName(contact: ConversationContactLike | null | undefined): string | null {
+  return contact?.name || contact?.phone || null;
 }
 
 export function buildConversationOperationalState(
   conversation: ConversationOperationalLike,
 ): ConversationOperationalState {
-  const lastMessage = getLastConversationMessage(conversation);
-  const lastMessageDirection = normalizeDirection(lastMessage?.direction);
-  const owner = resolveConversationOwner(conversation);
-  const status = normalizeUpperOrNull(conversation.status);
-  const mode = normalizeUpperOrNull(conversation.mode);
-  const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
-  const unansweredInbound = hasUnansweredInbound(conversation.messages);
-
+  const signals = deriveOperationalSignals(conversation);
   const blockedReason = resolveBlockedReason({
-    status,
-    mode,
-    owner,
-    lastMessageDirection,
-    unreadCount,
-    unansweredInbound,
+    status: signals.status,
+    mode: signals.mode,
+    owner: signals.owner,
+    lastMessageDirection: signals.lastMessageDirection,
+    unreadCount: signals.unreadCount,
+    unansweredInbound: signals.unansweredInbound,
   });
-
-  const pending = blockedReason === null && (unansweredInbound || unreadCount > 0);
-  const pendingMessages = pending
-    ? Math.max(1, countPendingInboundMessages(conversation.messages, unreadCount))
-    : 0;
+  const pending = blockedReason === null && (signals.unansweredInbound || signals.unreadCount > 0);
 
   return {
     conversationId: conversation.id || null,
     contactId: conversation.contact?.id || null,
     phone: conversation.contact?.phone || null,
-    contactName: conversation.contact?.name || conversation.contact?.phone || null,
-    owner,
+    contactName: resolveContactName(conversation.contact),
+    owner: signals.owner,
     pending,
     needsReply: pending,
     blockedReason,
-    lastMessageDirection,
-    lastMessageAt:
-      toIsoTimestamp(lastMessage?.createdAt) || toIsoTimestamp(conversation.lastMessageAt) || null,
-    unreadCount,
-    pendingMessages,
-    status,
-    mode,
+    lastMessageDirection: signals.lastMessageDirection,
+    lastMessageAt: resolveLastMessageAt(signals.lastMessage, conversation),
+    unreadCount: signals.unreadCount,
+    pendingMessages: computePendingMessages(conversation, pending, signals.unreadCount),
+    status: signals.status,
+    mode: signals.mode,
     assignedAgentId: conversation.assignedAgentId || null,
   };
 }
