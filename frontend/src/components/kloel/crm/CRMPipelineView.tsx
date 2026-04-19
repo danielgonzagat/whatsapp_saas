@@ -566,12 +566,12 @@ export default function CRMPipelineView() {
                             transition: 'border-color 150ms',
                             opacity: dragDealId === did ? 0.5 : 1,
                           }}
-                          onMouseEnter={(e) =>
-                            ((e.currentTarget as HTMLDivElement).style.borderColor = '#333338')
-                          }
-                          onMouseLeave={(e) =>
-                            ((e.currentTarget as HTMLDivElement).style.borderColor = '#222226')
-                          }
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLDivElement).style.borderColor = '#333338';
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLDivElement).style.borderColor = '#222226';
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
@@ -724,12 +724,12 @@ export default function CRMPipelineView() {
                         cursor: 'pointer',
                         transition: 'border-color 150ms',
                       }}
-                      onMouseEnter={(e) =>
-                        ((e.currentTarget as HTMLButtonElement).style.borderColor = '#E85D30')
-                      }
-                      onMouseLeave={(e) =>
-                        ((e.currentTarget as HTMLButtonElement).style.borderColor = '#222226')
-                      }
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = '#E85D30';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = '#222226';
+                      }}
                     >
                       {IC.plus(12)} Novo deal
                     </button>

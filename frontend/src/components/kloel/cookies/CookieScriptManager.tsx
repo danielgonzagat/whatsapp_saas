@@ -42,6 +42,7 @@ function expireCookie(name: string, domain?: string) {
   if (typeof document === 'undefined') return;
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
   const domainPart = domain ? `; domain=${domain}` : '';
+  // biome-ignore lint/suspicious/noDocumentCookie: cookie name sanitized via resolveManagedCookieNames allowlist; value is empty (expiring). Refactoring to CookieStore API would lose sync browser compatibility we require here.
   document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax${domainPart}${secure}`;
 }
 

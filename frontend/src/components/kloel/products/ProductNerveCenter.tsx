@@ -558,6 +558,7 @@ export default function ProductNerveCenter({
     setPlanVisible(selectedPlanObj.vis);
     setPlanError('');
     planConfigInitRef.current = false;
+    // biome-ignore lint/correctness/useExhaustiveDependencies: selectedPlanObj is derived from selPlan+PLANS; tracking its individual fields avoids spurious reruns when the object reference changes without field changes
   }, [
     selectedPlanObj?.id,
     selectedPlanObj?.name,

@@ -238,12 +238,15 @@ function setBrowserCookie(
   options?: { shareAcrossSubdomains?: boolean },
 ) {
   if (typeof document === 'undefined') return;
+  // biome-ignore lint/suspicious/noDocumentCookie: auth cookie name is a module-level constant; value URL-encoded. CookieStore API lacks required sync semantics for auth bootstrap.
   document.cookie = `${name}=${encodeURIComponent(value)}; ${browserCookieSuffix(maxAge, options)}`;
 }
 
 function clearBrowserCookie(name: string) {
   if (typeof document === 'undefined') return;
+  // biome-ignore lint/suspicious/noDocumentCookie: clearing auth cookie by module-level constant name; empty value.
   document.cookie = `${name}=; ${browserCookieSuffix(0)}`;
+  // biome-ignore lint/suspicious/noDocumentCookie: clearing host-only variant; same safety as above.
   document.cookie = `${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`;
 }
 
@@ -253,6 +256,7 @@ function setBrowserAuthCookie() {
 
 function clearHostOnlyBrowserCookie(name: string) {
   if (typeof document === 'undefined') return;
+  // biome-ignore lint/suspicious/noDocumentCookie: internal helper; name controlled by callers with module-level constants.
   document.cookie = `${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`;
 }
 

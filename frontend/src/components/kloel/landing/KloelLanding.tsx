@@ -254,6 +254,7 @@ function HeroLoop() {
     return () => {
       m.current = false;
     };
+    // biome-ignore lint/correctness/useExhaustiveDependencies: mkSlices and scramble are pure helpers defined inline; including them would recreate on every render and restart the animation loop
   }, [prefersReducedMotion]);
 
   const ts = {
