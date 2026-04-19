@@ -73,6 +73,7 @@ import {
 } from './ProductNerveCenter.helpers';
 import {
   applyProductSync,
+  buildBumpPayload,
   buildPlanPaymentConfig,
   deriveDefaultShippingMode,
   normalizeCommissionPercent,
@@ -858,19 +859,7 @@ export default function ProductNerveCenter({
     );
     if (!selectedCheckoutProduct || !selectedBumpPlan) return;
     try {
-      await createBump({
-        title: selectedBumpPlan.name || selectedCheckoutProduct.name,
-        description: `Oferta adicional do plano ${selectedBumpPlan.name || selectedCheckoutProduct.name}.`,
-        productName: selectedCheckoutProduct.name || selectedBumpPlan.name,
-        image:
-          selectedBumpPlan.checkoutConfig?.productImage ||
-          selectedCheckoutProduct.imageUrl ||
-          selectedCheckoutProduct.images?.[0] ||
-          undefined,
-        priceInCents: Math.max(0, Math.round(Number(selectedBumpPlan.priceInCents || 0))),
-        compareAtPrice: selectedBumpPlan.compareAtPrice || undefined,
-        checkboxLabel: 'Sim, eu quero!',
-      });
+      await createBump({ ...buildBumpPayload(selectedCheckoutProduct, selectedBumpPlan) });
       setNewBumpProductId('');
       setNewBumpPlanId('');
       setModal(null);

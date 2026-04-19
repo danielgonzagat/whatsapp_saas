@@ -113,3 +113,54 @@ export function normalizeCommissionPercent(
   const value = planCheckoutConfig.affiliateCustomCommissionPercent ?? fallbackProductCommission ?? 30;
   return String(value).replace('.', ',');
 }
+
+export interface CheckoutBumpProduct {
+  name?: string;
+  imageUrl?: string;
+  images?: string[];
+}
+
+export interface CheckoutBumpPlan {
+  name?: string;
+  priceInCents?: unknown;
+  compareAtPrice?: number | null;
+  checkoutConfig?: { productImage?: string | null };
+}
+
+export interface CreateBumpPayload {
+  title: string;
+  description: string;
+  productName: string;
+  image?: string;
+  priceInCents: number;
+  compareAtPrice?: number | null;
+  checkboxLabel: string;
+}
+
+function resolveBumpImage(
+  plan: CheckoutBumpPlan,
+  product: CheckoutBumpProduct,
+): string | undefined {
+  return (
+    plan.checkoutConfig?.productImage ||
+    product.imageUrl ||
+    product.images?.[0] ||
+    undefined
+  );
+}
+
+export function buildBumpPayload(
+  product: CheckoutBumpProduct,
+  plan: CheckoutBumpPlan,
+): CreateBumpPayload {
+  const displayName = plan.name || product.name || '';
+  return {
+    title: displayName,
+    description: `Oferta adicional do plano ${displayName}.`,
+    productName: product.name || plan.name || '',
+    image: resolveBumpImage(plan, product),
+    priceInCents: Math.max(0, Math.round(Number(plan.priceInCents || 0))),
+    compareAtPrice: plan.compareAtPrice || undefined,
+    checkboxLabel: 'Sim, eu quero!',
+  };
+}
