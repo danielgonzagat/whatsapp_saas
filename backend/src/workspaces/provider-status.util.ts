@@ -31,6 +31,14 @@ export function pickMetaAuthUrl(
   return trimmed ? authUrl : null;
 }
 
+function metaRawStatusFallback(phoneNumberId: string | null): string {
+  return phoneNumberId ? 'CONNECTION_INCOMPLETE' : 'DISCONNECTED';
+}
+
+function wahaRawStatusFallback(normalizedStatus: NormalizedConnectionStatus): string {
+  return normalizedStatus === 'connecting' ? 'SCAN_QR_CODE' : 'DISCONNECTED';
+}
+
 export function resolveRawStatusFallback(
   rawStatus: string,
   providerType: WhatsAppProviderType,
@@ -39,9 +47,9 @@ export function resolveRawStatusFallback(
 ): string {
   if (rawStatus) return rawStatus;
   if (normalizedStatus === 'connected') return 'CONNECTED';
-  if (providerType === 'meta-cloud' && phoneNumberId) return 'CONNECTION_INCOMPLETE';
-  if (providerType === 'whatsapp-api' && normalizedStatus === 'connecting') return 'SCAN_QR_CODE';
-  return 'DISCONNECTED';
+  return providerType === 'meta-cloud'
+    ? metaRawStatusFallback(phoneNumberId)
+    : wahaRawStatusFallback(normalizedStatus);
 }
 
 export function resolveSelfIds(selfIds: string[] | null | undefined): string[] {

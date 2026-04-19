@@ -20,36 +20,42 @@ function containsAny(text: string, variants: string[]): boolean {
   return variants.some((variant) => text.includes(normalizeText(variant)));
 }
 
+/**
+ * Keyword vocabulary that flips the router into "marketing intent" mode.
+ * Kept as a module-level readonly constant so `isMarketingRequest` stays at
+ * a trivial NLOC — Lizard counts every array element on its own line.
+ */
+const MARKETING_INTENT_KEYWORDS: readonly string[] = [
+  'marketing',
+  'copy',
+  'landing',
+  'homepage',
+  'seo',
+  'trafego pago',
+  'meta ads',
+  'google ads',
+  'roas',
+  'checkout',
+  'conversao',
+  'campanha',
+  'afiliado',
+  'afiliados',
+  'lançamento',
+  'lancamento',
+  'precificacao',
+  'preco',
+  'churn',
+  'email',
+  'funil',
+  'whatsapp marketing',
+];
+
 @Injectable()
 export class MarketingSkillRouter {
   isMarketingRequest(message: string): boolean {
     const normalized = normalizeText(message);
     if (!normalized) return false;
-
-    return containsAny(normalized, [
-      'marketing',
-      'copy',
-      'landing',
-      'homepage',
-      'seo',
-      'trafego pago',
-      'meta ads',
-      'google ads',
-      'roas',
-      'checkout',
-      'conversao',
-      'campanha',
-      'afiliado',
-      'afiliados',
-      'lançamento',
-      'lancamento',
-      'precificacao',
-      'preco',
-      'churn',
-      'email',
-      'funil',
-      'whatsapp marketing',
-    ]);
+    return containsAny(normalized, [...MARKETING_INTENT_KEYWORDS]);
   }
 
   route(message: string): MarketingSkillRouteHit[] {

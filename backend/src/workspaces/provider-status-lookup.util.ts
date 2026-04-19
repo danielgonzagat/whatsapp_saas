@@ -31,13 +31,22 @@ export function extractPhoneNumberId(
   return trimmed || null;
 }
 
+/**
+ * Maps WAHA raw session statuses to our normalized connection-status vocabulary.
+ * Declared as a dispatch table so `resolveWahaStatus` stays at CCN 2 instead
+ * of ballooning into a chain of string-OR branches.
+ */
+const WAHA_STATUS_MAP: Record<string, NormalizedConnectionStatus> = {
+  CONNECTED: 'connected',
+  WORKING: 'connected',
+  SCAN_QR_CODE: 'connecting',
+  STARTING: 'connecting',
+  OPENING: 'connecting',
+  FAILED: 'failed',
+};
+
 export function resolveWahaStatus(rawStatus: string): NormalizedConnectionStatus {
-  if (rawStatus === 'CONNECTED' || rawStatus === 'WORKING') return 'connected';
-  if (rawStatus === 'SCAN_QR_CODE' || rawStatus === 'STARTING' || rawStatus === 'OPENING') {
-    return 'connecting';
-  }
-  if (rawStatus === 'FAILED') return 'failed';
-  return 'disconnected';
+  return WAHA_STATUS_MAP[rawStatus] ?? 'disconnected';
 }
 
 export function resolveMetaStatus(

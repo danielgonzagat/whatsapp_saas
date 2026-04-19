@@ -12,32 +12,28 @@ export function isDigit(char: string): boolean {
   return code >= 48 && code <= 57;
 }
 
+/**
+ * Coerces the common scalar shapes (string, number, boolean) into a string.
+ * Everything else (null, undefined, objects, arrays, ...) collapses to ''.
+ *
+ * Pulled out so `collapseWhitespace` and `extractAsciiDigits` can share the
+ * same branch without each being measured as a CCN-6 hotspot by Codacy.
+ */
+function coerceToString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return '';
+}
+
 export function collapseWhitespace(value: unknown): string {
-  return (
-    typeof value === 'string'
-      ? value
-      : typeof value === 'number' || typeof value === 'boolean'
-        ? String(value)
-        : ''
-  )
-    .replace(WHITESPACE_RE, ' ')
-    .trim();
+  return coerceToString(value).replace(WHITESPACE_RE, ' ').trim();
 }
 
 export function extractAsciiDigits(value: unknown): string {
-  const input =
-    typeof value === 'string'
-      ? value
-      : typeof value === 'number' || typeof value === 'boolean'
-        ? String(value)
-        : '';
+  const input = coerceToString(value);
   let result = '';
-
   for (const char of input) {
-    if (isDigit(char)) {
-      result += char;
-    }
+    if (isDigit(char)) result += char;
   }
-
   return result;
 }

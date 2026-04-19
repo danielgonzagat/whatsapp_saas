@@ -2,6 +2,41 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { MarketingWorkspaceSnapshot } from './marketing-skill.types';
 
+type TopProductEntry = MarketingWorkspaceSnapshot['topProducts'][number];
+type RecentCampaignEntry = MarketingWorkspaceSnapshot['recentCampaigns'][number];
+
+interface ProductRow {
+  id: string;
+  name: string;
+  price: unknown;
+  active: boolean;
+}
+
+interface CampaignRow {
+  id: string;
+  name: string;
+  status: string;
+  scheduledAt: Date | null;
+}
+
+function toTopProduct(product: ProductRow): TopProductEntry {
+  return {
+    id: product.id,
+    name: product.name,
+    price: typeof product.price === 'number' ? product.price : null,
+    active: product.active,
+  };
+}
+
+function toRecentCampaign(campaign: CampaignRow): RecentCampaignEntry {
+  return {
+    id: campaign.id,
+    name: campaign.name,
+    status: campaign.status,
+    scheduledAt: campaign.scheduledAt?.toISOString() || null,
+  };
+}
+
 @Injectable()
 export class MarketingSkillContextBuilder {
   constructor(private readonly prisma: PrismaService) {}
@@ -112,24 +147,14 @@ export class MarketingSkillContextBuilder {
       brandVoice: typeof brandVoiceValue?.style === 'string' ? brandVoiceValue.style : null,
       productCount,
       activeProductCount,
-      topProducts: products.map((product) => ({
-        id: product.id,
-        name: product.name,
-        price: typeof product.price === 'number' ? product.price : null,
-        active: product.active,
-      })),
+      topProducts: products.map(toTopProduct),
       paidOrderCount,
       totalOrderCount,
       socialLeadCount,
       checkoutConversionRate,
       grossRevenueCents: Number(revenueAggregate._sum.totalInCents || 0),
       campaignCount,
-      recentCampaigns: recentCampaigns.map((campaign) => ({
-        id: campaign.id,
-        name: campaign.name,
-        status: campaign.status,
-        scheduledAt: campaign.scheduledAt?.toISOString() || null,
-      })),
+      recentCampaigns: recentCampaigns.map(toRecentCampaign),
       siteCount,
       publishedSiteCount,
       affiliateProductCount,

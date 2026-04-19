@@ -11,12 +11,16 @@ export function coerceToInputString(value: unknown): string {
   return '';
 }
 
+function isAsciiAlphanumericCode(code: number): boolean {
+  if (code >= ASCII_DIGIT_START && code <= ASCII_DIGIT_END) return true;
+  if (code >= ASCII_UPPER_START && code <= ASCII_UPPER_END) return true;
+  return code >= ASCII_LOWER_START && code <= ASCII_LOWER_END;
+}
+
+const QUEUE_ID_SYMBOLS = new Set(['_', '-']);
+
 export function isAllowedQueueIdChar(char: string): boolean {
-  const code = char.charCodeAt(0);
-  const isDigit = code >= ASCII_DIGIT_START && code <= ASCII_DIGIT_END;
-  const isUpper = code >= ASCII_UPPER_START && code <= ASCII_UPPER_END;
-  const isLower = code >= ASCII_LOWER_START && code <= ASCII_LOWER_END;
-  return isDigit || isUpper || isLower || char === '_' || char === '-';
+  return isAsciiAlphanumericCode(char.charCodeAt(0)) || QUEUE_ID_SYMBOLS.has(char);
 }
 
 export function stripLeadingTrailingUnderscores(value: string): string {

@@ -201,11 +201,15 @@ function fallbackFromRawTokens(rawTokens: readonly string[]): string | null {
   return fallback || null;
 }
 
+function tokenizeCandidateMessage(messageContent: string): string[] {
+  const raw = String(messageContent ?? '');
+  const matches = raw.match(A_ZA_Z___0_9_RE);
+  if (!matches) return [];
+  return matches.filter(Boolean);
+}
+
 export function extractMissingProductCandidate(messageContent: string): string | null {
-  const rawTokens =
-    String(messageContent || '')
-      .match(A_ZA_Z___0_9_RE)
-      ?.filter(Boolean) || [];
+  const rawTokens = tokenizeCandidateMessage(messageContent);
   if (!rawTokens.length) return null;
 
   const upperHit = findUppercaseProductToken(rawTokens);

@@ -29,6 +29,22 @@ function resolveOptionalModeWorkspace(requested: string | undefined): string {
   return requested;
 }
 
+function extractTokenWorkspaceId(user: TokenUser | undefined | null): string | null {
+  if (!user) return null;
+  const { workspaceId } = user;
+  return typeof workspaceId === 'string' && workspaceId ? workspaceId : null;
+}
+
+function enforceRequestedMatchesToken(
+  requested: string | undefined,
+  tokenWorkspaceId: string,
+): string {
+  if (requested && requested !== tokenWorkspaceId) {
+    throw new ForbiddenException('Acesso negado a este workspace');
+  }
+  return tokenWorkspaceId;
+}
+
 /**
  * Assegura que o usuário autenticado tem acesso ao workspace solicitado.
  * - Se não houver user → Unauthorized
@@ -41,22 +57,18 @@ export function assertWorkspaceAccess(
 ): string {
   warnIfAuthOptionalInProduction();
 
-  const missingToken = !user || !user.workspaceId;
+  const tokenWorkspaceId = extractTokenWorkspaceId(user);
 
   // Dev/optional mode: permite somente workspace explícito (NUNCA fallback default)
-  if (isAuthOptionalDevMode() && missingToken) {
+  if (!tokenWorkspaceId && isAuthOptionalDevMode()) {
     return resolveOptionalModeWorkspace(requested);
   }
 
-  if (!user || !user.workspaceId) {
+  if (!tokenWorkspaceId) {
     throw new UnauthorizedException('Token obrigatório');
   }
 
-  // Regra: workspace efetivo é o do token. O requested só pode existir se for igual.
-  if (requested && requested !== user.workspaceId) {
-    throw new ForbiddenException('Acesso negado a este workspace');
-  }
-  return user.workspaceId;
+  return enforceRequestedMatchesToken(requested, tokenWorkspaceId);
 }
 
 function asStringOrUndefined(value: unknown): string | undefined {

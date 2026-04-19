@@ -74,22 +74,28 @@ function hasUnansweredInbound(messages?: ConversationMessageLike[] | null): bool
   return firstDirectionalMessage(messages) === 'INBOUND';
 }
 
+function normalizeFallbackUnread(unreadCount?: number | null): number {
+  const parsed = Number(unreadCount ?? 0);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, parsed);
+}
+
+function countLeadingInboundMessages(messages: ConversationMessageLike[]): number {
+  let count = 0;
+  for (const message of messages) {
+    const direction = normalizeDirection(message.direction);
+    if (direction === 'OUTBOUND') break;
+    if (direction === 'INBOUND') count += 1;
+  }
+  return count;
+}
+
 function countPendingInboundMessages(
   messages?: ConversationMessageLike[] | null,
   unreadCount?: number | null,
 ): number {
-  const fallbackUnread = Math.max(0, Number(unreadCount || 0) || 0);
-  let count = 0;
-  for (const message of messages || []) {
-    const direction = normalizeDirection(message.direction);
-    if (direction === 'OUTBOUND') {
-      break;
-    }
-    if (direction === 'INBOUND') {
-      count += 1;
-    }
-  }
-  return Math.max(count, fallbackUnread);
+  const leading = countLeadingInboundMessages(messages ?? []);
+  return Math.max(leading, normalizeFallbackUnread(unreadCount));
 }
 
 export function resolveConversationOwner(

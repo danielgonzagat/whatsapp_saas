@@ -19,6 +19,35 @@ interface AuditLogEntry {
 }
 
 /**
+ * Parses a response body into a record-shaped object for inspection, or
+ * returns `undefined` if the body cannot be interpreted as structured JSON.
+ * Pulled out of the AuditLogMiddleware class so each branch is its own
+ * statement and `extractError` stays at CCN 3.
+ */
+function parseErrorPayload(responseBody: unknown): Record<string, unknown> | undefined {
+  if (typeof responseBody !== 'string') {
+    return responseBody as Record<string, unknown>;
+  }
+  try {
+    return JSON.parse(responseBody) as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Returns the first non-empty string message from `obj.message` or `obj.error`,
+ * or `null` when neither field provides a usable string.
+ */
+function extractErrorMessage(obj: Record<string, unknown>): string | null {
+  const message = obj?.message;
+  if (typeof message === 'string' && message.trim()) return message;
+  const error = obj?.error;
+  if (typeof error === 'string' && error.trim()) return error;
+  return null;
+}
+
+/**
  * Middleware de Audit Logging para APIs KLOEL.
  * Registra todas as operacoes para auditoria e debugging.
  * Sensitive fields are stripped via the shared sanitizePayload helper.
@@ -183,21 +212,9 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 
   private extractError(responseBody: unknown): string | undefined {
     if (!responseBody) return undefined;
-
-    try {
-      const parsed = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
-
-      const obj = parsed as Record<string, unknown>;
-      if (typeof obj?.message === 'string' && obj.message.trim()) {
-        return obj.message;
-      }
-      if (typeof obj?.error === 'string' && obj.error.trim()) {
-        return obj.error;
-      }
-      return 'Unknown error';
-    } catch {
-      return undefined;
-    }
+    const parsed = parseErrorPayload(responseBody);
+    if (parsed === undefined) return undefined;
+    return extractErrorMessage(parsed) ?? 'Unknown error';
   }
 
   private async flushBuffer(): Promise<void> {
