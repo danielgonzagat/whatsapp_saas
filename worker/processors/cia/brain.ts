@@ -308,37 +308,57 @@ function buildOptions(candidate: CiaCandidate) {
   return options;
 }
 
-function applyGovernor(selected: ActionOption, candidate: CiaCandidate): CiaActionDecision {
-  const state = candidate.cognitiveState;
-  let type = selected.type;
-  let governor: CiaGovernorVerdict = 'EXECUTE';
-  let reason = selected.reason;
+interface GovernorVerdictOutcome {
+  type: CiaActionType;
+  governor: CiaGovernorVerdict;
+  reason: string;
+}
 
-  if (selected.type === 'WAIT') {
-    governor = 'WAIT';
-    reason = 'timing_not_good_enough';
-  } else if (
+function shouldEscalateForRisk(selected: ActionOption, state: CustomerCognitiveState): boolean {
+  return (
     selected.type === 'ESCALATE_HUMAN' ||
     selected.riskScore >= 0.25 ||
     state.riskFlags.length > 0 ||
     state.intent === 'SUPPORT'
-  ) {
-    governor = 'ESCALATE';
-    type = 'ESCALATE_HUMAN';
-    reason = state.riskFlags.length > 0 ? 'risk_flagged_case' : 'confidence_too_low';
-  } else if (selected.confidence < 0.45) {
-    governor = 'ESCALATE';
-    type = 'ESCALATE_HUMAN';
-    reason = 'confidence_too_low';
-  } else if (selected.confidence < 0.75 && selected.type !== 'ASK_CLARIFYING') {
-    governor = 'ASK';
-    type = 'ASK_CLARIFYING';
-    reason = 'clarify_before_committing';
+  );
+}
+
+function resolveGovernorVerdict(
+  selected: ActionOption,
+  state: CustomerCognitiveState,
+): GovernorVerdictOutcome {
+  if (selected.type === 'WAIT') {
+    return { type: selected.type, governor: 'WAIT', reason: 'timing_not_good_enough' };
   }
-  const tacticPlan = buildConversationTacticPlan({
-    action: type,
-    state,
-  });
+  if (shouldEscalateForRisk(selected, state)) {
+    return {
+      type: 'ESCALATE_HUMAN',
+      governor: 'ESCALATE',
+      reason: state.riskFlags.length > 0 ? 'risk_flagged_case' : 'confidence_too_low',
+    };
+  }
+  if (selected.confidence < 0.45) {
+    return { type: 'ESCALATE_HUMAN', governor: 'ESCALATE', reason: 'confidence_too_low' };
+  }
+  if (selected.confidence < 0.75 && selected.type !== 'ASK_CLARIFYING') {
+    return { type: 'ASK_CLARIFYING', governor: 'ASK', reason: 'clarify_before_committing' };
+  }
+  return { type: selected.type, governor: 'EXECUTE', reason: selected.reason };
+}
+
+function resolveVariantFamily(
+  type: CiaActionType,
+  selectedVariantFamily: ActionOption['variantFamily'],
+): CiaActionDecision['variantFamily'] {
+  if (type === 'PAYMENT_RECOVERY') return 'payment_recovery';
+  if (type === 'FOLLOWUP_SOFT' || type === 'FOLLOWUP_URGENT') return 'followup';
+  return selectedVariantFamily;
+}
+
+function applyGovernor(selected: ActionOption, candidate: CiaCandidate): CiaActionDecision {
+  const state = candidate.cognitiveState;
+  const { type, governor, reason } = resolveGovernorVerdict(selected, state);
+  const tacticPlan = buildConversationTacticPlan({ action: type, state });
 
   return {
     type,
@@ -350,12 +370,7 @@ function applyGovernor(selected: ActionOption, candidate: CiaCandidate): CiaActi
     priority: Number((selected.rewardScore - selected.riskScore).toFixed(3)),
     reason,
     lastMessageText: candidate.lastMessageText,
-    variantFamily:
-      type === 'PAYMENT_RECOVERY'
-        ? 'payment_recovery'
-        : type === 'FOLLOWUP_SOFT' || type === 'FOLLOWUP_URGENT'
-          ? 'followup'
-          : selected.variantFamily,
+    variantFamily: resolveVariantFamily(type, selected.variantFamily),
     confidence: selected.confidence,
     riskScore: selected.riskScore,
     rewardScore: selected.rewardScore,

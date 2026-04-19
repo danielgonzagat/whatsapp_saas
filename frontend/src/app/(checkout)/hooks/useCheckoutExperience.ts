@@ -668,34 +668,8 @@ export function useCheckoutExperience({
     [payMethod],
   );
 
-  const finalizeOrder = useCallback(async () => {
-    setSubmitError('');
-
-    const preflight = preflightFinalizeOrder({
-      validateStep1,
-      validateStep2,
-      workspaceId,
-      planId: plan?.id,
-      checkoutUnavailableReason,
-      payMethod,
-      supportsCard,
-      supportsPix,
-      supportsBoleto,
-      cpf: form.cpf,
-    });
-    if (preflight) {
-      setSubmitError(preflight.error);
-      if (preflight.step) setStep(preflight.step);
-      return;
-    }
-
-    // Safe after preflight: workspaceId and plan.id were asserted present.
-    const resolvedPlanId = plan?.id as string;
-    const resolvedWorkspaceId = workspaceId as string;
-
-    setIsSubmitting(true);
-
-    try {
+  const buildOrderPayload = useCallback(
+    (resolvedPlanId: string, resolvedWorkspaceId: string): CreateOrderData => {
       const payload: CreateOrderData = {
         planId: resolvedPlanId,
         workspaceId: resolvedWorkspaceId,
@@ -730,7 +704,97 @@ export function useCheckoutExperience({
       if (payMethod === 'card') {
         payload.cardHolderName = form.cardName || form.name;
       }
+      return payload;
+    },
+    [
+      affiliateContext?.affiliateWorkspaceId,
+      checkoutCode,
+      couponApplied,
+      couponCode,
+      discount,
+      form.cardName,
+      form.cep,
+      form.city,
+      form.complement,
+      form.cpf,
+      form.destinatario,
+      form.email,
+      form.name,
+      form.neighborhood,
+      form.number,
+      form.phone,
+      form.state,
+      form.street,
+      installments,
+      payMethod,
+      qty,
+      shippingInCents,
+      shippingMode,
+      subtotal,
+      total,
+    ],
+  );
 
+  const dispatchOrderCompletion = useCallback(
+    (result: Record<string, unknown>, successPath: string) => {
+      if (payMethod === 'card') {
+        const resultData = result?.data as Record<string, unknown> | undefined;
+        setSuccessOrderNumber(String(result?.orderNumber || resultData?.orderNumber || ''));
+        setShowSuccess(true);
+        redirectTimer.current = window.setTimeout(() => {
+          window.location.href = successPath;
+        }, 1200);
+        return;
+      }
+      window.location.href = successPath;
+    },
+    [payMethod],
+  );
+
+  const runPreflightForFinalize = useCallback((): PreflightOutcome => {
+    return preflightFinalizeOrder({
+      validateStep1,
+      validateStep2,
+      workspaceId,
+      planId: plan?.id,
+      checkoutUnavailableReason,
+      payMethod,
+      supportsCard,
+      supportsPix,
+      supportsBoleto,
+      cpf: form.cpf,
+    });
+  }, [
+    checkoutUnavailableReason,
+    form.cpf,
+    payMethod,
+    plan?.id,
+    supportsBoleto,
+    supportsCard,
+    supportsPix,
+    validateStep1,
+    validateStep2,
+    workspaceId,
+  ]);
+
+  const finalizeOrder = useCallback(async () => {
+    setSubmitError('');
+
+    const preflight = runPreflightForFinalize();
+    if (preflight) {
+      setSubmitError(preflight.error);
+      if (preflight.step) setStep(preflight.step);
+      return;
+    }
+
+    // Safe after preflight: workspaceId and plan.id were asserted present.
+    const resolvedPlanId = plan?.id as string;
+    const resolvedWorkspaceId = workspaceId as string;
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = buildOrderPayload(resolvedPlanId, resolvedWorkspaceId);
       const result = (await createOrder(payload)) as Record<string, unknown>;
       setPixelEvent('Purchase');
 
@@ -739,16 +803,7 @@ export function useCheckoutExperience({
         throw new Error('Pedido criado sem rota de continuidade.');
       }
 
-      if (payMethod === 'card') {
-        const resultData = result?.data as Record<string, unknown> | undefined;
-        setSuccessOrderNumber(String(result?.orderNumber || resultData?.orderNumber || ''));
-        setShowSuccess(true);
-        redirectTimer.current = window.setTimeout(() => {
-          window.location.href = successPath;
-        }, 1200);
-      } else {
-        window.location.href = successPath;
-      }
+      dispatchOrderCompletion(result, successPath);
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : 'Erro ao processar o checkout. Tente novamente.',
@@ -757,39 +812,11 @@ export function useCheckoutExperience({
       setIsSubmitting(false);
     }
   }, [
-    affiliateContext?.affiliateWorkspaceId,
-    checkoutCode,
-    checkoutUnavailableReason,
-    couponApplied,
-    couponCode,
-    discount,
-    form.cardName,
-    form.cep,
-    form.city,
-    form.complement,
-    form.cpf,
-    form.destinatario,
-    form.email,
-    form.name,
-    form.neighborhood,
-    form.number,
-    form.phone,
-    form.state,
-    form.street,
-    installments,
-    payMethod,
+    buildOrderPayload,
+    dispatchOrderCompletion,
     plan?.id,
-    qty,
     resolveSuccessRedirect,
-    shippingInCents,
-    shippingMode,
-    subtotal,
-    supportsCard,
-    supportsBoleto,
-    supportsPix,
-    total,
-    validateStep1,
-    validateStep2,
+    runPreflightForFinalize,
     workspaceId,
   ]);
 

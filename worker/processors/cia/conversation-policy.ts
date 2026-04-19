@@ -270,6 +270,61 @@ export function analyzeForActiveListening(
   };
 }
 
+const CONVERSATION_IDENTITY_BLOCK = [
+  'IDENTIDADE:',
+  '- Soe humana, segura, viva e consultiva.',
+  '- Nao finja ser humana. Se perguntarem diretamente, diga com naturalidade que voce e a assistente virtual da empresa.',
+  '- Nao use emoji por padrao e nao escreva como template.',
+] as const;
+
+const CONVERSATION_HOW_TO_RESPOND_BLOCK = [
+  'COMO RESPONDER:',
+  '- Responda primeiro o que o contato quis dizer.',
+  '- Valide a emocao antes de empurrar informacao quando houver frustracao, ansiedade ou confusao.',
+  '- Use uma unica pergunta por mensagem quando estiver conduzindo.',
+  '- Se a mensagem dele foi curta, seja curta. Se foi rica, aprofunde sem virar bloco burocratico.',
+  '- Toda resposta deve ter valor concreto, contexto humano ou proximo passo claro.',
+  '- Considere o historico integral da conversa como fonte primaria.',
+  '- Nunca repita pergunta, assunto, historia, dado pedido ou oferta que ja aparecam no historico integral.',
+] as const;
+
+function buildListeningSignalsBlock(listening?: ActiveListeningSignals | null): string[] {
+  return [
+    'SINAIS DA CONVERSA:',
+    `- Tom emocional: ${listening?.emotionalTone || 'neutral'}`,
+    `- Precisa validacao: ${listening?.validationNeeded ? 'sim' : 'nao'}`,
+    `- Necessidade inferida: ${listening?.inferredNeed || 'nao identificada'}`,
+    `- Contexto pessoal compartilhado: ${listening?.personalDetailShared ? 'sim' : 'nao'}`,
+  ];
+}
+
+function buildConversationContextBlock(params: {
+  compressedContext?: string | null;
+  conversationHistory?: string | null;
+  conversationLedger?: string | null;
+  productSummary?: string | null;
+  matchedProducts?: string[];
+}): string[] {
+  const matchedProducts = params.matchedProducts?.length
+    ? params.matchedProducts.join(', ')
+    : 'nenhum';
+  return [
+    'CONTEXTO DO CONTATO:',
+    params.compressedContext || 'Sem resumo persistido.',
+    '',
+    'LEDGER INTEGRAL DO CONTATO:',
+    params.conversationLedger || 'Sem ledger acumulado.',
+    '',
+    'HISTORICO INTEGRAL DA CONVERSA:',
+    params.conversationHistory || 'Sem historico integral.',
+    '',
+    'PRODUTOS DISPONIVEIS:',
+    params.productSummary || 'Nenhum produto cadastrado.',
+    '',
+    `PRODUTOS MAIS RELEVANTES NESTA CONVERSA: ${matchedProducts}`,
+  ];
+}
+
 export function buildWhatsAppConversationPrompt(params: {
   workspaceName: string;
   contactName?: string | null;
@@ -285,32 +340,18 @@ export function buildWhatsAppConversationPrompt(params: {
   tactic?: string | null;
 }): string {
   const state = params.cognitiveState;
-  const listening = params.listeningSignals;
   const stage = state?.stage || 'COLD';
   const trust = Number(state?.trustScore || 0.45);
   const urgency = Number(state?.urgencyScore || 0.2);
   const live = params.deliveryMode === 'reactive';
-  const matchedProducts = params.matchedProducts?.length
-    ? params.matchedProducts.join(', ')
-    : 'nenhum';
 
   return [
     `Voce responde no WhatsApp da ${params.workspaceName}.`,
     `Voce esta falando com ${params.contactName || 'o contato'}.`,
     '',
-    'IDENTIDADE:',
-    '- Soe humana, segura, viva e consultiva.',
-    '- Nao finja ser humana. Se perguntarem diretamente, diga com naturalidade que voce e a assistente virtual da empresa.',
-    '- Nao use emoji por padrao e nao escreva como template.',
+    ...CONVERSATION_IDENTITY_BLOCK,
     '',
-    'COMO RESPONDER:',
-    '- Responda primeiro o que o contato quis dizer.',
-    '- Valide a emocao antes de empurrar informacao quando houver frustracao, ansiedade ou confusao.',
-    '- Use uma unica pergunta por mensagem quando estiver conduzindo.',
-    '- Se a mensagem dele foi curta, seja curta. Se foi rica, aprofunde sem virar bloco burocratico.',
-    '- Toda resposta deve ter valor concreto, contexto humano ou proximo passo claro.',
-    '- Considere o historico integral da conversa como fonte primaria.',
-    '- Nunca repita pergunta, assunto, historia, dado pedido ou oferta que ja aparecam no historico integral.',
+    ...CONVERSATION_HOW_TO_RESPOND_BLOCK,
     '',
     buildStageDirective(stage, trust, urgency),
     '',
@@ -318,25 +359,9 @@ export function buildWhatsAppConversationPrompt(params: {
     '',
     `DIRETIVA DE ACAO:\n${buildActionDirective(params.action, params.tactic)}`,
     '',
-    'SINAIS DA CONVERSA:',
-    `- Tom emocional: ${listening?.emotionalTone || 'neutral'}`,
-    `- Precisa validacao: ${listening?.validationNeeded ? 'sim' : 'nao'}`,
-    `- Necessidade inferida: ${listening?.inferredNeed || 'nao identificada'}`,
-    `- Contexto pessoal compartilhado: ${listening?.personalDetailShared ? 'sim' : 'nao'}`,
+    ...buildListeningSignalsBlock(params.listeningSignals),
     '',
-    'CONTEXTO DO CONTATO:',
-    params.compressedContext || 'Sem resumo persistido.',
-    '',
-    'LEDGER INTEGRAL DO CONTATO:',
-    params.conversationLedger || 'Sem ledger acumulado.',
-    '',
-    'HISTORICO INTEGRAL DA CONVERSA:',
-    params.conversationHistory || 'Sem historico integral.',
-    '',
-    'PRODUTOS DISPONIVEIS:',
-    params.productSummary || 'Nenhum produto cadastrado.',
-    '',
-    `PRODUTOS MAIS RELEVANTES NESTA CONVERSA: ${matchedProducts}`,
+    ...buildConversationContextBlock(params),
     '',
     live
       ? 'A conversa esta ao vivo. Responda acompanhando o ritmo do contato.'

@@ -594,20 +594,20 @@ async function doRefreshAccessToken(): Promise<boolean> {
   }
 }
 
-export async function apiFetch<T = unknown>(
-  endpoint: string,
-  options: Omit<RequestInit, 'body'> & {
-    body?: unknown;
-    params?: Record<string, string | undefined>;
-  } = {},
-): Promise<ApiResponse<T>> {
-  const resolvedEndpoint =
-    endpoint === '/marketing' || endpoint.startsWith('/marketing/') ? `/api${endpoint}` : endpoint;
+function resolveApiEndpoint(endpoint: string): string {
+  return endpoint === '/marketing' || endpoint.startsWith('/marketing/')
+    ? `/api${endpoint}`
+    : endpoint;
+}
+
+function buildApiHeaders(
+  options: { headers?: HeadersInit; body?: unknown },
+  isProxyEndpoint: boolean,
+): Record<string, string> {
+  const isFormData = options.body instanceof FormData;
   const token = tokenStorage.getToken();
   const workspaceId = tokenStorage.getWorkspaceId();
-  const isProxyEndpoint = resolvedEndpoint.startsWith('/api/');
 
-  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     // CSRF mitigation: custom header prevents cross-origin form submissions
@@ -617,88 +617,102 @@ export async function apiFetch<T = unknown>(
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
-    if (isProxyEndpoint) {
-      headers['x-kloel-access-token'] = token;
-    }
+    if (isProxyEndpoint) headers['x-kloel-access-token'] = token;
   }
-
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
-    if (isProxyEndpoint) {
-      headers['x-kloel-workspace-id'] = workspaceId;
-    }
+    if (isProxyEndpoint) headers['x-kloel-workspace-id'] = workspaceId;
   }
+  return headers;
+}
 
-  let url = isProxyEndpoint ? resolvedEndpoint : `${API_URL}${endpoint}`;
-
-  // Append query params if provided
-  if (options.params) {
-    const searchParams = new URLSearchParams();
-    for (const [key, value] of Object.entries(options.params)) {
-      if (value !== undefined) searchParams.set(key, value);
-    }
-    const qs = searchParams.toString();
-    if (qs) url += (url.includes('?') ? '&' : '?') + qs;
+function appendQueryParams(baseUrl: string, params?: Record<string, string | undefined>): string {
+  if (!params) return baseUrl;
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) searchParams.set(key, value);
   }
+  const qs = searchParams.toString();
+  if (!qs) return baseUrl;
+  return baseUrl + (baseUrl.includes('?') ? '&' : '?') + qs;
+}
 
-  // Auto-stringify body if it's an object
-  const body: BodyInit | null | undefined =
-    options.body &&
-    typeof options.body === 'object' &&
-    !(options.body instanceof FormData) &&
-    !(options.body instanceof Blob) &&
-    !(options.body instanceof ArrayBuffer)
-      ? JSON.stringify(options.body)
-      : (options.body as BodyInit | null | undefined);
+function serializeApiBody(body: unknown): BodyInit | null | undefined {
+  if (
+    body &&
+    typeof body === 'object' &&
+    !(body instanceof FormData) &&
+    !(body instanceof Blob) &&
+    !(body instanceof ArrayBuffer)
+  ) {
+    return JSON.stringify(body);
+  }
+  return body as BodyInit | null | undefined;
+}
+
+function buildErrorResponse<T>(
+  data: { message?: unknown; error?: string },
+  status: number,
+): ApiResponse<T> {
+  const rawMsg = data.message;
+  const message = Array.isArray(rawMsg) ? rawMsg.join(', ') : (rawMsg as string | undefined);
+  return { error: message || data.error || `HTTP ${status}`, status };
+}
+
+async function performApiRequest<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
+  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+  // Safe: `url` is either a proxy endpoint starting with `/api/` (same-origin Next route) or `${API_URL}${endpoint}` where API_URL is fixed from NEXT_PUBLIC_API_URL env var and `endpoint` is a hardcoded path literal in every call site. No user-controlled host.
+  const res = await fetch(url, init);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return buildErrorResponse<T>(data, res.status);
+  return buildSuccessResponse(data, res.status);
+}
+
+async function retryApiRequestWithRefreshedToken<T>(
+  url: string,
+  baseInit: RequestInit,
+  headers: Record<string, string>,
+): Promise<ApiResponse<T> | null> {
+  const refreshed = await refreshAccessToken();
+  if (!refreshed) return null;
+  headers.Authorization = `Bearer ${tokenStorage.getToken()}`;
+  return performApiRequest<T>(url, { ...baseInit, headers });
+}
+
+export async function apiFetch<T = unknown>(
+  endpoint: string,
+  options: Omit<RequestInit, 'body'> & {
+    body?: unknown;
+    params?: Record<string, string | undefined>;
+  } = {},
+): Promise<ApiResponse<T>> {
+  const resolvedEndpoint = resolveApiEndpoint(endpoint);
+  const isProxyEndpoint = resolvedEndpoint.startsWith('/api/');
+  const headers = buildApiHeaders(options, isProxyEndpoint);
+  const url = appendQueryParams(
+    isProxyEndpoint ? resolvedEndpoint : `${API_URL}${endpoint}`,
+    options.params,
+  );
+  const body = serializeApiBody(options.body);
+  const baseInit: RequestInit = {
+    ...options,
+    credentials: 'include', // Send httpOnly cookies
+    body,
+    headers,
+  };
 
   try {
     // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-    // Safe: `url` is either a proxy endpoint starting with `/api/` (same-origin Next route) or `${API_URL}${endpoint}` where API_URL is fixed from NEXT_PUBLIC_API_URL env var and `endpoint` is a hardcoded path literal in every call site. No user-controlled host.
-    const res = await fetch(url, {
-      ...options,
-      credentials: 'include', // Send httpOnly cookies
-      body,
-      headers,
-    });
+    // Safe: see performApiRequest comment.
+    const res = await fetch(url, baseInit);
 
-    // Handle 401 - try refresh token
     if (res.status === 401 && tokenStorage.getRefreshToken()) {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
-        // Retry original request with new token
-        headers.Authorization = `Bearer ${tokenStorage.getToken()}`;
-        // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-        // Safe: same `url` as above — proxy endpoint or `${API_URL}${endpoint}` with env-var base + hardcoded path. No user-controlled host.
-        const retryRes = await fetch(url, {
-          ...options,
-          credentials: 'include', // Send httpOnly cookies
-          headers,
-          body,
-        });
-        const retryData = await retryRes.json().catch(() => ({}));
-        if (!retryRes.ok) {
-          const rawRetryMsg = retryData.message;
-          const retryMessage = Array.isArray(rawRetryMsg) ? rawRetryMsg.join(', ') : rawRetryMsg;
-          return {
-            error: retryMessage || retryData.error || `HTTP ${retryRes.status}`,
-            status: retryRes.status,
-          };
-        }
-        return buildSuccessResponse(retryData, retryRes.status);
-      }
+      const retryResponse = await retryApiRequestWithRefreshedToken<T>(url, baseInit, headers);
+      if (retryResponse) return retryResponse;
     }
 
     const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      const rawMsg = data.message;
-      const message = Array.isArray(rawMsg) ? rawMsg.join(', ') : rawMsg;
-      return {
-        error: message || data.error || `HTTP ${res.status}`,
-        status: res.status,
-      };
-    }
-
+    if (!res.ok) return buildErrorResponse<T>(data, res.status);
     return buildSuccessResponse(data, res.status);
   } catch (err: unknown) {
     return {

@@ -172,6 +172,67 @@ export function useCheckoutExperienceSocial({
 
   const validateStep2 = useCallback(() => isCheckoutAddressStepValid(form), [form]);
 
+  const advanceToStep2 = useCallback(async () => {
+    if (!validateStep1()) {
+      setSubmitError('Preencha nome, e-mail, CPF e WhatsApp para continuar.');
+      return;
+    }
+
+    setSubmitError('');
+    setLoadingStep(true);
+    setPixelEvent('InitiateCheckout');
+    await social.updateLeadProgress({
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      cpf: form.cpf,
+      stepReached: 2,
+    });
+    window.setTimeout(() => {
+      setStep(2);
+      setLoadingStep(false);
+    }, 600);
+  }, [form.cpf, form.email, form.name, form.phone, social, validateStep1]);
+
+  const advanceToStep3 = useCallback(async () => {
+    if (!validateStep2()) {
+      setSubmitError('Preencha o endereço completo para continuar ao pagamento.');
+      return;
+    }
+
+    setSubmitError('');
+    setPixelEvent('AddPaymentInfo');
+    await social.updateLeadProgress({
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      cpf: form.cpf,
+      cep: form.cep,
+      street: form.street,
+      number: form.number,
+      neighborhood: form.neighborhood,
+      city: form.city,
+      state: form.state,
+      complement: form.complement,
+      stepReached: 3,
+    });
+    setStep(3);
+  }, [
+    form.cep,
+    form.city,
+    form.complement,
+    form.cpf,
+    form.email,
+    form.name,
+    form.neighborhood,
+    form.number,
+    form.phone,
+    form.state,
+    form.street,
+    social,
+    validateStep2,
+  ]);
+
   const goStep = useCallback(
     async (target: number) => {
       if (target === 1 && mobileCanOpenStep1) {
@@ -181,74 +242,16 @@ export function useCheckoutExperienceSocial({
 
       if (target === 2) {
         if (step === 1) {
-          if (!validateStep1()) {
-            setSubmitError('Preencha nome, e-mail, CPF e WhatsApp para continuar.');
-            return;
-          }
-
-          setSubmitError('');
-          setLoadingStep(true);
-          setPixelEvent('InitiateCheckout');
-          await social.updateLeadProgress({
-            name: form.name,
-            email: form.email,
-            phone: form.phone,
-            cpf: form.cpf,
-            stepReached: 2,
-          });
-          window.setTimeout(() => {
-            setStep(2);
-            setLoadingStep(false);
-          }, 600);
+          await advanceToStep2();
           return;
         }
-
         if (mobileCanOpenStep2) setStep(2);
         return;
       }
 
-      if (!validateStep2()) {
-        setSubmitError('Preencha o endereço completo para continuar ao pagamento.');
-        return;
-      }
-
-      setSubmitError('');
-      setPixelEvent('AddPaymentInfo');
-      await social.updateLeadProgress({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        cpf: form.cpf,
-        cep: form.cep,
-        street: form.street,
-        number: form.number,
-        neighborhood: form.neighborhood,
-        city: form.city,
-        state: form.state,
-        complement: form.complement,
-        stepReached: 3,
-      });
-      setStep(3);
+      await advanceToStep3();
     },
-    [
-      form.email,
-      form.cpf,
-      form.name,
-      form.phone,
-      form.cep,
-      form.city,
-      form.complement,
-      form.neighborhood,
-      form.number,
-      form.state,
-      form.street,
-      mobileCanOpenStep1,
-      mobileCanOpenStep2,
-      social,
-      step,
-      validateStep1,
-      validateStep2,
-    ],
+    [advanceToStep2, advanceToStep3, mobileCanOpenStep1, mobileCanOpenStep2, step],
   );
 
   const rejectCoupon = useCallback((message: string) => {
@@ -336,32 +339,35 @@ export function useCheckoutExperienceSocial({
     [],
   );
 
-  const finalizeOrder = useCallback(async () => {
-    const planId = plan?.id;
-    const precheckError = computeFinalizeOrderPrecheckError({
-      identityValid: validateStep1(),
-      addressValid: validateStep2(),
-      hasWorkspaceAndPlan: Boolean(workspaceId && planId),
+  const runFinalizeOrderPrecheck = useCallback(
+    (planId: string | undefined) =>
+      computeFinalizeOrderPrecheckError({
+        identityValid: validateStep1(),
+        addressValid: validateStep2(),
+        hasWorkspaceAndPlan: Boolean(workspaceId && planId),
+        checkoutUnavailableReason,
+        payMethod,
+        supportsCard,
+        supportsPix,
+        supportsBoleto,
+        cpfDigits: form.cpf.replace(D_RE, '').length,
+      }),
+    [
       checkoutUnavailableReason,
+      form.cpf,
       payMethod,
+      supportsBoleto,
       supportsCard,
       supportsPix,
-      supportsBoleto,
-      cpfDigits: form.cpf.replace(D_RE, '').length,
-    });
-    if (precheckError) {
-      setSubmitError(precheckError.message);
-      if (precheckError.targetStep) setStep(precheckError.targetStep);
-      return;
-    }
-    if (!workspaceId || !planId) return;
+      validateStep1,
+      validateStep2,
+      workspaceId,
+    ],
+  );
 
-    setIsSubmitting(true);
-    setSubmitError('');
-    resetStripeConfirmation();
-
-    try {
-      const result = await finalizeCheckoutOrder({
+  const dispatchFinalizeCheckout = useCallback(
+    (planId: string) =>
+      finalizeCheckoutOrder({
         affiliateContext,
         capturedLeadId: social.socialIdentity?.leadId,
         checkoutCode,
@@ -377,8 +383,43 @@ export function useCheckoutExperienceSocial({
         shippingMode,
         subtotal,
         total,
-        workspaceId,
-      });
+        workspaceId: workspaceId as string,
+      }),
+    [
+      affiliateContext,
+      checkoutCode,
+      discount,
+      form,
+      installments,
+      payMethod,
+      paymentProvider,
+      qty,
+      shippingInCents,
+      shippingMode,
+      social.deviceFingerprint,
+      social.socialIdentity?.leadId,
+      subtotal,
+      total,
+      workspaceId,
+    ],
+  );
+
+  const finalizeOrder = useCallback(async () => {
+    const planId = plan?.id;
+    const precheckError = runFinalizeOrderPrecheck(planId);
+    if (precheckError) {
+      setSubmitError(precheckError.message);
+      if (precheckError.targetStep) setStep(precheckError.targetStep);
+      return;
+    }
+    if (!workspaceId || !planId) return;
+
+    setIsSubmitting(true);
+    setSubmitError('');
+    resetStripeConfirmation();
+
+    try {
+      const result = await dispatchFinalizeCheckout(planId);
       applyFinalizedCheckoutResult(result);
     } catch (error) {
       setSubmitError(
@@ -388,29 +429,11 @@ export function useCheckoutExperienceSocial({
       setIsSubmitting(false);
     }
   }, [
-    affiliateContext,
     applyFinalizedCheckoutResult,
-    checkoutCode,
-    checkoutUnavailableReason,
-    discount,
-    form,
-    installments,
-    payMethod,
-    paymentProvider,
+    dispatchFinalizeCheckout,
     plan?.id,
     resetStripeConfirmation,
-    qty,
-    shippingInCents,
-    shippingMode,
-    social.deviceFingerprint,
-    social.socialIdentity?.leadId,
-    subtotal,
-    supportsBoleto,
-    supportsCard,
-    supportsPix,
-    total,
-    validateStep1,
-    validateStep2,
+    runFinalizeOrderPrecheck,
     workspaceId,
   ]);
 

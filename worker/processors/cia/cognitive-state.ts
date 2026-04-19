@@ -595,10 +595,19 @@ function deriveSignals(input: SeedCognitiveStateInput): DerivedSignals {
   };
 }
 
-function assembleCognitiveState(
+interface DerivedScores {
+  trustScore: number;
+  urgencyScore: number;
+  priceSensitivity: number;
+  stage: CustomerStage;
+  confidence: number;
+  ltvEstimate: number;
+}
+
+function computeDerivedScores(
   input: SeedCognitiveStateInput,
   signals: DerivedSignals,
-): CustomerCognitiveState {
+): DerivedScores {
   const { previous } = signals;
   const trustScore = computeTrustScore({
     previous,
@@ -629,51 +638,73 @@ function assembleCognitiveState(
     objections: signals.objections,
     unreadCount: signals.unreadCount,
   });
-  const nextBestAction = inferNextBestAction({
-    intent: signals.intent,
-    stage,
-    unreadCount: signals.unreadCount,
-    silenceMinutes: signals.silenceMinutes,
-    trustScore,
-    urgencyScore,
-    priceSensitivity,
-    paymentState: signals.paymentState,
-    riskFlags: signals.riskFlags,
-    objections: signals.objections,
-    desires: signals.desires,
-    confidence,
-  });
-  const nextBestQuestion = inferNextBestQuestion({
-    stage,
-    emotionalTone: signals.emotionalTone,
-    objections: signals.objections,
-    corePain: signals.corePain,
-  });
   const ltvEstimate = computeLtvEstimate({
     leadScore: input.leadScore,
     trustScore,
     urgencyScore,
     stage,
   });
+  return { trustScore, urgencyScore, priceSensitivity, stage, confidence, ltvEstimate };
+}
 
-  const state: CustomerCognitiveState = {
+function computeRecommendedActions(
+  signals: DerivedSignals,
+  scores: DerivedScores,
+): {
+  nextBestAction: CognitiveActionType;
+  nextBestQuestion: string | null | undefined;
+} {
+  const nextBestAction = inferNextBestAction({
+    intent: signals.intent,
+    stage: scores.stage,
+    unreadCount: signals.unreadCount,
+    silenceMinutes: signals.silenceMinutes,
+    trustScore: scores.trustScore,
+    urgencyScore: scores.urgencyScore,
+    priceSensitivity: scores.priceSensitivity,
+    paymentState: signals.paymentState,
+    riskFlags: signals.riskFlags,
+    objections: signals.objections,
+    desires: signals.desires,
+    confidence: scores.confidence,
+  });
+  const nextBestQuestion = inferNextBestQuestion({
+    stage: scores.stage,
+    emotionalTone: signals.emotionalTone,
+    objections: signals.objections,
+    corePain: signals.corePain,
+  });
+  return { nextBestAction, nextBestQuestion };
+}
+
+function buildCognitiveStatePayload(
+  input: SeedCognitiveStateInput,
+  signals: DerivedSignals,
+  scores: DerivedScores,
+  recommended: {
+    nextBestAction: CognitiveActionType;
+    nextBestQuestion: string | null | undefined;
+  },
+): CustomerCognitiveState {
+  const { previous } = signals;
+  return {
     conversationId: input.conversationId || previous?.conversationId || null,
     contactId: input.contactId || previous?.contactId || null,
     phone: input.phone || previous?.phone || null,
     contactName: input.contactName || previous?.contactName || null,
     intent: signals.intent,
-    stage,
-    trustScore,
-    urgencyScore,
-    priceSensitivity,
+    stage: scores.stage,
+    trustScore: scores.trustScore,
+    urgencyScore: scores.urgencyScore,
+    priceSensitivity: scores.priceSensitivity,
     objections: signals.objections,
     desires: signals.desires,
     trustSignals: signals.trustSignals,
     lastOffer: previous?.lastOffer || null,
     lastAction: input.lastAction || previous?.lastAction || null,
-    nextBestAction,
+    nextBestAction: recommended.nextBestAction,
     silenceMinutes: signals.silenceMinutes,
-    ltvEstimate,
+    ltvEstimate: scores.ltvEstimate,
     paymentState: signals.paymentState,
     lastOutcome: input.lastOutcome || previous?.lastOutcome || null,
     riskFlags: signals.riskFlags,
@@ -681,11 +712,20 @@ function assembleCognitiveState(
     disclosureLevel: signals.disclosureLevel,
     corePain: signals.corePain,
     preferredStyle: signals.preferredStyle,
-    nextBestQuestion,
-    classificationConfidence: confidence,
+    nextBestQuestion: recommended.nextBestQuestion,
+    classificationConfidence: scores.confidence,
     summary: '',
     updatedAt: new Date().toISOString(),
   };
+}
+
+function assembleCognitiveState(
+  input: SeedCognitiveStateInput,
+  signals: DerivedSignals,
+): CustomerCognitiveState {
+  const scores = computeDerivedScores(input, signals);
+  const recommended = computeRecommendedActions(signals, scores);
+  const state = buildCognitiveStatePayload(input, signals, scores, recommended);
 
   state.summary = summarizeState({
     intent: state.intent,

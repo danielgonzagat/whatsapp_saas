@@ -215,6 +215,55 @@ function buildDerivedFooterLegal(
   return `Copyright ${new Date().getFullYear()} ${companyName}${cnpjSuffix}`;
 }
 
+function resolveSupportedMethods(
+  config: DerivedStateArgs['config'],
+  paymentProvider: DerivedStateArgs['paymentProvider'],
+) {
+  return {
+    supportsCard:
+      config?.enableCreditCard !== false && paymentProvider?.supportsCreditCard !== false,
+    supportsPix: config?.enablePix !== false && paymentProvider?.supportsPix !== false,
+    supportsBoleto: config?.enableBoleto === true && paymentProvider?.supportsBoleto !== false,
+  };
+}
+
+function buildDerivedPricing(
+  total: number,
+  payMethod: DerivedStateArgs['payMethod'],
+  installments: number,
+  paymentProvider: DerivedStateArgs['paymentProvider'],
+) {
+  return buildCheckoutPricing({
+    baseTotalInCents: total,
+    paymentMethod: payMethod === 'card' ? 'credit' : payMethod,
+    installments,
+    installmentInterestMonthlyPercent: paymentProvider?.installmentInterestMonthlyPercent ?? 3.99,
+  });
+}
+
+function buildDerivedFooter(
+  config: DerivedStateArgs['config'],
+  merchant: DerivedStateArgs['merchant'],
+  brandName: string,
+  helpers: DerivedStateArgs['helpers'],
+) {
+  return {
+    footerPrimary: helpers.buildFooterPrimaryLine(brandName, merchant),
+    footerSecondary: merchant?.addressLine || '',
+    footerLegal: buildDerivedFooterLegal(config, merchant, brandName, helpers.formatCnpj),
+  };
+}
+
+function buildDerivedHeader(config: DerivedStateArgs['config']) {
+  return {
+    headerPrimary: config?.headerMessage || 'Envio Imediato após o Pagamento',
+    headerSecondary: config?.headerSubMessage || 'OFERTA ESPECIAL DO MÊS!!!',
+    popupCouponCode: String(config?.autoCouponCode || '')
+      .trim()
+      .toUpperCase(),
+  };
+}
+
 export function deriveCheckoutExperienceState({
   product,
   config,
@@ -230,7 +279,7 @@ export function deriveCheckoutExperienceState({
   dynamicShippingInCents,
   step,
 }: DerivedStateArgs) {
-  const { fmt, normalizeTestimonials, buildFooterPrimaryLine, formatCnpj } = helpers;
+  const { fmt, normalizeTestimonials } = helpers;
   const productName =
     config?.productDisplayName || plan?.name || product?.name || defaults.product.name;
   const brandName = resolveDerivedBrandName(config, merchant, product, defaults);
@@ -243,10 +292,10 @@ export function deriveCheckoutExperienceState({
     plan,
     dynamicShippingInCents,
   );
-  const supportsCard =
-    config?.enableCreditCard !== false && paymentProvider?.supportsCreditCard !== false;
-  const supportsPix = config?.enablePix !== false && paymentProvider?.supportsPix !== false;
-  const supportsBoleto = config?.enableBoleto === true && paymentProvider?.supportsBoleto !== false;
+  const { supportsCard, supportsPix, supportsBoleto } = resolveSupportedMethods(
+    config,
+    paymentProvider,
+  );
   const productImage = resolveDerivedProductImage(config, product);
   const checkoutUnavailableReason = resolveDerivedUnavailableReason(paymentProvider);
   const testimonials = normalizeTestimonials(
@@ -258,24 +307,16 @@ export function deriveCheckoutExperienceState({
   const subtotal = unitPriceInCents * qty;
   const total = Math.max(0, subtotal + shippingInCents - discount);
   const installments = Math.max(1, Number.parseInt(form.installments || '1', 10) || 1);
-  const pricing = buildCheckoutPricing({
-    baseTotalInCents: total,
-    paymentMethod: payMethod === 'card' ? 'credit' : payMethod,
-    installments,
-    installmentInterestMonthlyPercent: paymentProvider?.installmentInterestMonthlyPercent ?? 3.99,
-  });
+  const pricing = buildDerivedPricing(total, payMethod, installments, paymentProvider);
   const totalWithInterest = payMethod === 'card' ? pricing.chargedTotalInCents : total;
   const installmentOptions = buildDerivedInstallmentOptions(total, plan, paymentProvider, fmt);
-  const footerPrimary = buildFooterPrimaryLine(brandName, merchant);
-  const footerSecondary = merchant?.addressLine || '';
-  const footerLegal = buildDerivedFooterLegal(config, merchant, brandName, formatCnpj);
-  const popupCouponCode = String(config?.autoCouponCode || '')
-    .trim()
-    .toUpperCase();
-  const headerPrimary = config?.headerMessage || 'Envio Imediato após o Pagamento';
-  const headerSecondary = config?.headerSubMessage || 'OFERTA ESPECIAL DO MÊS!!!';
-  const mobileCanOpenStep1 = step > 1;
-  const mobileCanOpenStep2 = step > 2;
+  const { footerPrimary, footerSecondary, footerLegal } = buildDerivedFooter(
+    config,
+    merchant,
+    brandName,
+    helpers,
+  );
+  const { headerPrimary, headerSecondary, popupCouponCode } = buildDerivedHeader(config);
   return {
     productName,
     brandName,
@@ -301,8 +342,8 @@ export function deriveCheckoutExperienceState({
     popupCouponCode,
     headerPrimary,
     headerSecondary,
-    mobileCanOpenStep1,
-    mobileCanOpenStep2,
+    mobileCanOpenStep1: step > 1,
+    mobileCanOpenStep2: step > 2,
   };
 }
 
