@@ -8,6 +8,12 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type React from 'react';
 import { startTransition, useEffect, useRef, useState, useId } from 'react';
 import useSWR, { mutate } from 'swr';
+import {
+  emptyPlatformMetrics,
+  extractMetaCampaignsFromResponse,
+  extractMetaPlatformMetrics,
+  mapMetaCampaign,
+} from './AnunciosView.helpers';
 
 // ── Fonts ──
 const SORA = "'Sora', sans-serif";
@@ -2729,111 +2735,20 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   // Hydrate PLATFORMS.meta with real data when available
   useEffect(() => {
-    if (metaConnected && metaInsights) {
-      const d = Array.isArray(metaInsights?.data) ? metaInsights.data[0] : metaInsights;
-      PLATFORMS = {
-        ...PLATFORMS,
-        meta: {
-          ...PLATFORMS.meta,
-          connected: true,
-          spend: Number.parseFloat(d?.spend || '0'),
-          impressions: Number.parseInt(d?.impressions || '0', 10),
-          clicks: Number.parseInt(d?.clicks || '0', 10),
-          conversions: Number.parseInt(d?.conversions || d?.actions?.length || '0', 10),
-          ctr: Number.parseFloat(d?.ctr || '0'),
-          cpc: Number.parseFloat(d?.cpc || '0'),
-          revenue:
-            Number.parseFloat(
-              d?.action_values?.find?.(
-                (a: Record<string, unknown>) =>
-                  a.action_type === 'offsite_conversion.fb_pixel_purchase',
-              )?.value ||
-                d?.purchase_roas?.[0]?.value ||
-                '0',
-            ) * Number.parseFloat(d?.spend || '1'),
-          roas: Number.parseFloat(d?.purchase_roas?.[0]?.value || '0'),
-        },
-      };
-    } else {
-      PLATFORMS = {
-        ...PLATFORMS,
-        meta: {
-          ...PLATFORMS.meta,
-          connected: false,
-          spend: 0,
-          revenue: 0,
-          roas: 0,
-          conversions: 0,
-          impressions: 0,
-          clicks: 0,
-          ctr: 0,
-          cpc: 0,
-        },
-      };
-    }
+    const metaMetrics =
+      metaConnected && metaInsights
+        ? extractMetaPlatformMetrics(metaInsights as Record<string, unknown>)
+        : emptyPlatformMetrics();
+    PLATFORMS = {
+      ...PLATFORMS,
+      meta: { ...PLATFORMS.meta, ...metaMetrics },
+    };
   }, [metaConnected, metaInsights]);
 
   // Hydrate CAMPAIGNS with real campaign data
   useEffect(() => {
-    const raw = Array.isArray(metaCampaigns?.data)
-      ? metaCampaigns.data
-      : Array.isArray(metaCampaigns)
-        ? metaCampaigns
-        : [];
-
-    if (metaConnected && raw.length > 0) {
-      CAMPAIGNS = raw.map((c: Record<string, unknown>) => {
-        const id =
-          typeof c.id === 'string' ? c.id : `campaign-${Math.random().toString(36).slice(2, 10)}`;
-        const insightsData = (() => {
-          const candidate = c.insights;
-          if (
-            candidate &&
-            typeof candidate === 'object' &&
-            Array.isArray((candidate as { data?: unknown[] }).data)
-          ) {
-            return (candidate as { data: Array<Record<string, unknown>> }).data;
-          }
-          return [];
-        })();
-        const firstInsight = insightsData[0] || {};
-        const actionValues = Array.isArray(firstInsight.action_values)
-          ? (firstInsight.action_values as Array<Record<string, unknown>>)
-          : [];
-        const purchaseRoas = Array.isArray(firstInsight.purchase_roas)
-          ? (firstInsight.purchase_roas as Array<Record<string, unknown>>)
-          : [];
-
-        return {
-          id,
-          platform: 'meta' as const,
-          name: typeof c.name === 'string' ? c.name : `Campaign ${id}`,
-          status:
-            String(c.status || c.effective_status || 'PAUSED').toLowerCase() === 'active'
-              ? 'active'
-              : 'paused',
-          spend: Number.parseFloat(String(c.spend || firstInsight.spend || '0')),
-          revenue: Number.parseFloat(
-            String(
-              actionValues.find(
-                (a: Record<string, unknown>) =>
-                  a.action_type === 'offsite_conversion.fb_pixel_purchase',
-              )?.value || '0',
-            ),
-          ),
-          roas: Number.parseFloat(String(purchaseRoas[0]?.value || '0')),
-          conv: Number.parseInt(String(firstInsight.conversions || '0'), 10),
-          ctr: Number.parseFloat(String(firstInsight.ctr || '0')),
-          cpc: Number.parseFloat(String(firstInsight.cpc || '0')),
-          trend:
-            Number.parseFloat(String(purchaseRoas[0]?.value || '0')) > 1
-              ? ('up' as const)
-              : ('down' as const),
-        };
-      });
-    } else {
-      CAMPAIGNS = [];
-    }
+    const raw = extractMetaCampaignsFromResponse(metaCampaigns);
+    CAMPAIGNS = metaConnected && raw.length > 0 ? raw.map(mapMetaCampaign) : [];
   }, [metaConnected, metaCampaigns]);
 
   const metaAccessToken: string | undefined =
