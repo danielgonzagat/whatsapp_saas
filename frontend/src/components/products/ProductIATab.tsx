@@ -3,6 +3,12 @@
 import { apiFetch } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
+import {
+  type AIConfig,
+  type AIConfigPayload,
+  buildAIConfigBody,
+  mergeAIConfigPayload,
+} from './ProductIATab.helpers';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const V = {
@@ -88,20 +94,6 @@ function Toggle({
   );
 }
 
-interface AIConfig {
-  idealCustomer?: string;
-  painPoints?: string;
-  promisedResult?: string;
-  objections?: Array<{ q: string; a: string }>;
-  tone?: string;
-  persistence?: number;
-  messageLimit?: number;
-  followUp?: string;
-  autoCheckoutLink?: boolean;
-  offerDiscount?: boolean;
-  useUrgency?: boolean;
-}
-
 export function ProductIATab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -126,42 +118,10 @@ export function ProductIATab({ productId }: { productId: string }) {
   });
 
   useEffect(() => {
-    interface AIConfigPayload {
-      customerProfile?: {
-        idealCustomer?: string;
-        painPoints?: string;
-        promisedResult?: string;
-      };
-      objections?: Array<{ q: string; a: string }>;
-      tone?: string;
-      persistenceLevel?: number;
-      messageLimit?: number;
-      followUpConfig?: { schedule?: string };
-      salesArguments?: {
-        autoCheckoutLink?: boolean;
-        offerDiscount?: boolean;
-        useUrgency?: boolean;
-      };
-    }
     apiFetch<AIConfigPayload>(`/products/${productId}/ai-config`)
       .then((res) => {
         const d = res?.data;
-        if (d) {
-          setConfig((prev) => ({
-            ...prev,
-            idealCustomer: d.customerProfile?.idealCustomer || '',
-            painPoints: d.customerProfile?.painPoints || '',
-            promisedResult: d.customerProfile?.promisedResult || '',
-            objections: d.objections || [],
-            tone: d.tone || 'Consultivo',
-            persistence: d.persistenceLevel ?? 3,
-            messageLimit: d.messageLimit ?? 10,
-            followUp: d.followUpConfig?.schedule || '2h, 24h, 72h',
-            autoCheckoutLink: d.salesArguments?.autoCheckoutLink ?? true,
-            offerDiscount: d.salesArguments?.offerDiscount ?? true,
-            useUrgency: d.salesArguments?.useUrgency ?? true,
-          }));
-        }
+        if (d) setConfig((prev) => mergeAIConfigPayload(prev, d));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -176,25 +136,7 @@ export function ProductIATab({ productId }: { productId: string }) {
     try {
       await apiFetch(`/products/${productId}/ai-config`, {
         method: 'PUT',
-        body: {
-          customerProfile: config.idealCustomer
-            ? {
-                idealCustomer: config.idealCustomer,
-                painPoints: config.painPoints,
-                promisedResult: config.promisedResult,
-              }
-            : undefined,
-          objections: config.objections,
-          tone: config.tone,
-          persistenceLevel: config.persistence,
-          messageLimit: config.messageLimit,
-          followUpConfig: config.followUp ? { schedule: config.followUp } : undefined,
-          salesArguments: {
-            autoCheckoutLink: config.autoCheckoutLink,
-            offerDiscount: config.offerDiscount,
-            useUrgency: config.useUrgency,
-          },
-        },
+        body: buildAIConfigBody(config),
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
