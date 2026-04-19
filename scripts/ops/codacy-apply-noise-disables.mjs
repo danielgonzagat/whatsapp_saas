@@ -418,6 +418,12 @@ const NOISE_PATTERNS = [
     reason:
       'WRONG_RULE (our context) — flags every `new RegExp(x)` call. Triage sample 2026-04-18: all non-protected findings build regex from internal constants / validated workspace IDs / allowlisted search tokens. The real DoS vector — regex-dos — is separately disabled (see above) because our regexes have bounded input. Real attacker-controlled regex construction would be caught by code review at the input boundary.',
   },
+  // ── Biome performance rules producing mostly stale or debatable signal ──
+  {
+    id: 'Biome_lint_correctness_noGlobalDirnameFilename',
+    reason:
+      'WRONG_RULE (our context) — flags `__dirname`/`__filename` in CommonJS files. All findings are in legitimate CJS scripts (next.config.ts uses CJS runtime, postinstall scripts are CJS). ESM files correctly use `import.meta.url` / `import.meta.filename`. Rule does not distinguish module system.',
+  },
 ];
 
 // -------------------- Env --------------------
