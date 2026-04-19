@@ -21,7 +21,6 @@ function StartNodeComponent({ data, selected }: NodeProps<StartNodeData>) {
         return data.eventType ? `Evento: ${data.eventType}` : 'Configure evento';
       case 'schedule':
         return data.schedule ? `Agendado: ${data.schedule}` : 'Configure horário';
-      case 'manual':
       default:
         return 'Execução manual';
     }

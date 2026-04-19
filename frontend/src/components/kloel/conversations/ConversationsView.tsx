@@ -100,7 +100,9 @@ export function ConversationsView() {
     );
     if (!approved) return;
 
-    selectedIds.forEach((conversationId) => deleteConversation(conversationId));
+    selectedIds.forEach((conversationId) => {
+      deleteConversation(conversationId);
+    });
     resetSelection();
   };
 

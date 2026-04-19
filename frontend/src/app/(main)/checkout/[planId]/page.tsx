@@ -544,7 +544,6 @@ export default function CheckoutEditorPage() {
             return `/products/${productId}?tab=ia&focus=urgency`;
           case 'payment-widget':
             return `/products/${productId}?tab=checkouts&focus=payment-widget`;
-          case 'checkout-appearance':
           default:
             return `/products/${productId}?tab=checkouts&focus=checkout-appearance`;
         }

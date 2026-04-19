@@ -69,7 +69,7 @@ export const kloelApi = {
 
         try {
           // biome-ignore lint/performance/noAwaitInLoops: SSE reader.read() must resolve before appending to buffer and splitting on newline — parallel reads would interleave chunks and corrupt multi-line data: frames
-          while (true) {
+          for (;;) {
             const { done, value } = await reader.read();
             if (done) break;
 

@@ -18,7 +18,9 @@ export class GroupingManager {
     if (objects.length < 2) return null;
 
     this.canvas.discardActiveObject();
-    objects.forEach((obj) => this.canvas.remove(obj));
+    objects.forEach((obj) => {
+      this.canvas.remove(obj);
+    });
 
     const group = new Group(objects);
     this.canvas.add(group);

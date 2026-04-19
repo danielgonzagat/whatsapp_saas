@@ -318,7 +318,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           const decoder = new TextDecoder();
 
           // biome-ignore lint/performance/noAwaitInLoops: HomeScreen SSE stream — each reader.read() chunk must decode and render to the message state before the next read so user-visible tokens arrive in order; parallel reads would interleave data: frames mid-JSON
-          while (true) {
+          for (;;) {
             const { done, value } = await reader.read();
             if (done) break;
 

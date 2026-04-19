@@ -33,7 +33,9 @@ export class SelectionManager {
     const objs = this.canvas.getActiveObjects();
     if (objs.length === 0) return;
     this.canvas.discardActiveObject();
-    objs.forEach((obj) => this.canvas.remove(obj));
+    objs.forEach((obj) => {
+      this.canvas.remove(obj);
+    });
     this.canvas.requestRenderAll();
   }
 

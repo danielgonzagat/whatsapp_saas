@@ -24,7 +24,11 @@ function resolveManagedCookieNames(patterns: string[]): string[] {
   for (const pattern of patterns) {
     if (pattern.includes('*')) {
       const prefix = pattern.replace(PATTERN_RE, '');
-      cookieNames.filter((name) => name.startsWith(prefix)).forEach((name) => names.add(name));
+      cookieNames
+        .filter((name) => name.startsWith(prefix))
+        .forEach((name) => {
+          names.add(name);
+        });
       continue;
     }
 

@@ -159,7 +159,7 @@ function OnboardingChatContent() {
 
       if (reader) {
         // biome-ignore lint/performance/noAwaitInLoops: onboarding-chat SSE stream — each reader.read() chunk must decode and update the `assistantMessage` accumulator before the next read so the welcome-flow renders token-by-token rather than jumping from empty to final state
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
 

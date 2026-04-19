@@ -18,7 +18,6 @@ function EndNodeComponent({ data, selected }: NodeProps<EndNodeData>) {
         return 'Redirecionar para outro fluxo';
       case 'handoff':
         return 'Transferir para atendente';
-      case 'complete':
       default:
         return 'Finalizar conversa';
     }

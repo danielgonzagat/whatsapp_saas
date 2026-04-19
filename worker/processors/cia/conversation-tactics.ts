@@ -132,7 +132,6 @@ export function buildConversationTacticPlan(input: {
         candidate('CHECKOUT_SIMPLIFICATION', 0.7 + urgency * 0.04, 'reduce_decision_friction'),
       );
       break;
-    case 'RESPOND':
     default:
       candidates.push(
         candidate(

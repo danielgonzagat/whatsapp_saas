@@ -580,7 +580,9 @@ export function ChatContainer({
 
     if (!hasAuthQuery) return;
 
-    authKeys.forEach((key) => nextParams.delete(key));
+    authKeys.forEach((key) => {
+      nextParams.delete(key);
+    });
     const nextQuery = nextParams.toString();
     const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
 
@@ -1231,7 +1233,7 @@ export function ChatContainer({
         let buffer = '';
 
         // biome-ignore lint/performance/noAwaitInLoops: chat-container SSE stream — each reader.read() chunk must append to buffer and split on '\n' to surface [DONE] and data: frames to the token renderer in order; parallel reads would interleave partial JSON across boundaries
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
 

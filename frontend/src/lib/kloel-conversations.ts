@@ -224,7 +224,7 @@ export function streamAuthenticatedKloelMessage(
 
       try {
         // biome-ignore lint/performance/noAwaitInLoops: kloel conversations SSE stream — each reader.read() must reset the idle-timeout and parse buffered newlines before the next read; parallel reads would starve the idle-timeout reset and abort the stream mid-flight
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
 

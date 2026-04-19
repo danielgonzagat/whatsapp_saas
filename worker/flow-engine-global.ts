@@ -385,7 +385,7 @@ export class FlowEngineGlobal {
         const MAX_RETRIES = 3;
 
         // biome-ignore lint/performance/noAwaitInLoops: retry-with-exponential-backoff — each attempt must observe the previous attempt's outcome (success/thrown error) and sleep 2^retryCount seconds before retrying the same node
-        while (true) {
+        for (;;) {
           try {
             result = await this.executeNode(state, node);
             break;

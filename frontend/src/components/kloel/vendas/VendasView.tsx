@@ -125,9 +125,6 @@ interface DetailItemData {
   planName?: string;
 }
 
-const T_RE = /[:T]/g;
-const PATTERN_RE = /"/g;
-
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
@@ -2763,115 +2760,6 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       )}
 
       {/* Action buttons removed from header for clean pill-tab layout */}
-      {false && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: 24,
-          }}
-        >
-          <div />
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button
-              type="button"
-              onClick={() => setShowSmartPayment(true)}
-              style={{
-                padding: '8px 16px',
-                background: '#E85D30',
-                border: 'none',
-                borderRadius: 6,
-                color: 'var(--app-text-on-accent)',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: SORA,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              {IC.dollar(14)} Cobrar
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const now = new Date().toISOString().slice(0, 19).replace(T_RE, '-');
-                const escape = (v: unknown) => {
-                  const s = String(v ?? '');
-                  return `"${s.replace(PATTERN_RE, '""')}"`;
-                };
-                let rows: Record<string, unknown>[] = [];
-                let filename = '';
-                if (tab === 'vendas') {
-                  filename = `vendas-${now}.csv`;
-                  rows = (sales as SaleItem[]).map((s) => ({
-                    id: s.id,
-                    cliente: s.leadPhone || s.customerName || '',
-                    produto: s.productName || '',
-                    valor: s.amount,
-                    status: s.status,
-                    metodo: s.paymentMethod || '',
-                    data: s.createdAt,
-                  }));
-                } else if (tab === 'assinaturas') {
-                  filename = `assinaturas-${now}.csv`;
-                  rows = (subscriptions as SubscriptionItem[]).map((s) => ({
-                    id: s.id,
-                    cliente: s.customerName || '',
-                    plano: s.planName || '',
-                    valor: s.amount,
-                    status: s.status,
-                    ltv: s.totalPaid || 0,
-                  }));
-                } else {
-                  filename = `pedidos-${now}.csv`;
-                  rows = (orders as OrderItem[]).map((o) => ({
-                    id: o.id,
-                    cliente: o.customerName || '',
-                    produto: o.productName || '',
-                    valor: o.amount,
-                    status: o.status,
-                    rastreio: o.trackingCode || '',
-                    destino: o.addressState || '',
-                  }));
-                }
-                if (!rows.length) return;
-                const headers = Object.keys(rows[0]);
-                const csv = [
-                  headers.join(';'),
-                  ...rows.map((r) => headers.map((h) => escape(r[h])).join(';')),
-                ].join('\n');
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-              style={{
-                padding: '8px 16px',
-                background: 'none',
-                border: '1px solid var(--app-border-primary)',
-                borderRadius: 6,
-                color: 'var(--app-text-secondary)',
-                fontSize: 12,
-                cursor: 'pointer',
-                fontFamily: SORA,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              {IC.download(14)} Exportar tudo
-            </button>
-          </div>
-        </div>
-      )}
 
       {orderAlerts.length > 0 && (
         <div

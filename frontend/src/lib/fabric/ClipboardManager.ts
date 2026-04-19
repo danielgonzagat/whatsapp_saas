@@ -25,7 +25,9 @@ export class ClipboardManager {
     await this.copy();
     const objs = this.canvas.getActiveObjects();
     this.canvas.discardActiveObject();
-    objs.forEach((obj) => this.canvas.remove(obj));
+    objs.forEach((obj) => {
+      this.canvas.remove(obj);
+    });
     this.canvas.requestRenderAll();
     this.history.saveState();
   }
