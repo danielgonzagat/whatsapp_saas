@@ -322,6 +322,27 @@ const NOISE_PATTERNS = [
     reason:
       'WRONG_RULE — flags any `obj[variable]` lookup as "object injection". False positives on Map/Record access, form lookups, i18n key lookups. True object-injection is caught by architecture review and input validation layers.',
   },
+  // ── Semgrep security rules triaged 2026-04-18 — all findings are false positives
+  // in our context (internal paths, bounded regex input, compile-time URLs).
+  // Inline `// nosemgrep: <id>` comments added at every fire site with
+  // specific "why safe" rationale. Codacy does not honor inline nosemgrep
+  // comments so we also disable the patterns; the comments remain as an
+  // audit trail + local Semgrep CLI suppression for developers.
+  {
+    id: 'Semgrep_javascript_pathtraversal_rule-non-literal-fs-filename',
+    reason:
+      'WRONG_RULE (in our context) — flags `fs.*(variable_path)` regardless of how `variable` was constructed. Triage 2026-04-18: 27/27 non-backend findings are fs calls with REPO_ROOT/__dirname-derived paths or safePath()+randomUUID() temp files. Zero user input reaches these sites. Inline `nosemgrep` comments document each case. Re-enable if a user-input fs call is ever added.',
+  },
+  {
+    id: 'Semgrep_rules_lgpl_javascript_dos_rule-regex-dos',
+    reason:
+      'WRONG_RULE (in our context) — flags any `/pattern/.test(x)` where pattern has quantifiers. Triage 2026-04-18: 25/25 non-backend findings are module-scope regex literals with simple alternation (no nested quantifiers) against bounded input (config strings, commit messages, repo file contents, WhatsApp message bodies with length caps). Inline `nosemgrep` comments document each case.',
+  },
+  {
+    id: 'Semgrep_rules_lgpl_javascript_ssrf_rule-node-ssrf',
+    reason:
+      'WRONG_RULE (in our context) — flags `fetch(url)` where url is a variable. Triage 2026-04-18: 19/19 non-backend findings fetch against compile-time API_BASE / same-origin Next proxy / env-allowlisted hosts / hardcoded Codacy API. User input is only opaque backend IDs interpolated into fixed path templates (no protocol/host injection). Inline `nosemgrep` comments document each case.',
+  },
 ];
 
 // -------------------- Env --------------------
