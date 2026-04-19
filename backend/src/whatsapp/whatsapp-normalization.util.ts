@@ -1,38 +1,6 @@
-const S_RE = /\s+/g;
-function isDigit(char: string): boolean {
-  const code = char.charCodeAt(0);
-  return code >= 48 && code <= 57;
-}
+import { collapseWhitespace, extractAsciiDigits, isDigit } from './whatsapp-digits.util';
 
-export function collapseWhitespace(value: unknown): string {
-  return (
-    typeof value === 'string'
-      ? value
-      : typeof value === 'number' || typeof value === 'boolean'
-        ? String(value)
-        : ''
-  )
-    .replace(S_RE, ' ')
-    .trim();
-}
-
-export function extractAsciiDigits(value: unknown): string {
-  const input =
-    typeof value === 'string'
-      ? value
-      : typeof value === 'number' || typeof value === 'boolean'
-        ? String(value)
-        : '';
-  let result = '';
-
-  for (const char of input) {
-    if (isDigit(char)) {
-      result += char;
-    }
-  }
-
-  return result;
-}
+export { collapseWhitespace, extractAsciiDigits };
 
 export function extractPhoneFromChatId(value: unknown): string {
   const input =

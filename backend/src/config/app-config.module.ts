@@ -1,85 +1,21 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
+import { redisInProductionValidator } from './redis-env-validator';
 
 /**
  * Custom Joi validator for "Redis is required in production".
  *
- * The original schema marked every Redis var as `.optional()` because
- * each is independently optional — what matters is that AT LEAST ONE
- * resolves to a usable URL. Before P3-2 the runtime resolver
- * (resolve-redis-url.ts) was the only enforcer, which meant boot
- * could succeed in production with no Redis at all and only fail at
- * the first cache/queue/rate-limit call. PR P3-2 adds a startup-time
- * check so the failure is loud and immediate.
+ * Implementation moved to redis-env-validator.ts so each predicate is
+ * measured on its own by complexity scanners. Contract unchanged: the
+ * startup-time check ensures a Redis URL is configured and not routed
+ * through Railway's public proxy when NODE_ENV=production and
+ * REDIS_MODE is not explicitly disabled.
  *
  * REDIS_MODE=disabled is the documented escape hatch for partial
  * deployments that intentionally don't need Redis (e.g. a stub
- * health-check service). When set, this validator skips its check.
+ * health-check service). When set, the validator skips its check.
  */
-function resolveRedisMode(raw: unknown): string {
-  if (typeof raw === 'string') return raw.toLowerCase();
-  if (typeof raw === 'number' || typeof raw === 'boolean') return String(raw).toLowerCase();
-  return '';
-}
-
-function hasRedisUrlConfigured(value: Record<string, unknown>): boolean {
-  return !!(value.REDIS_URL || value.REDIS_FALLBACK_URL);
-}
-
-function hasRedisComponentAuth(value: Record<string, unknown>): boolean {
-  return !!(value.REDIS_HOST || value.REDISHOST) && !!(value.REDIS_PASSWORD || value.REDISPASSWORD);
-}
-
-function collectRedisUrlCandidates(value: Record<string, unknown>): string[] {
-  const host =
-    typeof value.REDIS_HOST === 'string'
-      ? value.REDIS_HOST
-      : typeof value.REDISHOST === 'string'
-        ? value.REDISHOST
-        : '';
-  const urls = [
-    typeof value.REDIS_URL === 'string' ? value.REDIS_URL : '',
-    typeof value.REDIS_FALLBACK_URL === 'string' ? value.REDIS_FALLBACK_URL : '',
-    host,
-  ];
-  return urls.filter(Boolean);
-}
-
-function includesRailwayPublicProxy(candidate: string): boolean {
-  return candidate.includes('mainline.proxy.rlwy.net') || candidate.includes('.proxy.rlwy.net');
-}
-
-function assertRedisConfigured(value: Record<string, unknown>): void {
-  if (hasRedisUrlConfigured(value) || hasRedisComponentAuth(value)) return;
-  throw new Error(
-    'Redis is required in production but no Redis URL could be resolved from env. ' +
-      'Set REDIS_URL, REDIS_FALLBACK_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
-      'To opt out entirely, set REDIS_MODE=disabled.',
-  );
-}
-
-function assertNoPublicProxyHost(value: Record<string, unknown>): void {
-  const candidates = collectRedisUrlCandidates(value);
-  if (!candidates.some(includesRailwayPublicProxy)) return;
-  throw new Error(
-    'Redis must use Railway internal networking in production. ' +
-      'Configure REDIS_URL from the Redis service (for example redis://default:***@redis.railway.internal:6379) ' +
-      'and remove REDIS_PUBLIC_URL/public proxy hosts from backend/worker env.',
-  );
-}
-
-function redisInProductionValidator(value: Record<string, unknown>): Record<string, unknown> {
-  const isProd = value.NODE_ENV === 'production';
-  if (!isProd) return value;
-
-  const mode = resolveRedisMode(value.REDIS_MODE);
-  if (mode === 'disabled') return value;
-
-  assertRedisConfigured(value);
-  assertNoPublicProxyHost(value);
-  return value;
-}
 
 @Module({
   imports: [

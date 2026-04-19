@@ -47,26 +47,13 @@ export class RedisConfigurationError extends Error {
   }
 }
 
-function isLocalhost(url: string): boolean {
-  return url.includes('localhost') || url.includes('127.0.0.1');
-}
-
-function isRailwayPublicProxy(url: string): boolean {
-  return url.includes('mainline.proxy.rlwy.net') || url.includes('.proxy.rlwy.net');
-}
-
-function isRailwayRuntime(): boolean {
-  return [
-    process.env.RAILWAY_PROJECT_ID,
-    process.env.RAILWAY_ENVIRONMENT_ID,
-    process.env.RAILWAY_SERVICE_ID,
-    process.env.RAILWAY_DEPLOYMENT_ID,
-  ].some((value) => typeof value === 'string' && value.trim().length > 0);
-}
-
-function isProductionLikeRuntime(): boolean {
-  return process.env.NODE_ENV === 'production' || isRailwayRuntime();
-}
+import {
+  isLocalhost,
+  isProductionLikeRuntime,
+  isRailwayPublicProxy,
+  isRailwayRuntime,
+} from './redis-url-predicates';
+export { isLocalhost, isProductionLikeRuntime, isRailwayPublicProxy, isRailwayRuntime };
 
 function assertProductionSafeRedisUrl(url: string): string {
   if (isProductionLikeRuntime() && isRailwayPublicProxy(url)) {

@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Queue as BullQueue, QueueEvents } from 'bullmq';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
+import { classifyWebhook } from './webhook-classifier';
 
 // ============================================================================
 // LAZY INITIALIZATION - Conexão só é criada quando acessada pela primeira vez
@@ -104,27 +105,6 @@ export const queueRegistry: Record<string, BullQueue> = {};
 
 const _dlqQueues: Record<string, BullQueue> = {};
 const _queueEvents: Record<string, QueueEvents> = {};
-
-function classifyWebhook(webhook: string): 'slack' | 'teams' | 'generic' {
-  try {
-    const host = new URL(webhook).hostname.toLowerCase();
-    if (host === 'hooks.slack.com') {
-      return 'slack';
-    }
-    if (
-      host === 'outlook.office.com' ||
-      host === 'outlook.office365.com' ||
-      host.endsWith('.office.com') ||
-      host.endsWith('.office365.com')
-    ) {
-      return 'teams';
-    }
-  } catch {
-    return 'generic';
-  }
-
-  return 'generic';
-}
 
 async function notifyOps(input: {
   queue: string;
