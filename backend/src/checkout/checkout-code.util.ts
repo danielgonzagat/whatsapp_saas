@@ -32,6 +32,7 @@ export async function generateUniquePublicCheckoutCode(
   // biome-ignore lint/performance/noAwaitInLoops: retry loop for unique code generation
   for (let attempt = 0; attempt < 24; attempt += 1) {
     const candidate = generatePublicCheckoutCode(length);
+    // biome-ignore lint/performance/noAwaitInLoops: collision-retry loop for public checkout code generation; sequential required
     if (!(await exists(candidate))) {
       return candidate;
     }

@@ -194,6 +194,7 @@ export class UploadController {
         }
         file.mimetype = detectedMime;
 
+        // biome-ignore lint/performance/noAwaitInLoops: per-file processing respects storage backpressure and memory limits
         const result = await this.processFile(file, workspaceId);
         results.push({
           success: true,

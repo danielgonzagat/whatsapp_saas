@@ -358,6 +358,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       }
 
       try {
+        // biome-ignore lint/performance/noAwaitInLoops: per-session deleteSession must be sequential to avoid provider race
         const removed = await this.whatsappApi.deleteSession(session.name);
         if (removed) {
           deleted += 1;
@@ -435,6 +436,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     // biome-ignore lint/performance/noAwaitInLoops: sequential workspace refresh cycle
     for (const workspaceId of workspaceIdsToRefresh) {
       try {
+        // biome-ignore lint/performance/noAwaitInLoops: per-workspace session status probe; sequential to respect provider rate limit
         await this.providerRegistry.getSessionStatus(workspaceId);
       } catch (error: unknown) {
         const errorInstanceofError =
@@ -614,6 +616,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
       // biome-ignore lint/performance/noAwaitInLoops: sequential workspace health monitoring
       for (const workspace of workspaces) {
+        // biome-ignore lint/performance/noAwaitInLoops: per-workspace session check preserves watchdog alerting ordering
         await this.checkWorkspaceSession(workspace.id, workspace.name);
       }
     } catch (error: unknown) {

@@ -783,6 +783,7 @@ export class WhatsappService {
     let scheduled = 0;
     // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
     for (const target of targets) {
+      // biome-ignore lint/performance/noAwaitInLoops: BullMQ autopilotQueue.add per target preserves per-contact scoring order
       await autopilotQueue.add(
         'score-contact',
         {
@@ -1512,6 +1513,7 @@ export class WhatsappService {
     // biome-ignore lint/performance/noAwaitInLoops: sequential contact sync with rate limit protection
     for (const phone of unique) {
       try {
+        // biome-ignore lint/performance/noAwaitInLoops: per-phone optInContact must be sequential to avoid duplicate consent records
         await this.optInContact(workspaceId, phone);
         results.push({ phone, ok: true });
       } catch {
@@ -1527,6 +1529,7 @@ export class WhatsappService {
     // biome-ignore lint/performance/noAwaitInLoops: sequential contact sync with rate limit protection
     for (const phone of unique) {
       try {
+        // biome-ignore lint/performance/noAwaitInLoops: per-phone optOutContact must be sequential to honor consent revocation order
         await this.optOutContact(workspaceId, phone);
         results.push({ phone, ok: true });
       } catch {
@@ -1788,6 +1791,7 @@ export class WhatsappService {
 
     // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for session state
     while (Date.now() < deadline) {
+      // biome-ignore lint/performance/noAwaitInLoops: Redis SET NX lock acquire loop; sequential polling for distributed lock
       const acquired = await this.redis.set(key, token, 'PX', ttlMs, 'NX');
       if (acquired === 'OK') {
         try {
@@ -2357,6 +2361,7 @@ export class WhatsappService {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution with early return
     for (const candidate of candidates) {
+      // biome-ignore lint/performance/noAwaitInLoops: per-candidate readChatMessages with early return; sequential required
       await this.providerRegistry.readChatMessages(workspaceId, candidate).catch(() => undefined);
     }
   }

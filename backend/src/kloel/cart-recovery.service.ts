@@ -47,6 +47,7 @@ export class CartRecoveryService {
         try {
           if (!order.customerEmail) continue;
 
+          // biome-ignore lint/performance/noAwaitInLoops: dynamic import of EmailService per recovery target; resolved once per run
           const emailService = new (await import('../auth/email.service')).EmailService();
           const productName = order.plan?.product?.name || 'Seu pedido';
 

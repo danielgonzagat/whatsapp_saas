@@ -76,6 +76,7 @@ export async function callOpenAIWithRetry<T>(
   // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff
   for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: retry loop for OpenAI with exponential backoff on rate limit errors
       return await fn();
     } catch (err: unknown) {
       const errInstanceofError =

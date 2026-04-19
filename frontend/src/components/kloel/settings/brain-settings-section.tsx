@@ -220,6 +220,45 @@ function normalizeEmergencyMode(value: unknown): EmergencyModeProfile {
   };
 }
 
+type AiToolData = {
+  sentiment?: string;
+  score?: number;
+  label?: string;
+  summary?: string;
+  suggestion?: string;
+  pitch?: string;
+};
+
+type AiToolKind = 'analyzeSentiment' | 'summarize' | 'suggest' | 'pitch';
+
+async function invokeAiTool(
+  tool: AiToolKind,
+  text: string,
+  workspaceId: string,
+): Promise<{ data?: AiToolData; error?: string }> {
+  if (tool === 'analyzeSentiment') {
+    const res = await aiAssistantApi.analyzeSentiment(text);
+    return { data: res.data as AiToolData | undefined, error: res.error };
+  }
+  if (tool === 'summarize') {
+    const res = await aiAssistantApi.summarize(text);
+    return { data: res.data as AiToolData | undefined, error: res.error };
+  }
+  if (tool === 'suggest') {
+    const res = await aiAssistantApi.suggest(workspaceId, text);
+    return { data: res.data as AiToolData | undefined, error: res.error };
+  }
+  const res = await aiAssistantApi.pitch(workspaceId, text);
+  return { data: res.data as AiToolData | undefined, error: res.error };
+}
+
+function formatAiToolOutput(data: AiToolData | undefined): string {
+  if (data?.sentiment) {
+    return `${data.sentiment} (score: ${data.score ?? '\u2014'}, label: ${data.label ?? '\u2014'})`;
+  }
+  return data?.summary || data?.suggestion || data?.pitch || JSON.stringify(data, null, 2);
+}
+
 export function BrainSettingsSection() {
   const fid = useId();
   const kbFileRef = useRef<HTMLInputElement>(null);
@@ -723,49 +762,15 @@ export function BrainSettingsSection() {
     }
   };
 
-  const runAiTool = async (
-    tool: 'analyzeSentiment' | 'summarize' | 'suggest' | 'pitch',
-    label: string,
-  ) => {
+  const runAiTool = async (tool: AiToolKind, label: string) => {
     if (!aiToolInput.trim()) return;
     setAiToolLoading(true);
     setAiToolError('');
     setAiToolResult('');
     try {
-      type AiToolData = {
-        sentiment?: string;
-        score?: number;
-        label?: string;
-        summary?: string;
-        suggestion?: string;
-        pitch?: string;
-      };
-      let data: AiToolData | undefined;
-      let error: string | undefined;
-      const wsId = workspaceId || '';
-      // For tools that need workspaceId/conversationId, we use the text as the conversationId for testing
-      if (tool === 'analyzeSentiment') {
-        const res = await aiAssistantApi.analyzeSentiment(aiToolInput.trim());
-        error = res.error;
-        data = res.data as AiToolData | undefined;
-      } else if (tool === 'summarize') {
-        const res = await aiAssistantApi.summarize(aiToolInput.trim());
-        error = res.error;
-        data = res.data as AiToolData | undefined;
-      } else if (tool === 'suggest') {
-        const res = await aiAssistantApi.suggest(wsId, aiToolInput.trim());
-        error = res.error;
-        data = res.data as AiToolData | undefined;
-      } else {
-        const res = await aiAssistantApi.pitch(wsId, aiToolInput.trim());
-        error = res.error;
-        data = res.data as AiToolData | undefined;
-      }
+      const { data, error } = await invokeAiTool(tool, aiToolInput.trim(), workspaceId || '');
       if (error) throw new Error(error);
-      const output = data?.sentiment
-        ? `${data.sentiment} (score: ${data.score ?? '\u2014'}, label: ${data.label ?? '\u2014'})`
-        : data?.summary || data?.suggestion || data?.pitch || JSON.stringify(data, null, 2);
-      setAiToolResult(`[${label}]\n${output}`);
+      setAiToolResult(`[${label}]\n${formatAiToolOutput(data)}`);
     } catch (e: unknown) {
       setAiToolError(e instanceof Error ? e.message : `Erro ao executar ${label}`);
     } finally {

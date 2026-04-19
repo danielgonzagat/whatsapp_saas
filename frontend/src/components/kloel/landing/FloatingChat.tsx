@@ -31,6 +31,26 @@ const S = "var(--font-sora), 'Sora', sans-serif";
 
 const THINKING_LABELS = ['Pensando', 'Analisando', 'Raciocinando'];
 
+const USER_BUBBLE_STYLE: React.CSSProperties = {
+  background: '#E85D30',
+  color: '#0A0A0C',
+  borderRadius: 6,
+  padding: '10px 14px',
+  fontFamily: S,
+  fontSize: 14,
+  lineHeight: 1.55,
+  wordBreak: 'break-word',
+};
+
+const ASSISTANT_BUBBLE_STYLE: React.CSSProperties = {
+  fontFamily: S,
+  fontSize: 14,
+  color: '#E0DDD8',
+  lineHeight: 1.65,
+  wordBreak: 'break-word',
+  whiteSpace: 'pre-wrap',
+};
+
 function useRotatingLabel(labels: string[], intervalMs = 2500) {
   const [index, setIndex] = useState(0);
   useEffect(() => {
@@ -38,6 +58,113 @@ function useRotatingLabel(labels: string[], intervalMs = 2500) {
     return () => clearInterval(timer);
   }, [labels.length, intervalMs]);
   return labels[index];
+}
+
+function UserMessageRow({
+  msg,
+  isStreaming,
+  hoveredMessageId,
+  onHoverEnter,
+  onHoverLeave,
+  onEdit,
+  onRetry,
+}: {
+  msg: Message;
+  isStreaming: boolean;
+  hoveredMessageId: string | null;
+  onHoverEnter: (id: string) => void;
+  onHoverLeave: (id: string) => void;
+  onEdit: (id: string) => void;
+  onRetry: (id: string) => Promise<void>;
+}) {
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: no native element groups block-level chat bubble + action affordances; role="group" is the correct ARIA mapping
+    <div
+      role="group"
+      style={{ display: 'flex', justifyContent: 'flex-end' }}
+      onMouseEnter={() => onHoverEnter(msg.id)}
+      onMouseLeave={() => onHoverLeave(msg.id)}
+    >
+      <div style={{ maxWidth: '82%' }}>
+        <div style={USER_BUBBLE_STYLE}>{msg.content}</div>
+        <MessageActionBar
+          content={msg.content}
+          align="right"
+          visible={hoveredMessageId === msg.id}
+          actions={[
+            {
+              id: 'edit',
+              label: 'Editar',
+              icon: 'edit',
+              disabled: isStreaming,
+              onClick: () => onEdit(msg.id),
+            },
+            {
+              id: 'retry',
+              label: 'Reenviar',
+              icon: 'retry',
+              disabled: isStreaming,
+              onClick: async () => {
+                await onRetry(msg.id);
+              },
+            },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AssistantMessageRow({
+  msg,
+  isStreaming,
+  onFeedback,
+  onRegenerate,
+}: {
+  msg: Message;
+  isStreaming: boolean;
+  onFeedback: (id: string, type: 'positive' | 'negative' | null) => void;
+  onRegenerate: (id: string) => Promise<void>;
+}) {
+  return (
+    <div style={{ maxWidth: '92%' }}>
+      <div style={ASSISTANT_BUBBLE_STYLE}>{msg.content}</div>
+      {!msg.isStreaming && msg.content ? (
+        <MessageActionBar
+          content={msg.content}
+          align="left"
+          visible={true}
+          actions={[
+            {
+              id: 'thumbs-up',
+              label: 'Gostei',
+              icon: 'thumbsUp',
+              active: msg.feedback === 'positive',
+              disabled: isStreaming,
+              onClick: () => onFeedback(msg.id, msg.feedback === 'positive' ? null : 'positive'),
+            },
+            {
+              id: 'thumbs-down',
+              label: 'Não Gostei',
+              icon: 'thumbsDown',
+              active: msg.feedback === 'negative',
+              disabled: isStreaming,
+              onClick: () => onFeedback(msg.id, msg.feedback === 'negative' ? null : 'negative'),
+            },
+            {
+              id: 'retry',
+              label: 'Tentar novamente',
+              icon: 'retry',
+              disabled: isStreaming,
+              onClick: async () => {
+                await onRegenerate(msg.id);
+              },
+            },
+          ]}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 export function FloatingChat({
@@ -475,118 +602,26 @@ export function FloatingChat({
 
             {messages.map((msg) =>
               msg.role === 'user' ? (
-                // biome-ignore lint/a11y/useSemanticElements: no native element groups block-level chat bubble + action affordances; role="group" is the correct ARIA mapping
-                <div
+                <UserMessageRow
                   key={msg.id}
-                  role="group"
-                  style={{ display: 'flex', justifyContent: 'flex-end' }}
-                  onMouseEnter={() => setHoveredMessageId(msg.id)}
-                  onMouseLeave={() =>
-                    setHoveredMessageId((current) => (current === msg.id ? null : current))
+                  msg={msg}
+                  isStreaming={isStreaming}
+                  hoveredMessageId={hoveredMessageId}
+                  onHoverEnter={setHoveredMessageId}
+                  onHoverLeave={(id) =>
+                    setHoveredMessageId((current) => (current === id ? null : current))
                   }
-                >
-                  <div style={{ maxWidth: '82%' }}>
-                    <div
-                      style={{
-                        background: '#E85D30',
-                        color: '#0A0A0C',
-                        borderRadius: 6,
-                        padding: '10px 14px',
-                        fontFamily: S,
-                        fontSize: 14,
-                        lineHeight: 1.55,
-                        wordBreak: 'break-word',
-                      }}
-                    >
-                      {msg.content}
-                    </div>
-                    <MessageActionBar
-                      content={msg.content}
-                      align="right"
-                      visible={hoveredMessageId === msg.id}
-                      actions={[
-                        {
-                          id: 'edit',
-                          label: 'Editar',
-                          icon: 'edit',
-                          disabled: isStreaming,
-                          onClick: () => handleUserEdit(msg.id),
-                        },
-                        {
-                          id: 'retry',
-                          label: 'Reenviar',
-                          icon: 'retry',
-                          disabled: isStreaming,
-                          onClick: async () => {
-                            await handleUserRetry(msg.id);
-                          },
-                        },
-                      ]}
-                    />
-                  </div>
-                </div>
+                  onEdit={handleUserEdit}
+                  onRetry={handleUserRetry}
+                />
               ) : (
-                <div
+                <AssistantMessageRow
                   key={msg.id}
-                  style={{
-                    maxWidth: '92%',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: S,
-                      fontSize: 14,
-                      color: '#E0DDD8',
-                      lineHeight: 1.65,
-                      wordBreak: 'break-word',
-                      whiteSpace: 'pre-wrap',
-                    }}
-                  >
-                    {msg.content}
-                  </div>
-                  {!msg.isStreaming && msg.content ? (
-                    <MessageActionBar
-                      content={msg.content}
-                      align="left"
-                      visible={true}
-                      actions={[
-                        {
-                          id: 'thumbs-up',
-                          label: 'Gostei',
-                          icon: 'thumbsUp',
-                          active: msg.feedback === 'positive',
-                          disabled: isStreaming,
-                          onClick: () =>
-                            handleAssistantFeedback(
-                              msg.id,
-                              msg.feedback === 'positive' ? null : 'positive',
-                            ),
-                        },
-                        {
-                          id: 'thumbs-down',
-                          label: 'Não Gostei',
-                          icon: 'thumbsDown',
-                          active: msg.feedback === 'negative',
-                          disabled: isStreaming,
-                          onClick: () =>
-                            handleAssistantFeedback(
-                              msg.id,
-                              msg.feedback === 'negative' ? null : 'negative',
-                            ),
-                        },
-                        {
-                          id: 'retry',
-                          label: 'Tentar novamente',
-                          icon: 'retry',
-                          disabled: isStreaming,
-                          onClick: async () => {
-                            await handleAssistantRegenerate(msg.id);
-                          },
-                        },
-                      ]}
-                    />
-                  ) : null}
-                </div>
+                  msg={msg}
+                  isStreaming={isStreaming}
+                  onFeedback={handleAssistantFeedback}
+                  onRegenerate={handleAssistantRegenerate}
+                />
               ),
             )}
 

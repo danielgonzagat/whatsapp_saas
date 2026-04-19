@@ -94,6 +94,7 @@ export class ScrapersService {
     // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing with external calls
     for (const lead of leads) {
       // PULSE:OK — upsert requires compound unique where per contact phone; cannot batch
+      // biome-ignore lint/performance/noAwaitInLoops: per-contact upsert preserves scrape-order audit trail
       await this.prisma.contact.upsert({
         where: {
           workspaceId_phone: {

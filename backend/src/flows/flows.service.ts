@@ -515,6 +515,7 @@ export class FlowsService {
       };
 
       // PULSE:OK — each execution has unique state/logs data; cannot batch with updateMany
+      // biome-ignore lint/performance/noAwaitInLoops: per-execution flow update must be sequential to honor node progression order
       await this.prisma.flowExecution.update({
         where: { id: execution.id },
         data: {

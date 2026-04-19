@@ -874,6 +874,7 @@ export class WahaProvider {
     // biome-ignore lint/performance/noAwaitInLoops: sequential WAHA API attempts with different payloads
     for (const payload of payloadVariants) {
       try {
+        // biome-ignore lint/performance/noAwaitInLoops: per-webhook WAHA PUT must be sequential to honor session state transitions
         await this.request('PUT', path, payload);
         return;
       } catch (err: unknown) {
@@ -1560,6 +1561,7 @@ export class WahaProvider {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential session resolution attempts
     for (const attempt of attempts) {
+      // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff for WAHA request
       const result = await attempt();
       if (result) {
         return true;
@@ -1635,6 +1637,7 @@ export class WahaProvider {
     // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
     for (let page = 0; page < maxPages; page += 1) {
       const offset = page * pageSize;
+      // biome-ignore lint/performance/noAwaitInLoops: per-endpoint fallback probe; sequential until first success
       const payload = await this.tryRequest<Record<string, unknown> | unknown[]>(
         'GET',
         pathBuilder(offset, pageSize),
@@ -1746,6 +1749,7 @@ export class WahaProvider {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     // biome-ignore lint/performance/noAwaitInLoops: sequential chatId candidate resolution
     for (const candidate of this.buildChatIdCandidates(chatId)) {
+      // biome-ignore lint/performance/noAwaitInLoops: per-candidate sendSeen attempt; sequential until first success
       const delivered = await this.tryRequest('POST', '/api/sendSeen', {
         session: resolvedSessionId,
         chatId: candidate,
@@ -1763,6 +1767,7 @@ export class WahaProvider {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution with early return
     for (const candidate of candidates) {
+      // biome-ignore lint/performance/noAwaitInLoops: session-scoped WAHA request fallback; sequential until first success
       const sessionScoped = await this.tryRequest(
         'POST',
         `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(candidate)}/messages/read`,
@@ -1775,6 +1780,7 @@ export class WahaProvider {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution with early return
     for (const candidate of candidates) {
+      // biome-ignore lint/performance/noAwaitInLoops: per-candidate sendSeen dispatch respects WAHA session rate limit
       await this.sendSeen(resolvedSessionId, candidate).catch(() => undefined);
     }
   }

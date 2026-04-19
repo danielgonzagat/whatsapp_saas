@@ -137,6 +137,7 @@ export class GuestChatService implements OnModuleDestroy {
     // biome-ignore lint/performance/noAwaitInLoops: sequential fallback through model list
     for (const model of emergencyModels) {
       try {
+        // biome-ignore lint/performance/noAwaitInLoops: retry loop for OpenAI chat completion with exponential backoff
         const completion = await chatCompletionWithRetry(this.openai, {
           model,
           messages: contextMessages,

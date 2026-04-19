@@ -438,6 +438,120 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
+type HeroTile = {
+  label: string;
+  value: string;
+  meta: string;
+  tone: string;
+};
+
+function HeroTilesGrid({ tiles, compact }: { tiles: HeroTile[]; compact: boolean }) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: compact ? '1fr 1fr' : 'repeat(2, minmax(0, 1fr))',
+        gap: 10,
+      }}
+    >
+      {tiles.map((item) => (
+        <div
+          key={item.label}
+          style={{
+            minHeight: 102,
+            padding: '14px 16px',
+            borderRadius: 6,
+            background: KLOEL_THEME.bgSecondary,
+            border: `1px solid ${KLOEL_THEME.borderPrimary}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '.08em',
+              textTransform: 'uppercase',
+              color: KLOEL_THEME.textTertiary,
+              marginBottom: 8,
+            }}
+          >
+            {item.label}
+          </div>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: item.tone,
+              lineHeight: 1.1,
+            }}
+          >
+            {item.value}
+          </div>
+          <div style={{ marginTop: 6, fontSize: 11, color: KLOEL_THEME.textSecondary }}>
+            {item.meta}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+type MetricTile = {
+  label: string;
+  value: string;
+  tone: string;
+  delta: string;
+  series: number[];
+};
+
+function MetricsRow({ items, isLoading }: { items: MetricTile[]; isLoading: boolean }) {
+  return (
+    <>
+      {items.map((item) => (
+        <Surface key={item.label} style={{ padding: 18 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '.12em',
+                  textTransform: 'uppercase',
+                  color: KLOEL_THEME.textTertiary,
+                  marginBottom: 8,
+                }}
+              >
+                {item.label}
+              </div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  letterSpacing: '-0.04em',
+                  lineHeight: 1,
+                  color: item.tone,
+                }}
+              >
+                {isLoading ? '...' : item.value}
+              </div>
+            </div>
+            <Sparkline data={item.series} color={KLOEL_THEME.accent} />
+          </div>
+          <div style={{ fontSize: 11, color: KLOEL_THEME.textSecondary }}>{item.delta}</div>
+        </Surface>
+      ))}
+    </>
+  );
+}
+
 function OperationalHealthGuide({
   checkpoints,
   onClose,
@@ -950,14 +1064,9 @@ export function HomeView() {
               </div>
             </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: compact ? '1fr 1fr' : 'repeat(2, minmax(0, 1fr))',
-                gap: 10,
-              }}
-            >
-              {[
+            <HeroTilesGrid
+              compact={compact}
+              tiles={[
                 {
                   label: 'Total deste mês',
                   value: formatCurrency(home?.hero.monthRevenueInCents || 0),
@@ -982,51 +1091,8 @@ export function HomeView() {
                   meta: 'Receitas em processamento',
                   tone: KLOEL_THEME.warning,
                 },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    minHeight: 102,
-                    padding: '14px 16px',
-                    borderRadius: 6,
-                    background: KLOEL_THEME.bgSecondary,
-                    border: `1px solid ${KLOEL_THEME.borderPrimary}`,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '.08em',
-                      textTransform: 'uppercase',
-                      color: KLOEL_THEME.textTertiary,
-                      marginBottom: 8,
-                    }}
-                  >
-                    {item.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 700,
-                      color: item.tone,
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    {item.value}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 6,
-                      fontSize: 11,
-                      color: KLOEL_THEME.textSecondary,
-                    }}
-                  >
-                    {item.meta}
-                  </div>
-                </div>
-              ))}
-            </div>
+              ]}
+            />
           </div>
         </Surface>
 
@@ -1037,79 +1103,42 @@ export function HomeView() {
             gap: 12,
           }}
         >
-          {[
-            {
-              label: 'Receita',
-              value: formatCurrency(home?.hero.totalRevenueInCents || 0),
-              tone: KLOEL_THEME.accent,
-              delta:
-                home?.hero.revenueDeltaPct === null
-                  ? 'Sem comparativo anterior'
-                  : `${(home?.hero.revenueDeltaPct || 0) >= 0 ? '+' : ''}${formatOneDecimal(home?.hero.revenueDeltaPct || 0, '%')} vs período anterior`,
-              series: revenueSeries,
-            },
-            {
-              label: 'Vendas',
-              value: formatInteger(home?.metrics.paidOrders || 0),
-              tone: KLOEL_THEME.textPrimary,
-              delta: `${formatInteger(home?.metrics.totalOrders || 0)} pedidos gerados no período`,
-              series: orderSeries,
-            },
-            {
-              label: 'Conversão',
-              value: formatOneDecimal(home?.metrics.conversionRatePct || 0, '%'),
-              tone: KLOEL_THEME.textPrimary,
-              delta: 'Taxa de checkout concluído',
-              series: conversionSeries,
-            },
-            {
-              label: 'Ticket médio',
-              value: formatCurrency(home?.metrics.averageTicketInCents || 0),
-              tone: KLOEL_THEME.textPrimary,
-              delta: 'Média por pedido aprovado',
-              series: averageTicketSeries,
-            },
-          ].map((item) => (
-            <Surface key={item.label} style={{ padding: 18 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  marginBottom: 16,
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '.12em',
-                      textTransform: 'uppercase',
-                      color: KLOEL_THEME.textTertiary,
-                      marginBottom: 8,
-                    }}
-                  >
-                    {item.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 28,
-                      fontWeight: 700,
-                      letterSpacing: '-0.04em',
-                      lineHeight: 1,
-                      color: item.tone,
-                    }}
-                  >
-                    {isLoading ? '...' : item.value}
-                  </div>
-                </div>
-                <Sparkline data={item.series} color={KLOEL_THEME.accent} />
-              </div>
-              <div style={{ fontSize: 11, color: KLOEL_THEME.textSecondary }}>{item.delta}</div>
-            </Surface>
-          ))}
+          <MetricsRow
+            isLoading={isLoading}
+            items={[
+              {
+                label: 'Receita',
+                value: formatCurrency(home?.hero.totalRevenueInCents || 0),
+                tone: KLOEL_THEME.accent,
+                delta:
+                  home?.hero.revenueDeltaPct === null
+                    ? 'Sem comparativo anterior'
+                    : `${(home?.hero.revenueDeltaPct || 0) >= 0 ? '+' : ''}${formatOneDecimal(home?.hero.revenueDeltaPct || 0, '%')} vs período anterior`,
+                series: revenueSeries,
+              },
+              {
+                label: 'Vendas',
+                value: formatInteger(home?.metrics.paidOrders || 0),
+                tone: KLOEL_THEME.textPrimary,
+                delta: `${formatInteger(home?.metrics.totalOrders || 0)} pedidos gerados no período`,
+                series: orderSeries,
+              },
+              {
+                label: 'Conversão',
+                value: formatOneDecimal(home?.metrics.conversionRatePct || 0, '%'),
+                tone: KLOEL_THEME.textPrimary,
+                delta: 'Taxa de checkout concluído',
+                series: conversionSeries,
+              },
+              {
+                label: 'Ticket médio',
+                value: formatCurrency(home?.metrics.averageTicketInCents || 0),
+                tone: KLOEL_THEME.textPrimary,
+                delta: 'Média por pedido aprovado',
+                series: averageTicketSeries,
+              },
+            ]}
+          />
         </div>
 
         <div

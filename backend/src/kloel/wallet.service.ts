@@ -432,6 +432,7 @@ export class WalletService {
           if (!wallet) continue;
 
           // PULSE:OK — each settlement needs atomic $transaction with unique amounts per wallet
+          // biome-ignore lint/performance/noAwaitInLoops: per-transfer $transaction must be sequential to preserve ledger append-only invariant
           await this.prisma.$transaction(
             async (txn) => {
               // Guard the status flip with `updateMany` so a concurrent

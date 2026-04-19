@@ -907,6 +907,7 @@ export class MemberAreaController {
     await this.prisma.$transaction(async (tx) => {
       // biome-ignore lint/performance/noAwaitInLoops: sequential module creation with ordering
       for (const modData of modulesData) {
+        // biome-ignore lint/performance/noAwaitInLoops: per-module create inside $transaction; sequential for FK ordering
         const createdModule = await tx.memberModule.create({
           data: {
             memberAreaId: id,
@@ -919,6 +920,7 @@ export class MemberAreaController {
 
         // biome-ignore lint/performance/noAwaitInLoops: sequential lesson creation within module
         for (const lessonData of modData.lessons) {
+          // biome-ignore lint/performance/noAwaitInLoops: per-lesson create inside $transaction; depends on moduleId from prior step
           await tx.memberLesson.create({
             data: {
               moduleId: createdModule.id,

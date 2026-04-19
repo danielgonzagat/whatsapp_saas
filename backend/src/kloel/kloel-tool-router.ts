@@ -119,6 +119,7 @@ export class KloelToolRouter {
 
       try {
         result = toResultRecord(
+          // biome-ignore lint/performance/noAwaitInLoops: sequential tool execution to preserve agent conversation context
           await this.unifiedAgentService.executeTool(toolName, toolArgs, {
             workspaceId: input.workspaceId,
             phone: stringArgument(toolArgs.phone),

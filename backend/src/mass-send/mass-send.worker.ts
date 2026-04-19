@@ -74,6 +74,7 @@ export function startMassSendWorker() {
 
           // Deduplicate via jobId: same campaign + number = same job
           const jobId = `mass-send:${job.id}:${sanitized}`;
+          // biome-ignore lint/performance/noAwaitInLoops: BullMQ flow queue.add must preserve per-target delivery order
           await flowQueue.add(
             'send-message',
             {

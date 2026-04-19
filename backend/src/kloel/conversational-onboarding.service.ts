@@ -419,6 +419,7 @@ export class ConversationalOnboardingService {
           this.logger.log(`Executando tool: ${functionName}`, args);
 
           // Executar a função correspondente
+          // biome-ignore lint/performance/noAwaitInLoops: tool call chain in onboarding; each step depends on previous result
           const result = await this.executeToolCall(workspaceId, functionName, args);
 
           // Adicionar resultado da tool call ao histórico
@@ -459,6 +460,7 @@ export class ConversationalOnboardingService {
             if (!('function' in toolCall)) continue;
             const functionName: string = toolCall.function.name;
             const args: Record<string, unknown> = JSON.parse(toolCall.function.arguments);
+            // biome-ignore lint/performance/noAwaitInLoops: sequential tool execution to preserve onboarding conversation ordering
             await this.executeToolCall(workspaceId, functionName, args);
           }
         }

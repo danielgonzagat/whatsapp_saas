@@ -726,6 +726,7 @@ export class MarketingController {
       try {
         if (provider === 'resend') {
           // Not SSRF: hardcoded Resend API endpoint
+          // biome-ignore lint/performance/noAwaitInLoops: retry loop for Resend email API with sequential attempts
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {

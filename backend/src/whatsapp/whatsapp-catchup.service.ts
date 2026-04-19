@@ -375,6 +375,7 @@ export class WhatsAppCatchupService {
 
       // biome-ignore lint/performance/noAwaitInLoops: sequential multi-pass sync with state tracking
       for (let pass = 0; pass < this.maxPasses; pass += 1) {
+        // biome-ignore lint/performance/noAwaitInLoops: per-workspace provider getChats must be sequential to avoid provider thrashing
         const rawChats = await this.providerRegistry.getChats(workspaceId);
         const pendingChats = this.normalizeChats(rawChats)
           .filter((chat) => !!chat.id)
@@ -439,6 +440,7 @@ export class WhatsAppCatchupService {
             processedChats === estimatedTotalChats ||
             processedChats % 5 === 0
           ) {
+            // biome-ignore lint/performance/noAwaitInLoops: agent event publish per chat preserves catch-up ordering
             await this.agentEvents.publish({
               type: 'status',
               workspaceId,
@@ -484,6 +486,7 @@ export class WhatsAppCatchupService {
           // biome-ignore lint/performance/noAwaitInLoops: sequential message processing preserving order
           for (const message of messages) {
             if (message.fromMe) {
+              // biome-ignore lint/performance/noAwaitInLoops: per-message historical outbound persist must be sequential for timeline integrity
               const persisted = await this.persistHistoricalOutboundMessage(workspaceId, message);
               if (persisted) {
                 importedMessages += 1;
@@ -1121,6 +1124,7 @@ export class WhatsAppCatchupService {
 
     // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
     for (let page = 0; page < maxPages; page += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: per-chat provider getChatMessages uses cursor pagination; sequential required
       const rawMessages = await this.providerRegistry.getChatMessages(workspaceId, chat.id, {
         limit: this.maxMessagesPerChat,
         offset,
@@ -1489,6 +1493,7 @@ export class WhatsAppCatchupService {
       nextCustomFields.placeholderRelationCount = relationCount;
       nextCustomFields.nameResolutionStatus = trustedName ? 'resolved' : 'pending';
 
+      // biome-ignore lint/performance/noAwaitInLoops: per-contact updateMany batches; sequential to preserve audit ordering
       await this.prisma.contact.updateMany({
         where: { id: contact.id, workspaceId },
         data: {

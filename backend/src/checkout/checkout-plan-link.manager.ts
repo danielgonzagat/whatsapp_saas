@@ -66,6 +66,7 @@ export class CheckoutPlanLinkManager {
     for (let attempt = 0; attempt < 25; attempt += 1) {
       const suffix = `${Date.now().toString(36)}${attempt.toString(36)}`.slice(-6);
       const candidate = this.normalizeCheckoutSlug(`${normalizedBase}-${suffix}`);
+      // biome-ignore lint/performance/noAwaitInLoops: slug-collision retry loop; each attempt depends on prior uniqueness check
       if (!(await this.isPublicSlugTaken(candidate, ignore))) {
         return candidate;
       }
@@ -220,6 +221,7 @@ export class CheckoutPlanLinkManager {
       for (const plan of plans) {
         if (existingPlanIds.has(plan.id)) continue;
 
+        // biome-ignore lint/performance/noAwaitInLoops: per-plan count query inside $transaction; sequential to preserve txn ordering
         const existingPlanLinkCount = await tx.checkoutPlanLink.count({
           where: { planId: plan.id },
         });
@@ -242,6 +244,7 @@ export class CheckoutPlanLinkManager {
 
       // biome-ignore lint/performance/noAwaitInLoops: sequential plan link invalidation
       for (const planId of affectedPlanIds) {
+        // biome-ignore lint/performance/noAwaitInLoops: per-plan link invalidation inside $transaction; sequential for primary-link promotion
         const remainingLinks = await tx.checkoutPlanLink.findMany({
           where: { planId },
           orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],

@@ -60,6 +60,7 @@ export class OpsController {
     for (const job of jobs) {
       // Preserve original opts and add jobId for deduplication on retry
       const retryOpts = { ...job.opts, jobId: `dlq-retry:${job.id || Date.now()}` };
+      // biome-ignore lint/performance/noAwaitInLoops: per-job requeue must preserve original ordering for ops replay
       await main.add(job.name || 'default', job.data, retryOpts);
       await job.remove();
       retried++;

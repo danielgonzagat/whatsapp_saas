@@ -119,6 +119,7 @@ export class StripeWebhookProcessor {
       // Seller already received the funds via the Direct Charge — no
       // separate transfer needed. Other roles need one.
       if (line.role !== 'seller') {
+        // biome-ignore lint/performance/noAwaitInLoops: per-split Stripe transfer dispatch must be sequential for ledger idempotency
         await this.dispatchTransfer({
           paymentIntentId: paymentIntent.id,
           sellerStripeAccountId,

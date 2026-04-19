@@ -455,6 +455,7 @@ export class SegmentationService {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential contact processing with DB writes
     for (const contact of contacts) {
+      // biome-ignore lint/performance/noAwaitInLoops: per-contact engagement score depends on prior contact state; sequential required
       const { level } = await this.calculateEngagementScore(contact.id);
       results[level]++;
       results.processed++;

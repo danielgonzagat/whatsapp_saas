@@ -1259,6 +1259,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       const messages = conversation.messages as Record<string, unknown>[] | undefined;
       const contact = conversation.contact as Record<string, unknown> | undefined;
       const lastMessage = messages?.[0];
+      // biome-ignore lint/performance/noAwaitInLoops: per-chat pending inbound batch build; each batch depends on prior cursor
       const pendingBatch = await this.buildPendingInboundBatch({
         workspaceId,
         contactId: safeStr(conversation.contactId) || null,
@@ -1369,6 +1370,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
         for (const [replyIndex, replyItem] of replyPlan.entries()) {
           // messageLimit: enforced via PlanLimitsService.trackMessageSend
+          // biome-ignore lint/performance/noAwaitInLoops: WhatsApp sendMessage must be sequential per chat to respect provider rate limit
           const sendResult = await this.whatsappService.sendMessage(
             workspaceId,
             phone,
@@ -1694,6 +1696,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation processing with reply locks
     for (const [index, chat] of chats.entries()) {
+      // biome-ignore lint/performance/noAwaitInLoops: remote pending batch load uses cursor pagination; sequential required
       const remoteBatch = await this.loadRemotePendingBatch({
         workspaceId,
         chat,

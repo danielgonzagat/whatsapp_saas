@@ -399,6 +399,7 @@ export class InboundProcessorService {
     if (cached === 'processing') {
       // biome-ignore lint/performance/noAwaitInLoops: retry loop for upsert race condition
       for (let attempt = 0; attempt < 3; attempt++) {
+        // biome-ignore lint/performance/noAwaitInLoops: sleep between batches enforces WhatsApp provider rate limit
         await this.sleep(150);
         const refreshed = await this.redis.get(cacheKey);
         if (refreshed && refreshed !== 'processing') {
@@ -849,6 +850,7 @@ export class InboundProcessorService {
       for (let index = 0; index < replyPlan.length; index += 1) {
         const plan = replyPlan[index];
         // messageLimit: enforced via PlanLimitsService.trackMessageSend
+        // biome-ignore lint/performance/noAwaitInLoops: WhatsApp sendMessage must be sequential per chat for delivery ordering
         const sendResult = await this.whatsappService.sendMessage(
           input.workspaceId,
           input.phone,

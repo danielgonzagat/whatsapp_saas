@@ -161,6 +161,7 @@ export class MetaWebhookController {
       try {
         switch (object) {
           case 'instagram':
+            // biome-ignore lint/performance/noAwaitInLoops: webhook fan-out ordering required for Instagram message delivery
             await this.handleInstagram(entry);
             break;
           case 'page':
@@ -201,6 +202,7 @@ export class MetaWebhookController {
     // biome-ignore lint/performance/noAwaitInLoops: sequential Messenger message processing
     for (const msg of entry.messaging || []) {
       if (msg.message) {
+        // biome-ignore lint/performance/noAwaitInLoops: omnichannel handler must preserve Meta webhook message ordering
         await this.omnichannelService.handleIncomingMessage({
           workspaceId,
           channel: 'MESSENGER',
@@ -224,6 +226,7 @@ export class MetaWebhookController {
       if (change.field === 'messages') {
         const phoneNumberId = String(change.value?.metadata?.phone_number_id || '').trim();
         const workspaceId =
+          // biome-ignore lint/performance/noAwaitInLoops: per-phone-number-id workspace resolution with cache-miss fallback
           await this.metaWhatsApp.resolveWorkspaceIdByPhoneNumberId(phoneNumberId);
 
         if (!workspaceId) {
@@ -264,6 +267,7 @@ export class MetaWebhookController {
             continue;
           }
 
+          // biome-ignore lint/performance/noAwaitInLoops: inbound processor preserves WhatsApp Cloud API message ordering per chat
           await this.inboundProcessor.process({
             workspaceId,
             provider: 'meta-cloud',
@@ -286,6 +290,7 @@ export class MetaWebhookController {
             continue;
           }
 
+          // biome-ignore lint/performance/noAwaitInLoops: per-status update preserves Meta delivery-status timeline
           await this.prisma.message.updateMany({
             where: {
               workspaceId,

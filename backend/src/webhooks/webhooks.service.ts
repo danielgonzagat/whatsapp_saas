@@ -358,6 +358,7 @@ export class WebhooksService {
         }
         // Pub/Sub para múltiplas instâncias (escutadas pelo InboxEventsService)
         try {
+          // biome-ignore lint/performance/noAwaitInLoops: per-subscription Redis publish preserves webhook fan-out ordering
           await this.redis.publish(
             'ws:inbox',
             JSON.stringify({

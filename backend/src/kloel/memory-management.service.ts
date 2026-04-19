@@ -194,6 +194,7 @@ export class MemoryManagementService {
 
       try {
         // PULSE:OK — each category has a unique cutoff date; fixed small set of categories
+        // biome-ignore lint/performance/noAwaitInLoops: per-bucket memory deletion with workspace-scoped audit; sequential required
         const result = await this.prisma.kloelMemory.deleteMany({
           where: {
             category,
@@ -257,6 +258,7 @@ export class MemoryManagementService {
       // biome-ignore lint/performance/noAwaitInLoops: sequential memory group processing
       for (const group of groups) {
         // PULSE:OK — each group has unique workspace+category filter; dedup requires per-group scan
+        // biome-ignore lint/performance/noAwaitInLoops: cursor pagination over memory records; next batch depends on prior cursor
         const memories = await this.prisma.kloelMemory.findMany({
           where: {
             workspaceId: group.workspaceId,
@@ -509,6 +511,7 @@ export class MemoryManagementService {
       const toDelete = sorted.slice(1).map((m: { id: string }) => m.id);
 
       if (toDelete.length > 0) {
+        // biome-ignore lint/performance/noAwaitInLoops: per-category cleanup respects retention policy ordering
         await this.prisma.kloelMemory.deleteMany({
           where: { id: { in: toDelete } },
         });

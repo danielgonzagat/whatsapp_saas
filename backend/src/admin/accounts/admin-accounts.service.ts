@@ -141,6 +141,7 @@ export class AdminAccountsService {
   ): Promise<{ updated: number }> {
     let updated = 0;
     for (const workspaceId of workspaceIds) {
+      // biome-ignore lint/performance/noAwaitInLoops: bulk state update must run sequentially per workspace to maintain audit trail ordering
       await this.updateState(workspaceId, actorId, action, input);
       updated += 1;
     }

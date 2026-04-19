@@ -56,6 +56,7 @@ export class QueueHealthService {
         ...queueOptions,
         connection,
       });
+      // biome-ignore lint/performance/noAwaitInLoops: queue metrics aggregated with internal Promise.all; outer loop iterates queue names
       const [mainCounts, dlqCounts] = await Promise.all([
         queue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
         dlq.getJobCounts('waiting', 'active', 'delayed', 'failed'),

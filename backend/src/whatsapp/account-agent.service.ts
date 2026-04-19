@@ -1141,6 +1141,7 @@ export class AccountAgentService {
     // biome-ignore lint/performance/noAwaitInLoops: sequential offer creation with unique constraints
     for (const offer of offers.filter((item) => item.url && !existingUrls.has(String(item.url)))) {
       // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
+      // biome-ignore lint/performance/noAwaitInLoops: per-plan externalPaymentLink create must be sequential for idempotency key uniqueness
       await this.prisma.externalPaymentLink.create({
         data: {
           workspaceId,

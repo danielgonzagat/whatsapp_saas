@@ -332,6 +332,58 @@ const TABS = [
   { id: 'rules', label: 'Regras IA', iconKey: 'shield', activeColor: EMBER },
 ];
 
+function AnunciosTabBar({
+  tab,
+  isMobile,
+  onSelect,
+}: {
+  tab: string;
+  isMobile: boolean;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 2,
+        borderBottom: '1px solid #222226',
+        padding: isMobile ? '0 12px' : '0 16px',
+        overflowX: 'auto' as const,
+      }}
+    >
+      {TABS.map((t) => {
+        const active = tab === t.id;
+        const icon = IC[t.iconKey];
+        return (
+          <button
+            type="button"
+            key={t.id}
+            onClick={() => onSelect(t.id)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: isMobile ? '10px 12px' : '10px 16px',
+              border: 'none',
+              background: 'none',
+              color: active ? t.activeColor : '#6E6E73',
+              borderBottom: active ? `2px solid ${t.activeColor}` : '2px solid transparent',
+              cursor: 'pointer',
+              fontSize: isMobile ? 12 : 13,
+              fontFamily: SORA,
+              whiteSpace: 'nowrap' as const,
+              transition: 'color 150ms ease',
+            }}
+          >
+            {icon(14)}
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── WarRoom ──
 function WarRoom({
   onGoToRules,
@@ -2817,45 +2869,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
       `}</style>
 
       {/* Tab bar */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 2,
-          borderBottom: '1px solid #222226',
-          padding: isMobile ? '0 12px' : '0 16px',
-          overflowX: 'auto' as const,
-        }}
-      >
-        {TABS.map((t) => {
-          const active = tab === t.id;
-          const icon = IC[t.iconKey];
-          return (
-            <button
-              type="button"
-              key={t.id}
-              onClick={() => goToTab(t.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: isMobile ? '10px 12px' : '10px 16px',
-                border: 'none',
-                background: 'none',
-                color: active ? t.activeColor : '#6E6E73',
-                borderBottom: active ? `2px solid ${t.activeColor}` : '2px solid transparent',
-                cursor: 'pointer',
-                fontSize: isMobile ? 12 : 13,
-                fontFamily: SORA,
-                whiteSpace: 'nowrap' as const,
-                transition: 'color 150ms ease',
-              }}
-            >
-              {icon(14)}
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
+      <AnunciosTabBar tab={tab} isMobile={isMobile} onSelect={goToTab} />
 
       {/* Content */}
       <div style={{ padding: isMobile ? 16 : 24, maxWidth: 1240, margin: '0 auto' }}>

@@ -53,6 +53,7 @@ export class FollowUpService {
         const contact = contactsMap.get(`${followUp.workspaceId}:${followUp.contactId}`) ?? null;
 
         if (!contact?.phone) {
+          // biome-ignore lint/performance/noAwaitInLoops: per-followup update must respect sequential scheduling state transitions
           await this.update(followUp.workspaceId, followUp.id, {
             status: 'cancelled',
             reason: 'contact_phone_missing',

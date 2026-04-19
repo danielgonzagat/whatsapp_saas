@@ -112,6 +112,7 @@ export class OmnichannelService {
 
         // Se tiver base64, fazer upload para storage
         if (attachment.base64) {
+          // biome-ignore lint/performance/noAwaitInLoops: per-attachment base64 upload; sequential to avoid saturating storage bandwidth
           const uploadedUrl = await this.uploadBase64ToStorage(
             workspaceId,
             attachment.base64,

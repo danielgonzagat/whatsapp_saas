@@ -99,6 +99,7 @@ export class InboxService {
 
     // biome-ignore lint/performance/noAwaitInLoops: retry loop for upsert race condition
     for (let attempt = 0; attempt < GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS; attempt++) {
+      // biome-ignore lint/performance/noAwaitInLoops: per-channel conversation lookup; early return on first match prevents batching
       const existing = await client.conversation.findFirst({
         where: { workspaceId, contactId, channel, status: { not: 'CLOSED' } },
       });

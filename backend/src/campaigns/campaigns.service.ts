@@ -186,6 +186,7 @@ export class CampaignsService {
       try {
         // Try email first (always available if Resend configured)
         if (contact.email) {
+          // biome-ignore lint/performance/noAwaitInLoops: dynamic import inside per-contact loop; resolved once per send attempt
           const EmailServiceClass = (await import('../auth/email.service')).EmailService;
           const emailService = new EmailServiceClass();
           // unsubscribe: link included in email footer
@@ -261,6 +262,7 @@ export class CampaignsService {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential AI variant generation
     for (let i = 0; i < Math.max(1, Math.min(variants, 10)); i++) {
+      // biome-ignore lint/performance/noAwaitInLoops: AI variant generation depends on previous mutation seed; sequential required
       const mutatedMessage = await this.mutateCopy(base.messageTemplate, i);
       // PULSE:OK — each variant depends on mutateCopy result; sequential creation required
       const variant = await this.prisma.campaign.create({

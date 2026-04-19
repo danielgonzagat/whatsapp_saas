@@ -77,6 +77,60 @@ const CARRIERS = [
   'Transportadora Local',
 ];
 
+const PAYMENT_TYPE_OPTIONS = [
+  { value: 'ONE_TIME' as const, label: 'Avista', desc: 'Pagamento unico' },
+  { value: 'SUBSCRIPTION' as const, label: 'Assinatura', desc: 'Cobranca recorrente' },
+  { value: 'INSTALLMENT' as const, label: 'Parcelado', desc: 'Dividido em parcelas' },
+];
+
+const CHECKOUT_TYPE_OPTIONS = [
+  { value: 'standard' as const, label: 'Standard', desc: 'Checkout tradicional' },
+  { value: 'conversational' as const, label: 'Conversacional', desc: 'Via WhatsApp com IA' },
+];
+
+const SHIPPING_RESPONSIBLE_OPTIONS = [
+  { value: 'producer' as const, label: 'Produtor', desc: 'Voce mesmo envia' },
+  { value: 'supplier' as const, label: 'Fornecedor', desc: 'Seu fornecedor envia' },
+  { value: 'fulfillment' as const, label: 'Fulfillment', desc: 'Centro de distribuicao' },
+  { value: 'dropshipping' as const, label: 'Dropshipping', desc: 'Envio direto ao cliente' },
+];
+
+const APPROVAL_MODE_OPTIONS = [
+  { value: 'auto' as const, label: 'Automatico', desc: 'Aprovacao instantanea' },
+  { value: 'manual' as const, label: 'Manual', desc: 'Voce aprova cada solicitacao' },
+];
+
+const BILLING_TYPE_OPTIONS = [
+  { value: 'one_time' as const, label: 'Unico', desc: 'Uma cobranca' },
+  { value: 'recurring' as const, label: 'Recorrente', desc: 'Assinatura mensal' },
+  { value: 'free' as const, label: 'Gratuito', desc: 'Sem cobranca' },
+];
+
+const FORMAT_LABEL_MAP: Record<FormState['format'], string> = {
+  PHYSICAL: 'Fisico',
+  DIGITAL: 'Digital',
+  HYBRID: 'Hibrido',
+};
+
+const PAYMENT_TYPE_LABEL_MAP: Record<FormState['paymentType'], string> = {
+  ONE_TIME: 'Avista',
+  SUBSCRIPTION: 'Assinatura',
+  INSTALLMENT: 'Parcelado',
+};
+
+const SHIPPING_RESPONSIBLE_LABEL_MAP: Record<FormState['shippingResponsible'], string> = {
+  producer: 'Produtor',
+  supplier: 'Fornecedor',
+  fulfillment: 'Fulfillment',
+  dropshipping: 'Dropshipping',
+};
+
+const BILLING_TYPE_LABEL_MAP: Record<FormState['billingType'], string> = {
+  one_time: 'Unico',
+  recurring: 'Recorrente',
+  free: 'Gratuito',
+};
+
 // ============================================
 // FORM STATE TYPE
 // ============================================
@@ -865,19 +919,7 @@ export default function NewProductPage() {
             {/* Tipo de pagamento */}
             <MonitorInputField label="Tipo de pagamento *">
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
-                {[
-                  { value: 'ONE_TIME' as const, label: 'Avista', desc: 'Pagamento unico' },
-                  {
-                    value: 'SUBSCRIPTION' as const,
-                    label: 'Assinatura',
-                    desc: 'Cobranca recorrente',
-                  },
-                  {
-                    value: 'INSTALLMENT' as const,
-                    label: 'Parcelado',
-                    desc: 'Dividido em parcelas',
-                  },
-                ].map((opt) => {
+                {PAYMENT_TYPE_OPTIONS.map((opt) => {
                   const selected = form.paymentType === opt.value;
                   return (
                     <button
@@ -964,14 +1006,7 @@ export default function NewProductPage() {
             {/* Tipo de checkout */}
             <MonitorInputField label="Tipo de checkout">
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
-                {[
-                  { value: 'standard' as const, label: 'Standard', desc: 'Checkout tradicional' },
-                  {
-                    value: 'conversational' as const,
-                    label: 'Conversacional',
-                    desc: 'Via WhatsApp com IA',
-                  },
-                ].map((opt) => {
+                {CHECKOUT_TYPE_OPTIONS.map((opt) => {
                   const selected = form.checkoutType === opt.value;
                   return (
                     <button
@@ -1204,20 +1239,7 @@ export default function NewProductPage() {
             {/* Quem envia */}
             <MonitorInputField label="Quem realiza o envio? *">
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
-                {[
-                  { value: 'producer' as const, label: 'Produtor', desc: 'Voce mesmo envia' },
-                  { value: 'supplier' as const, label: 'Fornecedor', desc: 'Seu fornecedor envia' },
-                  {
-                    value: 'fulfillment' as const,
-                    label: 'Fulfillment',
-                    desc: 'Centro de distribuicao',
-                  },
-                  {
-                    value: 'dropshipping' as const,
-                    label: 'Dropshipping',
-                    desc: 'Envio direto ao cliente',
-                  },
-                ].map((opt) => {
+                {SHIPPING_RESPONSIBLE_OPTIONS.map((opt) => {
                   const selected = form.shippingResponsible === opt.value;
                   return (
                     <button
@@ -1423,18 +1445,7 @@ export default function NewProductPage() {
                 {/* Modo de aprovacao */}
                 <MonitorInputField label="Modo de aprovacao">
                   <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
-                    {[
-                      {
-                        value: 'auto' as const,
-                        label: 'Automatico',
-                        desc: 'Aprovacao instantanea',
-                      },
-                      {
-                        value: 'manual' as const,
-                        label: 'Manual',
-                        desc: 'Voce aprova cada solicitacao',
-                      },
-                    ].map((opt) => {
+                    {APPROVAL_MODE_OPTIONS.map((opt) => {
                       const selected = form.affiliateApprovalMode === opt.value;
                       return (
                         <button
@@ -1504,11 +1515,7 @@ export default function NewProductPage() {
             {/* Tipo de cobranca */}
             <MonitorInputField label="Tipo de cobranca *">
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
-                {[
-                  { value: 'one_time' as const, label: 'Unico', desc: 'Uma cobranca' },
-                  { value: 'recurring' as const, label: 'Recorrente', desc: 'Assinatura mensal' },
-                  { value: 'free' as const, label: 'Gratuito', desc: 'Sem cobranca' },
-                ].map((opt) => {
+                {BILLING_TYPE_OPTIONS.map((opt) => {
                   const selected = form.billingType === opt.value;
                   return (
                     <button
@@ -1624,15 +1631,7 @@ export default function NewProductPage() {
                 },
                 { label: 'Categoria', value: form.category },
                 { label: 'Tags', value: form.tags.join(', ') },
-                {
-                  label: 'Formato',
-                  value:
-                    form.format === 'PHYSICAL'
-                      ? 'Fisico'
-                      : form.format === 'DIGITAL'
-                        ? 'Digital'
-                        : 'Hibrido',
-                },
+                { label: 'Formato', value: FORMAT_LABEL_MAP[form.format] },
               ]}
             />
 
@@ -1648,15 +1647,7 @@ export default function NewProductPage() {
                     .replace('.', ',')}`,
                   highlight: true,
                 },
-                {
-                  label: 'Tipo de pagamento',
-                  value:
-                    form.paymentType === 'ONE_TIME'
-                      ? 'Avista'
-                      : form.paymentType === 'SUBSCRIPTION'
-                        ? 'Assinatura'
-                        : 'Parcelado',
-                },
+                { label: 'Tipo de pagamento', value: PAYMENT_TYPE_LABEL_MAP[form.paymentType] },
                 {
                   label: 'Comissao afiliado',
                   value: form.affiliateCommission ? `${form.affiliateCommission}%` : '',
@@ -1698,14 +1689,7 @@ export default function NewProductPage() {
                 items={[
                   {
                     label: 'Responsavel',
-                    value:
-                      form.shippingResponsible === 'producer'
-                        ? 'Produtor'
-                        : form.shippingResponsible === 'supplier'
-                          ? 'Fornecedor'
-                          : form.shippingResponsible === 'fulfillment'
-                            ? 'Fulfillment'
-                            : 'Dropshipping',
+                    value: SHIPPING_RESPONSIBLE_LABEL_MAP[form.shippingResponsible],
                   },
                   {
                     label: 'Prazo de despacho',
@@ -1747,15 +1731,7 @@ export default function NewProductPage() {
               title="Pagamento"
               onEdit={() => setStep(6)}
               items={[
-                {
-                  label: 'Tipo de cobranca',
-                  value:
-                    form.billingType === 'one_time'
-                      ? 'Unico'
-                      : form.billingType === 'recurring'
-                        ? 'Recorrente'
-                        : 'Gratuito',
-                },
+                { label: 'Tipo de cobranca', value: BILLING_TYPE_LABEL_MAP[form.billingType] },
                 ...(form.billingType !== 'free'
                   ? [
                       { label: 'Max. parcelas', value: `${form.maxInstallments}x` },
