@@ -6,7 +6,8 @@ Detailed targeting strategies for each major ad platform.
 
 - Google Ads Audiences (Search Campaign Targeting, Display/YouTube Targeting)
 - Meta Audiences (Core Audiences, Custom Audiences, Lookalike Audiences)
-- LinkedIn Audiences (Job-Based Targeting, Company-Based Targeting, High-Performing Combinations)
+- LinkedIn Audiences (Job-Based Targeting, Company-Based Targeting,
+  High-Performing Combinations)
 - Twitter/X Audiences
 - TikTok Audiences
 - Audience Size Guidelines

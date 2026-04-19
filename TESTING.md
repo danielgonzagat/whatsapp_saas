@@ -93,7 +93,8 @@ Para validar Google real no backend durante E2E/API tests, defina também:
 export E2E_GOOGLE_TEST_CREDENTIAL="<id_token_emitido_pelo_google>"
 ```
 
-Sem essa variável, a suíte continua cobrindo auth por email/senha e o bloqueio do
+Sem essa variável, a suíte continua cobrindo auth por email/senha e o bloqueio
+do
 endpoint OAuth legado, mas pula o teste do fluxo Google real.
 
 ### Visualizar Testes

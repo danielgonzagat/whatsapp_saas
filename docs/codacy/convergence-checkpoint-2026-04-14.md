@@ -54,7 +54,8 @@ autonomous session of ~5 hours.
   exclude_paths. Reviewable, version-controlled, reversible.
 
 - **`scripts/ralph/`**: phase 3, 4, 5 Ralph Loop prompts ready for
-  future autonomous sessions (`/ralph-loop "$(cat scripts/ralph/phase-3-prompt.md)"`).
+  future autonomous sessions (
+  `/ralph-loop "$(cat scripts/ralph/phase-3-prompt.md)"` ).
 
 - **`scripts/ops/codemods/`**: 3 codemod scripts wired via npm
   scripts. Two with skeleton implementations (cleanup-unused-vars,

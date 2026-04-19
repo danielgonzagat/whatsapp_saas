@@ -13,11 +13,13 @@
 ### Session 2 (2026-03-31)
 
 - Marked ~33 internal/admin/worker routes in PULSE exclusion
-- Fixed PULSE detection: kycMutation wrapper, getServerApiBase(), nested generics,
+- Fixed PULSE detection: kycMutation wrapper, getServerApiBase(), nested
+  generics,
   multi-object API files
 - Fixed PULSE facade detector: message-clearing timers, API object method calls
 - Connected remaining ~47 routes: MercadoPago, Smart Payment, AI Assistant, KB
-  Upload, Webinar, Video/Voice, Scrapers, Launch, Ad Rules, Onboarding, Marketing,
+  Upload, Webinar, Video/Voice, Scrapers, Launch, Ad Rules, Onboarding,
+  Marketing,
   Partnerships
 - PULSE: 96% -> 100%
 

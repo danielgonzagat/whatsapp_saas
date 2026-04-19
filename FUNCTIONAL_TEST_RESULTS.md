@@ -36,9 +36,14 @@
 
 Static said FUNCIONA but browser says QUEBRADO/CRASH:
 
-- **/products/:id** — "Produtos" (button): Error: locator.click: Timeout 10000ms exceeded. Call log: [2m - waiting for locator('button:has-text("Produtos")').first()[22m [2m - locator resolved
-- **/products/:id** — "← Produtos" (button): Error: locator.click: Timeout 10000ms exceeded. Call log: [2m - waiting for locator('button:has-text("← Produtos")').first()[22m [2m - locator resolve
-- **/funnels** — "Entrar" (button): Auth failed: 401 on GET /api/whatsapp-api/live
+- **/products/:id** — "Produtos" (button): Error: locator.click: Timeout 10000ms
+  exceeded. Call log: [2m - waiting for
+  locator('button:has-text("Produtos")').first()[22m [2m - locator resolved
+- **/products/:id** — "← Produtos" (button): Error: locator.click: Timeout
+  10000ms exceeded. Call log: [2m - waiting for locator('button:has-text("←
+  Produtos")').first()[22m [2m - locator resolve
+- **/funnels** — "Entrar" (button): Auth failed: 401 on GET
+  /api/whatsapp-api/live
 
 ## Per-Page Results
 
@@ -1608,7 +1613,8 @@ Ca** (229 occurrences)
 
 - /vendas/fisicos → "Conectar canaisWhatsApp, Instagram, Facebook e Email"
 - /carteira/extrato → "[Como posso ajudar você hoje?]"
-- /carteira/movimentacoes → "Conectar canaisWhatsApp, Instagram, Facebook e Email"
+- /carteira/movimentacoes → "Conectar canaisWhatsApp, Instagram, Facebook e
+  Email"
 - /carteira/saques → "Anuncios"
 - /anuncios → "Ver vendasPedidos, assinaturas, pipeline e carteira"
 - ... and 5 more
@@ -1626,7 +1632,8 @@ Ca** (229 occurrences)
 
 - /vendas/gestao-vendas → "+"
 - /carteira/extrato → "+"
-- /carteira/extrato → "🤖Kloel IAAssistente de IA que atende seus leads 24/7 com in"
+- /carteira/extrato → "🤖Kloel IAAssistente de IA que atende seus leads 24/7 com
+  in"
 - /carteira/movimentacoes → "Vendas"
 - /carteira/movimentacoes → "Parcerias"
 - ... and 2 more

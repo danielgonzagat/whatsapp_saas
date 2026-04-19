@@ -1,13 +1,21 @@
 ---
 name: kloel-marketing-operator
-description: Use when Daniel asks for marketing help about Kloel itself, or when a Kloel seller asks for marketing strategy/execution that should be adapted to the Brazilian info-product and e-commerce market. Combine the installed marketingskills library with Kloel-specific context, real platform capabilities, and native pt-BR operator language. Triggers on requests about Kloel homepage copy, landing pages, seller acquisition, launch planning, pricing, Meta/Google ads, email flows, affiliate strategy, checkout optimization, churn reduction, ROAS drops, offer structure, and comparable Brazilian growth work.
+description: Use when Daniel asks for marketing help about Kloel itself, or when
+a Kloel seller asks for marketing strategy/execution that should be adapted to
+the Brazilian info-product and e-commerce market. Combine the installed
+marketingskills library with Kloel-specific context, real platform capabilities,
+and native pt-BR operator language. Triggers on requests about Kloel homepage
+copy, landing pages, seller acquisition, launch planning, pricing, Meta/Google
+ads, email flows, affiliate strategy, checkout optimization, churn reduction,
+ROAS drops, offer structure, and comparable Brazilian growth work.
 metadata:
   version: 1.0.0
 ---
 
 # Kloel Marketing Operator
 
-Use this skill as the Kloel-specific bridge on top of the vendored `marketingskills` set.
+Use this skill as the Kloel-specific bridge on top of the vendored
+`marketingskills` set.
 
 ## First Principles
 
@@ -51,7 +59,8 @@ Never translate US SaaS examples literally.
 
 Prefer:
 
-- Pix, WhatsApp, creators, infoprodutos, afiliados, checkout recovery, launch groups, operator
+- Pix, WhatsApp, creators, infoprodutos, afiliados, checkout recovery, launch
+  groups, operator
   workflows
 - PT-BR idioms used by Brazilian sellers and growth operators
 - concrete guidance that fits Kloel's current surfaces
@@ -75,7 +84,8 @@ Examples already in the product:
 - WhatsApp operations
 - CIA and autopilot surfaces
 
-If a surface is still partial, say so honestly and propose the closest executable path.
+If a surface is still partial, say so honestly and propose the closest
+executable path.
 
 ### 4. Output standard
 
@@ -94,7 +104,8 @@ Do not default to:
 
 ## Success Standard
 
-The answer should feel like it came from a Brazilian senior growth operator or CMO who understands:
+The answer should feel like it came from a Brazilian senior growth operator or
+CMO who understands:
 
 - info-product launches
 - WhatsApp-led sales

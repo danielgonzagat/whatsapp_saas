@@ -62,7 +62,9 @@ SP-9 constrói:
 - **I-ADMIN-W5 (idempotência do split)**: o split de uma `CheckoutOrder`
   nunca pode creditar a `PlatformWallet` duas vezes. A unicidade é
   garantida por `@@unique([orderId, kind])` no `PlatformWalletLedger`
-  com `kind in ('platform_fee_credit','chargeback_reserve','refund_debit','chargeback_debit')`.
+  com
+  `kind in ('platform_fee_credit','chargeback_reserve','refund_debit','chargeback_debit')`
+  .
 - **I-ADMIN-W6 (aprovação humana)**: `PlatformPayout` só avança de
   `PENDING` para `APPROVED` via ação de um `AdminUser` com permissão
   `CARTEIRA:APPROVE`. A aprovação é registrada em `AdminAuditLog` e a

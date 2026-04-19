@@ -1,6 +1,7 @@
 # The 12 Programmatic SEO Playbooks
 
-Beyond mixing and matching data point permutations, these are the proven playbooks for programmatic
+Beyond mixing and matching data point permutations, these are the proven
+playbooks for programmatic
 SEO.
 
 ## Contents
@@ -22,7 +23,8 @@ SEO.
 ## 1. Templates
 
 **Pattern**: "[Type] template" or "free [type] template"
-**Example searches**: "resume template", "invoice template", "pitch deck template"
+**Example searches**: "resume template", "invoice template", "pitch deck
+template"
 
 **What it is**: Downloadable or interactive templates users can use directly.
 
@@ -46,7 +48,8 @@ SEO.
 ## 2. Curation
 
 **Pattern**: "best [category]" or "top [number] [things]"
-**Example searches**: "best website builders", "top 10 crm software", "best free design tools"
+**Example searches**: "best website builders", "top 10 crm software", "best free
+design tools"
 
 **What it is**: Curated lists ranking or recommending options in a category.
 
@@ -72,7 +75,8 @@ SEO.
 **Pattern**: "[X] to [Y]" or "[amount] [unit] in [unit]"
 **Example searches**: "$10 USD to GBP", "100 kg to lbs", "pdf to word"
 
-**What it is**: Tools or pages that convert between formats, units, or currencies.
+**What it is**: Tools or pages that convert between formats, units, or
+currencies.
 
 **Why it works**:
 
@@ -94,7 +98,8 @@ SEO.
 ## 4. Comparisons
 
 **Pattern**: "[X] vs [Y]" or "[X] alternative"
-**Example searches**: "webflow vs wordpress", "notion vs coda", "figma alternatives"
+**Example searches**: "webflow vs wordpress", "notion vs coda", "figma
+alternatives"
 
 **What it is**: Head-to-head comparisons between products, tools, or options.
 
@@ -119,7 +124,8 @@ SEO.
 
 ## 5. Examples
 
-**Pattern**: "[type] examples" or "[category] inspiration" **Example searches**: "saas landing page
+**Pattern**: "[type] examples" or "[category] inspiration" **Example searches**:
+"saas landing page
 examples", "email subject line examples", "portfolio website examples"
 
 **What it is**: Galleries or collections of real-world examples for inspiration.
@@ -143,10 +149,12 @@ examples", "email subject line examples", "portfolio website examples"
 
 ## 6. Locations
 
-**Pattern**: "[service/thing] in [location] " **Example searches**: "coworking spaces in san diego",
+**Pattern**: "[service/thing] in [location] " **Example searches**: "coworking
+spaces in san diego",
 "dentists in austin", "best restaurants in brooklyn"
 
-**What it is**: Location-specific pages for services, businesses, or information.
+**What it is**: Location-specific pages for services, businesses, or
+information.
 
 **Why it works**:
 
@@ -167,8 +175,10 @@ examples", "email subject line examples", "portfolio website examples"
 
 ## 7. Personas
 
-**Pattern**: "[product] for [audience] " or "[solution] for [role/industry] " **Example searches**:
-"payroll software for agencies", "crm for real estate", "project management for freelancers"
+**Pattern**: "[product] for [audience] " or "[solution] for [role/industry] "
+**Example searches**:
+"payroll software for agencies", "crm for real estate", "project management for
+freelancers"
 
 **What it is**: Tailored landing pages addressing specific audience segments.
 
@@ -191,8 +201,10 @@ examples", "email subject line examples", "portfolio website examples"
 
 ## 8. Integrations
 
-**Pattern**: "[your product] [other product] integration" or "[product] + [product]"
-**Example searches**: "slack asana integration", "zapier airtable", "hubspot salesforce sync"
+**Pattern**: "[your product] [other product] integration" or "[product] +
+[product]"
+**Example searches**: "slack asana integration", "zapier airtable", "hubspot
+salesforce sync"
 
 **What it is**: Pages explaining how your product works with other tools.
 
@@ -216,7 +228,8 @@ examples", "email subject line examples", "portfolio website examples"
 ## 9. Glossary
 
 **Pattern**: "what is [term]" or "[term] definition" or "[term] meaning"
-**Example searches**: "what is pSEO", "api definition", "what does crm stand for"
+**Example searches**: "what is pSEO", "api definition", "what does crm stand
+for"
 
 **What it is**: Educational definitions of industry terms and concepts.
 
@@ -242,7 +255,8 @@ examples", "email subject line examples", "portfolio website examples"
 **Pattern**: Same content in multiple languages
 **Example searches**: "qué es pSEO", "was ist SEO", "マーケティングとは"
 
-**What it is**: Your content translated and localized for other language markets.
+**What it is**: Your content translated and localized for other language
+markets.
 
 **Why it works**:
 
@@ -264,7 +278,8 @@ examples", "email subject line examples", "portfolio website examples"
 ## 11. Directory
 
 **Pattern**: "[category] tools" or "[type] software" or "[category] companies"
-**Example searches**: "ai copywriting tools", "email marketing software", "crm companies"
+**Example searches**: "ai copywriting tools", "email marketing software", "crm
+companies"
 
 **What it is**: Comprehensive directories listing options in a category.
 
@@ -288,7 +303,8 @@ examples", "email subject line examples", "portfolio website examples"
 ## 12. Profiles
 
 **Pattern**: "[person/company name]" or "[entity] + [attribute]"
-**Example searches**: "stripe ceo", "airbnb founding story", "elon musk companies"
+**Example searches**: "stripe ceo", "airbnb founding story", "elon musk
+companies"
 
 **What it is**: Profile pages about notable people, companies, or entities.
 

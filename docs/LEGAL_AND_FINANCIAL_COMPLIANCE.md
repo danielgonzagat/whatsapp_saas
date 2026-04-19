@@ -2,7 +2,8 @@
 
 ## Scope
 
-This document is the operational compliance baseline for launching and operating KLOEL while
+This document is the operational compliance baseline for launching and operating
+KLOEL while
 processing customer data and payments.
 
 ## Public Legal Surfaces
@@ -14,7 +15,8 @@ These pages are mandatory and must remain publicly accessible.
 
 ## LGPD Baseline
 
-- The privacy policy must describe categories of personal data, legal basis, retention, rights, and
+- The privacy policy must describe categories of personal data, legal basis,
+  retention, rights, and
   DPO contact.
 - Personal data exposure in logs must remain minimized.
 - Production incidents involving personal data are treated as P1.
@@ -28,7 +30,8 @@ These pages are mandatory and must remain publicly accessible.
 
 ## Mandatory Business Policies
 
-Before operating with real money, the following must remain defined and reviewable:
+Before operating with real money, the following must remain defined and
+reviewable:
 
 - Terms of use
 - Privacy policy

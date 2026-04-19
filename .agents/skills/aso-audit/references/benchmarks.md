@@ -1,6 +1,7 @@
 # ASO Benchmarks & Conversion Data
 
-Industry data from AppTweak, SplitMetrics, Sensor Tower, and others. Updated March 2026.
+Industry data from AppTweak, SplitMetrics, Sensor Tower, and others. Updated
+March 2026.
 
 ## Conversion Rate Benchmarks by Category
 
@@ -84,7 +85,8 @@ Sources: AppTweak, ASOMobile, Sensor Tower
 - Best cases: up to **+8.6%**
 - Organic referral: **+2.5 percentage points** (156% lift vs 1.6% baseline)
 - Apple Ads CPP CVR: **55.8% in 2024** (up from 42.1% in 2023)
-- **Only 31% of apps** and **26% of games** use CPPs (low adoption = opportunity)
+- **Only 31% of apps** and **26% of games** use CPPs (low adoption =
+  opportunity)
 - Screenshot reordering alone produced **+16.6% installs** in one case
 
 Sources: AppTweak, SplitMetrics, MobileAction

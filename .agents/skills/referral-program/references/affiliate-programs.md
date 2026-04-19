@@ -8,7 +8,8 @@ Detailed guidance for building and managing affiliate programs.
 - Cookie Duration
 - Affiliate Recruitment
 - Affiliate Enablement
-- Tools & Platforms (Referral Program Tools, Affiliate Program Tools, Choosing a Tool)
+- Tools & Platforms (Referral Program Tools, Affiliate Program Tools, Choosing a
+  Tool)
 - Fraud Prevention (Common Referral Fraud, Prevention Measures)
 
 ## Commission Structures
@@ -134,7 +135,8 @@ Provide affiliates with:
 
 **Partner Relationship Management (PRM):**
 
-- Introw — Full PRM with deal registration, commissions, tiers, QBRs, and partner engagement
+- Introw — Full PRM with deal registration, commissions, tiers, QBRs, and
+  partner engagement
   tracking ([integration guide](../../../tools/integrations/introw.md))
 
 **Self-hosted:**

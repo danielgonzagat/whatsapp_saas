@@ -74,16 +74,22 @@
 - Runtime: Runtime probes were not executed in scan mode.
 - Browser: Browser certification is not required in this environment.
 - Flows: No flow specs are required in the current environment.
-- Invariants: Invariant evidence summary: 0 passed, 1 failed, 0 accepted, 0 missing evidence.
-- Observability: Observability evidence found tracing, alerting, health endpoints, and audit hooks.
+- Invariants: Invariant evidence summary: 0 passed, 1 failed, 0 accepted, 0
+  missing evidence.
+- Observability: Observability evidence found tracing, alerting, health
+  endpoints, and audit hooks.
 - Recovery: Recovery evidence is missing: backup-validation.
-- Customer: customer scenarios: 1 passed, 0 failed/checker-gap, 3 missing evidence.
-- Operator: operator scenarios: 7 passed, 0 failed/checker-gap, 2 missing evidence.
+- Customer: customer scenarios: 1 passed, 0 failed/checker-gap, 3 missing
+  evidence.
+- Operator: operator scenarios: 7 passed, 0 failed/checker-gap, 2 missing
+  evidence.
 - Admin: admin scenarios: 1 passed, 0 failed/checker-gap, 2 missing evidence.
 - Soak: soak scenarios: 0 passed, 0 failed/checker-gap, 3 missing evidence.
-- Synthetic Coverage: Synthetic coverage maps 96/96 non-ops page(s) to declared scenarios.
+- Synthetic Coverage: Synthetic coverage maps 96/96 non-ops page(s) to declared
+  scenarios.
 - Execution Trace: Execution completed: 110 phase(s) passed.
-- Truth: Resolved manifest is aligned: 32 module(s), 49 flow group(s), no blocking drift.
+- Truth: Resolved manifest is aligned: 32 module(s), 49 flow group(s), no
+  blocking drift.
 
 ## Human Replacement
 
@@ -169,101 +175,221 @@
 
 ### truthExtractionPass
 
-- truth | executed=true | Resolved manifest built from 96 page(s), 32 module(s), 49 flow group(s).
-- Artifacts: PULSE_CODEBASE_TRUTH.json, PULSE_RESOLVED_MANIFEST.json, AUDIT_FEATURE_MATRIX.md, PULSE_REPORT.md | Metrics: unresolvedModules=0, unresolvedFlowGroups=0, orphanManualModules=0, orphanFlowSpecs=0
+- truth | executed=true | Resolved manifest built from 96 page(s), 32 module(s),
+  49 flow group(s).
+- Artifacts: PULSE_CODEBASE_TRUTH.json, PULSE_RESOLVED_MANIFEST.json,
+  AUDIT_FEATURE_MATRIX.md, PULSE_REPORT.md | Metrics: unresolvedModules=0,
+  unresolvedFlowGroups=0, orphanManualModules=0, orphanFlowSpecs=0
 
 ### staticPass
 
-- artifact | executed=true | 169 critical/high blocking finding(s) remain in the scan graph.
-- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics: blockingBreaks=169, totalBreaks=1091
+- artifact | executed=true | 169 critical/high blocking finding(s) remain in the
+  scan graph.
+- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics:
+  blockingBreaks=169, totalBreaks=1091
 
 ### runtimePass
 
 - runtime | executed=false | Runtime probes were not executed in scan mode.
-- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: executedChecks=0, blockingBreakTypes=0
+- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics:
+  executedChecks=0, blockingBreakTypes=0
 
 ### browserPass
 
-- browser | executed=false | Browser certification is not required in this environment.
-- Artifacts: (none) | Metrics: attempted=false, failureCode=ok, totalPages=0, totalTested=0, passRate=0, blockingInteractions=0
+- browser | executed=false | Browser certification is not required in this
+  environment.
+- Artifacts: (none) | Metrics: attempted=false, failureCode=ok, totalPages=0,
+  totalTested=0, passRate=0, blockingInteractions=0
 
 ### flowPass
 
 
 ### invariantPass
 
-- invariant | executed=true | Blocking findings for financial-audit-trail: AUDIT_DELETION_NO_LOG, AUDIT_ADMIN_NO_LOG.
-- Artifacts: PULSE_INVARIANT_EVIDENCE.json | Metrics: invariantId=financial-audit-trail, status=failed, accepted=false
+- invariant | executed=true | Blocking findings for financial-audit-trail:
+  AUDIT_DELETION_NO_LOG, AUDIT_ADMIN_NO_LOG.
+- Artifacts: PULSE_INVARIANT_EVIDENCE.json | Metrics:
+  invariantId=financial-audit-trail, status=failed, accepted=false
 
 ### recoveryPass
 
 - artifact | executed=true | Recovery evidence is missing: backup-validation.
-- Artifacts: PULSE_RECOVERY_EVIDENCE.json | Metrics: backupManifestPresent=true, backupPolicyPresent=true, backupValidationPresent=false, restoreRunbookPresent=true, disasterRecoveryRunbookPresent=true, disasterRecoveryTestPresent=true, seedScriptPresent=true
+- Artifacts: PULSE_RECOVERY_EVIDENCE.json | Metrics: backupManifestPresent=true,
+  backupPolicyPresent=true, backupValidationPresent=false,
+  restoreRunbookPresent=true, disasterRecoveryRunbookPresent=true,
+  disasterRecoveryTestPresent=true, seedScriptPresent=true
 
 ### observabilityPass
 
-- artifact | executed=true | Observability evidence found tracing, alerting, health endpoints, and audit hooks.
-- Artifacts: PULSE_OBSERVABILITY_EVIDENCE.json | Metrics: tracingHeadersDetected=false, requestIdMiddlewareDetected=true, structuredLoggingDetected=true, sentryDetected=true, alertingIntegrationDetected=true, healthEndpointsDetected=true, auditTrailDetected=true
+- artifact | executed=true | Observability evidence found tracing, alerting,
+  health endpoints, and audit hooks.
+- Artifacts: PULSE_OBSERVABILITY_EVIDENCE.json | Metrics:
+  tracingHeadersDetected=false, requestIdMiddlewareDetected=true,
+  structuredLoggingDetected=true, sentryDetected=true,
+  alertingIntegrationDetected=true, healthEndpointsDetected=true,
+  auditTrailDetected=true
 
 ### customerPass
 
-- actor | executed=false | Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-auth-shell, actorKind=customer, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-product-and-checkout, actorKind=customer, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-whatsapp-and-inbox, actorKind=customer, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario customer-onboarding-public-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=customer-onboarding-public-map, actorKind=customer, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario customer-auth-shell requires runtime probes
+  that are not attached: auth-session.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics:
+  scenarioId=customer-auth-shell, actorKind=customer, critical=true,
+  requested=false, runner=playwright-spec, status=missing_evidence,
+  specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario customer-product-and-checkout requires
+  runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json,
+  PULSE_RUNTIME_EVIDENCE.json | Metrics:
+  scenarioId=customer-product-and-checkout, actorKind=customer, critical=true,
+  requested=false, runner=playwright-spec, status=missing_evidence,
+  specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario customer-whatsapp-and-inbox requires runtime
+  probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json,
+  PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-whatsapp-and-inbox,
+  actorKind=customer, critical=true, requested=false, runner=playwright-spec,
+  status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario customer-onboarding-public-map passed
+  via runtime/browser/flow dependencies.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json | Metrics:
+  scenarioId=customer-onboarding-public-map, actorKind=customer, critical=false,
+  requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
 
 ### operatorPass
 
-- actor | executed=false | Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-ads-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-ads-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-canvas-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-canvas-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-tools-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-tools-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-sites-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sites-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-partnerships-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-partnerships-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-sales-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sales-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-media-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-media-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-campaigns-and-flows requires
+  runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics:
+  scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true,
+  requested=false, runner=playwright-spec, status=missing_evidence,
+  specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-autopilot-run requires runtime
+  probes that are not attached: backend-health.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics:
+  scenarioId=operator-autopilot-run, actorKind=operator, critical=true,
+  requested=false, runner=playwright-spec, status=missing_evidence,
+  specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-ads-surface-map passed via
+  runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-ads-surface-map,
+  actorKind=operator, critical=false, requested=false, runner=derived,
+  status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-canvas-surface-map passed
+  via runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json | Metrics:
+  scenarioId=operator-canvas-surface-map, actorKind=operator, critical=false,
+  requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-tools-surface-map passed via
+  runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-tools-surface-map,
+  actorKind=operator, critical=false, requested=false, runner=derived,
+  status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-sites-surface-map passed via
+  runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sites-surface-map,
+  actorKind=operator, critical=false, requested=false, runner=derived,
+  status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-partnerships-surface-map
+  passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json | Metrics:
+  scenarioId=operator-partnerships-surface-map, actorKind=operator,
+  critical=false, requested=false, runner=derived, status=passed,
+  specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-sales-surface-map passed via
+  runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sales-surface-map,
+  actorKind=operator, critical=false, requested=false, runner=derived,
+  status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-media-surface-map passed via
+  runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-media-surface-map,
+  actorKind=operator, critical=false, requested=false, runner=derived,
+  status=passed, specsExecuted=0, durationMs=0
 
 ### adminPass
 
-- actor | executed=false | Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-settings-kyc-banking, actorKind=admin, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-whatsapp-session-control, actorKind=admin, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario admin-ops-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=admin-ops-surface-map, actorKind=admin, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario admin-settings-kyc-banking requires runtime
+  probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json,
+  PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-settings-kyc-banking,
+  actorKind=admin, critical=true, requested=false, runner=playwright-spec,
+  status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario admin-whatsapp-session-control requires
+  runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json,
+  PULSE_RUNTIME_EVIDENCE.json | Metrics:
+  scenarioId=admin-whatsapp-session-control, actorKind=admin, critical=true,
+  requested=false, runner=playwright-spec, status=missing_evidence,
+  specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario admin-ops-surface-map passed via
+  runtime/browser/flow dependencies.
+- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=admin-ops-surface-map,
+  actorKind=admin, critical=false, requested=false, runner=derived,
+  status=passed, specsExecuted=0, durationMs=0
 
 ### soakPass
 
-- actor | executed=false | Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=system-payment-reconciliation, actorKind=system, critical=true, requested=false, runner=derived, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-campaigns-and-flows requires
+  runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics:
+  scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true,
+  requested=false, runner=playwright-spec, status=missing_evidence,
+  specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-autopilot-run requires runtime
+  probes that are not attached: backend-health.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics:
+  scenarioId=operator-autopilot-run, actorKind=operator, critical=true,
+  requested=false, runner=playwright-spec, status=missing_evidence,
+  specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario system-payment-reconciliation requires
+  runtime probes that are not attached: backend-health.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json,
+  PULSE_RUNTIME_EVIDENCE.json | Metrics:
+  scenarioId=system-payment-reconciliation, actorKind=system, critical=true,
+  requested=false, runner=derived, status=missing_evidence, specsExecuted=0,
+  durationMs=0
 
 ### syntheticCoveragePass
 
-- coverage | executed=true | Synthetic coverage maps 96/96 non-ops page(s) to declared scenarios.
-- Artifacts: PULSE_SCENARIO_COVERAGE.json | Metrics: totalPages=96, userFacingPages=96, coveredPages=96, uncoveredPages=0
+- coverage | executed=true | Synthetic coverage maps 96/96 non-ops page(s) to
+  declared scenarios.
+- Artifacts: PULSE_SCENARIO_COVERAGE.json | Metrics: totalPages=96,
+  userFacingPages=96, coveredPages=96, uncoveredPages=0
 
 ### evidenceFresh
 
-- artifact | executed=true | Execution in progress: 109 passed, 0 failed, 0 timed out, 1 running.
-- Artifacts: PULSE_EXECUTION_TRACE.json, PULSE_REPORT.md, AUDIT_FEATURE_MATRIX.md, PULSE_CERTIFICATE.json, PULSE_FLOW_EVIDENCE.json, PULSE_INVARIANT_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json, PULSE_OBSERVABILITY_EVIDENCE.json, PULSE_RECOVERY_EVIDENCE.json, PULSE_CODEBASE_TRUTH.json, PULSE_RESOLVED_MANIFEST.json, KLOEL_PRODUCT_MAP.md, PULSE_CONVERGENCE_PLAN.json, PULSE_CONVERGENCE_PLAN.md, PULSE_CUSTOMER_EVIDENCE.json, PULSE_OPERATOR_EVIDENCE.json, PULSE_ADMIN_EVIDENCE.json, PULSE_SOAK_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
+- artifact | executed=true | Execution in progress: 109 passed, 0 failed, 0
+  timed out, 1 running.
+- Artifacts: PULSE_EXECUTION_TRACE.json, PULSE_REPORT.md,
+  AUDIT_FEATURE_MATRIX.md, PULSE_CERTIFICATE.json, PULSE_FLOW_EVIDENCE.json,
+  PULSE_INVARIANT_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json,
+  PULSE_RUNTIME_PROBES.json, PULSE_OBSERVABILITY_EVIDENCE.json,
+  PULSE_RECOVERY_EVIDENCE.json, PULSE_CODEBASE_TRUTH.json,
+  PULSE_RESOLVED_MANIFEST.json, KLOEL_PRODUCT_MAP.md,
+  PULSE_CONVERGENCE_PLAN.json, PULSE_CONVERGENCE_PLAN.md,
+  PULSE_CUSTOMER_EVIDENCE.json, PULSE_OPERATOR_EVIDENCE.json,
+  PULSE_ADMIN_EVIDENCE.json, PULSE_SOAK_EVIDENCE.json,
+  PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 
 ## Summary
 

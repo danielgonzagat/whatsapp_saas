@@ -3,7 +3,8 @@
 > **Status:** Live for the Big Tech hardening plan landed in 2026-04-08
 > **Owners:** KLOEL engineering on-call
 > **Companion:** `docs/runbooks/hardening-rollout.md`
-> **Trigger:** Any signal listed in the rollout runbook's "Rollback signals" section
+> **Trigger:** Any signal listed in the rollout runbook's "Rollback signals"
+  section
 
 ## Decision
 
@@ -51,7 +52,8 @@ without TTL; payment state transitions rejected unexpectedly.
 
 **Rollback:**
 
-1. Set `FF_WEBHOOK__ATOMICDEDUP=false` and `FF_PAYMENT__FAILCLOSEDUNKNOWNSTATE=false`
+1. Set `FF_WEBHOOK__ATOMICDEDUP=false` and
+   `FF_PAYMENT__FAILCLOSEDUNKNOWNSTATE=false`
    on the Railway backend service.
 2. Restart the backend.
 3. Behavior reverts to legacy SETNX+EXPIRE and fail-open state machine.
@@ -122,7 +124,8 @@ TypeScript errors in the worker about missing models.
 
 1. SSH into the worker container (or rebuild locally).
 2. Remove the symlink: `rm worker/prisma/schema.prisma`
-3. Recreate as a copy: `cp backend/prisma/schema.prisma worker/prisma/schema.prisma`
+3. Recreate as a copy:
+   `cp backend/prisma/schema.prisma worker/prisma/schema.prisma`
 4. Run `cd worker && npm run prisma:generate`
 5. Redeploy.
 

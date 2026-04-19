@@ -18,7 +18,8 @@ Headline formulas, page section types, and structural templates.
 
 #### {Achieve desirable outcome} without {pain point}
 
-> Understand how users are really experiencing your site without drowning in numbers
+> Understand how users are really experiencing your site without drowning in
+  numbers
 
 #### {Achieve desirable outcome} by {how product makes it possible}
 
@@ -62,7 +63,8 @@ Headline formulas, page section types, and structural templates.
 
 #### You don't have to {skills or resources} to {achieve desirable outcome}
 
-> With Ahrefs, you don't have to be an SEO pro to rank higher and get more traffic
+> With Ahrefs, you don't have to be an SEO pro to rank higher and get more
+  traffic
 
 ---
 

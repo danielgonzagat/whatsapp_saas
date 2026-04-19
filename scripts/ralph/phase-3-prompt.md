@@ -92,7 +92,8 @@ completion. **There is no skip. Every file picked gets finished.**
    - Frontend file:
      `npm --prefix frontend run typecheck && \
       npm --prefix frontend test -- --runTestsByPath <related>`
-   - Worker file: `npm --prefix worker run typecheck && npm --prefix worker test`
+   - Worker file:
+     `npm --prefix worker run typecheck && npm --prefix worker test`
    - Always: `npm run ratchet:check`
 
 6. If green:

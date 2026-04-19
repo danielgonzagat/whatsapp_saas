@@ -41,7 +41,8 @@ check completion.
    - Frontend file:
      `npm --prefix frontend run typecheck && \
       npm --prefix frontend test -- --runTestsByPath <related>`
-   - Worker file: `npm --prefix worker run typecheck && npm --prefix worker test`
+   - Worker file:
+     `npm --prefix worker run typecheck && npm --prefix worker test`
    - Always: `npm run ratchet:check`
 5. If green:
    - Non-sensitive:

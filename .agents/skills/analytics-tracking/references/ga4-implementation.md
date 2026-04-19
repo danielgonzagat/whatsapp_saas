@@ -278,7 +278,8 @@ Reports > Real-time
 
 ### Filters
 
-Admin > Data streams > [Stream] > Configure tag settings > Define internal traffic
+Admin > Data streams > [Stream] > Configure tag settings > Define internal
+traffic
 
 **Exclude:**
 

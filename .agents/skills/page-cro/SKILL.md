@@ -1,26 +1,41 @@
 ---
 name: page-cro
-description: When the user wants to optimize, improve, or increase conversions on any marketing page — including homepage, landing pages, pricing pages, feature pages, or blog posts. Also use when the user says "CRO," "conversion rate optimization," "this page isn't converting," "improve conversions," "why isn't this page working," "my landing page sucks," "nobody's converting," "low conversion rate," "bounce rate is too high," "people leave without signing up," or "this page needs work." Use this even if the user just shares a URL and asks for feedback — they probably want conversion help. For signup/registration flows, see signup-flow-cro. For post-signup activation, see onboarding-cro. For forms outside of signup, see form-cro. For popups/modals, see popup-cro.
+description: When the user wants to optimize, improve, or increase conversions
+on any marketing page — including homepage, landing pages, pricing pages,
+feature pages, or blog posts. Also use when the user says "CRO," "conversion
+rate optimization," "this page isn't converting," "improve conversions," "why
+isn't this page working," "my landing page sucks," "nobody's converting," "low
+conversion rate," "bounce rate is too high," "people leave without signing up,"
+or "this page needs work." Use this even if the user just shares a URL and asks
+for feedback — they probably want conversion help. For signup/registration
+flows, see signup-flow-cro. For post-signup activation, see onboarding-cro. For
+forms outside of signup, see form-cro. For popups/modals, see popup-cro.
 metadata:
   version: 1.1.0
 ---
 
 # Page Conversion Rate Optimization (CRO)
 
-You are a conversion rate optimization expert. Your goal is to analyze marketing pages and provide
+You are a conversion rate optimization expert. Your goal is to analyze marketing
+pages and provide
 actionable recommendations to improve conversion rates.
 
 ## Initial Assessment
 
-**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
-`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
-context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If
+`.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that
+context and only ask for information not already covered or specific to this
+task.
 
 Before providing recommendations, identify:
 
 1. **Page Type**: Homepage, landing page, pricing, feature, blog, about, other
-2. **Primary Conversion Goal**: Sign up, request demo, purchase, subscribe, download, contact sales
-3. **Traffic Context**: Where are visitors coming from? (organic, paid, email, social)
+2. **Primary Conversion Goal**: Sign up, request demo, purchase, subscribe,
+   download, contact sales
+3. **Traffic Context**: Where are visitors coming from? (organic, paid, email,
+   social)
 
 ---
 
@@ -32,7 +47,8 @@ Analyze the page across these dimensions, in order of impact:
 
 **Check for:**
 
-- Can a visitor understand what this is and why they should care within 5 seconds?
+- Can a visitor understand what this is and why they should care within 5
+  seconds?
 - Is the primary benefit clear, specific, and differentiated?
 - Is it written in the customer's language (not company jargon)?
 
@@ -101,7 +117,8 @@ Analyze the page across these dimensions, in order of impact:
 - Implementation difficulty
 - "What if it doesn't work?"
 
-**Address through:** FAQ sections, guarantees, comparison content, process transparency
+**Address through:** FAQ sections, guarantees, comparison content, process
+transparency
 
 ### 7. Friction Points
 
@@ -126,7 +143,8 @@ Easy changes with likely immediate impact.
 
 ### High-Impact Changes (Prioritize)
 
-Bigger changes that require more effort but will significantly improve conversions.
+Bigger changes that require more effort but will significantly improve
+conversions.
 
 ### Test Ideas
 

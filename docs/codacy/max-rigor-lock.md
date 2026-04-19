@@ -10,7 +10,8 @@ triage.
 
 - Codacy must analyze the widest possible versioned surface of the repository.
 - Only generated/vendor/build outputs are excluded in `.codacy.yml`.
-- Because this repository uses `.codacy.yml`, Codacy UI file-ignore toggles do not
+- Because this repository uses `.codacy.yml` , Codacy UI file-ignore toggles do
+  not
   apply; exclusions must go through the protected config file.
 - The canonical coding standard linked to `whatsapp_saas` must keep all tools
   and all patterns enabled.

@@ -118,7 +118,8 @@ expected delta.
   `noReactSpecificProps: off`, `noExplicitAny: warn`, `useImportType: warn`.
 - `scripts/ops/codacy-discover-noise-patterns.mjs` Phase 0 helper script
   wired via `npm run codacy:discover-noise`.
-- Commit: `4c23e3a9 feat(codacy): phase 1 — engine surgery via biome.json + .codacy.yml`
+- Commit:
+  `4c23e3a9 feat(codacy): phase 1 — engine surgery via biome.json + .codacy.yml`
 
 ### Measured delta
 
