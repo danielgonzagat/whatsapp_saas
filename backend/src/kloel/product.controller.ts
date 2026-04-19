@@ -113,17 +113,28 @@ export class ProductController {
     };
   }
 
-  private async buildProductMetrics(
-    workspaceId: string,
-    productIds: string[],
-  ): Promise<Map<string, ProductMetrics>> {
-    if (productIds.length === 0) {
-      return new Map<string, ProductMetrics>();
-    }
+  private emptyProductMetrics(): ProductMetrics {
+    return {
+      totalSales: 0,
+      totalRevenue: 0,
+      memberAreasCount: 0,
+      studentsCount: 0,
+      modulesCount: 0,
+      lessonsCount: 0,
+      plansCount: 0,
+      activePlansCount: 0,
+      minPlanPriceInCents: null,
+      maxPlanPriceInCents: null,
+      affiliateListed: false,
+      affiliateCount: 0,
+      affiliateSales: 0,
+      affiliateRevenue: 0,
+      affiliateCommissionPct: null,
+    };
+  }
 
-    const paidStatuses = new Set(['PAID', 'SHIPPED', 'DELIVERED']);
-
-    const [orders, memberAreas, checkoutPlans, affiliateProducts] = await Promise.all([
+  private fetchProductMetricsSources(workspaceId: string, productIds: string[]) {
+    return Promise.all([
       this.prisma.checkoutOrder.findMany({
         where: {
           workspaceId,
@@ -169,82 +180,106 @@ export class ProductController {
         },
       }),
     ]);
+  }
+
+  private isPaidOrderStatus(status: string): boolean {
+    return status === 'PAID' || status === 'SHIPPED' || status === 'DELIVERED';
+  }
+
+  private applyOrderMetric(
+    metrics: Map<string, ProductMetrics>,
+    order: { status: string; totalInCents: number | null; plan: { productId: string } | null },
+  ): void {
+    const productId = order.plan?.productId;
+    if (!productId) return;
+    const current = metrics.get(productId);
+    if (!current) return;
+    if (!this.isPaidOrderStatus(order.status)) return;
+    current.totalSales += 1;
+    current.totalRevenue += Number(order.totalInCents || 0) / 100;
+  }
+
+  private applyMemberAreaMetric(
+    metrics: Map<string, ProductMetrics>,
+    area: {
+      productId: string | null;
+      totalStudents: number | null;
+      totalModules: number | null;
+      totalLessons: number | null;
+    },
+  ): void {
+    if (!area.productId) return;
+    const current = metrics.get(area.productId);
+    if (!current) return;
+    current.memberAreasCount += 1;
+    current.studentsCount += Number(area.totalStudents || 0);
+    current.modulesCount += Number(area.totalModules || 0);
+    current.lessonsCount += Number(area.totalLessons || 0);
+  }
+
+  private updatePlanPriceRange(current: ProductMetrics, normalizedPriceInCents: number): void {
+    const minUnset = current.minPlanPriceInCents === null;
+    if (minUnset || normalizedPriceInCents < current.minPlanPriceInCents) {
+      current.minPlanPriceInCents = normalizedPriceInCents;
+    }
+    const maxUnset = current.maxPlanPriceInCents === null;
+    if (maxUnset || normalizedPriceInCents > current.maxPlanPriceInCents) {
+      current.maxPlanPriceInCents = normalizedPriceInCents;
+    }
+  }
+
+  private applyPlanMetric(
+    metrics: Map<string, ProductMetrics>,
+    plan: { productId: string; isActive: boolean; priceInCents: number | null },
+  ): void {
+    const current = metrics.get(plan.productId);
+    if (!current) return;
+    current.plansCount += 1;
+    if (plan.isActive) current.activePlansCount += 1;
+    const normalizedPriceInCents = Math.max(0, Math.round(Number(plan.priceInCents || 0)));
+    this.updatePlanPriceRange(current, normalizedPriceInCents);
+  }
+
+  private applyAffiliateMetric(
+    metrics: Map<string, ProductMetrics>,
+    affiliateProduct: {
+      productId: string;
+      listed: boolean;
+      totalAffiliates: number;
+      totalSales: number;
+      totalRevenue: number;
+      commissionPct: number | null;
+    },
+  ): void {
+    const current = metrics.get(affiliateProduct.productId);
+    if (!current) return;
+    current.affiliateListed = affiliateProduct.listed;
+    current.affiliateCount = affiliateProduct.totalAffiliates;
+    current.affiliateSales = affiliateProduct.totalSales;
+    current.affiliateRevenue = affiliateProduct.totalRevenue;
+    current.affiliateCommissionPct = affiliateProduct.commissionPct;
+  }
+
+  private async buildProductMetrics(
+    workspaceId: string,
+    productIds: string[],
+  ): Promise<Map<string, ProductMetrics>> {
+    if (productIds.length === 0) {
+      return new Map<string, ProductMetrics>();
+    }
+
+    const [orders, memberAreas, checkoutPlans, affiliateProducts] =
+      await this.fetchProductMetricsSources(workspaceId, productIds);
 
     const metrics = new Map<string, ProductMetrics>();
-
     for (const productId of productIds) {
-      metrics.set(productId, {
-        totalSales: 0,
-        totalRevenue: 0,
-        memberAreasCount: 0,
-        studentsCount: 0,
-        modulesCount: 0,
-        lessonsCount: 0,
-        plansCount: 0,
-        activePlansCount: 0,
-        minPlanPriceInCents: null,
-        maxPlanPriceInCents: null,
-        affiliateListed: false,
-        affiliateCount: 0,
-        affiliateSales: 0,
-        affiliateRevenue: 0,
-        affiliateCommissionPct: null,
-      });
+      metrics.set(productId, this.emptyProductMetrics());
     }
 
-    for (const order of orders) {
-      const productId = order.plan?.productId;
-      if (!productId || !metrics.has(productId) || !paidStatuses.has(order.status)) {
-        continue;
-      }
-
-      const current = metrics.get(productId);
-      current.totalSales += 1;
-      current.totalRevenue += Number(order.totalInCents || 0) / 100;
-    }
-
-    for (const area of memberAreas) {
-      if (!area.productId || !metrics.has(area.productId)) continue;
-
-      const current = metrics.get(area.productId);
-      current.memberAreasCount += 1;
-      current.studentsCount += Number(area.totalStudents || 0);
-      current.modulesCount += Number(area.totalModules || 0);
-      current.lessonsCount += Number(area.totalLessons || 0);
-    }
-
-    for (const plan of checkoutPlans) {
-      if (!metrics.has(plan.productId)) continue;
-
-      const current = metrics.get(plan.productId);
-      current.plansCount += 1;
-      if (plan.isActive) current.activePlansCount += 1;
-
-      const normalizedPriceInCents = Math.max(0, Math.round(Number(plan.priceInCents || 0)));
-      if (
-        current.minPlanPriceInCents === null ||
-        normalizedPriceInCents < current.minPlanPriceInCents
-      ) {
-        current.minPlanPriceInCents = normalizedPriceInCents;
-      }
-      if (
-        current.maxPlanPriceInCents === null ||
-        normalizedPriceInCents > current.maxPlanPriceInCents
-      ) {
-        current.maxPlanPriceInCents = normalizedPriceInCents;
-      }
-    }
-
-    for (const affiliateProduct of affiliateProducts) {
-      if (!metrics.has(affiliateProduct.productId)) continue;
-
-      const current = metrics.get(affiliateProduct.productId);
-      current.affiliateListed = affiliateProduct.listed;
-      current.affiliateCount = affiliateProduct.totalAffiliates;
-      current.affiliateSales = affiliateProduct.totalSales;
-      current.affiliateRevenue = affiliateProduct.totalRevenue;
-      current.affiliateCommissionPct = affiliateProduct.commissionPct;
-    }
+    for (const order of orders) this.applyOrderMetric(metrics, order);
+    for (const area of memberAreas) this.applyMemberAreaMetric(metrics, area);
+    for (const plan of checkoutPlans) this.applyPlanMetric(metrics, plan);
+    for (const ap of affiliateProducts) this.applyAffiliateMetric(metrics, ap);
 
     return metrics;
   }

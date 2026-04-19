@@ -226,56 +226,80 @@ export class WahaProvider {
   private readonly quietErrorPaths = new Set<string>();
   private readonly allowConnectedSessionConfigSync: boolean;
 
-  constructor(private readonly configService: ConfigService) {
-    const configuredBaseUrl =
-      this.configService.get<string>('WAHA_API_URL') ||
-      this.configService.get<string>('WAHA_BASE_URL') ||
-      this.configService.get<string>('WAHA_URL') ||
-      '';
-    this.baseUrl = configuredBaseUrl.trim().replace(/\/+$/, '');
+  private readFirstConfigValue(keys: readonly string[]): string {
+    for (const key of keys) {
+      const raw = this.configService.get<string>(key);
+      if (raw) return raw;
+    }
+    return '';
+  }
 
+  private resolveBaseUrlFromConfig(): string {
+    const raw = this.readFirstConfigValue(['WAHA_API_URL', 'WAHA_BASE_URL', 'WAHA_URL']);
+    return raw.trim().replace(/\/+$/, '');
+  }
+
+  private resolveApiKeyFromConfig(): string {
+    return this.readFirstConfigValue(['WAHA_API_KEY', 'WAHA_API_TOKEN']);
+  }
+
+  private hasAnyConfigTrue(keys: readonly string[]): boolean {
+    return keys.some((key) => this.configService.get<string>(key) === 'true');
+  }
+
+  private hasAnyConfigFalse(keys: readonly string[]): boolean {
+    return keys.some((key) => this.configService.get<string>(key) === 'false');
+  }
+
+  private resolveUseWorkspaceSessions(sessionIdOverride: string): boolean {
+    if (sessionIdOverride) return false;
+    const explicitWorkspaceMode = this.hasAnyConfigTrue([
+      'WAHA_MULTISESSION',
+      'WAHA_USE_WORKSPACE_SESSION',
+    ]);
+    const explicitSingleSessionMode =
+      this.configService.get<string>('WAHA_SINGLE_SESSION') === 'true' ||
+      this.hasAnyConfigFalse(['WAHA_MULTISESSION', 'WAHA_USE_WORKSPACE_SESSION']);
+    return explicitWorkspaceMode || !explicitSingleSessionMode;
+  }
+
+  private resolveBoundedIntConfig(key: string, min: number, fallback: number): number {
+    const raw = this.configService.get<string>(key) || String(fallback);
+    const parsed = Number.parseInt(raw, 10) || fallback;
+    return Math.max(min, parsed);
+  }
+
+  private describeSessionMode(): string {
+    if (this.sessionIdOverride) return `override(${this.sessionIdOverride})`;
+    return this.useWorkspaceSessions ? 'workspace' : 'default';
+  }
+
+  constructor(private readonly configService: ConfigService) {
+    this.baseUrl = this.resolveBaseUrlFromConfig();
     if (!this.baseUrl) {
       this.logger.warn(
         'WAHA provider initialized without base URL. WAHA methods will stay disabled until WAHA_API_URL/WAHA_BASE_URL/WAHA_URL is configured.',
       );
     }
 
-    this.apiKey =
-      this.configService.get<string>('WAHA_API_KEY') ||
-      this.configService.get<string>('WAHA_API_TOKEN') ||
-      '';
-
+    this.apiKey = this.resolveApiKeyFromConfig();
     this.sessionIdOverride = (this.configService.get<string>('WAHA_SESSION_ID') || '').trim();
-    const explicitWorkspaceMode =
-      this.configService.get<string>('WAHA_MULTISESSION') === 'true' ||
-      this.configService.get<string>('WAHA_USE_WORKSPACE_SESSION') === 'true';
-    const explicitSingleSessionMode =
-      this.configService.get<string>('WAHA_SINGLE_SESSION') === 'true' ||
-      this.configService.get<string>('WAHA_MULTISESSION') === 'false' ||
-      this.configService.get<string>('WAHA_USE_WORKSPACE_SESSION') === 'false';
+    this.useWorkspaceSessions = this.resolveUseWorkspaceSessions(this.sessionIdOverride);
 
-    this.useWorkspaceSessions =
-      !this.sessionIdOverride && (explicitWorkspaceMode || !explicitSingleSessionMode);
-    this.sessionConfigSyncTtlMs = Math.max(
+    this.sessionConfigSyncTtlMs = this.resolveBoundedIntConfig(
+      'WAHA_SESSION_CONFIG_SYNC_TTL_MS',
       60_000,
-      Number.parseInt(
-        this.configService.get<string>('WAHA_SESSION_CONFIG_SYNC_TTL_MS') || '300000',
-        10,
-      ) || 300_000,
+      300_000,
     );
-    this.chatsOverviewTimeoutMs = Math.max(
+    this.chatsOverviewTimeoutMs = this.resolveBoundedIntConfig(
+      'WAHA_CHATS_OVERVIEW_TIMEOUT_MS',
       500,
-      Number.parseInt(
-        this.configService.get<string>('WAHA_CHATS_OVERVIEW_TIMEOUT_MS') || '3000',
-        10,
-      ) || 3000,
+      3000,
     );
-    this.chatsOverviewFailureTtlMs = Math.max(
+    this.chatsOverviewFailureTtlMs = this.resolveBoundedIntConfig(
+      'WAHA_CHATS_OVERVIEW_FAILURE_TTL_MS',
       10_000,
-      Number.parseInt(
-        this.configService.get<string>('WAHA_CHATS_OVERVIEW_FAILURE_TTL_MS') || '300000',
-        10,
-      ) || 300_000,
+      300_000,
     );
     this.allowConnectedSessionConfigSync = this.readBooleanEnv(
       ['WAHA_ALLOW_CONNECTED_SESSION_CONFIG_SYNC'],
@@ -284,13 +308,7 @@ export class WahaProvider {
     this.quietErrorPaths.add('/chats/overview');
 
     this.logger.log(
-      `WAHA provider initialized. Base URL: ${this.baseUrl}. Session mode: ${
-        this.sessionIdOverride
-          ? `override(${this.sessionIdOverride})`
-          : this.useWorkspaceSessions
-            ? 'workspace'
-            : 'default'
-      }`,
+      `WAHA provider initialized. Base URL: ${this.baseUrl}. Session mode: ${this.describeSessionMode()}`,
     );
   }
 

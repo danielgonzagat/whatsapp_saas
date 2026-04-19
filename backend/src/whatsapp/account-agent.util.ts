@@ -156,6 +156,51 @@ export function findProductMatches(messageContent: string, productNames: string[
   );
 }
 
+function findUppercaseProductToken(rawTokens: readonly string[]): string | null {
+  for (const token of rawTokens) {
+    if (A_Z0_9___3_RE.test(token) && !STOPWORDS.has(normalizeCatalogText(token))) {
+      return token.toUpperCase();
+    }
+  }
+  return null;
+}
+
+function collectCandidateAfterCueWord(rawTokens: readonly string[], startIndex: number): string[] {
+  const candidate: string[] = [];
+  for (let cursor = startIndex; cursor < rawTokens.length; cursor += 1) {
+    const token = rawTokens[cursor];
+    const normalized = normalizeCatalogText(token);
+    if (!normalized || STOPWORDS.has(normalized)) {
+      if (candidate.length > 0) break;
+      continue;
+    }
+    candidate.push(token);
+    if (candidate.length >= 3) break;
+  }
+  return candidate;
+}
+
+function findCandidateFromCueWord(rawTokens: readonly string[]): string | null {
+  const normalizedTokens = rawTokens.map((token) => normalizeCatalogText(token));
+  for (let index = 0; index < normalizedTokens.length; index += 1) {
+    if (!PRODUCT_CUE_WORDS.has(normalizedTokens[index])) continue;
+    const candidate = collectCandidateAfterCueWord(rawTokens, index + 1);
+    if (candidate.length > 0) {
+      return candidate.join(' ').trim();
+    }
+  }
+  return null;
+}
+
+function fallbackFromRawTokens(rawTokens: readonly string[]): string | null {
+  const fallback = rawTokens
+    .filter((token) => !STOPWORDS.has(normalizeCatalogText(token)))
+    .slice(0, 3)
+    .join(' ')
+    .trim();
+  return fallback || null;
+}
+
 export function extractMissingProductCandidate(messageContent: string): string | null {
   const rawTokens =
     String(messageContent || '')
@@ -163,41 +208,13 @@ export function extractMissingProductCandidate(messageContent: string): string |
       ?.filter(Boolean) || [];
   if (!rawTokens.length) return null;
 
-  for (const token of rawTokens) {
-    if (A_Z0_9___3_RE.test(token) && !STOPWORDS.has(normalizeCatalogText(token))) {
-      return token.toUpperCase();
-    }
-  }
+  const upperHit = findUppercaseProductToken(rawTokens);
+  if (upperHit) return upperHit;
 
-  const normalizedTokens = rawTokens.map((token) => normalizeCatalogText(token));
-  for (let index = 0; index < normalizedTokens.length; index += 1) {
-    if (!PRODUCT_CUE_WORDS.has(normalizedTokens[index])) continue;
+  const cueHit = findCandidateFromCueWord(rawTokens);
+  if (cueHit) return cueHit;
 
-    const candidate: string[] = [];
-    for (let cursor = index + 1; cursor < rawTokens.length; cursor += 1) {
-      const token = rawTokens[cursor];
-      const normalized = normalizeCatalogText(token);
-      if (!normalized || STOPWORDS.has(normalized)) {
-        if (candidate.length > 0) break;
-        continue;
-      }
-
-      candidate.push(token);
-      if (candidate.length >= 3) break;
-    }
-
-    if (candidate.length > 0) {
-      return candidate.join(' ').trim();
-    }
-  }
-
-  const fallback = rawTokens
-    .filter((token) => !STOPWORDS.has(normalizeCatalogText(token)))
-    .slice(0, 3)
-    .join(' ')
-    .trim();
-
-  return fallback || null;
+  return fallbackFromRawTokens(rawTokens);
 }
 
 export function detectCatalogGap(params: {
