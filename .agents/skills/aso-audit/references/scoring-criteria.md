@@ -194,14 +194,15 @@ unused characters represent waste or intentional simplicity.
 
 ## 6. Conversion Signals (Weight: 10%)
 
-| Score | Criteria                                                                                                                                                          |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 9-10  | Clear value before download, transparent pricing/IAP, social proof visible (press, awards), download range suggests strong traction, developer credibility strong |
-| 7-8   | Good value communication, pricing clear, some social proof                                                                                                        |
-| 5-6   | Value prop exists but weak, pricing unclear or IAP heavy, limited social proof                                                                                    |
-| 3-4   | Unclear what user gets, confusing pricing, no social proof, low downloads visible                                                                                 |
-| 1-2   | No value communication, suspicious pricing, app looks abandoned                                                                                                   |
-| 0     | Cannot assess                                                                                                                                                     |
+| Score | Criteria                                                                                |
+| ----- | --------------------------------------------------------------------------------------- |
+| 9-10  | Clear value pre-download, transparent pricing/IAP, social proof (press, awards), strong |
+|       | traction implied by downloads, developer credibility strong                             |
+| 7-8   | Good value communication, pricing clear, some social proof                              |
+| 5-6   | Value prop exists but weak, pricing unclear or IAP heavy, limited social proof          |
+| 3-4   | Unclear what user gets, confusing pricing, no social proof, low downloads visible       |
+| 1-2   | No value communication, suspicious pricing, app looks abandoned                         |
+| 0     | Cannot assess                                                                           |
 
 **Check for:**
 

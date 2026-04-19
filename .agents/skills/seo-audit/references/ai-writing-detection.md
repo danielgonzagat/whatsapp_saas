@@ -37,12 +37,12 @@ information. While they have legitimate uses in writing, AI models drastically o
 
 ### What To Do Instead
 
-| Instead of                                                 | Use                                                          |
-| ---------------------------------------------------------- | ------------------------------------------------------------ |
-| The results—which were surprising—showed...                | The results, which were surprising, showed...                |
-| This approach—unlike traditional methods—allows...         | This approach, unlike traditional methods, allows...         |
-| The study found—as expected—that...                        | The study found, as expected, that...                        |
-| Communication skills—both written and verbal—are essential | Communication skills (both written and verbal) are essential |
+| Instead of                                       | Use                                        |
+| ------------------------------------------------ | ------------------------------------------ |
+| The results—which were surprising—showed...      | The results, which were surprising...      |
+| This approach—unlike traditional methods—allows. | This approach, unlike traditional, allows. |
+| The study found—as expected—that...              | The study found, as expected, that...      |
+| Communication skills—both written and verbal—... | Communication skills (both written)...     |
 
 ### Guidelines
 

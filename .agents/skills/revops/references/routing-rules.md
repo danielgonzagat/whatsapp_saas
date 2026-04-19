@@ -1,6 +1,7 @@
 # Lead Routing Rules
 
-Decision trees, platform-specific configurations, territory routing, ABM routing, and speed-to-lead benchmarks.
+Decision trees, platform-specific configurations, territory routing, ABM
+routing, and speed-to-lead benchmarks.
 
 ## Routing Decision Tree
 
@@ -29,7 +30,8 @@ New Lead Arrives
    └─ If no rep available: Assign to team queue with 1-hour SLA
 ```
 
-Customize this tree for your business. The key principle: **route to the most specific match first, fall back to general.**
+Customize this tree for your business. The key principle: **route to the
+most specific match first, fall back to general.**
 
 ---
 

@@ -59,15 +59,15 @@ in a structured backend and delivered via API to any frontend.
 
 ### Common Marketing Content Types
 
-| Type             | Key Fields                                                     | Notes                                    |
-| ---------------- | -------------------------------------------------------------- | ---------------------------------------- |
-| **Landing Page** | title, slug, hero, sections[], seo                             | Modular sections for flexibility         |
-| **Blog Post**    | title, slug, body, author, category, tags, publishedAt, seo    | Rich text or Portable Text body          |
-| **Case Study**   | title, customer, challenge, solution, results, metrics[], logo | Link to related products/features        |
-| **Testimonial**  | quote, author, role, company, avatar, rating                   | Reference from landing pages             |
-| **FAQ**          | question, answer, category                                     | Group by category for programmatic pages |
-| **Author**       | name, bio, avatar, social links                                | Reference from blog posts                |
-| **CTA Block**    | heading, body, buttonText, buttonUrl, variant                  | Reusable across pages                    |
+| Type             | Key Fields                                        | Notes                    |
+| ---------------- | ------------------------------------------------- | ------------------------ |
+| **Landing Page** | title, slug, hero, sections[], seo                | Modular sections         |
+| **Blog Post**    | title, slug, body, author, category, tags         | Rich or Portable Text    |
+| **Case Study**   | title, customer, challenge, solution, results     | Link to related products |
+| **Testimonial**  | quote, author, role, company, avatar, rating      | Reference from landing   |
+| **FAQ**          | question, answer, category                        | Group by category        |
+| **Author**       | name, bio, avatar, social links                   | Reference from blogs     |
+| **CTA Block**    | heading, body, buttonText, buttonUrl, variant     | Reusable across pages    |
 
 ### SEO Fields Checklist
 

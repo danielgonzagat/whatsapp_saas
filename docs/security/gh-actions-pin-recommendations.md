@@ -78,14 +78,14 @@ the SHA preserves the human-readable version for Dependabot and reviewers.
 
 ## Total: 8 action references across 6 distinct actions
 
-| Action                                 | Occurrences | Current Ref | Pinned SHA                               | Version |
-| -------------------------------------- | ----------- | ----------- | ---------------------------------------- | ------- |
-| actions/checkout                       | 3           | @v4         | 34e114876b0b11c390a56381ad16ebd13914f8d5 | v4.3.1  |
-| actions/setup-node                     | 3           | @v4         | 49933ea5288caeca8642d1e84afbd3f7d6820020 | v4.4.0  |
-| actions/upload-artifact                | 2           | @v4         | ea165f8d65b6e75b540449e92b4886f43607fa02 | v4.6.2  |
-| codecov/codecov-action                 | 3           | @v5         | 75cd11691c0faa626561e295848008c8a7dddffe | v5.5.4  |
-| codecov/test-results-action            | 3           | @v1         | 0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 | v1.2.1  |
-| codacy/codacy-coverage-reporter-action | 1           | @v1.3.0     | 89d6c85cfafaec52c72b6c5e8b2878d33104c699 | v1.3.0  |
+| Action                                 | N   | Ref     | Pinned SHA (short)     | Version |
+| -------------------------------------- | --- | ------- | ---------------------- | ------- |
+| actions/checkout                       | 3   | @v4     | 34e114876b0b…f8d5      | v4.3.1  |
+| actions/setup-node                     | 3   | @v4     | 49933ea5288c…0020      | v4.4.0  |
+| actions/upload-artifact                | 2   | @v4     | ea165f8d65b6…fa02      | v4.6.2  |
+| codecov/codecov-action                 | 3   | @v5     | 75cd11691c0f…dffe      | v5.5.4  |
+| codecov/test-results-action            | 3   | @v1     | 0fa95f0e1eea…77d3      | v1.2.1  |
+| codacy/codacy-coverage-reporter-action | 1   | @v1.3.0 | 89d6c85cfafa…c699      | v1.3.0  |
 
 ## How to Apply
 

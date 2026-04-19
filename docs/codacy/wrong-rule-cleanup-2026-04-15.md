@@ -87,10 +87,10 @@ Tail includes `fp_no-mutation`, `fp_no-let`, `fp_no-loops`, `fp_no-class`,
 checker. This project is TypeScript-only (see `tsconfig.json` in every
 workspace). Flow annotations (`// @flow`) would not even parse.
 
-| Pattern ID                                          | Count | What it flags                        |
-| --------------------------------------------------- | ----: | ------------------------------------ |
-| `ESLint8_flowtype_no-types-missing-file-annotation` |    48 | Missing `// @flow` header            |
-| `ESLint8_flowtype_require-parameter-type`           |    45 | Untyped params (TS already enforces) |
+| Pattern ID                                          | Count | What it flags                |
+| --------------------------------------------------- | ----: | ---------------------------- |
+| `ESLint8_flowtype_no-types-missing-file-annotation` |    48 | Missing `// @flow` header    |
+| `ESLint8_flowtype_require-parameter-type`           |    45 | Untyped params (TS enforces) |
 
 **Disable the entire `flowtype` rule group.**
 

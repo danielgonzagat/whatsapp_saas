@@ -17,13 +17,10 @@ function isAuthRedirectLike(value: string) {
   );
 }
 
-function bearerFromHeaderOrCookie(
+function firstCookieBearer(
   request: NextRequest,
-  headerName: string,
   cookieNames: string[],
 ): string | null {
-  const headerValue = request.headers.get(headerName);
-  if (headerValue) return `Bearer ${headerValue}`;
   for (const cookieName of cookieNames) {
     const value = readCookieValue(request, cookieName);
     if (value) return `Bearer ${value}`;
@@ -31,13 +28,26 @@ function bearerFromHeaderOrCookie(
   return null;
 }
 
+function bearerFromHeaderOrCookie(
+  request: NextRequest,
+  headerName: string,
+  cookieNames: string[],
+): string | null {
+  const headerValue = request.headers.get(headerName);
+  if (headerValue) return `Bearer ${headerValue}`;
+  return firstCookieBearer(request, cookieNames);
+}
+
+const ACCESS_TOKEN_COOKIE_NAMES = ['kloel_access_token', 'kloel_token'];
+
 function resolveAuthorizationHeader(request: NextRequest): string | null {
   return (
     request.headers.get('authorization') ||
-    bearerFromHeaderOrCookie(request, 'x-kloel-access-token', [
-      'kloel_access_token',
-      'kloel_token',
-    ])
+    bearerFromHeaderOrCookie(
+      request,
+      'x-kloel-access-token',
+      ACCESS_TOKEN_COOKIE_NAMES,
+    )
   );
 }
 

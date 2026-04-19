@@ -395,12 +395,12 @@ Not all content is equally citable. Prioritize these formats:
 
 ### AI Visibility Monitoring Tools
 
-| Tool           | Coverage                                      | Best For                            |
-| -------------- | --------------------------------------------- | ----------------------------------- |
-| **Otterly AI** | ChatGPT, Perplexity, Google AI Overviews      | Share of AI voice tracking          |
-| **Peec AI**    | ChatGPT, Gemini, Perplexity, Claude, Copilot+ | Multi-platform monitoring at scale  |
-| **ZipTie**     | Google AI Overviews, ChatGPT, Perplexity      | Brand mention + sentiment tracking  |
-| **LLMrefs**    | ChatGPT, Perplexity, AI Overviews, Gemini     | SEO keyword → AI visibility mapping |
+| Tool           | Coverage                                 | Best For                         |
+| -------------- | ---------------------------------------- | -------------------------------- |
+| **Otterly AI** | ChatGPT, Perplexity, Google AI Overviews | Share of AI voice tracking       |
+| **Peec AI**    | ChatGPT, Gemini, Perplexity, Claude      | Multi-platform monitoring, scale |
+| **ZipTie**     | Google AI Overviews, ChatGPT, Perplexity | Brand mention + sentiment        |
+| **LLMrefs**    | ChatGPT, Perplexity, AI Overviews        | SEO keyword → AI visibility      |
 
 ### DIY Monitoring (No Tools)
 

@@ -143,7 +143,9 @@ Take proven patterns and make them yours with these voice principles:
 - Create rhythm: short, short, longer explanation
 
 ```
-❌ "I spent three years building my business the wrong way before I finally realized that the key to success was focusing on fewer things and doing them exceptionally well."
+❌ "I spent three years building my business the wrong way before I finally
+realized that the key to success was focusing on fewer things and doing
+them exceptionally well."
 
 ✅ "I built wrong for 3 years.
 

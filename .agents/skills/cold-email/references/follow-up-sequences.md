@@ -31,13 +31,13 @@ Increase the gap between each touch:
 
 Each follow-up must stand alone while building toward the goal. Never just "bump this up."
 
-| Email       | Angle                                                      | Purpose                    |
-| ----------- | ---------------------------------------------------------- | -------------------------- |
-| Initial     | Personalized hook + core value prop + soft CTA             | Introduce problem/solution |
-| Follow-up 1 | Different angle, new value piece (stat, insight, resource) | Show additional benefit    |
-| Follow-up 2 | Social proof / case study from similar company             | Build credibility          |
-| Follow-up 3 | New insight, industry trend, or relevant resource          | Demonstrate expertise      |
-| Follow-up 4 | Breakup — acknowledge silence, leave door open             | Trigger loss aversion      |
+| Email       | Angle                                            | Purpose                    |
+| ----------- | ------------------------------------------------ | -------------------------- |
+| Initial     | Personalized hook + core value prop + soft CTA   | Introduce problem/solution |
+| Follow-up 1 | New value piece (stat, insight, resource)        | Show additional benefit    |
+| Follow-up 2 | Social proof / case study from similar company   | Build credibility          |
+| Follow-up 3 | New insight, industry trend, or relevant content | Demonstrate expertise      |
+| Follow-up 4 | Breakup — acknowledge silence, leave door open   | Trigger loss aversion      |
 
 Add only **one new value proposition per email** (SalesBread). This naturally forces different
 angles.

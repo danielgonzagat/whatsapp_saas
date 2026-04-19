@@ -397,11 +397,11 @@ platform-specific guidance when the CRM is known.
 For implementation, see the [tools registry](../../tools/REGISTRY.md). Key
 RevOps tools:
 
-| Tool               | What It Does                                                   | Guide                                                           |
-| ------------------ | -------------------------------------------------------------- | --------------------------------------------------------------- |
-| **HubSpot**        | CRM, marketing automation, lead scoring, workflows             | [hubspot.md](../../tools/integrations/hubspot.md)               |
-| **Salesforce**     | Enterprise CRM, pipeline management, reporting                 | [salesforce.md](../../tools/integrations/salesforce.md)         |
-| **Calendly**       | Meeting scheduling, round-robin routing                        | [calendly.md](../../tools/integrations/calendly.md)             |
+| Tool               | What It Does                                        | Guide             |
+| ------------------ | --------------------------------------------------- | ----------------- |
+| **HubSpot**        | CRM, marketing automation, lead scoring, workflows  | `hubspot.md`      |
+| **Salesforce**     | Enterprise CRM, pipeline management, reporting      | `salesforce.md`   |
+| **Calendly**       | Meeting scheduling, round-robin routing             | `calendly.md`     |
 | **SavvyCal**       | Scheduling with priority-based availability                    | [savvycal.md](../../tools/integrations/savvycal.md)             |
 | **Clearbit**       | Real-time lead enrichment and scoring                          | [clearbit.md](../../tools/integrations/clearbit.md)             |
 | **Apollo**         | Contact data, enrichment, and outbound sequences               | [apollo.md](../../tools/integrations/apollo.md)                 |

@@ -220,11 +220,11 @@ We'll know this is true when [metrics].
 For tracking all tests in a central location:
 
 ```markdown
-| Test ID | Name                 | Page     | Dates     | Primary Metric | Result       | Lift | Link   |
-| ------- | -------------------- | -------- | --------- | -------------- | ------------ | ---- | ------ |
-| 001     | Hero headline test   | Homepage | 1/1-1/15  | CTR            | Winner       | +12% | [Link] |
-| 002     | Pricing table layout | Pricing  | 1/10-1/31 | Plan selection | Loser        | -5%  | [Link] |
-| 003     | Signup form fields   | Signup   | 2/1-2/14  | Completion     | Inconclusive | +2%  | [Link] |
+| ID  | Name          | Page     | Dates     | Metric    | Result       | Lift | Link   |
+| --- | ------------- | -------- | --------- | --------- | ------------ | ---- | ------ |
+| 001 | Hero headline | Homepage | 1/1-1/15  | CTR       | Winner       | +12% | [Link] |
+| 002 | Pricing table | Pricing  | 1/10-1/31 | Plan sel. | Loser        | -5%  | [Link] |
+| 003 | Signup form   | Signup   | 2/1-2/14  | Complete  | Inconclusive | +2%  | [Link] |
 ```
 
 ---
@@ -294,9 +294,9 @@ Scoring: 1-5 (5 = best)
 For collecting test ideas:
 
 ```markdown
-| ID  | Page/Area | Observation         | Hypothesis                            | Potential Impact | Status  |
-| --- | --------- | ------------------- | ------------------------------------- | ---------------- | ------- |
-| H1  | Homepage  | Low scroll depth    | Shorter hero will increase scroll     | High             | Testing |
-| H2  | Pricing   | Users compare plans | Comparison table will help            | Medium           | Backlog |
-| H3  | Signup    | Drop-off at email   | Social login will increase completion | Medium           | Backlog |
+| ID  | Page/Area | Observation         | Hypothesis                   | Impact | Status  |
+| --- | --------- | ------------------- | ---------------------------- | ------ | ------- |
+| H1  | Homepage  | Low scroll depth    | Shorter hero raises scroll   | High   | Testing |
+| H2  | Pricing   | Users compare plans | Comparison table helps       | Medium | Backlog |
+| H3  | Signup    | Drop-off at email   | Social login lifts completes | Medium | Backlog |
 ```

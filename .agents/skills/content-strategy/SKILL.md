@@ -364,10 +364,10 @@ Score each idea on four factors:
 
 ### Scoring Template
 
-| Idea    | Customer Impact (40%) | Content-Market Fit (30%) | Search Potential (20%) | Resources (10%) | Total |
-| ------- | --------------------- | ------------------------ | ---------------------- | --------------- | ----- |
-| Topic A | 8                     | 9                        | 7                      | 6               | 8.0   |
-| Topic B | 6                     | 7                        | 9                      | 8               | 7.1   |
+| Idea    | Cust Impact (40%) | Content Fit (30%) | Search (20%) | Resources (10%) | Total |
+| ------- | ----------------- | ----------------- | ------------ | --------------- | ----- |
+| Topic A | 8                 | 9                 | 7            | 6               | 8.0   |
+| Topic B | 6                 | 7                 | 9            | 8               | 7.1   |
 
 ---
 

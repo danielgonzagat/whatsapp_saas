@@ -195,7 +195,8 @@ Ratchet locked at 25,164 / 12,891 / 11,150.
   stripping NestJS reflect-metadata from constructor parameter types.
   Phase 2A.5 (deferred) will re-run biome on backend with the new
   ruleset.
-- Commit: `18bb157f chore(codacy): phase 2a — biome --write auto-fix on frontend, worker, scripts/ops`
+- Commit: `18bb157f chore(codacy): phase 2a — biome --write auto-fix on
+  frontend, worker, scripts/ops`
 
 ### Measured delta
 

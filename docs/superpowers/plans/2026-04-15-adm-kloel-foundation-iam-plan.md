@@ -261,9 +261,11 @@ scaffold; frontend-admin pages; root wiring + docs). Push branch. Open PR with f
 **What.**
 
 ```
-vercel link --project kloel-admin --yes --token $VERCEL_TOKEN --scope $VERCEL_TEAM_ID --cwd frontend-admin
+vercel link --project kloel-admin --yes --token $VERCEL_TOKEN \
+  --scope $VERCEL_TEAM_ID --cwd frontend-admin
 vercel env add NEXT_PUBLIC_ADMIN_API_URL production ...
-vercel deploy --prebuilt=false --prod=false --token $VERCEL_TOKEN --scope $VERCEL_TEAM_ID --cwd frontend-admin
+vercel deploy --prebuilt=false --prod=false --token $VERCEL_TOKEN \
+  --scope $VERCEL_TEAM_ID --cwd frontend-admin
 ```
 
 Project didn't exist — `vercel link` with `--yes` will create it. Set Node 24.x, rootDirectory via

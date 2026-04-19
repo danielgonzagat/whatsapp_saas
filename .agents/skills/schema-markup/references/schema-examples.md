@@ -175,7 +175,7 @@ For pages with frequently asked questions.
       "name": "What is schema markup?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Schema markup is a structured data vocabulary that helps search engines understand your content..."
+        "text": "Schema markup is a structured data vocabulary that helps search engines..."
       }
     },
     {
@@ -183,7 +183,7 @@ For pages with frequently asked questions.
       "name": "How do I implement schema?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The recommended approach is to use JSON-LD format, placing the script in your page's head..."
+        "text": "The recommended approach is to use JSON-LD format, placing the script in head..."
       }
     }
   ]

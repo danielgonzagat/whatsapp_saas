@@ -21,22 +21,46 @@
 
 ## Queue
 
-| Order | Priority | Lane | Kind | Unit | Opened By |
-|-------|----------|------|------|------|-----------|
-| 1 | P0 | customer | SCENARIO | Recover Customer Auth Shell | browserPass, customer-auth-shell, customerPass |
-| 2 | P0 | customer | SCENARIO | Recover Customer Product And Checkout | browserPass, customer-product-and-checkout, customerPass, payment-webhook-reconciliation |
-| 3 | P0 | customer | SCENARIO | Recover Customer Whatsapp And Inbox | browserPass, conversation-reload, customer-whatsapp-and-inbox, customerPass, message-persistence |
-| 4 | P0 | customer | SCENARIO | Recover System Payment Reconciliation | payment-webhook-replay, system-payment-reconciliation, wallet-ledger-reconciliation |
-| 5 | P0 | customer | GATE | Clear Runtime Pass | runtimePass |
-| 6 | P1 | operator-admin | SCENARIO | Recover Admin Settings Kyc Banking | admin-settings-kyc-banking, adminPass, browserPass, kyc-doc-processing, withdrawal-ledger-consistency |
-| 7 | P1 | operator-admin | SCENARIO | Recover Admin Whatsapp Session Control | admin-whatsapp-session-control, adminPass, browserPass, provider-status-sync, session-reconnect |
-| 8 | P1 | operator-admin | SCENARIO | Recover Operator Autopilot Run | job-enqueued, operator-autopilot-run, operatorPass, worker-health-visible |
-| 9 | P1 | operator-admin | SCENARIO | Recover Operator Campaigns And Flows | flow-resume-after-wait, operator-campaigns-and-flows, operatorPass |
-| 10 | P2 | security | SECURITY | Clear Blocking Security And Compliance Findings | securityPass |
-| 11 | P2 | reliability | GATE | Clear Invariant Pass | invariantPass |
-| 12 | P2 | reliability | GATE | Clear Observability Pass | observabilityPass |
-| 13 | P2 | reliability | GATE | Clear Recovery Pass | recoveryPass |
-| 14 | P3 | platform | STATIC | Reduce Remaining Static Critical And High Breakers | staticPass |
+| Order | Priority | Lane | Kind | Unit |
+|-------|----------|------|------|------|
+| 1 | P0 | customer | SCENARIO | Recover Customer Auth Shell |
+| 2 | P0 | customer | SCENARIO | Recover Customer Product And Checkout |
+| 3 | P0 | customer | SCENARIO | Recover Customer Whatsapp And Inbox |
+| 4 | P0 | customer | SCENARIO | Recover System Payment Reconciliation |
+| 5 | P0 | customer | GATE | Clear Runtime Pass |
+| 6 | P1 | operator-admin | SCENARIO | Recover Admin Settings Kyc Banking |
+| 7 | P1 | operator-admin | SCENARIO | Recover Admin Whatsapp Session Control |
+| 8 | P1 | operator-admin | SCENARIO | Recover Operator Autopilot Run |
+| 9 | P1 | operator-admin | SCENARIO | Recover Operator Campaigns And Flows |
+| 10 | P2 | security | SECURITY | Clear Blocking Security And Compliance Findings |
+| 11 | P2 | reliability | GATE | Clear Invariant Pass |
+| 12 | P2 | reliability | GATE | Clear Observability Pass |
+| 13 | P2 | reliability | GATE | Clear Recovery Pass |
+| 14 | P3 | platform | STATIC | Reduce Remaining Static Critical And High Breakers |
+
+### Queue Gates (Opened By)
+
+- 1: `browserPass`, `customer-auth-shell`, `customerPass`
+- 2: `browserPass`, `customer-product-and-checkout`, `customerPass`,
+  `payment-webhook-reconciliation`
+- 3: `browserPass`, `conversation-reload`, `customer-whatsapp-and-inbox`,
+  `customerPass`, `message-persistence`
+- 4: `payment-webhook-replay`, `system-payment-reconciliation`,
+  `wallet-ledger-reconciliation`
+- 5: `runtimePass`
+- 6: `admin-settings-kyc-banking`, `adminPass`, `browserPass`,
+  `kyc-doc-processing`, `withdrawal-ledger-consistency`
+- 7: `admin-whatsapp-session-control`, `adminPass`, `browserPass`,
+  `provider-status-sync`, `session-reconnect`
+- 8: `job-enqueued`, `operator-autopilot-run`, `operatorPass`,
+  `worker-health-visible`
+- 9: `flow-resume-after-wait`, `operator-campaigns-and-flows`,
+  `operatorPass`
+- 10: `securityPass`
+- 11: `invariantPass`
+- 12: `observabilityPass`
+- 13: `recoveryPass`
+- 14: `staticPass`
 
 ## 1. [P0] Recover Customer Auth Shell
 

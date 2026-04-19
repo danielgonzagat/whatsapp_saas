@@ -386,7 +386,7 @@ export function resolveCheckoutCouponCode(currentCode: string, explicitCode?: st
  * precondition holds. Kept as a small data-only function to tame the cyclomatic
  * complexity of the orchestrator.
  */
-export function computeFinalizeOrderPrecheckError(input: {
+interface FinalizeOrderPrecheckInput {
   identityValid: boolean;
   addressValid: boolean;
   hasWorkspaceAndPlan: boolean;
@@ -396,28 +396,53 @@ export function computeFinalizeOrderPrecheckError(input: {
   supportsPix: boolean;
   supportsBoleto: boolean;
   cpfDigits: number;
-}): { message: string; targetStep?: 1 | 2 } | null {
-  if (!input.identityValid) {
-    return { message: 'Revise os dados pessoais antes de finalizar.', targetStep: 1 };
-  }
-  if (!input.addressValid) {
-    return { message: 'Revise o endereço antes de finalizar.', targetStep: 2 };
-  }
-  if (!input.hasWorkspaceAndPlan) {
-    return { message: 'Checkout sem vínculo com workspace ou plano.' };
-  }
+}
+
+type PrecheckError = { message: string; targetStep?: 1 | 2 };
+
+const PRECHECK_IDENTITY_ERROR: PrecheckError = {
+  message: 'Revise os dados pessoais antes de finalizar.',
+  targetStep: 1,
+};
+const PRECHECK_ADDRESS_ERROR: PrecheckError = {
+  message: 'Revise o endereço antes de finalizar.',
+  targetStep: 2,
+};
+const PRECHECK_NO_WORKSPACE_ERROR: PrecheckError = {
+  message: 'Checkout sem vínculo com workspace ou plano.',
+};
+const PRECHECK_METHOD_ERROR: PrecheckError = {
+  message: 'Forma de pagamento indisponível neste checkout.',
+};
+const PRECHECK_BOLETO_CPF_ERROR: PrecheckError = {
+  message: 'CPF válido é obrigatório para gerar boleto.',
+};
+
+function isPayMethodUnsupported(input: FinalizeOrderPrecheckInput): boolean {
+  const method = input.payMethod;
+  if (method === 'card') return !input.supportsCard;
+  if (method === 'pix') return !input.supportsPix;
+  return !input.supportsBoleto;
+}
+
+function findFinalizePrecheckError(
+  input: FinalizeOrderPrecheckInput,
+): PrecheckError | null {
+  if (!input.identityValid) return PRECHECK_IDENTITY_ERROR;
+  if (!input.addressValid) return PRECHECK_ADDRESS_ERROR;
+  if (!input.hasWorkspaceAndPlan) return PRECHECK_NO_WORKSPACE_ERROR;
   if (input.checkoutUnavailableReason) {
     return { message: input.checkoutUnavailableReason };
   }
-  const methodUnsupported =
-    (input.payMethod === 'card' && !input.supportsCard) ||
-    (input.payMethod === 'pix' && !input.supportsPix) ||
-    (input.payMethod === 'boleto' && !input.supportsBoleto);
-  if (methodUnsupported) {
-    return { message: 'Forma de pagamento indisponível neste checkout.' };
-  }
+  if (isPayMethodUnsupported(input)) return PRECHECK_METHOD_ERROR;
   if (input.payMethod === 'boleto' && input.cpfDigits < 11) {
-    return { message: 'CPF válido é obrigatório para gerar boleto.' };
+    return PRECHECK_BOLETO_CPF_ERROR;
   }
   return null;
+}
+
+export function computeFinalizeOrderPrecheckError(
+  input: FinalizeOrderPrecheckInput,
+): PrecheckError | null {
+  return findFinalizePrecheckError(input);
 }

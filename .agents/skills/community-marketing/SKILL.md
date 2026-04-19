@@ -141,14 +141,14 @@ accelerate the loop or slow it down?_
 
 ## Platform Selection Guide
 
-| Platform          | Best For                                                | Watch Out For                                    |
-| ----------------- | ------------------------------------------------------- | ------------------------------------------------ |
-| Discord           | Developer, gaming, creator communities; real-time chat  | High noise, hard to search, onboarding friction  |
-| Slack             | B2B / professional communities; familiar to SaaS buyers | Free tier limits history; feels like work        |
-| Circle            | Creator or course-based communities; clean UX           | Less organic discovery; requires driving traffic |
-| Reddit            | High-volume public communities; SEO benefit             | You don't own it; moderation is hard             |
-| Facebook Groups   | Consumer brands; older demographics                     | Declining organic reach; algorithm dependent     |
-| Forum (Discourse) | Long-form technical communities; SEO-rich               | Slower velocity; higher effort to post           |
+| Platform          | Best For                               | Watch Out For                   |
+| ----------------- | -------------------------------------- | ------------------------------- |
+| Discord           | Developer/gaming/creator; real-time    | Noise, hard to search           |
+| Slack             | B2B/professional; SaaS buyers          | Free tier limits; work feel     |
+| Circle            | Creator or course-based; clean UX      | Less organic discovery          |
+| Reddit            | Public communities; SEO benefit        | Don't own it; moderation hard   |
+| Facebook Groups   | Consumer brands; older demographics    | Declining reach; algorithm-run  |
+| Forum (Discourse) | Long-form technical; SEO-rich          | Slower velocity; effort to post |
 
 ---
 

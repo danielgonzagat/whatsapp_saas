@@ -77,7 +77,8 @@ exploring new angles.
 The core loop:
 
 ```
-Pull performance data → Identify winning patterns → Generate new variations → Validate specs → Deliver
+Pull performance data → Identify winning patterns →
+Generate new variations → Validate specs → Deliver
 ```
 
 ---
@@ -303,7 +304,9 @@ When generating at scale (10+ variations), offer CSV format for direct upload:
 
 ```csv
 headline_1,headline_2,headline_3,description_1,description_2,platform
-"Stop Manual Reporting","Automate in 5 Minutes","Join 10K+ Teams","Save 10+ hrs/week on reports. Start free.","Connect data sources once. Reports forever.","google_ads"
+"Stop Manual Reporting","Automate in 5 Minutes","Join 10K+ Teams",
+"Save 10+ hrs/week on reports. Start free.",
+"Connect data sources once. Reports forever.","google_ads"
 ```
 
 ### Iteration Report
@@ -369,12 +372,12 @@ For large-scale creative production (Anthropic's growth team generates 100+ vari
 For pulling performance data and managing campaigns, see the [tools
 registry](../../tools/REGISTRY.md).
 
-| Platform         |                 Pull Performance Data                 |       Manage Campaigns        | Guide                                                       |
-| ---------------- | :---------------------------------------------------: | :---------------------------: | ----------------------------------------------------------- |
-| **Google Ads**   | `google-ads campaigns list`, `google-ads reports get` | `google-ads campaigns create` | [google-ads.md](../../tools/integrations/google-ads.md)     |
-| **Meta Ads**     |                `meta-ads insights get`                |   `meta-ads campaigns list`   | [meta-ads.md](../../tools/integrations/meta-ads.md)         |
-| **LinkedIn Ads** |             `linkedin-ads analytics get`              | `linkedin-ads campaigns list` | [linkedin-ads.md](../../tools/integrations/linkedin-ads.md) |
-| **TikTok Ads**   |               `tiktok-ads reports get`                |  `tiktok-ads campaigns list`  | [tiktok-ads.md](../../tools/integrations/tiktok-ads.md)     |
+| Platform         | Pull Performance Data        | Manage Campaigns           | Guide           |
+| ---------------- | :--------------------------: | :------------------------: | --------------- |
+| **Google Ads**   | `google-ads campaigns list`  | `google-ads camps create`  | `google-ads.md` |
+| **Meta Ads**     | `meta-ads insights get`      | `meta-ads camps list`      | `meta-ads.md`   |
+| **LinkedIn Ads** | `linkedin-ads analytics get` | `linkedin-ads camps list`  | `linkedin.md`   |
+| **TikTok Ads**   | `tiktok-ads reports get`     | `tiktok-ads camps list`    | `tiktok.md`     |
 
 ### Workflow: Pull Data, Analyze, Generate
 

@@ -322,7 +322,8 @@ When a test wins, don't just implement it — document the pattern:
 **Date**: [date]
 **Hypothesis**: [the hypothesis]
 **Sample size**: [n per variant]
-**Result**: [winner/loser/inconclusive] — [primary metric] changed by [X%] (95% CI: [range], p=[value])
+**Result**: [winner/loser/inconclusive] — [primary metric] changed by
+[X%] (95% CI: [range], p=[value])
 **Guardrails**: [any guardrail metrics and their outcomes]
 **Segment deltas**: [notable differences by device, segment, or cohort]
 **Why it worked/failed**: [analysis]

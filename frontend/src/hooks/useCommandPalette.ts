@@ -122,30 +122,37 @@ export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
   useEffect(() => {
     if (disableShortcut) return;
 
+    const isTogglePaletteEvent = (e: KeyboardEvent): boolean =>
+      (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k';
+
+    const isTextInputElement = (target: HTMLElement): boolean =>
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable;
+
+    const isSlashOpenEvent = (e: KeyboardEvent): boolean => {
+      if (e.key !== '/' || state.isOpen) return false;
+      return !isTextInputElement(e.target as HTMLElement);
+    };
+
+    const isEscapeCloseEvent = (e: KeyboardEvent): boolean =>
+      e.key === 'Escape' && state.isOpen;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+K ou Cmd+K
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      if (isTogglePaletteEvent(e)) {
         e.preventDefault();
         e.stopPropagation();
         toggle();
         return;
       }
 
-      // "/" para abrir com foco em busca (quando não está em input)
-      if (e.key === '/' && !state.isOpen) {
-        const target = e.target as HTMLElement;
-        const isInputFocused =
-          target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
-
-        if (!isInputFocused) {
-          e.preventDefault();
-          open({ initialQuery: '' });
-          return;
-        }
+      if (isSlashOpenEvent(e)) {
+        e.preventDefault();
+        open({ initialQuery: '' });
+        return;
       }
 
-      // Escape para fechar
-      if (e.key === 'Escape' && state.isOpen) {
+      if (isEscapeCloseEvent(e)) {
         e.preventDefault();
         close();
       }

@@ -28,16 +28,16 @@ Wave 3 ships changes in many backend-adjacent client files. These
 are **explicitly allowed** as long as the visual baseline stays
 zero-diff:
 
-| File                                       | Wave 3 PR      | Why it's allowed                                    |
-| ------------------------------------------ | -------------- | --------------------------------------------------- |
-| `frontend/src/lib/http.ts`                 | P6.5-2, P6.5-4 | API client wiring, error handling. No DOM.          |
-| `frontend/next.config.js`                  | P6.5-2         | Build-time config. No DOM.                          |
-| `frontend/src/lib/auth/session.ts`         | P6.5-3         | Session state. Renders no DOM directly.             |
-| `frontend/src/lib/session-guard.tsx` (new) | P6.5-3         | HOC that gates SWR hooks; visual surface unchanged. |
-| `frontend/.env.example`                    | P6.5-2         | Env documentation.                                  |
-| `frontend/src/app/settings/page.tsx`       | P6.5-3         | Bug fix for crash; loading state already designed.  |
-| `frontend/src/app/products/[id]/page.tsx`  | P6.5-3         | Same.                                               |
-| `frontend/src/app/products/new/page.tsx`   | P6.5-3         | Same.                                               |
+| File                                       | Wave 3 PR      | Why it's allowed                   |
+| ------------------------------------------ | -------------- | ---------------------------------- |
+| `frontend/src/lib/http.ts`                 | P6.5-2, P6.5-4 | API client wiring, errors. No DOM. |
+| `frontend/next.config.js`                  | P6.5-2         | Build-time config. No DOM.         |
+| `frontend/src/lib/auth/session.ts`         | P6.5-3         | Session state. No DOM.             |
+| `frontend/src/lib/session-guard.tsx` (new) | P6.5-3         | HOC gating SWR; visual same.       |
+| `frontend/.env.example`                    | P6.5-2         | Env documentation.                 |
+| `frontend/src/app/settings/page.tsx`       | P6.5-3         | Bug fix; loading already there.    |
+| `frontend/src/app/products/[id]/page.tsx`  | P6.5-3         | Same.                              |
+| `frontend/src/app/products/new/page.tsx`   | P6.5-3         | Same.                              |
 
 The general rule: **a fix is in scope if and only if its rendered
 output is byte-for-byte identical to the pre-fix output for any

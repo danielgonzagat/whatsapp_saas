@@ -19,15 +19,28 @@ export interface ParsedInboxMessage {
   newMsg: Record<string, unknown>;
 }
 
+function extractNestedMessage(
+  payload: Record<string, unknown>,
+): Record<string, unknown> | null {
+  const candidate = payload.message;
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+    return null;
+  }
+  return candidate as Record<string, unknown>;
+}
+
+function pickConversationId(
+  payload: Record<string, unknown>,
+  newMsg: Record<string, unknown>,
+): string | undefined {
+  if (typeof payload.conversationId === 'string') return payload.conversationId;
+  if (typeof newMsg.conversationId === 'string') return newMsg.conversationId;
+  return undefined;
+}
+
 export function parseInboxMessagePayload(payload: Record<string, unknown>): ParsedInboxMessage {
-  const nestedMessage =
-    payload.message && typeof payload.message === 'object' && !Array.isArray(payload.message)
-      ? (payload.message as Record<string, unknown>)
-      : null;
-  const newMsg = nestedMessage ?? payload;
-  const convId =
-    (typeof payload.conversationId === 'string' ? payload.conversationId : undefined) ??
-    (typeof newMsg.conversationId === 'string' ? newMsg.conversationId : undefined);
+  const newMsg = extractNestedMessage(payload) ?? payload;
+  const convId = pickConversationId(payload, newMsg);
   const messageId = typeof newMsg.id === 'string' ? newMsg.id : undefined;
   return { convId, messageId, newMsg };
 }
