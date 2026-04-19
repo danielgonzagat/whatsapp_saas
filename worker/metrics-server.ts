@@ -10,23 +10,29 @@ function sendJson(res: http.ServerResponse, status: number, data: unknown) {
   res.end(JSON.stringify(data));
 }
 
+function extractBearerToken(auth: string | string[] | undefined): string | undefined {
+  if (typeof auth !== 'string') return undefined;
+  return auth.startsWith('Bearer ') ? auth.slice(7) : undefined;
+}
+
+function readStringHeader(req: http.IncomingMessage, name: string): string | undefined {
+  const raw = req.headers[name];
+  return typeof raw === 'string' ? raw : undefined;
+}
+
+function resolveRequestToken(req: http.IncomingMessage): string | undefined {
+  return (
+    extractBearerToken(req.headers.authorization) ||
+    readStringHeader(req, 'x-metrics-token') ||
+    readStringHeader(req, 'x-internal-key')
+  );
+}
+
 function isAuthorized(req: http.IncomingMessage): boolean {
-  const auth = req.headers.authorization;
-  const bearer = typeof auth === 'string' && auth.startsWith('Bearer ') ? auth.slice(7) : undefined;
-  const headerToken =
-    bearer ||
-    (typeof req.headers['x-metrics-token'] === 'string'
-      ? req.headers['x-metrics-token']
-      : undefined) ||
-    (typeof req.headers['x-internal-key'] === 'string' ? req.headers['x-internal-key'] : undefined);
+  const headerToken = resolveRequestToken(req);
 
-  if (internalApiKey && headerToken === internalApiKey) {
-    return true;
-  }
-
-  if (metricsToken && headerToken === metricsToken) {
-    return true;
-  }
+  if (internalApiKey && headerToken === internalApiKey) return true;
+  if (metricsToken && headerToken === metricsToken) return true;
 
   return !internalApiKey && !metricsToken;
 }

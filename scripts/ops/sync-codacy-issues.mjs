@@ -373,6 +373,33 @@ async function syncCodacyIssues() {
   return state;
 }
 
+function isQuoted(value, quote) {
+  return value.startsWith(quote) && value.endsWith(quote);
+}
+
+function stripSurroundingQuotes(value) {
+  if (isQuoted(value, '"') || isQuoted(value, "'")) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
+function parseEnvLine(rawLine) {
+  const line = rawLine.trim();
+  if (!line || line.startsWith('#')) return null;
+  const eq = line.indexOf('=');
+  if (eq <= 0) return null;
+  const key = line.slice(0, eq).trim();
+  const value = stripSurroundingQuotes(line.slice(eq + 1).trim());
+  return { key, value };
+}
+
+function applyEnvPair(entry) {
+  if (!entry) return;
+  if (entry.key in process.env) return;
+  process.env[entry.key] = entry.value;
+}
+
 async function loadLocalEnvFile() {
   // When run locally outside CI we opportunistically read .env.pulse.local so
   // the developer experience matches the nightly workflow without requiring
@@ -382,21 +409,7 @@ async function loadLocalEnvFile() {
   if (!existsSync(envPath)) return;
   const content = readFileSync(envPath, 'utf8');
   for (const rawLine of content.split('\n')) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const eq = line.indexOf('=');
-    if (eq <= 0) continue;
-    const key = line.slice(0, eq).trim();
-    let value = line.slice(eq + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    if (!(key in process.env)) {
-      process.env[key] = value;
-    }
+    applyEnvPair(parseEnvLine(rawLine));
   }
 }
 

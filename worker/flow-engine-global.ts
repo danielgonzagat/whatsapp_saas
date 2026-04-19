@@ -1282,24 +1282,29 @@ export class FlowEngineGlobal {
     }) || { id: 'default' };
     let contactId: string | null = null;
     let conversationId: string | null = null;
-    const extractExternalId = (res: unknown): string | null => {
-      if (!res || typeof res !== 'object') return null;
-      const r = res as Record<string, unknown>;
-      const msgs = r.messages;
-      if (Array.isArray(msgs) && msgs[0] && typeof msgs[0] === 'object') {
-        const firstId = (msgs[0] as Record<string, unknown>).id;
-        if (typeof firstId === 'string') return firstId;
-      }
-      const msg = r.message;
-      if (msg && typeof msg === 'object') {
-        const msgId = (msg as Record<string, unknown>).id;
-        if (typeof msgId === 'string') return msgId;
-      }
-      const candidates = [r.id, r.messageId, r.sid];
-      for (const c of candidates) {
+    const readIdFromObject = (value: unknown): string | null => {
+      if (!value || typeof value !== 'object') return null;
+      const id = (value as Record<string, unknown>).id;
+      return typeof id === 'string' ? id : null;
+    };
+    const extractIdFromMessages = (messages: unknown): string | null => {
+      if (!Array.isArray(messages)) return null;
+      return readIdFromObject(messages[0]);
+    };
+    const extractFirstStringCandidate = (r: Record<string, unknown>): string | null => {
+      for (const c of [r.id, r.messageId, r.sid]) {
         if (typeof c === 'string') return c;
       }
       return null;
+    };
+    const extractExternalId = (res: unknown): string | null => {
+      if (!res || typeof res !== 'object') return null;
+      const r = res as Record<string, unknown>;
+      return (
+        extractIdFromMessages(r.messages) ||
+        readIdFromObject(r.message) ||
+        extractFirstStringCandidate(r)
+      );
     };
 
     // Rate Limiter Check
