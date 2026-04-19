@@ -276,9 +276,15 @@ describe('AccountSettingsSection privacy controls', () => {
   it('sends a password reset link to the authenticated email from settings', async () => {
     render(<AccountSettingsSection />);
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Enviar link de redefinição para meu e-mail' }),
-    );
+    const resetLinkButton = await screen.findByRole('button', {
+      name: 'Enviar link de redefinição para meu e-mail',
+    });
+
+    await waitFor(() => {
+      expect(resetLinkButton).toBeEnabled();
+    });
+
+    fireEvent.click(resetLinkButton);
 
     await waitFor(() => {
       expect(mockedAuthForgotPassword).toHaveBeenCalledWith('daniel@kloel.com');
