@@ -283,14 +283,17 @@ Rules:
 
 ### Things to Avoid
 
-- **Too many header items** (8+): causes decision paralysis, nav becomes unreadable on smaller screens
+- **Too many header items** (8+): causes decision paralysis, nav becomes unreadable on smaller
+  screens
 - **Dropdown inception**: dropdowns inside dropdowns inside dropdowns
 - **Mystery icons**: icons without labels — users don't know what they mean
 - **Hidden primary nav**: burying important pages in hamburger menus on desktop
-- **Inconsistent nav between pages**: nav should be identical across the site (except app vs marketing)
+- **Inconsistent nav between pages**: nav should be identical across the site (except app vs
+  marketing)
 - **No mobile consideration**: desktop nav that doesn't translate to mobile
 - **Footer as sitemap dump**: 50+ links in the footer with no organization
-- **Breadcrumbs that don't match URLs**: breadcrumb says "Products > Widget" but URL is `/shop/widget-pro`
+- **Breadcrumbs that don't match URLs**: breadcrumb says "Products > Widget" but URL is
+  `/shop/widget-pro`
 
 ### Common Fixes
 

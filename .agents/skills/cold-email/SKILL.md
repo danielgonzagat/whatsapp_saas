@@ -1,6 +1,12 @@
 ---
 name: cold-email
-description: Write B2B cold emails and follow-up sequences that get replies. Use when the user wants to write cold outreach emails, prospecting emails, cold email campaigns, sales development emails, or SDR emails. Also use when the user mentions "cold outreach," "prospecting email," "outbound email," "email to leads," "reach out to prospects," "sales email," "follow-up email sequence," "nobody's replying to my emails," or "how do I write a cold email." Covers subject lines, opening lines, body copy, CTAs, personalization, and multi-touch follow-up sequences. For warm/lifecycle email sequences, see email-sequence. For sales collateral beyond emails, see sales-enablement.
+description: Write B2B cold emails and follow-up sequences that get replies. Use when the user wants
+to write cold outreach emails, prospecting emails, cold email campaigns, sales development emails,
+or SDR emails. Also use when the user mentions "cold outreach," "prospecting email," "outbound
+email," "email to leads," "reach out to prospects," "sales email," "follow-up email sequence,"
+"nobody's replying to my emails," or "how do I write a cold email." Covers subject lines, opening
+lines, body copy, CTAs, personalization, and multi-touch follow-up sequences. For warm/lifecycle
+email sequences, see email-sequence. For sales collateral beyond emails, see sales-enablement.
 metadata:
   version: 1.1.0
 ---
@@ -28,7 +34,9 @@ Understand the situation (ask if not provided):
 5. **Any research signals?** — Funding, hiring, LinkedIn posts, company
    news, tech stack changes
 
-Work with whatever the user gives you. If they have a strong signal and a clear value prop, that's enough to write. Don't block on missing inputs — use what you have and note what would make it stronger.
+Work with whatever the user gives you. If they have a strong signal and a clear value prop, that's
+enough to write. Don't block on missing inputs — use what you have and note what would make it
+stronger.
 
 ---
 
@@ -42,27 +50,32 @@ aloud. If it sounds like marketing copy, rewrite it.
 
 ### Every sentence must earn its place
 
-Cold email is ruthlessly short. If a sentence doesn't move the reader toward replying, cut it. The best cold emails feel like they could have been shorter, not longer.
+Cold email is ruthlessly short. If a sentence doesn't move the reader toward replying, cut it. The
+best cold emails feel like they could have been shorter, not longer.
 
 ### Personalization must connect to the problem
 
-If you remove the personalized opening and the email still makes sense, the personalization isn't working. The observation should naturally lead into why you're reaching out.
+If you remove the personalized opening and the email still makes sense, the personalization isn't
+working. The observation should naturally lead into why you're reaching out.
 
 See [personalization.md](references/personalization.md) for the 4-level system and research signals.
 
 ### Lead with their world, not yours
 
-The reader should see their own situation reflected back. "You/your" should dominate over "I/we." Don't open with who you are or what your company does.
+The reader should see their own situation reflected back. "You/your" should dominate over "I/we."
+Don't open with who you are or what your company does.
 
 ### One ask, low friction
 
-Interest-based CTAs ("Worth exploring?" / "Would this be useful?") beat meeting requests. One CTA per email. Make it easy to say yes with a one-line reply.
+Interest-based CTAs ("Worth exploring?" / "Would this be useful?") beat meeting requests. One CTA
+per email. Make it easy to say yes with a one-line reply.
 
 ---
 
 ## Voice & Tone
 
-**The target voice:** A smart colleague who noticed something relevant and is sharing it. Conversational but not sloppy. Confident but not pushy.
+**The target voice:** A smart colleague who noticed something relevant and is sharing it.
+Conversational but not sloppy. Confident but not pushy.
 
 **Calibrate to the audience:**
 
@@ -103,7 +116,8 @@ For the full catalog of frameworks with examples, see [frameworks.md](references
 
 ## Subject Lines
 
-Short, boring, internal-looking. The subject line's only job is to get the email opened — not to sell.
+Short, boring, internal-looking. The subject line's only job is to get the email opened — not to
+sell.
 
 - 2-4 words, lowercase, no punctuation tricks
 - Should look like it came from a colleague ("reply rates," "hiring ops," "Q2 forecast")
@@ -122,7 +136,8 @@ useful resource. "Just checking in" gives the reader no reason to respond.
 - Each email should stand alone (they may not have read the previous ones)
 - The breakup email is your last touch — honor it
 
-See [follow-up-sequences.md](references/follow-up-sequences.md) for cadence, angle rotation, and breakup email templates.
+See [follow-up-sequences.md](references/follow-up-sequences.md) for cadence, angle rotation, and
+breakup email templates.
 
 ---
 
@@ -157,7 +172,8 @@ The references contain performance data if you need to make informed choices:
 
 - [benchmarks.md](references/benchmarks.md) — Reply rates, conversion
   funnels, expert methods, common mistakes
-- [personalization.md](references/personalization.md) — 4-level personalization system, research signals
+- [personalization.md](references/personalization.md) — 4-level personalization system, research
+  signals
 - [subject-lines.md](references/subject-lines.md) — Subject line data and optimization
 - [follow-up-sequences.md](references/follow-up-sequences.md) — Cadence, angles, breakup emails
 - [frameworks.md](references/frameworks.md) — All copywriting frameworks with examples

@@ -9,37 +9,83 @@ import { getBackendCandidateUrls } from '../../_lib/backend-url';
  * avoiding CORS / NEXT_PUBLIC_API_URL misconfiguration issues.
  */
 
-async function proxyKyc(request: NextRequest, pathSegments: string[]) {
-  const kycPath = `/kyc/${pathSegments.join('/')}`;
+function resolveWorkspaceIdHeader(request: NextRequest): string {
+  return (
+    request.headers.get('x-workspace-id') || request.headers.get('x-kloel-workspace-id') || ''
+  );
+}
 
-  const authHeader = request.headers.get('authorization') || '';
-  const workspaceId =
-    request.headers.get('x-workspace-id') || request.headers.get('x-kloel-workspace-id') || '';
-
-  const contentType = request.headers.get('content-type') || '';
-  const isFormData = contentType.includes('multipart/form-data');
-
+function buildKycHeaders(request: NextRequest, isFormData: boolean, contentType: string) {
   const headers: Record<string, string> = {
-    Authorization: authHeader,
-    'x-workspace-id': workspaceId,
+    Authorization: request.headers.get('authorization') || '',
+    'x-workspace-id': resolveWorkspaceIdHeader(request),
     Accept: 'application/json',
   };
+  headers['Content-Type'] = isFormData ? contentType : 'application/json';
+  return headers;
+}
 
-  if (!isFormData) {
-    headers['Content-Type'] = 'application/json';
+async function readKycRequestBody(
+  request: NextRequest,
+  isFormData: boolean,
+): Promise<BodyInit | null> {
+  if (request.method === 'GET' || request.method === 'HEAD') {
+    return null;
+  }
+  if (isFormData) {
+    return request.arrayBuffer();
+  }
+  return request.text().catch(() => null);
+}
+
+async function buildResponseFromUpstream(attempt: Response) {
+  const responseContentType = attempt.headers.get('content-type') || '';
+  if (responseContentType.includes('application/json')) {
+    const data = await attempt.json().catch(() => ({}));
+    return NextResponse.json(data, { status: attempt.status });
   }
 
-  let body: BodyInit | null = null;
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
-    body = isFormData ? await request.arrayBuffer() : await request.text().catch(() => null);
-    if (isFormData) {
-      headers['Content-Type'] = contentType;
-    }
+  const blob = await attempt.blob();
+  return new NextResponse(blob, {
+    status: attempt.status,
+    headers: { 'Content-Type': responseContentType },
+  });
+}
+
+interface UpstreamCallArgs {
+  baseUrl: string;
+  kycPath: string;
+  method: string;
+  headers: Record<string, string>;
+  body: BodyInit | null;
+}
+
+async function callUpstreamKyc(
+  { baseUrl, kycPath, method, headers, body }: UpstreamCallArgs,
+  recordError: (error: unknown) => void,
+): Promise<NextResponse | null> {
+  const url = `${baseUrl}${kycPath}`;
+  const attempt = await fetch(url, {
+    method,
+    headers,
+    body,
+    cache: 'no-store',
+  }).catch((error) => {
+    recordError(error);
+    return null;
+  });
+
+  if (!attempt) return null;
+  if (attempt.status === 404 || attempt.status === 405) {
+    recordError(new Error(`upstream ${attempt.status} at ${url}`));
+    return null;
   }
 
-  let lastError: unknown;
+  return buildResponseFromUpstream(attempt);
+}
+
+async function proxyKyc(request: NextRequest, pathSegments: string[]) {
   const candidates = getBackendCandidateUrls();
-
   if (candidates.length === 0) {
     console.error(
       '[KYC Proxy] No backend URLs configured. Set BACKEND_URL or NEXT_PUBLIC_API_URL.',
@@ -47,36 +93,20 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
     return NextResponse.json({ message: 'Servidor backend nao configurado.' }, { status: 502 });
   }
 
-  const response = await findFirstSequential(candidates, async (baseUrl) => {
-    const url = `${baseUrl}${kycPath}`;
-    const attempt = await fetch(url, {
-      method: request.method,
-      headers,
-      body,
-      cache: 'no-store',
-    }).catch((error) => {
-      lastError = error;
-      return null;
-    });
+  const kycPath = `/kyc/${pathSegments.join('/')}`;
+  const contentType = request.headers.get('content-type') || '';
+  const isFormData = contentType.includes('multipart/form-data');
+  const headers = buildKycHeaders(request, isFormData, contentType);
+  const body = await readKycRequestBody(request, isFormData);
 
-    if (!attempt) return null;
-    if (attempt.status === 404 || attempt.status === 405) {
-      lastError = new Error(`upstream ${attempt.status} at ${url}`);
-      return null;
-    }
+  let lastError: unknown;
+  const recordError = (error: unknown) => {
+    lastError = error;
+  };
 
-    const responseContentType = attempt.headers.get('content-type') || '';
-    if (responseContentType.includes('application/json')) {
-      const data = await attempt.json().catch(() => ({}));
-      return NextResponse.json(data, { status: attempt.status });
-    }
-
-    const blob = await attempt.blob();
-    return new NextResponse(blob, {
-      status: attempt.status,
-      headers: { 'Content-Type': responseContentType },
-    });
-  });
+  const response = await findFirstSequential(candidates, (baseUrl) =>
+    callUpstreamKyc({ baseUrl, kycPath, method: request.method, headers, body }, recordError),
+  );
 
   if (response) {
     return response;

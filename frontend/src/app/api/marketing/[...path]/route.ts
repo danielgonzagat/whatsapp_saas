@@ -17,29 +17,49 @@ function isAuthRedirectLike(value: string) {
   );
 }
 
+function bearerFromHeaderOrCookie(
+  request: NextRequest,
+  headerName: string,
+  cookieNames: string[],
+): string | null {
+  const headerValue = request.headers.get(headerName);
+  if (headerValue) return `Bearer ${headerValue}`;
+  for (const cookieName of cookieNames) {
+    const value = readCookieValue(request, cookieName);
+    if (value) return `Bearer ${value}`;
+  }
+  return null;
+}
+
+function resolveAuthorizationHeader(request: NextRequest): string | null {
+  return (
+    request.headers.get('authorization') ||
+    bearerFromHeaderOrCookie(request, 'x-kloel-access-token', [
+      'kloel_access_token',
+      'kloel_token',
+    ])
+  );
+}
+
+function resolveWorkspaceHeader(request: NextRequest): string {
+  return (
+    request.headers.get('x-workspace-id') ||
+    request.headers.get('x-kloel-workspace-id') ||
+    readCookieValue(request, 'kloel_workspace_id')
+  );
+}
+
 function buildHeaders(request: NextRequest, options?: { body?: BodyInit | null }) {
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
 
-  const authorization =
-    request.headers.get('authorization') ||
-    (request.headers.get('x-kloel-access-token')
-      ? `Bearer ${request.headers.get('x-kloel-access-token')}`
-      : readCookieValue(request, 'kloel_access_token')
-        ? `Bearer ${readCookieValue(request, 'kloel_access_token')}`
-        : readCookieValue(request, 'kloel_token')
-          ? `Bearer ${readCookieValue(request, 'kloel_token')}`
-          : null);
-  const workspaceId =
-    request.headers.get('x-workspace-id') ||
-    request.headers.get('x-kloel-workspace-id') ||
-    readCookieValue(request, 'kloel_workspace_id');
-
+  const authorization = resolveAuthorizationHeader(request);
   if (authorization) {
     headers.Authorization = authorization;
   }
 
+  const workspaceId = resolveWorkspaceHeader(request);
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
   }
@@ -58,15 +78,89 @@ function unauthorizedResponse() {
   );
 }
 
-async function proxyMarketing(request: NextRequest, pathSegments: string[]) {
-  const upstreamPath = `/marketing/${pathSegments.join('/')}${request.nextUrl.search || ''}`;
-  const rawBody =
-    request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.text();
-  const headers = buildHeaders(request, {
-    body: rawBody || null,
-  });
-  const candidates = getBackendCandidateUrls();
+interface MarketingUpstreamArgs {
+  baseUrl: string;
+  upstreamPath: string;
+  method: string;
+  headers: Record<string, string>;
+  rawBody: string | undefined;
+}
 
+function handleRedirectResponse(
+  attempt: Response,
+  url: string,
+  recordError: (error: unknown) => void,
+): NextResponse | null {
+  const location = attempt.headers.get('location') || '';
+  if (isAuthRedirectLike(location)) {
+    return unauthorizedResponse();
+  }
+  recordError(new Error(`upstream redirect at ${url} -> ${location || 'unknown-location'}`));
+  return null;
+}
+
+async function handleNonJsonResponse(
+  attempt: Response,
+  contentType: string,
+  recordError: (error: unknown) => void,
+): Promise<NextResponse | null> {
+  const bodyPreview = (await attempt.text().catch(() => '')).slice(0, 240);
+  if (isAuthRedirectLike(`${contentType} ${bodyPreview}`)) {
+    return unauthorizedResponse();
+  }
+  recordError(
+    new Error(
+      `Unexpected Marketing upstream response (${attempt.status}) content-type=${contentType || 'unknown'} body=${bodyPreview}`,
+    ),
+  );
+  return null;
+}
+
+async function interpretMarketingUpstream(
+  attempt: Response,
+  url: string,
+  recordError: (error: unknown) => void,
+): Promise<NextResponse | null> {
+  if (attempt.status === 404 || attempt.status === 405) {
+    recordError(new Error(`upstream ${attempt.status} at ${url}`));
+    return null;
+  }
+  if (attempt.status >= 300 && attempt.status < 400) {
+    return handleRedirectResponse(attempt, url, recordError);
+  }
+
+  const contentType = attempt.headers.get('content-type') || '';
+  if (contentType.toLowerCase().includes('application/json')) {
+    const data = await attempt.json().catch(() => ({}));
+    return NextResponse.json(data, { status: attempt.status });
+  }
+  return handleNonJsonResponse(attempt, contentType, recordError);
+}
+
+async function tryMarketingUpstream(
+  args: MarketingUpstreamArgs,
+  recordError: (error: unknown) => void,
+): Promise<NextResponse | null> {
+  const url = `${args.baseUrl}${args.upstreamPath}`;
+  try {
+    const attempt = await fetch(
+      new Request(url, {
+        method: args.method,
+        headers: args.headers,
+        body: args.rawBody || undefined,
+        cache: 'no-store',
+        redirect: 'manual',
+      }),
+    );
+    return interpretMarketingUpstream(attempt, url, recordError);
+  } catch (error) {
+    recordError(error);
+    return null;
+  }
+}
+
+async function proxyMarketing(request: NextRequest, pathSegments: string[]) {
+  const candidates = getBackendCandidateUrls();
   if (candidates.length === 0) {
     return NextResponse.json(
       { message: 'Servidor backend nao configurado para o proxy de Marketing.' },
@@ -74,56 +168,22 @@ async function proxyMarketing(request: NextRequest, pathSegments: string[]) {
     );
   }
 
+  const upstreamPath = `/marketing/${pathSegments.join('/')}${request.nextUrl.search || ''}`;
+  const rawBody =
+    request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.text();
+  const headers = buildHeaders(request, { body: rawBody || null });
+
   let lastError: unknown;
+  const recordError = (error: unknown) => {
+    lastError = error;
+  };
 
-  const response = await findFirstSequential(candidates, async (baseUrl) => {
-    const url = `${baseUrl}${upstreamPath}`;
-
-    try {
-      const attempt = await fetch(
-        new Request(url, {
-          method: request.method,
-          headers,
-          body: rawBody || undefined,
-          cache: 'no-store',
-          redirect: 'manual',
-        }),
-      );
-
-      if (attempt.status === 404 || attempt.status === 405) {
-        lastError = new Error(`upstream ${attempt.status} at ${url}`);
-        return null;
-      }
-
-      if (attempt.status >= 300 && attempt.status < 400) {
-        const location = attempt.headers.get('location') || '';
-        if (isAuthRedirectLike(location)) {
-          return unauthorizedResponse();
-        }
-        lastError = new Error(`upstream redirect at ${url} -> ${location || 'unknown-location'}`);
-        return null;
-      }
-
-      const contentType = attempt.headers.get('content-type') || '';
-      if (contentType.toLowerCase().includes('application/json')) {
-        const data = await attempt.json().catch(() => ({}));
-        return NextResponse.json(data, { status: attempt.status });
-      }
-
-      const bodyPreview = (await attempt.text().catch(() => '')).slice(0, 240);
-      if (isAuthRedirectLike(`${contentType} ${bodyPreview}`)) {
-        return unauthorizedResponse();
-      }
-
-      lastError = new Error(
-        `Unexpected Marketing upstream response (${attempt.status}) content-type=${contentType || 'unknown'} body=${bodyPreview}`,
-      );
-    } catch (error) {
-      lastError = error;
-      return null;
-    }
-    return null;
-  });
+  const response = await findFirstSequential(candidates, (baseUrl) =>
+    tryMarketingUpstream(
+      { baseUrl, upstreamPath, method: request.method, headers, rawBody },
+      recordError,
+    ),
+  );
 
   if (response) {
     return response;

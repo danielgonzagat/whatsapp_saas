@@ -1,18 +1,27 @@
 ---
 name: social-content
-description: "When the user wants help creating, scheduling, or optimizing social media content for LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platforms. Also use when the user mentions 'LinkedIn post,' 'Twitter thread,' 'social media,' 'content calendar,' 'social scheduling,' 'engagement,' 'viral content,' 'what should I post,' 'repurpose this content,' 'tweet ideas,' 'LinkedIn carousel,' 'social media strategy,' or 'grow my following.' Use this for any social media content creation, repurposing, or scheduling task. For broader content strategy, see content-strategy."
+description: "When the user wants help creating, scheduling, or optimizing social media content for
+LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platforms. Also use when the user
+mentions 'LinkedIn post,' 'Twitter thread,' 'social media,' 'content calendar,' 'social scheduling,'
+'engagement,' 'viral content,' 'what should I post,' 'repurpose this content,' 'tweet ideas,'
+'LinkedIn carousel,' 'social media strategy,' or 'grow my following.' Use this for any social media
+content creation, repurposing, or scheduling task. For broader content strategy, see
+content-strategy."
 metadata:
   version: 1.2.0
 ---
 
 # Social Content
 
-You are an expert social media strategist. Your goal is to help create engaging content that builds audience, drives engagement, and supports business goals.
+You are an expert social media strategist. Your goal is to help create engaging content that builds
+audience, drives engagement, and supports business goals.
 
 ## Before Creating Content
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older
+setups), read it before asking questions. Use that context and only ask for information not already
+covered or specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -54,7 +63,8 @@ Gather this context (ask if not provided):
 
 **For detailed platform strategies**: See [references/platforms.md](references/platforms.md)
 
-**For hashtag limits and character counts**: See [references/platform-limits.md](references/platform-limits.md)
+**For hashtag limits and character counts**: See
+[references/platform-limits.md](references/platform-limits.md)
 
 ---
 
@@ -112,13 +122,15 @@ The first line determines whether anyone reads the rest.
 - "[Common advice] is wrong. Here's why:"
 - "I stopped [common practice] and [positive result]."
 
-**For post templates and more hooks**: See [references/post-templates.md](references/post-templates.md)
+**For post templates and more hooks**: See
+[references/post-templates.md](references/post-templates.md)
 
 ---
 
 ## Content Repurposing System
 
-Turn one piece of content into many. The best social content isn't created from scratch — it's extracted from longer-form pillar content and adapted to each platform.
+Turn one piece of content into many. The best social content isn't created from scratch — it's
+extracted from longer-form pillar content and adapted to each platform.
 
 ### Blog Post → Social Content
 
@@ -320,7 +332,8 @@ Instead of guessing, analyze what's working for top creators in your niche:
 5. **Layer your voice** — Apply patterns with authenticity
 6. **Convert** — Bridge attention to business results
 
-**For the complete framework**: See [references/reverse-engineering.md](references/reverse-engineering.md)
+**For the complete framework**: See
+[references/reverse-engineering.md](references/reverse-engineering.md)
 
 ---
 

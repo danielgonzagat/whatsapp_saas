@@ -26,31 +26,53 @@ function readCookieValue(request: NextRequest, name: string) {
   return request.cookies.get(name)?.value || '';
 }
 
+function bearerFromHeaderOrCookie(
+  request: NextRequest,
+  headerName: string,
+  cookieNames: string[],
+): string | null {
+  const headerValue = request.headers.get(headerName);
+  if (headerValue) return `Bearer ${headerValue}`;
+  for (const cookieName of cookieNames) {
+    const value = readCookieValue(request, cookieName);
+    if (value) return `Bearer ${value}`;
+  }
+  return null;
+}
+
+function resolveAuthorizationHeader(request: NextRequest): string | null {
+  return (
+    request.headers.get('authorization') ||
+    bearerFromHeaderOrCookie(request, 'x-kloel-access-token', [
+      'kloel_access_token',
+      'kloel_token',
+    ])
+  );
+}
+
+function resolveWorkspaceHeader(request: NextRequest): string {
+  return (
+    request.headers.get('x-workspace-id') ||
+    request.headers.get('x-kloel-workspace-id') ||
+    readCookieValue(request, 'kloel_workspace_id')
+  );
+}
+
 function buildHeaders(request: NextRequest, options?: { body?: string; accept?: string }) {
   const headers: Record<string, string> = {
     Accept: options?.accept || 'application/json',
   };
 
-  const authorization =
-    request.headers.get('authorization') ||
-    (request.headers.get('x-kloel-access-token')
-      ? `Bearer ${request.headers.get('x-kloel-access-token')}`
-      : readCookieValue(request, 'kloel_access_token')
-        ? `Bearer ${readCookieValue(request, 'kloel_access_token')}`
-        : readCookieValue(request, 'kloel_token')
-          ? `Bearer ${readCookieValue(request, 'kloel_token')}`
-          : null);
-  const workspaceId =
-    request.headers.get('x-workspace-id') ||
-    request.headers.get('x-kloel-workspace-id') ||
-    readCookieValue(request, 'kloel_workspace_id');
-
+  const authorization = resolveAuthorizationHeader(request);
   if (authorization) {
     headers.Authorization = authorization;
   }
+
+  const workspaceId = resolveWorkspaceHeader(request);
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
   }
+
   if (options?.body) {
     headers['Content-Type'] = request.headers.get('content-type') || 'application/json';
   }

@@ -1,6 +1,7 @@
 # Personalization at Scale
 
-Personalization drives **50–250% more replies** (Lavender). The key insight: **if your personalization has nothing to do with the problem you solve, it's just an attention hack** (Clay).
+Personalization drives **50–250% more replies** (Lavender). The key insight: **if your
+personalization has nothing to do with the problem you solve, it's just an attention hack** (Clay).
 
 ## Four Levels of Personalization
 
@@ -18,13 +19,15 @@ Industry-specific pain points, trends, regulatory challenges. Scalable via micro
 
 Challenges specific to their role and seniority.
 
-> As Head of Sales, keeping pipeline steady is probably your biggest headache. Your RevOps team is small, so you're likely wearing multiple hats during scaling.
+> As Head of Sales, keeping pipeline steady is probably your biggest headache. Your RevOps team is
+> small, so you're likely wearing multiple hats during scaling.
 
 ### Level 4 — Individual (gold standard)
 
 Specific, timely observations about that person connected to the problem you solve.
 
-> Noticed you're hiring 3 SDRs — sounds like you're scaling outbound fast. Most teams hit follow-up fatigue during onboarding.
+> Noticed you're hiring 3 SDRs — sounds like you're scaling outbound fast. Most teams hit follow-up
+> fatigue during onboarding.
 
 ## Research Signal Stack
 
@@ -42,13 +45,17 @@ Specific, timely observations about that person connected to the problem you sol
 
 From "30 Minutes to President's Club":
 
-**Step 1:** Build a research stack of top 10 buying signals — 5 company triggers, 5 person triggers. Stack-rank by relevance.
+**Step 1:** Build a research stack of top 10 buying signals — 5 company triggers, 5 person triggers.
+Stack-rank by relevance.
 
-**Step 2:** Build a 3x3 template: (1) personalization attached to a problem, (2) problem you solve, (3) one-sentence solution + low-friction CTA.
+**Step 2:** Build a 3x3 template: (1) personalization attached to a problem, (2) problem you solve,
+(3) one-sentence solution + low-friction CTA.
 
-**Step 3:** Create 5 "trigger templates" — pre-written personalization paragraphs for each trigger, with a smooth segue into the problem.
+**Step 3:** Create 5 "trigger templates" — pre-written personalization paragraphs for each trigger,
+with a smooth segue into the problem.
 
-The personalization must logically connect to the problem. This creates 5 reusable triggers with the rest of the email constant. A top SDR writes a personalized email in **under 3 minutes**.
+The personalization must logically connect to the problem. This creates 5 reusable triggers with the
+rest of the email constant. A top SDR writes a personalized email in **under 3 minutes**.
 
 ## The Four -Graphic Principles (Becc Holland)
 
@@ -61,11 +68,14 @@ Tapping into what prospects are passionate about drives significantly higher res
 
 ## Observation-Based Openers (highest performing)
 
-**Trigger-event:** "Congrats on the recent funding round — scaling the team from here is exciting, and I imagine [challenge] is top of mind."
+**Trigger-event:** "Congrats on the recent funding round — scaling the team from here is exciting,
+and I imagine [challenge] is top of mind."
 
-**Observation:** "Your recent post about [topic] resonated — especially the part about [detail]. Got me thinking about how that applies to [challenge]."
+**Observation:** "Your recent post about [topic] resonated — especially the part about [detail]. Got
+me thinking about how that applies to [challenge]."
 
-**Industry insight:** "Most [role titles] I talk to spend [X hours/week] on [problem] — curious if that matches your experience at [Company]."
+**Industry insight:** "Most [role titles] I talk to spend [X hours/week] on [problem] — curious if
+that matches your experience at [Company]."
 
 ## What Feels Fake (avoid)
 
@@ -76,4 +86,5 @@ Tapping into what prospects are passionate about drives significantly higher res
 
 ## The "So What?" Test
 
-After writing any opening line, read from prospect's perspective: "So what? Why would I care?" If the answer is nothing, rewrite.
+After writing any opening line, read from prospect's perspective: "So what? Why would I care?" If
+the answer is nothing, rewrite.

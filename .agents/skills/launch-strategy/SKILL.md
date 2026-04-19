@@ -1,24 +1,33 @@
 ---
 name: launch-strategy
-description: "When the user wants to plan a product launch, feature announcement, or release strategy. Also use when the user mentions 'launch,' 'Product Hunt,' 'feature release,' 'announcement,' 'go-to-market,' 'beta launch,' 'early access,' 'waitlist,' 'product update,' 'how do I launch this,' 'launch checklist,' 'GTM plan,' or 'we're about to ship.' Use this whenever someone is preparing to release something publicly. For ongoing marketing after launch, see marketing-ideas."
+description: "When the user wants to plan a product launch, feature announcement, or release
+strategy. Also use when the user mentions 'launch,' 'Product Hunt,' 'feature release,'
+'announcement,' 'go-to-market,' 'beta launch,' 'early access,' 'waitlist,' 'product update,' 'how do
+I launch this,' 'launch checklist,' 'GTM plan,' or 'we're about to ship.' Use this whenever someone
+is preparing to release something publicly. For ongoing marketing after launch, see
+marketing-ideas."
 metadata:
   version: 1.1.0
 ---
 
 # Launch Strategy
 
-You are an expert in SaaS product launches and feature announcements. Your goal is to help users plan launches that build momentum, capture attention, and convert interest into users.
+You are an expert in SaaS product launches and feature announcements. Your goal is to help users
+plan launches that build momentum, capture attention, and convert interest into users.
 
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older
+setups), read it before asking questions. Use that context and only ask for information not already
+covered or specific to this task.
 
 ---
 
 ## Core Philosophy
 
-The best companies don't just launch once—they launch again and again. Every new feature, improvement, and update is an opportunity to capture attention and engage your audience.
+The best companies don't just launch once—they launch again and again. Every new feature,
+improvement, and update is an opportunity to capture attention and engage your audience.
 
 A strong launch isn't about a single moment. It's about:
 
@@ -31,7 +40,8 @@ A strong launch isn't about a single moment. It's about:
 
 ## The ORB Framework
 
-Structure your launch marketing across three channel types. Everything should ultimately lead back to owned channels.
+Structure your launch marketing across three channel types. Everything should ultimately lead back
+to owned channels.
 
 ### Owned Channels
 
@@ -59,11 +69,14 @@ You own the channel (though not the audience). Direct access without algorithms 
 - Engagement matters → Build a community
 
 **Example - Superhuman:**
-Built demand through an invite-only waitlist and one-on-one onboarding sessions. Every new user got a 30-minute live demo. This created exclusivity, FOMO, and word-of-mouth—all through owned relationships. Years later, their original onboarding materials still drive engagement.
+Built demand through an invite-only waitlist and one-on-one onboarding sessions. Every new user got
+a 30-minute live demo. This created exclusivity, FOMO, and word-of-mouth—all through owned
+relationships. Years later, their original onboarding materials still drive engagement.
 
 ### Rented Channels
 
-Platforms that provide visibility but you don't control. Algorithms shift, rules change, pay-to-play increases.
+Platforms that provide visibility but you don't control. Algorithms shift, rules change, pay-to-play
+increases.
 
 **Examples:**
 
@@ -79,7 +92,9 @@ Platforms that provide visibility but you don't control. Algorithms shift, rules
 - Don't rely on them as your only strategy
 
 **Example - Notion:**
-Hacked virality through Twitter, YouTube, and Reddit where productivity enthusiasts were active. Encouraged community to share templates and workflows. But they funneled all visibility into owned assets—every viral post led to signups, then targeted email onboarding.
+Hacked virality through Twitter, YouTube, and Reddit where productivity enthusiasts were active.
+Encouraged community to share templates and workflows. But they funneled all visibility into owned
+assets—every viral post led to signups, then targeted email onboarding.
 
 **Platform-specific tactics:**
 
@@ -87,7 +102,8 @@ Hacked virality through Twitter, YouTube, and Reddit where productivity enthusia
 - LinkedIn: High-value posts → lead to gated content or email signup
 - Marketplaces (Shopify, Slack): Optimize listing → drive to site for more
 
-Rented channels give speed, not stability. Capture momentum by bringing users into your owned ecosystem.
+Rented channels give speed, not stability. Capture momentum by bringing users into your owned
+ecosystem.
 
 ### Borrowed Channels
 
@@ -105,12 +121,16 @@ Tap into someone else's audience to shortcut the hardest part—getting noticed.
 1. List industry leaders your audience follows
 2. Pitch win-win collaborations
 3. Use tools like SparkToro or Listen Notes to find audience overlap
-4. Set up affiliate/referral incentives (for channel partner launches, use [Introw](../../tools/integrations/introw.md) to manage deal registration and commissions)
+4. Set up affiliate/referral incentives (for channel partner launches, use
+   [Introw](../../tools/integrations/introw.md) to manage deal registration and commissions)
 
 **Example - TRMNL:**
-Sent a free e-ink display to YouTuber Snazzy Labs—not a paid sponsorship, just hoping he'd like it. He created an in-depth review that racked up 500K+ views and drove $500K+ in sales. They also set up an affiliate program for ongoing promotion.
+Sent a free e-ink display to YouTuber Snazzy Labs—not a paid sponsorship, just hoping he'd
+like it. He created an in-depth review that racked up 500K+ views and drove $500K+ in sales.
+They also set up an affiliate program for ongoing promotion.
 
-Borrowed channels give instant credibility, but only work if you convert borrowed attention into owned relationships.
+Borrowed channels give instant credibility, but only work if you convert borrowed attention into
+owned relationships.
 
 ---
 
@@ -206,7 +226,8 @@ Open the floodgates.
 
 ## Product Hunt Launch Strategy
 
-Product Hunt can be powerful for reaching early adopters, but it's not magic—it requires preparation.
+Product Hunt can be powerful for reaching early adopters, but it's not magic—it requires
+preparation.
 
 ### Pros
 
@@ -283,11 +304,13 @@ Publish comparison pages highlighting why you're the obvious choice.
 Add dedicated sections about the new feature/product across your site.
 
 **Offer hands-on preview:**
-Create no-code interactive demo (using tools like Navattic) so visitors can explore before signing up.
+Create no-code interactive demo (using tools like Navattic) so visitors can explore before signing
+up.
 
 ### Keep Momentum Going
 
-It's easier to build on existing momentum than start from scratch. Every touchpoint reinforces the launch.
+It's easier to build on existing momentum than start from scratch. Every touchpoint reinforces the
+launch.
 
 ---
 
@@ -329,7 +352,8 @@ If a previous announcement resonated, apply those insights to future updates.
 Continue using email, social, and in-app messaging to highlight improvements.
 
 **Signal active development:**
-Even small changelog updates remind customers your product is evolving. This builds retention and word-of-mouth—customers feel confident you'll be around.
+Even small changelog updates remind customers your product is evolving. This builds retention and
+word-of-mouth—customers feel confident you'll be around.
 
 ---
 

@@ -5,26 +5,32 @@
 Incorporate the `coreyhaines31/marketingskills` knowledge base into Kloel at two levels:
 
 1. Project-local CLI skills for future Codex/Claude sessions working on Kloel.
-2. Runtime marketing intelligence inside the seller-facing CIA, grounded in real workspace data and adapted to Brazilian info-product and e-commerce contexts.
+2. Runtime marketing intelligence inside the seller-facing CIA, grounded in real workspace data and
+   adapted to Brazilian info-product and e-commerce contexts.
 
 ## Reality Check
 
-As of April 19, 2026, the upstream `marketingskills` README exposes 36 public skills, not 34. Kloel should treat those 36 skills as the canonical source set unless Daniel explicitly wants a pinned older subset.
+As of April 19, 2026, the upstream `marketingskills` README exposes 36 public skills, not 34. Kloel
+should treat those 36 skills as the canonical source set unless Daniel explicitly wants a pinned
+older subset.
 
 ## Constraints
 
 - Governance files remain untouched.
 - Preserve the current CIA architecture instead of introducing a second agent stack.
 - Prefer deterministic routing and local file assets over fragile prompt-only magic.
-- Any product-facing marketing response must stay honest about missing data and missing execution surfaces.
+- Any product-facing marketing response must stay honest about missing data and missing execution
+  surfaces.
 
 ## Architecture
 
 ### Layer 1: CLI Skill Surface
 
 - Vendor the upstream skills into project-local `.agents/skills/`.
-- Create `.agents/product-marketing-context.md` with real Kloel positioning, audience, GTM, objections, proof points, and Brazilian-market language.
-- Add one Kloel-specific companion skill that teaches the agent how to combine the upstream skills with Brazilian-market adaptation and Kloel realities.
+- Create `.agents/product-marketing-context.md` with real Kloel positioning, audience, GTM,
+  objections, proof points, and Brazilian-market language.
+- Add one Kloel-specific companion skill that teaches the agent how to combine the upstream skills
+  with Brazilian-market adaptation and Kloel realities.
 - Document the installation and update path in the repo.
 
 ### Layer 2: CIA Marketing Intelligence
@@ -33,9 +39,11 @@ As of April 19, 2026, the upstream `marketingskills` README exposes 36 public sk
 - The package has four responsibilities:
   - Registry: canonical catalog of the 36 skills and their BR adaptation notes.
   - Loader: load the upstream skill markdown from `.agents/skills/<skill>/SKILL.md`.
-  - Router: map incoming seller messages to one or more skill domains using deterministic PT-BR heuristics.
+  - Router: map incoming seller messages to one or more skill domains using deterministic PT-BR
+    heuristics.
   - Context builder: assemble a compact marketing snapshot from real workspace state.
-- `UnifiedAgentService` remains the execution brain. It receives an extra "marketing packet" when the seller message is marketing-oriented.
+- `UnifiedAgentService` remains the execution brain. It receives an extra "marketing packet" when
+  the seller message is marketing-oriented.
 
 ## Marketing Packet
 
@@ -72,7 +80,8 @@ Prioritize real actions already present in the codebase:
 Use deterministic first-pass routing to avoid cost and drift:
 
 - keyword families in PT-BR and BR operator language
-- checkout / ROAS / lançamento / afiliado / copy / SEO / email / landing / oferta / churn / precificação / ads
+- checkout / ROAS / lançamento / afiliado / copy / SEO / email / landing / oferta / churn /
+  precificação / ads
 - allow multi-skill selection
 - fall back to no packet when the message is not marketing-specific
 
@@ -100,6 +109,9 @@ Use deterministic first-pass routing to avoid cost and drift:
 
 ## Success Conditions
 
-- Future project sessions in Kloel have immediate access to the upstream skill set and Kloel context.
-- CIA can detect marketing asks, load the right frameworks, and answer with workspace-grounded strategy.
-- CIA can trigger at least the existing real execution surfaces for landing pages, campaigns, and email.
+- Future project sessions in Kloel have immediate access to the upstream skill set and Kloel
+  context.
+- CIA can detect marketing asks, load the right frameworks, and answer with workspace-grounded
+  strategy.
+- CIA can trigger at least the existing real execution surfaces for landing pages, campaigns, and
+  email.

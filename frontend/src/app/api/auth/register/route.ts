@@ -7,16 +7,83 @@ import { setSharedAuthCookies } from '../_lib/shared-auth-cookies';
 
 const W_RE = /[^\w]+/g;
 
+interface RegisterRequestBody {
+  name?: string;
+  email?: string;
+  password?: string;
+  workspaceName?: string;
+}
+
+function deriveNameFromEmail(addr: string): string {
+  const localPart = addr.split('@')[0] || 'User';
+  const cleaned = localPart.replace(W_RE, ' ').trim();
+  const candidate = cleaned || 'User';
+  return candidate.charAt(0).toUpperCase() + candidate.slice(1);
+}
+
+function validateRegisterInput(body: RegisterRequestBody): NextResponse | null {
+  const { email, password } = body;
+  if (!email || !password) {
+    return NextResponse.json({ message: 'Email e senha são obrigatórios' }, { status: 400 });
+  }
+  if (password.length < 8) {
+    return NextResponse.json(
+      { message: 'A senha deve ter no mínimo 8 caracteres' },
+      { status: 400 },
+    );
+  }
+  return null;
+}
+
+function resolveRegisterPayload(body: RegisterRequestBody) {
+  const email = body.email || '';
+  const finalName = body.name?.trim() || deriveNameFromEmail(email);
+  const finalWorkspaceName = body.workspaceName?.trim() || `${finalName}'s Workspace`;
+  return {
+    name: finalName,
+    email,
+    password: body.password || '',
+    workspaceName: finalWorkspaceName,
+  };
+}
+
+async function callBackendRegister(
+  backendUrl: string,
+  request: NextRequest,
+  payload: ReturnType<typeof resolveRegisterPayload>,
+) {
+  return fetch(`${backendUrl}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Forwarded-For': request.headers.get('x-forwarded-for') || '',
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
+}
+
+async function buildRegisterSuccessResponse(request: NextRequest, backendResponse: Response) {
+  const user = await backendResponse.json();
+  revalidateTag('auth', 'max');
+  const res = NextResponse.json(user, { status: 201 });
+  if (user.access_token) {
+    setSharedAuthCookies(request, res, user);
+  }
+  return res;
+}
+
+async function buildRegisterErrorResponse(backendResponse: Response) {
+  const error = await backendResponse.json();
+  return NextResponse.json(
+    { message: error.message || 'Erro ao criar conta' },
+    { status: backendResponse.status },
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as {
-      name?: string;
-      email?: string;
-      password?: string;
-      workspaceName?: string;
-    };
-
-    const { name, email, password, workspaceName } = body;
+    const body = (await request.json()) as RegisterRequestBody;
 
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
@@ -27,61 +94,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validações básicas
-    if (!email || !password) {
-      return NextResponse.json({ message: 'Email e senha são obrigatórios' }, { status: 400 });
-    }
+    const invalid = validateRegisterInput(body);
+    if (invalid) return invalid;
 
-    const deriveName = (addr: string) => {
-      const localPart = addr.split('@')[0] || 'User';
-      const cleaned = localPart.replace(W_RE, ' ').trim();
-      const candidate = cleaned || 'User';
-      return candidate.charAt(0).toUpperCase() + candidate.slice(1);
-    };
-
-    const finalName = name?.trim() || deriveName(email);
-    const finalWorkspaceName = workspaceName?.trim() || `${finalName}'s Workspace`;
-
-    if (password.length < 8) {
-      return NextResponse.json(
-        { message: 'A senha deve ter no mínimo 8 caracteres' },
-        { status: 400 },
-      );
-    }
-
-    // Chamar o backend para criar o usuário
-    const response = await fetch(`${backendUrl}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Forwarded-For': request.headers.get('x-forwarded-for') || '',
-      },
-      body: JSON.stringify({
-        name: finalName,
-        email,
-        password,
-        workspaceName: finalWorkspaceName,
-      }),
-      cache: 'no-store',
-    });
+    const payload = resolveRegisterPayload(body);
+    const response = await callBackendRegister(backendUrl, request, payload);
 
     if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json(
-        { message: error.message || 'Erro ao criar conta' },
-        { status: response.status },
-      );
+      return buildRegisterErrorResponse(response);
     }
 
-    const user = await response.json();
-    revalidateTag('auth', 'max');
-    const res = NextResponse.json(user, { status: 201 });
-
-    if (user.access_token) {
-      setSharedAuthCookies(request, res, user);
-    }
-
-    return res;
+    return buildRegisterSuccessResponse(request, response);
   } catch (error) {
     console.error('Register error:', error);
     return NextResponse.json({ message: 'Erro interno do servidor' }, { status: 500 });

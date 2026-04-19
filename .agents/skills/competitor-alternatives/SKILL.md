@@ -1,18 +1,28 @@
 ---
 name: competitor-alternatives
-description: "When the user wants to create competitor comparison or alternative pages for SEO and sales enablement. Also use when the user mentions 'alternative page,' 'vs page,' 'competitor comparison,' 'comparison page,' '[Product] vs [Product],' '[Product] alternative,' 'competitive landing pages,' 'how do we compare to X,' 'battle card,' or 'competitor teardown.' Use this for any content that positions your product against competitors. Covers four formats: singular alternative, plural alternatives, you vs competitor, and competitor vs competitor. For sales-specific competitor docs, see sales-enablement."
+description: "When the user wants to create competitor comparison or alternative pages for SEO and
+sales enablement. Also use when the user mentions 'alternative page,' 'vs page,' 'competitor
+comparison,' 'comparison page,' '[Product] vs [Product],' '[Product] alternative,' 'competitive
+landing pages,' 'how do we compare to X,' 'battle card,' or 'competitor teardown.' Use this for any
+content that positions your product against competitors. Covers four formats: singular alternative,
+plural alternatives, you vs competitor, and competitor vs competitor. For sales-specific competitor
+docs, see sales-enablement."
 metadata:
   version: 1.1.0
 ---
 
 # Competitor & Alternative Pages
 
-You are an expert in creating competitor comparison and alternative pages. Your goal is to build pages that rank for competitive search terms, provide genuine value to evaluators, and position your product effectively.
+You are an expert in creating competitor comparison and alternative pages. Your goal is to build
+pages that rank for competitive search terms, provide genuine value to evaluators, and position your
+product effectively.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older
+setups), read it before asking questions. Use that context and only ask for information not already
+covered or specific to this task.
 
 Before creating competitor pages, understand:
 
@@ -76,7 +86,8 @@ Before creating competitor pages, understand:
 
 **URL pattern**: `/alternatives/[competitor]` or `/[competitor]-alternative`
 
-**Target keywords**: "[Competitor] alternative", "alternative to [Competitor]", "switch from [Competitor]"
+**Target keywords**: "[Competitor] alternative", "alternative to [Competitor]", "switch from
+[Competitor]"
 
 **Page structure**:
 
@@ -96,7 +107,8 @@ Before creating competitor pages, understand:
 
 **URL pattern**: `/alternatives/[competitor]-alternatives`
 
-**Target keywords**: "[Competitor] alternatives", "best [Competitor] alternatives", "tools like [Competitor]"
+**Target keywords**: "[Competitor] alternatives", "best [Competitor] alternatives", "tools like
+[Competitor]"
 
 **Page structure**:
 
@@ -160,15 +172,18 @@ Start every page with a quick summary for scanners—key differences in 2-3 sent
 
 ### Paragraph Comparisons
 
-Go beyond tables. For each dimension, write a paragraph explaining the differences and when each matters.
+Go beyond tables. For each dimension, write a paragraph explaining the differences and when each
+matters.
 
 ### Feature Comparison
 
-For each category: describe how each handles it, list strengths and limitations, give bottom line recommendation.
+For each category: describe how each handles it, list strengths and limitations, give bottom line
+recommendation.
 
 ### Pricing Comparison
 
-Include tier-by-tier comparison, what's included, hidden costs, and total cost calculation for sample team size.
+Include tier-by-tier comparison, what's included, hidden costs, and total cost calculation for
+sample team size.
 
 ### Who It's For
 
@@ -176,7 +191,8 @@ Be explicit about ideal customer for each option. Honest recommendations build t
 
 ### Migration Section
 
-Cover what transfers, what needs reconfiguration, support offered, and quotes from customers who switched.
+Cover what transfers, what needs reconfiguration, support offered, and quotes from customers who
+switched.
 
 **For detailed templates**: See [references/templates.md](references/templates.md)
 
@@ -196,7 +212,8 @@ Create a single source of truth for each competitor with:
 - Common complaints (from reviews)
 - Migration notes
 
-**For data structure and examples**: See [references/content-architecture.md](references/content-architecture.md)
+**For data structure and examples**: See
+[references/content-architecture.md](references/content-architecture.md)
 
 ---
 

@@ -66,32 +66,36 @@ function withConsentCookie(
   return response;
 }
 
+function firstNonEmpty(candidates: Array<string | undefined | null>): string {
+  for (const candidate of candidates) {
+    const value = candidate ?? '';
+    if (value) return value;
+  }
+  return '';
+}
+
 function resolveAccessToken(request: NextRequest): string {
-  return (
-    request.headers.get('authorization')?.replace(BEARER_S_RE, '') ||
-    request.headers.get('x-kloel-access-token') ||
-    request.cookies.get('kloel_access_token')?.value ||
-    request.cookies.get('kloel_token')?.value ||
-    ''
-  );
+  return firstNonEmpty([
+    request.headers.get('authorization')?.replace(BEARER_S_RE, ''),
+    request.headers.get('x-kloel-access-token'),
+    request.cookies.get('kloel_access_token')?.value,
+    request.cookies.get('kloel_token')?.value,
+  ]);
 }
 
 function resolveWorkspaceId(request: NextRequest): string {
-  return (
-    request.headers.get('x-workspace-id') ||
-    request.headers.get('x-kloel-workspace-id') ||
-    request.cookies.get('kloel_workspace_id')?.value ||
-    ''
-  );
+  return firstNonEmpty([
+    request.headers.get('x-workspace-id'),
+    request.headers.get('x-kloel-workspace-id'),
+    request.cookies.get('kloel_workspace_id')?.value,
+  ]);
 }
 
-async function fetchBackendConsent(
-  request: NextRequest,
-  method: 'GET' | 'POST',
-  body?: CookieConsentPreferences,
-) {
-  const accessToken = resolveAccessToken(request);
-  const workspaceId = resolveWorkspaceId(request);
+function buildConsentHeaders(
+  accessToken: string,
+  workspaceId: string,
+  hasBody: boolean,
+): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
@@ -102,28 +106,54 @@ async function fetchBackendConsent(
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
   }
-  if (body) {
+  if (hasBody) {
     headers['Content-Type'] = 'application/json';
   }
 
-  return findFirstSequential(getBackendCandidateUrls(), async (baseUrl) => {
-    try {
-      const response = await fetch(`${baseUrl}/api/v1/cookie-consent`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-        cache: 'no-store',
-      });
+  return headers;
+}
 
-      if (response.status === 404 || response.status === 405) {
-        return null;
-      }
+interface ConsentUpstreamArgs {
+  baseUrl: string;
+  method: 'GET' | 'POST';
+  headers: Record<string, string>;
+  body?: CookieConsentPreferences;
+}
 
-      const data = await response.json().catch(() => ({}));
-      return { response, data };
-    } catch {}
+async function callConsentUpstream({ baseUrl, method, headers, body }: ConsentUpstreamArgs) {
+  try {
+    const response = await fetch(`${baseUrl}/api/v1/cookie-consent`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      cache: 'no-store',
+    });
+
+    if (response.status === 404 || response.status === 405) {
+      return null;
+    }
+
+    const data = await response.json().catch(() => ({}));
+    return { response, data };
+  } catch {
     return null;
-  });
+  }
+}
+
+async function fetchBackendConsent(
+  request: NextRequest,
+  method: 'GET' | 'POST',
+  body?: CookieConsentPreferences,
+) {
+  const headers = buildConsentHeaders(
+    resolveAccessToken(request),
+    resolveWorkspaceId(request),
+    Boolean(body),
+  );
+
+  return findFirstSequential(getBackendCandidateUrls(), (baseUrl) =>
+    callConsentUpstream({ baseUrl, method, headers, body }),
+  );
 }
 
 export async function GET(request: NextRequest) {

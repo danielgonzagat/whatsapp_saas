@@ -4,7 +4,8 @@
 
 ## Goal
 
-Install a Codex-native persistent memory system that works across all repositories and all future Codex sessions for this user account.
+Install a Codex-native persistent memory system that works across all repositories and all future
+Codex sessions for this user account.
 
 The system must:
 
@@ -12,15 +13,18 @@ The system must:
 - maintain one global memory spanning the entire Codex history;
 - inject only a short, conservative memory brief at the start of new sessions;
 - support manual retrieval of prior work, decisions, preferences, and relevant recent activity;
-- default to compact summaries and facts, while allowing small raw excerpts when useful and non-sensitive.
+- default to compact summaries and facts, while allowing small raw excerpts when useful and
+  non-sensitive.
 
 ## Constraints
 
 - The current Codex environment exposes native skill discovery via `~/.agents/skills/`.
-- The current environment does not expose a clearly supported equivalent to Claude Code lifecycle hooks such as `SessionStart`.
+- The current environment does not expose a clearly supported equivalent to Claude Code lifecycle
+  hooks such as `SessionStart`.
 - The design must therefore avoid relying on undocumented Codex hook behavior.
 - The design should prefer local runtimes already present on the machine.
-- The design should fail open: if memory infrastructure is unavailable, Codex must still operate normally.
+- The design should fail open: if memory infrastructure is unavailable, Codex must still operate
+  normally.
 
 ## User Requirements
 
@@ -39,10 +43,12 @@ The system has four parts:
 
 1. `codex-mem-store`
    - A SQLite database under `~/.codex/memories/codex-mem/`.
-   - Stores normalized memory records, ingestion checkpoints, ranking metadata, and operator preferences.
+   - Stores normalized memory records, ingestion checkpoints, ranking metadata, and operator
+     preferences.
 
 2. `codex-mem-indexer`
-   - A local process that reads Codex history files from `~/.codex/history.jsonl` and `~/.codex/sessions/**`.
+   - A local process that reads Codex history files from `~/.codex/history.jsonl` and
+     `~/.codex/sessions/**`.
    - Normalizes raw history into compact memory records.
    - Runs incrementally and deduplicates by content hash.
 
@@ -53,12 +59,14 @@ The system has four parts:
 
 4. `codex-memory-bootstrap` and companion skills
    - Global skills installed in `~/.agents/skills/`.
-   - The bootstrap skill runs at the start of new conversations, ensures the server is available, requests a short relevant brief, and injects only a compact summary when confidence is high.
+   - The bootstrap skill runs at the start of new conversations, ensures the server is available,
+     requests a short relevant brief, and injects only a compact summary when confidence is high.
    - Search/admin skills provide manual retrieval and operator controls.
 
 ## Why This Architecture
 
-This architecture preserves the core benefit of `claude-mem` without depending on Claude Code plugin hooks that are not clearly available in this Codex environment.
+This architecture preserves the core benefit of `claude-mem` without depending on Claude Code plugin
+hooks that are not clearly available in this Codex environment.
 
 The key adaptation is:
 
@@ -74,7 +82,8 @@ The database stores memory records with one of these kinds:
 - `decision`: an important decision and its rationale;
 - `episode`: a compact session or workstream summary;
 - `artifact`: reference to a file, branch, command, error, URL, or output;
-- `raw_excerpt`: a short non-sensitive raw excerpt retained because it materially improves future retrieval.
+- `raw_excerpt`: a short non-sensitive raw excerpt retained because it materially improves future
+  retrieval.
 
 Each memory record carries:
 
@@ -95,7 +104,8 @@ Each memory record carries:
 - `freshness_score`
 - `content_hash`
 
-The system also maintains FTS search indexes over title, summary, excerpt, tags, cwd, and repo hints.
+The system also maintains FTS search indexes over title, summary, excerpt, tags, cwd, and repo
+hints.
 
 ## Ingestion Strategy
 
@@ -126,7 +136,8 @@ The first version uses deterministic extraction rather than a second LLM:
 - command/file activity from session logs becomes `artifact`;
 - short raw text snippets are retained only when high-value and low-sensitivity.
 
-This keeps the system local, deterministic, and cheap while still allowing the active session model to summarize retrieved items into a concise startup brief.
+This keeps the system local, deterministic, and cheap while still allowing the active session model
+to summarize retrieved items into a concise startup brief.
 
 ## Retrieval Strategy
 
