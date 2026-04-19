@@ -220,89 +220,98 @@ export class MetaWebhookController {
     }
   }
 
+  private buildContactIndex(contacts: MetaWhatsAppContact[]): Map<string, string> {
+    return new Map<string, string>(
+      contacts.map((contact) => [
+        String(contact?.wa_id || '').trim(),
+        String(contact?.profile?.name || '').trim(),
+      ]),
+    );
+  }
+
+  private async processIncomingWhatsAppMessage(
+    workspaceId: string,
+    change: MetaWebhookChange,
+    msg: MetaWhatsAppMessage,
+    contactIndex: Map<string, string>,
+  ): Promise<void> {
+    const senderPhone = String(msg?.from || '').trim();
+    const providerMessageId = String(msg?.id || '').trim();
+    if (!providerMessageId || !senderPhone) return;
+
+    const messageType = this.normalizeWhatsAppMessageType(msg?.type);
+    const messageText = this.extractWhatsAppMessageText(msg);
+    const senderName = [
+      contactIndex.get(senderPhone),
+      String(msg?.profile?.name || '').trim(),
+    ].find((value): value is string => typeof value === 'string' && value.length > 0);
+
+    await this.inboundProcessor.process({
+      workspaceId,
+      provider: 'meta-cloud',
+      ingestMode: 'live',
+      providerMessageId,
+      from: senderPhone,
+      to: String(change.value?.metadata?.display_phone_number || '').trim(),
+      senderName,
+      type: messageType,
+      text: messageText,
+      raw: msg,
+      createdAt: msg?.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date(),
+    });
+  }
+
+  private async updateWhatsAppStatus(
+    workspaceId: string,
+    status: MetaWhatsAppStatus,
+  ): Promise<void> {
+    const externalId = String(status?.id || '').trim();
+    if (!externalId) return;
+
+    await this.prisma.message.updateMany({
+      where: { workspaceId, externalId },
+      data: {
+        status: this.normalizeOutboundStatus(status?.status),
+        errorCode: String(status?.errors?.[0]?.code || '').trim() || null,
+      },
+    });
+  }
+
+  private async handleWhatsAppMessagesChange(change: MetaWebhookChange): Promise<void> {
+    const phoneNumberId = String(change.value?.metadata?.phone_number_id || '').trim();
+    const workspaceId = await this.metaWhatsApp.resolveWorkspaceIdByPhoneNumberId(phoneNumberId);
+
+    if (!workspaceId) {
+      this.logger.warn(
+        `[WA Cloud] Could not resolve workspace for phone_number_id=${phoneNumberId}`,
+      );
+      return;
+    }
+
+    await this.metaWhatsApp.touchWebhookHeartbeat(workspaceId, {
+      status: 'connected',
+      phoneNumberId,
+      lastWebhookObject: 'whatsapp_business_account',
+    });
+
+    const contacts: MetaWhatsAppContact[] = Array.isArray(change.value?.contacts)
+      ? change.value.contacts
+      : [];
+    const contactIndex = this.buildContactIndex(contacts);
+
+    for (const msg of change.value?.messages || []) {
+      await this.processIncomingWhatsAppMessage(workspaceId, change, msg, contactIndex);
+    }
+
+    for (const status of change.value?.statuses || []) {
+      await this.updateWhatsAppStatus(workspaceId, status);
+    }
+  }
+
   private async handleWhatsAppCloud(entry: MetaWebhookEntry) {
-    // biome-ignore lint/performance/noAwaitInLoops: sequential WhatsApp Cloud change processing
     for (const change of entry.changes || []) {
-      if (change.field === 'messages') {
-        const phoneNumberId = String(change.value?.metadata?.phone_number_id || '').trim();
-        const workspaceId =
-          // biome-ignore lint/performance/noAwaitInLoops: per-phone-number-id workspace resolution with cache-miss fallback
-          await this.metaWhatsApp.resolveWorkspaceIdByPhoneNumberId(phoneNumberId);
-
-        if (!workspaceId) {
-          this.logger.warn(
-            `[WA Cloud] Could not resolve workspace for phone_number_id=${phoneNumberId}`,
-          );
-          continue;
-        }
-
-        await this.metaWhatsApp.touchWebhookHeartbeat(workspaceId, {
-          status: 'connected',
-          phoneNumberId,
-          lastWebhookObject: 'whatsapp_business_account',
-        });
-
-        const contacts: MetaWhatsAppContact[] = Array.isArray(change.value?.contacts)
-          ? change.value.contacts
-          : [];
-        const contactIndex = new Map<string, string>(
-          contacts.map((contact) => [
-            String(contact?.wa_id || '').trim(),
-            String(contact?.profile?.name || '').trim(),
-          ]),
-        );
-
-        // biome-ignore lint/performance/noAwaitInLoops: sequential inbound message processing preserving order
-        for (const msg of change.value?.messages || []) {
-          const senderPhone = String(msg?.from || '').trim();
-          const messageType = this.normalizeWhatsAppMessageType(msg?.type);
-          const messageText = this.extractWhatsAppMessageText(msg);
-          const providerMessageId = String(msg?.id || '').trim();
-          const senderName = [
-            contactIndex.get(senderPhone),
-            String(msg?.profile?.name || '').trim(),
-          ].find((value): value is string => typeof value === 'string' && value.length > 0);
-
-          if (!providerMessageId || !senderPhone) {
-            continue;
-          }
-
-          // biome-ignore lint/performance/noAwaitInLoops: inbound processor preserves WhatsApp Cloud API message ordering per chat
-          await this.inboundProcessor.process({
-            workspaceId,
-            provider: 'meta-cloud',
-            ingestMode: 'live',
-            providerMessageId,
-            from: senderPhone,
-            to: String(change.value?.metadata?.display_phone_number || '').trim(),
-            senderName,
-            type: messageType,
-            text: messageText,
-            raw: msg,
-            createdAt: msg?.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date(),
-          });
-        }
-
-        // biome-ignore lint/performance/noAwaitInLoops: sequential message status update
-        for (const status of change.value?.statuses || []) {
-          const externalId = String(status?.id || '').trim();
-          if (!externalId) {
-            continue;
-          }
-
-          // biome-ignore lint/performance/noAwaitInLoops: per-status update preserves Meta delivery-status timeline
-          await this.prisma.message.updateMany({
-            where: {
-              workspaceId,
-              externalId,
-            },
-            data: {
-              status: this.normalizeOutboundStatus(status?.status),
-              errorCode: String(status?.errors?.[0]?.code || '').trim() || null,
-            },
-          });
-        }
-      }
+      if (change.field !== 'messages') continue;
+      await this.handleWhatsAppMessagesChange(change);
     }
   }
 

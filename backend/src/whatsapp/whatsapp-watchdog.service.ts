@@ -104,6 +104,64 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
+  private isRuntimeActive(autonomyMode: string, runtimeState: string): boolean {
+    return (
+      ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
+      ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
+        runtimeState,
+      )
+    );
+  }
+
+  private async resetStaleRuntime(
+    workspaceId: string,
+    settings: ReturnType<typeof asProviderSettings>,
+    autonomy: NonNullable<ReturnType<typeof asProviderSettings>['autonomy']>,
+    runtime: NonNullable<ReturnType<typeof asProviderSettings>['ciaRuntime']>,
+    autonomyMode: string,
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    const preserveManualBlock = autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED';
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: toPrismaJsonValue({
+          ...settings,
+          autonomy: preserveManualBlock
+            ? {
+                ...autonomy,
+                lastRuntimeResetAt: now,
+                lastRuntimeResetReason: 'watchdog_stale_bootstrap',
+              }
+            : {
+                ...autonomy,
+                mode: null,
+                lastRuntimeResetAt: now,
+                lastRuntimeResetReason: 'watchdog_stale_bootstrap',
+              },
+          ciaRuntime: {
+            ...runtime,
+            state: null,
+            currentRunId: null,
+            mode: null,
+            autoStarted: false,
+            lastRuntimeResetAt: now,
+            lastRuntimeResetReason: 'watchdog_stale_bootstrap',
+          },
+        }),
+      },
+    });
+
+    await this.redis
+      .del(
+        `cia:bootstrap:${workspaceId}`,
+        `whatsapp:catchup:${workspaceId}`,
+        `whatsapp:catchup:cooldown:${workspaceId}`,
+      )
+      .catch(() => undefined);
+  }
+
   private async tryBootstrapAutonomy(
     workspaceId: string,
     workspaceName?: string,
@@ -117,20 +175,15 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     const settings = asProviderSettings(workspace?.providerSettings);
     const autonomy = settings.autonomy ?? {};
     const runtime = settings.ciaRuntime ?? {};
+    if (autonomy.autoBootstrapOnConnected === false) return false;
+
     const autonomyMode = String(autonomy.mode || '').toUpperCase();
     const runtimeState = String(runtime.state || '').toUpperCase();
     const lastBootstrapRaw =
       this.readText(runtime.lastBootstrapAt) || this.readText(runtime.startedAt);
-    if (autonomy.autoBootstrapOnConnected === false) {
-      return false;
-    }
-
     const lastBootstrapAt = Date.parse(lastBootstrapRaw);
-    const runtimeAppearsActive =
-      ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
-      ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
-        runtimeState,
-      );
+
+    const runtimeAppearsActive = this.isRuntimeActive(autonomyMode, runtimeState);
     const staleRuntime =
       runtimeAppearsActive &&
       !String(runtime.currentRunId || '').trim() &&
@@ -139,64 +192,14 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       Date.now() - lastBootstrapAt > 60 * 60 * 1000;
 
     if (staleRuntime) {
-      const now = new Date().toISOString();
-      const preserveManualBlock = autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED';
-
-      await this.prisma.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: toPrismaJsonValue({
-            ...settings,
-            autonomy: preserveManualBlock
-              ? {
-                  ...autonomy,
-                  lastRuntimeResetAt: now,
-                  lastRuntimeResetReason: 'watchdog_stale_bootstrap',
-                }
-              : {
-                  ...autonomy,
-                  mode: null,
-                  lastRuntimeResetAt: now,
-                  lastRuntimeResetReason: 'watchdog_stale_bootstrap',
-                },
-            ciaRuntime: {
-              ...runtime,
-              state: null,
-              currentRunId: null,
-              mode: null,
-              autoStarted: false,
-              lastRuntimeResetAt: now,
-              lastRuntimeResetReason: 'watchdog_stale_bootstrap',
-            },
-          }),
-        },
-      });
-
-      await this.redis
-        .del(
-          `cia:bootstrap:${workspaceId}`,
-          `whatsapp:catchup:${workspaceId}`,
-          `whatsapp:catchup:cooldown:${workspaceId}`,
-        )
-        .catch(() => undefined);
-    }
-
-    if (
-      !staleRuntime &&
-      (['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
-        ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
-          runtimeState,
-        ) ||
-        Boolean(String(runtime.currentRunId || '').trim()))
-    ) {
+      await this.resetStaleRuntime(workspaceId, settings, autonomy, runtime, autonomyMode);
+    } else if (runtimeAppearsActive || Boolean(String(runtime.currentRunId || '').trim())) {
       return false;
     }
 
     const lockKey = `cia:bootstrap:${workspaceId}`;
     const locked = await this.redis.set(lockKey, reason, 'EX', 120, 'NX');
-    if (locked !== 'OK') {
-      return false;
-    }
+    if (locked !== 'OK') return false;
 
     try {
       await this.ciaRuntime.bootstrap(workspaceId);
@@ -637,6 +640,69 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   /**
    * Verifica e tenta reconectar uma sessão específica
    */
+  private async handleConnectedSession(
+    workspaceId: string,
+    workspaceName: string | undefined,
+    health: SessionHealth,
+    wasConnected: boolean,
+    now: Date,
+  ): Promise<void> {
+    if (!wasConnected) {
+      health.upSince = now;
+      this.logger.log(`✅ Session reconnected: ${workspaceName || workspaceId}`);
+    }
+    health.consecutiveFailures = 0;
+    health.reconnectBlockedReason = undefined;
+    await this.persistSessionDiagnostics(workspaceId, {
+      lastHeartbeatAt: now.toISOString(),
+      lastSeenWorkingAt: now.toISOString(),
+      lastWatchdogDisconnectedAt: null,
+      watchdogReconnectBlockedReason: null,
+    });
+    if (!wasConnected) {
+      await this.tryBootstrapAutonomy(workspaceId, workspaceName, 'watchdog_reconnected');
+    }
+    await this.maintainConnectedWorkspace(
+      workspaceId,
+      workspaceName,
+      !wasConnected ? 'watchdog_reconnected' : 'watchdog_connected_scan',
+    );
+  }
+
+  private async handleDisconnectedSession(
+    workspaceId: string,
+    workspaceName: string | undefined,
+    health: SessionHealth,
+    normalizedStatus: string,
+    now: Date,
+  ): Promise<void> {
+    health.consecutiveFailures++;
+
+    this.logger.warn(
+      `⚠️ Session disconnected: ${workspaceName || workspaceId} ` +
+        `(failures: ${health.consecutiveFailures}, status: ${normalizedStatus})`,
+    );
+
+    const reconnectBlockedReason = await this.getReconnectBlockReason(workspaceId);
+    health.reconnectBlockedReason = reconnectBlockedReason || undefined;
+    await this.persistSessionDiagnostics(workspaceId, {
+      lastWatchdogDisconnectedAt: now.toISOString(),
+      watchdogReconnectBlockedReason: reconnectBlockedReason || null,
+    });
+
+    if (reconnectBlockedReason) {
+      this.logger.error(
+        `🛑 Auto-reconnect blocked for ${workspaceName || workspaceId}: ${reconnectBlockedReason}`,
+      );
+    } else if (this.shouldAttemptReconnect(health)) {
+      await this.attemptReconnect(workspaceId, workspaceName, health);
+    }
+
+    if (health.consecutiveFailures === this.ALERT_THRESHOLD) {
+      await this.alertOps(workspaceId, workspaceName, health);
+    }
+  }
+
   async checkWorkspaceSession(workspaceId: string, workspaceName?: string): Promise<SessionHealth> {
     if (!this.isWahaOperationallyEnabled()) {
       const now = new Date();
@@ -658,7 +724,6 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     };
 
     try {
-      // Verificar status da sessão
       const status = await this.providerRegistry.getSessionStatus(workspaceId);
       const wasConnected = health.connected;
       health.connected = status.connected;
@@ -670,34 +735,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           ? 'pending'
           : 'disconnected';
 
-      // Atualizar métricas
       this.sessionStatusGauge.set({ workspaceId }, status.connected ? 1 : 0);
       this.healthCheckCounter.inc({ workspaceId, status: metricStatus });
 
       if (status.connected) {
-        // Sessão OK
-        if (!wasConnected) {
-          health.upSince = now;
-          this.logger.log(`✅ Session reconnected: ${workspaceName || workspaceId}`);
-        }
-        health.consecutiveFailures = 0;
-        health.reconnectBlockedReason = undefined;
-        await this.persistSessionDiagnostics(workspaceId, {
-          lastHeartbeatAt: now.toISOString(),
-          lastSeenWorkingAt: now.toISOString(),
-          lastWatchdogDisconnectedAt: null,
-          watchdogReconnectBlockedReason: null,
-        });
-        if (!wasConnected) {
-          await this.tryBootstrapAutonomy(workspaceId, workspaceName, 'watchdog_reconnected');
-        }
-        await this.maintainConnectedWorkspace(
-          workspaceId,
-          workspaceName,
-          !wasConnected ? 'watchdog_reconnected' : 'watchdog_connected_scan',
-        );
+        await this.handleConnectedSession(workspaceId, workspaceName, health, wasConnected, now);
       } else if (this.pendingStatuses.has(normalizedStatus)) {
-        // Sessão aguardando QR ou ainda inicializando. Não é falha operacional.
         health.consecutiveFailures = 0;
         health.reconnectBlockedReason = undefined;
         this.logger.debug(
@@ -705,34 +748,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
             `(status: ${normalizedStatus})`,
         );
       } else {
-        // Sessão desconectada
-        health.consecutiveFailures++;
-
-        this.logger.warn(
-          `⚠️ Session disconnected: ${workspaceName || workspaceId} ` +
-            `(failures: ${health.consecutiveFailures}, status: ${normalizedStatus})`,
+        await this.handleDisconnectedSession(
+          workspaceId,
+          workspaceName,
+          health,
+          normalizedStatus,
+          now,
         );
-
-        const reconnectBlockedReason = await this.getReconnectBlockReason(workspaceId);
-        health.reconnectBlockedReason = reconnectBlockedReason || undefined;
-        await this.persistSessionDiagnostics(workspaceId, {
-          lastWatchdogDisconnectedAt: now.toISOString(),
-          watchdogReconnectBlockedReason: reconnectBlockedReason || null,
-        });
-
-        if (reconnectBlockedReason) {
-          this.logger.error(
-            `🛑 Auto-reconnect blocked for ${workspaceName || workspaceId}: ${reconnectBlockedReason}`,
-          );
-        } else if (this.shouldAttemptReconnect(health)) {
-          // Tentar reconectar se dentro do cooldown
-          await this.attemptReconnect(workspaceId, workspaceName, health);
-        }
-
-        // Alertar ops se muitas falhas consecutivas
-        if (health.consecutiveFailures === this.ALERT_THRESHOLD) {
-          await this.alertOps(workspaceId, workspaceName, health);
-        }
       }
     } catch (error: unknown) {
       const errorInstanceofError =

@@ -92,18 +92,59 @@ export class IdempotencyGuard implements CanActivate {
   // ------------------------------------------------------------
   // v2 — scoped key + body fingerprint (I13, P6-5)
   // ------------------------------------------------------------
+  private buildV2Context(request: {
+    user?: { workspaceId?: string; sub?: string; id?: string };
+    workspaceId?: string;
+    route?: { path?: string };
+    url?: string;
+    method?: string;
+    body?: unknown;
+  }): {
+    workspaceId: string;
+    actorId: string;
+    routeTemplate: string;
+    method: string;
+    bodyFp: string;
+  } {
+    return {
+      workspaceId: request.user?.workspaceId ?? request.workspaceId ?? 'anon',
+      actorId: request.user?.sub ?? request.user?.id ?? 'anon',
+      routeTemplate: request.route?.path ?? request.url ?? 'unknown',
+      method: request.method ?? 'UNKNOWN',
+      bodyFp: bodyFingerprint(request.body ?? null),
+    };
+  }
+
+  /**
+   * Claim the scope key atomically. If another request already holds the
+   * scope with a DIFFERENT bodyFp, throw 409. Otherwise return silently.
+   */
+  private async claimScopeOrThrow(scopeKey: string, bodyFp: string, ttl: number): Promise<void> {
+    const claimed = await this.redis.set(scopeKey, bodyFp, 'EX', ttl, 'NX');
+    if (claimed === 'OK') return;
+
+    const existingFp = await this.redis.get(scopeKey);
+    if (existingFp !== null && existingFp !== bodyFp) {
+      this.logger.warn(
+        `idempotency_key_reuse_different_body: scope=${scopeKey} stored=${existingFp} incoming=${bodyFp}`,
+      );
+      throw new ConflictException({
+        code: 'idempotency_key_reuse_different_body',
+        message:
+          'This idempotency key was previously used with a different request body. ' +
+          'Use a fresh key for a different request.',
+      });
+    }
+    // existingFp matches (or scope expired between SET NX and GET) — proceed.
+  }
+
   private async canActivateV2(
     context: ExecutionContext,
     idempotencyKey: string,
     ttl: number,
   ): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-
-    const workspaceId = request.user?.workspaceId ?? request.workspaceId ?? 'anon';
-    const actorId = request.user?.sub ?? request.user?.id ?? 'anon';
-    const routeTemplate = request.route?.path ?? request.url ?? 'unknown';
-    const method = request.method ?? 'UNKNOWN';
-    const bodyFp = bodyFingerprint(request.body ?? null);
+    const { workspaceId, actorId, routeTemplate, method, bodyFp } = this.buildV2Context(request);
 
     const scopeKey = buildScopeKey({
       workspaceId,
@@ -122,33 +163,13 @@ export class IdempotencyGuard implements CanActivate {
     });
 
     try {
-      // Phase 1: atomically claim the scope with this bodyFp. If another
-      // request beat us to it with a DIFFERENT bodyFp, we must throw 409.
-      // SET NX returns 'OK' on success and null on a pre-existing key.
-      const claimed = await this.redis.set(scopeKey, bodyFp, 'EX', ttl, 'NX');
-      if (claimed !== 'OK') {
-        const existingFp = await this.redis.get(scopeKey);
-        if (existingFp !== null && existingFp !== bodyFp) {
-          this.logger.warn(
-            `idempotency_key_reuse_different_body: scope=${scopeKey} stored=${existingFp} incoming=${bodyFp}`,
-          );
-          throw new ConflictException({
-            code: 'idempotency_key_reuse_different_body',
-            message:
-              'This idempotency key was previously used with a different request body. ' +
-              'Use a fresh key for a different request.',
-          });
-        }
-        // existingFp matches (or is null because the scope expired between
-        // check and re-read) — fall through to the cacheKey lookup.
-      }
+      await this.claimScopeOrThrow(scopeKey, bodyFp, ttl);
 
-      // Phase 2: same body → standard cache lookup flow.
+      // Same body → standard cache lookup flow.
       const existing = await this.redis.get(cacheKey);
       if (existing) {
         const decision = await this.handleExistingEntry(cacheKey, existing, context);
         if (decision.kind === 'responded') return false;
-        // 'proceed' falls through to store a new placeholder
       }
 
       await this.redis.set(
@@ -162,11 +183,11 @@ export class IdempotencyGuard implements CanActivate {
       request._idempotencyTtl = ttl;
       return true;
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Re-throw ConflictException (our 409) — do NOT degrade to "no dedup"
       // when the error is deliberate.
       if (err instanceof ConflictException) throw err;
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Redis failure degrades to "no dedup", same as v1. Log loudly.
       this.logger.warn(`Idempotency v2 check failed: ${errInstanceofError?.message}`);
       return true;

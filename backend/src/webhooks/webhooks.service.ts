@@ -38,6 +38,14 @@ type InstagramWebhookBody = Record<string, unknown>;
  */
 type PhoneBearingPayload = Record<string, unknown>;
 
+/** Minimal message row shape emitted over gateway/pubsub after a status update. */
+interface MessageStatusTarget {
+  id: string;
+  conversationId: string | null;
+  contactId: string | null;
+  externalId: string | null;
+}
+
 /** Runtime-narrow helper: returns an object when `value` is a non-null record. */
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
@@ -230,6 +238,121 @@ export class WebhooksService {
     return null;
   }
 
+  private async updateMessagesByExternalId(
+    workspaceId: string,
+    externalId: string,
+    status: string,
+    errorCode: string | null,
+  ): Promise<{ count: number; msgs: MessageStatusTarget[] }> {
+    const res = await this.prisma.message.updateMany({
+      where: { workspaceId, externalId },
+      data: { status, errorCode },
+    });
+    if (res.count === 0) return { count: 0, msgs: [] };
+
+    const msgs = await this.prisma.message.findMany({
+      take: 20,
+      where: { workspaceId, externalId },
+      select: { id: true, conversationId: true, contactId: true, externalId: true },
+    });
+    return { count: res.count, msgs };
+  }
+
+  private async updateMessagesByPhone(
+    workspaceId: string,
+    phone: string,
+    channel: string | undefined,
+    status: string,
+    errorCode: string | null,
+  ): Promise<MessageStatusTarget | null> {
+    const where: Record<string, unknown> = {
+      workspaceId,
+      direction: 'OUTBOUND',
+      contact: { phone },
+    };
+    if (channel) {
+      where.conversation = { channel };
+    }
+    const msg = await this.prisma.message.findFirst({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    });
+    if (!msg?.id) return null;
+
+    // Re-read then update scoped by workspaceId so multi-tenant guard is
+    // explicit at the call site (msg was already scoped by the findFirst
+    // above, but the gate checks query shape, not control flow).
+    await this.prisma.message.updateMany({
+      where: { id: msg.id, workspaceId },
+      data: { status, errorCode },
+    });
+    return this.prisma.message.findFirst({
+      where: { id: msg.id, workspaceId },
+      select: { id: true, conversationId: true, contactId: true, externalId: true },
+    });
+  }
+
+  private async publishMessageStatus(
+    workspaceId: string,
+    m: MessageStatusTarget,
+    status: string,
+    errorCode: string | null,
+  ): Promise<void> {
+    this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', {
+      id: m.id,
+      conversationId: m.conversationId,
+      contactId: m.contactId,
+      externalId: m.externalId,
+      status,
+      errorCode,
+    });
+    if (m.conversationId) {
+      this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', {
+        id: m.conversationId,
+        lastMessageStatus: status,
+        lastMessageErrorCode: errorCode,
+        lastMessageId: m.id,
+      });
+    }
+    try {
+      await this.redis.publish(
+        'ws:inbox',
+        JSON.stringify({
+          type: 'message:status',
+          workspaceId,
+          payload: {
+            id: m.id,
+            conversationId: m.conversationId,
+            contactId: m.contactId,
+            externalId: m.externalId,
+            status,
+            errorCode,
+          },
+        }),
+      );
+      if (m.conversationId) {
+        await this.redis.publish(
+          'ws:inbox',
+          JSON.stringify({
+            type: 'conversation:update',
+            workspaceId,
+            conversation: {
+              id: m.conversationId,
+              lastMessageStatus: status,
+              lastMessageErrorCode: errorCode,
+              lastMessageId: m.id,
+            },
+          }),
+        );
+      }
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown error';
+      this.logger.warn(`Failed to publish ws status: ${msg}`);
+    }
+  }
+
   async updateMessageStatus(input: {
     workspaceId?: string;
     externalId?: string;
@@ -242,6 +365,7 @@ export class WebhooksService {
     const workspaceId = input.workspaceId;
     const externalId = input.externalId;
     const phone = input.phone?.replace(D_RE, '') || undefined;
+    const errorCode = input.errorCode || null;
 
     if (!workspaceId) {
       throw new BadRequestException('workspaceId é obrigatório');
@@ -250,72 +374,28 @@ export class WebhooksService {
       throw new BadRequestException('status é obrigatório');
     }
 
-    const updatedMessages: {
-      id: string;
-      conversationId: string | null;
-      contactId: string | null;
-      externalId: string | null;
-    }[] = [];
+    const updatedMessages: MessageStatusTarget[] = [];
+    let updated = 0;
 
     // 1) Tenta localizar por externalId
-    let updated = 0;
     if (externalId) {
-      const res = await this.prisma.message.updateMany({
-        where: { workspaceId, externalId },
-        data: { status, errorCode: input.errorCode || null },
-      });
-      updated += res.count;
-      if (res.count > 0) {
-        const msgs = await this.prisma.message.findMany({
-          take: 20,
-          where: { workspaceId, externalId },
-          select: {
-            id: true,
-            conversationId: true,
-            contactId: true,
-            externalId: true,
-          },
-        });
-        updatedMessages.push(...msgs);
-      }
+      const r = await this.updateMessagesByExternalId(workspaceId, externalId, status, errorCode);
+      updated += r.count;
+      updatedMessages.push(...r.msgs);
     }
 
     // 2) Fallback por phone (última mensagem OUTBOUND)
     if (updated === 0 && phone) {
-      const where: Record<string, unknown> = {
+      const byPhone = await this.updateMessagesByPhone(
         workspaceId,
-        direction: 'OUTBOUND',
-        contact: { phone },
-      };
-      if (input.channel) {
-        where.conversation = { channel: input.channel };
-      }
-      const msg = await this.prisma.message.findFirst({
-        where,
-        orderBy: { createdAt: 'desc' },
-        select: { id: true },
-      });
-      if (msg?.id) {
-        // Re-read then update scoped by workspaceId so multi-tenant guard is
-        // explicit at the call site (msg was already scoped by the findFirst
-        // above, but the gate checks query shape, not control flow).
-        await this.prisma.message.updateMany({
-          where: { id: msg.id, workspaceId },
-          data: { status, errorCode: input.errorCode || null },
-        });
-        const updatedMsg = await this.prisma.message.findFirst({
-          where: { id: msg.id, workspaceId },
-          select: {
-            id: true,
-            conversationId: true,
-            contactId: true,
-            externalId: true,
-          },
-        });
-        if (updatedMsg) {
-          updated = 1;
-          updatedMessages.push(updatedMsg);
-        }
+        phone,
+        input.channel,
+        status,
+        errorCode,
+      );
+      if (byPhone) {
+        updated = 1;
+        updatedMessages.push(byPhone);
       }
     }
 
@@ -326,73 +406,14 @@ export class WebhooksService {
           workspaceId,
           action: 'MESSAGE_STATUS_MISS',
           resource: 'message',
-          details: {
-            externalId,
-            phone,
-            status,
-            errorCode: input.errorCode,
-          },
+          details: { externalId, phone, status, errorCode: input.errorCode },
         },
       });
     }
 
     // 4) Notifica clientes conectados
-    if (updatedMessages.length > 0) {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential message status update
-      for (const m of updatedMessages) {
-        this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', {
-          id: m.id,
-          conversationId: m.conversationId,
-          contactId: m.contactId,
-          externalId: m.externalId,
-          status,
-          errorCode: input.errorCode || null,
-        });
-        if (m.conversationId) {
-          this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', {
-            id: m.conversationId,
-            lastMessageStatus: status,
-            lastMessageErrorCode: input.errorCode || null,
-            lastMessageId: m.id,
-          });
-        }
-        // Pub/Sub para múltiplas instâncias (escutadas pelo InboxEventsService)
-        try {
-          // biome-ignore lint/performance/noAwaitInLoops: per-subscription Redis publish preserves webhook fan-out ordering
-          await this.redis.publish(
-            'ws:inbox',
-            JSON.stringify({
-              type: 'message:status',
-              workspaceId,
-              payload: {
-                id: m.id,
-                conversationId: m.conversationId,
-                contactId: m.contactId,
-                externalId: m.externalId,
-                status,
-                errorCode: input.errorCode || null,
-              },
-            }),
-          );
-          if (m.conversationId) {
-            await this.redis.publish(
-              'ws:inbox',
-              JSON.stringify({
-                type: 'conversation:update',
-                workspaceId,
-                conversation: {
-                  id: m.conversationId,
-                  lastMessageStatus: status,
-                  lastMessageErrorCode: input.errorCode || null,
-                  lastMessageId: m.id,
-                },
-              }),
-            );
-          }
-        } catch (err) {
-          this.logger.warn(`Failed to publish ws status: ${err?.message || err}`);
-        }
-      }
+    for (const m of updatedMessages) {
+      await this.publishMessageStatus(workspaceId, m, status, errorCode);
     }
 
     return { updated };

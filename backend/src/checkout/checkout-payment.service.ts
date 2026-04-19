@@ -77,6 +77,132 @@ export class CheckoutPaymentService {
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
   ) {}
 
+  private buildChargeInput(
+    params: {
+      orderId: string;
+      idempotencyKey?: string;
+      workspaceId: string;
+      customerName: string;
+      customerEmail: string;
+      customerPhone?: string;
+      paymentMethod: CheckoutPaymentMethod;
+    },
+    opts: {
+      sellerStripeAccountId: string;
+      currency: string;
+      baseTotalInCents: number;
+      chargedTotalInCents: number;
+      platformFeeInCents: number;
+      interestInCents: number;
+    },
+  ) {
+    const isPix = params.paymentMethod === 'PIX';
+    return {
+      workspaceId: params.workspaceId,
+      sellerStripeAccountId: opts.sellerStripeAccountId,
+      buyerPaidCents: BigInt(opts.chargedTotalInCents),
+      saleValueCents: BigInt(opts.baseTotalInCents),
+      interestCents: BigInt(opts.interestInCents),
+      platformFeeCents: BigInt(opts.platformFeeInCents),
+      currency: opts.currency,
+      idempotencyKey: params.idempotencyKey || params.orderId,
+      buyerEmail: params.customerEmail,
+      paymentMethodTypes: (isPix ? ['pix'] : ['card']) as ('pix' | 'card')[],
+      confirm: isPix,
+      paymentMethodData: isPix
+        ? {
+            type: 'pix' as const,
+            billing_details: {
+              name: params.customerName,
+              email: params.customerEmail,
+              phone: params.customerPhone,
+            },
+          }
+        : undefined,
+      paymentMethodOptions: isPix
+        ? {
+            pix: {
+              expires_after_seconds: 30 * 60,
+            },
+          }
+        : undefined,
+      metadata: {
+        kloel_order_id: params.orderId,
+        workspace_id: params.workspaceId,
+      },
+    };
+  }
+
+  private async persistPayment(
+    params: {
+      orderId: string;
+      workspaceId: string;
+      paymentMethod: CheckoutPaymentMethod;
+      installments?: number;
+      cardLast4?: string;
+    },
+    charge: Awaited<ReturnType<StripeChargeService['createSaleCharge']>>,
+    paymentStatus: CheckoutPaymentStatus,
+    pixData: PixDisplayData,
+    amount: number,
+  ) {
+    const approved = paymentStatus === 'APPROVED';
+    return this.prisma.$transaction(
+      async (tx) => {
+        const createdPayment = await tx.checkoutPayment.create({
+          data: {
+            orderId: params.orderId,
+            gateway: 'stripe',
+            externalId: charge.paymentIntentId,
+            pixQrCode: pixData.pixQrCode,
+            pixCopyPaste: pixData.pixCopyPaste,
+            pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
+            boletoUrl: null,
+            boletoBarcode: null,
+            boletoExpiresAt: null,
+            cardLast4: params.cardLast4 || null,
+            cardBrand: null,
+            status: paymentStatus,
+            webhookData: toJsonValue({
+              provider: 'stripe',
+              paymentIntent: charge.stripePaymentIntent,
+              split: charge.split,
+              splitInput: charge.splitInput,
+            }),
+          },
+        });
+
+        if (approved) {
+          await this.transitionOrderToApproved(tx, params.orderId, params.workspaceId, {
+            paymentId: createdPayment.id,
+            provider: 'stripe',
+            externalId: charge.paymentIntentId,
+          });
+        }
+
+        await this.auditService.logWithTx(tx, {
+          workspaceId: params.workspaceId,
+          action: 'CHECKOUT_PAYMENT_CREATED',
+          resource: 'CheckoutPayment',
+          resourceId: createdPayment.id,
+          details: {
+            method: params.paymentMethod,
+            amount,
+            orderId: params.orderId,
+            gateway: 'stripe',
+            externalId: charge.paymentIntentId,
+            approved,
+            installments: params.installments,
+            paymentStatus: charge.stripePaymentIntent.status,
+          },
+        });
+
+        return createdPayment;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
   async processPayment(params: {
     orderId: string;
     idempotencyKey?: string;
@@ -112,47 +238,20 @@ export class CheckoutPaymentService {
     );
     const platformFeeInCents = Number(orderMetadata.platformFeeInCents || 0);
     const interestInCents = Number(orderMetadata.installmentInterestInCents || 0);
-    const idempotencyKey = params.idempotencyKey || params.orderId;
     const sellerStripeAccountId = await this.ensureSellerStripeAccountId(params.workspaceId);
     const amount = chargedTotalInCents / 100;
 
     try {
-      const charge = await this.stripeCharge.createSaleCharge({
-        workspaceId: params.workspaceId,
-        sellerStripeAccountId,
-        buyerPaidCents: BigInt(chargedTotalInCents),
-        saleValueCents: BigInt(baseTotalInCents),
-        interestCents: BigInt(interestInCents),
-        platformFeeCents: BigInt(platformFeeInCents),
-        currency: String(order.plan?.currency || 'BRL'),
-        idempotencyKey,
-        buyerEmail: params.customerEmail,
-        paymentMethodTypes: params.paymentMethod === 'PIX' ? ['pix'] : ['card'],
-        confirm: params.paymentMethod === 'PIX',
-        paymentMethodData:
-          params.paymentMethod === 'PIX'
-            ? {
-                type: 'pix',
-                billing_details: {
-                  name: params.customerName,
-                  email: params.customerEmail,
-                  phone: params.customerPhone,
-                },
-              }
-            : undefined,
-        paymentMethodOptions:
-          params.paymentMethod === 'PIX'
-            ? {
-                pix: {
-                  expires_after_seconds: 30 * 60,
-                },
-              }
-            : undefined,
-        metadata: {
-          kloel_order_id: params.orderId,
-          workspace_id: params.workspaceId,
-        },
-      });
+      const charge = await this.stripeCharge.createSaleCharge(
+        this.buildChargeInput(params, {
+          sellerStripeAccountId,
+          currency: String(order.plan?.currency || 'BRL'),
+          baseTotalInCents,
+          chargedTotalInCents,
+          platformFeeInCents,
+          interestInCents,
+        }),
+      );
 
       const paymentStatus = mapStripePaymentStatus(charge.stripePaymentIntent.status);
       const approved = paymentStatus === 'APPROVED';
@@ -161,60 +260,7 @@ export class CheckoutPaymentService {
           ? extractPixDisplayData(charge.stripePaymentIntent)
           : { pixQrCode: null, pixCopyPaste: null, pixExpiresAt: null };
 
-      const payment = await this.prisma.$transaction(
-        async (tx) => {
-          const createdPayment = await tx.checkoutPayment.create({
-            data: {
-              orderId: params.orderId,
-              gateway: 'stripe',
-              externalId: charge.paymentIntentId,
-              pixQrCode: pixData.pixQrCode,
-              pixCopyPaste: pixData.pixCopyPaste,
-              pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
-              boletoUrl: null,
-              boletoBarcode: null,
-              boletoExpiresAt: null,
-              cardLast4: params.cardLast4 || null,
-              cardBrand: null,
-              status: paymentStatus,
-              webhookData: toJsonValue({
-                provider: 'stripe',
-                paymentIntent: charge.stripePaymentIntent,
-                split: charge.split,
-                splitInput: charge.splitInput,
-              }),
-            },
-          });
-
-          if (approved) {
-            await this.transitionOrderToApproved(tx, params.orderId, params.workspaceId, {
-              paymentId: createdPayment.id,
-              provider: 'stripe',
-              externalId: charge.paymentIntentId,
-            });
-          }
-
-          await this.auditService.logWithTx(tx, {
-            workspaceId: params.workspaceId,
-            action: 'CHECKOUT_PAYMENT_CREATED',
-            resource: 'CheckoutPayment',
-            resourceId: createdPayment.id,
-            details: {
-              method: params.paymentMethod,
-              amount,
-              orderId: params.orderId,
-              gateway: 'stripe',
-              externalId: charge.paymentIntentId,
-              approved,
-              installments: params.installments,
-              paymentStatus: charge.stripePaymentIntent.status,
-            },
-          });
-
-          return createdPayment;
-        },
-        { isolationLevel: 'ReadCommitted' },
-      );
+      const payment = await this.persistPayment(params, charge, paymentStatus, pixData, amount);
 
       if (approved) {
         await this.checkoutSocialLeadService

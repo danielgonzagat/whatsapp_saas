@@ -137,6 +137,65 @@ export class SegmentationService {
   /**
    * Busca contatos com base em critérios avançados de segmentação
    */
+  private applyTagFilters(where: Prisma.ContactWhereInput, criteria: SegmentCriteria): void {
+    if (criteria.tags && criteria.tags.length > 0) {
+      where.tags = { some: { name: { in: criteria.tags } } };
+    }
+    if (criteria.excludeTags && criteria.excludeTags.length > 0) {
+      where.NOT = { tags: { some: { name: { in: criteria.excludeTags } } } };
+    }
+  }
+
+  private applyActivityWindowFilters(
+    where: Prisma.ContactWhereInput,
+    criteria: SegmentCriteria,
+    now: Date,
+  ): void {
+    const updatedAtFilter: Prisma.DateTimeFilter<'Contact'> = {};
+    if (criteria.lastMessageDays) {
+      const since = new Date(now);
+      since.setDate(since.getDate() - criteria.lastMessageDays);
+      updatedAtFilter.gte = since;
+    }
+    if (criteria.noMessageDays) {
+      const before = new Date(now);
+      before.setDate(before.getDate() - criteria.noMessageDays);
+      updatedAtFilter.lte = before;
+    }
+    if (updatedAtFilter.gte !== undefined || updatedAtFilter.lte !== undefined) {
+      where.updatedAt = updatedAtFilter;
+    }
+
+    const createdAtFilter: Prisma.DateTimeFilter<'Contact'> = {};
+    if (criteria.createdAfter) createdAtFilter.gte = criteria.createdAfter;
+    if (criteria.createdBefore) createdAtFilter.lte = criteria.createdBefore;
+    if (createdAtFilter.gte !== undefined || createdAtFilter.lte !== undefined) {
+      where.createdAt = createdAtFilter;
+    }
+  }
+
+  private applyPipelineFilters(where: Prisma.ContactWhereInput, criteria: SegmentCriteria): void {
+    if (criteria.stageIds && criteria.stageIds.length > 0) {
+      where.deals = { some: { stageId: { in: criteria.stageIds } } };
+    }
+    if (criteria.pipelineIds && criteria.pipelineIds.length > 0) {
+      where.deals = {
+        some: { stage: { pipelineId: { in: criteria.pipelineIds } } },
+      };
+    }
+    if (criteria.dealStatus) {
+      const statusMap: Record<'open' | 'won' | 'lost', string[]> = {
+        open: ['OPEN', 'NEGOTIATION'],
+        won: ['WON'],
+        lost: ['LOST'],
+      };
+      const validStatuses: DealStatus[] = (statusMap[criteria.dealStatus] || []).filter(
+        isDealStatus,
+      );
+      where.deals = { some: { status: { in: validStatuses } } };
+    }
+  }
+
   async getAudienceBySegment(
     workspaceId: string,
     criteria: SegmentCriteria,
@@ -147,93 +206,9 @@ export class SegmentationService {
     };
 
     const now = new Date();
-
-    // Filtro por tags
-    if (criteria.tags && criteria.tags.length > 0) {
-      where.tags = {
-        some: {
-          name: { in: criteria.tags },
-        },
-      };
-    }
-
-    // Excluir tags
-    if (criteria.excludeTags && criteria.excludeTags.length > 0) {
-      where.NOT = {
-        tags: {
-          some: {
-            name: { in: criteria.excludeTags },
-          },
-        },
-      };
-    }
-
-    // Última mensagem nos últimos X dias (usando updatedAt como proxy)
-    const updatedAtFilter: Prisma.DateTimeFilter<'Contact'> = {};
-    if (criteria.lastMessageDays) {
-      const since = new Date(now);
-      since.setDate(since.getDate() - criteria.lastMessageDays);
-      updatedAtFilter.gte = since;
-    }
-
-    // Sem mensagens há X dias
-    if (criteria.noMessageDays) {
-      const before = new Date(now);
-      before.setDate(before.getDate() - criteria.noMessageDays);
-      updatedAtFilter.lte = before;
-    }
-
-    if (updatedAtFilter.gte !== undefined || updatedAtFilter.lte !== undefined) {
-      where.updatedAt = updatedAtFilter;
-    }
-
-    // Criado após/antes
-    const createdAtFilter: Prisma.DateTimeFilter<'Contact'> = {};
-    if (criteria.createdAfter) {
-      createdAtFilter.gte = criteria.createdAfter;
-    }
-    if (criteria.createdBefore) {
-      createdAtFilter.lte = criteria.createdBefore;
-    }
-    if (createdAtFilter.gte !== undefined || createdAtFilter.lte !== undefined) {
-      where.createdAt = createdAtFilter;
-    }
-
-    // Pipeline e estágios
-    if (criteria.stageIds && criteria.stageIds.length > 0) {
-      where.deals = {
-        some: {
-          stageId: { in: criteria.stageIds },
-        },
-      };
-    }
-
-    if (criteria.pipelineIds && criteria.pipelineIds.length > 0) {
-      where.deals = {
-        some: {
-          stage: {
-            pipelineId: { in: criteria.pipelineIds },
-          },
-        },
-      };
-    }
-
-    // Status de deal
-    if (criteria.dealStatus) {
-      const statusMap: Record<'open' | 'won' | 'lost', string[]> = {
-        open: ['OPEN', 'NEGOTIATION'],
-        won: ['WON'],
-        lost: ['LOST'],
-      };
-      const validStatuses: DealStatus[] = (statusMap[criteria.dealStatus] || []).filter(
-        isDealStatus,
-      );
-      where.deals = {
-        some: {
-          status: { in: validStatuses },
-        },
-      };
-    }
+    this.applyTagFilters(where, criteria);
+    this.applyActivityWindowFilters(where, criteria, now);
+    this.applyPipelineFilters(where, criteria);
 
     // Buscar contatos com critérios básicos
     let contacts = await this.prisma.contact.findMany({
