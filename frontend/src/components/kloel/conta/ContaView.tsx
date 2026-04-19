@@ -3115,220 +3115,214 @@ function AjudaSection() {
   ];
 
   return (
-    <>
-      <SectionCard
-        title="Precisa de ajuda?"
-        subtitle="Entre em contato conosco ou consulte as perguntas frequentes"
-      >
-        {/* Quick links */}
-        <div
-          style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginBottom: 24 }}
+    <SectionCard
+      title="Precisa de ajuda?"
+      subtitle="Entre em contato conosco ou consulte as perguntas frequentes"
+    >
+      {/* Quick links */}
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginBottom: 24 }}>
+        {helpLinks.map((link) => (
+          <a
+            key={link.label}
+            href={link.href}
+            target={link.target}
+            rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '14px 18px',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
+              borderRadius: 8,
+              textDecoration: 'none',
+              color: 'var(--app-text-primary)',
+              fontSize: 13,
+              fontFamily: SORA,
+              transition: 'all 150ms ease',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = EMBER;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--app-border-primary)';
+            }}
+          >
+            <span style={{ color: EMBER, flexShrink: 0 }}>{link.icon(16)}</span>
+            <span style={{ flex: 1 }}>{link.label}</span>
+            <svg
+              width={14}
+              height={14}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--app-text-placeholder)"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
+        ))}
+      </div>
+
+      {/* Contact buttons */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        <a
+          href="https://wa.me/5500000000000"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1,
+            padding: '14px 20px',
+            background: 'rgba(37,211,102,.06)',
+            border: '1px solid rgba(37,211,102,.2)',
+            borderRadius: 6,
+            color: '#25D366',
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: SORA,
+            textDecoration: 'none',
+            textAlign: 'center' as const,
+            cursor: 'pointer',
+            transition: 'all 150ms ease',
+            display: 'block',
+          }}
         >
-          {helpLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              target={link.target}
-              rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
+          WhatsApp
+        </a>
+        <a
+          href="mailto:suporte@kloel.com"
+          style={{
+            flex: 1,
+            padding: '14px 20px',
+            background: 'rgba(232,93,48,.06)',
+            border: `1px solid rgba(232,93,48,.2)`,
+            borderRadius: 6,
+            color: EMBER,
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: SORA,
+            textDecoration: 'none',
+            textAlign: 'center' as const,
+            cursor: 'pointer',
+            transition: 'all 150ms ease',
+            display: 'block',
+          }}
+        >
+          E-mail
+        </a>
+      </div>
+
+      {/* FAQ Accordion */}
+      <div style={{ borderTop: '1px solid var(--app-border-subtle)', paddingTop: 20 }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--app-text-primary)',
+            display: 'block',
+            marginBottom: 14,
+            fontFamily: SORA,
+          }}
+        >
+          Perguntas frequentes
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          {faqs.map((faq, idx) => (
+            <div
+              key={faq.q}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '14px 18px',
-                background: 'var(--app-bg-card)',
+                background: 'var(--app-bg-secondary)',
                 border: '1px solid var(--app-border-primary)',
-                borderRadius: 8,
-                textDecoration: 'none',
-                color: 'var(--app-text-primary)',
-                fontSize: 13,
-                fontFamily: SORA,
-                transition: 'all 150ms ease',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = EMBER;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--app-border-primary)';
+                borderRadius: 6,
+                overflow: 'hidden',
               }}
             >
-              <span style={{ color: EMBER, flexShrink: 0 }}>{link.icon(16)}</span>
-              <span style={{ flex: 1 }}>{link.label}</span>
-              <svg
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--app-text-placeholder)"
-                strokeWidth={2}
-                aria-hidden="true"
-              >
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
-            </a>
-          ))}
-        </div>
-
-        {/* Contact buttons */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-          <a
-            href="https://wa.me/5500000000000"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              flex: 1,
-              padding: '14px 20px',
-              background: 'rgba(37,211,102,.06)',
-              border: '1px solid rgba(37,211,102,.2)',
-              borderRadius: 6,
-              color: '#25D366',
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: SORA,
-              textDecoration: 'none',
-              textAlign: 'center' as const,
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-              display: 'block',
-            }}
-          >
-            WhatsApp
-          </a>
-          <a
-            href="mailto:suporte@kloel.com"
-            style={{
-              flex: 1,
-              padding: '14px 20px',
-              background: 'rgba(232,93,48,.06)',
-              border: `1px solid rgba(232,93,48,.2)`,
-              borderRadius: 6,
-              color: EMBER,
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: SORA,
-              textDecoration: 'none',
-              textAlign: 'center' as const,
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-              display: 'block',
-            }}
-          >
-            E-mail
-          </a>
-        </div>
-
-        {/* FAQ Accordion */}
-        <div style={{ borderTop: '1px solid var(--app-border-subtle)', paddingTop: 20 }}>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: 'var(--app-text-primary)',
-              display: 'block',
-              marginBottom: 14,
-              fontFamily: SORA,
-            }}
-          >
-            Perguntas frequentes
-          </span>
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-            {faqs.map((faq, idx) => (
-              <div
-                key={faq.q}
+              <button
+                type="button"
+                onClick={() => toggle(idx)}
                 style={{
-                  background: 'var(--app-bg-secondary)',
-                  border: '1px solid var(--app-border-primary)',
-                  borderRadius: 6,
-                  overflow: 'hidden',
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  fontFamily: SORA,
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => toggle(idx)}
+                <span
                   style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: 'transparent',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--app-text-primary)',
+                    textAlign: 'left' as const,
+                  }}
+                >
+                  {faq.q}
+                </span>
+                <span
+                  style={{
+                    color: 'var(--app-text-tertiary)',
+                    transform: openQuestion === idx ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform .15s',
+                    flexShrink: 0,
+                    marginLeft: 8,
+                  }}
+                >
+                  <svg
+                    width={12}
+                    height={12}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </span>
+              </button>
+              {openQuestion === idx && (
+                <div
+                  style={{
+                    padding: '0 16px 12px',
+                    fontSize: 11,
+                    color: 'var(--app-text-secondary)',
+                    lineHeight: 1.6,
                     fontFamily: SORA,
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: 'var(--app-text-primary)',
-                      textAlign: 'left' as const,
-                    }}
-                  >
-                    {faq.q}
-                  </span>
-                  <span
-                    style={{
-                      color: 'var(--app-text-tertiary)',
-                      transform: openQuestion === idx ? 'rotate(180deg)' : 'rotate(0deg)',
-                      transition: 'transform .15s',
-                      flexShrink: 0,
-                      marginLeft: 8,
-                    }}
-                  >
-                    <svg
-                      width={12}
-                      height={12}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      aria-hidden="true"
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </span>
-                </button>
-                {openQuestion === idx && (
-                  <div
-                    style={{
-                      padding: '0 16px 12px',
-                      fontSize: 11,
-                      color: 'var(--app-text-secondary)',
-                      lineHeight: 1.6,
-                      fontFamily: SORA,
-                    }}
-                  >
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Platform version */}
-        <div
-          style={{
-            borderTop: '1px solid var(--app-border-subtle)',
-            marginTop: 20,
-            paddingTop: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <span style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }}>
-            {Icons.shield(14)}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-            Versao da plataforma: Kloel v1.0.0-beta
-          </span>
-        </div>
-      </SectionCard>
-    </>
+      {/* Platform version */}
+      <div
+        style={{
+          borderTop: '1px solid var(--app-border-subtle)',
+          marginTop: 20,
+          paddingTop: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <span style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }}>{Icons.shield(14)}</span>
+        <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
+          Versao da plataforma: Kloel v1.0.0-beta
+        </span>
+      </div>
+    </SectionCard>
   );
 }
 

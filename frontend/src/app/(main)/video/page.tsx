@@ -366,49 +366,46 @@ export default function VideoPage() {
       </div>
 
       {/* Jobs tab */}
-      {activeTab === 'jobs' && (
-        <>
-          {isLoading ? (
-            <Card>
-              <div
-                style={{
-                  padding: 32,
-                  textAlign: 'center',
-                  color: 'var(--app-text-secondary)',
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                Carregando jobs...
-              </div>
-            </Card>
-          ) : error ? (
-            <Card>
-              <div
-                style={{
-                  padding: 32,
-                  textAlign: 'center',
-                  color: '#EF4444',
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                Erro ao carregar video jobs
-              </div>
-            </Card>
-          ) : jobs.length === 0 ? (
-            <ContextualEmptyState
-              context="generic"
-              title="Nenhum job de video"
-              description="Crie um job para gerar ou processar videos com IA."
-            />
-          ) : (
-            <Card>
-              {jobs.map((job) => (
-                <VideoJobRow key={job.id} job={job} onRefresh={handleRefreshJob} />
-              ))}
-            </Card>
-          )}
-        </>
-      )}
+      {activeTab === 'jobs' &&
+        (isLoading ? (
+          <Card>
+            <div
+              style={{
+                padding: 32,
+                textAlign: 'center',
+                color: 'var(--app-text-secondary)',
+                fontFamily: "'Sora', sans-serif",
+              }}
+            >
+              Carregando jobs...
+            </div>
+          </Card>
+        ) : error ? (
+          <Card>
+            <div
+              style={{
+                padding: 32,
+                textAlign: 'center',
+                color: '#EF4444',
+                fontFamily: "'Sora', sans-serif",
+              }}
+            >
+              Erro ao carregar video jobs
+            </div>
+          </Card>
+        ) : jobs.length === 0 ? (
+          <ContextualEmptyState
+            context="generic"
+            title="Nenhum job de video"
+            description="Crie um job para gerar ou processar videos com IA."
+          />
+        ) : (
+          <Card>
+            {jobs.map((job) => (
+              <VideoJobRow key={job.id} job={job} onRefresh={handleRefreshJob} />
+            ))}
+          </Card>
+        ))}
 
       {/* Create video tab */}
       {activeTab === 'create' && (

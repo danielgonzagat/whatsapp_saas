@@ -8,7 +8,7 @@ LAUNCHER="${REPO_ROOT}/scripts/mcp/stripe-mcp-launcher.sh"
 LOG_FILE="$(mktemp "${TMPDIR:-/tmp}/stripe-mcp-check.XXXXXX.log")"
 MCP_PID=""
 
-# shellcheck disable=SC2329
+# shellcheck disable=SC2317,SC2329
 cleanup() {
   if [[ -n "${MCP_PID}" ]] && kill -0 "${MCP_PID}" >/dev/null 2>&1; then
     kill "${MCP_PID}" >/dev/null 2>&1 || true

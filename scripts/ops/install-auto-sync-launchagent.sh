@@ -1,4 +1,5 @@
 #!/bin/zsh
+# shellcheck shell=bash
 set -euo pipefail
 
 REPO_DIR="${1:-$HOME/whatsapp_saas}"

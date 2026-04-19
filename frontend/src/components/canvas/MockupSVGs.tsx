@@ -103,20 +103,18 @@ export const DesktopSVG: React.FC<DesktopProps> = ({ c1, c2, chart }) => (
     <rect x="6" y="14" width="8" height="1.2" rx="0.6" fill="rgba(255,255,255,0.08)" />
     <rect x="6" y="17" width="10" height="1.2" rx="0.6" fill="rgba(255,255,255,0.08)" />
     {chart ? (
-      <>
-        {[22, 28, 34, 40, 46, 52, 58].map((x, i) => (
-          <rect
-            key={x}
-            x={x}
-            y={32 - [6, 10, 14, 8, 16, 12, 7][i]}
-            width="4.5"
-            height={[6, 10, 14, 8, 16, 12, 7][i]}
-            rx="1"
-            fill={i === 2 || i === 4 ? c2 : 'rgba(255,255,255,0.12)'}
-            opacity={i === 2 || i === 4 ? 0.5 : 1}
-          />
-        ))}
-      </>
+      [22, 28, 34, 40, 46, 52, 58].map((x, i) => (
+        <rect
+          key={x}
+          x={x}
+          y={32 - [6, 10, 14, 8, 16, 12, 7][i]}
+          width="4.5"
+          height={[6, 10, 14, 8, 16, 12, 7][i]}
+          rx="1"
+          fill={i === 2 || i === 4 ? c2 : 'rgba(255,255,255,0.12)'}
+          opacity={i === 2 || i === 4 ? 0.5 : 1}
+        />
+      ))
     ) : (
       <>
         <rect x="22" y="11" width="20" height="2.5" rx="1" fill="rgba(255,255,255,0.2)" />
