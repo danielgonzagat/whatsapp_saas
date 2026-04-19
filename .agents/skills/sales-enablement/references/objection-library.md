@@ -1,6 +1,7 @@
 # Objection Library
 
-Common B2B SaaS objections with response frameworks. Organized by category for quick reference.
+Common B2B SaaS objections with response frameworks. Organized by category for
+quick reference.
 
 ## Quick-Reference Table
 
@@ -32,7 +33,9 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 #### "It's too expensive"
 
-**Why they say it:** May be genuine budget constraint, sticker shock, or negotiation tactic. Often means they don't yet see enough value to justify the cost.
+**Why they say it:** May be genuine budget constraint, sticker shock, or
+negotiation tactic. Often means they don't yet see enough value to justify the
+cost.
 
 **Response approach:**
 
@@ -43,17 +46,22 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "I hear that. Let me ask — what's the cost of the problem we discussed? You mentioned your team spends [X hours] on [task] every week. At your team's loaded cost, that's roughly [$ amount] per year. Our solution runs [$ price] — so the question is whether eliminating that problem is worth the investment."
+> "I hear that. Let me ask — what's the cost of the problem we discussed? You
+> mentioned your team spends [X hours] on [task] every week. At your team's
+> loaded cost, that's roughly [$ amount] per year. Our solution runs [$ price] —
+> so the question is whether eliminating that problem is worth the investment."
 
 **Proof point:** ROI calculator or case study showing payback period.
 
-**Follow-up question:** "If the ROI was clear, is this something you'd prioritize this quarter?"
+**Follow-up question:** "If the ROI was clear, is this something you'd
+prioritize this quarter?"
 
 ---
 
 #### "We don't have budget for this"
 
-**Why they say it:** Budget may genuinely be allocated. Or they haven't identified budget because priority isn't established.
+**Why they say it:** Budget may genuinely be allocated. Or they haven't
+identified budget because priority isn't established.
 
 **Response approach:**
 
@@ -64,17 +72,23 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "Totally understand. Two questions: When does your next budget cycle open? And — if we could show clear ROI with a limited pilot, is that something you could fund from a different line item? Sometimes teams fund this from the efficiency savings it creates."
+> "Totally understand. Two questions: When does your next budget cycle open? And
+> — if we could show clear ROI with a limited pilot, is that something you could
+> fund from a different line item? Sometimes teams fund this from the efficiency
+> savings it creates."
 
-**Proof point:** Customer who started with a small pilot and expanded after proving ROI.
+**Proof point:** Customer who started with a small pilot and expanded after
+proving ROI.
 
-**Follow-up question:** "Would it help if I put together an ROI brief you could share with your finance team?"
+**Follow-up question:** "Would it help if I put together an ROI brief you could
+share with your finance team?"
 
 ---
 
 #### "Competitor X is cheaper"
 
-**Why they say it:** They're comparing prices, possibly without comparing capabilities. May be using competitor price as leverage.
+**Why they say it:** They're comparing prices, possibly without comparing
+capabilities. May be using competitor price as leverage.
 
 **Response approach:**
 
@@ -85,11 +99,17 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "You're right, [Competitor] is less expensive. Here's what I've seen from teams who evaluated both: [Competitor] works well for [their strength]. Where it falls short is [specific gap]. Customers like [name] actually switched to us after starting with [Competitor] because [specific reason]. The question is whether [specific capability] is worth the difference for your team."
+> "You're right, [Competitor] is less expensive. Here's what I've seen from
+> teams who evaluated both: [Competitor] works well for [their strength]. Where
+> it falls short is [specific gap]. Customers like [name] actually switched to
+> us after starting with [Competitor] because [specific reason]. The question is
+> whether [specific capability] is worth the difference for your team."
 
-**Proof point:** Customer who switched from the competitor, with specific reasons.
+**Proof point:** Customer who switched from the competitor, with specific
+reasons.
 
-**Follow-up question:** "What's most important to your team — the lowest price or the best fit for [their specific need]?"
+**Follow-up question:** "What's most important to your team — the lowest price
+or the best fit for [their specific need]?"
 
 ---
 
@@ -97,7 +117,8 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 #### "Not the right time"
 
-**Why they say it:** Competing priorities, organizational change, genuine capacity constraint, or lack of urgency.
+**Why they say it:** Competing priorities, organizational change, genuine
+capacity constraint, or lack of urgency.
 
 **Response approach:**
 
@@ -108,17 +129,23 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "I get it — timing matters. Can I ask what's taking priority right now? The reason I bring up timing is that every month of [problem], based on our earlier conversation, costs your team roughly [$ amount]. A 3-month delay is [$ amount]. What if we mapped out a start date that works with your calendar so you're not losing that value?"
+> "I get it — timing matters. Can I ask what's taking priority right now? The
+> reason I bring up timing is that every month of [problem], based on our
+> earlier conversation, costs your team roughly [$ amount]. A 3-month delay is
+> [$ amount]. What if we mapped out a start date that works with your calendar
+> so you're not losing that value?"
 
 **Proof point:** Cost-of-delay calculation based on their specific numbers.
 
-**Follow-up question:** "What would need to change for this to move up in priority?"
+**Follow-up question:** "What would need to change for this to move up in
+priority?"
 
 ---
 
 #### "Maybe next quarter"
 
-**Why they say it:** Genuine scheduling, or a polite way of saying "not interested enough right now."
+**Why they say it:** Genuine scheduling, or a polite way of saying "not
+interested enough right now."
 
 **Response approach:**
 
@@ -129,11 +156,16 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "Next quarter works. To make sure we hit the ground running, would it make sense to do [small next step] now? That way when Q[X] starts, you're not starting from scratch. I'll also send over [relevant content] in the meantime. Can we lock in [specific date] to reconnect?"
+> "Next quarter works. To make sure we hit the ground running, would it make
+> sense to do [small next step] now? That way when Q[X] starts, you're not
+> starting from scratch. I'll also send over [relevant content] in the meantime.
+> Can we lock in [specific date] to reconnect?"
 
-**Proof point:** Customer who started the evaluation process early and was live by their target date.
+**Proof point:** Customer who started the evaluation process early and was live
+by their target date.
 
-**Follow-up question:** "Is there anything I can send between now and then that would be helpful?"
+**Follow-up question:** "Is there anything I can send between now and then that
+would be helpful?"
 
 ---
 
@@ -141,7 +173,8 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 #### "We already use X"
 
-**Why they say it:** They have an existing solution and switching has real costs. May be satisfied, or may have frustrations they haven't voiced.
+**Why they say it:** They have an existing solution and switching has real
+costs. May be satisfied, or may have frustrations they haven't voiced.
 
 **Response approach:**
 
@@ -152,28 +185,38 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "How's that working for you? Specifically, when it comes to [area where you're stronger] — is that meeting your needs? The reason I ask is that most teams who come to us from [Competitor] tell us [specific pain point] was the tipping point. Not saying that's you, but worth exploring."
+> "How's that working for you? Specifically, when it comes to
+> [area where you're stronger] — is that meeting your needs? The reason I ask is
+> that most teams who come to us from [Competitor] tell us [specific pain point]
+> was the tipping point. Not saying that's you, but worth exploring."
 
 **Proof point:** Customer who switched from that specific competitor.
 
-**Follow-up question:** "If you could change one thing about your current setup, what would it be?"
+**Follow-up question:** "If you could change one thing about your current setup,
+what would it be?"
 
 ---
 
 #### "What makes you different?"
 
-**Why they say it:** They're evaluating options and want a clear differentiator. Sometimes a genuine question, sometimes a test.
+**Why they say it:** They're evaluating options and want a clear differentiator.
+Sometimes a genuine question, sometimes a test.
 
 **Response approach:**
 
-1. Don't list features — give the one thing that matters most for their situation
+1. Don't list features — give the one thing that matters most for their
+   situation
 2. Tie the differentiator to their specific pain
 3. Back it up with proof
 4. Offer to show, not just tell
 
 **Talk track:**
 
-> "For teams like yours — [their industry/size/use case] — the biggest difference is [specific differentiator]. That matters because [connection to their pain]. For example, [Customer] was evaluating us alongside [Competitor] and chose us because [specific reason]. Want me to walk you through how that works?"
+> "For teams like yours — [their industry/size/use case] — the biggest
+> difference is [specific differentiator]. That matters because
+> [connection to their pain]. For example, [Customer] was evaluating us
+> alongside [Competitor] and chose us because [specific reason]. Want me to walk
+> you through how that works?"
 
 **Proof point:** Case study of a customer who chose you over alternatives.
 
@@ -185,7 +228,8 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 #### "I need to check with my boss"
 
-**Why they say it:** They may not be the decision maker, or they need internal buy-in to proceed. Could also be a stall tactic.
+**Why they say it:** They may not be the decision maker, or they need internal
+buy-in to proceed. Could also be a stall tactic.
 
 **Response approach:**
 
@@ -196,7 +240,11 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "Absolutely — what would help you make the case? I can put together a one-pager that covers the ROI and addresses the concerns your boss is likely to have. Also happy to jump on a quick call with them if that would be helpful. What does your boss typically prioritize — cost savings, risk reduction, or efficiency?"
+> "Absolutely — what would help you make the case? I can put together a
+> one-pager that covers the ROI and addresses the concerns your boss is likely
+> to have. Also happy to jump on a quick call with them if that would be
+> helpful. What does your boss typically prioritize — cost savings, risk
+> reduction, or efficiency?"
 
 **Proof point:** Champion enablement one-pager, ROI calculator.
 
@@ -206,7 +254,8 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 #### "A committee decides this"
 
-**Why they say it:** Enterprise buying involves multiple stakeholders. Genuine process, not a brush-off.
+**Why they say it:** Enterprise buying involves multiple stakeholders. Genuine
+process, not a brush-off.
 
 **Response approach:**
 
@@ -217,11 +266,16 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "That makes sense. Can you walk me through who's on the committee and what each person cares about? I can tailor materials for each stakeholder so you're not doing all the heavy lifting. I've also got a deck designed for executive presentations if that would be useful."
+> "That makes sense. Can you walk me through who's on the committee and what
+> each person cares about? I can tailor materials for each stakeholder so you're
+> not doing all the heavy lifting. I've also got a deck designed for executive
+> presentations if that would be useful."
 
-**Proof point:** Multi-stakeholder case study showing how different personas were addressed.
+**Proof point:** Multi-stakeholder case study showing how different personas
+were addressed.
 
-**Follow-up question:** "Who on the committee is most likely to push back, and what would their concern be?"
+**Follow-up question:** "Who on the committee is most likely to push back, and
+what would their concern be?"
 
 ---
 
@@ -229,7 +283,8 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 #### "What we have works fine"
 
-**Why they say it:** Inertia is real. The current solution may be adequate, and change has real costs.
+**Why they say it:** Inertia is real. The current solution may be adequate, and
+change has real costs.
 
 **Response approach:**
 
@@ -240,11 +295,15 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "It probably does work — and I wouldn't suggest changing something that's truly meeting your needs. The question I'd ask is: is 'works fine' the bar? Teams using [your product] are seeing [specific outcome]. If you're leaving [X% improvement] on the table, is that worth exploring?"
+> "It probably does work — and I wouldn't suggest changing something that's
+> truly meeting your needs. The question I'd ask is: is 'works fine' the bar?
+> Teams using [your product] are seeing [specific outcome]. If you're leaving
+> [X% improvement] on the table, is that worth exploring?"
 
 **Proof point:** Benchmark data showing what's possible vs. status quo.
 
-**Follow-up question:** "If there were one area where your current approach could be better, what would it be?"
+**Follow-up question:** "If there were one area where your current approach
+could be better, what would it be?"
 
 ---
 
@@ -252,7 +311,8 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 #### "Does it integrate with X?"
 
-**Why they say it:** Integration is a real requirement. They need to know your product fits their stack.
+**Why they say it:** Integration is a real requirement. They need to know your
+product fits their stack.
 
 **Response approach:**
 
@@ -263,21 +323,26 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track (if yes):**
 
-> "Yes, we integrate with [X] natively. It takes about [time] to set up. [Customer] runs the same stack and here's how they have it configured."
+> "Yes, we integrate with [X] natively. It takes about [time] to set up.
+> [Customer] runs the same stack and here's how they have it configured."
 
 **Talk track (if no):**
 
-> "We don't have a native integration with [X] today. Here's what customers typically do: [alternative]. We also have an open API that [description]. Would it help to get our technical team on a call to explore options?"
+> "We don't have a native integration with [X] today. Here's what customers
+> typically do: [alternative]. We also have an open API that [description].
+> Would it help to get our technical team on a call to explore options?"
 
 **Proof point:** Customer using the same tech stack, integration documentation.
 
-**Follow-up question:** "What other tools are in your stack that we'd need to work with?"
+**Follow-up question:** "What other tools are in your stack that we'd need to
+work with?"
 
 ---
 
 #### "We have security concerns"
 
-**Why they say it:** Legitimate concern, especially in regulated industries or enterprise. Non-negotiable for many buyers.
+**Why they say it:** Legitimate concern, especially in regulated industries or
+enterprise. Non-negotiable for many buyers.
 
 **Response approach:**
 
@@ -288,8 +353,13 @@ For live calls. Find the objection, scan the response, reference the proof.
 
 **Talk track:**
 
-> "That's exactly the right question to ask. Here's our security overview — we're [SOC 2 Type II / ISO 27001 / etc.] certified, and I can share our full security documentation. We also have a security team that's happy to do a review call with your infosec team. What are your specific requirements?"
+> "That's exactly the right question to ask. Here's our security overview —
+> we're [SOC 2 Type II / ISO 27001 / etc.] certified, and I can share our full
+> security documentation. We also have a security team that's happy to do a
+> review call with your infosec team. What are your specific requirements?"
 
-**Proof point:** Security certifications, compliance documentation, customers in regulated industries.
+**Proof point:** Security certifications, compliance documentation, customers in
+regulated industries.
 
-**Follow-up question:** "Do you have a security questionnaire you'd like us to fill out?"
+**Follow-up question:** "Do you have a security questionnaire you'd like us to
+fill out?"

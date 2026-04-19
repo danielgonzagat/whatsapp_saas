@@ -7,7 +7,8 @@ Score each dimension 0-10 using the rubrics below.
 
 ## Brand Maturity Adjustments (apply to all dimensions)
 
-Before scoring, determine the app's tier: **Dominant**, **Established**, or **Challenger**.
+Before scoring, determine the app's tier: **Dominant**, **Established**, or
+**Challenger**.
 
 **Dominant apps (Instagram, Uber, Spotify, WhatsApp, Netflix):**
 
@@ -29,7 +30,8 @@ Before scoring, determine the app's tier: **Dominant**, **Established**, or **Ch
 
 - Scored strictly against textbook ASO — every character and feature matters
 
-**Key principle:** Before docking points, ask: "Is this a mistake or a data-informed
+**Key principle:** Before docking points, ask: "Is this a mistake or a
+data-informed
 choice by a team with more information than I have?"
 
 ---
@@ -54,7 +56,8 @@ unused characters represent waste or intentional simplicity.
 
 **Check for:**
 
-- Characters used vs limit (title: 30, subtitle/short desc: 30/80). "Near max" = within 3 chars of the limit (27+/30, 77+/80)
+- Characters used vs limit (title: 30, subtitle/short desc: 30/80). "Near max" =
+  within 3 chars of the limit (27+/30, 77+/80)
 - Primary keyword in title
 - Keyword duplication between title and subtitle
 - Whether app purpose is immediately clear
@@ -204,7 +207,8 @@ Final Score = (Title * 0.20) + (Description * 0.15) + (Visuals * 0.25)
 Scale to 100: Final Score * 10
 ```
 
-**Example:** Title: 7, Description: 6, Visuals: 8, Ratings: 9, Metadata: 5, Conversion: 7
+**Example:** Title: 7, Description: 6, Visuals: 8, Ratings: 9, Metadata: 5,
+Conversion: 7
 
 ```
 (7 * 0.20) + (6 * 0.15) + (8 * 0.25) + (9 * 0.20) + (5 * 0.10) + (7 * 0.10)

@@ -1,16 +1,20 @@
 # Headless CMS Guide
 
-Reference for choosing, modeling, and implementing a headless CMS for marketing content.
+Reference for choosing, modeling, and implementing a headless CMS for marketing
+content.
 
 ## When to Use This Reference
 
-Use this when selecting a CMS for a new project, designing content models for marketing sites, setting up editorial workflows, or connecting CMS content to programmatic pages.
+Use this when selecting a CMS for a new project, designing content models for
+marketing sites, setting up editorial workflows, or connecting CMS content to
+programmatic pages.
 
 ---
 
 ## Headless vs Traditional CMS
 
-A headless CMS separates content management from presentation. Content is stored in a structured backend and delivered via API to any frontend.
+A headless CMS separates content management from presentation. Content is stored
+in a structured backend and delivered via API to any frontend.
 
 ### When Headless Makes Sense
 
@@ -44,10 +48,14 @@ A headless CMS separates content management from presentation. Content is stored
 
 ### Core Principles
 
-1. **Think in types, not pages.** A "Landing Page" is a content type with fields — not an HTML file. This lets you reuse components across pages.
-2. **Separate content from presentation.** Store the headline text, not the styled headline. Presentation belongs in the frontend.
-3. **Design for reuse.** If testimonials appear on 5 pages, create a Testimonial type and reference it — don't duplicate.
-4. **Keep models flat.** Deeply nested structures are hard to query and maintain. Prefer references over nesting.
+1. **Think in types, not pages.** A "Landing Page" is a content type with fields
+   — not an HTML file. This lets you reuse components across pages.
+2. **Separate content from presentation.** Store the headline text, not the
+   styled headline. Presentation belongs in the frontend.
+3. **Design for reuse.** If testimonials appear on 5 pages, create a Testimonial
+   type and reference it — don't duplicate.
+4. **Keep models flat.** Deeply nested structures are hard to query and
+   maintain. Prefer references over nesting.
 
 ### Common Marketing Content Types
 
@@ -90,10 +98,13 @@ Every page-level content type needs:
 All major headless CMS platforms support draft previews:
 
 - **Sanity**: Real-time preview with `useLiveQuery` or Presentation tool
-- **Contentful**: Preview API (`preview.contentful.com`) with separate access token
-- **Strapi**: Draft & Publish system with `status=draft` query parameter (v5; replaces v4's `publicationState`)
+- **Contentful**: Preview API (`preview.contentful.com`) with separate access
+  token
+- **Strapi**: Draft & Publish system with `status=draft` query parameter (v5;
+  replaces v4's `publicationState`)
 
-Set up a preview route in your frontend (e.g., `/api/preview`) that authenticates and renders draft content.
+Set up a preview route in your frontend (e.g., `/api/preview`) that
+authenticates and renders draft content.
 
 ### Roles and Permissions
 
@@ -103,7 +114,8 @@ Set up a preview route in your frontend (e.g., `/api/preview`) that authenticate
 | Editor |    Yes     |   All    |     Yes     |   Drafts   |
 | Admin  |    Yes     |   All    |     Yes     |    All     |
 
-Exact permission models vary by platform. Sanity uses role-based access. Contentful has space-level roles. Strapi has granular RBAC.
+Exact permission models vary by platform. Sanity uses role-based access.
+Contentful has space-level roles. Strapi has granular RBAC.
 
 ---
 
@@ -121,34 +133,47 @@ Exact permission models vary by platform. Sanity uses role-based access. Content
 
 ### Sanity
 
-**Strengths**: GROQ query language is powerful and flexible. Schema defined in code (version-controlled). Real-time collaborative editing. Portable Text for rich content. Generous free tier.
+**Strengths**: GROQ query language is powerful and flexible. Schema defined in
+code (version-controlled). Real-time collaborative editing. Portable Text for
+rich content. Generous free tier.
 
-**Considerations**: Steeper learning curve for non-developers. Studio customization requires React knowledge. Vendor lock-in on GROQ queries.
+**Considerations**: Steeper learning curve for non-developers. Studio
+customization requires React knowledge. Vendor lock-in on GROQ queries.
 
-**Marketing fit**: Best when developers and marketers collaborate closely. Strong for content-heavy sites with complex models.
+**Marketing fit**: Best when developers and marketers collaborate closely.
+Strong for content-heavy sites with complex models.
 
 ### Contentful
 
-**Strengths**: Mature enterprise platform. Excellent multi-locale support. Strong ecosystem of integrations. Composable content with Studio. Well-documented APIs.
+**Strengths**: Mature enterprise platform. Excellent multi-locale support.
+Strong ecosystem of integrations. Composable content with Studio.
+Well-documented APIs.
 
-**Considerations**: Pricing scales with content types and locales. Two separate APIs (Delivery and Management). Rate limits can be tight on lower plans.
+**Considerations**: Pricing scales with content types and locales. Two separate
+APIs (Delivery and Management). Rate limits can be tight on lower plans.
 
-**Marketing fit**: Best for enterprises with multi-market content needs. Good when you need established vendor reliability.
+**Marketing fit**: Best for enterprises with multi-market content needs. Good
+when you need established vendor reliability.
 
 ### Strapi
 
-**Strengths**: Open source, self-hosted option. Full control over data. No per-seat pricing. Customizable admin panel. Plugin ecosystem. REST by default, GraphQL via plugin.
+**Strengths**: Open source, self-hosted option. Full control over data. No
+per-seat pricing. Customizable admin panel. Plugin ecosystem. REST by default,
+GraphQL via plugin.
 
-**Considerations**: Self-hosting means you handle infrastructure. Smaller ecosystem than Sanity/Contentful. V5 migration can be significant from V4.
+**Considerations**: Self-hosting means you handle infrastructure. Smaller
+ecosystem than Sanity/Contentful. V5 migration can be significant from V4.
 
-**Marketing fit**: Best for teams with DevOps capability who want full control and no vendor lock-in. Good for budget-conscious projects.
+**Marketing fit**: Best for teams with DevOps capability who want full control
+and no vendor lock-in. Good for budget-conscious projects.
 
 ### Others Worth Knowing
 
 - **Hygraph** — GraphQL-native, strong for federation and multi-source content
 - **Keystatic** — Git-based, good for developer-content hybrid workflows
 - **Payload** — TypeScript-first, self-hosted, code-configured like Sanity
-- **Builder.io** — Visual editor with headless backend, good for non-technical marketers
+- **Builder.io** — Visual editor with headless backend, good for non-technical
+  marketers
 - **Prismic** — Slice-based content modeling, strong Next.js integration
 
 ---
@@ -157,19 +182,27 @@ Exact permission models vary by platform. Sanity uses role-based access. Content
 
 ### Programmatic SEO
 
-Use CMS as the data source for programmatic pages. Store structured data (FAQs, comparisons, city pages) as content types and generate pages from queries. See **programmatic-seo** skill.
+Use CMS as the data source for programmatic pages. Store structured data (FAQs,
+comparisons, city pages) as content types and generate pages from queries. See
+**programmatic-seo** skill.
 
 ### Copywriting
 
-CMS content models enforce consistent structure. Define fields that match your copy frameworks (headline, subheadline, social proof, CTA). See **copywriting** skill.
+CMS content models enforce consistent structure. Define fields that match your
+copy frameworks (headline, subheadline, social proof, CTA). See **copywriting**
+skill.
 
 ### Site Architecture
 
-URL structure, navigation hierarchy, and internal linking all depend on how content is organized in the CMS. Plan your content model and site architecture together. See **site-architecture** skill.
+URL structure, navigation hierarchy, and internal linking all depend on how
+content is organized in the CMS. Plan your content model and site architecture
+together. See **site-architecture** skill.
 
 ### Email Sequences
 
-Pull CMS content into email templates for consistent messaging across web and email. Case studies, testimonials, and blog posts can feed email nurture sequences. See **email-sequence** skill.
+Pull CMS content into email templates for consistent messaging across web and
+email. Case studies, testimonials, and blog posts can feed email nurture
+sequences. See **email-sequence** skill.
 
 ---
 
@@ -181,7 +214,8 @@ Pull CMS content into email templates for consistent messaging across web and em
 - [ ] Configure roles and permissions for your team
 - [ ] Create sample content for each type before building frontend
 - [ ] Set up webhook notifications for content changes (rebuild triggers)
-- [ ] Document content guidelines for editors (field descriptions, character limits)
+- [ ] Document content guidelines for editors (field descriptions, character
+      limits)
 - [ ] Test content delivery performance (CDN, caching, ISR)
 - [ ] Plan migration strategy if moving from existing CMS
 
@@ -190,5 +224,7 @@ Pull CMS content into email templates for consistent messaging across web and em
 ## Relevant Integration Guides
 
 - [Sanity](../../../tools/integrations/sanity.md) — GROQ queries, mutations, CLI
-- [Contentful](../../../tools/integrations/contentful.md) — Delivery/Management APIs, publishing
-- [Strapi](../../../tools/integrations/strapi.md) — REST CRUD, filters, document API
+- [Contentful](../../../tools/integrations/contentful.md) — Delivery/Management
+  APIs, publishing
+- [Strapi](../../../tools/integrations/strapi.md) — REST CRUD, filters, document
+  API

@@ -1,6 +1,7 @@
 # Lead Scoring Models
 
-Detailed scoring templates, example models by business type, and calibration guidance.
+Detailed scoring templates, example models by business type, and calibration
+guidance.
 
 ## Explicit Scoring Template (Fit)
 
@@ -226,7 +227,8 @@ Detailed scoring templates, example models by business type, and calibration gui
 2. **Retroactively score** each deal using your new model
 3. **Find the natural breakpoint** — what score separated wins from losses?
 4. **Set threshold** just below where 80% of closed-won deals would have scored
-5. **Validate** against closed-lost — if many closed-lost score above threshold, tighten criteria
+5. **Validate** against closed-lost — if many closed-lost score above threshold,
+   tighten criteria
 
 ### Calibration Cadence
 

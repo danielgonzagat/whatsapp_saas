@@ -1,6 +1,7 @@
 # Generative AI Tools for Ad Creative
 
-Reference for using AI image generators, video generators, and code-based video tools to produce ad visuals at scale.
+Reference for using AI image generators, video generators, and code-based video
+tools to produce ad visuals at scale.
 
 ---
 
@@ -30,7 +31,8 @@ Google DeepMind's image generation model, available through the Gemini API.
 
 **Best for:** High-quality ad images, product visuals, text rendering
 **API:** Gemini API (Google AI Studio, Vertex AI)
-**Pricing:** ~$0.04/image (Gemini 2.5 Flash Image), ~$0.24/4K image (Nano Banana Pro)
+**Pricing:** ~$0.04/image (Gemini 2.5 Flash Image), ~$0.24/4K image (Nano Banana
+Pro)
 
 **Strengths:**
 
@@ -59,15 +61,18 @@ curl -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5
   }'
 ```
 
-**Docs:** [Gemini Image Generation](https://ai.google.dev/gemini-api/docs/image-generation)
+**Docs:**
+[Gemini Image Generation](https://ai.google.dev/gemini-api/docs/image-generation)
 
 ---
 
 ### Flux (Black Forest Labs)
 
-Open-weight image generation models with API access through Replicate and BFL's native API.
+Open-weight image generation models with API access through Replicate and BFL's
+native API.
 
-**Best for:** Photorealistic images, brand-consistent variations, multi-reference generation
+**Best for:** Photorealistic images, brand-consistent variations,
+multi-reference generation
 **API:** Replicate, BFL API, fal.ai
 **Pricing:** ~$0.01-0.06/image depending on model and resolution
 
@@ -93,7 +98,8 @@ Open-weight image generation models with API access through Replicate and BFL's 
 - Style-match to existing brand assets using reference images
 - Rapid A/B test image variations
 
-**Docs:** [Replicate Flux](https://replicate.com/black-forest-labs/flux-2-pro), [BFL API](https://docs.bfl.ml/)
+**Docs:** [Replicate Flux](https://replicate.com/black-forest-labs/flux-2-pro),
+[BFL API](https://docs.bfl.ml/)
 
 ---
 
@@ -101,7 +107,8 @@ Open-weight image generation models with API access through Replicate and BFL's 
 
 Specialized in typography and text rendering within images.
 
-**Best for:** Ad banners with text, branded graphics, social ad images with headlines
+**Best for:** Ad banners with text, branded graphics, social ad images with
+headlines
 **API:** Ideogram API, Runware
 **Pricing:** ~$0.06/image (API), ~$0.009/image (subscription)
 
@@ -119,7 +126,8 @@ Specialized in typography and text rendering within images.
 - Produce multiple design variations with consistent typography
 - Generate promotional materials without needing a designer for each iteration
 
-**Docs:** [Ideogram API](https://developer.ideogram.ai/), [Ideogram](https://ideogram.ai/)
+**Docs:** [Ideogram API](https://developer.ideogram.ai/),
+[Ideogram](https://ideogram.ai/)
 
 ---
 
@@ -137,9 +145,11 @@ Specialized in typography and text rendering within images.
 
 ### Google Veo
 
-Google DeepMind's video generation model, available through the Gemini API and Vertex AI.
+Google DeepMind's video generation model, available through the Gemini API and
+Vertex AI.
 
-**Best for:** High-quality video ads with native audio, vertical video for social
+**Best for:** High-quality video ads with native audio, vertical video for
+social
 **API:** Gemini API, Vertex AI
 **Pricing:** ~$0.15/sec (Veo 3.1 Fast), ~$0.40/sec (Veo 3.1 Standard)
 
@@ -158,7 +168,8 @@ Google DeepMind's video generation model, available through the Gemini API and V
 - Produce product demos with voiceover
 - Generate multiple video variations from the same prompt with different styles
 
-**Docs:** [Veo on Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/video/overview)
+**Docs:**
+[Veo on Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/video/overview)
 
 ---
 
@@ -191,7 +202,8 @@ Video generation with simultaneous audio-visual generation and camera controls.
 
 Video generation and editing platform with strong controllability.
 
-**Best for:** Controlled video generation, style-consistent content, editing existing footage
+**Best for:** Controlled video generation, style-consistent content, editing
+existing footage
 **API:** Runway Developer Portal
 
 **Capabilities:**
@@ -217,7 +229,8 @@ OpenAI's video generation model with synchronized audio.
 
 **Best for:** High-fidelity video with dialogue and sound
 **API:** OpenAI API
-**Pricing:** Free tier available; Pro from $0.10-0.50/sec depending on resolution
+**Pricing:** Free tier available; Pro from $0.10-0.50/sec depending on
+resolution
 
 **Capabilities:**
 
@@ -232,17 +245,22 @@ OpenAI's video generation model with synchronized audio.
 - Product demo videos with narration
 - Narrative brand videos
 
-**Docs:** [OpenAI Video Generation](https://platform.openai.com/docs/guides/video-generation)
+**Docs:**
+[OpenAI Video Generation](https://platform.openai.com/docs/guides/video-generation)
 
 ---
 
 ### Seedance 2.0 (ByteDance)
 
-ByteDance's video generation model with simultaneous audio-visual generation and multimodal inputs.
+ByteDance's video generation model with simultaneous audio-visual generation and
+multimodal inputs.
 
-**Best for:** Fast, affordable video ads with native audio, multimodal reference inputs
-**API:** BytePlus (official), Replicate, WaveSpeedAI, fal.ai (third-party); OpenAI-compatible API format
-**Pricing:** ~$0.10-0.80/min depending on resolution (estimated 10-100x cheaper than Sora 2 per clip)
+**Best for:** Fast, affordable video ads with native audio, multimodal reference
+inputs
+**API:** BytePlus (official), Replicate, WaveSpeedAI, fal.ai (third-party);
+OpenAI-compatible API format
+**Pricing:** ~$0.10-0.80/min depending on resolution (estimated 10-100x cheaper
+than Sora 2 per clip)
 
 **Capabilities:**
 
@@ -256,7 +274,8 @@ ByteDance's video generation model with simultaneous audio-visual generation and
 
 - High-volume short video ad production at low cost
 - Video ads with synchronized voiceover and sound effects in one pass
-- Multi-reference generation (feed product images, brand assets, style references)
+- Multi-reference generation (feed product images, brand assets, style
+  references)
 - Rapid iteration on video ad concepts
 
 **Docs:** [Seedance](https://seed.bytedance.com/en/seedance2_0)
@@ -301,13 +320,17 @@ Full-stack video creation platform with cinematic camera controls.
 
 ## Voice & Audio Generation
 
-For layering realistic voiceovers onto video ads, adding narration to product demos, or generating audio for Remotion-rendered videos. These tools turn ad scripts into natural-sounding voice tracks.
+For layering realistic voiceovers onto video ads, adding narration to product
+demos, or generating audio for Remotion-rendered videos. These tools turn ad
+scripts into natural-sounding voice tracks.
 
 ### When to Use Voice Tools
 
-Many video generators (Veo, Kling, Sora, Seedance) now include native audio. Use standalone voice tools when you need:
+Many video generators (Veo, Kling, Sora, Seedance) now include native audio. Use
+standalone voice tools when you need:
 
-- **Voiceover on silent video** — Runway Gen-4 and Remotion produce silent output
+- **Voiceover on silent video** — Runway Gen-4 and Remotion produce silent
+  output
 - **Brand voice consistency** — Clone a specific voice for all ads
 - **Multi-language versions** — Same ad script in 20+ languages
 - **Script iteration** — Re-record voiceover without reshooting video
@@ -319,14 +342,17 @@ Many video generators (Veo, Kling, Sora, Seedance) now include native audio. Use
 
 The market leader in realistic voice generation and voice cloning.
 
-**Best for:** Most natural-sounding voiceovers, brand voice cloning, multilingual
+**Best for:** Most natural-sounding voiceovers, brand voice cloning,
+multilingual
 **API:** REST API with streaming support
-**Pricing:** ~$0.12-0.30 per 1,000 characters depending on plan; starts at $5/month
+**Pricing:** ~$0.12-0.30 per 1,000 characters depending on plan; starts at
+$5/month
 
 **Capabilities:**
 
 - 29+ languages with natural accent and intonation
-- Voice cloning from short audio clips (instant) or longer recordings (professional)
+- Voice cloning from short audio clips (instant) or longer recordings
+  (professional)
 - Emotion and style control
 - Streaming for real-time generation
 - Voice library with hundreds of pre-built voices
@@ -351,7 +377,8 @@ curl -X POST "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}" \
   }' --output voiceover.mp3
 ```
 
-**Docs:** [ElevenLabs API](https://elevenlabs.io/docs/api-reference/text-to-speech)
+**Docs:**
+[ElevenLabs API](https://elevenlabs.io/docs/api-reference/text-to-speech)
 
 ---
 
@@ -361,7 +388,8 @@ Simple, affordable text-to-speech built into the OpenAI API.
 
 **Best for:** Quick voiceovers, cost-effective at scale, simple integration
 **API:** OpenAI API (same SDK as GPT/DALL-E)
-**Pricing:** $15/million chars (standard), $30/million chars (HD); ~$0.015/min with gpt-4o-mini-tts
+**Pricing:** $15/million chars (standard), $30/million chars (HD); ~$0.015/min
+with gpt-4o-mini-tts
 
 **Capabilities:**
 
@@ -403,15 +431,18 @@ Ultra-low latency voice generation built for real-time applications.
 - Interactive demo videos with dynamic narration
 - Ads requiring natural laughter, sighs, or emotional reactions
 
-**Docs:** [Cartesia Sonic](https://docs.cartesia.ai/build-with-cartesia/tts-models/latest)
+**Docs:**
+[Cartesia Sonic](https://docs.cartesia.ai/build-with-cartesia/tts-models/latest)
 
 ---
 
 ### Voicebox (Open Source)
 
-Free, local-first voice synthesis studio powered by Qwen3-TTS. The open-source alternative to ElevenLabs.
+Free, local-first voice synthesis studio powered by Qwen3-TTS. The open-source
+alternative to ElevenLabs.
 
-**Best for:** Free voice cloning, local/private generation, zero-cost batch production
+**Best for:** Free voice cloning, local/private generation, zero-cost batch
+production
 **API:** Local REST API at `http://localhost:8000`
 **Pricing:** Free (MIT license). Runs entirely on your machine.
 **Stack:** Tauri (Rust) + React + FastAPI (Python)
@@ -440,7 +471,8 @@ curl -X POST http://localhost:8000/generate \
   -d '{"text": "Stop wasting hours on manual reporting.", "profile_id": "abc123", "language": "en"}'
 ```
 
-**Install:** Desktop apps for macOS and Windows at [voicebox.sh](https://voicebox.sh), or build from source:
+**Install:** Desktop apps for macOS and Windows at
+[voicebox.sh](https://voicebox.sh), or build from source:
 
 ```bash
 git clone https://github.com/jamiepine/voicebox.git
@@ -515,11 +547,15 @@ Need voiceover for ads?
 
 ## Code-Based Video: Remotion
 
-For templated, data-driven video ads at scale, Remotion is the best option. Unlike AI video generators that produce unique video from prompts, Remotion uses React code to render deterministic, brand-perfect video from templates and data.
+For templated, data-driven video ads at scale, Remotion is the best option.
+Unlike AI video generators that produce unique video from prompts, Remotion uses
+React code to render deterministic, brand-perfect video from templates and data.
 
-**Best for:** Templated ad variations, personalized video, brand-consistent production
+**Best for:** Templated ad variations, personalized video, brand-consistent
+production
 **Stack:** React + TypeScript
-**Pricing:** Free for individuals/small teams; commercial license required for 4+ employees
+**Pricing:** Free for individuals/small teams; commercial license required for
+4+ employees
 **Docs:** [remotion.dev](https://www.remotion.dev/)
 
 ### Why Remotion for Ads
@@ -641,12 +677,15 @@ Need image ads?
 
 ### Recommended Workflow for Scaled Ad Production
 
-1. **Generate hero creative** with AI (Nano Banana, Flux, Veo) — high-quality, exploratory
+1. **Generate hero creative** with AI (Nano Banana, Flux, Veo) — high-quality,
+   exploratory
 2. **Build templates** in Remotion based on winning creative patterns
-3. **Batch produce variations** with Remotion using data (products, headlines, CTAs)
+3. **Batch produce variations** with Remotion using data (products, headlines,
+   CTAs)
 4. **Iterate** — use AI tools for new angles, Remotion for scale
 
-This hybrid approach gives you the creative exploration of AI generators and the consistency and scale of code-based rendering.
+This hybrid approach gives you the creative exploration of AI generators and the
+consistency and scale of code-based rendering.
 
 ---
 
@@ -667,4 +706,5 @@ When generating images for ads, request the correct dimensions:
 | Twitter/X Feed     | Landscape    | 16:9         | 1200x675         |
 | Twitter/X Card     | Landscape    | 1.91:1       | 800x418          |
 
-Include these dimensions in your generation prompts to avoid needing to crop or resize.
+Include these dimensions in your generation prompts to avoid needing to crop or
+resize.

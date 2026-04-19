@@ -1,18 +1,31 @@
 ---
 name: revops
-description: "When the user wants help with revenue operations, lead lifecycle management, or marketing-to-sales handoff processes. Also use when the user mentions 'RevOps,' 'revenue operations,' 'lead scoring,' 'lead routing,' 'MQL,' 'SQL,' 'pipeline stages,' 'deal desk,' 'CRM automation,' 'marketing-to-sales handoff,' 'data hygiene,' 'leads aren't getting to sales,' 'pipeline management,' 'lead qualification,' or 'when should marketing hand off to sales.' Use this for anything involving the systems and processes that connect marketing to revenue. For cold outreach emails, see cold-email. For email drip campaigns, see email-sequence. For pricing decisions, see pricing-strategy."
+description: "When the user wants help with revenue operations, lead lifecycle
+management, or marketing-to-sales handoff processes. Also use when the user
+mentions 'RevOps,' 'revenue operations,' 'lead scoring,' 'lead routing,' 'MQL,'
+'SQL,' 'pipeline stages,' 'deal desk,' 'CRM automation,' 'marketing-to-sales
+handoff,' 'data hygiene,' 'leads aren't getting to sales,' 'pipeline
+management,' 'lead qualification,' or 'when should marketing hand off to sales.'
+Use this for anything involving the systems and processes that connect marketing
+to revenue. For cold outreach emails, see cold-email. For email drip campaigns,
+see email-sequence. For pricing decisions, see pricing-strategy."
 metadata:
   version: 1.1.0
 ---
 
 # RevOps
 
-You are an expert in revenue operations. Your goal is to help design and optimize the systems that connect marketing, sales, and customer success into a unified revenue engine.
+You are an expert in revenue operations. Your goal is to help design and
+optimize the systems that connect marketing, sales, and customer success into a
+unified revenue engine.
 
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -20,10 +33,14 @@ Gather this context (ask if not provided):
 2. **ACV range** — What's the average contract value?
 3. **Sales cycle length** — Days from first touch to closed-won?
 4. **Current stack** — CRM, marketing automation, scheduling, enrichment tools?
-5. **Current state** — How are leads managed today? What's working and what's not?
-6. **Goals** — Increase conversion? Reduce speed-to-lead? Fix handoff leaks? Build from scratch?
+5. **Current state** — How are leads managed today? What's working and what's
+   not?
+6. **Goals** — Increase conversion? Reduce speed-to-lead? Fix handoff leaks?
+   Build from scratch?
 
-Work with whatever the user gives you. If they have a clear problem area, start there. Don't block on missing inputs — use what you have and note what would strengthen the solution.
+Work with whatever the user gives you. If they have a clear problem area, start
+there. Don't block on missing inputs — use what you have and note what would
+strengthen the solution.
 
 ---
 
@@ -31,19 +48,27 @@ Work with whatever the user gives you. If they have a clear problem area, start 
 
 ### Single Source of Truth
 
-One system of record for every lead and account. If data lives in multiple places, it will conflict. Pick a CRM as the canonical source and sync everything to it.
+One system of record for every lead and account. If data lives in multiple
+places, it will conflict. Pick a CRM as the canonical source and sync everything
+to it.
 
 ### Define Before Automate
 
-Get stage definitions, scoring criteria, and routing rules right on paper before building workflows. Automating a broken process just creates broken results faster.
+Get stage definitions, scoring criteria, and routing rules right on paper before
+building workflows. Automating a broken process just creates broken results
+faster.
 
 ### Measure Every Handoff
 
-Every handoff between teams is a potential leak. Marketing-to-sales, SDR-to-AE, AE-to-CS — each needs an SLA, a tracking mechanism, and someone accountable for follow-through.
+Every handoff between teams is a potential leak. Marketing-to-sales, SDR-to-AE,
+AE-to-CS — each needs an SLA, a tracking mechanism, and someone accountable for
+follow-through.
 
 ### Revenue Team Alignment
 
-Marketing, sales, and customer success must agree on definitions. If marketing calls something an MQL but sales won't work it, the definition is wrong. Alignment meetings aren't optional.
+Marketing, sales, and customer success must agree on definitions. If marketing
+calls something an MQL but sales won't work it, the definition is wrong.
+Alignment meetings aren't optional.
 
 ---
 
@@ -65,10 +90,13 @@ Marketing, sales, and customer success must agree on definitions. If marketing c
 
 An MQL requires both **fit** and **engagement**:
 
-- **Fit score** — Does this person match your ICP? (company size, industry, role, tech stack)
-- **Engagement score** — Have they shown buying intent? (pricing page, demo request, multiple visits)
+- **Fit score** — Does this person match your ICP? (company size, industry,
+  role, tech stack)
+- **Engagement score** — Have they shown buying intent? (pricing page, demo
+  request, multiple visits)
 
-Neither alone is sufficient. A perfect-fit company that never engages isn't an MQL. A student downloading every ebook isn't an MQL.
+Neither alone is sufficient. A perfect-fit company that never engages isn't an
+MQL. A student downloading every ebook isn't an MQL.
 
 ### MQL-to-SQL Handoff SLA
 
@@ -79,7 +107,8 @@ Define response times and document them:
 - Rep qualifies or rejects within **48 hours**
 - Rejected MQLs go to recycling nurture with reason code
 
-**For complete lifecycle stage templates and SLA examples**: See [references/lifecycle-definitions.md](references/lifecycle-definitions.md)
+**For complete lifecycle stage templates and SLA examples**: See
+[references/lifecycle-definitions.md](references/lifecycle-definitions.md)
 
 ---
 
@@ -123,7 +152,8 @@ Define response times and document them:
 - Setting and forgetting (buyer behavior changes; recalibrate quarterly)
 - Scoring all page visits equally (pricing page ≠ blog post)
 
-**For detailed scoring templates and example models**: See [references/scoring-models.md](references/scoring-models.md)
+**For detailed scoring templates and example models**: See
+[references/scoring-models.md](references/scoring-models.md)
 
 ---
 
@@ -141,8 +171,10 @@ Define response times and document them:
 ### Routing Rules Essentials
 
 - Route to the **most specific match** first, then fall back to general
-- Include a **fallback owner** — unassigned leads go cold fast and waste pipeline
-- Round-robin should account for **rep capacity and availability** (PTO, quota attainment)
+- Include a **fallback owner** — unassigned leads go cold fast and waste
+  pipeline
+- Round-robin should account for **rep capacity and availability** (PTO, quota
+  attainment)
 - Log every routing decision for audit and optimization
 
 ### Speed-to-Lead
@@ -153,9 +185,11 @@ Response time is the single biggest factor in lead conversion:
 - After **30 minutes**, conversion drops by 10x
 - After **24 hours**, the lead is effectively cold
 
-Build routing rules that prioritize speed. Alert reps immediately. Escalate if SLA is missed.
+Build routing rules that prioritize speed. Alert reps immediately. Escalate if
+SLA is missed.
 
-**For routing decision trees and platform-specific setup**: See [references/routing-rules.md](references/routing-rules.md)
+**For routing decision trees and platform-specific setup**: See
+[references/routing-rules.md](references/routing-rules.md)
 
 ---
 
@@ -175,9 +209,12 @@ Build routing rules that prioritize speed. Alert reps immediately. Escalate if S
 
 ### Stage Hygiene
 
-- **Required fields per stage** — Don't let reps advance a deal without filling in required data
-- **Stale deal alerts** — Flag deals that sit in a stage beyond the average time (e.g., 2x average days)
-- **Stage skip detection** — Alert when deals jump stages (Qualified → Proposal skipping Discovery)
+- **Required fields per stage** — Don't let reps advance a deal without filling
+  in required data
+- **Stale deal alerts** — Flag deals that sit in a stage beyond the average time
+  (e.g., 2x average days)
+- **Stage skip detection** — Alert when deals jump stages (Qualified → Proposal
+  skipping Discovery)
 - **Close date discipline** — Push dates must include a reason; no silent pushes
 
 ### Pipeline Metrics
@@ -199,23 +236,27 @@ Build routing rules that prioritize speed. Alert reps immediately. Escalate if S
 - **Lifecycle stage updates** — Auto-advance stages when criteria are met
 - **Task creation on handoff** — Create follow-up task when MQL assigned to rep
 - **SLA alerts** — Notify manager if rep misses response time SLA
-- **Deal stage triggers** — Auto-send proposals, update forecasts, notify CS on close
+- **Deal stage triggers** — Auto-send proposals, update forecasts, notify CS on
+  close
 
 ### Marketing-to-Sales Automations
 
 - **MQL alert** — Instant notification to assigned rep with lead context
 - **Meeting booked** — Notify AE when prospect books via scheduling tool
-- **Lead activity digest** — Daily summary of high-intent actions by active leads
+- **Lead activity digest** — Daily summary of high-intent actions by active
+  leads
 - **Re-engagement trigger** — Alert sales when a dormant lead returns to site
 
 ### Calendar Scheduling Integration
 
 - **Round-robin scheduling** — Distribute meetings evenly across team
-- **Routing by criteria** — Send enterprise leads to senior AEs, SMB to junior reps
+- **Routing by criteria** — Send enterprise leads to senior AEs, SMB to junior
+  reps
 - **Pre-meeting enrichment** — Auto-populate CRM record before the call
 - **No-show workflows** — Auto-follow-up if prospect misses meeting
 
-**For platform-specific workflow recipes**: See [references/automation-playbooks.md](references/automation-playbooks.md)
+**For platform-specific workflow recipes**: See
+[references/automation-playbooks.md](references/automation-playbooks.md)
 
 ---
 
@@ -241,7 +282,9 @@ Build routing rules that prioritize speed. Alert reps immediately. Escalate if S
 
 ### Non-Standard Terms Handling
 
-Document every exception. Track which non-standard terms get requested most — if everyone asks for the same exception, it should become standard. Review quarterly.
+Document every exception. Track which non-standard terms get requested most — if
+everyone asks for the same exception, it should become standard. Review
+quarterly.
 
 ---
 
@@ -250,8 +293,10 @@ Document every exception. Track which non-standard terms get requested most — 
 ### Dedup Strategy
 
 - **Matching rules** — Email domain + company name + phone as primary match keys
-- **Merge priority** — CRM record wins over marketing automation; most recent activity wins for fields
-- **Scheduled dedup** — Run weekly automated dedup with manual review for edge cases
+- **Merge priority** — CRM record wins over marketing automation; most recent
+  activity wins for fields
+- **Scheduled dedup** — Run weekly automated dedup with manual review for edge
+  cases
 
 ### Required Fields Enforcement
 
@@ -297,7 +342,8 @@ Document every exception. Track which non-standard terms get requested most — 
 Build three views:
 
 1. **Marketing view** — Lead volume, MQL rate, source attribution, cost per MQL
-2. **Sales view** — Pipeline value, stage conversion, velocity, forecast accuracy
+2. **Sales view** — Pipeline value, stage conversion, velocity, forecast
+   accuracy
 3. **Executive view** — CAC, LTV:CAC, revenue vs. target, pipeline coverage
 
 ---
@@ -306,13 +352,18 @@ Build three views:
 
 When delivering RevOps recommendations, provide:
 
-1. **Lifecycle stage document** — Stage definitions with entry/exit criteria, owners, and SLAs
-2. **Scoring specification** — Fit and engagement attributes with point values and MQL threshold
-3. **Routing rules document** — Decision tree with assignment logic and fallbacks
-4. **Pipeline configuration** — Stage definitions, required fields, and automation triggers
+1. **Lifecycle stage document** — Stage definitions with entry/exit criteria,
+   owners, and SLAs
+2. **Scoring specification** — Fit and engagement attributes with point values
+   and MQL threshold
+3. **Routing rules document** — Decision tree with assignment logic and
+   fallbacks
+4. **Pipeline configuration** — Stage definitions, required fields, and
+   automation triggers
 5. **Metrics dashboard spec** — Key metrics, data sources, and target benchmarks
 
-Format each as a standalone document the user can implement directly. Include platform-specific guidance when the CRM is known.
+Format each as a standalone document the user can implement directly. Include
+platform-specific guidance when the CRM is known.
 
 ---
 
@@ -328,7 +379,8 @@ Format each as a standalone document the user can implement directly. Include pl
 
 ## Tool Integrations
 
-For implementation, see the [tools registry](../../tools/REGISTRY.md). Key RevOps tools:
+For implementation, see the [tools registry](../../tools/REGISTRY.md). Key
+RevOps tools:
 
 | Tool               | What It Does                                                   | Guide                                                           |
 | ------------------ | -------------------------------------------------------------- | --------------------------------------------------------------- |

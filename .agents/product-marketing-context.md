@@ -4,23 +4,39 @@ _Last updated: 2026-04-19_
 
 ## Product Overview
 
-**One-liner:** Kloel is an AI-native Brazilian commerce and growth operating system for producers, sellers, and affiliate-driven businesses that want WhatsApp, checkout, pages, campaigns, and autonomous commercial intelligence in one stack.
+**One-liner:** Kloel is an AI-native Brazilian commerce and growth operating
+system for producers, sellers, and affiliate-driven businesses that want
+WhatsApp, checkout, pages, campaigns, and autonomous commercial intelligence in
+one stack.
 
-**What it does:** Kloel centralizes product setup, branded checkout, landing/page creation, affiliate operations, WhatsApp and email marketing, CRM, autopilot workflows, billing, wallet, and a seller-facing AI called CIA. The practical promise is simple: stop stitching together Hotmart/Kiwify + WhatsApp tools + page builders + ad ops spreadsheets, and run growth and revenue from one operating layer.
+**What it does:** Kloel centralizes product setup, branded checkout,
+landing/page creation, affiliate operations, WhatsApp and email marketing, CRM,
+autopilot workflows, billing, wallet, and a seller-facing AI called CIA. The
+practical promise is simple: stop stitching together Hotmart/Kiwify + WhatsApp
+tools + page builders + ad ops spreadsheets, and run growth and revenue from one
+operating layer.
 
-**Product category:** commerce OS, growth OS, checkout + affiliate platform, WhatsApp-first sales platform.
+**Product category:** commerce OS, growth OS, checkout + affiliate platform,
+WhatsApp-first sales platform.
 
-**Product type:** B2B SaaS platform with marketplace/transactional characteristics.
+**Product type:** B2B SaaS platform with marketplace/transactional
+characteristics.
 
-**Business model:** subscription-led platform with monetization tied to platform billing and commerce activity.
+**Business model:** subscription-led platform with monetization tied to platform
+billing and commerce activity.
 
 ## Target Audience
 
-**Target companies:** Brazilian info-product operators, digital product sellers, small-to-mid e-commerce operators, agencies/operators running WhatsApp-led revenue motions, and creators building affiliate-assisted launches.
+**Target companies:** Brazilian info-product operators, digital product sellers,
+small-to-mid e-commerce operators, agencies/operators running WhatsApp-led
+revenue motions, and creators building affiliate-assisted launches.
 
-**Decision-makers:** founder, infoprodutor, growth/operator lead, marketing manager, revenue operator.
+**Decision-makers:** founder, infoprodutor, growth/operator lead, marketing
+manager, revenue operator.
 
-**Primary use case:** increase sales and operational leverage by centralizing checkout, affiliate orchestration, CRM, WhatsApp conversion, campaigns, and AI-assisted execution.
+**Primary use case:** increase sales and operational leverage by centralizing
+checkout, affiliate orchestration, CRM, WhatsApp conversion, campaigns, and
+AI-assisted execution.
 
 **Jobs to be done:**
 
@@ -47,7 +63,9 @@ _Last updated: 2026-04-19_
 
 ## Problems & Pain Points
 
-**Core problem:** Brazilian operators often depend on a brittle stack of checkout tool, page builder, WhatsApp automation, spreadsheet ops, email tool, and affiliate back office that do not share context.
+**Core problem:** Brazilian operators often depend on a brittle stack of
+checkout tool, page builder, WhatsApp automation, spreadsheet ops, email tool,
+and affiliate back office that do not share context.
 
 **Why alternatives fall short:**
 
@@ -56,15 +74,21 @@ _Last updated: 2026-04-19_
 - foreign SaaS playbooks feel culturally off for BR direct response
 - ChatGPT can suggest ideas but cannot act inside the operator’s stack
 
-**What it costs them:** lost checkout conversion, delayed launches, manual operator effort, lower ROAS, slower follow-up, and revenue leakage across the funnel.
+**What it costs them:** lost checkout conversion, delayed launches, manual
+operator effort, lower ROAS, slower follow-up, and revenue leakage across the
+funnel.
 
-**Emotional tension:** chaos, distrust in the stack, fear of missing revenue, and the feeling that growth depends on too many disconnected people and tools.
+**Emotional tension:** chaos, distrust in the stack, fear of missing revenue,
+and the feeling that growth depends on too many disconnected people and tools.
 
 ## Competitive Landscape
 
-**Direct:** Hotmart / Kiwify / Eduzz / Cakto style stacks — strong on distribution or checkout, weaker as unified commerce-and-growth OS.
-**Secondary:** Shopify + add-ons, CRM + automation stacks, page builders + checkout plugins — require stitching and ops overhead.
-**Indirect:** manual operator stack (WhatsApp + Sheets + freelancers + ChatGPT) — flexible but fragmented and hard to scale.
+**Direct:** Hotmart / Kiwify / Eduzz / Cakto style stacks — strong on
+distribution or checkout, weaker as unified commerce-and-growth OS.
+**Secondary:** Shopify + add-ons, CRM + automation stacks, page builders +
+checkout plugins — require stitching and ops overhead.
+**Indirect:** manual operator stack (WhatsApp + Sheets + freelancers + ChatGPT)
+— flexible but fragmented and hard to scale.
 
 ## Differentiation
 
@@ -75,11 +99,14 @@ _Last updated: 2026-04-19_
 - checkout, pages, affiliate, campaigns, CRM, and wallet in one surface
 - operator workflows tuned for Brazilian info-product and e-commerce patterns
 
-**How we do it differently:** we treat the platform as the seller’s operating system, not a single-point tool.
+**How we do it differently:** we treat the platform as the seller’s operating
+system, not a single-point tool.
 
-**Why that's better:** data, execution, and decision support live in the same loop.
+**Why that's better:** data, execution, and decision support live in the same
+loop.
 
-**Why customers choose us:** fewer tool hops, faster execution, more contextual AI help, and stronger alignment with Brazilian direct-response commerce.
+**Why customers choose us:** fewer tool hops, faster execution, more contextual
+AI help, and stronger alignment with Brazilian direct-response commerce.
 
 ## Objections
 
@@ -89,14 +116,18 @@ _Last updated: 2026-04-19_
 | "IA só escreve texto genérico." | CIA is meant to work from real workspace context and real execution surfaces, not blank-page prompting.                   |
 | "Migrar isso vai dar trabalho." | The practical win is replacing recurring chaos with a unified stack for checkout, recovery, campaigns, and affiliate ops. |
 
-**Anti-persona:** teams wanting only a single-purpose commodity tool with no need for orchestration, automation, or AI-assisted execution.
+**Anti-persona:** teams wanting only a single-purpose commodity tool with no
+need for orchestration, automation, or AI-assisted execution.
 
 ## Switching Dynamics
 
-**Push:** tool sprawl, weak checkout recovery, manual launch ops, poor continuity across channels.
-**Pull:** one platform, embedded CIA, WhatsApp-first operation, affiliate-aware commerce.
+**Push:** tool sprawl, weak checkout recovery, manual launch ops, poor
+continuity across channels.
+**Pull:** one platform, embedded CIA, WhatsApp-first operation, affiliate-aware
+commerce.
 **Habit:** current tool familiarity, sunk setup cost, established workarounds.
-**Anxiety:** migration risk, reliability, whether the platform can replace the current patchwork.
+**Anxiety:** migration risk, reliability, whether the platform can replace the
+current patchwork.
 
 ## Customer Language
 
@@ -113,9 +144,11 @@ _Last updated: 2026-04-19_
 - "Uma IA que não só sugere, mas ajuda a executar."
 - "O centro da minha operação comercial."
 
-**Words to use:** operação, checkout, conversão, lançamento, afiliado, WhatsApp, recuperação, campanha, oferta, escala, vendedor, produtor, tráfego, follow-up.
+**Words to use:** operação, checkout, conversão, lançamento, afiliado, WhatsApp,
+recuperação, campanha, oferta, escala, vendedor, produtor, tráfego, follow-up.
 
-**Words to avoid:** enterprise transformation, digital transformation, best-in-class, omnichannel excellence, GTM motion.
+**Words to avoid:** enterprise transformation, digital transformation,
+best-in-class, omnichannel excellence, GTM motion.
 
 **Glossary:**
 | Term | Meaning |
@@ -130,13 +163,16 @@ _Last updated: 2026-04-19_
 
 **Tone:** sharp, operator-minded, confident, Brazilian, commercially grounded.
 
-**Style:** direct, strategic, practical, never generic, never corporate-English translated into Portuguese.
+**Style:** direct, strategic, practical, never generic, never corporate-English
+translated into Portuguese.
 
 **Personality:** afiada, confiável, persuasiva, pragmática, inteligente.
 
 ## Proof Points
 
-**Metrics:** centralized checkout + campaigns + WhatsApp + AI assistant + wallet + affiliate surfaces inside one monorepo product.
+**Metrics:** centralized checkout + campaigns + WhatsApp + AI assistant + wallet
+
+- affiliate surfaces inside one monorepo product.
 
 **Customers:** not yet formalized in this document.
 
@@ -151,8 +187,11 @@ _Last updated: 2026-04-19_
 
 ## Goals
 
-**Business goal:** make Kloel the default AI-native operating system for Brazilian seller growth and revenue execution.
+**Business goal:** make Kloel the default AI-native operating system for
+Brazilian seller growth and revenue execution.
 
-**Conversion action:** seller starts operating real products, campaigns, pages, checkout, and CIA inside the platform.
+**Conversion action:** seller starts operating real products, campaigns, pages,
+checkout, and CIA inside the platform.
 
-**Current metrics:** not pinned in this document; use live workspace/product analytics when needed.
+**Current metrics:** not pinned in this document; use live workspace/product
+analytics when needed.
