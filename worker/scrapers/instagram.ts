@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
@@ -48,7 +49,7 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
     ];
-    const randomUA = userAgents[Math.floor(Math.random() * userAgents.length)];
+    const randomUA = userAgents[randomInt(userAgents.length)];
     await page.setUserAgent(randomUA);
 
     await page.setViewport({ width: 375, height: 812, isMobile: true }); // Mobile view for IG

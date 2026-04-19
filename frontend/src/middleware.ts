@@ -14,7 +14,7 @@ import {
 } from '@/lib/subdomains';
 import { type NextRequest, NextResponse } from 'next/server';
 
-const FORCE_AUTH_QUERY_KEY = 'forceAuth';
+const FORCE_AUTH_QUERY_PARAM = 'forceAuth';
 const LEGAL_PATHS = new Set(['/terms', '/privacy', '/cookies']);
 
 function hasSharedAuth(request: NextRequest): boolean {
@@ -43,7 +43,7 @@ function isPublicAuthPath(pathname: string): boolean {
 
 function redirectToLogin(_request: NextRequest, host: string, nextPath?: string) {
   const loginUrl = new URL(buildAuthUrl('/login', host));
-  loginUrl.searchParams.set(FORCE_AUTH_QUERY_KEY, '1');
+  loginUrl.searchParams.set(FORCE_AUTH_QUERY_PARAM, '1');
 
   if (nextPath) {
     loginUrl.searchParams.set('next', sanitizeNextPath(nextPath));
@@ -103,7 +103,7 @@ function handleForceAuth(request: NextRequest, host: string) {
 
   if (pathname === '/') {
     const loginUrl = new URL(buildAuthUrl('/login', host));
-    loginUrl.searchParams.set(FORCE_AUTH_QUERY_KEY, '1');
+    loginUrl.searchParams.set(FORCE_AUTH_QUERY_PARAM, '1');
     const requestedNext = searchParams.get('next');
     if (requestedNext) {
       loginUrl.searchParams.set('next', sanitizeNextPath(requestedNext));
@@ -152,7 +152,7 @@ function handleAnonymousOnAuthHost(request: NextRequest, host: string) {
 
 function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boolean) {
   const { searchParams } = request.nextUrl;
-  const forceAuth = searchParams.get(FORCE_AUTH_QUERY_KEY) === '1';
+  const forceAuth = searchParams.get(FORCE_AUTH_QUERY_PARAM) === '1';
 
   if (forceAuth) {
     const forced = handleForceAuth(request, host);

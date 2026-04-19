@@ -9,8 +9,8 @@ const GOOGLE_PEOPLE_SCOPES = [
   'https://www.googleapis.com/auth/user.phonenumbers.read',
   'https://www.googleapis.com/auth/user.addresses.read',
 ].join(' ');
-const DEVICE_STORAGE_KEY = 'kloel.checkout.device-id.v1';
-const IDENTITY_STORAGE_KEY = 'kloel.checkout.identity.v1';
+const DEVICE_STORAGE_SLOT = 'kloel.checkout.device-id.v1';
+const IDENTITY_STORAGE_SLOT = 'kloel.checkout.identity.v1';
 
 export type CheckoutSocialProvider = 'google' | 'facebook' | 'apple';
 
@@ -402,18 +402,30 @@ async function requestGoogleAccessToken(tokenClient: GoogleTokenClient, hint?: s
   });
 }
 
+function fallbackDeviceFingerprint(): string {
+  const bytes = new Uint8Array(16);
+  const webCrypto = globalThis.crypto;
+  if (webCrypto?.getRandomValues) {
+    webCrypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = (Date.now() + i) & 0xff;
+    }
+  }
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 function ensureDeviceFingerprint() {
-  const existing = readFromStorage(DEVICE_STORAGE_KEY);
+  const existing = readFromStorage(DEVICE_STORAGE_SLOT);
   if (existing) return existing;
 
-  const generated =
-    globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  writeToStorage(DEVICE_STORAGE_KEY, generated);
+  const generated = globalThis.crypto?.randomUUID?.() || fallbackDeviceFingerprint();
+  writeToStorage(DEVICE_STORAGE_SLOT, generated);
   return generated;
 }
 
 function readStoredIdentity() {
-  const raw = readFromStorage(IDENTITY_STORAGE_KEY);
+  const raw = readFromStorage(IDENTITY_STORAGE_SLOT);
   if (!raw) return null;
 
   try {
@@ -429,7 +441,7 @@ function readStoredIdentity() {
 }
 
 function persistIdentity(value: CheckoutSocialIdentitySnapshot) {
-  writeToStorage(IDENTITY_STORAGE_KEY, JSON.stringify(value));
+  writeToStorage(IDENTITY_STORAGE_SLOT, JSON.stringify(value));
 }
 
 function resolveIdentityProvider(
