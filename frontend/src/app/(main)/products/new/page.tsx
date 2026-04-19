@@ -10,6 +10,7 @@ import { apiFetch } from '@/lib/api';
 import { PRODUCT_CATEGORIES } from '@/lib/categories';
 import { colors, typography } from '@/lib/design-tokens';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
+import { buildProductCreatePayload, extractCreatedProductId } from './page.helpers';
 import {
   ArrowLeft,
   ArrowRight,
@@ -466,41 +467,7 @@ export default function NewProductPage() {
 
     setSaving(true);
     try {
-      const body: Record<string, unknown> = {
-        workspaceId,
-        name: form.name.trim(),
-        description: form.description,
-        category: form.category,
-        tags: form.tags,
-        format: form.format,
-        imageUrl: form.imageUrl || undefined,
-        price: Number.parseFloat(form.price) || 0,
-        paymentType: form.paymentType,
-        affiliateCommission: Number.parseFloat(form.affiliateCommission) || 0,
-        salesPageUrl: form.salesPageUrl || undefined,
-        guaranteeDays: Number.parseInt(form.guaranteeDays, 10) || 30,
-        checkoutType: form.checkoutType,
-        facebookPixelId: form.facebookPixelId || undefined,
-        googleTagManagerId: form.googleTagManagerId || undefined,
-        affiliatesEnabled: form.affiliatesEnabled,
-        affiliateCommissionPercent: Number.parseFloat(form.affiliateCommissionPercent) || 0,
-        affiliateApprovalMode: form.affiliateApprovalMode,
-        billingType: form.billingType,
-        maxInstallments: Number.parseInt(form.maxInstallments, 10) || 12,
-        interestFreeInstallments: Number.parseInt(form.interestFreeInstallments, 10) || 1,
-        status: 'PENDING',
-      };
-
-      if (needsPhysical) {
-        body.packageType = form.packageType || undefined;
-        body.width = Number.parseFloat(form.width) || undefined;
-        body.height = Number.parseFloat(form.height) || undefined;
-        body.depth = Number.parseFloat(form.depth) || undefined;
-        body.weight = Number.parseFloat(form.weight) || undefined;
-        body.shippingResponsible = form.shippingResponsible;
-        body.dispatchTime = Number.parseInt(form.dispatchTime, 10) || 3;
-        body.carriers = form.carriers;
-      }
+      const body = buildProductCreatePayload(form, workspaceId, needsPhysical);
 
       const res = await apiFetch<Record<string, unknown>>('/products', { method: 'POST', body });
 
@@ -510,15 +477,7 @@ export default function NewProductPage() {
       }
 
       const responsePayload = (res.data ?? null) as Record<string, unknown> | null;
-      const productField =
-        responsePayload && typeof responsePayload === 'object' && 'product' in responsePayload
-          ? (responsePayload.product as Record<string, unknown> | null)
-          : null;
-      const createdProduct = productField || responsePayload || null;
-      const createdProductId =
-        createdProduct && typeof createdProduct === 'object' && 'id' in createdProduct
-          ? (createdProduct.id as string)
-          : undefined;
+      const createdProductId = extractCreatedProductId(responsePayload);
 
       await mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       clearLocalPreview();
