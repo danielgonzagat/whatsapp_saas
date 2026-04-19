@@ -121,7 +121,7 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
     const items = await page.$$('div[role="article"]');
     console.log(`[MAPS] Found ${items.length} items. Processing details...`);
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
+    // biome-ignore lint/performance/noAwaitInLoops: single puppeteer page with shared DOM state — each iteration clicks, scrolls, and waits for a details panel that replaces the previous one; parallel access would race on the same tab and break selector resolution
     for (let i = 0; i < Math.min(items.length, limit); i++) {
       try {
         const currentItems = await page.$$('div[role="article"]');

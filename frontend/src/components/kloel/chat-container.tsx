@@ -1230,7 +1230,7 @@ export function ChatContainer({
         let fullContent = '';
         let buffer = '';
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+        // biome-ignore lint/performance/noAwaitInLoops: chat-container SSE stream — each reader.read() chunk must append to buffer and split on '\n' to surface [DONE] and data: frames to the token renderer in order; parallel reads would interleave partial JSON across boundaries
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;

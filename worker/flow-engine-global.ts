@@ -384,7 +384,7 @@ export class FlowEngineGlobal {
         let retryCount = 0;
         const MAX_RETRIES = 3;
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+        // biome-ignore lint/performance/noAwaitInLoops: retry-with-exponential-backoff — each attempt must observe the previous attempt's outcome (success/thrown error) and sleep 2^retryCount seconds before retrying the same node
         while (true) {
           try {
             result = await this.executeNode(state, node);
@@ -1148,7 +1148,7 @@ export class FlowEngineGlobal {
           // Ideally we would suspend flow execution and use a webhook/event to resume.
           // But for < 10s generation, polling is acceptable.
           let audioUrl: string | null = null;
-          // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
+          // biome-ignore lint/performance/noAwaitInLoops: polling VoiceJob status — must sleep 1s between each findFirst so the worker has time to update the row; parallel queries would hammer the DB and defeat the 45s budget
           for (let i = 0; i < 45; i++) {
             // 45 seconds timeout
             await this.sleep(1000);

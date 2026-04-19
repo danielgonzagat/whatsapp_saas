@@ -116,7 +116,7 @@ async function refreshQueueMetrics() {
   try {
     queueGauge.reset();
     const queueNames = Object.keys(queueRegistry);
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+    // biome-ignore lint/performance/noAwaitInLoops: per-queue Prometheus gauge refresh — each iteration instantiates a fresh BullMQ Queue for the DLQ which opens a Redis connection; parallel execution would multiply Redis client count by |queueNames|*2 and hit MAXCLIENTS
     for (const name of queueNames) {
       const q = queueRegistry[name];
       const mainCounts = await q.getJobCounts();

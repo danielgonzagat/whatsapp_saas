@@ -246,7 +246,7 @@ export default function CiaPage() {
         const decoder = new TextDecoder();
         let buffer = '';
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+        // biome-ignore lint/performance/noAwaitInLoops: CIA page SSE stream — each reader.read() chunk must honor the `cancelled` flag and split on '\n\n' to yield complete SSE events; parallel reads would fire after navigation-away and leak into stale React state
         while (!cancelled) {
           const { value, done } = await reader.read();
           if (done) break;

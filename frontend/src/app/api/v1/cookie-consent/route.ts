@@ -106,7 +106,7 @@ async function fetchBackendConsent(
     headers['Content-Type'] = 'application/json';
   }
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+  // biome-ignore lint/performance/noAwaitInLoops: cookie-consent backend failover — return on first non-404/405 response so the user's consent is persisted exactly once; parallel fan-out would write the consent record to every backend and create duplicate audit rows
   for (const baseUrl of getBackendCandidateUrls()) {
     try {
       const response = await fetch(`${baseUrl}/api/v1/cookie-consent`, {

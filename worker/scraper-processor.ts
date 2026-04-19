@@ -134,7 +134,7 @@ async function processScraperJob(job: Job): Promise<void> {
 
     const importedContacts: string[] = [];
     let savedCount = 0;
-    // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing
+    // biome-ignore lint/performance/noAwaitInLoops: sequential lead import — persistLeadWithCrm opens a Prisma $transaction per lead that upserts Contact + pipes it into CRM stage 0; parallel execution races on the workspace-scoped uniqueness constraint for (workspaceId, phone)
     for (const lead of leads) {
       const contactId = await persistLeadWithCrm(lead, { jobId, workspaceId, firstStageId });
       importedContacts.push(contactId);

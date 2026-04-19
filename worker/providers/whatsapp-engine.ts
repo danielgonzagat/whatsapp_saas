@@ -150,7 +150,7 @@ async function withWorkspaceActionLock<T>(
   const token = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
   const deadline = Date.now() + config.ttlMs;
 
-  // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for condition
+  // biome-ignore lint/performance/noAwaitInLoops: distributed-lock acquisition wait — each tryAcquireAndRun atomically SETs the Redis key for workspace isolation; parallel attempts would race for the same lock and violate invariant I6 (single-writer WhatsApp send per workspace)
   while (Date.now() < deadline) {
     const attempt = await tryAcquireAndRun(key, token, config.ttlMs, operation);
     if (attempt.ran) return attempt.value;

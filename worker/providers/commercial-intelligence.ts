@@ -631,7 +631,7 @@ export async function persistMarketSignals(
     signals: MarketSignal[];
   },
 ) {
-  // biome-ignore lint/performance/noAwaitInLoops: sequential signal processing
+  // biome-ignore lint/performance/noAwaitInLoops: sequential market-signal upsert — each upsertMemory writes to Memory keyed by `market_signal:${normalizedKey}`; parallel upserts race on the (workspaceId, key) unique index and cause P2002 conflicts
   for (const signal of input.signals.slice(0, 10)) {
     await upsertMemory(prisma, {
       workspaceId: input.workspaceId,

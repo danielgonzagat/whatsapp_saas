@@ -183,7 +183,7 @@ export function FloatingChat({
       let buffer = '';
       let full = '';
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+      // biome-ignore lint/performance/noAwaitInLoops: SSE auth-chat stream from /kloel/think — each reader.read() must decode into the shared buffer and split on '\n' before the next read so data: frames stay intact across chunk boundaries
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;

@@ -50,7 +50,7 @@ async function processIngestSource(job: Job): Promise<void> {
   const openai = new OpenAI({ apiKey });
   const chunks = splitText(content, 1000, 200).slice(0, maxChunks || 400);
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential chunk processing
+  // biome-ignore lint/performance/noAwaitInLoops: OpenAI embeddings API enforces a per-key tokens-per-minute quota; parallel insertion of 400 chunks at once triggers 429 rate-limit errors and partial indexing
   for (const chunk of chunks) {
     await insertChunkVector(openai, chunk, sourceId);
   }

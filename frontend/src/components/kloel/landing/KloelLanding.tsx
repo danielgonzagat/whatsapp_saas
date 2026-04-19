@@ -207,7 +207,7 @@ function HeroLoop() {
         await wait(50);
         // RESOLVE
         setVis((d) => ({ ...d, phase: 'hidden' }));
-        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
+        // biome-ignore lint/performance/noAwaitInLoops: resolve-phase animation — each of the 14 frames must render with its own setGx state before sleeping; Promise.all would render all frames in the same tick and skip the dissolve-to-resolve transition
         for (let i = 0; i < 14; i++) {
           if (!m.current) return;
           const p = i / 14;
@@ -222,6 +222,7 @@ function HeroLoop() {
             slices: p > 0.6 ? [] : mkSlices(),
             flash: false,
           });
+          // biome-ignore lint/performance/noAwaitInLoops: 38ms per-frame delay is the perceived animation cadence — removing the await collapses the 14-frame resolve effect into a single visual jump
           await wait(38);
         }
         // CLEAN

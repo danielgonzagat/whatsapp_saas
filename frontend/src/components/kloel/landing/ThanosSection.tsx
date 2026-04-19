@@ -351,7 +351,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     setMsgs(EMPTY_MESSAGES);
 
     const run = async () => {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+      // biome-ignore lint/performance/noAwaitInLoops: staggered landing-page animation — each SALES_FLOW message renders after a per-message delay (900/600/400ms) to create the typing cadence; Promise.all would render all messages instantaneously and destroy the effect
       for (const msg of SALES_FLOW) {
         if (cancelled) return;
         await wait(msg.f === '$' ? 900 : msg.f === 'a' ? 600 : 400);

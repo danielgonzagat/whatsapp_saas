@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     let lastError: unknown;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+    // biome-ignore lint/performance/noAwaitInLoops: WhatsApp OTP verification failover — must try one backend at a time because success sets auth cookies on the response; parallel fan-out would race on setSharedAuthCookies and also double-invalidate the OTP server-side
     for (const baseUrl of getBackendCandidateUrls()) {
       const response = await fetch(`${baseUrl}/auth/whatsapp/verify`, {
         method: 'POST',

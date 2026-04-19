@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     let lastError: unknown;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+    // biome-ignore lint/performance/noAwaitInLoops: anonymous-session backend failover — first 2xx creates one guest session; parallel fan-out would allocate multiple GuestSession rows and tie a single client IP to N unrelated workspace trials
     for (const baseUrl of getBackendCandidateUrls()) {
       const response = await fetch(`${baseUrl}/auth/anonymous`, {
         method: 'POST',
