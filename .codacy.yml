@@ -1,29 +1,21 @@
 # Codacy repository configuration
 # https://docs.codacy.com/repositories-configure/codacy-configuration-file/
 #
-# Phase 1 of the convergence plan. See:
-#   - /Users/danielpenin/.claude/plans/synthetic-whistling-meteor.md
-#   - docs/codacy/applied-overrides.md
-#
-# This file controls EXCLUDE PATHS only. Per the official Codacy schema, YAML
-# cannot enable/disable engines or individual rules — those live in the
-# Coding Standards UI (or via the draft-based REST API path documented in
-# applied-overrides.md as the fallback).
-#
-# Strategy: scope analysis to product code only. Test files, generated code,
-# operational tooling (scripts/pulse), e2e fixtures, docs, and PULSE state
-# artifacts are excluded so Codacy stops counting noise from rules that don't
-# meaningfully apply there.
+# MAX-RIGOR LOCK (2026-04-19):
+# - Codacy must analyze the widest possible versioned surface of this repo.
+# - Rules and tools are configured in Codacy's published coding standard and
+#   enforced live via scripts/ops/codacy-enforce-max-rigor.mjs.
+# - This file exists only to exclude non-source generated/vendor outputs that
+#   would create false negatives or meaningless duplicate scans.
+# - Do not add path exclusions for tests, docs, scripts, migrations, product
+#   maps, PULSE artifacts, or any other versioned source. If the analysis is
+#   noisy, fix code or tighten governance — never shrink Codacy's scope.
 
 engines:
   eslint:
     enabled: true
   biome:
     enabled: true
-    exclude_paths:
-      - 'backend/eslint.config.mjs'
-      - 'frontend/eslint.config.mjs'
-      - 'worker/eslint.config.mjs'
   opengrep:
     enabled: true
   semgrep:
@@ -34,61 +26,14 @@ engines:
     enabled: true
 
 exclude_paths:
-  # Vendored, generated, and build outputs — never product code.
+  # Vendored dependencies and generated build artifacts only.
   - '**/node_modules/**'
   - '**/dist/**'
   - '**/.next/**'
   - '**/.next-types/**'
+  - '**/.turbo/**'
+  - '**/out/**'
+  - '**/build/**'
   - '**/coverage/**'
-  - 'frontend/test-results/**'
-  - 'backend/test-results/**'
-  - 'worker/test-results/**'
-
-  # E2E fixtures and Playwright artifacts (own analysis layer).
-  - 'e2e/**'
-
-  # Operational tooling — not customer-facing product code. Excluded so the
-  # PULSE diagnostics, codemods, and Codacy sync scripts themselves do not
-  # generate metrics that distract from the actual product convergence.
-  - 'scripts/pulse/**'
-  - 'scripts/ops/codemods/**'
-
-  # Test files. Vitest/Jest DSL produces high-volume false positives from
-  # rules that target production code. Tests have their own coverage gate.
-  - '**/*.spec.ts'
-  - '**/*.spec.tsx'
-  - '**/*.test.ts'
-  - '**/*.test.tsx'
-  - '**/*.e2e-spec.ts'
-  - 'backend/test/**'
-  - '**/__tests__/**'
-
-  # Type declaration files — not source.
-  - '**/*.d.ts'
-
-  # Docs and product maps — markdown is linted by markdownlint at the right
-  # level; we don't want product rules firing on long-form prose.
-  - 'docs/**'
-  - 'AUDIT_FEATURE_MATRIX.md'
-  - 'KLOEL_PRODUCT_MAP.md'
-
-  # PULSE state artifacts and the convergence ratchet are operational state,
-  # not product code.
-  - 'PULSE_*.json'
-  - 'PULSE_*.md'
-  - 'ratchet.json'
-
-  # Prisma migrations are immutable history — analyzing them creates phantom
-  # debt for every old DDL statement.
-  - 'backend/prisma/migrations/**'
-
-  # Phase 4A security triage — see docs/adr/0002-security-triage.md
-  # Excluded files generate exclusively WRONG_RULE / FALSE_POSITIVE
-  # security findings:
-  #
-  # - worker/package.json: 102 hits of Semgrep
-  #   `package-dependencies-check` flagging every semver range like
-  #   `^1.2.3` as "potential dependency hijack". The rule is for orgs
-  #   that pin to exact versions; this repo follows standard npm semver
-  #   conventions and the warning is universally false.
-  - 'worker/package.json'
+  - '**/test-results/**'
+  - '**/playwright-report/**'

@@ -32,6 +32,46 @@ const ADDED_LINE_RULES = [
     label: 'new eslint-disable',
     pattern: /eslint-disable\b/,
   },
+  {
+    rule: 'no_new_biome_ignore',
+    label: 'new biome-ignore',
+    pattern: /\bbiome-ignore\b/,
+  },
+  {
+    rule: 'no_new_nosemgrep',
+    label: 'new nosemgrep',
+    pattern: /\bnosemgrep\b/,
+  },
+  {
+    rule: 'no_new_ts_expect_error',
+    label: 'new @ts-expect-error',
+    pattern: /@ts-expect-error\b/,
+  },
+  {
+    rule: 'no_new_ts_nocheck',
+    label: 'new @ts-nocheck',
+    pattern: /@ts-nocheck\b/,
+  },
+  {
+    rule: 'no_new_codacy_disable',
+    label: 'new codacy:disable',
+    pattern: /codacy:disable(?:-next-line|-line)?\b/,
+  },
+  {
+    rule: 'no_new_codacy_ignore',
+    label: 'new codacy:ignore',
+    pattern: /codacy:ignore\b/,
+  },
+  {
+    rule: 'no_new_nosonar',
+    label: 'new NOSONAR',
+    pattern: /\bNOSONAR\b/,
+  },
+  {
+    rule: 'no_new_noqa',
+    label: 'new noqa',
+    pattern: /\bnoqa\b/,
+  },
 ];
 
 function fail(message) {
@@ -243,7 +283,7 @@ function main() {
     }
     console.error('');
     console.error(
-      '[architecture] Either reduce the debt in this diff or add a temporary entry to scripts/ops/architecture-allowlist.json with owner, reason, and expiresAt.',
+      '[architecture] Do not suppress Codacy/lint findings with inline comments. Fix the code, or if a governance file must reference a literal directive for measurement, add a temporary allowlist entry with owner, reason, and expiresAt.',
     );
     process.exit(1);
   }

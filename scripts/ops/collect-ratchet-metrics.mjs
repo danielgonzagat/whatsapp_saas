@@ -105,6 +105,14 @@ const LINE_SUFFIX_COMMENT_RE = /\/\/.*$/;
 const STRING_OR_JSX_CHAR_RE = /['"`<>]/;
 const TS_IGNORE_RE = /@ts-ignore\b/;
 const ESLINT_DISABLE_RE = /eslint-disable(?:-next-line|-line)?\b/;
+const BIOME_IGNORE_RE = /\bbiome-ignore\b/;
+const NOSEMGREP_RE = /\bnosemgrep\b/;
+const TS_EXPECT_ERROR_RE = /@ts-expect-error\b/;
+const TS_NOCHECK_RE = /@ts-nocheck\b/;
+const CODACY_DISABLE_RE = /codacy:disable(?:-next-line|-line)?\b/;
+const CODACY_IGNORE_RE = /codacy:ignore\b/;
+const NOSONAR_RE = /\bNOSONAR\b/;
+const NOQA_RE = /\bnoqa\b/;
 
 function runGit(args) {
   return execFileSync('git', args, {
@@ -581,6 +589,14 @@ export function collectRatchetMetrics(options = {}) {
   const anyMetrics = countExplicitAnyMetrics(codeFiles);
   const tsIgnoreMetric = countCommentDirective(codeFiles, TS_IGNORE_RE);
   const eslintDisableMetric = countCommentDirective(codeFiles, ESLINT_DISABLE_RE);
+  const biomeIgnoreMetric = countCommentDirective(codeFiles, BIOME_IGNORE_RE);
+  const nosemgrepMetric = countCommentDirective(codeFiles, NOSEMGREP_RE);
+  const tsExpectErrorMetric = countCommentDirective(codeFiles, TS_EXPECT_ERROR_RE);
+  const tsNoCheckMetric = countCommentDirective(codeFiles, TS_NOCHECK_RE);
+  const codacyDisableMetric = countCommentDirective(codeFiles, CODACY_DISABLE_RE);
+  const codacyIgnoreMetric = countCommentDirective(codeFiles, CODACY_IGNORE_RE);
+  const nosonarMetric = countCommentDirective(codeFiles, NOSONAR_RE);
+  const noqaMetric = countCommentDirective(codeFiles, NOQA_RE);
   const hardcodedAiSpeechMetric = countHardcodedAiSpeech(productFiles);
   const emojiMetric = countEmojiOccurrences(productFiles);
   const hardcodedHexMetric = countHardcodedHexColors(frontendFiles);
@@ -600,6 +616,14 @@ export function collectRatchetMetrics(options = {}) {
       prisma_any_max: anyMetrics.prismaAny.value,
       ts_ignore_max: tsIgnoreMetric.value,
       eslint_disable_max: eslintDisableMetric.value,
+      biome_ignore_max: biomeIgnoreMetric.value,
+      nosemgrep_max: nosemgrepMetric.value,
+      ts_expect_error_max: tsExpectErrorMetric.value,
+      ts_nocheck_max: tsNoCheckMetric.value,
+      codacy_disable_max: codacyDisableMetric.value,
+      codacy_ignore_max: codacyIgnoreMetric.value,
+      nosonar_max: nosonarMetric.value,
+      noqa_max: noqaMetric.value,
       hardcoded_ai_speech_max: hardcodedAiSpeechMetric.value,
       emoji_in_prompts_max: emojiMetric.value,
       hardcoded_hex_outside_tokens_max: hardcodedHexMetric.value,
@@ -624,6 +648,14 @@ export function collectRatchetMetrics(options = {}) {
       prisma_any_max: anyMetrics.prismaAny,
       ts_ignore_max: tsIgnoreMetric,
       eslint_disable_max: eslintDisableMetric,
+      biome_ignore_max: biomeIgnoreMetric,
+      nosemgrep_max: nosemgrepMetric,
+      ts_expect_error_max: tsExpectErrorMetric,
+      ts_nocheck_max: tsNoCheckMetric,
+      codacy_disable_max: codacyDisableMetric,
+      codacy_ignore_max: codacyIgnoreMetric,
+      nosonar_max: nosonarMetric,
+      noqa_max: noqaMetric,
       hardcoded_ai_speech_max: hardcodedAiSpeechMetric,
       emoji_in_prompts_max: emojiMetric,
       hardcoded_hex_outside_tokens_max: hardcodedHexMetric,

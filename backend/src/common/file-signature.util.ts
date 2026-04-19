@@ -125,27 +125,26 @@ function detectTextMime(buffer: Buffer, name: string, declaredMime: string): str
   return 'text/plain';
 }
 
+type MimeDetector = (buffer: Buffer, name: string, declaredMime: string) => string | null;
+
+const MIME_DETECTION_CHAIN: readonly MimeDetector[] = [
+  (buffer) => (bufferStartsWith(buffer, PDF_SIG) ? 'application/pdf' : null),
+  (buffer) => detectImageMime(buffer),
+  (buffer, name) => detectOfficeMime(buffer, name),
+  (buffer) => detectBasicAudioMime(buffer),
+  (buffer, name, declaredMime) => detectMatroskaMime(buffer, name, declaredMime),
+  (buffer, name, declaredMime) => detectFtypMime(buffer, name, declaredMime),
+  (buffer, name, declaredMime) => detectTextMime(buffer, name, declaredMime),
+];
+
 export function detectUploadedMime(file: UploadedFileLike): string | null {
   const buffer = file.buffer;
   const name = String(file.originalname || '').toLowerCase();
   const declaredMime = String(file.mimetype || '').toLowerCase();
 
-  if (bufferStartsWith(buffer, PDF_SIG)) return 'application/pdf';
-
-  const image = detectImageMime(buffer);
-  if (image) return image;
-
-  const office = detectOfficeMime(buffer, name);
-  if (office) return office;
-
-  const basicAudio = detectBasicAudioMime(buffer);
-  if (basicAudio) return basicAudio;
-
-  const matroska = detectMatroskaMime(buffer, name, declaredMime);
-  if (matroska) return matroska;
-
-  const ftyp = detectFtypMime(buffer, name, declaredMime);
-  if (ftyp) return ftyp;
-
-  return detectTextMime(buffer, name, declaredMime);
+  for (const detect of MIME_DETECTION_CHAIN) {
+    const resolved = detect(buffer, name, declaredMime);
+    if (resolved) return resolved;
+  }
+  return null;
 }

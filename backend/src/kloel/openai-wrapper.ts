@@ -27,25 +27,41 @@ const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
   backoffMultiplier: 2,
 };
 
+type RetryableErrorShape = { status?: number; code?: string; message?: string } | null;
+
+const RETRYABLE_NETWORK_CODES = new Set([
+  'ETIMEDOUT',
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+]);
+
+function isRetryableHttpStatus(status: number | undefined): boolean {
+  if (status === 429) return true;
+  if (typeof status !== 'number') return false;
+  return status >= 500 && status < 600;
+}
+
+function isRetryableNetworkCode(code: string | undefined): boolean {
+  return typeof code === 'string' && RETRYABLE_NETWORK_CODES.has(code);
+}
+
+function isRetryableTimeoutMessage(message: string | undefined): boolean {
+  if (typeof message !== 'string') return false;
+  const lower = message.toLowerCase();
+  return lower.includes('timeout');
+}
+
 /**
  * Verifica se o erro é retryable (temporário)
  */
 function isRetryableError(err: unknown): boolean {
-  const errObj = err as { status?: number; code?: string; message?: string } | null;
-  // Rate limit
-  if (errObj?.status === 429) return true;
-
-  // Server errors (5xx)
-  if (errObj?.status && errObj.status >= 500 && errObj.status < 600) return true;
-
-  // Network errors
-  const networkErrors = ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN'];
-  if (errObj?.code && networkErrors.includes(errObj.code)) return true;
-
-  // Timeout errors
-  if (errObj?.message?.includes('timeout') || errObj?.message?.includes('Timeout')) return true;
-
-  return false;
+  const errObj = err as RetryableErrorShape;
+  if (!errObj) return false;
+  if (isRetryableHttpStatus(errObj.status)) return true;
+  if (isRetryableNetworkCode(errObj.code)) return true;
+  return isRetryableTimeoutMessage(errObj.message);
 }
 
 /**

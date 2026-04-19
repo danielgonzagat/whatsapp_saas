@@ -2,12 +2,12 @@
 /**
  * scripts/ops/codacy-discover-noise-patterns.mjs
  *
- * Phase 0 of the Codacy convergence plan
- * (docs/codacy/synthetic-whistling-meteor.md is the live spec).
+ * Historical Phase 0 helper from the Codacy convergence plan.
  *
  * Reads the byPatternId map from PULSE_CODACY_STATE.json and produces
- * docs/codacy/noise-patterns.json — the ordered list of pattern IDs that
- * scripts/ops/codacy-pattern-overrides.mjs (Phase 1) will PATCH off.
+ * docs/codacy/noise-patterns.json — a read-only inventory of historically
+ * noisy pattern families. It no longer authorizes or implies any Codacy
+ * mutation path.
  *
  * "Noise" here means: pattern families that are objectively wrong for this
  * Next.js 16 + NestJS + Vitest + Jest stack. Each entry is justified by:
@@ -24,7 +24,7 @@
  *     ]
  *   }
  *
- * No mutations — this script is read-only against Codacy's API.
+ * No mutations — this script is read-only and archival.
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';

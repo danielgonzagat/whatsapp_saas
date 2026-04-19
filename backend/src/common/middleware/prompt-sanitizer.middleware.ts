@@ -92,26 +92,42 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
   /** Property names that must never be accessed via bracket notation. */
   private static readonly BLOCKED_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
 
+  private isSanitizableKey(obj: Record<string, unknown>, key: string): boolean {
+    if (PromptSanitizerMiddleware.BLOCKED_PROPS.has(key)) return false;
+    return Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  private sanitizeStringValueAt(
+    obj: Record<string, unknown>,
+    key: string,
+    value: string,
+    path: string,
+  ): void {
+    const sanitized = this.sanitizeString(value);
+    if (sanitized === value) return;
+    this.logger.warn(`Prompt injection detectado em ${path}.${key}`);
+    obj[key] = sanitized;
+  }
+
+  private sanitizeEntry(obj: Record<string, unknown>, key: string, path: string): void {
+    const value = obj[key];
+    if (typeof value === 'string') {
+      this.sanitizeStringValueAt(obj, key, value, path);
+      return;
+    }
+    if (value && typeof value === 'object') {
+      this.sanitizeObject(value as Record<string, unknown>, `${path}.${key}`);
+    }
+  }
+
   private sanitizeObject(obj: Record<string, unknown>, path: string): void {
     if (!obj || typeof obj !== 'object') return;
 
     // Object.keys() returns own enumerable properties only — safe from prototype chain.
     // The BLOCKED_PROPS guard adds defense-in-depth against prototype pollution.
     for (const key of Object.keys(obj)) {
-      if (PromptSanitizerMiddleware.BLOCKED_PROPS.has(key)) continue;
-      if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-
-      const value = obj[key];
-
-      if (typeof value === 'string') {
-        const sanitized = this.sanitizeString(value);
-        if (sanitized !== value) {
-          this.logger.warn(`Prompt injection detectado em ${path}.${key}`);
-          obj[key] = sanitized;
-        }
-      } else if (value && typeof value === 'object') {
-        this.sanitizeObject(value as Record<string, unknown>, `${path}.${key}`);
-      }
+      if (!this.isSanitizableKey(obj, key)) continue;
+      this.sanitizeEntry(obj, key, path);
     }
   }
 

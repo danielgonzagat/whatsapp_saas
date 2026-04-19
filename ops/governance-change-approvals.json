@@ -106,5 +106,32 @@
     "approved_by": "usuario",
     "date": "2026-04-14",
     "expires": "2026-04-21"
+  },
+  {
+    "file": ".codacy.yml",
+    "rule": "governanceChange",
+    "reason": "Usuario aprovou explicitamente endurecer Codacy para max-rigor, reabrindo o escopo total da analise no repositorio.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "usuario",
+    "date": "2026-04-19",
+    "expires": "2026-04-26"
+  },
+  {
+    "filePrefix": "docs/codacy/",
+    "rule": "governanceChange",
+    "reason": "Usuario aprovou explicitamente travar a governanca do Codacy e registrar o lock max-rigor na documentacao protegida.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "usuario",
+    "date": "2026-04-19",
+    "expires": "2026-04-26"
+  },
+  {
+    "file": ".github/workflows/codacy-analysis.yml",
+    "rule": "governanceChange",
+    "reason": "Usuario aprovou explicitamente endurecer a workflow do Codacy para verificar drift do lock max-rigor.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "usuario",
+    "date": "2026-04-19",
+    "expires": "2026-04-26"
   }
 ]

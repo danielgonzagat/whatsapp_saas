@@ -19,12 +19,16 @@ Quando Daniel pedir para trabalhar autonomamente (ex.: "trabalhe autonomamente",
 
 Parar sem necessidade quando Daniel pediu autonomia é violação desta regra.
 
-## REGRA DE CODACY (2026-04-18)
+## REGRA DE CODACY (2026-04-19)
 
-1. **PROIBIDO atualizar qualquer política, regra, coding standard, pattern, noise list, draft ou configuração do Codacy** (via API, UI, ou scripts que modifiquem o estado Codacy).
-2. **Permitido apenas**: `npm run codacy:sync` (read-only snapshot) e leitura da API para diagnóstico.
-3. Para reduzir issues, **apenas corrigir código de produto** — narrow types, decompose functions, extract helpers, add/remove lines, etc.
-4. Se uma regra Codacy fizer sentido como WRONG_RULE, **documentar em `docs/codacy/`** mas **não aplicar** — aguarda autorização explícita do dono.
+1. O Codacy deste repo opera em **MAX-RIGOR LOCK**. O objetivo padrao e manter **todas** as ferramentas/patterns aplicaveis ativas, com gates/coverage/duplication/complexity no nivel mais estrito viavel.
+2. **Permitido**:
+   - `npm run codacy:sync` para snapshot read-only.
+   - `npm run codacy:check-max-rigor` para verificar drift.
+   - `npm run codacy:enforce-max-rigor` para reaplicar o estado canonico maximo quando houver drift autorizado.
+3. **Proibido** reduzir escopo, desativar regra, desativar pattern, criar draft para relaxamento, adicionar exclude path, trocar threshold por valor mais fraco, ou alterar qualquer configuracao live do Codacy fora do script canonico.
+4. **Proibido** usar comentarios para satisfazer Codacy. `biome-ignore`, `nosemgrep`, `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`, `codacy:disable`, `codacy:ignore`, `NOSONAR` e `noqa` sao bypasses proibidos.
+5. Para reduzir issues, **corrija codigo real**. Se uma regra parecer ruido, documente a evidencia, mas nao enfraqueca o Codacy sem aprovacao humana explicita.
 
 ---
 

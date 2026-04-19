@@ -1,4 +1,10 @@
 ---
+
+> Note (2026-04-19): portions of this ADR describe historical suppress / exclude
+> ideas from an earlier Codacy triage phase. Those actions are now superseded
+> by the repository-wide Codacy MAX-RIGOR lock. Do not add `biome-ignore`,
+> `codacy:disable`, or new `.codacy.yml` exclusions based on this ADR.
+
 id: 0002-security-triage
 title: 'Security finding triage — Phase 4 of the Codacy convergence'
 status: accepted

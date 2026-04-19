@@ -447,6 +447,70 @@ export class WhatsappService {
     };
   }
 
+  private indexRemoteChatsByPhone(remoteChats: NormalizedChat[]): Map<string, NormalizedChat> {
+    const remoteByPhone = new Map<string, NormalizedChat>();
+    for (const chat of remoteChats) {
+      const existing = remoteByPhone.get(chat.phone);
+      if (!existing || Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)) {
+        remoteByPhone.set(chat.phone, chat);
+      }
+    }
+    return remoteByPhone;
+  }
+
+  private indexLocalConversationsByPhone(
+    localConversations: ConversationOperationalState[],
+  ): Map<string, ConversationOperationalState> {
+    const localByPhone = new Map<string, ConversationOperationalState>();
+    for (const conversation of localConversations) {
+      const phone = this.normalizeNumber(conversation.phone || '');
+      if (!phone) continue;
+
+      const existing = localByPhone.get(phone);
+      const currentTimestamp = this.resolveTimestamp({ createdAt: conversation.lastMessageAt });
+      const existingTimestamp = this.resolveTimestamp({ createdAt: existing?.lastMessageAt });
+
+      if (!existing || currentTimestamp >= existingTimestamp) {
+        localByPhone.set(phone, conversation);
+      }
+    }
+    return localByPhone;
+  }
+
+  private compareOperationalBacklogItems(
+    a: ReturnType<WhatsappService['buildOperationalBacklogItem']>,
+    b: ReturnType<WhatsappService['buildOperationalBacklogItem']>,
+  ): number {
+    if (a.pending !== b.pending) return Number(b.pending) - Number(a.pending);
+    if (a.lastMessageTimestamp !== b.lastMessageTimestamp) {
+      return b.lastMessageTimestamp - a.lastMessageTimestamp;
+    }
+    if (a.remoteUnreadCount !== b.remoteUnreadCount) {
+      return b.remoteUnreadCount - a.remoteUnreadCount;
+    }
+    return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
+  }
+
+  private buildOperationalBacklogSummary(
+    items: ReturnType<WhatsappService['buildOperationalBacklogItem']>[],
+    pendingItems: ReturnType<WhatsappService['buildOperationalBacklogItem']>[],
+  ) {
+    return {
+      remotePendingConversations: items.filter((item) => item.remotePending).length,
+      remotePendingMessages: items.reduce((sum, item) => sum + item.remoteUnreadCount, 0),
+      localPendingConversations: items.filter((item) => item.localPending).length,
+      localPendingMessages: items.reduce(
+        (sum, item) => sum + (item.localPending ? Math.max(item.localUnreadCount, 1) : 0),
+        0,
+      ),
+      effectivePendingConversations: pendingItems.length,
+      effectivePendingMessages: pendingItems.reduce((sum, item) => sum + item.pendingMessages, 0),
+      remoteOnlyPendingConversations: items.filter((item) => item.remoteOnlyPending).length,
+      localOnlyPendingConversations: items.filter((item) => item.localOnlyPending).length,
+      latestPendingMessageAt: pendingItems[0]?.lastMessageAt || null,
+    };
+  }
+
   async getOperationalBacklogReport(
     workspaceId: string,
     options?: { limit?: number; includeResolved?: boolean },
@@ -467,31 +531,8 @@ export class WhatsappService {
       this.isIndividualChatId(chat.id),
     );
 
-    const remoteByPhone = new Map<string, NormalizedChat>();
-    for (const chat of remoteChats) {
-      const existing = remoteByPhone.get(chat.phone);
-      if (!existing || Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)) {
-        remoteByPhone.set(chat.phone, chat);
-      }
-    }
-
-    const localByPhone = new Map<string, ConversationOperationalState>();
-    for (const conversation of localConversations) {
-      const phone = this.normalizeNumber(conversation.phone || '');
-      if (!phone) continue;
-
-      const existing = localByPhone.get(phone);
-      const currentTimestamp = this.resolveTimestamp({
-        createdAt: conversation.lastMessageAt,
-      });
-      const existingTimestamp = this.resolveTimestamp({
-        createdAt: existing?.lastMessageAt,
-      });
-
-      if (!existing || currentTimestamp >= existingTimestamp) {
-        localByPhone.set(phone, conversation);
-      }
-    }
+    const remoteByPhone = this.indexRemoteChatsByPhone(remoteChats);
+    const localByPhone = this.indexLocalConversationsByPhone(localConversations);
 
     const phoneSet = new Set<string>([
       ...Array.from(remoteByPhone.keys()),
@@ -502,18 +543,7 @@ export class WhatsappService {
       .map((phone) =>
         this.buildOperationalBacklogItem(phone, remoteByPhone.get(phone), localByPhone.get(phone)),
       )
-      .sort((a, b) => {
-        if (a.pending !== b.pending) {
-          return Number(b.pending) - Number(a.pending);
-        }
-        if (a.lastMessageTimestamp !== b.lastMessageTimestamp) {
-          return b.lastMessageTimestamp - a.lastMessageTimestamp;
-        }
-        if (a.remoteUnreadCount !== b.remoteUnreadCount) {
-          return b.remoteUnreadCount - a.remoteUnreadCount;
-        }
-        return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
-      });
+      .sort((a, b) => this.compareOperationalBacklogItems(a, b));
 
     const visibleItems = items.filter((item) => includeResolved || item.pending).slice(0, limit);
     const pendingItems = items.filter((item) => item.pending);
@@ -525,20 +555,7 @@ export class WhatsappService {
       connected: status.connected,
       status: status.status,
       includeResolved,
-      summary: {
-        remotePendingConversations: items.filter((item) => item.remotePending).length,
-        remotePendingMessages: items.reduce((sum, item) => sum + item.remoteUnreadCount, 0),
-        localPendingConversations: items.filter((item) => item.localPending).length,
-        localPendingMessages: items.reduce(
-          (sum, item) => sum + (item.localPending ? Math.max(item.localUnreadCount, 1) : 0),
-          0,
-        ),
-        effectivePendingConversations: pendingItems.length,
-        effectivePendingMessages: pendingItems.reduce((sum, item) => sum + item.pendingMessages, 0),
-        remoteOnlyPendingConversations: items.filter((item) => item.remoteOnlyPending).length,
-        localOnlyPendingConversations: items.filter((item) => item.localOnlyPending).length,
-        latestPendingMessageAt: pendingItems[0]?.lastMessageAt || null,
-      },
+      summary: this.buildOperationalBacklogSummary(items, pendingItems),
       items: visibleItems,
     };
   }

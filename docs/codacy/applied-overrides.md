@@ -1,5 +1,10 @@
 # Codacy Override Audit Log
 
+> Historical archive only. As of `2026-04-19`, this repository runs under the
+> MAX-RIGOR lock described in [max-rigor-lock.md](./max-rigor-lock.md).
+> New Codacy overrides, pattern disables, draft relaxations, and suppression
+> workflows are forbidden. This file exists only to preserve prior context.
+
 This file records every mutation applied to Codacy's tool/pattern configuration
 for the `whatsapp_saas` repository, both via REST API and via committed config
 files. It is the source of truth for "what did we tell Codacy to do, and why".
