@@ -57,7 +57,7 @@ Most engagements combine both. Establish which mode applies before proceeding.
 - Look for: the moment they decided to look for a solution, what they tried
   before, what success looks like to them
 
-**Survey results**
+#### Survey results
 
 - Segment responses by customer tier, use case, or tenure before drawing
   conclusions

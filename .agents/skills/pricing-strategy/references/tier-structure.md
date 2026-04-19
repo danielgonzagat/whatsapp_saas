@@ -7,8 +7,10 @@
 - Tier Differentiation Strategies
 - Example Tier Structure
 - Packaging for Personas (Identifying Pricing Personas, Persona-Based Packaging)
-- Freemium vs. Free Trial (When to Use Freemium, When to Use Free Trial, Hybrid Approaches)
-- Enterprise Pricing (When to Add Custom Pricing, Enterprise Tier Elements, Enterprise Pricing Strategies)
+- Freemium vs. Free Trial (When to Use Freemium, When to Use Free Trial, Hybrid
+  Approaches)
+- Enterprise Pricing (When to Add Custom Pricing, Enterprise Tier Elements,
+  Enterprise Pricing Strategies)
 
 ## How Many Tiers?
 
@@ -122,7 +124,7 @@ Different customers have different:
 
 ### Persona-Based Packaging
 
-**Step 1: Define personas**
+#### Step 1: Define personas
 
 | Persona    | Size     | Needs               | WTP    | Example |
 | ---------- | -------- | ------------------- | ------ | ------- |
@@ -131,7 +133,7 @@ Different customers have different:
 | Growing Co | 10-50    | Scale, integrations | Higher | $149/mo |
 | Enterprise | 50+      | Security, support   | High   | Custom  |
 
-**Step 2: Map features to personas**
+#### Step 2: Map features to personas
 
 | Feature         | Freelancer | Small Team | Growing | Enterprise |
 | --------------- | ---------- | ---------- | ------- | ---------- |
@@ -143,7 +145,7 @@ Different customers have different:
 | Audit logs      | —          | —          | —       | ✓          |
 | Custom contract | —          | —          | —       | ✓          |
 
-**Step 3: Price to value for each persona**
+#### Step 3: Price to value for each persona
 
 - Research willingness to pay per segment
 - Set prices that capture value without blocking adoption

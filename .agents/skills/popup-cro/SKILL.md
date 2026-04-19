@@ -7,12 +7,16 @@ metadata:
 
 # Popup CRO
 
-You are an expert in popup and modal optimization. Your goal is to create popups that convert without annoying users or damaging brand perception.
+You are an expert in popup and modal optimization. Your goal is to create
+popups that convert without annoying users or damaging brand perception.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered
+or specific to this task.
 
 Before providing recommendations, understand:
 
@@ -208,7 +212,8 @@ Before providing recommendations, understand:
 
 ### Close Button
 
-- Keep visible (top right is convention) — users who can't find the close button will bounce entirely
+- Keep visible (top right is convention) — users who can't find the close
+  button will bounce entirely
 - Large enough to tap on mobile
 - "No thanks" text link as alternative
 - Click outside to close
@@ -396,21 +401,21 @@ Ideas to A/B test with expected outcomes
 
 ### Placement & Format Experiments
 
-**Banner Variations**
+#### Banner Variations
 
 - Top bar vs. banner below header
 - Sticky banner vs. static banner
 - Full-width vs. contained banner
 - Banner with countdown timer vs. without
 
-**Popup Formats**
+#### Popup Formats
 
 - Center modal vs. slide-in from corner
 - Full-screen overlay vs. smaller modal
 - Bottom bar vs. corner popup
 - Top announcements vs. bottom slideouts
 
-**Position Testing**
+#### Position Testing
 
 - Test popup sizes on desktop and mobile
 - Left corner vs. right corner for slide-ins
@@ -420,21 +425,21 @@ Ideas to A/B test with expected outcomes
 
 ### Trigger Experiments
 
-**Timing Triggers**
+#### Timing Triggers
 
 - Exit intent vs. 30-second delay vs. 50% scroll depth
 - Test optimal time delay (10s vs. 30s vs. 60s)
 - Test scroll depth percentage (25% vs. 50% vs. 75%)
 - Page count trigger (show after X pages viewed)
 
-**Behavior Triggers**
+#### Behavior Triggers
 
 - Show based on user intent prediction
 - Trigger based on specific page visits
 - Return visitor vs. new visitor targeting
 - Show based on referral source
 
-**Click Triggers**
+#### Click Triggers
 
 - Click-triggered popups for lead magnets
 - Button-triggered vs. link-triggered modals
@@ -444,21 +449,21 @@ Ideas to A/B test with expected outcomes
 
 ### Messaging & Content Experiments
 
-**Headlines & Copy**
+#### Headlines & Copy
 
 - Test attention-grabbing vs. informational headlines
 - "Limited-time offer" vs. "New feature alert" messaging
 - Urgency-focused copy vs. value-focused copy
 - Test headline length and specificity
 
-**CTAs**
+#### CTAs
 
 - CTA button text variations
 - Button color testing for contrast
 - Primary + secondary CTA vs. single CTA
 - Test decline text (friendly vs. neutral)
 
-**Visual Content**
+#### Visual Content
 
 - Add countdown timers to create urgency
 - Test with/without images
@@ -469,14 +474,14 @@ Ideas to A/B test with expected outcomes
 
 ### Personalization Experiments
 
-**Dynamic Content**
+#### Dynamic Content
 
 - Personalize popup based on visitor data
 - Show industry-specific content
 - Tailor content based on pages visited
 - Use progressive profiling (ask more over time)
 
-**Audience Targeting**
+#### Audience Targeting
 
 - New vs. returning visitor messaging
 - Segment by traffic source

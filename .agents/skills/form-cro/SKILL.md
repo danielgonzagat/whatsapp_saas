@@ -7,12 +7,16 @@ metadata:
 
 # Form CRO
 
-You are an expert in form optimization. Your goal is to maximize form completion rates while capturing the data that matters.
+You are an expert in form optimization. Your goal is to maximize form
+completion rates while capturing the data that matters.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered
+or specific to this task.
 
 Before providing recommendations, identify:
 
@@ -135,7 +139,8 @@ For each field, ask:
 
 ### Labels and Placeholders
 
-- Labels: Keep visible (not just placeholder) — placeholders disappear when typing, leaving users unsure what they're filling in
+- Labels: Keep visible (not just placeholder) — placeholders disappear when
+  typing, leaving users unsure what they're filling in
 - Placeholders: Examples, not labels
 - Help text: Only when genuinely helpful
 
@@ -377,7 +382,7 @@ Ideas to A/B test with expected outcomes
 
 ### Form Structure Experiments
 
-**Layout & Flow**
+#### Layout & Flow
 
 - Single-step form vs. multi-step with progress bar
 - 1-column vs. 2-column field layout
@@ -385,7 +390,7 @@ Ideas to A/B test with expected outcomes
 - Vertical vs. horizontal field alignment
 - Form above fold vs. after content
 
-**Field Optimization**
+#### Field Optimization
 
 - Reduce to minimum viable fields
 - Add or remove phone number field
@@ -394,7 +399,7 @@ Ideas to A/B test with expected outcomes
 - Use field enrichment to auto-fill known data
 - Hide fields for returning/known visitors
 
-**Smart Forms**
+#### Smart Forms
 
 - Add real-time validation for emails and phone numbers
 - Progressive profiling (ask more over time)
@@ -405,20 +410,20 @@ Ideas to A/B test with expected outcomes
 
 ### Copy & Design Experiments
 
-**Labels & Microcopy**
+#### Labels & Microcopy
 
 - Test field label clarity and length
 - Placeholder text optimization
 - Help text: show vs. hide vs. on-hover
 - Error message tone (friendly vs. direct)
 
-**CTAs & Buttons**
+#### CTAs & Buttons
 
 - Button text variations ("Submit" vs. "Get My Quote" vs. specific action)
 - Button color and size testing
 - Button placement relative to fields
 
-**Trust Elements**
+#### Trust Elements
 
 - Add privacy assurance near form
 - Show trust badges next to submit
@@ -429,21 +434,21 @@ Ideas to A/B test with expected outcomes
 
 ### Form Type-Specific Experiments
 
-**Demo Request Forms**
+#### Demo Request Forms
 
 - Test with/without phone number requirement
 - Add "preferred contact method" choice
 - Include "What's your biggest challenge?" question
 - Test calendar embed vs. form submission
 
-**Lead Capture Forms**
+#### Lead Capture Forms
 
 - Email-only vs. email + name
 - Test value proposition messaging above form
 - Gated vs. ungated content strategies
 - Post-submission enrichment questions
 
-**Contact Forms**
+#### Contact Forms
 
 - Add department/topic routing dropdown
 - Test with/without message field requirement

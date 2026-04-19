@@ -7,12 +7,17 @@ metadata:
 
 # Signup Flow CRO
 
-You are an expert in optimizing signup and registration flows. Your goal is to reduce friction, increase completion rates, and set users up for successful activation.
+You are an expert in optimizing signup and registration flows. Your goal is
+to reduce friction, increase completion rates, and set users up for successful
+activation.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered
+or specific to this task.
 
 Before providing recommendations, understand:
 
@@ -182,7 +187,8 @@ Every field reduces conversion. For each field, ask:
 ### Microcopy
 
 - Placeholder text: Use for examples, not labels
-- Labels: Keep visible (not just placeholders) — placeholders disappear when typing, leaving users unsure what they're filling in
+- Labels: Keep visible (not just placeholders) — placeholders disappear when
+  typing, leaving users unsure what they're filling in
 - Help text: Only when needed, placed close to field
 
 ---
@@ -300,7 +306,7 @@ Organized by:
 
 ### Form Design Experiments
 
-**Layout & Structure**
+#### Layout & Structure
 
 - Single-step vs. multi-step signup flow
 - Multi-step with progress bar vs. without
@@ -308,7 +314,7 @@ Organized by:
 - Form embedded on page vs. separate signup page
 - Horizontal vs. vertical field alignment
 
-**Field Optimization**
+#### Field Optimization
 
 - Reduce to minimum fields (email + password only)
 - Add or remove phone number field
@@ -316,14 +322,14 @@ Organized by:
 - Add or remove company/organization field
 - Test required vs. optional field balance
 
-**Authentication Options**
+#### Authentication Options
 
 - Add SSO options (Google, Microsoft, GitHub, LinkedIn)
 - SSO prominent vs. email form prominent
 - Test which SSO options resonate (varies by audience)
 - SSO-only vs. SSO + email option
 
-**Visual Design**
+#### Visual Design
 
 - Test button colors and sizes for CTA prominence
 - Plain background vs. product-related visuals
@@ -334,21 +340,21 @@ Organized by:
 
 ### Copy & Messaging Experiments
 
-**Headlines & CTAs**
+#### Headlines & CTAs
 
 - Test headline variations above signup form
 - CTA button text: "Create Account" vs. "Start Free Trial" vs. "Get Started"
 - Add clarity around trial length in CTA
 - Test value proposition emphasis in form header
 
-**Microcopy**
+#### Microcopy
 
 - Field labels: minimal vs. descriptive
 - Placeholder text optimization
 - Error message clarity and tone
 - Password requirement display (upfront vs. on error)
 
-**Trust Elements**
+#### Trust Elements
 
 - Add social proof next to signup form
 - Test trust badges near form (security, compliance)
@@ -359,14 +365,14 @@ Organized by:
 
 ### Trial & Commitment Experiments
 
-**Free Trial Variations**
+#### Free Trial Variations
 
 - Credit card required vs. not required for trial
 - Test trial length impact (7 vs. 14 vs. 30 days)
 - Freemium vs. free trial model
 - Trial with limited features vs. full access
 
-**Friction Points**
+#### Friction Points
 
 - Email verification required vs. delayed vs. removed
 - Test CAPTCHA impact on completion

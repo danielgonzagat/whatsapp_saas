@@ -1,6 +1,7 @@
 # KLOEL — AUDIT FEATURE MATRIX
 
-> Updated: 2026-04-14 | Status: PARTIAL | Score: 52% | BREAKS: 1091 | MODULES(resolved): 32
+> Updated: 2026-04-14 | Status: PARTIAL | Score: 52% | BREAKS: 1091 |
+> MODULES(resolved): 32
 
 ## Resolved Module Map
 

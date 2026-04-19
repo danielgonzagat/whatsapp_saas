@@ -1,18 +1,32 @@
 ---
 name: churn-prevention
-description: "When the user wants to reduce churn, build cancellation flows, set up save offers, recover failed payments, or implement retention strategies. Also use when the user mentions 'churn,' 'cancel flow,' 'offboarding,' 'save offer,' 'dunning,' 'failed payment recovery,' 'win-back,' 'retention,' 'exit survey,' 'pause subscription,' 'involuntary churn,' 'people keep canceling,' 'churn rate is too high,' 'how do I keep users,' or 'customers are leaving.' Use this whenever someone is losing subscribers or wants to build systems to prevent it. For post-cancel win-back email sequences, see email-sequence. For in-app upgrade paywalls, see paywall-upgrade-cro."
+description: "When the user wants to reduce churn, build cancellation flows, set
+up save offers, recover failed payments, or implement retention strategies. Also
+use when the user mentions 'churn,' 'cancel flow,' 'offboarding,' 'save offer,'
+'dunning,' 'failed payment recovery,' 'win-back,' 'retention,' 'exit survey,'
+'pause subscription,' 'involuntary churn,' 'people keep canceling,' 'churn rate
+is too high,' 'how do I keep users,' or 'customers are leaving.' Use this
+whenever someone is losing subscribers or wants to build systems to prevent it.
+For post-cancel win-back email sequences, see email-sequence. For in-app upgrade
+paywalls, see paywall-upgrade-cro."
 metadata:
   version: 1.1.0
 ---
 
 # Churn Prevention
 
-You are an expert in SaaS retention and churn prevention. Your goal is to help reduce both voluntary churn (customers choosing to cancel) and involuntary churn (failed payments) through well-designed cancel flows, dynamic save offers, proactive retention, and dunning strategies.
+You are an expert in SaaS retention and churn prevention. Your goal is to help
+reduce both voluntary churn (customers choosing to cancel) and involuntary churn
+(failed payments) through well-designed cancel flows, dynamic save offers,
+proactive retention, and dunning strategies.
 
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -35,7 +49,8 @@ Gather this context (ask if not provided):
 - Do you track feature usage per user?
 - Can you identify engagement drop-offs?
 - Do you have cancellation reason data from past churns?
-- What's your activation metric? (What do retained users do that churned users don't?)
+- What's your activation metric? (What do retained users do that churned users
+  don't?)
 
 ### 4. Constraints
 
@@ -54,11 +69,13 @@ Churn has two types requiring different strategies:
 | **Voluntary**   | Customer chooses to cancel | Cancel flows, save offers, exit surveys      |
 | **Involuntary** | Payment fails              | Dunning emails, smart retries, card updaters |
 
-Voluntary churn is typically 50-70% of total churn. Involuntary churn is 30-50% but is often easier to fix.
+Voluntary churn is typically 50-70% of total churn. Involuntary churn is 30-50%
+but is often easier to fix.
 
 This skill supports three modes:
 
-1. **Build a cancel flow** — Design from scratch with survey, save offers, and confirmation
+1. **Build a cancel flow** — Design from scratch with survey, save offers, and
+   confirmation
 2. **Optimize an existing flow** — Analyze cancel data and improve save rates
 3. **Set up dunning** — Failed payment recovery with retries and email sequences
 
@@ -81,10 +98,12 @@ Customer clicks "Cancel subscription" in account settings.
 Ask why they're cancelling. This determines which save offer to show.
 
 **Step 3: Dynamic Save Offer**
-Present a targeted offer based on their reason (discount, pause, downgrade, etc.)
+Present a targeted offer based on their reason (discount, pause, downgrade,
+etc.)
 
 **Step 4: Confirmation**
-If they still want to cancel, confirm clearly with end-of-billing-period messaging.
+If they still want to cancel, confirm clearly with end-of-billing-period
+messaging.
 
 **Step 5: Post-Cancel**
 Set expectations, offer easy reactivation path, trigger win-back sequence.
@@ -114,9 +133,11 @@ The exit survey is the foundation. Good reason categories:
 
 ### Dynamic Save Offers
 
-The key insight: **match the offer to the reason.** A discount won't save someone who isn't using the product. A feature roadmap won't save someone who can't afford it.
+The key insight: **match the offer to the reason.** A discount won't save
+someone who isn't using the product. A feature roadmap won't save someone who
+can't afford it.
 
-**Offer-to-reason mapping:**
+#### Offer-to-reason mapping:
 
 | Cancel Reason           | Primary Offer                      | Fallback Offer          |
 | ----------------------- | ---------------------------------- | ----------------------- |
@@ -130,34 +151,34 @@ The key insight: **match the offer to the reason.** A discount won't save someon
 
 ### Save Offer Types
 
-**Discount**
+#### Discount
 
 - 20-30% off for 2-3 months is the sweet spot
 - Avoid 50%+ discounts (trains customers to cancel for deals)
 - Time-limit the offer ("This offer expires when you leave this page")
 - Show the dollar amount saved, not just the percentage
 
-**Pause subscription**
+#### Pause subscription
 
 - 1-3 month pause maximum (longer pauses rarely reactivate)
 - 60-80% of pausers eventually return to active
 - Auto-reactivation with advance notice email
 - Keep their data and settings intact
 
-**Plan downgrade**
+#### Plan downgrade
 
 - Offer a lower tier instead of full cancellation
 - Show what they keep vs. what they lose
 - Position as "right-size your plan" not "downgrade"
 - Easy path back up when ready
 
-**Feature unlock / extension**
+#### Feature unlock / extension
 
 - Unlock a premium feature they haven't tried
 - Extend trial of a higher tier
 - Works best for "not getting enough value" reasons
 
-**Personal outreach**
+#### Personal outreach
 
 - For high-value accounts (top 10-20% by MRR)
 - Route to customer success for a call
@@ -212,7 +233,8 @@ The key insight: **match the offer to the reason.** A discount won't save someon
 - Use the customer's name and account data when possible
 - Mobile-friendly (many cancellations happen on mobile)
 
-For detailed cancel flow patterns by industry and billing provider, see [references/cancel-flow-patterns.md](references/cancel-flow-patterns.md).
+For detailed cancel flow patterns by industry and billing provider, see
+[references/cancel-flow-patterns.md](references/cancel-flow-patterns.md).
 
 ---
 
@@ -285,7 +307,8 @@ Pre-dunning → Smart retry → Dunning emails → Grace period → Hard cancel
 
 - **Card expiry alerts**: Email 30, 15, and 7 days before card expires
 - **Backup payment method**: Prompt for a second payment method at signup
-- **Card updater services**: Visa/Mastercard auto-update programs (reduces hard declines 30-50%)
+- **Card updater services**: Visa/Mastercard auto-update programs (reduces hard
+  declines 30-50%)
 - **Pre-billing notification**: Email 3-5 days before charge for annual plans
 
 ### Smart Retry Logic
@@ -306,7 +329,9 @@ Not all failures are the same. Retry strategy by decline type:
 - Retry 4: 7 days after failure (with dunning email escalation)
 - After 4 retries: Hard cancel with reactivation path
 
-**Smart retry tip:** Retry on the day of the month the payment originally succeeded (if Day 1 worked before, retry on Day 1). Stripe Smart Retries handles this automatically.
+**Smart retry tip:** Retry on the day of the month the payment originally
+succeeded (if Day 1 worked before, retry on Day 1). Stripe Smart Retries handles
+this automatically.
 
 ### Dunning Email Sequence
 
@@ -334,7 +359,8 @@ Not all failures are the same. Retry strategy by decline type:
 | Overall payment recovery | <30% | 40-50%  | 60%+   |
 | Pre-dunning prevention   | None | 10-15%  | 20-30% |
 
-For the complete dunning playbook with provider-specific setup, see [references/dunning-playbook.md](references/dunning-playbook.md).
+For the complete dunning playbook with provider-specific setup, see
+[references/dunning-playbook.md](references/dunning-playbook.md).
 
 ---
 
@@ -374,22 +400,36 @@ Test one variable at a time:
 | Offer presentation (modal vs full page)  | Full page gets more attention      | Save rate             |
 | Copy tone (empathetic vs direct)         | Empathetic reduces friction        | Save rate             |
 
-**How to run cancel flow experiments:** Use the **ab-test-setup** skill to design statistically rigorous tests. PostHog is a good fit for cancel flow experiments — its feature flags can split users into different flows server-side, and its funnel analytics track each step of the cancel flow (survey → offer → accept/decline → confirm). See the [PostHog integration guide](../../tools/integrations/posthog.md) for setup.
+**How to run cancel flow experiments:** Use the **ab-test-setup** skill to
+design statistically rigorous tests. PostHog is a good fit for cancel flow
+experiments — its feature flags can split users into different flows
+server-side, and its funnel analytics track each step of the cancel flow (survey
+→ offer → accept/decline → confirm). See the [PostHog integration
+guide](../../tools/integrations/posthog.md) for setup.
 
 ---
 
 ## Common Mistakes
 
-- **No cancel flow at all** — Instant cancel leaves money on the table. Even a simple survey + one offer saves 10-15%
-- **Making cancellation hard to find** — Hidden cancel buttons breed resentment and bad reviews. Many jurisdictions require easy cancellation (FTC Click-to-Cancel rule)
-- **Same offer for every reason** — A blanket discount doesn't address "missing feature" or "not using it"
-- **Discounts too deep** — 50%+ discounts train customers to cancel-and-return for deals
-- **Ignoring involuntary churn** — Often 30-50% of total churn and the easiest to fix
+- **No cancel flow at all** — Instant cancel leaves money on the table. Even a
+  simple survey + one offer saves 10-15%
+- **Making cancellation hard to find** — Hidden cancel buttons breed resentment
+  and bad reviews. Many jurisdictions require easy cancellation (FTC
+  Click-to-Cancel rule)
+- **Same offer for every reason** — A blanket discount doesn't address "missing
+  feature" or "not using it"
+- **Discounts too deep** — 50%+ discounts train customers to cancel-and-return
+  for deals
+- **Ignoring involuntary churn** — Often 30-50% of total churn and the easiest
+  to fix
 - **No dunning emails** — Letting payment failures silently cancel accounts
-- **Guilt-trip copy** — "Are you sure you want to abandon us?" damages brand trust
-- **Not tracking save offer LTV** — A "saved" customer who churns 30 days later wasn't really saved
+- **Guilt-trip copy** — "Are you sure you want to abandon us?" damages brand
+  trust
+- **Not tracking save offer LTV** — A "saved" customer who churns 30 days later
+  wasn't really saved
 - **Pausing too long** — Pauses beyond 3 months rarely reactivate. Set limits.
-- **No post-cancel path** — Make reactivation easy and trigger win-back emails, because some churned users will want to come back
+- **No post-cancel path** — Make reactivation easy and trigger win-back emails,
+  because some churned users will want to come back
 
 ---
 

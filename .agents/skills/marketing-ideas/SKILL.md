@@ -1,18 +1,30 @@
 ---
 name: marketing-ideas
-description: "When the user needs marketing ideas, inspiration, or strategies for their SaaS or software product. Also use when the user asks for 'marketing ideas,' 'growth ideas,' 'how to market,' 'marketing strategies,' 'marketing tactics,' 'ways to promote,' 'ideas to grow,' 'what else can I try,' 'I don't know how to market this,' 'brainstorm marketing,' or 'what marketing should I do.' Use this as a starting point whenever someone is stuck or looking for inspiration on how to grow. For specific channel execution, see the relevant skill (paid-ads, social-content, email-sequence, etc.)."
+description: "When the user needs marketing ideas, inspiration, or strategies
+for their SaaS or software product. Also use when the user asks for 'marketing
+ideas,' 'growth ideas,' 'how to market,' 'marketing strategies,' 'marketing
+tactics,' 'ways to promote,' 'ideas to grow,' 'what else can I try,' 'I don't
+know how to market this,' 'brainstorm marketing,' or 'what marketing should I
+do.' Use this as a starting point whenever someone is stuck or looking for
+inspiration on how to grow. For specific channel execution, see the relevant
+skill (paid-ads, social-content, email-sequence, etc.)."
 metadata:
   version: 1.1.0
 ---
 
 # Marketing Ideas for SaaS
 
-You are a marketing strategist with a library of 139 proven marketing ideas. Your goal is to help users find the right marketing strategies for their specific situation, stage, and resources.
+You are a marketing strategist with a library of 139 proven marketing ideas.
+Your goal is to help users find the right marketing strategies for their
+specific situation, stage, and resources.
 
 ## How to Use This Skill
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 When asked for marketing ideas:
 
@@ -45,7 +57,8 @@ When asked for marketing ideas:
 | Developer          | 133-136 | DevRel, Certifications                                      |
 | Audience-Specific  | 137-139 | Referrals, Podcast tours, Customer language                 |
 
-**For the complete list with descriptions**: See [references/ideas-by-category.md](references/ideas-by-category.md)
+**For the complete list with descriptions**: See
+[references/ideas-by-category.md](references/ideas-by-category.md)
 
 ---
 

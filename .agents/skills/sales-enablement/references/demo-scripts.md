@@ -1,6 +1,7 @@
 # Demo Script Templates
 
-Scene-by-scene templates for different call types, with timing, talk tracks, and interaction guidance.
+Scene-by-scene templates for different call types, with timing, talk tracks, and
+interaction guidance.
 
 ## Discovery Call Script
 
@@ -11,7 +12,10 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 
 **Talk track:**
 
-> "Thanks for taking the time, [Name]. I've done some research on [Company] but I'd love to hear from you directly. My goal for today is to understand what you're working on and see if there's a fit — and if there's not, I'll tell you that too. Sound good?"
+> "Thanks for taking the time, [Name]. I've done some research on [Company] but
+> I'd love to hear from you directly. My goal for today is to understand what
+> you're working on and see if there's a fit — and if there's not, I'll tell you
+> that too. Sound good?"
 
 **What to establish:**
 
@@ -55,7 +59,9 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 - Failed attempts to solve this (shows urgency)
 - The "magic wand" answer reveals their ideal state
 
-**Interaction tip:** Take notes visibly. Repeat back what you hear: "So if I understand correctly, the biggest issue is [X], which costs you about [Y] per month. Is that right?"
+**Interaction tip:** Take notes visibly. Repeat back what you hear: "So if I
+understand correctly, the biggest issue is [X], which costs you about [Y] per
+month. Is that right?"
 
 ---
 
@@ -81,7 +87,8 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 
 **Questions to ask:**
 
-- "If you decided this was the right solution, what does the evaluation process look like?"
+- "If you decided this was the right solution, what does the evaluation process
+  look like?"
 - "Who else would be involved in the decision?"
 - "Have you evaluated solutions for this before?"
 - "What's your timeline for making a decision?"
@@ -98,7 +105,10 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 
 **Talk track:**
 
-> "Based on what you've shared, I think there's a strong fit — specifically around [pain point 1] and [pain point 2]. What I'd suggest as a next step is a 30-minute demo where I can show you exactly how we'd address those. I'll customize it to your workflow. Does [specific date/time] work?"
+> "Based on what you've shared, I think there's a strong fit — specifically
+> around [pain point 1] and [pain point 2]. What I'd suggest as a next step is a
+> 30-minute demo where I can show you exactly how we'd address those. I'll
+> customize it to your workflow. Does [specific date/time] work?"
 
 **What to do:**
 
@@ -111,13 +121,16 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 ## First Demo Script
 
 **Duration:** 30-45 minutes
-**Goal:** Show how your product solves their specific pain. Advance to evaluation/pilot.
+**Goal:** Show how your product solves their specific pain. Advance to
+evaluation/pilot.
 
 ### Scene 1: Opening & Recap (5 min)
 
 **Talk track:**
 
-> "Last time we spoke, you mentioned [pain point 1], [pain point 2], and [goal]. I've put together a demo focused on those three areas. If I've missed anything, flag it and we'll adjust. Sound good?"
+> "Last time we spoke, you mentioned [pain point 1], [pain point 2], and [goal].
+> I've put together a demo focused on those three areas. If I've missed
+> anything, flag it and we'll adjust. Sound good?"
 
 **What to do:**
 
@@ -165,7 +178,9 @@ Show something they can't do today and can't get from competitors.
 
 **Talk track:**
 
-> "This is where we're really different from [competitor/status quo]. [Explain the unique capability]. For example, [Customer] uses this to [specific outcome]."
+> "This is where we're really different from [competitor/status quo]. [Explain
+> > the unique capability]. For example, [Customer] uses this to [specific
+> > outcome]."
 
 **Interaction point:**
 
@@ -177,7 +192,9 @@ Show something they can't do today and can't get from competitors.
 
 **Talk track:**
 
-> "Let me share a quick example. [Customer similar to them] was in a similar situation — [brief challenge]. After implementing, they saw [specific metrics]. Their [role] said [quote]."
+> "Let me share a quick example. [Customer similar to them] was in a similar
+> situation — [brief challenge]. After implementing, they saw [specific
+> > metrics]. Their [role] said [quote]."
 
 **What to do:**
 
@@ -190,7 +207,9 @@ Show something they can't do today and can't get from competitors.
 
 **Talk track:**
 
-> "Based on what we've covered, here's what I'd recommend as next steps: [specific next step]. This typically takes [timeline]. Who else on your team should be involved? I can set up a [follow-up meeting type] for [date]."
+> "Based on what we've covered, here's what I'd recommend as next steps:
+> [specific next step]. This typically takes [timeline]. Who else on your team
+> should be involved? I can set up a [follow-up meeting type] for [date]."
 
 **What to do:**
 
@@ -204,15 +223,20 @@ Show something they can't do today and can't get from competitors.
 ## Technical Deep-Dive Script
 
 **Duration:** 45-60 minutes
-**Goal:** Satisfy technical evaluation criteria. Address architecture, security, and integration concerns.
+**Goal:** Satisfy technical evaluation criteria. Address architecture, security,
+and integration concerns.
 
 ### Scene 1: Opening (3 min)
 
 **Talk track:**
 
-> "I know your goal today is to understand the technical details — architecture, security, integrations, and how this fits your stack. I'll walk through each area and leave plenty of time for questions. What's your top priority for this session?"
+> "I know your goal today is to understand the technical details — architecture,
+> security, integrations, and how this fits your stack. I'll walk through each
+> area and leave plenty of time for questions. What's your top priority for this
+> session?"
 
-**Attendees:** Typically includes their technical evaluator (engineer, architect, IT lead) plus your SE or solutions engineer.
+**Attendees:** Typically includes their technical evaluator (engineer,
+architect, IT lead) plus your SE or solutions engineer.
 
 ---
 
@@ -245,7 +269,8 @@ Show something they can't do today and can't get from competitors.
 
 **Interaction point:**
 
-> "What are your must-have security requirements? I want to make sure we address them specifically."
+> "What are your must-have security requirements? I want to make sure we address
+> them specifically."
 
 ---
 
@@ -261,7 +286,8 @@ Show something they can't do today and can't get from competitors.
 
 **Interaction point:**
 
-> "Walk me through your current stack — I want to map out exactly how we'd fit in."
+> "Walk me through your current stack — I want to map out exactly how we'd fit
+> in."
 
 ---
 
@@ -277,7 +303,8 @@ Show something they can't do today and can't get from competitors.
 
 **Interaction point:**
 
-> "What does your team's capacity look like for implementation? That helps me scope the right timeline."
+> "What does your team's capacity look like for implementation? That helps me
+> scope the right timeline."
 
 ---
 
@@ -285,7 +312,8 @@ Show something they can't do today and can't get from competitors.
 
 **Talk track:**
 
-> "What questions do I need to answer for you to feel confident about the technical fit?"
+> "What questions do I need to answer for you to feel confident about the
+> technical fit?"
 
 **What to do:**
 
@@ -299,13 +327,17 @@ Show something they can't do today and can't get from competitors.
 ## Executive Overview Script
 
 **Duration:** 20-30 minutes
-**Goal:** Get executive buy-in on the business case. Advance to budget approval or decision.
+**Goal:** Get executive buy-in on the business case. Advance to budget approval
+or decision.
 
 ### Scene 1: Opening (2 min)
 
 **Talk track:**
 
-> "Thanks for your time, [Name]. [Champion] has been evaluating [your product] and the results look strong. I'll keep this focused on the business impact and what a partnership looks like. I know your time is valuable so I'll aim to leave 10 minutes for questions."
+> "Thanks for your time, [Name]. [Champion] has been evaluating [your product]
+> and the results look strong. I'll keep this focused on the business impact and
+> what a partnership looks like. I know your time is valuable so I'll aim to
+> leave 10 minutes for questions."
 
 **What to do:**
 
@@ -319,7 +351,10 @@ Show something they can't do today and can't get from competitors.
 
 **Talk track:**
 
-> "Based on what [Champion] shared, your team is spending [X hours/$ amount] on [problem]. That's [annual cost]. It's also creating [secondary impact: risk, delays, churn]. This isn't unique to you — it's an industry-wide challenge, and the companies solving it are seeing [outcome]."
+> "Based on what [Champion] shared, your team is spending [X hours/$ amount] on
+> [problem]. That's [annual cost]. It's also creating [secondary impact: risk,
+> > delays, churn]. This isn't unique to you — it's an industry-wide challenge,
+> and the companies solving it are seeing [outcome]."
 
 **What to do:**
 
@@ -333,7 +368,10 @@ Show something they can't do today and can't get from competitors.
 
 **Talk track:**
 
-> "Here's what we do differently. [One-sentence explanation]. For your team specifically, this means [specific benefit 1] and [specific benefit 2]. [Champion]'s team has already seen [early result or reaction from evaluation]."
+> "Here's what we do differently. [One-sentence explanation]. For your team
+> specifically, this means [specific benefit 1] and [specific benefit 2].
+> [Champion]'s team has already seen [early result or reaction from
+> > evaluation]."
 
 **What to do:**
 
@@ -347,7 +385,10 @@ Show something they can't do today and can't get from competitors.
 
 **Talk track:**
 
-> "Here's the business case. Based on your team's numbers: [walk through ROI calculation]. Expected payback period is [X months]. Over 3 years, the total value is [$ amount]. [Customer similar to them] saw [specific result] within [timeframe]."
+> "Here's the business case. Based on your team's numbers: [walk through ROI
+> > calculation]. Expected payback period is [X months]. Over 3 years, the total
+> value is [$ amount]. [Customer similar to them] saw [specific result] within
+> [timeframe]."
 
 **What to do:**
 
@@ -361,7 +402,8 @@ Show something they can't do today and can't get from competitors.
 
 **Talk track:**
 
-> "What questions do you have? And — assuming the business case holds up, what does the decision process look like from here?"
+> "What questions do you have? And — assuming the business case holds up, what
+> does the decision process look like from here?"
 
 **What to do:**
 
@@ -376,9 +418,12 @@ Show something they can't do today and can't get from competitors.
 
 ### When to Ask Questions During Demos
 
-- **After showing each workflow** — "How does this compare to your current process?"
-- **When you see a reaction** — "I noticed you reacted to that — what are you thinking?"
-- **Before moving to the next section** — "Any questions on this before we move on?"
+- **After showing each workflow** — "How does this compare to your current
+  process?"
+- **When you see a reaction** — "I noticed you reacted to that — what are you
+  thinking?"
+- **Before moving to the next section** — "Any questions on this before we move
+  on?"
 - **When showing a differentiator** — "How would your team use this?"
 - **At the midpoint** — "Are we covering the right things, or should we adjust?"
 
@@ -394,7 +439,10 @@ Show something they can't do today and can't get from competitors.
 When a prospect asks to see something during the demo:
 
 1. **If it's quick** — show it now, then return to your flow
-2. **If it's a tangent** — "Great question. Let me note that and show you after the main flow so we stay on track."
-3. **If it's not possible** — "We don't do that today. Here's how customers handle it: [alternative]."
+2. **If it's a tangent** — "Great question. Let me note that and show you after
+   the main flow so we stay on track."
+3. **If it's not possible** — "We don't do that today. Here's how customers
+   handle it: [alternative]."
 
-Never say "I'll get back to you" without writing it down and following up within 24 hours.
+Never say "I'll get back to you" without writing it down and following up within
+24 hours.

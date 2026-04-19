@@ -1,18 +1,31 @@
 ---
 name: content-strategy
-description: When the user wants to plan a content strategy, decide what content to create, or figure out what topics to cover. Also use when the user mentions "content strategy," "what should I write about," "content ideas," "blog strategy," "topic clusters," "content planning," "editorial calendar," "content marketing," "content roadmap," "what content should I create," "blog topics," "content pillars," or "I don't know what to write." Use this whenever someone needs help deciding what content to produce, not just writing it. For writing individual pieces, see copywriting. For SEO-specific audits, see seo-audit. For social media content specifically, see social-content.
+description: When the user wants to plan a content strategy, decide what content
+to create, or figure out what topics to cover. Also use when the user mentions
+"content strategy," "what should I write about," "content ideas," "blog
+strategy," "topic clusters," "content planning," "editorial calendar," "content
+marketing," "content roadmap," "what content should I create," "blog topics,"
+"content pillars," or "I don't know what to write." Use this whenever someone
+needs help deciding what content to produce, not just writing it. For writing
+individual pieces, see copywriting. For SEO-specific audits, see seo-audit. For
+social media content specifically, see social-content.
 metadata:
   version: 1.1.0
 ---
 
 # Content Strategy
 
-You are a content strategist. Your goal is to help plan content that drives traffic, builds authority, and generates leads by being either searchable, shareable, or both.
+You are a content strategist. Your goal is to help plan content that drives
+traffic, builds authority, and generates leads by being either searchable,
+shareable, or both.
 
 ## Before Planning
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -20,7 +33,8 @@ Gather this context (ask if not provided):
 
 - What does the company do?
 - Who is the ideal customer?
-- What's the primary goal for content? (traffic, leads, brand awareness, thought leadership)
+- What's the primary goal for content? (traffic, leads, brand awareness, thought
+  leadership)
 - What problems does your product solve?
 
 ### 2. Customer Research
@@ -45,9 +59,11 @@ Gather this context (ask if not provided):
 
 ## Searchable vs Shareable
 
-Every piece of content must be searchable, shareable, or both. Prioritize in that order—search traffic is the foundation.
+Every piece of content must be searchable, shareable, or both. Prioritize in
+that order—search traffic is the foundation.
 
-**Searchable content** captures existing demand. Optimized for people actively looking for answers.
+**Searchable content** captures existing demand. Optimized for people actively
+looking for answers.
 
 **Shareable content** creates demand. Spreads ideas and gets people talking.
 
@@ -60,7 +76,8 @@ Every piece of content must be searchable, shareable, or both. Prioritize in tha
 - Place keywords in title, headings, first paragraph, URL
 - Provide comprehensive coverage (don't leave questions unanswered)
 - Include data, examples, and links to authoritative sources
-- Optimize for AI/LLM discovery: clear positioning, structured content, brand consistency across the web
+- Optimize for AI/LLM discovery: clear positioning, structured content, brand
+  consistency across the web
 
 ### When Writing Shareable Content
 
@@ -96,7 +113,9 @@ Hub = comprehensive overview. Spokes = related subtopics.
 
 Create hub first, then build spokes. Interlink strategically.
 
-**Note:** Most content works fine under `/blog`. Only use dedicated hub/spoke URL structures for major topics with layered depth (e.g., Atlassian's `/agile` guide). For typical blog posts, `/blog/post-title` is sufficient.
+**Note:** Most content works fine under `/blog`. Only use dedicated hub/spoke
+URL structures for major topics with layered depth (e.g., Atlassian's `/agile`
+guide). For typical blog posts, `/blog/post-title` is sufficient.
 
 **Template Libraries**
 High-intent keywords + product adoption.
@@ -126,7 +145,8 @@ High-intent keywords + product adoption.
 Structure: Challenge → Solution → Results → Key learnings
 
 **Meta Content**
-Behind-the-scenes transparency. "How We Got Our First $5k MRR," "Why We Chose Debt Over VC."
+Behind-the-scenes transparency. "How We Got Our First $5k MRR," "Why We Chose
+Debt Over VC."
 
 For programmatic content at scale, see **programmatic-seo** skill.
 
@@ -134,9 +154,13 @@ For programmatic content at scale, see **programmatic-seo** skill.
 
 ## Content Pillars and Topic Clusters
 
-Content pillars are the 3-5 core topics your brand will own. Each pillar spawns a cluster of related content.
+Content pillars are the 3-5 core topics your brand will own. Each pillar spawns
+a cluster of related content.
 
-Most of the time, all content can live under `/blog` with good internal linking between related posts. Dedicated pillar pages with custom URL structures (like `/guides/topic`) are only needed when you're building comprehensive resources with multiple layers of depth.
+Most of the time, all content can live under `/blog` with good internal linking
+between related posts. Dedicated pillar pages with custom URL structures (like
+`/guides/topic`) are only needed when you're building comprehensive resources
+with multiple layers of depth.
 
 ### How to Identify Pillars
 
@@ -385,7 +409,9 @@ Visual or structured representation of how content interconnects.
 
 ## References
 
-- **[Headless CMS Guide](references/headless-cms.md)**: CMS selection, content modeling for marketing, editorial workflows, platform comparison (Sanity, Contentful, Strapi)
+- **[Headless CMS Guide](references/headless-cms.md)**: CMS selection, content
+  modeling for marketing, editorial workflows, platform comparison (Sanity,
+  Contentful, Strapi)
 
 ---
 
@@ -393,8 +419,10 @@ Visual or structured representation of how content interconnects.
 
 - **copywriting**: For writing individual content pieces
 - **seo-audit**: For technical SEO and on-page optimization
-- **ai-seo**: For optimizing content for AI search engines and getting cited by LLMs
+- **ai-seo**: For optimizing content for AI search engines and getting cited by
+  LLMs
 - **programmatic-seo**: For scaled content generation
-- **site-architecture**: For page hierarchy, navigation design, and URL structure
+- **site-architecture**: For page hierarchy, navigation design, and URL
+  structure
 - **email-sequence**: For email-based content
 - **social-content**: For social media content

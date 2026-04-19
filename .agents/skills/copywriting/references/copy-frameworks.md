@@ -4,24 +4,27 @@ Headline formulas, page section types, and structural templates.
 
 ## Contents
 
-- Headline Formulas (outcome-focused, problem-focused, audience-focused, differentiation-focused, proof-focused, additional formulas)
+- Headline Formulas (outcome-focused, problem-focused, audience-focused,
+  differentiation-focused, proof-focused, additional formulas)
 - Landing Page Section Types (core sections, supporting sections)
-- Page Structure Templates (feature-heavy page, varied engaging page, compact landing page, enterprise/B2B landing page, product launch page)
-- Section Writing Tips (problem section, benefits section, how it works section, testimonial selection)
+- Page Structure Templates (feature-heavy page, varied engaging page, compact
+  landing page, enterprise/B2B landing page, product launch page)
+- Section Writing Tips (problem section, benefits section, how it works
+  section, testimonial selection)
 
 ## Headline Formulas
 
 ### Outcome-Focused
 
-**{Achieve desirable outcome} without {pain point}**
+#### {Achieve desirable outcome} without {pain point}
 
 > Understand how users are really experiencing your site without drowning in numbers
 
-**{Achieve desirable outcome} by {how product makes it possible}**
+#### {Achieve desirable outcome} by {how product makes it possible}
 
 > Generate more leads by seeing which companies visit your site
 
-**Turn {input} into {outcome}**
+#### Turn {input} into {outcome}
 
 > Turn your hard-earned sales into repeat customers
 
@@ -33,11 +36,11 @@ Headline formulas, page section types, and structural templates.
 
 ### Problem-Focused
 
-**Never {unpleasant event} again**
+#### Never {unpleasant event} again
 
 > Never miss a sales opportunity again
 
-**{Question highlighting the main pain point}**
+#### {Question highlighting the main pain point}
 
 > Hate returning stuff to Amazon?
 
@@ -49,15 +52,15 @@ Headline formulas, page section types, and structural templates.
 
 ### Audience-Focused
 
-**{Key feature/product type} for {target audience}**
+#### {Key feature/product type} for {target audience}
 
 > Advanced analytics for Shopify e-commerce
 
-**{Key feature/product type} for {target audience} to {what it's used for}**
+#### {Key feature/product type} for {target audience} to {what it's used for}
 
 > An online whiteboard for teams to ideate and brainstorm together
 
-**You don't have to {skills or resources} to {achieve desirable outcome}**
+#### You don't have to {skills or resources} to {achieve desirable outcome}
 
 > With Ahrefs, you don't have to be an SEO pro to rank higher and get more traffic
 
@@ -65,7 +68,7 @@ Headline formulas, page section types, and structural templates.
 
 ### Differentiation-Focused
 
-**The {opposite of usual process} way to {achieve desirable outcome}**
+#### The {opposite of usual process} way to {achieve desirable outcome}
 
 > The easiest way to turn your passion into income
 
@@ -81,7 +84,7 @@ Headline formulas, page section types, and structural templates.
 
 > 50,000 marketers use Drip to send better emails
 
-**{Key benefit of your product}**
+#### {Key benefit of your product}
 
 > Sound clear in online meetings
 
@@ -89,23 +92,23 @@ Headline formulas, page section types, and structural templates.
 
 ### Additional Formulas
 
-**The simple way to {outcome}**
+#### The simple way to {outcome}
 
 > The simple way to track your time
 
-**Finally, {category} that {benefit}**
+#### Finally, {category} that {benefit}
 
 > Finally, accounting software that doesn't suck
 
-**{Outcome} without {common pain}**
+#### {Outcome} without {common pain}
 
 > Build your website without writing code
 
-**Get {benefit} from your {thing}**
+#### Get {benefit} from your {thing}
 
 > Get more revenue from your existing traffic
 
-**{Action verb} your {thing} like {admirable example}**
+#### {Action verb} your {thing} like {admirable example}
 
 > Market your SaaS like a Fortune 500
 
@@ -113,11 +116,11 @@ Headline formulas, page section types, and structural templates.
 
 > What if you could close deals 30% faster?
 
-**Everything you need to {outcome}**
+#### Everything you need to {outcome}
 
 > Everything you need to launch your course
 
-**The {adjective} {category} built for {audience}**
+#### The {adjective} {category} built for {audience}
 
 > The lightweight CRM built for startups
 
@@ -127,39 +130,39 @@ Headline formulas, page section types, and structural templates.
 
 ### Core Sections
 
-**Hero (Above the Fold)**
+#### Hero (Above the Fold)
 
 - Headline + subheadline
 - Primary CTA
 - Supporting visual (product screenshot, hero image)
 - Optional: Social proof bar
 
-**Social Proof Bar**
+#### Social Proof Bar
 
 - Customer logos (recognizable > many)
 - Key metric ("10,000+ teams")
 - Star rating with review count
 - Short testimonial snippet
 
-**Problem/Pain Section**
+#### Problem/Pain Section
 
 - Articulate their problem better than they can
 - Create recognition ("that's exactly my situation")
 - Hint at cost of not solving it
 
-**Solution/Benefits Section**
+#### Solution/Benefits Section
 
 - Bridge from problem to your solution
 - 3-5 key benefits (not 10)
 - Each: headline + explanation + proof if available
 
-**How It Works**
+#### How It Works
 
 - 3-4 numbered steps
 - Reduces perceived complexity
 - Each step: action + outcome
 
-**Final CTA Section**
+#### Final CTA Section
 
 - Recap value proposition
 - Repeat primary CTA
@@ -169,79 +172,79 @@ Headline formulas, page section types, and structural templates.
 
 ### Supporting Sections
 
-**Testimonials**
+#### Testimonials
 
 - Full quotes with names, roles, companies
 - Photos when possible
 - Specific results over vague praise
 - Formats: quote cards, video, tweet embeds
 
-**Case Studies**
+#### Case Studies
 
 - Problem → Solution → Results
 - Specific metrics and outcomes
 - Customer name and context
 - Can be snippets with "Read more" links
 
-**Use Cases**
+#### Use Cases
 
 - Different ways product is used
 - Helps visitors self-identify
 - "For marketers who need X" format
 
-**Personas / "Built For" Sections**
+#### Personas / "Built For" Sections
 
 - Explicitly call out target audience
 - "Perfect for [role]" blocks
 - Addresses "Is this for me?" question
 
-**FAQ Section**
+#### FAQ Section
 
 - Address common objections
 - Good for SEO
 - Reduces support burden
 - 5-10 most common questions
 
-**Comparison Section**
+#### Comparison Section
 
 - vs. competitors (name them or don't)
 - vs. status quo (spreadsheets, manual processes)
 - Tables or side-by-side format
 
-**Integrations / Partners**
+#### Integrations / Partners
 
 - Logos of tools you connect with
 - "Works with your stack" messaging
 - Builds credibility
 
-**Founder Story / Manifesto**
+#### Founder Story / Manifesto
 
 - Why you built this
 - What you believe
 - Emotional connection
 - Differentiates from faceless competitors
 
-**Demo / Product Tour**
+#### Demo / Product Tour
 
 - Interactive demos
 - Video walkthroughs
 - GIF previews
 - Shows product in action
 
-**Pricing Preview**
+#### Pricing Preview
 
 - Teaser even on non-pricing pages
 - Starting price or "from $X/mo"
 - Moves decision-makers forward
 
-**Guarantee / Risk Reversal**
+#### Guarantee / Risk Reversal
 
 - Money-back guarantee
 - Free trial terms
 - "Cancel anytime"
 - Reduces friction
 
-**Stats Section**
+#### Stats Section
 
 - Key metrics that build credibility
 - "10,000+ customers"

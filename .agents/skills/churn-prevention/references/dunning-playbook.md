@@ -8,7 +8,8 @@ Complete guide to recovering failed payments and reducing involuntary churn.
 
 - Failed payments cause 30-50% of all subscription churn
 - Most failed payments are recoverable with the right strategy
-- Subscription businesses lose an estimated $129 billion annually to involuntary churn
+- Subscription businesses lose an estimated $129 billion annually to involuntary
+  churn
 - Effective dunning recovers 50-60% of failed payments
 
 ---
@@ -81,8 +82,10 @@ Major card networks offer automatic card update programs:
 Prompt for a second payment method:
 
 - During signup: "Add a backup payment method" (low conversion)
-- After first successful payment: "Protect your account with a backup card" (better timing)
-- After a failed payment is recovered: "Add a backup to prevent future interruptions" (best timing — they felt the pain)
+- After first successful payment: "Protect your account with a backup card"
+  (better timing)
+- After a failed payment is recovered: "Add a backup to prevent future
+  interruptions" (best timing — they felt the pain)
 
 ### Pre-Billing Notifications
 

@@ -6,14 +6,20 @@ Reusable content block patterns optimized for answer engines and AI citation.
 
 ## Contents
 
-- Answer Engine Optimization (AEO) Patterns (Definition Block, Step-by-Step Block, Comparison Table Block, Pros and Cons Block, FAQ Block, Listicle Block)
-- Generative Engine Optimization (GEO) Patterns (Statistic Citation Block, Expert Quote Block, Authoritative Claim Block, Self-Contained Answer Block, Evidence Sandwich Block)
-- Domain-Specific GEO Tactics (Technology Content, Health/Medical Content, Financial Content, Legal Content, Business/Marketing Content)
-- Voice Search Optimization (Question Formats for Voice, Voice-Optimized Answer Structure)
+- Answer Engine Optimization (AEO) Patterns (Definition Block, Step-by-Step
+  Block, Comparison Table Block, Pros and Cons Block, FAQ Block, Listicle Block)
+- Generative Engine Optimization (GEO) Patterns (Statistic Citation Block,
+  Expert Quote Block, Authoritative Claim Block, Self-Contained Answer Block,
+  Evidence Sandwich Block)
+- Domain-Specific GEO Tactics (Technology Content, Health/Medical Content,
+  Financial Content, Legal Content, Business/Marketing Content)
+- Voice Search Optimization (Question Formats for Voice, Voice-Optimized Answer
+  Structure)
 
 ## Answer Engine Optimization (AEO) Patterns
 
-These patterns help content appear in featured snippets, AI Overviews, voice search results, and answer boxes.
+These patterns help content appear in featured snippets, AI Overviews, voice
+search results, and answer boxes.
 
 ### Definition Block
 
@@ -162,7 +168,8 @@ Use for "Best [X]", "Top [X]", "[Number] ways to [X]" queries.
 
 ## Generative Engine Optimization (GEO) Patterns
 
-These patterns optimize content for citation by AI assistants like ChatGPT, Claude, Perplexity, and Gemini.
+These patterns optimize content for citation by AI assistants like ChatGPT,
+Claude, Perplexity, and Gemini.
 
 ### Statistic Citation Block
 
@@ -281,7 +288,8 @@ Different content domains benefit from different authority signals.
 
 ## Voice Search Optimization
 
-Voice queries are conversational and question-based. Optimize for these patterns:
+Voice queries are conversational and question-based. Optimize for these
+patterns:
 
 ### Question Formats for Voice
 

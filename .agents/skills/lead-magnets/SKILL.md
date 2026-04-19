@@ -1,18 +1,31 @@
 ---
 name: lead-magnets
-description: When the user wants to create, plan, or optimize a lead magnet for email capture or lead generation. Also use when the user mentions "lead magnet," "gated content," "content upgrade," "downloadable," "ebook," "cheat sheet," "checklist," "template download," "opt-in," "freebie," "PDF download," "resource library," "content offer," "email capture content," "Notion template," "spreadsheet template," or "what should I give away for emails." Use this for planning what to create and how to distribute it. For interactive tools as lead magnets, see free-tool-strategy. For writing the actual content, see copywriting. For the email sequence after capture, see email-sequence.
+description: When the user wants to create, plan, or optimize a lead magnet for
+email capture or lead generation. Also use when the user mentions "lead magnet,"
+"gated content," "content upgrade," "downloadable," "ebook," "cheat sheet,"
+"checklist," "template download," "opt-in," "freebie," "PDF download," "resource
+library," "content offer," "email capture content," "Notion template,"
+"spreadsheet template," or "what should I give away for emails." Use this for
+planning what to create and how to distribute it. For interactive tools as lead
+magnets, see free-tool-strategy. For writing the actual content, see
+copywriting. For the email sequence after capture, see email-sequence.
 metadata:
   version: 1.0.0
 ---
 
 # Lead Magnets
 
-You are an expert in lead magnet strategy. Your goal is to help plan lead magnets that capture emails, generate qualified leads, and naturally lead to product adoption.
+You are an expert in lead magnet strategy. Your goal is to help plan lead
+magnets that capture emails, generate qualified leads, and naturally lead to
+product adoption.
 
 ## Before Planning
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -91,7 +104,8 @@ Gather this context (ask if not provided):
 | Resource library                  | Ongoing value, return visits    | High    | Ongoing        |
 | Free trial/community access       | Product experience              | Varies  | Varies         |
 
-**For detailed creation guidance per format**: See [references/format-guide.md](references/format-guide.md)
+**For detailed creation guidance per format**: See
+[references/format-guide.md](references/format-guide.md)
 
 ---
 
@@ -150,7 +164,8 @@ Goal: Help implement. Remove friction to purchase.
 - **Email + company/role** — better lead qualification, more friction
 - **Multi-field** — only for high-value offers (webinars, demos)
 
-Rule of thumb: Ask for the minimum needed. Every extra field reduces conversion by 5-10%.
+Rule of thumb: Ask for the minimum needed. Every extra field reduces conversion
+by 5-10%.
 
 ### How to Frame the Exchange
 
@@ -169,7 +184,8 @@ Rule of thumb: Ask for the minimum needed. Every extra field reduces conversion 
 ### Landing Page Structure
 
 1. **Headline** — Clear benefit: what they'll get and why it matters
-2. **Preview/mockup** — Visual of the lead magnet (cover, screenshot, sample page)
+2. **Preview/mockup** — Visual of the lead magnet (cover, screenshot, sample
+   page)
 3. **What's inside** — 3-5 bullet points of key takeaways
 4. **Social proof** — Download count, testimonials, logos
 5. **Form** — Minimal fields, clear CTA button
@@ -247,7 +263,8 @@ Don't waste the thank you page. After they've converted:
 | **Email engagement**             | Content relevance      | 30-50% open, 2-5% click             |
 | **Time to conversion**           | Nurture effectiveness  | Track by lead magnet source         |
 
-**For detailed benchmarks by format and industry**: See [references/benchmarks.md](references/benchmarks.md)
+**For detailed benchmarks by format and industry**: See
+[references/benchmarks.md](references/benchmarks.md)
 
 ### A/B Testing Ideas
 
@@ -317,7 +334,8 @@ When creating a lead magnet strategy, provide:
 
 ## Related Skills
 
-- **free-tool-strategy**: For interactive tools as lead magnets (calculators, graders, quizzes)
+- **free-tool-strategy**: For interactive tools as lead magnets (calculators,
+  graders, quizzes)
 - **copywriting**: For writing the lead magnet content itself
 - **email-sequence**: For nurture sequences after lead capture
 - **page-cro**: For optimizing lead magnet landing pages

@@ -1,6 +1,7 @@
 # Customer Research — Source Guides
 
-Detailed, source-by-source playbooks for gathering customer intelligence from online watering holes.
+Detailed, source-by-source playbooks for gathering customer intelligence from
+online watering holes.
 
 ---
 
@@ -8,12 +9,15 @@ Detailed, source-by-source playbooks for gathering customer intelligence from on
 
 ### Finding the Right Subreddits
 
-Start by identifying where your ICP spends time, not where your product is discussed.
+Start by identifying where your ICP spends time, not where your product is
+discussed.
 
 **Discovery methods:**
 
-- Search `site:reddit.com "[job title] tools"` or `site:reddit.com "[problem category] software"`
-- Use [subreddit search tools](https://www.reddit.com/subreddits/search) with problem-space keywords
+- Search `site:reddit.com "[job title] tools"` or `site:reddit.com "[problem
+category] software"`
+- Use [subreddit search tools](https://www.reddit.com/subreddits/search) with
+  problem-space keywords
 - Look at what subreddits show up in Google results when you search ICP problems
 - Check what subreddits competitors' customers mention in reviews
 
@@ -39,7 +43,8 @@ site:reddit.com "[competitor name]" "vs" OR "alternative" OR "switched"
 **High-signal post types:**
 
 - "What tools do you use for X?" → reveals alternatives and vocab
-- "Frustrated with [competitor], looking for alternatives" → reveals pain and switching triggers
+- "Frustrated with [competitor], looking for alternatives" → reveals pain and
+  switching triggers
 - "How do you handle X?" → reveals workflow and workarounds
 - "Is [your category] worth it?" → reveals objections and evaluation criteria
 - Complaint threads about competitors → reveals gaps you might fill
@@ -66,9 +71,12 @@ site:reddit.com "[competitor name]" "vs" OR "alternative" OR "switched"
 
 Read in this order for maximum signal:
 
-1. **3-star reviews** — these are the most honest. Customer liked it enough to stay but felt something was missing.
-2. **1-star reviews** — understand the failure modes. Separate product issues from support/onboarding issues.
-3. **5-star reviews** — extract the "what they love" language. These are your proof points.
+1. **3-star reviews** — these are the most honest. Customer liked it enough to
+   stay but felt something was missing.
+2. **1-star reviews** — understand the failure modes. Separate product issues
+   from support/onboarding issues.
+3. **5-star reviews** — extract the "what they love" language. These are your
+   proof points.
 4. **4-star reviews** — often contain "the only thing I wish…" buried in praise.
 
 **What to extract:**
@@ -80,7 +88,8 @@ Read in this order for maximum signal:
 
 ### Competitor Reviews on G2
 
-The 4-star competitor reviews are gold — customers who like the product but still have complaints.
+The 4-star competitor reviews are gold — customers who like the product but
+still have complaints.
 
 **G2 structure to exploit:**
 
@@ -88,7 +97,8 @@ The 4-star competitor reviews are gold — customers who like the product but st
 - "What do you dislike?" → their weaknesses (your opportunities)
 - "What problems are you solving?" → the job to be done
 
-**Capterra** has similar structure. **Trustpilot** skews B2C. **AppSumo** reviews are useful for SMB/prosumer SaaS.
+**Capterra** has similar structure. **Trustpilot** skews B2C. **AppSumo**
+reviews are useful for SMB/prosumer SaaS.
 
 ### Review Mining Template
 
@@ -113,7 +123,8 @@ Strong signal for founder/builder/SMB ICP.
 **Where to look:**
 
 - "Ask IH" posts: questions about problems your product solves
-- Milestone posts: when founders describe their stack, they reveal tool preferences and pain
+- Milestone posts: when founders describe their stack, they reveal tool
+  preferences and pain
 - Comment threads on product launches in your category
 
 **Search:** `site:indiehackers.com "[problem]"` or use IH's native search.
@@ -124,7 +135,8 @@ Strong signal for founder/builder/SMB ICP.
 
 - Questions asked = pre-sales concerns = objections
 - Comments = early adopter reactions = leading indicators of reception
-- "Alternatives to X" collections reveal the competitive landscape as users see it
+- "Alternatives to X" collections reveal the competitive landscape as users see
+  it
 
 ---
 
@@ -162,11 +174,13 @@ A job posting is a company's admission of a pain point.
 
 **What to look for:**
 
-- What tools are listed as "nice to have" vs. "required"? (reveals stack and adjacent tools)
+- What tools are listed as "nice to have" vs. "required"? (reveals stack and
+  adjacent tools)
 - What metrics and outcomes are mentioned in the role description?
 - What does the role spend most of its time doing? (reveals the job to be done)
 
-**Search:** `site:linkedin.com/jobs "[role title]" "[relevant tool or category]"`
+**Search:** `site:linkedin.com/jobs "[role title]" "[relevant tool or
+category]"`
 
 ---
 
@@ -209,22 +223,30 @@ A job posting is a company's admission of a pain point.
 
 ### Comparison Content
 
-Google: `"[competitor 1] vs [competitor 2]"` or `"best [category] software [year]"`
+Google: `"[competitor 1] vs [competitor 2]"` or `"best [category] software
+[year]"`
 
-Read the comments on these posts — people who find comparison content are actively evaluating. Their comments are questions your sales process should answer.
+Read the comments on these posts — people who find comparison content are
+actively evaluating. Their comments are questions your sales process should
+answer.
 
 ### Niche Communities
 
-- **Slack communities**: Many industries have public or semi-public Slack groups. Search "[industry] Slack community".
+- **Slack communities**: Many industries have public or semi-public Slack
+  groups. Search "[industry] Slack community".
 - **Discord servers**: Growing for developer and creator communities.
-- **Facebook Groups**: Still strong for SMB, e-commerce, agency, and coach/consultant ICP.
-- **Circle/Mighty Networks communities**: Check if there are paid communities in your ICP's space.
+- **Facebook Groups**: Still strong for SMB, e-commerce, agency, and
+  coach/consultant ICP.
+- **Circle/Mighty Networks communities**: Check if there are paid communities in
+  your ICP's space.
 
 ---
 
 ## B2C and Consumer App Research
 
-B2C research requires different sources than B2B SaaS. Consumer buyers don't congregate on LinkedIn or G2 — they leave traces in app stores, social media, and communities built around the activity your product serves.
+B2C research requires different sources than B2B SaaS. Consumer buyers don't
+congregate on LinkedIn or G2 — they leave traces in app stores, social media,
+and communities built around the activity your product serves.
 
 ### App Store Reviews (iOS App Store / Google Play)
 
@@ -234,7 +256,8 @@ One of the richest unfiltered sources for mobile/consumer products.
 
 1. **1-2 star reviews** — failure modes, unmet expectations, frustration peaks
 2. **3-star reviews** — honest tradeoffs and "it's good but…" feedback
-3. **5-star reviews** — what they love in their own words (proof points and positioning)
+3. **5-star reviews** — what they love in their own words (proof points and
+   positioning)
 
 **What to extract:**
 
@@ -243,17 +266,20 @@ One of the richest unfiltered sources for mobile/consumer products.
 - What they compared it to or switched from
 - Emotional language — "I love how…", "I'm so frustrated that…"
 
-**Search tip:** Sort by "Most Recent" to get fresh signal, then "Most Critical" for pain themes.
+**Search tip:** Sort by "Most Recent" to get fresh signal, then "Most Critical"
+for pain themes.
 
 ### Amazon Reviews (for physical products or software with Amazon presence)
 
 Same priority order as app stores: 3-star reviews first.
 
-**G2 analog for consumer SaaS**: Trustpilot, Sitejabber, and product-specific review aggregators.
+**G2 analog for consumer SaaS**: Trustpilot, Sitejabber, and product-specific
+review aggregators.
 
 ### Reddit Consumer Communities
 
-B2C Reddit is highly vertical — go to the hobby/lifestyle subreddit, not the general ones.
+B2C Reddit is highly vertical — go to the hobby/lifestyle subreddit, not the
+general ones.
 
 **Examples by product type:**
 
@@ -290,12 +316,15 @@ Same approach as B2B but different video types:
 - "Best [category] apps [year]" comparison videos
 - Unboxing or "setup" videos for hardware/physical products
 
-Comments on review videos are especially valuable — these are people actively in the consideration phase.
+Comments on review videos are especially valuable — these are people actively in
+the consideration phase.
 
 ### Consumer Community Platforms
 
-- **Facebook Groups**: Still dominant for many consumer verticals (parenting, fitness, local services, hobbies)
-- **Discord servers**: Growing for gaming, creator tools, productivity, crypto, lifestyle communities
+- **Facebook Groups**: Still dominant for many consumer verticals (parenting,
+  fitness, local services, hobbies)
+- **Discord servers**: Growing for gaming, creator tools, productivity, crypto,
+  lifestyle communities
 - **Nextdoor**: Useful for local service businesses
 - **Quora**: Long-form questions reveal decision anxiety and evaluation criteria
 
@@ -303,13 +332,21 @@ Comments on review videos are especially valuable — these are people actively 
 
 ## SparkToro (Audience Intelligence)
 
-SparkToro is a behavioral audience research tool. Instead of mining individual posts and comments, it aggregates clickstream, search, and social data to show what your audience does at scale — what they read, watch, listen to, follow, and search for.
+SparkToro is a behavioral audience research tool. Instead of mining individual
+posts and comments, it aggregates clickstream, search, and social data to show
+what your audience does at scale — what they read, watch, listen to, follow, and
+search for.
 
 ### When to Use SparkToro vs. Manual Research
 
-- **SparkToro first** when you need to understand where your ICP spends time, what content they consume, and which influencers they follow — it answers these questions in seconds with aggregated data
-- **Manual research first** (Reddit, G2, communities) when you need raw language, exact quotes, emotional context, and the "why" behind behavior
-- **Best together**: Use SparkToro to identify which podcasts, subreddits, and websites matter, then go mine those sources manually for voice-of-customer language
+- **SparkToro first** when you need to understand where your ICP spends time,
+  what content they consume, and which influencers they follow — it answers
+  these questions in seconds with aggregated data
+- **Manual research first** (Reddit, G2, communities) when you need raw
+  language, exact quotes, emotional context, and the "why" behind behavior
+- **Best together**: Use SparkToro to identify which podcasts, subreddits, and
+  websites matter, then go mine those sources manually for voice-of-customer
+  language
 
 ### Key Queries to Run
 
@@ -343,11 +380,13 @@ SparkToro is a behavioral audience research tool. Instead of mining individual p
 
 ### Source Weighting
 
-SparkToro data is aggregated and anonymized — it shows patterns, not individual opinions. Treat it as:
+SparkToro data is aggregated and anonymized — it shows patterns, not individual
+opinions. Treat it as:
 
 - **High confidence** for behavioral data (what they visit, follow, search for)
 - **Medium confidence** for demographic data (self-reported, may be incomplete)
-- **Not a substitute** for qualitative research (doesn't capture language, emotions, or the "why")
+- **Not a substitute** for qualitative research (doesn't capture language,
+  emotions, or the "why")
 
 ### Limitations
 
@@ -356,7 +395,8 @@ SparkToro data is aggregated and anonymized — it shows patterns, not individua
 - Skews English-language, US-centric
 - Shows what audiences do, not why — pair with qualitative sources
 
-See [tools/integrations/sparktoro.md](../../../tools/integrations/sparktoro.md) for full tool details and pricing.
+See [tools/integrations/sparktoro.md](../../../tools/integrations/sparktoro.md)
+for full tool details and pricing.
 
 ---
 
@@ -376,13 +416,15 @@ Use a simple tagging system across all sources:
 
 Keep a running doc with columns: Source | Date | Quote | Tags | Notes
 
-After 20-30 entries, patterns will emerge. Look for quotes that appear in multiple unrelated sources — those are your highest-confidence insights.
+After 20-30 entries, patterns will emerge. Look for quotes that appear in
+multiple unrelated sources — those are your highest-confidence insights.
 
 ---
 
 ## Source Reliability and Confidence Scoring
 
-Not all sources carry equal weight. Use this guide when assigning confidence labels.
+Not all sources carry equal weight. Use this guide when assigning confidence
+labels.
 
 ### Source Weighting
 
@@ -421,4 +463,5 @@ from companies 500+. Needs more signal before acting on it.
 - **Use with caution**: 12-24 months (product and market may have shifted)
 - **Use only for baseline context**: 2+ years old
 
-When a theme appears consistently across old and new data, that's a durable signal worth acting on.
+When a theme appears consistently across old and new data, that's a durable
+signal worth acting on.

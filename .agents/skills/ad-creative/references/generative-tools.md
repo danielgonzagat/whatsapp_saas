@@ -62,7 +62,8 @@ curl -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5
 ```
 
 **Docs:**
-[Gemini Image Generation](https://ai.google.dev/gemini-api/docs/image-generation)
+[Gemini Image
+Generation](https://ai.google.dev/gemini-api/docs/image-generation)
 
 ---
 
@@ -169,7 +170,8 @@ social
 - Generate multiple video variations from the same prompt with different styles
 
 **Docs:**
-[Veo on Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/video/overview)
+[Veo on Vertex
+AI](https://cloud.google.com/vertex-ai/generative-ai/docs/video/overview)
 
 ---
 
@@ -246,7 +248,8 @@ resolution
 - Narrative brand videos
 
 **Docs:**
-[OpenAI Video Generation](https://platform.openai.com/docs/guides/video-generation)
+[OpenAI Video
+Generation](https://platform.openai.com/docs/guides/video-generation)
 
 ---
 

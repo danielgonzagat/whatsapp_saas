@@ -1,10 +1,12 @@
 # Reverse Engineering Viral Content
 
-Instead of guessing what works, systematically analyze top-performing content in your niche and extract proven patterns.
+Instead of guessing what works, systematically analyze top-performing content in
+your niche and extract proven patterns.
 
 ## Contents
 
-- The 6-Step Framework (Niche ID, Scrape, Analyze, Playbook, Layer Voice, Convert)
+- The 6-Step Framework (Niche ID, Scrape, Analyze, Playbook, Layer Voice,
+  Convert)
 - The Formula
 - Reverse Engineering Checklist
 
@@ -113,14 +115,14 @@ Why it works: Pattern interrupt + invites debate
 
 Take proven patterns and make them yours with these voice principles:
 
-**"Smart friend who figured something out"**
+#### "Smart friend who figured something out"
 
 - Write like you're texting advice to a friend
 - Share discoveries, not lectures
 - Use "I found that..." not "You should..."
 - Be helpful, not preachy
 
-**Specific > Vague**
+#### Specific > Vague
 
 ```
 ❌ "I made good revenue"
@@ -153,7 +155,7 @@ Do it exceptionally well.
 Everything changed."
 ```
 
-**Write from emotion**
+#### Write from emotion
 
 - Start with how you felt, not what you did
 - Use emotional words: frustrated, excited, terrified, obsessed

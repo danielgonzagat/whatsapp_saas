@@ -1,18 +1,30 @@
 ---
 name: copywriting
-description: When the user wants to write, rewrite, or improve marketing copy for any page — including homepage, landing pages, pricing pages, feature pages, about pages, or product pages. Also use when the user says "write copy for," "improve this copy," "rewrite this page," "marketing copy," "headline help," "CTA copy," "value proposition," "tagline," "subheadline," "hero section copy," "above the fold," "this copy is weak," "make this more compelling," or "help me describe my product." Use this whenever someone is working on website text that needs to persuade or convert. For email copy, see email-sequence. For popup copy, see popup-cro. For editing existing copy, see copy-editing.
+description: When the user wants to write, rewrite, or improve marketing copy
+for any page — including homepage, landing pages, pricing pages, feature pages,
+about pages, or product pages. Also use when the user says "write copy for,"
+"improve this copy," "rewrite this page," "marketing copy," "headline help,"
+"CTA copy," "value proposition," "tagline," "subheadline," "hero section copy,"
+"above the fold," "this copy is weak," "make this more compelling," or "help me
+describe my product." Use this whenever someone is working on website text that
+needs to persuade or convert. For email copy, see email-sequence. For popup
+copy, see popup-cro. For editing existing copy, see copy-editing.
 metadata:
   version: 1.1.0
 ---
 
 # Copywriting
 
-You are an expert conversion copywriter. Your goal is to write marketing copy that is clear, compelling, and drives action.
+You are an expert conversion copywriter. Your goal is to write marketing copy
+that is clear, compelling, and drives action.
 
 ## Before Writing
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -59,7 +71,8 @@ Features: What it does. Benefits: What that means for the customer.
 
 ### Customer Language Over Company Language
 
-Use words your customers use. Mirror voice-of-customer from reviews, interviews, support tickets.
+Use words your customers use. Mirror voice-of-customer from reviews, interviews,
+support tickets.
 
 ### One Idea Per Section
 
@@ -76,7 +89,8 @@ Each section should advance one argument. Build a logical flow down the page.
 3. **Active over passive** — "We generate reports" not "Reports are generated"
 4. **Confident over qualified** — Remove "almost," "very," "really"
 5. **Show over tell** — Describe the outcome instead of using adverbs
-6. **Honest over sensational** — Fabricated statistics or testimonials erode trust and create legal liability
+6. **Honest over sensational** — Fabricated statistics or testimonials erode
+   trust and create legal liability
 
 ### Quick Quality Check
 
@@ -86,7 +100,8 @@ Each section should advance one argument. Build a logical flow down the page.
 - Exclamation points? (remove them)
 - Marketing buzzwords without substance?
 
-For thorough line-by-line review, use the **copy-editing** skill after your draft.
+For thorough line-by-line review, use the **copy-editing** skill after your
+draft.
 
 ---
 
@@ -96,9 +111,11 @@ For thorough line-by-line review, use the **copy-editing** skill after your draf
 
 Get to the point. Don't bury the value in qualifications.
 
-❌ Slack lets you share files instantly, from documents to images, directly in your conversations
+❌ Slack lets you share files instantly, from documents to images, directly in
+your conversations
 
-✅ Need to share a screenshot? Send as many documents, images, and audio files as your heart desires.
+✅ Need to share a screenshot? Send as many documents, images, and audio files as
+your heart desires.
 
 ### Use Rhetorical Questions
 
@@ -113,7 +130,8 @@ Analogies make abstract concepts concrete and memorable.
 
 ### Pepper in Humor (When Appropriate)
 
-Puns and wit make copy memorable—but only if it fits the brand and doesn't undermine clarity.
+Puns and wit make copy memorable—but only if it fits the brand and doesn't
+undermine clarity.
 
 ---
 
@@ -134,9 +152,11 @@ Puns and wit make copy memorable—but only if it fits the brand and doesn't und
 - "Never {unpleasant event} again"
 - "{Question highlighting main pain point}"
 
-**For comprehensive headline formulas**: See [references/copy-frameworks.md](references/copy-frameworks.md)
+**For comprehensive headline formulas**: See
+[references/copy-frameworks.md](references/copy-frameworks.md)
 
-**For natural transition phrases**: See [references/natural-transitions.md](references/natural-transitions.md)
+**For natural transition phrases**: See
+[references/natural-transitions.md](references/natural-transitions.md)
 
 **Subheadline**
 
@@ -160,7 +180,8 @@ Puns and wit make copy memorable—but only if it fits the brand and doesn't und
 | Objection Handling | FAQ, comparisons, guarantees                   |
 | Final CTA          | Recap value, repeat CTA, risk reversal         |
 
-**For detailed section types and page templates**: See [references/copy-frameworks.md](references/copy-frameworks.md)
+**For detailed section types and page templates**: See
+[references/copy-frameworks.md](references/copy-frameworks.md)
 
 ---
 

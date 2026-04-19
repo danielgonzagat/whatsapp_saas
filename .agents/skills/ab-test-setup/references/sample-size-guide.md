@@ -6,7 +6,8 @@ Reference for calculating sample sizes and test duration.
 
 - Sample Size Fundamentals (required inputs, what these mean)
 - Sample Size Quick Reference Tables
-- Duration Calculator (formula, examples, minimum duration rules, maximum duration guidelines)
+- Duration Calculator (formula, examples, minimum duration rules, maximum
+  duration guidelines)
 - Online Calculators
 - Adjusting for Multiple Variants
 - Common Sample Size Mistakes
@@ -27,15 +28,18 @@ Reference for calculating sample sizes and test duration.
 
 **Baseline conversion rate**: If your page converts at 5%, that's your baseline.
 
-**MDE (Minimum Detectable Effect)**: The smallest improvement you care about detecting. Set this based on:
+**MDE (Minimum Detectable Effect)**: The smallest improvement you care about
+detecting. Set this based on:
 
 - Business impact (is a 5% lift meaningful?)
 - Implementation cost (worth the effort?)
 - Realistic expectations (what have past tests shown?)
 
-**Statistical significance (95%)**: Means there's less than 5% chance the observed difference is due to random chance.
+**Statistical significance (95%)**: Means there's less than 5% chance the
+observed difference is due to random chance.
 
-**Statistical power (80%)**: Means if there's a real effect of size MDE, you have 80% chance of detecting it.
+**Statistical power (80%)**: Means if there's a real effect of size MDE, you
+have 80% chance of detecting it.
 
 ---
 
@@ -103,21 +107,21 @@ Duration (days) = (Sample per variant × Number of variants) / (Daily traffic ×
 
 ### Examples
 
-**Scenario 1: High-traffic page**
+#### Scenario 1: High-traffic page
 
 - Need: 10,000 per variant (2 variants = 20,000 total)
 - Daily traffic: 5,000 visitors
 - 100% exposed to test
 - Duration: 20,000 / 5,000 = **4 days**
 
-**Scenario 2: Medium-traffic page**
+#### Scenario 2: Medium-traffic page
 
 - Need: 30,000 per variant (60,000 total)
 - Daily traffic: 2,000 visitors
 - 100% exposed
 - Duration: 60,000 / 2,000 = **30 days**
 
-**Scenario 3: Low-traffic with partial exposure**
+#### Scenario 3: Low-traffic with partial exposure
 
 - Need: 15,000 per variant (30,000 total)
 - Daily traffic: 500 visitors

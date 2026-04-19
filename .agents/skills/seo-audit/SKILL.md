@@ -7,12 +7,17 @@ metadata:
 
 # SEO Audit
 
-You are an expert in search engine optimization. Your goal is to identify SEO issues and provide actionable recommendations to improve organic search performance.
+You are an expert in search engine optimization. Your goal is to identify SEO
+issues and provide actionable recommendations to improve organic search
+performance.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Before auditing, understand:
 
@@ -39,15 +44,19 @@ Before auditing, understand:
 
 **`web_fetch` and `curl` cannot reliably detect structured data / schema markup.**
 
-Many CMS plugins (AIOSEO, Yoast, RankMath) inject JSON-LD via client-side JavaScript — it won't appear in static HTML or `web_fetch` output (which strips `<script>` tags during conversion).
+Many CMS plugins (AIOSEO, Yoast, RankMath) inject JSON-LD via client-side
+JavaScript — it won't appear in static HTML or `web_fetch` output (which strips
+`<script>` tags during conversion).
 
 **To accurately check for schema markup, use one of these methods:**
 
-1. **Browser tool** — render the page and run: `document.querySelectorAll('script[type="application/ld+json"]')`
+1. **Browser tool** — render the page and run:
+   `document.querySelectorAll('script[type="application/ld+json"]')`
 2. **Google Rich Results Test** — https://search.google.com/test/rich-results
 3. **Screaming Frog export** — if the client provides one, use it (SF renders JavaScript)
 
-Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false audit findings — these tools can't see JS-injected schema.
+Reporting "no schema found" based solely on `web_fetch` or `curl` leads to
+false audit findings — these tools can't see JS-injected schema.
 
 ### Priority Order
 
@@ -63,13 +72,13 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 
 ### Crawlability
 
-**Robots.txt**
+#### Robots.txt
 
 - Check for unintentional blocks
 - Verify important pages allowed
 - Check sitemap reference
 
-**XML Sitemap**
+#### XML Sitemap
 
 - Exists and accessible
 - Submitted to Search Console
@@ -77,7 +86,7 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 - Updated regularly
 - Proper formatting
 
-**Site Architecture**
+#### Site Architecture
 
 - Important pages within 3 clicks of homepage
 - Logical hierarchy
@@ -93,13 +102,13 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 
 ### Indexation
 
-**Index Status**
+#### Index Status
 
 - site:domain.com check
 - Search Console coverage report
 - Compare indexed vs. expected
 
-**Indexation Issues**
+#### Indexation Issues
 
 - Noindex tags on important pages
 - Canonicals pointing wrong direction
@@ -107,7 +116,7 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 - Soft 404s
 - Duplicate content without canonicals
 
-**Canonicalization**
+#### Canonicalization
 
 - All pages have canonical tags
 - Self-referencing canonicals on unique pages
@@ -117,13 +126,13 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 
 ### Site Speed & Core Web Vitals
 
-**Core Web Vitals**
+#### Core Web Vitals
 
 - LCP (Largest Contentful Paint): < 2.5s
 - INP (Interaction to Next Paint): < 200ms
 - CLS (Cumulative Layout Shift): < 0.1
 
-**Speed Factors**
+#### Speed Factors
 
 - Server response time (TTFB)
 - Image optimization
@@ -133,7 +142,7 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 - CDN usage
 - Font loading
 
-**Tools**
+#### Tools
 
 - PageSpeed Insights
 - WebPageTest
@@ -214,7 +223,7 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 - Headings describe content
 - Not just for styling
 
-**Common issues:**
+#### Common issues:
 
 - Multiple H1s
 - Skip levels (H1 → H3)
@@ -223,7 +232,7 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 
 ### Content Optimization
 
-**Primary Page Content**
+#### Primary Page Content
 
 - Keyword in first 100 words
 - Related keywords naturally used
@@ -231,7 +240,7 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 - Answers search intent
 - Better than competitors
 
-**Thin Content Issues**
+#### Thin Content Issues
 
 - Pages with little unique content
 - Tag/category pages with no value
@@ -260,7 +269,7 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 - No broken internal links
 - Reasonable link count per page
 
-**Common issues:**
+#### Common issues:
 
 - Orphan pages (no internal links)
 - Over-optimized anchor text
@@ -269,14 +278,14 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 
 ### Keyword Targeting
 
-**Per Page**
+#### Per Page
 
 - Clear primary keyword target
 - Title, H1, URL aligned
 - Content satisfies search intent
 - Not competing with other pages (cannibalization)
 
-**Site-Wide**
+#### Site-Wide
 
 - Keyword mapping document
 - No major gaps in coverage
@@ -289,25 +298,25 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 
 ### E-E-A-T Signals
 
-**Experience**
+#### Experience
 
 - First-hand experience demonstrated
 - Original insights/data
 - Real examples and case studies
 
-**Expertise**
+#### Expertise
 
 - Author credentials visible
 - Accurate, detailed information
 - Properly sourced claims
 
-**Authoritativeness**
+#### Authoritativeness
 
 - Recognized in the space
 - Cited by others
 - Industry credentials
 
-**Trustworthiness**
+#### Trustworthiness
 
 - Accurate information
 - Transparent about business
@@ -371,7 +380,7 @@ Reporting "no schema found" based solely on `web_fetch` or `curl` leads to false
 
 ### Audit Report Structure
 
-**Executive Summary**
+#### Executive Summary
 
 - Overall health assessment
 - Top 3-5 priority issues
@@ -392,7 +401,7 @@ Same format as above
 **Content Findings**
 Same format as above
 
-**Prioritized Action Plan**
+#### Prioritized Action Plan
 
 1. Critical fixes (blocking indexation/ranking)
 2. High-impact improvements
@@ -403,14 +412,16 @@ Same format as above
 
 ## References
 
-- [AI Writing Detection](references/ai-writing-detection.md): Common AI writing patterns to avoid (em dashes, overused phrases, filler words)
-- For AI search optimization (AEO, GEO, LLMO, AI Overviews), see the **ai-seo** skill
+- [AI Writing Detection](references/ai-writing-detection.md): Common AI writing
+  patterns to avoid (em dashes, overused phrases, filler words)
+- For AI search optimization (AEO, GEO, LLMO, AI Overviews), see the **ai-seo**
+  skill
 
 ---
 
 ## Tools Referenced
 
-**Free Tools**
+### Free Tools
 
 - Google Search Console (essential)
 - Google PageSpeed Insights
@@ -419,7 +430,11 @@ Same format as above
 - Mobile-Friendly Test
 - Schema Validator
 
-> **Note on schema detection:** `web_fetch` strips `<script>` tags (including JSON-LD) and cannot detect JS-injected schema. Use the browser tool, Rich Results Test, or Screaming Frog instead — they render JavaScript and capture dynamically-injected markup. See the Schema Markup Detection Limitation section above.
+> **Note on schema detection:** `web_fetch` strips `<script>` tags (including
+> JSON-LD) and cannot detect JS-injected schema. Use the browser tool, Rich
+> Results Test, or Screaming Frog instead — they render JavaScript and capture
+> dynamically-injected markup. See the Schema Markup Detection Limitation
+> section above.
 
 **Paid Tools** (if available)
 

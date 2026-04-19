@@ -4,11 +4,13 @@ Comprehensive list of events to track by business type and context.
 
 ## Contents
 
-- Marketing Site Events (navigation & engagement, CTA & form interactions, conversion events)
+- Marketing Site Events (navigation & engagement, CTA & form interactions,
+  conversion events)
 - Product/App Events (onboarding, core usage, errors & support)
 - Monetization Events (pricing & checkout, subscription management)
 - E-commerce Events (browsing, cart, checkout, post-purchase)
-- B2B / SaaS Specific Events (team & collaboration, integration events, account events)
+- B2B / SaaS Specific Events (team & collaboration, integration events, account
+  events)
 - Event Properties (Parameters)
 - Funnel Event Sequences
 
