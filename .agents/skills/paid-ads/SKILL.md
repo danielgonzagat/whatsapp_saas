@@ -1,6 +1,13 @@
 ---
 name: paid-ads
-description: "When the user wants help with paid advertising campaigns on Google Ads, Meta (Facebook/Instagram), LinkedIn, Twitter/X, or other ad platforms. Also use when the user mentions 'PPC,' 'paid media,' 'ROAS,' 'CPA,' 'ad campaign,' 'retargeting,' 'audience targeting,' 'Google Ads,' 'Facebook ads,' 'LinkedIn ads,' 'ad budget,' 'cost per click,' 'ad spend,' or 'should I run ads.' Use this for campaign strategy, audience targeting, bidding, and optimization. For bulk ad creative generation and iteration, see ad-creative. For landing page optimization, see page-cro."
+description: "When the user wants help with paid advertising campaigns on Google
+Ads, Meta (Facebook/Instagram), LinkedIn, Twitter/X, or other ad platforms. Also
+use when the user mentions 'PPC,' 'paid media,' 'ROAS,' 'CPA,' 'ad campaign,'
+'retargeting,' 'audience targeting,' 'Google Ads,' 'Facebook ads,' 'LinkedIn
+ads,' 'ad budget,' 'cost per click,' 'ad spend,' or 'should I run ads.' Use this
+for campaign strategy, audience targeting, bidding, and optimization. For bulk
+ad creative generation and iteration, see ad-creative. For landing page
+optimization, see page-cro."
 metadata:
   version: 1.1.0
 ---
@@ -140,7 +147,8 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 
 - **Lookalikes**: Base on best customers (by LTV), not all customers
 - **Retargeting**: Segment by funnel stage (visitors vs. cart abandoners)
-- **Exclusions**: Exclude existing customers and recent converters — showing ads to people who
+- **Exclusions**: Exclude existing customers and recent converters — showing ads
+  to people who
   already bought wastes spend
 
 **For detailed targeting strategies by platform**: See
@@ -350,7 +358,8 @@ For tracking, see also: [ga4.md](../../tools/integrations/ga4.md) ,
 
 ## Related Skills
 
-- **ad-creative**: For generating and iterating ad headlines, descriptions, and creative at scale
+- **ad-creative**: For generating and iterating ad headlines, descriptions, and
+  creative at scale
 - **copywriting**: For landing page copy that converts ad traffic
 - **analytics-tracking**: For proper conversion tracking setup
 - **ab-test-setup**: For landing page testing to improve ROAS

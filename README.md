@@ -7,7 +7,8 @@ https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/dashboard?utm_source=gh&u
 ](
 https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
-Plataforma AI-native de marketing digital e vendas. Monorepo com frontend (Next.js / Vercel),
+Plataforma AI-native de marketing digital e vendas. Monorepo com frontend
+(Next.js / Vercel),
 backend (NestJS / Railway), worker (BullMQ / Railway).
 
 ## Arquitetura
@@ -62,19 +63,26 @@ Infra
 
 ### Funcionais
 
-- **Auth** — JWT + refresh + Google + Apple + WhatsApp OTP + anonymous + magic link
-- **Products** — CRUD completo, editor com 10 tabs (dados, planos, checkouts, URLs, comissionamento,
+- **Auth** — JWT + refresh + Google + Apple + WhatsApp OTP + anonymous + magic
+  link
+- **Products** — CRUD completo, editor com 10 tabs (dados, planos, checkouts,
+  URLs, comissionamento,
   cupons, campanhas, avaliacoes, after pay, IA)
-- **Checkout** — Temas Blanc/Noir com cores dinamicas do config, Stripe-only (Pix + card), coupon
+- **Checkout** — Temas Blanc/Noir com cores dinamicas do config, Stripe-only
+  (Pix + card), coupon
   popup automatico
-- **WhatsApp** — Dual provider (Meta Cloud API + WAHA, configurable via WHATSAPP_PROVIDER_DEFAULT),
-  inbox real, autopilot com LLM, flow engine. Ver `docs/adr/0001-whatsapp-source-of-truth.md` para a
+- **WhatsApp** — Dual provider (Meta Cloud API + WAHA, configurable via
+  WHATSAPP_PROVIDER_DEFAULT),
+  inbox real, autopilot com LLM, flow engine. Ver
+  `docs/adr/0001-whatsapp-source-of-truth.md` para a
   arquitetura completa.
-- **Kloel AI** — SSE streaming, tool calling, conversation store, context formatter, modulos
+- **Kloel AI** — SSE streaming, tool calling, conversation store, context
+  formatter, modulos
   extraidos (StreamWriter, ToolRouter, ConversationStore)
 - **CRM** — Pipeline, contacts, neuro-CRM, segmentation, deals
 - **Billing** — Stripe integration, usage tracking, trial management
-- **Wallet** — Saldo real, transacoes, saques com verificacao atomica, antecipacoes
+- **Wallet** — Saldo real, transacoes, saques com verificacao atomica,
+  antecipacoes
 - **KYC** — Profile, fiscal, documents, bank, auto-approval
 - **Flows** — Builder visual + engine de execucao no worker
 - **Analytics** — Dashboard stats, daily activity, advanced analytics
@@ -92,7 +100,8 @@ Infra
 
 - JWT + WorkspaceGuard + ThrottlerModule (rate limiting por endpoint)
 - RBAC com `@Roles` decorator (36 endpoints protegidos)
-- SSRF protection (`url-validator.ts`) em fetch calls dinamicos — bloqueia localhost, IPs privados,
+- SSRF protection ( `url-validator.ts` ) em fetch calls dinamicos — bloqueia
+  localhost, IPs privados,
   cloud metadata, IPv6 interno
 - DOMPurify sanitization em todo conteudo HTML dinamico
 - Webhook signature verification (Stripe, Meta)
@@ -214,16 +223,19 @@ e historico antigo deste README.)
 
 ## Health Checks
 
-- `GET /health/live` — liveness probe (sempre 200, sem dependencias) — orchestrators
+- `GET /health/live` — liveness probe (sempre 200, sem dependencias) —
+  orchestrators
 - `GET /health/ready` — readiness probe (DB + Redis) — orchestrators
-- `GET /health/system` — deep check (DB, Redis, WhatsApp, Worker, Storage, OpenAI, Anthropic,
+- `GET /health/system` — deep check (DB, Redis, WhatsApp, Worker, Storage,
+  OpenAI, Anthropic,
   Stripe) — dashboards
 - Worker: `GET :3003/health`
 
 ## Observabilidade
 
 - **Sentry** — error tracking em frontend, backend, worker
-- **Prometheus** — metricas com histograms/gauges/counters, endpoints protegidos por token
+- **Prometheus** — metricas com histograms/gauges/counters, endpoints protegidos
+  por token
 - **Structured logging** — NestJS Logger + pino, 625+ chamadas estruturadas
 - **Audit log** — operacoes financeiras, webhook events, KYC
 - **Financial alerts** — alertas de operacoes monetarias

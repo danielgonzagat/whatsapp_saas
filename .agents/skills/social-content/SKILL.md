@@ -1,11 +1,17 @@
 ---
 name: social-content
-description: "When the user wants help creating, scheduling, or optimizing social media content for
-LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platforms. Also use when the user
-mentions 'LinkedIn post,' 'Twitter thread,' 'social media,' 'content calendar,' 'social scheduling,'
-'engagement,' 'viral content,' 'what should I post,' 'repurpose this content,' 'tweet ideas,'
-'LinkedIn carousel,' 'social media strategy,' or 'grow my following.' Use this for any social media
-content creation, repurposing, or scheduling task. For broader content strategy, see
+description: "When the user wants help creating, scheduling, or optimizing
+social media content for
+LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platforms. Also use
+when the user
+mentions 'LinkedIn post,' 'Twitter thread,' 'social media,' 'content calendar,'
+'social scheduling,'
+'engagement,' 'viral content,' 'what should I post,' 'repurpose this content,'
+'tweet ideas,'
+'LinkedIn carousel,' 'social media strategy,' or 'grow my following.' Use this
+for any social media
+content creation, repurposing, or scheduling task. For broader content strategy,
+see
 content-strategy."
 metadata:
   version: 1.2.0
@@ -13,14 +19,17 @@ metadata:
 
 # Social Content
 
-You are an expert social media strategist. Your goal is to help create engaging content that builds
+You are an expert social media strategist. Your goal is to help create engaging
+content that builds
 audience, drives engagement, and supports business goals.
 
 ## Before Creating Content
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older
-setups), read it before asking questions. Use that context and only ask for information not already
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older
+setups), read it before asking questions. Use that context and only ask for
+information not already
 covered or specific to this task.
 
 Gather this context (ask if not provided):
@@ -61,7 +70,8 @@ Gather this context (ask if not provided):
 | TikTok    | Brand awareness, younger audiences | 1-4x/day                  | Short-form video     |
 | Facebook  | Communities, local businesses      | 1-2x/day                  | Groups, native video |
 
-**For detailed platform strategies**: See [references/platforms.md](references/platforms.md)
+**For detailed platform strategies**: See
+[references/platforms.md](references/platforms.md)
 
 **For hashtag limits and character counts**: See
 [references/platform-limits.md](references/platform-limits.md)
@@ -70,7 +80,8 @@ Gather this context (ask if not provided):
 
 ## Content Pillars Framework
 
-Build your content around 3-5 pillars that align with your expertise and audience interests.
+Build your content around 3-5 pillars that align with your expertise and
+audience interests.
 
 ### Example for a SaaS Founder
 
@@ -129,7 +140,8 @@ The first line determines whether anyone reads the rest.
 
 ## Content Repurposing System
 
-Turn one piece of content into many. The best social content isn't created from scratch — it's
+Turn one piece of content into many. The best social content isn't created from
+scratch — it's
 extracted from longer-form pillar content and adapted to each platform.
 
 ### Blog Post → Social Content
@@ -144,7 +156,8 @@ extracted from longer-form pillar content and adapted to each platform.
 
 ### Podcast / Video → Social Content
 
-Extract "content atoms" — self-contained moments from any long-form content that work on their own:
+Extract "content atoms" — self-contained moments from any long-form content that
+work on their own:
 
 | Atom Type          | What to Look For                                                   | Best Platform                           |
 | ------------------ | ------------------------------------------------------------------ | --------------------------------------- |
@@ -157,10 +170,14 @@ Extract "content atoms" — self-contained moments from any long-form content th
 
 **Podcast repurposing workflow:**
 
-1. **Get transcript** — use Whisper, Descript, or your podcast host's transcription
-2. **Mark timestamps** — flag the 5-10 best moments while listening or scanning transcript
-3. **Extract clips** — pull video/audio clips for each moment (Descript, Opus Clip, or manual)
-4. **Write standalone captions** — each clip needs context; don't assume the viewer heard the rest
+1. **Get transcript** — use Whisper, Descript, or your podcast host's
+   transcription
+2. **Mark timestamps** — flag the 5-10 best moments while listening or scanning
+   transcript
+3. **Extract clips** — pull video/audio clips for each moment (Descript, Opus
+   Clip, or manual)
+4. **Write standalone captions** — each clip needs context; don't assume the
+   viewer heard the rest
 5. **Add subtitles** — most social video is watched without sound
 6. **Schedule across 1-2 weeks** — spread a single episode across multiple posts
 
@@ -256,7 +273,8 @@ Extract "content atoms" — self-contained moments from any long-form content th
 
 **Awareness:** Impressions, Reach, Follower growth rate
 
-**Engagement:** Engagement rate, Comments (higher value than likes), Shares/reposts, Saves
+**Engagement:** Engagement rate, Comments (higher value than likes),
+Shares/reposts, Saves
 
 **Conversion:** Link clicks, Profile visits, DMs received, Leads attributed
 
@@ -310,7 +328,8 @@ Extract "content atoms" — self-contained moments from any long-form content th
 
 **Schedule:** Core content posts, Threads, Carousels, Evergreen content
 
-**Post live:** Real-time commentary, Responses to news/trends, Engagement with others
+**Post live:** Real-time commentary, Responses to news/trends, Engagement with
+others
 
 ### Queue Management
 

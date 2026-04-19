@@ -2,7 +2,8 @@
 
 ## Visão Geral
 
-Este projeto utiliza o [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/) como **provider
+Este projeto utiliza o [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/)
+como **provider
 oficial** para envio de mensagens WhatsApp.
 
 ### Vantagens
@@ -55,12 +56,14 @@ WORKER_METRICS_TOKEN=your-worker-metrics-token
 BACKEND_URL=https://seu-backend.up.railway.app
 ```
 
-Importante: o runtime atual falha cedo se `WAHA_API_URL` não estiver definido. Não existe mais
+Importante: o runtime atual falha cedo se `WAHA_API_URL` não estiver definido.
+Não existe mais
 fallback implícito para uma instância WAHA hardcoded.
 
 ### 2. WAHA como Serviço Externo
 
-O WAHA roda como serviço externo (ex.: Railway). Não há mais container local no `docker-compose.yml`
+O WAHA roda como serviço externo (ex.: Railway). Não há mais container local no
+`docker-compose.yml`
 .
 
 ```bash
@@ -166,12 +169,15 @@ POST /webhooks/whatsapp-api
 Observações operacionais:
 
 - O WAHA precisa apontar explicitamente para `POST /webhooks/whatsapp-api`
-- Sem webhook configurado, o Kloel não recebe mensagens em tempo real e não responde reativamente
-- O catch-up inicial depende de `session.status` e do backlog disponível via WAHA
+- Sem webhook configurado, o Kloel não recebe mensagens em tempo real e não
+  responde reativamente
+- O catch-up inicial depende de `session.status` e do backlog disponível via
+  WAHA
 
 ## Configuração do Workspace
 
-Para usar o `whatsapp-api` como provider do workspace, configure em `providerSettings`:
+Para usar o `whatsapp-api` como provider do workspace, configure em
+`providerSettings` :
 
 ```json
 {
@@ -228,7 +234,8 @@ docker-compose.yml                     # Serviço whatsapp-api adicionado
 1. Verifique se a WAHA está acessível em `WAHA_API_URL`
 2. Verifique `GET /whatsapp-api/health` e `GET /health/system`
 3. Certifique-se de chamar `POST /session/start` antes de pedir o QR
-4. Confirme `WAHA_MULTISESSION=true` e `WAHA_USE_WORKSPACE_SESSION=true` em ambiente multi-tenant
+4. Confirme `WAHA_MULTISESSION=true` e `WAHA_USE_WORKSPACE_SESSION=true` em
+   ambiente multi-tenant
 
 ### Mensagem não enviada
 
@@ -239,7 +246,8 @@ docker-compose.yml                     # Serviço whatsapp-api adicionado
 ### Webhook não chega
 
 1. Verifique `WHATSAPP_HOOK_URL` e `WHATSAPP_HOOK_EVENTS` na WAHA
-2. Confirme que `WHATSAPP_API_WEBHOOK_SECRET` bate com o header enviado pela WAHA
+2. Confirme que `WHATSAPP_API_WEBHOOK_SECRET` bate com o header enviado pela
+   WAHA
 3. Teste conectividade: `curl https://seu-backend/health/system`
 4. Verifique se a sessão da WAHA usa o mesmo `sessionId` esperado pelo workspace
 

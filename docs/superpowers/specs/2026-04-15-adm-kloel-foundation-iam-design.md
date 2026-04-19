@@ -8,19 +8,27 @@
 
 ## 1. Purpose
 
-Stand up `adm.kloel.com` — the administrative control plane of the KLOEL platform — as a standalone
-Next.js application with rock-solid identity, 2FA, and granular permissions **before** any
-operational module (dashboards, transactions, wallet, compliance) is built on top. This spec covers
-the minimum viable admin shell: login, MFA enroll/verify, greeting, sidebar, empty honest
-placeholders for every future module, and the backend identity system they will all depend on.
+Stand up `adm.kloel.com` — the administrative control plane of the KLOEL
+platform — as a standalone
+Next.js application with rock-solid identity, 2FA, and granular permissions
+**before** any
+operational module (dashboards, transactions, wallet, compliance) is built on
+top. This spec covers
+the minimum viable admin shell: login, MFA enroll/verify, greeting, sidebar,
+empty honest
+placeholders for every future module, and the backend identity system they will
+all depend on.
 
 ## 2. Non-goals (deferred to later sub-projects)
 
-- No real data in any admin module screen (Home/Vendas/Carteira/etc. are honest placeholders here —
+- No real data in any admin module screen (Home/Vendas/Carteira/etc. are honest
+  placeholders here —
   they land in SP-3..13).
-- No admin AI chatbar functionality (skeleton only; wired in SP-14 after permissions are proven
+- No admin AI chatbar functionality (skeleton only; wired in SP-14 after
+  permissions are proven
   safe).
-- No destructive actions on production data (refund, block, hold) — those come in SP-8 with
+- No destructive actions on production data (refund, block, hold) — those come
+  in SP-8 with
   idempotency + dual control.
 - No impersonation ("view as producer").
 - No IP allowlist enforcement (model supports it; UI + enforcement in SP-11).
@@ -29,26 +37,39 @@ placeholders for every future module, and the backend identity system they will 
 
 ### 3.1 Repository layout
 
-- **No monorepo refactor.** `frontend/` and `backend/` remain untouched in place.
-- **New sibling app**: `frontend-admin/` — standalone Next.js 16 / React 19 / Tailwind v4 app with
-  its own `package.json`, `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`.
-- **No cross-app imports.** Visual parity with `app.kloel.com` is enforced by **identity of design
-  tokens** (`design-tokens.ts` copied byte-for-byte) + same dependency versions +
-  `scripts/ops/check-visual-contract.mjs` running in CI against both apps. Future SP will extract
+- **No monorepo refactor.** `frontend/` and `backend/` remain untouched in
+  place.
+- **New sibling app**: `frontend-admin/` — standalone Next.js 16 / React 19 /
+  Tailwind v4 app with
+  its own `package.json` , `tsconfig.json` , `next.config.ts` ,
+  `postcss.config.mjs` .
+- **No cross-app imports.** Visual parity with `app.kloel.com` is enforced by
+  **identity of design
+  tokens** ( `design-tokens.ts` copied byte-for-byte) + same dependency versions
+  +
+  `scripts/ops/check-visual-contract.mjs` running in CI against both apps.
+  Future SP will extract
   `packages/ui` if the copy cost grows.
-- **New backend feature module**: `backend/src/admin/` — sibling of `auth/`, `workspaces/`, etc. All
-  routes live under `/admin/*`. Shares the same NestJS process, Railway service, and Prisma client
+- **New backend feature module**: `backend/src/admin/` — sibling of `auth/` ,
+  `workspaces/` , etc. All
+  routes live under `/admin/*` . Shares the same NestJS process, Railway
+  service, and Prisma client
   as the rest of the backend.
 
 ### 3.2 Deploy topology
 
-- Backend: **unchanged**. Same Railway service. Gains new Prisma migrations + new routes + new env
+- Backend: **unchanged**. Same Railway service. Gains new Prisma migrations +
+  new routes + new env
   vars.
 - Frontend (`kloel-frontend` Vercel project): **unchanged**.
-- Admin frontend: **new Vercel project `kloel-admin`**, team `team_x9F030En3sPT9Ti4vAj3FCcJ`,
-  rootDirectory `frontend-admin`, Node 24.x, framework preset Next.js, domain `adm.kloel.com`.
-- DNS: HostGator cPanel — Daniel creates CNAME `adm` → `cname.vercel-dns.com` manually once,
-  triggered by this SP's deploy step. No automation is possible because HostGator lacks a usable
+- Admin frontend: **new Vercel project `kloel-admin` **, team
+  `team_x9F030En3sPT9Ti4vAj3FCcJ` ,
+  rootDirectory `frontend-admin` , Node 24.x, framework preset Next.js, domain
+  `adm.kloel.com` .
+- DNS: HostGator cPanel — Daniel creates CNAME `adm` → `cname.vercel-dns.com`
+  manually once,
+  triggered by this SP's deploy step. No automation is possible because
+  HostGator lacks a usable
   API.
 
 ## 4. Security invariants
@@ -66,12 +87,14 @@ placeholders for every future module, and the backend identity system they will 
 | I-ADMIN-9  | First login after seed forces password change before access to any protected route.                                                      | `password_change_required=true` on seed; guards return `password_change_required` state until cleared.                               |
 | I-ADMIN-10 | Session tokens are hashed in DB (SHA-256), never stored plain. Server keeps only the hash.                                               | `admin_sessions.token_hash` column; `bcrypt` not used here because we need fast lookup, SHA-256 over a 256-bit random is sufficient. |
 
-Explicit non-invariant: we do NOT require IP allowlist in SP-0..2. `admin_users` has a nullable
+Explicit non-invariant: we do NOT require IP allowlist in SP-0..2. `admin_users`
+has a nullable
 `allowed_ips` JSON column; enforcement lands in SP-11.
 
 ## 5. Data model — new Prisma models
 
-All models live in `backend/prisma/schema.prisma` under the `AdminUsers` block (grouped comment
+All models live in `backend/prisma/schema.prisma` under the `AdminUsers` block
+(grouped comment
 separator). Table names use `admin_` snake_case prefix via `@@map`.
 
 ### AdminUser
@@ -211,7 +234,8 @@ model AdminLoginAttempt {
 }
 ```
 
-Rows older than 24h are purged by a daily cron handler (deferred to SP-ops; for SP-0..2 the table
+Rows older than 24h are purged by a daily cron handler (deferred to SP-ops; for
+SP-0..2 the table
 just grows — acceptable for now).
 
 ## 6. Backend structure
@@ -269,19 +293,26 @@ backend/src/admin/
     admin-crypto.ts                     // AES-256-GCM wrap
 ```
 
-All controllers use `@UseGuards(AdminAuthGuard)` by default. Endpoints that must work pre-MFA
-(`/mfa/setup`, `/mfa/verify`, `/auth/change-password`) are marked with `@AllowPendingMfa()`
+All controllers use `@UseGuards(AdminAuthGuard)` by default. Endpoints that must
+work pre-MFA
+( `/mfa/setup` , `/mfa/verify` , `/auth/change-password` ) are marked with
+`@AllowPendingMfa()`
 decorator that tells `AdminMfaEnforcedGuard` to let them through.
 
-`AdminAuditInterceptor` is registered globally on the admin module. Any controller handler that is
-**not** a safe-idempotent `GET` (or explicitly marked `@NoAudit()`) results in one
-`admin_audit_logs` row containing: action name (`${controller}.${method}`), entityType/entityId
-extracted from route params if declared, and a sanitized slice of the request body (passwords, MFA
+`AdminAuditInterceptor` is registered globally on the admin module. Any
+controller handler that is
+**not** a safe-idempotent `GET` (or explicitly marked `@NoAudit()` ) results in
+one
+`admin_audit_logs` row containing: action name ( `${controller}.${method}` ),
+entityType/entityId
+extracted from route params if declared, and a sanitized slice of the request
+body (passwords, MFA
 codes, and tokens elided by a `sanitizeForAudit` helper).
 
 ## 7. Permission default matrix
 
-Declared in `admin-permissions.defaults.ts` and asserted by unit test. Seeded on user create.
+Declared in `admin-permissions.defaults.ts` and asserted by unit test. Seeded on
+user create.
 
 | Module \ Role | OWNER       | MANAGER     | STAFF                                                  |
 | ------------- | ----------- | ----------- | ------------------------------------------------------ |
@@ -299,9 +330,12 @@ Declared in `admin-permissions.defaults.ts` and asserted by unit test. Seeded on
 | AUDIT_LOG     | v/x         | v           | v                                                      |
 | PERFIL        | all         | all         | all                                                    |
 
-OWNER bypasses the guard. For MANAGER/STAFF, each "all" cell expands to six `AdminPermission` rows.
-The matrix is enforced by a permutation test: for every `(role, module, action)` combo, a fake JWT
-is constructed and a probe controller verified to return 200 or 403 as the matrix dictates.
+OWNER bypasses the guard. For MANAGER/STAFF, each "all" cell expands to six
+`AdminPermission` rows.
+The matrix is enforced by a permutation test: for every `(role, module, action)`
+combo, a fake JWT
+is constructed and a probe controller verified to return 200 or 403 as the
+matrix dictates.
 
 ## 8. Seed — OWNER account
 
@@ -332,30 +366,43 @@ await prisma.adminAuditLog.create({
 1. `POST /admin/auth/login { email, password }`
    - Rate limit check (I-ADMIN-5).
    - Bcrypt verify.
-   - Failure: increment `admin_login_attempts`, maybe set `locked_until`, audit log.
+   - Failure: increment `admin_login_attempts` , maybe set `locked_until` ,
+     audit log.
    - Success: reset `failed_login_count`.
-   - If `password_change_required`: return `{ state: 'password_change_required', changeToken }` — a
-     short-lived JWT (5 min, dedicated audience `admin-password-change`) that ONLY authorizes `POST
+   - If `password_change_required` : return
+     `{ state: 'password_change_required', changeToken }` — a
+     short-lived JWT (5 min, dedicated audience `admin-password-change` ) that
+     ONLY authorizes `POST
      /admin/auth/change-password`.
-   - Else if `mfa_pending_setup`: return `{ state: 'mfa_setup_required', setupToken }` — short-lived
+   - Else if `mfa_pending_setup` : return
+     `{ state: 'mfa_setup_required', setupToken }` — short-lived
      JWT (10 min) authorizing `POST /admin/auth/mfa/setup` and `POST
      /admin/auth/mfa/verify-initial`.
-   - Else if `mfa_enabled`: return `{ state: 'mfa_required', mfaToken }` — short-lived JWT (5 min)
+   - Else if `mfa_enabled` : return `{ state: 'mfa_required', mfaToken }` —
+     short-lived JWT (5 min)
      authorizing `POST /admin/auth/mfa/verify`.
-2. `POST /admin/auth/change-password { newPassword }` (with `changeToken`): hash, clear
+2. `POST /admin/auth/change-password { newPassword }` (with `changeToken` ):
+   hash, clear
    `password_change_required`, audit, return new state transition.
-3. `POST /admin/auth/mfa/setup` (with `setupToken`): generate TOTP secret, encrypt with
-   `ADMIN_MFA_ENCRYPTION_KEY`, return otpauth URL + QR base64. Does NOT persist `mfa_enabled=true`
+3. `POST /admin/auth/mfa/setup` (with `setupToken` ): generate TOTP secret,
+   encrypt with
+   `ADMIN_MFA_ENCRYPTION_KEY` , return otpauth URL + QR base64. Does NOT persist
+   `mfa_enabled=true`
    yet.
-4. `POST /admin/auth/mfa/verify-initial { code }` (with `setupToken`): verify TOTP. On success, set
-   `mfa_enabled=true`, `mfa_pending_setup=false`, audit, return full session (access + refresh).
-5. `POST /admin/auth/mfa/verify { code }` (with `mfaToken`): verify TOTP. On success, return full
+4. `POST /admin/auth/mfa/verify-initial { code }` (with `setupToken` ): verify
+   TOTP. On success, set
+   `mfa_enabled=true` , `mfa_pending_setup=false` , audit, return full session
+   (access + refresh).
+5. `POST /admin/auth/mfa/verify { code }` (with `mfaToken` ): verify TOTP. On
+   success, return full
    session.
-6. `POST /admin/auth/refresh { refreshToken }`: checks `admin_sessions` row by token hash, validates
+6. `POST /admin/auth/refresh { refreshToken }` : checks `admin_sessions` row by
+   token hash, validates
    expiry + not revoked, rotates token.
 7. `POST /admin/auth/logout`: marks current session revoked.
 
-Access tokens: 15-minute TTL, `HS256`, audience `adm.kloel.com`. Refresh tokens: 8-hour TTL (matches
+Access tokens: 15-minute TTL, `HS256` , audience `adm.kloel.com` . Refresh
+tokens: 8-hour TTL (matches
 `ADMIN_SESSION_TTL_HOURS`), rotated on every refresh, stored as SHA-256 hash in
 `admin_sessions.token_hash`.
 
@@ -427,26 +474,36 @@ frontend-admin/
 
 ### 10.2 Dependency strategy
 
-`frontend-admin/package.json` pins the **exact same versions** as `frontend/package.json` for: next,
-react, react-dom, tailwindcss, @tailwindcss/postcss, lucide-react, framer-motion, next-themes, clsx,
-class-variance-authority, tailwind-merge, @radix-ui/\*, swr, @sentry/nextjs, vitest,
-@testing-library/\*, @vitejs/plugin-react. Extra: `otplib` and `qrcode` only on the backend;
+`frontend-admin/package.json` pins the **exact same versions** as
+`frontend/package.json` for: next,
+react, react-dom, tailwindcss, @tailwindcss/postcss, lucide-react,
+framer-motion, next-themes, clsx,
+class-variance-authority, tailwind-merge, @radix-ui/\*, swr, @sentry/nextjs,
+vitest,
+@testing-library/\*, @vitejs/plugin-react. Extra: `otplib` and `qrcode` only on
+the backend;
 `otpauth-uri` already covered by backend.
 
-No `fabric`, no `reactflow`, no `jspdf`, no legacy-provider — admin doesn't need them.
+No `fabric` , no `reactflow` , no `jspdf` , no legacy-provider — admin doesn't
+need them.
 
 ### 10.3 Visual parity
 
 1. `frontend-admin/src/lib/design-tokens.ts` is an **identical copy** of
    `frontend/src/lib/design-tokens.ts`. A Codacy / CI guard (added to
-   `scripts/ops/check-visual-contract.mjs`) diffs the two files byte-for-byte and fails CI on drift.
-2. `frontend-admin/src/app/globals.css` copies the same CSS custom-property block (`--bg-void`,
+   `scripts/ops/check-visual-contract.mjs` ) diffs the two files byte-for-byte
+   and fails CI on drift.
+2. `frontend-admin/src/app/globals.css` copies the same CSS custom-property
+   block ( `--bg-void` ,
    `--bg-surface`, `--app-accent`, …) from frontend's globals.
-3. Fonts come from `next/font/google` — same family (Sora, JetBrains Mono), same weights.
+3. Fonts come from `next/font/google` — same family (Sora, JetBrains Mono), same
+   weights.
 4. `theme-provider.tsx` wraps `next-themes` identically.
-5. shadcn primitives are added via `npx shadcn@latest add` using the same style config (`default`,
+5. shadcn primitives are added via `npx shadcn@latest add` using the same style
+   config ( `default` ,
    Monitor palette CSS vars).
-6. The login screen replicates the visual DNA of `KloelAuthScreen` but with admin copy ("Entrar no
+6. The login screen replicates the visual DNA of `KloelAuthScreen` but with
+   admin copy ("Entrar no
    painel administrativo").
 
 ## 11. Honest placeholders
@@ -461,8 +518,10 @@ Every future module page returns the same component:
 />
 ```
 
-The card shows module name, planned SP, and one-line description. It **does not** fetch data. It
-does **not** show random numbers or loading skeletons that pretend to be fetching something. This is
+The card shows module name, planned SP, and one-line description. It **does
+not** fetch data. It
+does **not** show random numbers or loading skeletons that pretend to be
+fetching something. This is
 the "estados honestos" contract from `CLAUDE.md`.
 
 ## 12. Environment variables
@@ -482,46 +541,62 @@ the "estados honestos" contract from `CLAUDE.md`.
 - `NEXT_PUBLIC_APP_NAME=Kloel Admin`
 - `NEXT_PUBLIC_SENTRY_DSN` (optional for SP-0..2)
 - `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` (optional)
-- No `NEXT_PUBLIC_META_*`, no legacy payment provider, no legacy marketplace provider — admin does
+- No `NEXT_PUBLIC_META_*` , no legacy payment provider, no legacy marketplace
+  provider — admin does
   not need client payment SDKs.
 
-All values are generated by Claude during the deploy step and pushed via `vercel env add` / `railway
+All values are generated by Claude during the deploy step and pushed via
+`vercel env add` / `railway
 variables set` using tokens from `.env.pulse.local`.
 
 ## 13. Testing
 
-- **Backend unit**: `AdminAuthService`, `AdminMfaService`, `AdminPermissionsService`, guards
-  (`admin-auth.guard`, `admin-role.guard`, `admin-permission.guard`), rate limiter.
-- **Backend integration**: full login ↔ change-password ↔ MFA setup ↔ MFA verify ↔ protected route ↔
-  refresh ↔ logout sequence, running against a SQLite/`vitest-prisma` or Postgres test container
-  (mirror existing backend test strategy — read the existing test suite to match the pattern).
-- **Permission matrix permutation test**: for every `(role, module, action)` in the defaults,
-  constructs a JWT with that role, probes a test controller that requires exactly that permission,
+- **Backend unit**: `AdminAuthService` , `AdminMfaService` ,
+  `AdminPermissionsService` , guards
+  ( `admin-auth.guard` , `admin-role.guard` , `admin-permission.guard` ), rate
+  limiter.
+- **Backend integration**: full login ↔ change-password ↔ MFA setup ↔ MFA verify
+  ↔ protected route ↔
+  refresh ↔ logout sequence, running against a SQLite/ `vitest-prisma` or
+  Postgres test container
+  (mirror existing backend test strategy — read the existing test suite to match
+  the pattern).
+- **Permission matrix permutation test**: for every `(role, module, action)` in
+  the defaults,
+  constructs a JWT with that role, probes a test controller that requires
+  exactly that permission,
   asserts 200 or 403 as declared. Guards the entire matrix in one file.
-- **Audit append-only**: test attempts `UPDATE admin_audit_logs` and `DELETE` via raw SQL, asserts
+- **Audit append-only**: test attempts `UPDATE admin_audit_logs` and `DELETE`
+  via raw SQL, asserts
   Postgres raises exception.
 - **Seed idempotency**: running seed twice results in one row, same ID.
 - **Frontend-admin unit**: `cn()`, session storage, greeting-by-hour helper.
-- **Frontend-admin visual parity**: `check-visual-contract.mjs` passes, `design-tokens.ts` diff is
+- **Frontend-admin visual parity**: `check-visual-contract.mjs` passes,
+  `design-tokens.ts` diff is
   empty.
-- **Boot smoke**: backend boots cleanly (DI graph resolves), exposes `/admin/auth/login`.
+- **Boot smoke**: backend boots cleanly (DI graph resolves), exposes
+  `/admin/auth/login` .
   Frontend-admin `next build` succeeds.
-- **E2E**: one happy-path Playwright test (deferred if Playwright infra is not set up on admin yet;
+- **E2E**: one happy-path Playwright test (deferred if Playwright infra is not
+  set up on admin yet;
   boot smoke is the SP-0..2 gate).
 
 ## 14. Definition of done
 
-1. Branch `feat/adm-foundation-iam` merged to `main` (or ready to merge, pending Daniel's word).
+1. Branch `feat/adm-foundation-iam` merged to `main` (or ready to merge, pending
+   Daniel's word).
 2. `backend/` lint + typecheck + build + unit tests green.
 3. `frontend-admin/` lint + typecheck + build + unit tests green.
 4. `frontend/` untouched (no regressions).
 5. `check-visual-contract.mjs` green.
 6. PULSE scan: no new red issues attributable to this branch.
-7. Prisma migration applied to local dev DB successfully; migration file committed.
+7. Prisma migration applied to local dev DB successfully; migration file
+   committed.
 8. Seed executes on boot and creates Daniel's OWNER row.
 9. Vercel project `kloel-admin` created, preview deployment green, env vars set.
 10. CNAME instruction delivered to Daniel for HostGator.
-11. Once CNAME propagates, production alias `adm.kloel.com` assigned, health check green.
+11. Once CNAME propagates, production alias `adm.kloel.com` assigned, health
+    check green.
 12. Spec + plan committed under `docs/superpowers/`.
 13. Tasks #1–#5 in the task tracker marked completed.
 
@@ -540,8 +615,10 @@ variables set` using tokens from `.env.pulse.local`.
 ## 16. Explicit decisions captured from Daniel (2026-04-15)
 
 - Option **C** (separate Next.js app `frontend-admin/`).
-- Forced password change on first login + forced MFA setup on first login (stronger than prompt's
+- Forced password change on first login + forced MFA setup on first login
+  (stronger than prompt's
   "2FA pendente").
 - Full autonomy on push + preview deploy + domain wiring; no PR pre-review.
 - Single branch `feat/adm-foundation-iam` for SP-0..2.
-- Credentials (Vercel token + IDs) stored in `.env.pulse.local`; rotation deferred.
+- Credentials (Vercel token + IDs) stored in `.env.pulse.local` ; rotation
+  deferred.

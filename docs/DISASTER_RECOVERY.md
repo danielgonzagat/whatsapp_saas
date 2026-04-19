@@ -81,7 +81,8 @@
 
 ### Scenario 1: Database Loss
 
-**Symptoms:** Application returns 500 errors, Prisma connection timeouts, "relation does not exist"
+**Symptoms:** Application returns 500 errors, Prisma connection timeouts,
+"relation does not exist"
 errors.
 
 **Steps:**
@@ -125,7 +126,8 @@ errors.
 
 ### Scenario 2: Redis Loss
 
-**Symptoms:** Slow responses, BullMQ jobs not processing, rate limiting not working, stale cache
+**Symptoms:** Slow responses, BullMQ jobs not processing, rate limiting not
+working, stale cache
 data.
 
 **Steps:**
@@ -136,7 +138,8 @@ data.
    redis-cli -u "$REDIS_URL" PING
    ```
 
-2. **Application auto-degrades** -- The backend handles Redis unavailability gracefully:
+2. **Application auto-degrades** -- The backend handles Redis unavailability
+   gracefully:
    - Rate limiting falls back to in-memory
    - BullMQ retries with exponential backoff
    - Cache misses serve from database
@@ -162,7 +165,8 @@ data.
 
 ### Scenario 3: Application Crash (Backend)
 
-**Symptoms:** 502/503 errors from Railway, health check failing, no logs being produced.
+**Symptoms:** 502/503 errors from Railway, health check failing, no logs being
+produced.
 
 **Steps:**
 
@@ -203,7 +207,8 @@ data.
 
 ### Scenario 4: DNS Failure
 
-**Symptoms:** Domain not resolving, SSL certificate errors, "site can't be reached".
+**Symptoms:** Domain not resolving, SSL certificate errors, "site can't be
+reached".
 
 **Steps:**
 
@@ -239,7 +244,8 @@ data.
 
 ### Scenario 5: Provider Outage (Railway / Vercel / AWS)
 
-**Symptoms:** Multiple services down simultaneously, provider status page shows incident.
+**Symptoms:** Multiple services down simultaneously, provider status page shows
+incident.
 
 **Steps:**
 

@@ -38,9 +38,12 @@ For every PR or batch of PRs that touches a hardening surface:
   - [ ] `Prisma schema single source` (P2-1)
   - [ ] `Redis URL resolver sync` (P2-3)
   - [ ] `Shared constants sync` (P4-1)
-- [ ] PULSE certification gate is green (production deploy is now blocking — P4-2)
-- [ ] Rollback path identified (which feature flag, which env var, which manual revert)
-- [ ] Ops channel notified with: PR number, files touched, expected window, rollback signal
+- [ ] PULSE certification gate is green (production deploy is now blocking —
+  P4-2)
+- [ ] Rollback path identified (which feature flag, which env var, which manual
+  revert)
+- [ ] Ops channel notified with: PR number, files touched, expected window,
+  rollback signal
 
 ## Standard rollout sequence
 

@@ -1,10 +1,12 @@
 # One-Pager Templates
 
-Templates for different one-pager use cases, with layout guidance and copy prompts.
+Templates for different one-pager use cases, with layout guidance and copy
+prompts.
 
 ## Product Overview One-Pager
 
-The default one-pager. Introduces your product to someone who knows nothing about you.
+The default one-pager. Introduces your product to someone who knows nothing
+about you.
 
 ### Structure
 
@@ -33,15 +35,18 @@ PROOF
 
 ### Copy Prompts
 
-- Headline: "What do you do, in one sentence, that makes someone say 'tell me more'?"
+- Headline: "What do you do, in one sentence, that makes someone say 'tell me
+  more'?"
 - Problem: "What is your buyer struggling with before they find you?"
-- Differentiators: "If you could only tell them 3 things, what would make them choose you?"
+- Differentiators: "If you could only tell them 3 things, what would make them
+  choose you?"
 
 ---
 
 ## Use-Case Specific One-Pager
 
-Tailored to a specific workflow, vertical, or problem. More targeted than the product overview.
+Tailored to a specific workflow, vertical, or problem. More targeted than the
+product overview.
 
 ### Structure
 
@@ -80,7 +85,8 @@ CUSTOMER SPOTLIGHT
 
 ## Post-Meeting Leave-Behind
 
-Designed to reinforce a conversation that already happened. Summarizes what you discussed and
+Designed to reinforce a conversation that already happened. Summarizes what you
+discussed and
 proposes next steps.
 
 ### Structure
@@ -123,7 +129,8 @@ PROPOSED NEXT STEPS
 
 ## Champion Enablement One-Pager
 
-Designed specifically for your internal champion to share with their team and leadership. Written to
+Designed specifically for your internal champion to share with their team and
+leadership. Written to
 make them look smart.
 
 ### Structure

@@ -8,7 +8,8 @@ How to structure and maintain competitor data for scalable comparison pages.
 - Competitor Data Template
 - Your Product Data
 - Page Generation
-- Index Page Structure (alternatives index, vs comparisons index, index page best practices)
+- Index Page Structure (alternatives index, vs comparisons index, index page
+  best practices)
 - Footer Navigation
 
 ## Centralized Competitor Data
@@ -133,7 +134,8 @@ not_ideal_for:
 Each page pulls from centralized data:
 
 - **[Competitor] Alternative page**: Pulls competitor data + your data
-- **[Competitor] Alternatives page**: Pulls competitor data + your data + other alternatives
+- **[Competitor] Alternatives page**: Pulls competitor data + your data + other
+  alternatives
 - **You vs [Competitor] page**: Pulls your data + competitor data
 - **[A] vs [B] page**: Pulls both competitor data + your data
 
@@ -197,7 +199,8 @@ Looking to switch? See how [Your Product] compares to the tools you're evaluatin
 
 ### Index Page Best Practices
 
-**Keep them updated**: When you add a new comparison page, add it to the relevant index.
+**Keep them updated**: When you add a new comparison page, add it to the
+relevant index.
 
 **Internal linking**:
 
@@ -207,7 +210,8 @@ Looking to switch? See how [Your Product] compares to the tools you're evaluatin
 
 **SEO value**:
 
-- Index pages can rank for broad terms like "project management tool comparisons"
+- Index pages can rank for broad terms like "project management tool
+  comparisons"
 - Pass link equity to individual comparison pages
 - Help search engines discover all comparison content
 
@@ -228,7 +232,8 @@ Looking to switch? See how [Your Product] compares to the tools you're evaluatin
 
 ## Footer Navigation
 
-The site footer appears on all marketing pages, making it a powerful internal linking opportunity
+The site footer appears on all marketing pages, making it a powerful internal
+linking opportunity
 for competitor pages.
 
 ### Option 1: Link to Index Pages (Minimum)
@@ -242,11 +247,13 @@ Footer
 │   └── Comparisons →  /vs
 ```
 
-This ensures every marketing page passes link equity to your comparison content hub.
+This ensures every marketing page passes link equity to your comparison content
+hub.
 
 ### Option 2: Footer Columns by Format (Recommended for SEO)
 
-For stronger internal linking, create dedicated footer columns for each format you've built, linking
+For stronger internal linking, create dedicated footer columns for each format
+you've built, linking
 directly to your top competitors:
 
 ```
@@ -270,11 +277,14 @@ Footer
 
 ### Why Footer Links Matter
 
-1. **Sitewide distribution**: Footer links appear on every marketing page, passing link equity from
+1. **Sitewide distribution**: Footer links appear on every marketing page,
+   passing link equity from
    your entire site to comparison content
 2. **Crawl efficiency**: Search engines discover all comparison pages quickly
-3. **User discovery**: Visitors evaluating your product can easily find comparisons
-4. **Competitive positioning**: Signals to search engines that you're a key player in the space
+3. **User discovery**: Visitors evaluating your product can easily find
+   comparisons
+4. **Competitive positioning**: Signals to search engines that you're a key
+   player in the space
 
 ### Implementation Notes
 

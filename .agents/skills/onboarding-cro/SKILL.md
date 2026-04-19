@@ -1,25 +1,40 @@
 ---
 name: onboarding-cro
-description: When the user wants to optimize post-signup onboarding, user activation, first-run experience, or time-to-value. Also use when the user mentions "onboarding flow," "activation rate," "user activation," "first-run experience," "empty states," "onboarding checklist," "aha moment," "new user experience," "users aren't activating," "nobody completes setup," "low activation rate," "users sign up but don't use the product," "time to value," or "first session experience." Use this whenever users are signing up but not sticking around. For signup/registration optimization, see signup-flow-cro. For ongoing email sequences, see email-sequence.
+description: When the user wants to optimize post-signup onboarding, user
+activation, first-run experience, or time-to-value. Also use when the user
+mentions "onboarding flow," "activation rate," "user activation," "first-run
+experience," "empty states," "onboarding checklist," "aha moment," "new user
+experience," "users aren't activating," "nobody completes setup," "low
+activation rate," "users sign up but don't use the product," "time to value," or
+"first session experience." Use this whenever users are signing up but not
+sticking around. For signup/registration optimization, see signup-flow-cro. For
+ongoing email sequences, see email-sequence.
 metadata:
   version: 1.1.0
 ---
 
 # Onboarding CRO
 
-You are an expert in user onboarding and activation. Your goal is to help users reach their "aha
-moment" as quickly as possible and establish habits that lead to long-term retention.
+You are an expert in user onboarding and activation. Your goal is to help users
+reach their "aha
+moment" as quickly as possible and establish habits that lead to long-term
+retention.
 
 ## Initial Assessment
 
-**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
-`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
-context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If
+`.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that
+context and only ask for information not already covered or specific to this
+task.
 
 Before providing recommendations, understand:
 
-1. **Product Context** - What type of product? B2B or B2C? Core value proposition?
-2. **Activation Definition** - What's the "aha moment"? What action indicates a user "gets it"?
+1. **Product Context** - What type of product? B2B or B2C? Core value
+   proposition?
+2. **Activation Definition** - What's the "aha moment"? What action indicates a
+   user "gets it"?
 3. **Current State** - What happens after signup? Where do users drop off?
 
 ---
@@ -115,7 +130,8 @@ Empty states are onboarding opportunities, not dead ends.
 
 ### Tooltips and Guided Tours
 
-**When to use:** Complex UI, features that aren't self-evident, power features users might miss
+**When to use:** Complex UI, features that aren't self-evident, power features
+users might miss
 
 **Best practices:**
 
@@ -219,7 +235,8 @@ When recommending experiments, consider tests for:
 - Personalization by role or goal
 - Support and help availability
 
-**For comprehensive experiment ideas**: See [references/experiments.md](references/experiments.md)
+**For comprehensive experiment ideas**: See
+[references/experiments.md](references/experiments.md)
 
 ---
 

@@ -1,6 +1,7 @@
 # Automation Playbooks
 
-Platform-specific workflow recipes for HubSpot, Salesforce, scheduling tools, and cross-tool
+Platform-specific workflow recipes for HubSpot, Salesforce, scheduling tools,
+and cross-tool
 automation.
 
 ## HubSpot Workflow Recipes
@@ -8,7 +9,8 @@ automation.
 ### 1. MQL Alert and Assignment
 
 **Name:** MQL Notification and Task Creation
-**Trigger:** Contact property "Lifecycle Stage" is changed to "Marketing Qualified Lead"
+**Trigger:** Contact property "Lifecycle Stage" is changed to "Marketing
+Qualified Lead"
 **Actions:**
 
 1. Rotate contact owner among sales team (round-robin)
@@ -23,15 +25,19 @@ automation.
 
 ### 2. MQL SLA Escalation
 
-**Name:** MQL SLA Breach Alert **Trigger:** Contact property "Lifecycle Stage" equals "MQL" AND
+**Name:** MQL SLA Breach Alert **Trigger:** Contact property "Lifecycle Stage"
+equals "MQL" AND
 "Days since last contacted" is greater than 0.5 (12 hours) **Actions:**
 
-1. Send internal email to contact owner: "SLA warning: [Contact Name] has not been contacted"
+1. Send internal email to contact owner: "SLA warning: [Contact Name] has not
+   been contacted"
 2. If still no activity after 24 hours → send alert to sales manager
 3. If still no activity after 48 hours → reassign contact owner via rotation
-4. Create task for new owner: "Urgent: Contact [Contact Name] — reassigned due to SLA breach"
+4. Create task for new owner: "Urgent: Contact [Contact Name] — reassigned due
+   to SLA breach"
    **Outcome:** No MQL goes unworked for more than 48 hours
-   **Notes:** Exclude contacts where last activity type is "Call" or "Meeting" (already engaged)
+   **Notes:** Exclude contacts where last activity type is "Call" or "Meeting"
+   (already engaged)
 
 ---
 
@@ -45,7 +51,8 @@ automation.
 2. Set "MQL Date" to current date
 3. Suppress from marketing nurture workflows
 4. Trigger MQL Alert workflow (recipe #1)
-   **Outcome:** Leads automatically promote to MQL when they hit the scoring threshold
+   **Outcome:** Leads automatically promote to MQL when they hit the scoring
+   threshold
    **Notes:** Add suppression list for existing customers and competitors
 
 ---
@@ -53,16 +60,19 @@ automation.
 ### 4. Meeting Booked Notification
 
 **Name:** Meeting Booked Alert to AE
-**Trigger:** Meeting activity is logged for contact (via Calendly/HubSpot meetings)
+**Trigger:** Meeting activity is logged for contact (via Calendly/HubSpot
+meetings)
 **Actions:**
 
 1. Send internal email to contact owner with meeting details
 2. Update contact property "Last Meeting Booked" to current date
 3. If lifecycle stage is "Lead" → update to "MQL"
-4. Create task: "Prepare for meeting with [Contact Name]" — due 1 hour before meeting
+4. Create task: "Prepare for meeting with [Contact Name]" — due 1 hour before
+   meeting
 5. Send Slack notification to #meetings channel
    **Outcome:** AEs are prepared for every meeting with full context
-   **Notes:** Include recent page views and content downloads in notification email
+   **Notes:** Include recent page views and content downloads in notification
+   email
 
 ---
 
@@ -75,27 +85,33 @@ automation.
 1. Update associated contact lifecycle stage to "Customer"
 2. Set "Customer Since" date to current date
 3. Assign contact owner to CS team member (based on segment/territory)
-4. Create task for CS: "Schedule kickoff call with [Company Name]" — due in 2 business days
+4. Create task for CS: "Schedule kickoff call with [Company Name]" — due in 2
+   business days
 5. Enroll contact in "Customer Onboarding" email sequence
 6. Send internal notification to CS manager
 7. Remove from all sales sequences
    **Outcome:** Seamless handoff from sales to customer success
-   **Notes:** Include deal notes, contract value, and key stakeholders in CS notification
+   **Notes:** Include deal notes, contract value, and key stakeholders in CS
+   notification
 
 ---
 
 ### 6. Stale Deal Alert
 
 **Name:** Pipeline Hygiene — Stale Deal Detection
-**Trigger:** Deal property "Days in current stage" is greater than [2x average for that stage]
+**Trigger:** Deal property "Days in current stage" is greater than [2x average
+for that stage]
 **Actions:**
 
-1. Send internal email to deal owner: "Deal stale alert: [Deal Name] has been in [Stage] for [X]
+1. Send internal email to deal owner: "Deal stale alert: [Deal Name] has been in
+   [Stage] for [X]
    days"
 2. Create task: "Update or close [Deal Name]" — due in 3 business days
 3. If no update after 7 days → alert sales manager
-4. Add to "Stale Deals" dashboard list **Outcome:** Pipeline stays clean and forecast stays accurate
-   **Notes:** Customize thresholds per stage (Discovery: 14 days, Proposal: 10 days, Negotiation: 21
+4. Add to "Stale Deals" dashboard list **Outcome:** Pipeline stays clean and
+   forecast stays accurate
+   **Notes:** Customize thresholds per stage (Discovery: 14 days, Proposal: 10
+   days, Negotiation: 21
    days)
 
 ---
@@ -110,7 +126,8 @@ automation.
 2. Reset engagement score to baseline (keep fit score)
 3. Enroll in "Recycled Lead Nurture" sequence (lower frequency)
 4. Set "Recycle Date" to current date
-5. Set re-enrollment trigger: if HubSpot Score exceeds threshold again, re-trigger MQL workflow
+5. Set re-enrollment trigger: if HubSpot Score exceeds threshold again,
+   re-trigger MQL workflow
    **Outcome:** Rejected leads get a second chance without clogging the pipeline
    **Notes:** Track recycled-to-MQL conversion rate as a separate metric
 
@@ -122,12 +139,14 @@ automation.
 **Trigger:** Scheduled — daily at 8:00 AM local time
 **Actions:**
 
-1. Filter contacts: lifecycle stage is "SQL" or "Opportunity" AND had website activity in last 24
+1. Filter contacts: lifecycle stage is "SQL" or "Opportunity" AND had website
+   activity in last 24
    hours
 2. Send digest email to each contact owner with their leads' activity
 3. Include: pages visited, content downloaded, emails opened/clicked
    **Outcome:** Sales reps start each day knowing which leads are active
-   **Notes:** Only include leads with meaningful activity (exclude single homepage visits)
+   **Notes:** Only include leads with meaningful activity (exclude single
+   homepage visits)
 
 ---
 
@@ -142,7 +161,8 @@ automation.
 
 1. Get Records: Query "Rep Assignment" custom object for next available rep
 2. Update Records: Set Lead Owner to assigned rep
-3. Create Records: Create Task — "Contact MQL: {Lead.Name}" with due date = NOW + 4 hours
+3. Create Records: Create Task — "Contact MQL: {Lead.Name}" with due date = NOW
+   + 4 hours
 4. Action: Send email alert to new lead owner
 5. Update Records: Update "Rep Assignment" last-assigned timestamp
    **Notes:** Use a custom "Rep Assignment" object to manage round-robin state
@@ -157,7 +177,8 @@ automation.
 2. Decision: Is lead older than 48 hours with no activity?
    - YES → Reassign to next rep, create urgent task, alert manager
    - NO → Send reminder email to current owner
-     **Notes:** Pair with Process Builder for real-time alerts on initial assignment
+     **Notes:** Pair with Process Builder for real-time alerts on initial
+     assignment
 
 ### 3. Pipeline Stage Automation (Salesforce Flow)
 
@@ -171,8 +192,10 @@ automation.
    - **Discovery:** Create task "Complete discovery questionnaire"
    - **Demo:** Create task "Prepare demo environment"
    - **Proposal:** Create task "Send proposal" + alert deal desk if ACV > $25K
-   - **Closed Won:** Trigger CS handoff (create Case, assign CS owner, send welcome email)
-   - **Closed Lost:** Create task "Log loss reason" + add to win/loss analysis report
+   - **Closed Won:** Trigger CS handoff (create Case, assign CS owner, send
+     welcome email)
+   - **Closed Lost:** Create task "Log loss reason" + add to win/loss analysis
+     report
 
 ### 4. Stale Deal Detection (Salesforce Flow)
 
@@ -205,7 +228,8 @@ automation.
 
 1. Calendly webhook fires on booking
 2. Match invitee email to CRM contact
-3. If contact exists → assign meeting to contact owner (override round-robin if owned)
+3. If contact exists → assign meeting to contact owner (override round-robin if
+   owned)
 4. If new contact → create lead, assign via routing rules, log meeting
 5. Set lifecycle stage to MQL (meeting = high intent)
 
@@ -270,7 +294,8 @@ Booking form submitted
 
 1. Find or create CRM contact
 2. Update lifecycle stage to MQL
-3. Send prep email to assigned rep (include CRM link, LinkedIn profile, recent activity)
+3. Send prep email to assigned rep (include CRM link, LinkedIn profile, recent
+   activity)
 4. Create pre-meeting task
 
 ### 3. Deal Closed → Onboarding Stack
@@ -309,7 +334,8 @@ Booking form submitted
 **Trigger:** Schedule — every Monday at 8:00 AM
 **Actions:**
 
-1. Query CRM for pipeline summary (total value, new deals, stale deals, expected closes)
+1. Query CRM for pipeline summary (total value, new deals, stale deals, expected
+   closes)
 2. Format as summary
 3. Post to Slack #sales-team
 4. Send email digest to sales leadership

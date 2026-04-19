@@ -1,19 +1,24 @@
 # GitHub Actions: Pin Third-Party Actions to Commit SHA
 
 > **Status:** Recommendation (ci-cd.yml is a protected file)
-> **Semgrep rule:** `yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha`
+> **Semgrep rule:**
+  `yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha`
 > **Date:** 2026-04-16
 
 ## Why
 
-Version tags (e.g. `@v4`) are mutable Git refs. A compromised upstream repository
-can silently replace a tag's target, injecting malicious code into every workflow
-that references it. Pinning to a full commit SHA makes the reference immutable and
+Version tags (e.g. `@v4` ) are mutable Git refs. A compromised upstream
+repository
+can silently replace a tag's target, injecting malicious code into every
+workflow
+that references it. Pinning to a full commit SHA makes the reference immutable
+and
 auditable.
 
 ## Recommended Changes for `.github/workflows/ci-cd.yml`
 
-Each line below shows the current reference and its replacement. The comment after
+Each line below shows the current reference and its replacement. The comment
+after
 the SHA preserves the human-readable version for Dependabot and reviewers.
 
 ### actions/checkout
@@ -90,7 +95,8 @@ the SHA preserves the human-readable version for Dependabot and reviewers.
 ## How to Apply
 
 The repository owner should update `.github/workflows/ci-cd.yml` with the pinned
-references listed above. After pinning, ensure Dependabot is configured to update
+references listed above. After pinning, ensure Dependabot is configured to
+update
 GitHub Actions so pinned SHAs stay current:
 
 ```yaml

@@ -82,13 +82,19 @@ One iteration = classify ONE pattern cluster + take action.
      - For **WRONG_RULE**: write the ADR only and escalate the evidence.
        The Codacy MAX-RIGOR lock forbids disabling patterns, creating
        relaxed drafts, or shrinking scope.
-   - **REAL_BUG**: - Create branch `security/<patternId-sanitized>` . - Fix EVERY occurrence of the
-     pattern (use the same `issues/search` call to enumerate). Add a regression test in the same
+   - **REAL_BUG**: - Create branch `security/<patternId-sanitized>` . - Fix
+     EVERY occurrence of the
+     pattern (use the same `issues/search` call to enumerate). Add a regression
+     test in the same
      workspace as the fix. - Run scoped validation:
-     `npm --prefix <workspace> run typecheck && npm --prefix <workspace> test` . - `git add` +
-     commit + push branch. - `gh pr create --label security --title "fix(security): <patternId>"
---body "<from ADR>"`. **Do NOT add `auto-merge` label**. - Pause here for that pattern. Set
-`category: REAL_BUG_PENDING_REVIEW` . - Continue to the next pattern in the next iteration.
+     `npm --prefix <workspace> run typecheck && npm --prefix <workspace> test` .
+     - `git add` +
+     commit + push branch. - `gh pr create --label security --title
+     "fix(security): <patternId> "
+--body " <from ADR> " `. **Do NOT add ` auto-merge` label**. - Pause here for
+that pattern. Set
+`category: REAL_BUG_PENDING_REVIEW` . - Continue to the next pattern in the next
+iteration.
 
 6. Commit the updated triage JSON + any ADRs + any sources you touched
    (suppressions). For real-bug PRs, the source touches are in the PR

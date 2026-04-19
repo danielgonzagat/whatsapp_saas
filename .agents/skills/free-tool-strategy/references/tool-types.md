@@ -10,7 +10,8 @@ Detailed guide to each type of marketing tool you can build.
 - Testers/Validators
 - Libraries/Resources
 - Interactive Educational
-- Tool Concept Examples by Industry (SaaS product, agency/services, e-commerce, developer tools,
+- Tool Concept Examples by Industry (SaaS product, agency/services, e-commerce,
+  developer tools,
   finance)
 
 ## Calculators

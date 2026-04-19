@@ -68,7 +68,8 @@ Cancel button → Exit survey → Offer (or route to CS) → Confirm → Post-ca
 
 ### Freemium / Free-to-Paid
 
-Users cancelling paid to return to free tier. Different psychology — they're not leaving, they're
+Users cancelling paid to return to free tier. Different psychology — they're not
+leaving, they're
 downgrading.
 
 **Flow structure:**
@@ -247,7 +248,8 @@ from customers like you.
 
 ## Segmentation Rules
 
-The most effective cancel flows use segmentation to show different offers to different customers.
+The most effective cancel flows use segmentation to show different offers to
+different customers.
 
 ### Segmentation Dimensions
 

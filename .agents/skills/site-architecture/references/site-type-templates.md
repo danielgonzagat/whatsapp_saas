@@ -1,6 +1,7 @@
 # Site Type Templates
 
-Full page hierarchy templates with ASCII trees, URL maps, and navigation recommendations for common
+Full page hierarchy templates with ASCII trees, URL maps, and navigation
+recommendations for common
 site types.
 
 ---
@@ -61,7 +62,8 @@ Homepage (/)
 
 ### Navigation
 
-**Header (6 items + CTA)**: Features | Pricing | Customers | Resources | Integrations | Docs |
+**Header (6 items + CTA)**: Features | Pricing | Customers | Resources |
+Integrations | Docs |
 [Get Started]
 
 **Footer columns**:
@@ -164,7 +166,8 @@ Homepage (/)
 
 ### Navigation
 
-**Header (5 items + cart/account)**: Shop (mega menu) | Collections | Sale | Blog | Help |
+**Header (5 items + cart/account)**: Shop (mega menu) | Collections | Sale |
+Blog | Help |
 [Cart icon] [Account icon]
 
 **Mega menu under Shop**: Category columns with featured products/images
@@ -209,7 +212,8 @@ Docs Home (/docs)
 
 **Header**: Docs | API | Blog | Community | GitHub | [Dashboard]
 
-**Sidebar** (persistent, left): Getting Started, Guides, API Reference, Examples, Changelog — with
+**Sidebar** (persistent, left): Getting Started, Guides, API Reference,
+Examples, Changelog — with
 expandable subsections
 
 **On-page**: Previous/Next navigation at bottom of each doc page
@@ -254,10 +258,12 @@ Homepage (/)
 
 ### Navigation
 
-**Header (7 items + CTA)**: Product | Solutions | Pricing | Resources | Blog | Docs | Integrations |
+**Header (7 items + CTA)**: Product | Solutions | Pricing | Resources | Blog |
+Docs | Integrations |
 [Start Free Trial]
 
-Use mega menus for Product (features list), Solutions (use cases + industries), and Resources (blog,
+Use mega menus for Product (features list), Solutions (use cases + industries),
+and Resources (blog,
 guides, templates, webinars, case studies).
 
 ---
@@ -295,7 +301,9 @@ Homepage (/)
 
 ### Navigation
 
-**Header (5 items + CTA)**: Services | About | Testimonials | Blog | [Contact Us]
+**Header (5 items + CTA)**: Services | About | Testimonials | Blog | [Contact
+Us]
 
-Keep it simple. Small business sites should be flat (1-2 levels max). Every page should be reachable
+Keep it simple. Small business sites should be flat (1-2 levels max). Every page
+should be reachable
 from the header.

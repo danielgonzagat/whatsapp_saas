@@ -1,10 +1,15 @@
 ---
 name: product-marketing-context
-description: "When the user wants to create or update their product marketing context document. Also
-use when the user mentions 'product context,' 'marketing context,' 'set up context,' 'positioning,'
-'who is my target audience,' 'describe my product,' 'ICP,' 'ideal customer profile,' or wants to
-avoid repeating foundational information across marketing tasks. Use this at the start of any new
-project before using other marketing skills — it creates `.agents/product-marketing-context.md` that
+description: "When the user wants to create or update their product marketing
+context document. Also
+use when the user mentions 'product context,' 'marketing context,' 'set up
+context,' 'positioning,'
+'who is my target audience,' 'describe my product,' 'ICP,' 'ideal customer
+profile,' or wants to
+avoid repeating foundational information across marketing tasks. Use this at the
+start of any new
+project before using other marketing skills — it creates
+`.agents/product-marketing-context.md` that
 all other skills reference for product, audience, and positioning context."
 metadata:
   version: 1.1.0
@@ -12,8 +17,10 @@ metadata:
 
 # Product Marketing Context
 
-You help users create and maintain a product marketing context document. This captures foundational
-positioning and messaging information that other marketing skills reference, so users don't repeat
+You help users create and maintain a product marketing context document. This
+captures foundational
+positioning and messaging information that other marketing skills reference, so
+users don't repeat
 themselves.
 
 The document is stored at `.agents/product-marketing-context.md`.
@@ -22,8 +29,10 @@ The document is stored at `.agents/product-marketing-context.md`.
 
 ### Step 1: Check for Existing Context
 
-First, check if `.agents/product-marketing-context.md` already exists. Also check
-`.claude/product-marketing-context.md` for older setups — if found there but not in `.agents/`,
+First, check if `.agents/product-marketing-context.md` already exists. Also
+check
+`.claude/product-marketing-context.md` for older setups — if found there but not
+in `.agents/` ,
 offer to move it.
 
 **If it exists:**
@@ -34,28 +43,34 @@ offer to move it.
 
 **If it doesn't exist, offer two options:**
 
-1. **Auto-draft from codebase** (recommended): You'll study the repo—README, landing pages,
-   marketing copy, package.json, etc.—and draft a V1 of the context document. The user then reviews,
+1. **Auto-draft from codebase** (recommended): You'll study the repo—README,
+   landing pages,
+   marketing copy, package.json, etc.—and draft a V1 of the context document.
+   The user then reviews,
    corrects, and fills gaps. This is faster than starting from scratch.
 
-2. **Start from scratch**: Walk through each section conversationally, gathering info one section at
+2. **Start from scratch**: Walk through each section conversationally, gathering
+   info one section at
    a time.
 
-Most users prefer option 1. After presenting the draft, ask: "What needs correcting? What's
+Most users prefer option 1. After presenting the draft, ask: "What needs
+correcting? What's
 missing?"
 
 ### Step 2: Gather Information
 
 **If auto-drafting:**
 
-1. Read the codebase: README, landing pages, marketing copy, about pages, meta descriptions,
+1. Read the codebase: README, landing pages, marketing copy, about pages, meta
+   descriptions,
    package.json, any existing docs
 2. Draft all sections based on what you find
 3. Present the draft and ask what needs correcting or is missing
 4. Iterate until the user is satisfied
 
 **If starting from scratch:**
-Walk through each section below conversationally, one at a time. Don't dump all questions at once.
+Walk through each section below conversationally, one at a time. Don't dump all
+questions at once.
 
 For each section:
 
@@ -64,8 +79,10 @@ For each section:
 3. Confirm accuracy
 4. Move to the next
 
-Push for verbatim customer language — exact phrases are more valuable than polished descriptions
-because they reflect how customers actually think and speak, which makes copy more resonant.
+Push for verbatim customer language — exact phrases are more valuable than
+polished descriptions
+because they reflect how customers actually think and speak, which makes copy
+more resonant.
 
 ---
 
@@ -103,10 +120,13 @@ If multiple stakeholders are involved in buying, capture for each:
 
 ### 5. Competitive Landscape
 
-- **Direct competitors**: Same solution, same problem (e.g., Calendly vs SavvyCal)
-- **Secondary competitors**: Different solution, same problem (e.g., Calendly vs Superhuman
+- **Direct competitors**: Same solution, same problem (e.g., Calendly vs
+  SavvyCal)
+- **Secondary competitors**: Different solution, same problem (e.g., Calendly vs
+  Superhuman
   scheduling)
-- **Indirect competitors**: Conflicting approach (e.g., Calendly vs personal assistant)
+- **Indirect competitors**: Conflicting approach (e.g., Calendly vs personal
+  assistant)
 - How each falls short for customers
 
 ### 6. Differentiation
@@ -161,7 +181,8 @@ The JTBD Four Forces:
 
 ## Step 3: Create the Document
 
-After gathering information, create `.agents/product-marketing-context.md` with this structure:
+After gathering information, create `.agents/product-marketing-context.md` with
+this structure:
 
 ```markdown
 # Product Marketing Context
@@ -275,16 +296,19 @@ _Last updated: [date]_
 - Show the completed document
 - Ask if anything needs adjustment
 - Save to `.agents/product-marketing-context.md`
-- Tell them: "Other marketing skills will now use this context automatically. Run
+- Tell them: "Other marketing skills will now use this context automatically.
+  Run
   `/product-marketing-context` anytime to update it."
 
 ---
 
 ## Tips
 
-- **Be specific**: Ask "What's the #1 frustration that brings them to you?" not "What problem do
+- **Be specific**: Ask "What's the #1 frustration that brings them to you?" not
+  "What problem do
   they solve?"
 - **Capture exact words**: Customer language beats polished descriptions
 - **Ask for examples**: "Can you give me an example?" unlocks better answers
 - **Validate as you go**: Summarize each section and confirm before moving on
-- **Skip what doesn't apply**: Not every product needs all sections (e.g., Personas for B2C)
+- **Skip what doesn't apply**: Not every product needs all sections (e.g.,
+  Personas for B2C)

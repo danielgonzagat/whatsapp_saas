@@ -77,7 +77,8 @@ Gather this context (ask if not provided):
 
 For a deep dive on how each platform selects sources and what to optimize per
 platform, see
-[references/platform-ranking-factors.md](references/platform-ranking-factors.md).
+[references/platform-ranking-factors.md](references/platform-ranking-factors.md)
+.
 
 ### Key Difference from Traditional SEO
 

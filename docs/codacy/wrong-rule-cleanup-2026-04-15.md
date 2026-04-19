@@ -1,7 +1,8 @@
 # Codacy WRONG_RULE Cleanup — 2026-04-15
 
 **Status**: BLOCKED on manual Codacy UI action by repository owner.
-**Source snapshot**: `PULSE_CODACY_STATE.json` (sync 2026-04-15T11:17:43Z, 6700 issues).
+**Source snapshot**: `PULSE_CODACY_STATE.json` (sync 2026-04-15T11:17:43Z, 6700
+issues).
 **Related docs**:
 
 - `docs/codacy/convergence-checkpoint-2026-04-14.md` (prior phase)
@@ -28,7 +29,8 @@ single 30-minute session by @danielgonzagat.
 
 ## How to apply
 
-1. Open <https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/coding-standards>
+1. Open
+   <https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/coding-standards>
 2. Click **AI Policy** (`151338`) → **Code Patterns**.
 3. For each pattern listed below, use the filter box, then toggle it **off**.
 4. Click **Save & sync**.
@@ -59,8 +61,10 @@ rule is structurally incompatible.
 - `ESLint8_es-x_no-destructuring` — 38. Flags `const { x } = obj`.
 - `ESLint8_es-x_no-async-functions` — 37. Flags `async function`.
 
-Plus the long tail (`no-generators`, `no-classes`, `no-let`, `no-spread-elements`, etc.) —
-**disable the entire `es-x` rule group** rather than one at a time if the Codacy UI supports
+Plus the long tail ( `no-generators` , `no-classes` , `no-let` ,
+`no-spread-elements` , etc.) —
+**disable the entire `es-x` rule group** rather than one at a time if the Codacy
+UI supports
 bulk-disable by plugin.
 
 **Subtotal**: ~945 issues in top 50, estimated ~1,100 total including tail.
@@ -117,9 +121,12 @@ Components. This project has no Salesforce anything.
   `worker/package.json` in `.codacy.yml` — need the same treatment for
   root and every other `package.json`.
 - `Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator`
-  — 85. Flags strings containing `${...}` that aren't template literals (backticks), assuming they
-  were meant to be interpolated. In practice, these are mostly strings like `"Use ${VARIABLE_NAME}"`
-  in docs, `${}` in user-facing template prose, or SQL placeholders. False positive rate is
+  — 85. Flags strings containing `${...}` that aren't template literals
+  (backticks), assuming they
+  were meant to be interpolated. In practice, these are mostly strings like
+  `"Use ${VARIABLE_NAME}"`
+  in docs, `${}` in user-facing template prose, or SQL placeholders. False
+  positive rate is
   near-total in this repo.
 - `Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator`
   — 84. Flags `Math.random()` as cryptographically insecure. One real

@@ -34,13 +34,15 @@ Esta auditoria cruza:
 
 ### Painel direito
 
-- O `AgentConsole` mockado foi substituído, no shell principal, por um `WhatsAppConsole` em
+- O `AgentConsole` mockado foi substituído, no shell principal, por um
+  `WhatsAppConsole` em
   [`frontend/src/components/kloel/WhatsAppConsole.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/WhatsAppConsole.tsx)
   .
 - O handle colapsado agora usa um ícone dedicado de WhatsApp em
   [`frontend/src/components/icons/WhatsAppIcon.tsx`](/workspaces/whatsapp_saas/frontend/src/components/icons/WhatsAppIcon.tsx)
   .
-- Quando desconectado, o painel exibe QR Code, instruções, status, botão de conectar e reset.
+- Quando desconectado, o painel exibe QR Code, instruções, status, botão de
+  conectar e reset.
 - Quando conectado, o painel exibe:
   - cabeçalho com status
   - ação de fechar
@@ -65,8 +67,10 @@ Esta auditoria cruza:
 
 ### Painel esquerdo
 
-- O `SettingsDrawer` agora suporta ancoragem à esquerda e handle lateral colapsado.
-- O shell principal continua central; o usuário não precisa sair da página para abrir configurações.
+- O `SettingsDrawer` agora suporta ancoragem à esquerda e handle lateral
+  colapsado.
+- O shell principal continua central; o usuário não precisa sair da página para
+  abrir configurações.
 - As tabs operacionais hoje já incluem:
   - Conta
   - Métodos de pagamento
@@ -80,7 +84,8 @@ Esta auditoria cruza:
 - [`account-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/account-settings-section.tsx)
   já carrega e persiste dados reais de conta, provider, jitter e canais.
 - [`billing-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/billing-settings-section.tsx)
-  já opera saldo, Asaas, resumo de vendas, links externos, tracking e credenciais de plataforma.
+  já opera saldo, Asaas, resumo de vendas, links externos, tracking e
+  credenciais de plataforma.
 - [`brain-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/brain-settings-section.tsx)
   já persiste:
   - identidade da empresa
@@ -92,7 +97,8 @@ Esta auditoria cruza:
   - modo de emergência
   - toggle/config de autopilot
   - knowledge base por texto e URL
-- A parte de produto/oferta do drawer já conversa com produto real e links externos reais.
+- A parte de produto/oferta do drawer já conversa com produto real e links
+  externos reais.
 
 ### CRM, pipeline e analytics
 
@@ -118,7 +124,8 @@ Estado atual:
 - [`account-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/account-settings-section.tsx)
   já carrega `workspace/me` , canais, provider e jitter.
 - Os dados de conta são persistidos via endpoints reais de workspace/account.
-- O maior gap remanescente nesta área deixou de ser persistência básica e passou a ser cobertura de
+- O maior gap remanescente nesta área deixou de ser persistência básica e passou
+  a ser cobertura de
   webhooks, domínio, API keys e time/permissões.
 
 Conclusão:
@@ -132,14 +139,16 @@ Estado atual:
 
 - [`brain-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/brain-settings-section.tsx)
   já grava `providerSettings.kloelProfile` .
-- Persona, tom, regras, FAQ, opening message e emergency mode já persistem no backend.
+- Persona, tom, regras, FAQ, opening message e emergency mode já persistem no
+  backend.
 - O drawer já lê/grava knowledge base por texto e URL.
 - Produto, plano e link deixaram de ser puramente visuais.
 
 Conclusão:
 
 - A área já saiu do estado majoritariamente mockado.
-- O gap principal agora é upload dedicado de arquivo e cobertura de todos os fluxos de
+- O gap principal agora é upload dedicado de arquivo e cobertura de todos os
+  fluxos de
   mídia/conhecimento.
 
 ### 3. Pagamentos
@@ -147,9 +156,11 @@ Conclusão:
 Estado atual:
 
 - [`billing-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/billing-settings-section.tsx)
-  já opera saldo, pendências, Asaas, PIX, boleto, relatório de vendas, links externos, tracking e
+  já opera saldo, pendências, Asaas, PIX, boleto, relatório de vendas, links
+  externos, tracking e
   credenciais por plataforma.
-- O módulo ainda precisa ser expandido se a meta for paridade total com todos os cenários de
+- O módulo ainda precisa ser expandido se a meta for paridade total com todos os
+  cenários de
   plataforma, mas não está mais fragmentado como antes.
 
 Conclusão:
@@ -163,11 +174,13 @@ Estado atual:
 
 - [`activity-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/activity-section.tsx)
   já consome atividade real.
-- A barra de pensamento/trace no shell principal mostra reasoning/action trace vivo do dia.
+- A barra de pensamento/trace no shell principal mostra reasoning/action trace
+  vivo do dia.
 
 Conclusão:
 
-- O usuário já enxerga atividade real, mas ainda falta unificar todos os domínios de conta no mesmo
+- O usuário já enxerga atividade real, mas ainda falta unificar todos os
+  domínios de conta no mesmo
   stream.
 
 ### 5. WhatsApp
@@ -178,7 +191,8 @@ Estado atual antes do patch:
   [`frontend/src/app/(main)/whatsapp/page.tsx`](/workspaces/whatsapp_saas/frontend/src/app/(main)
   /whatsapp/page.tsx) já possuía QR/status/reset/desconexão.
 - O painel lateral direito não reaproveitava isso; usava
-  [`AgentConsole.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/AgentConsole.tsx),
+  [`AgentConsole.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/AgentConsole.tsx)
+  ,
   que era um monitor mockado.
 
 Estado atual depois do patch:
@@ -192,7 +206,8 @@ Estado atual depois do patch:
 
 Conclusão:
 
-- O painel vivo do WhatsApp deixou de ser só uma ideia de UX e passou a ter base operacional real.
+- O painel vivo do WhatsApp deixou de ser só uma ideia de UX e passou a ter base
+  operacional real.
 
 ## Diagnóstico exaustivo: capacidades do backend ainda sem cobertura completa no frontend
 
@@ -245,7 +260,8 @@ O backend cobre:
 Situação atual do frontend:
 
 - a maior parte da operação já foi trazida para o drawer
-- ainda faltam refinamentos e alguns cenários avançados, não mais a ausência total de UI
+- ainda faltam refinamentos e alguns cenários avançados, não mais a ausência
+  total de UI
 
 ### D. Segmentação, pipeline e CRM
 
@@ -294,7 +310,8 @@ O backend cobre:
 Situação atual do frontend:
 
 - já existe módulo real de knowledge base dentro das configurações
-- ainda falta upload de arquivo dedicado e cobertura completa de mídia/catalogação
+- ainda falta upload de arquivo dedicado e cobertura completa de
+  mídia/catalogação
 
 ## O que precisa ser feito para a conta ficar realmente completa na tela principal
 

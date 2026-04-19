@@ -1,18 +1,21 @@
 # CHANGELOG DE CORRECAO — Kloel Platform
 
 **Data:** 28 de Março de 2026
-**Escopo:** Eliminacao de mentiras visuais, dados falsos, codigo morto e refatoracao estrutural
+**Escopo:** Eliminacao de mentiras visuais, dados falsos, codigo morto e
+refatoracao estrutural
 **Resultado:** 36 arquivos alterados, +4.011/-4.226 linhas
 
 ---
 
 ## FASE 1A — AnunciosView: UI Fake Eliminada
 
-**Commit:** `db92185` — refactor(anuncios): substituir UI fake por empty state "Em Breve"
+**Commit:** `db92185` — refactor(anuncios): substituir UI fake por empty state
+"Em Breve"
 
 - **AnunciosView.tsx** reescrito de 627 para 75 linhas
 - Removidos: dados hardcoded de 3 plataformas (Meta/Google/TikTok), 10 campanhas
-  fictitcias, 5 regras de IA fake, 6 acoes de IA simuladas, profit ticker animado,
+  fictitcias, 5 regras de IA fake, 6 acoes de IA simuladas, profit ticker
+  animado,
   canvas NeuralPulse
 - Substituido por `ContextualEmptyState` com contexto "anuncios"
 - Navegacao de 6 tabs mantida funcional para uso futuro
@@ -24,12 +27,14 @@
 
 ## FASE 3A — Marketing: Dados Reais de Vendas
 
-**Commit:** `c1e2e83` — fix(marketing): usar vendas reais ao inves de contagem de produtos
+**Commit:** `c1e2e83` — fix(marketing): usar vendas reais ao inves de contagem
+de produtos
 
 - **Antes:** `totalSales = products.length` (contava produtos, nao vendas)
 - **Antes:** `totalRevenue = soma de precos de tabela` (nao receita real)
 - **Depois:** `kloelSale.count({ status: 'paid' })` para vendas reais
-- **Depois:** `kloelSale.aggregate({ _sum: { amount: true } })` para receita real
+- **Depois:** `kloelSale.aggregate({ _sum: { amount: true } })` para receita
+  real
 
 **Arquivo:** `marketing.controller.ts`
 
@@ -37,12 +42,14 @@
 
 ## FASE 2B — FunnelsModule Deletado
 
-**Commit:** `702670b` — chore: deletar FunnelsModule (stub in-memory) e launchpad (duplicata)
+**Commit:** `702670b` — chore: deletar FunnelsModule (stub in-memory) e
+launchpad (duplicata)
 
 - Deletado `backend/src/funnels/` (5 arquivos, 153 linhas)
 - FunnelsService mantinha funis num array in-memory — morria a cada restart
 - POST /funnels/register nunca era chamado pelo frontend
-- Frontend /funnels/page.tsx usa APIs de conversations/flows, nao o backend de funnels
+- Frontend /funnels/page.tsx usa APIs de conversations/flows, nao o backend de
+  funnels
 - Removido import do FunnelsModule no app.module.ts
 
 ---
@@ -66,18 +73,23 @@
   - brain-settings-section: productApi, autopilotApi, knowledgeBaseApi
   - crm-settings-section: crmApi, segmentationApi
   - analytics-settings-section: analytics APIs
-- Cards menores (kloel-status, realtime-usage, etc.) recebem props dos pais - funcional
+- Cards menores (kloel-status, realtime-usage, etc.) recebem props dos pais -
+  funcional
 - **Nenhuma mudanca necessaria**
 
 ---
 
 ## FASE 1C — Ferramentas: Badges "Em Breve"
 
-**Commit:** `787adcc` — feat(ferramentas): adicionar badge "Em Breve" em tools sem backend
+**Commit:** `787adcc` — feat(ferramentas): adicionar badge "Em Breve" em tools
+sem backend
 
-- `ToolCard.tsx`: nova prop `disabled` (opacity 0.5, cursor not-allowed, badge "Em Breve" cor Ember)
-- `ver-todas/page.tsx`: 32 tools sem rota real agora marcadas disabled automaticamente
-- 10 tools com rotas reais continuam funcionais (WhatsApp Marketing, Afiliados, Funnels, etc.)
+- `ToolCard.tsx` : nova prop `disabled` (opacity 0.5, cursor not-allowed, badge
+  "Em Breve" cor Ember)
+- `ver-todas/page.tsx` : 32 tools sem rota real agora marcadas disabled
+  automaticamente
+- 10 tools com rotas reais continuam funcionais (WhatsApp Marketing, Afiliados,
+  Funnels, etc.)
 - Paginas gerencie/ e impulsione/ ja tinham banner "Em desenvolvimento"
 
 **Arquivos:** `ToolCard.tsx`, `ver-todas/page.tsx`
@@ -86,7 +98,8 @@
 
 ## FASE 3B — Payment: Fallback Fake Removido
 
-**Commit:** `498f158` — fix(payment): remover fallback que criava registros falsos no banco
+**Commit:** `498f158` — fix(payment): remover fallback que criava registros
+falsos no banco
 
 - **Antes:** Quando legacy payment provider indisponivel, gerava ID fake
   `pay_${timestamp}`, criava KloelSale real no banco com URL inexistente
@@ -99,7 +112,8 @@
 
 ## FASE 4A — api.ts Quebrado em 19 Modulos
 
-**Commits:** `851432c`, `aefed19`, `1fb03a9` — refactor(api): quebrar api.ts em modulos
+**Commits:** `851432c` , `aefed19` , `1fb03a9` — refactor(api): quebrar api.ts
+em modulos
 
 - **Antes:** 3.368 linhas em 1 arquivo, 15 namespaces, 40+ interfaces
 - **Depois:** 19 modulos em `frontend/src/lib/api/`:
@@ -133,7 +147,8 @@
 
 ## FASE 2A — Paginas para Backends Orfaos
 
-**Commit:** `fc38984` — feat: criar paginas minimas para backends orfaos (scrapers + video)
+**Commit:** `fc38984` — feat: criar paginas minimas para backends orfaos
+(scrapers + video)
 
 - `scrapers/page.tsx`: Lista jobs de scraping via GET /scrapers/jobs
 - `video/page.tsx`: Lista video jobs via GET /video/jobs

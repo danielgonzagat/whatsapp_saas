@@ -1,6 +1,7 @@
 # Platform Specs Reference
 
-Complete character limits, format requirements, and best practices for each ad platform.
+Complete character limits, format requirements, and best practices for each ad
+platform.
 
 ---
 
@@ -205,19 +206,22 @@ Complete character limits, format requirements, and best practices for each ad p
 - **Emojis** count as 1-2 characters depending on platform
 - **Special characters** (|, &, etc.) count as 1 character
 - **URLs** in body text count against limits
-- **Dynamic keyword insertion** (`{KeyWord:default}`) can exceed limits — set safe defaults
+- **Dynamic keyword insertion** ( `{KeyWord:default}` ) can exceed limits — set
+  safe defaults
 - Always verify in the platform's ad preview before launching
 
 ---
 
 ## Multi-Platform Creative Adaptation
 
-When creating for multiple platforms simultaneously, start with the most restrictive format:
+When creating for multiple platforms simultaneously, start with the most
+restrictive format:
 
 1. **Google Search headlines** (30 chars) — forces the tightest messaging
 2. **Expand to Meta headlines** (40 chars) — add a word or two
 3. **Expand to LinkedIn intro text** (150 chars) — add context and proof
 4. **Expand to Meta primary text** (125+ chars) — full hook and value prop
 
-This cascading approach ensures your core message works everywhere, then gets enriched for platforms
+This cascading approach ensures your core message works everywhere, then gets
+enriched for platforms
 that allow more space.

@@ -23,7 +23,8 @@ Rules:
 
 ### Mega Menu Header
 
-Best for: SaaS with many features, e-commerce with categories, large content sites.
+Best for: SaaS with many features, e-commerce with categories, large content
+sites.
 
 ```
 [Logo]   Product ▾   Solutions ▾   Resources ▾   Pricing   Docs   [CTA]
@@ -101,7 +102,8 @@ Best for: simple sites, landing pages.
 
 ### Expanded Footer
 
-Best for: sites using footer for SEO (comparison pages, location pages, resource links).
+Best for: sites using footer for SEO (comparison pages, location pages, resource
+links).
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -283,16 +285,19 @@ Rules:
 
 ### Things to Avoid
 
-- **Too many header items** (8+): causes decision paralysis, nav becomes unreadable on smaller
+- **Too many header items** (8+): causes decision paralysis, nav becomes
+  unreadable on smaller
   screens
 - **Dropdown inception**: dropdowns inside dropdowns inside dropdowns
 - **Mystery icons**: icons without labels — users don't know what they mean
 - **Hidden primary nav**: burying important pages in hamburger menus on desktop
-- **Inconsistent nav between pages**: nav should be identical across the site (except app vs
+- **Inconsistent nav between pages**: nav should be identical across the site
+  (except app vs
   marketing)
 - **No mobile consideration**: desktop nav that doesn't translate to mobile
 - **Footer as sitemap dump**: 50+ links in the footer with no organization
-- **Breadcrumbs that don't match URLs**: breadcrumb says "Products > Widget" but URL is
+- **Breadcrumbs that don't match URLs**: breadcrumb says "Products > Widget" but
+  URL is
   `/shop/widget-pro`
 
 ### Common Fixes
@@ -312,8 +317,11 @@ Rules:
 Internal links in navigation pass PageRank. Use this strategically:
 
 - **Header nav links are strongest** — put your most important pages here
-- **Footer links pass less value** but still matter — good for comparison pages, location pages
-- **Sidebar links** help with section-level authority — good for blog categories, doc sections
-- **Breadcrumbs** provide structural signals to search engines — implement with schema markup
+- **Footer links pass less value** but still matter — good for comparison pages,
+  location pages
+- **Sidebar links** help with section-level authority — good for blog
+  categories, doc sections
+- **Breadcrumbs** provide structural signals to search engines — implement with
+  schema markup
 - **Don't use JavaScript-only nav** — search engines need crawlable HTML links
 - **Use descriptive anchor text** — "Analytics Features" not just "Features"

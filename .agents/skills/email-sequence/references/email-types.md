@@ -1,21 +1,28 @@
 # Email Types Reference
 
-A comprehensive guide to lifecycle and campaign emails. Use this as an audit checklist and
+A comprehensive guide to lifecycle and campaign emails. Use this as an audit
+checklist and
 implementation reference.
 
 ## Contents
 
-- Onboarding Emails (new users series, new customers series, key onboarding step reminder, new user
+- Onboarding Emails (new users series, new customers series, key onboarding step
+  reminder, new user
   invite)
-- Retention Emails (upgrade to paid, upgrade to higher plan, ask for review, offer support
+- Retention Emails (upgrade to paid, upgrade to higher plan, ask for review,
+  offer support
   proactively, product usage report, NPS survey, referral program)
-- Billing Emails (switch to annual, failed payment recovery, cancellation survey, upcoming renewal
+- Billing Emails (switch to annual, failed payment recovery, cancellation
+  survey, upcoming renewal
   reminder)
-- Usage Emails (daily/weekly/monthly summary, key event or milestone notifications)
+- Usage Emails (daily/weekly/monthly summary, key event or milestone
+  notifications)
 - Win-Back Emails (expired trials, cancelled customers)
-- Campaign Emails (monthly roundup/newsletter, seasonal promotions, product updates, industry news
+- Campaign Emails (monthly roundup/newsletter, seasonal promotions, product
+  updates, industry news
   roundup, pricing update)
-- Email Audit Checklist (onboarding, retention, billing, usage, win-back, campaigns)
+- Email Audit Checklist (onboarding, retention, billing, usage, win-back,
+  campaigns)
 
 ## Onboarding Emails
 
@@ -49,7 +56,8 @@ implementation reference.
 - Email 4: Success story from similar customer (day 7)
 - Email 5: Check-in + introduce support resources (day 14)
 
-**Key point**: Different from new user series—they've committed. Focus on reinforcement and
+**Key point**: Different from new user series—they've committed. Focus on
+reinforcement and
 expansion, not conversion.
 
 ---
@@ -120,7 +128,8 @@ expansion, not conversion.
 
 ### Upgrade to Higher Plan
 
-**Trigger**: User approaching plan limits or using features available on higher tier
+**Trigger**: User approaching plan limits or using features available on higher
+tier
 **Goal**: Upsell to next tier
 **Format**: Single email or 2-3 email sequence
 
@@ -142,7 +151,8 @@ expansion, not conversion.
 
 ### Ask for Review
 
-**Trigger**: Customer milestone (30/60/90 days, key achievement, support resolution)
+**Trigger**: Customer milestone (30/60/90 days, key achievement, support
+resolution)
 **Goal**: Generate social proof on G2, Capterra, app stores
 **Format**: Single email
 
@@ -320,7 +330,8 @@ expansion, not conversion.
 - Would anything change your mind
 - Can we help with transition
 
-**Winback opportunity**: Based on reason, offer targeted save (discount, pause, downgrade,
+**Winback opportunity**: Based on reason, offer targeted save (discount, pause,
+downgrade,
 training).
 
 ---
@@ -365,7 +376,8 @@ training).
 - Suggestions / what to try next
 - CTA to dive deeper
 
-**Personalization**: Must be relevant to their actual usage. Empty reports are worse than no report.
+**Personalization**: Must be relevant to their actual usage. Empty reports are
+worse than no report.
 
 ---
 

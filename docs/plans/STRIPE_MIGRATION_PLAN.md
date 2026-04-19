@@ -7,8 +7,10 @@
 
 ## Objetivo
 
-Consolidar checkout, Pix, webhooks, wallet, refunds e fluxos públicos em Stripe, removendo
-provedores legados do runtime ativo e deixando o repositório pronto para evolução do
+Consolidar checkout, Pix, webhooks, wallet, refunds e fluxos públicos em Stripe,
+removendo
+provedores legados do runtime ativo e deixando o repositório pronto para
+evolução do
 `Payment Kernel` sobre uma base única.
 
 ## Resultado entregue
@@ -29,7 +31,8 @@ provedores legados do runtime ativo e deixando o repositório pronto para evolu�
     /hooks/useCheckoutExperienceSocial.ts>)
   - [frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx](<../../frontend/src/app/(checkout)
     /components/CheckoutPaymentSection.tsx>)
-- Dependências legadas removidas de `backend/package.json` e `frontend/package.json`.
+- Dependências legadas removidas de `backend/package.json` e
+  `frontend/package.json` .
 - Testes de integração/simulação convertidos para webhook Stripe.
 
 ## Evidência de validação
@@ -42,14 +45,18 @@ provedores legados do runtime ativo e deixando o repositório pronto para evolu�
 ## Invariantes vigentes
 
 - Stripe é o único provider de pagamento ativo.
-- Toda evolução de pagamento deve partir do `Payment Kernel` e não de integrações paralelas.
-- Saldo exibido ao usuário continua sendo governado pelo ledger Kloel, não por saldo bruto do
+- Toda evolução de pagamento deve partir do `Payment Kernel` e não de
+  integrações paralelas.
+- Saldo exibido ao usuário continua sendo governado pelo ledger Kloel, não por
+  saldo bruto do
   rail.
-- Qualquer mudança estrutural de pagamentos deve manter este plano e o ADR sincronizados.
+- Qualquer mudança estrutural de pagamentos deve manter este plano e o ADR
+  sincronizados.
 
 ## Próximos passos permitidos
 
 1. Evoluir o `SplitEngine`.
 2. Evoluir o `LedgerEngine`.
 3. Conectar Connect onboarding, payouts e regras multi-stakeholder.
-4. Preparar o cutover de ambiente real quando as chaves e capabilities live estiverem disponíveis.
+4. Preparar o cutover de ambiente real quando as chaves e capabilities live
+   estiverem disponíveis.

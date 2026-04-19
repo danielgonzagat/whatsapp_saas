@@ -74,18 +74,23 @@ All data from support.google.com and developer.android.com as of March 2026.
 ## Store Listing Experiments (A/B Testing)
 
 - **Variants:** Up to 3 per experiment (plus control)
-- **Testable:** Icon, feature graphic, screenshots, video, short description, full description
-- **Concurrent:** Cannot run more than 1 default graphics experiment simultaneously
+- **Testable:** Icon, feature graphic, screenshots, video, short description,
+  full description
+- **Concurrent:** Cannot run more than 1 default graphics experiment
+  simultaneously
 - **Audience:** Signed-in Google Play users only
-- **Metrics:** First-time installers + retained first-time installers (1-day retention)
+- **Metrics:** First-time installers + retained first-time installers (1-day
+  retention)
 - **Duration:** Run at least 7 days (weekday/weekend variance)
 - **Localized:** Test across up to 5 languages simultaneously
 
 ## Custom Store Listings
 
 - **Max:** 50 per app (100 for Play partners)
-- **Customizable:** Title, short/full description, icon, screenshots, feature graphic, video
-- **Targeting:** Country/region, pre-registration, install state, Google Ads campaigns,
+- **Customizable:** Title, short/full description, icon, screenshots, feature
+  graphic, video
+- **Targeting:** Country/region, pre-registration, install state, Google Ads
+  campaigns,
   inactive/churned users (28+ days)
 - **2025 addition:** Gemini AI auto-generates text for CSLs in Play Console
 
@@ -100,11 +105,13 @@ All data from support.google.com and developer.android.com as of March 2026.
 
 - Submit **4+ days** before start (standard review)
 - Submit **14+ days** before for featuring requests
-- **Impact:** "Over twice as many explore acquisitions during featuring" (official Google)
+- **Impact:** "Over twice as many explore acquisitions during featuring"
+  (official Google)
 
 ## Android Vitals — Ranking Thresholds
 
-Apps exceeding these thresholds get **reduced visibility** in search and recommendations.
+Apps exceeding these thresholds get **reduced visibility** in search and
+recommendations.
 
 | Metric                       | Overall Threshold | Per-Device Threshold |
 | ---------------------------- | ----------------- | -------------------- |
@@ -112,20 +119,24 @@ Apps exceeding these thresholds get **reduced visibility** in search and recomme
 | User-Perceived ANR Rate      | **0.47%**         | 8%                   |
 | Excessive Partial Wake Locks | 5%                | N/A                  |
 
-**Consequences:** Reduced search visibility, warning labels on listing, quality alerts to users
+**Consequences:** Reduced search visibility, warning labels on listing, quality
+alerts to users
 before install. **Recovery:** Google checks daily using 28-day rolling average.
 
 ## Search Ranking — Official Factors
 
 Google confirms these affect ranking:
 
-1. **Metadata relevance** — Title carries most weight. NLP scans title + short desc + full desc.
+1. **Metadata relevance** — Title carries most weight. NLP scans title + short
+   desc + full desc.
 2. **App quality** — Android Vitals (crash/ANR rates)
-3. **Ratings and reviews** — Star rating + review text. 85% of featured apps have 4.0+
+3. **Ratings and reviews** — Star rating + review text. 85% of featured apps
+   have 4.0+
 4. **Install volume and velocity** — Total installs + daily/weekly frequency
 5. **Engagement and retention** — Session frequency, duration, retention rates
 6. **Update frequency** — Regular updates signal active maintenance
-7. **Localization** — Regional keyword/visual adaptation. 59% of US apps localize titles.
+7. **Localization** — Regional keyword/visual adaptation. 59% of US apps
+   localize titles.
 
 Sources: support.google.com/googleplay/android-developer/answer/4448378,
 support.google.com/googleplay/android-developer/answer/9898842,

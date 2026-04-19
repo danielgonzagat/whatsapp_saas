@@ -1,19 +1,27 @@
 # Codex Global Memory Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
-> (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
+> **For agentic workers:** REQUIRED SUB-SKILL: Use
+  superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan
+  task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Install a user-global persistent memory system for Codex that captures history
-automatically, injects a conservative startup brief in new sessions, and supports manual retrieval
+**Goal:** Install a user-global persistent memory system for Codex that captures
+history
+automatically, injects a conservative startup brief in new sessions, and
+supports manual retrieval
 across the full Codex history.
 
-**Architecture:** Build a local Node-based memory service under `~/.codex/memories/codex-mem/` using
-native `node:sqlite` and an HTTP API. Install global Codex skills in `~/.agents/skills/` so new
-sessions can bootstrap the service and pull a short memory brief without touching repository-local
+**Architecture:** Build a local Node-based memory service under
+`~/.codex/memories/codex-mem/` using
+native `node:sqlite` and an HTTP API. Install global Codex skills in
+`~/.agents/skills/` so new
+sessions can bootstrap the service and pull a short memory brief without
+touching repository-local
 governance surfaces.
 
-**Tech Stack:** Node.js 25, native `node:sqlite`, native `node:test`, local HTTP server, global
+**Tech Stack:** Node.js 25, native `node:sqlite` , native `node:test` , local
+HTTP server, global
 Codex skills under `~/.agents/skills/`.
 
 ---
@@ -46,7 +54,8 @@ test('resolveRuntimePaths builds paths under the codex memory root', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/config.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/config.test.mjs`
 Expected: FAIL because `../lib/config.mjs` does not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -64,7 +73,8 @@ export function resolveRuntimePaths(root) {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/config.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/config.test.mjs`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -187,7 +197,8 @@ Expected: FAIL because the modules do not exist yet.
 Code must:
 
 - mask secret-like substrings before persistence;
-- classify normalized records into `fact`, `decision`, `episode`, `artifact`, or `raw_excerpt`;
+- classify normalized records into `fact` , `decision` , `episode` , `artifact`
+  , or `raw_excerpt` ;
 - retain raw excerpts only when short and low-sensitivity.
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -225,7 +236,8 @@ Tests must prove:
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run:
-`node --test /Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs
+`node --test
+/Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs
 /Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
 Expected: FAIL because ingestion modules do not exist yet.
 
@@ -241,7 +253,8 @@ Code must:
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run:
-`node --test /Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs
+`node --test
+/Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs
 /Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
 Expected: PASS
 
@@ -318,7 +331,8 @@ Tests must prove these endpoints respond:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/server.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/server.test.mjs`
 Expected: FAIL because the server routes are incomplete.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -332,7 +346,8 @@ Code must:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/server.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/server.test.mjs`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -396,7 +411,8 @@ git commit -m "feat: install codex global memory skills"
 
 - [ ] **Step 1: Run full rebuild**
 
-Run: `node /Users/danielpenin/.codex/memories/codex-mem/server.mjs --reindex-once`
+Run:
+`node /Users/danielpenin/.codex/memories/codex-mem/server.mjs --reindex-once`
 Expected: existing Codex history is indexed into the database without crashes.
 
 - [ ] **Step 2: Run service health check**
@@ -413,7 +429,8 @@ Expected: at least one relevant result from prior Codex history.
 
 Run:
 `curl -sS 'http://127.0.0.1:37777/memory/brief?cwd=/Users/danielpenin/whatsapp_saas&q=continuar%20trabalho%20anterior'`
-Expected: a short JSON payload with compact sections or an explicit low-confidence no-brief
+Expected: a short JSON payload with compact sections or an explicit
+low-confidence no-brief
 response.
 
 - [ ] **Step 5: Commit**

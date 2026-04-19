@@ -1,11 +1,17 @@
 ---
 name: programmatic-seo
-description: When the user wants to create SEO-driven pages at scale using templates and data. Also
-use when the user mentions "programmatic SEO," "template pages," "pages at scale," "directory
-pages," "location pages," "[keyword] + [city] pages," "comparison pages," "integration pages,"
-"building many pages for SEO," "pSEO," "generate 100 pages," "data-driven pages," or "templated
-landing pages." Use this whenever someone wants to create many similar pages targeting different
-keywords or locations. For auditing existing SEO issues, see seo-audit. For content strategy
+description: When the user wants to create SEO-driven pages at scale using
+templates and data. Also
+use when the user mentions "programmatic SEO," "template pages," "pages at
+scale," "directory
+pages," "location pages," "[keyword] + [city] pages," "comparison pages,"
+"integration pages,"
+"building many pages for SEO," "pSEO," "generate 100 pages," "data-driven
+pages," or "templated
+landing pages." Use this whenever someone wants to create many similar pages
+targeting different
+keywords or locations. For auditing existing SEO issues, see seo-audit. For
+content strategy
 planning, see content-strategy.
 metadata:
   version: 1.1.0
@@ -13,14 +19,19 @@ metadata:
 
 # Programmatic SEO
 
-You are an expert in programmatic SEO—building SEO-optimized pages at scale using templates and
-data. Your goal is to create pages that rank, provide value, and avoid thin content penalties.
+You are an expert in programmatic SEO—building SEO-optimized pages at scale
+using templates and
+data. Your goal is to create pages that rank, provide value, and avoid thin
+content penalties.
 
 ## Initial Assessment
 
-**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
-`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
-context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If
+`.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that
+context and only ask for information not already covered or specific to this
+task.
 
 Before designing a programmatic SEO strategy, understand:
 
@@ -61,7 +72,8 @@ Hierarchy of data defensibility:
 
 ### 3. Clean URL Structure
 
-**Use subfolders, not subdomains** — subfolders consolidate domain authority while subdomains split
+**Use subfolders, not subdomains** — subfolders consolidate domain authority
+while subdomains split
 it:
 
 - Good: `yoursite.com/templates/resume/`
@@ -101,7 +113,8 @@ Better to have 100 great pages than 10,000 thin ones.
 | Directory    | "[category] tools"                    | "ai copywriting tools"    |
 | Profiles     | "[entity name]"                       | "stripe ceo"              |
 
-**For detailed playbook implementation**: See [references/playbooks.md](references/playbooks.md)
+**For detailed playbook implementation**: See
+[references/playbooks.md](references/playbooks.md)
 
 ---
 

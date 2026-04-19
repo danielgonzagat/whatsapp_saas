@@ -1,9 +1,11 @@
 # Natural Transitions
 
-Transitional phrases to guide readers through your content. Good signposting improves readability,
+Transitional phrases to guide readers through your content. Good signposting
+improves readability,
 user engagement, and helps search engines understand content structure.
 
-Adapted from: University of Manchester Academic Phrasebank (2023), Plain English Campaign, web
+Adapted from: University of Manchester Academic Phrasebank (2023), Plain English
+Campaign, web
 content best practices
 
 ---
@@ -89,7 +91,8 @@ Use to connect ideas and reinforce key points:
 - In addition,...
 - There's also...
 
-**Note:** Use "moreover" and "furthermore" sparingly. They can sound AI-generated when overused.
+**Note:** Use "moreover" and "furthermore" sparingly. They can sound
+AI-generated when overused.
 
 ---
 
@@ -206,7 +209,8 @@ Use when citing sources, data, or expert opinions:
 - Ready to get started?...
 - Now it's your turn.
 
-**Note:** Avoid "In conclusion" at the start of a paragraph. It's overused and signals AI writing.
+**Note:** Avoid "In conclusion" at the start of a paragraph. It's overused and
+signals AI writing.
 
 ---
 
@@ -254,13 +258,18 @@ For claims that need qualification or aren't absolute:
 
 ## Best Practice Guidelines
 
-1. **Match tone to audience**: B2B content can be slightly more formal; B2C often benefits from
+1. **Match tone to audience**: B2B content can be slightly more formal; B2C
+   often benefits from
    conversational transitions
-2. **Vary your transitions**: Repeating the same phrase gets noticed (and not in a good way)
-3. **Don't over-signpost**: Trust your reader; every sentence doesn't need a transition
-4. **Use for scannability**: Transitions at paragraph starts help skimmers navigate
+2. **Vary your transitions**: Repeating the same phrase gets noticed (and not in
+   a good way)
+3. **Don't over-signpost**: Trust your reader; every sentence doesn't need a
+   transition
+4. **Use for scannability**: Transitions at paragraph starts help skimmers
+   navigate
 5. **Keep it natural**: Read aloud; if it sounds forced, simplify
-6. **Front-load key info**: Put the important word or phrase early in the transition
+6. **Front-load key info**: Put the important word or phrase early in the
+   transition
 
 ---
 
@@ -276,5 +285,6 @@ These phrases are overused in AI-generated content:
 - "This begs the question..."
 - "Let's delve into..."
 
-See the seo-audit skill's `references/ai-writing-detection.md` for a complete list of AI writing
+See the seo-audit skill's `references/ai-writing-detection.md` for a complete
+list of AI writing
 tells.

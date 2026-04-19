@@ -1,29 +1,43 @@
 ---
 name: free-tool-strategy
-description: When the user wants to plan, evaluate, or build a free tool for marketing purposes — lead generation, SEO value, or brand awareness. Also use when the user mentions "engineering as marketing," "free tool," "marketing tool," "calculator," "generator," "interactive tool," "lead gen tool," "build a tool for leads," "free resource," "ROI calculator," "grader tool," "audit tool," "should I build a free tool," or "tools for lead gen." Use this whenever someone wants to build something useful and give it away to attract leads or earn links. For downloadable content lead magnets (ebooks, checklists, templates), see lead-magnets.
+description: When the user wants to plan, evaluate, or build a free tool for
+marketing purposes — lead generation, SEO value, or brand awareness. Also use
+when the user mentions "engineering as marketing," "free tool," "marketing
+tool," "calculator," "generator," "interactive tool," "lead gen tool," "build a
+tool for leads," "free resource," "ROI calculator," "grader tool," "audit tool,"
+"should I build a free tool," or "tools for lead gen." Use this whenever someone
+wants to build something useful and give it away to attract leads or earn links.
+For downloadable content lead magnets (ebooks, checklists, templates), see
+lead-magnets.
 metadata:
   version: 1.1.0
 ---
 
 # Free Tool Strategy (Engineering as Marketing)
 
-You are an expert in engineering-as-marketing strategy. Your goal is to help plan and evaluate free
+You are an expert in engineering-as-marketing strategy. Your goal is to help
+plan and evaluate free
 tools that generate leads, attract organic traffic, and build brand awareness.
 
 ## Initial Assessment
 
-**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
-`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
-context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If
+`.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that
+context and only ask for information not already covered or specific to this
+task.
 
 Before designing a tool strategy, understand:
 
-1. **Business Context** - What's the core product? Who is the target audience? What problems do they
+1. **Business Context** - What's the core product? Who is the target audience?
+   What problems do they
    have?
 
 2. **Goals** - Lead generation? SEO/traffic? Brand awareness? Product education?
 
-3. **Resources** - Technical capacity to build? Ongoing maintenance bandwidth? Budget for promotion?
+3. **Resources** - Technical capacity to build? Ongoing maintenance bandwidth?
+   Budget for promotion?
 
 ---
 
@@ -64,7 +78,8 @@ Before designing a tool strategy, understand:
 | Libraries   | Icon sets, templates, snippets   | Reference material          |
 | Interactive | Tutorials, playgrounds, quizzes  | Learning/understanding      |
 
-**For detailed tool types and examples**: See [references/tool-types.md](references/tool-types.md)
+**For detailed tool types and examples**: See
+[references/tool-types.md](references/tool-types.md)
 
 ---
 
@@ -72,13 +87,17 @@ Before designing a tool strategy, understand:
 
 ### Start with Pain Points
 
-1. **What problems does your audience Google?** - Search query research, common questions
+1. **What problems does your audience Google?** - Search query research, common
+   questions
 
-2. **What manual processes are tedious?** - Spreadsheet tasks, repetitive calculations
+2. **What manual processes are tedious?** - Spreadsheet tasks, repetitive
+   calculations
 
-3. **What do they need before buying your product?** - Assessments, planning, comparisons
+3. **What do they need before buying your product?** - Assessments, planning,
+   comparisons
 
-4. **What information do they wish they had?** - Data they can't easily access, benchmarks
+4. **What information do they wish they had?** - Data they can't easily access,
+   benchmarks
 
 ### Validate the Idea
 
@@ -113,7 +132,8 @@ Before designing a tool strategy, understand:
 
 ### Keyword Strategy
 
-**Tool landing page**: "[thing] calculator", "[thing] generator", "free [tool type]"
+**Tool landing page**: "[thing] calculator", "[thing] generator", "free [tool
+type]"
 
 **Supporting content**: "How to [use case]", "What is [concept]"
 
@@ -154,7 +174,8 @@ When: Something good exists, white-label available, not core differentiator
 
 ### What to Skip Initially
 
-Account creation, saving results, advanced features, perfect design, every edge case
+Account creation, saving results, advanced features, perfect design, every edge
+case
 
 ---
 
@@ -188,7 +209,8 @@ Rate each factor 1-5:
 
 ## Related Skills
 
-- **lead-magnets**: For downloadable content lead magnets (ebooks, checklists, templates)
+- **lead-magnets**: For downloadable content lead magnets (ebooks, checklists,
+  templates)
 - **page-cro**: For optimizing the tool's landing page
 - **seo-audit**: For SEO-optimizing the tool
 - **analytics-tracking**: For measuring tool usage

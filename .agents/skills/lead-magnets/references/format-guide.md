@@ -59,7 +59,8 @@ Detailed creation guidance for each lead magnet format.
 - Make it printable — clean layout, generous spacing
 - Include a "done" checkbox for each item
 
-**What works**: Step-by-step processes, audit criteria, launch checklists, setup guides
+**What works**: Step-by-step processes, audit criteria, launch checklists, setup
+guides
 
 ---
 
@@ -82,7 +83,8 @@ Detailed creation guidance for each lead magnet format.
 - Design for printing or saving as desktop reference
 - Bold the most important items
 
-**What works**: Keyboard shortcuts, formula references, terminology glossaries, decision matrices
+**What works**: Keyboard shortcuts, formula references, terminology glossaries,
+decision matrices
 
 ---
 
@@ -139,7 +141,8 @@ Detailed creation guidance for each lead magnet format.
 - Update periodically with fresh examples
 - Credit original sources
 
-**What works**: Email subject lines, landing pages, ad copy, CTAs, onboarding flows, pricing pages
+**What works**: Email subject lines, landing pages, ad copy, CTAs, onboarding
+flows, pricing pages
 
 ---
 
@@ -163,7 +166,8 @@ Detailed creation guidance for each lead magnet format.
 
 **Cadence**: Every 1-2 days. Don't stretch too thin or compress too tight.
 
-**Key principle**: Each lesson should deliver standalone value. If someone only watches lesson 2,
+**Key principle**: Each lesson should deliver standalone value. If someone only
+watches lesson 2,
 they should still learn something useful.
 
 ---
@@ -186,10 +190,12 @@ they should still learn something useful.
 - Tailor follow-up emails by result type
 - Share-worthy result format ("I got: Growth Stage Marketer!")
 
-**Implementation**: Gate results behind email capture. The quiz itself is ungated —
+**Implementation**: Gate results behind email capture. The quiz itself is
+ungated —
 the personalized results require an email.
 
-**For building interactive quizzes**: See **free-tool-strategy** skill for technical implementation
+**For building interactive quizzes**: See **free-tool-strategy** skill for
+technical implementation
 guidance.
 
 ---
@@ -212,7 +218,9 @@ guidance.
 - Gate with email registration
 - Automated follow-up sequence
 
-**Follow-up**: Send replay link + summary + CTA within 24 hours. Continue with nurture sequence.
+**Follow-up**: Send replay link + summary + CTA within 24 hours. Continue with
+nurture sequence.
 
-**Key principle**: Teach something genuinely useful. A webinar that's just a sales pitch will damage
+**Key principle**: Teach something genuinely useful. A webinar that's just a
+sales pitch will damage
 trust.

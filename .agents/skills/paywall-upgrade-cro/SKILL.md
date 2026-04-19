@@ -1,30 +1,47 @@
 ---
 name: paywall-upgrade-cro
-description: When the user wants to create or optimize in-app paywalls, upgrade screens, upsell modals, or feature gates. Also use when the user mentions "paywall," "upgrade screen," "upgrade modal," "upsell," "feature gate," "convert free to paid," "freemium conversion," "trial expiration screen," "limit reached screen," "plan upgrade prompt," "in-app pricing," "free users won't upgrade," "trial to paid conversion," or "how do I get users to pay." Use this for any in-product moment where you're asking users to upgrade. Distinct from public pricing pages (see page-cro) — this focuses on in-product upgrade moments where the user has already experienced value. For pricing decisions, see pricing-strategy.
+description: When the user wants to create or optimize in-app paywalls, upgrade
+screens, upsell modals, or feature gates. Also use when the user mentions
+"paywall," "upgrade screen," "upgrade modal," "upsell," "feature gate," "convert
+free to paid," "freemium conversion," "trial expiration screen," "limit reached
+screen," "plan upgrade prompt," "in-app pricing," "free users won't upgrade,"
+"trial to paid conversion," or "how do I get users to pay." Use this for any
+in-product moment where you're asking users to upgrade. Distinct from public
+pricing pages (see page-cro) — this focuses on in-product upgrade moments where
+the user has already experienced value. For pricing decisions, see
+pricing-strategy.
 metadata:
   version: 1.1.0
 ---
 
 # Paywall and Upgrade Screen CRO
 
-You are an expert in in-app paywalls and upgrade flows. Your goal is to convert free users to paid,
-or upgrade users to higher tiers, at moments when they've experienced enough value to justify the
+You are an expert in in-app paywalls and upgrade flows. Your goal is to convert
+free users to paid,
+or upgrade users to higher tiers, at moments when they've experienced enough
+value to justify the
 commitment.
 
 ## Initial Assessment
 
-**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
-`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
-context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If
+`.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that
+context and only ask for information not already covered or specific to this
+task.
 
 Before providing recommendations, understand:
 
-1. **Upgrade Context** - Freemium → Paid? Trial → Paid? Tier upgrade? Feature upsell? Usage limit?
+1. **Upgrade Context** - Freemium → Paid? Trial → Paid? Tier upgrade? Feature
+   upsell? Usage limit?
 
-2. **Product Model** - What's free? What's behind paywall? What triggers prompts? Current conversion
+2. **Product Model** - What's free? What's behind paywall? What triggers
+   prompts? Current conversion
    rate?
 
-3. **User Journey** - When does this appear? What have they experienced? What are they trying to do?
+3. **User Journey** - When does this appear? What have they experienced? What
+   are they trying to do?
 
 ---
 
@@ -215,7 +232,8 @@ What you've accomplished:
 - Revenue per user
 - Churn rate post-upgrade
 
-**For comprehensive experiment ideas**: See [references/experiments.md](references/experiments.md)
+**For comprehensive experiment ideas**: See
+[references/experiments.md](references/experiments.md)
 
 ---
 
@@ -249,7 +267,8 @@ What you've accomplished:
 
 ## Related Skills
 
-- **churn-prevention**: For cancel flows, save offers, and reducing churn post-upgrade
+- **churn-prevention**: For cancel flows, save offers, and reducing churn
+  post-upgrade
 - **page-cro**: For public pricing page optimization
 - **onboarding-cro**: For driving to aha moment before upgrade
 - **ab-test-setup**: For testing paywall variations

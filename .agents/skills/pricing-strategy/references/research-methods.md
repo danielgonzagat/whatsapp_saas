@@ -2,28 +2,35 @@
 
 ## Contents
 
-- Van Westendorp Price Sensitivity Meter (The Four Questions, How to Analyze, Survey Tips, Sample
+- Van Westendorp Price Sensitivity Meter (The Four Questions, How to Analyze,
+  Survey Tips, Sample
   Output)
-- MaxDiff Analysis (How It Works, Example Survey Question, Analyzing Results, Using MaxDiff for
+- MaxDiff Analysis (How It Works, Example Survey Question, Analyzing Results,
+  Using MaxDiff for
   Packaging)
 - Willingness to Pay Surveys
 - Usage-Value Correlation Analysis
 
 ## Van Westendorp Price Sensitivity Meter
 
-The Van Westendorp survey identifies the acceptable price range for your product.
+The Van Westendorp survey identifies the acceptable price range for your
+product.
 
 ### The Four Questions
 
 Ask each respondent:
 
-1. "At what price would you consider [product] to be so expensive that you would not consider buying
+1. "At what price would you consider [product] to be so expensive that you would
+   not consider buying
    it?" (Too expensive)
-2. "At what price would you consider [product] to be priced so low that you would question its
+2. "At what price would you consider [product] to be priced so low that you
+   would question its
    quality?" (Too cheap)
-3. "At what price would you consider [product] to be starting to get expensive, but you still might
+3. "At what price would you consider [product] to be starting to get expensive,
+   but you still might
    consider it?" (Expensive/high side)
-4. "At what price would you consider [product] to be a bargain—a great buy for the money?"
+4. "At what price would you consider [product] to be a bargain—a great buy for
+   the money?"
    (Cheap/good value)
 
 ### How to Analyze
@@ -64,7 +71,8 @@ Opportunity: 25-50% price increase without significant demand impact
 
 ## MaxDiff Analysis (Best-Worst Scaling)
 
-MaxDiff identifies which features customers value most, informing packaging decisions.
+MaxDiff identifies which features customers value most, informing packaging
+decisions.
 
 ### How It Works
 
