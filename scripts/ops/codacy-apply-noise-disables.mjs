@@ -343,6 +343,23 @@ const NOISE_PATTERNS = [
     reason:
       'WRONG_RULE (in our context) — flags `fetch(url)` where url is a variable. Triage 2026-04-18: 19/19 non-backend findings fetch against compile-time API_BASE / same-origin Next proxy / env-allowlisted hosts / hardcoded Codacy API. User input is only opaque backend IDs interpolated into fixed path templates (no protocol/host injection). Inline `nosemgrep` comments document each case.',
   },
+  // ── eslint-plugin-compat targets ancient browsers (op_mini) — WRONG for modern stack ──
+  {
+    id: 'ESLint8_compat_compat',
+    reason:
+      'WRONG_RULE — flags `URL`, `fetch`, `Map`, etc. as "not supported in op_mini all" (Opera Mini). Our Next.js 16 + React 19 stack targets evergreen browsers. Browserslist is configured accordingly; Codacy ignores the repo browserslist.',
+  },
+  // ── Monorepo path aliases not resolvable by Codacy ESLint engine ──
+  {
+    id: 'ESLint8_import_no-unresolved',
+    reason:
+      'WRONG_RULE — Codacy ESLint cannot resolve workspace-level packages like `eslint-seatbelt` or scoped imports with path aliases in the monorepo. Every flag is a legitimate workspace import that resolves locally at build time. Biome_lint_correctness_noUndeclaredDependencies is already disabled for the same reason.',
+  },
+  {
+    id: 'ESLint8_n_no-missing-import',
+    reason:
+      'WRONG_RULE — duplicate of import_no-unresolved from eslint-plugin-n. Same monorepo path-alias resolution issue: Codacy scans each package in isolation without workspace context.',
+  },
 ];
 
 // -------------------- Env --------------------
