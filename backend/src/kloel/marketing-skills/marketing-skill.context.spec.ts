@@ -43,7 +43,7 @@ describe('MarketingSkillContextBuilder', () => {
       contact: {
         count: jest.fn().mockResolvedValue(120),
       },
-    } as any;
+    } as unknown as ConstructorParameters<typeof MarketingSkillContextBuilder>[0];
 
     const builder = new MarketingSkillContextBuilder(prisma);
     const snapshot = await builder.buildSnapshot('ws-1');
