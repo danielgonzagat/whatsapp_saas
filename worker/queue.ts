@@ -236,69 +236,83 @@ export const queueRegistry: BullQueue[] = [
 
 // ─── DLQ webhook notifier ─────────────────────────────────────────────────
 
-async function notifyOps(input: {
+interface DlqEvent {
   queue: string;
   jobId?: string | number;
   jobName?: string;
   reason?: string;
-}) {
+}
+
+interface DlqPayload extends DlqEvent {
+  type: 'dlq_event';
+  env: string;
+  at: string;
+}
+
+const buildDlqPayload = (input: DlqEvent): DlqPayload => ({
+  type: 'dlq_event',
+  queue: input.queue,
+  jobId: input.jobId,
+  jobName: input.jobName,
+  reason: input.reason,
+  env: process.env.NODE_ENV || 'dev',
+  at: new Date().toISOString(),
+});
+
+const buildSlackBody = (payload: DlqPayload): { text: string } => ({
+  text: `DLQ ${payload.queue} -> job ${payload.jobName || payload.jobId || 'unknown'} (${payload.reason || 'no reason'}) [${payload.env}]`,
+});
+
+const buildTeamsBody = (payload: DlqPayload): Record<string, unknown> => ({
+  '@type': 'MessageCard',
+  '@context': 'http://schema.org/extensions',
+  summary: 'DLQ Event',
+  themeColor: 'E53935',
+  title: `DLQ ${payload.queue}`,
+  sections: [
+    {
+      facts: [
+        { name: 'Job', value: String(payload.jobName || payload.jobId || 'unknown') },
+        { name: 'Reason', value: payload.reason || 'n/a' },
+        { name: 'Env', value: payload.env },
+        { name: 'At', value: payload.at },
+      ],
+    },
+  ],
+});
+
+const buildWebhookBody = (
+  payload: DlqPayload,
+  type: 'slack' | 'teams' | 'generic',
+): Record<string, unknown> => {
+  if (type === 'slack') return buildSlackBody(payload);
+  if (type === 'teams') return buildTeamsBody(payload);
+  return payload as unknown as Record<string, unknown>;
+};
+
+const resolveFetch = (): typeof globalThis.fetch | undefined =>
+  typeof globalThis.fetch === 'function' ? globalThis.fetch : undefined;
+
+const normalizeError = (err: unknown): Error =>
+  err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+
+async function notifyOps(input: DlqEvent) {
   const webhook = process.env.DLQ_WEBHOOK_URL || process.env.OPS_WEBHOOK_URL;
   if (!webhook) return;
-  const webhookType = classifyWebhook(webhook);
-  const isSlack = webhookType === 'slack';
-  const isTeams = webhookType === 'teams';
-  const fetchFn: typeof globalThis.fetch | undefined =
-    typeof globalThis.fetch === 'function' ? globalThis.fetch : undefined;
+  const fetchFn = resolveFetch();
   if (!fetchFn) return;
 
   try {
-    const payload = {
-      type: 'dlq_event',
-      queue: input.queue,
-      jobId: input.jobId,
-      jobName: input.jobName,
-      reason: input.reason,
-      env: process.env.NODE_ENV || 'dev',
-      at: new Date().toISOString(),
-    };
-
-    const body = isSlack
-      ? {
-          text: `DLQ ${payload.queue} -> job ${payload.jobName || payload.jobId || 'unknown'} (${payload.reason || 'no reason'}) [${payload.env}]`,
-        }
-      : isTeams
-        ? {
-            '@type': 'MessageCard',
-            '@context': 'http://schema.org/extensions',
-            summary: 'DLQ Event',
-            themeColor: 'E53935',
-            title: `DLQ ${payload.queue}`,
-            sections: [
-              {
-                facts: [
-                  { name: 'Job', value: String(payload.jobName || payload.jobId || 'unknown') },
-                  { name: 'Reason', value: payload.reason || 'n/a' },
-                  { name: 'Env', value: payload.env },
-                  { name: 'At', value: payload.at },
-                ],
-              },
-            ],
-          }
-        : payload;
-
+    const payload = buildDlqPayload(input);
+    const body = buildWebhookBody(payload, classifyWebhook(webhook));
     await fetchFn(webhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    console.warn(
-      '[DLQ] Falha ao notificar webhook (%s): %s',
-      webhook,
-      errInstanceofError?.message || err,
-    );
+    const e = normalizeError(err);
+    console.warn('[DLQ] Falha ao notificar webhook (%s): %s', webhook, e.message || err);
   }
 }
 
@@ -377,51 +391,53 @@ export class Queue {
  * @param timeoutMs Maximum total time to wait for all closes. After
  *                   this elapses the function returns regardless.
  */
-export async function shutdownQueueSystem(timeoutMs = 10_000): Promise<void> {
+interface Closeable {
+  close: () => Promise<unknown>;
+}
+
+const closeWithWarn = (item: Closeable, label: string): Promise<unknown> =>
+  item.close().catch((err) => console.warn(`[SHUTDOWN] ${label} close failed:`, err));
+
+const collectClosers = (): Promise<unknown>[] => {
   const closers: Promise<unknown>[] = [];
+  for (const w of additionalWorkers) closers.push(closeWithWarn(w, 'worker'));
+  for (const ev of queueEventsRegistry.values()) closers.push(closeWithWarn(ev, 'queueEvents'));
+  for (const dlq of dlqRegistryMap.values()) closers.push(closeWithWarn(dlq, 'dlq'));
+  for (const q of queueRegistryMap.values()) closers.push(closeWithWarn(q, 'queue'));
+  return closers;
+};
 
-  // Workers first (so they stop accepting new jobs)
-  for (const w of additionalWorkers) {
-    closers.push(w.close().catch((err) => console.warn('[SHUTDOWN] worker close failed:', err)));
-  }
-
-  // QueueEvents next (release blocking connections)
-  for (const ev of queueEventsRegistry.values()) {
-    closers.push(
-      ev.close().catch((err) => console.warn('[SHUTDOWN] queueEvents close failed:', err)),
-    );
-  }
-
-  // DLQ queues
-  for (const dlq of dlqRegistryMap.values()) {
-    closers.push(dlq.close().catch((err) => console.warn('[SHUTDOWN] dlq close failed:', err)));
-  }
-
-  // Main queues
-  for (const q of queueRegistryMap.values()) {
-    closers.push(q.close().catch((err) => console.warn('[SHUTDOWN] queue close failed:', err)));
-  }
-
+const awaitCloserOrTimeout = async (
+  closers: Promise<unknown>[],
+  timeoutMs: number,
+): Promise<void> => {
   await Promise.race([
     Promise.allSettled(closers),
     new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
   ]);
+};
 
-  // Finally close the shared connection if it was opened
-  if (_connection) {
-    try {
-      await _connection.quit();
-    } catch (err) {
-      console.warn('[SHUTDOWN] connection quit failed:', err);
-    }
-    _connection = null;
+const closeSharedConnection = async (): Promise<void> => {
+  if (!_connection) return;
+  try {
+    await _connection.quit();
+  } catch (err) {
+    console.warn('[SHUTDOWN] connection quit failed:', err);
   }
+  _connection = null;
+};
 
-  // Reset registries so subsequent calls are no-ops
+const resetQueueRegistries = (): void => {
   additionalWorkers.length = 0;
   queueEventsRegistry.clear();
   dlqRegistryMap.clear();
   queueRegistryMap.clear();
+};
 
+export async function shutdownQueueSystem(timeoutMs = 10_000): Promise<void> {
+  const closers = collectClosers();
+  await awaitCloserOrTimeout(closers, timeoutMs);
+  await closeSharedConnection();
+  resetQueueRegistries();
   console.log('✅ [QUEUE] shutdownQueueSystem complete');
 }

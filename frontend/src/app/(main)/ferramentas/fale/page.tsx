@@ -53,18 +53,19 @@ export default function FalePage() {
           gap: 12,
         }}
       >
-        {live.map((tool) => (
-          <ToolCard
-            key={tool.title}
-            icon={tool.icon}
-            title={tool.title}
-            desc={tool.desc}
-            badge={getCapabilityBadge(tool)}
-            onClick={
-              getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined
-            }
-          />
-        ))}
+        {live.map((tool) => {
+          const href = getCapabilityHref(tool);
+          return (
+            <ToolCard
+              key={tool.title}
+              icon={tool.icon}
+              title={tool.title}
+              desc={tool.desc}
+              badge={getCapabilityBadge(tool)}
+              onClick={href ? () => router.push(href) : undefined}
+            />
+          );
+        })}
       </div>
 
       {roadmap.length > 0 ? (

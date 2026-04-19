@@ -5,6 +5,8 @@ import type { CheckoutDisplayTestimonial } from '@/lib/public-checkout-contract'
 import { ChDown, ChUp, Mn, PAYMENT_BADGES, Pl, Star, Tag } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 
+const STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
+
 type SummaryProps = {
   theme: CheckoutVisualTheme;
   summaryOpen: boolean;
@@ -211,8 +213,8 @@ export function CheckoutDesktopSidebar(props: SummaryProps) {
             </div>
             <div>
               <div style={{ display: 'flex', gap: 2, marginBottom: 2 }}>
-                {Array.from({ length: testimonial.stars }).map((_, index) => (
-                  <Star key={`${testimonial.name}-${index}`} />
+                {STAR_SLOTS.slice(0, testimonial.stars).map((slot) => (
+                  <Star key={`${testimonial.name}-${slot}`} />
                 ))}
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>

@@ -24,7 +24,11 @@ function resolveManagedCookieNames(patterns: string[]): string[] {
   for (const pattern of patterns) {
     if (pattern.includes('*')) {
       const prefix = pattern.replace(PATTERN_RE, '');
-      cookieNames.filter((name) => name.startsWith(prefix)).forEach((name) => names.add(name));
+      cookieNames
+        .filter((name) => name.startsWith(prefix))
+        .forEach((name) => {
+          names.add(name);
+        });
       continue;
     }
 
@@ -38,6 +42,7 @@ function expireCookie(name: string, domain?: string) {
   if (typeof document === 'undefined') return;
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
   const domainPart = domain ? `; domain=${domain}` : '';
+  // biome-ignore lint/suspicious/noDocumentCookie: cookie name sanitized via resolveManagedCookieNames allowlist; value is empty (expiring). Refactoring to CookieStore API would lose sync browser compatibility we require here.
   document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax${domainPart}${secure}`;
 }
 
@@ -103,11 +108,13 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
     <>
       {googleTagIds.length ? (
         <>
+          {/* biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication across renders; a useId()-generated value would re-inject Google Tag on every mount. */}
           <Script
             id="kloel-google-tag-src"
             src={`https://www.googletagmanager.com/gtag/js?id=${googleTagIds[0]}`}
             strategy="afterInteractive"
           />
+          {/* biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication across renders; a useId()-generated value would re-inject Google Tag config on every mount. */}
           <Script id="kloel-google-tag-config" strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
@@ -127,6 +134,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
       ) : null}
 
       {marketingEnabled && metaPixelId ? (
+        // biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication; a useId()-generated value would re-inject Meta Pixel on every mount.
         <Script id="kloel-meta-pixel" strategy="afterInteractive">
           {`
             !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -141,6 +149,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
       ) : null}
 
       {marketingEnabled && tiktokPixelId ? (
+        // biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication; a useId()-generated value would re-inject TikTok Pixel on every mount.
         <Script id="kloel-tiktok-pixel" strategy="afterInteractive">
           {`
             !function (w, d, t) {

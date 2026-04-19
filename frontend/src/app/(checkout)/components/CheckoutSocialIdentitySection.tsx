@@ -109,7 +109,9 @@ function GoogleIconButton({
   const transform = hovered ? 'scale(1.12)' : 'scale(1)';
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: wrapper groups a hover affordance around the Google auth button; role="group" is the correct ARIA mapping
     <div
+      role="group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{

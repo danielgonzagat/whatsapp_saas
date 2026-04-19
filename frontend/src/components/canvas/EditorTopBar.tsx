@@ -2,19 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { IC } from './CanvasIcons';
+import {
+  parseCustomDimensions,
+  RESIZE_PRESETS,
+  setRowBackground,
+  type DropdownId,
+} from './EditorTopBar.helpers';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-
-/* ═══ Resize presets ═══ */
-const RESIZE_PRESETS = [
-  { l: 'Post Instagram (4:5)', w: 1080, h: 1350 },
-  { l: 'Story Instagram', w: 1080, h: 1920 },
-  { l: 'Post Facebook', w: 1200, h: 628 },
-  { l: 'Post LinkedIn', w: 1200, h: 627 },
-  { l: 'Miniatura YouTube', w: 1280, h: 720 },
-  { l: 'Quadrado', w: 1080, h: 1080 },
-];
 
 /* ═══ Dropdown item styles ═══ */
 const ddMenu: React.CSSProperties = {
@@ -74,8 +70,6 @@ interface EditorTopBarProps {
   onResize?: (w: number, h: number) => void;
 }
 
-type DropdownId = 'file' | 'resize' | 'edit' | null;
-
 export function EditorTopBar({
   designName,
   onNameChange,
@@ -109,12 +103,8 @@ export function EditorTopBar({
 
   const toggleDropdown = (id: DropdownId) => setDropdown((prev) => (prev === id ? null : id));
 
-  const handleItemHover = (e: React.MouseEvent) => {
-    (e.currentTarget as HTMLElement).style.background = '#1C1C1F';
-  };
-  const handleItemLeave = (e: React.MouseEvent) => {
-    (e.currentTarget as HTMLElement).style.background = 'none';
-  };
+  const handleItemHover = (e: React.MouseEvent) => setRowBackground(e, '#1C1C1F');
+  const handleItemLeave = (e: React.MouseEvent) => setRowBackground(e, 'none');
 
   const closeAndRun = (fn?: () => void) => {
     setDropdown(null);
@@ -317,9 +307,10 @@ export function EditorTopBar({
               <button
                 type="button"
                 onClick={() => {
-                  const w = Number.parseInt(customW, 10);
-                  const h = Number.parseInt(customH, 10);
-                  if (w > 0 && h > 0) closeAndRun(() => onResize?.(w, h));
+                  const dimensions = parseCustomDimensions(customW, customH);
+                  if (dimensions) {
+                    closeAndRun(() => onResize?.(dimensions.width, dimensions.height));
+                  }
                 }}
                 style={{
                   background: '#E85D30',

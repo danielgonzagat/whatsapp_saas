@@ -86,32 +86,69 @@ export class AdminUsersService {
     return this.findById(id);
   }
 
+  private assertAdminUpdateAllowed(
+    current: { role: AdminRole },
+    patch: UpdateAdminUserInput,
+  ): void {
+    const actorIsOwner = patch.actorRole === AdminRole.OWNER;
+    // I-ADMIN-6: only OWNER can promote to OWNER.
+    if (patch.role === AdminRole.OWNER && !actorIsOwner) {
+      throw adminErrors.cannotCreateOwner();
+    }
+    // Non-OWNER cannot demote an OWNER.
+    if (current.role === AdminRole.OWNER && !actorIsOwner) {
+      throw adminErrors.ownerRequired();
+    }
+  }
+
+  private isRoleChange(
+    patch: UpdateAdminUserInput,
+    currentRole: AdminRole,
+  ): patch is UpdateAdminUserInput & { role: AdminRole } {
+    return patch.role !== undefined && patch.role !== currentRole;
+  }
+
+  private buildAdminUserUpdateData(
+    patch: UpdateAdminUserInput,
+    currentRole: AdminRole,
+  ): Prisma.AdminUserUpdateInput {
+    const data: Prisma.AdminUserUpdateInput = {};
+    if (patch.name !== undefined) data.name = patch.name.trim();
+    if (patch.status !== undefined) data.status = patch.status;
+    if (this.isRoleChange(patch, currentRole)) data.role = patch.role;
+    return data;
+  }
+
+  private async reseedPermissionsForRoleChange(id: string, role: AdminRole): Promise<void> {
+    await this.prisma.adminPermission.deleteMany({ where: { adminUserId: id } });
+    await this.permissions.seedDefaults(id, role);
+  }
+
+  private buildUpdateAuditDetails(
+    current: { role: AdminRole; status: AdminUserStatus; name: string },
+    patch: UpdateAdminUserInput,
+  ): Prisma.InputJsonValue {
+    return {
+      before: { role: current.role, status: current.status, name: current.name },
+      after: {
+        role: patch.role ?? null,
+        status: patch.status ?? null,
+        name: patch.name ?? null,
+      },
+    };
+  }
+
   async update(id: string, patch: UpdateAdminUserInput) {
     const current = await this.prisma.adminUser.findUnique({ where: { id } });
     if (!current) throw adminErrors.userNotFound();
 
-    // I-ADMIN-6: only OWNER can promote to OWNER.
-    if (patch.role === AdminRole.OWNER && patch.actorRole !== AdminRole.OWNER) {
-      throw adminErrors.cannotCreateOwner();
-    }
-    // Non-OWNER cannot demote an OWNER.
-    if (current.role === AdminRole.OWNER && patch.actorRole !== AdminRole.OWNER) {
-      throw adminErrors.ownerRequired();
-    }
+    this.assertAdminUpdateAllowed(current, patch);
 
-    const data: Prisma.AdminUserUpdateInput = {};
-    if (patch.name !== undefined) data.name = patch.name.trim();
-    if (patch.status !== undefined) data.status = patch.status;
-    if (patch.role !== undefined && patch.role !== current.role) {
-      data.role = patch.role;
-    }
-
+    const data = this.buildAdminUserUpdateData(patch, current.role);
     const updated = await this.prisma.adminUser.update({ where: { id }, data });
 
-    // If role changed, re-seed default permissions so the matrix matches.
-    if (patch.role !== undefined && patch.role !== current.role) {
-      await this.prisma.adminPermission.deleteMany({ where: { adminUserId: id } });
-      await this.permissions.seedDefaults(id, updated.role);
+    if (this.isRoleChange(patch, current.role)) {
+      await this.reseedPermissionsForRoleChange(id, updated.role);
     }
 
     await this.audit.append({
@@ -119,14 +156,7 @@ export class AdminUsersService {
       action: 'admin.users.updated',
       entityType: 'AdminUser',
       entityId: id,
-      details: {
-        before: { role: current.role, status: current.status, name: current.name },
-        after: {
-          role: patch.role ?? null,
-          status: patch.status ?? null,
-          name: patch.name ?? null,
-        },
-      },
+      details: this.buildUpdateAuditDetails(current, patch),
     });
 
     return this.serialize(updated);

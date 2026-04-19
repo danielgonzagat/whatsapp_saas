@@ -93,80 +93,99 @@ type DerivedStateArgs = {
   step: number;
 };
 
-export function deriveCheckoutExperienceState({
-  product,
-  config,
-  plan,
-  paymentProvider,
-  merchant,
-  defaults,
-  helpers,
-  form,
-  qty,
-  discount,
-  payMethod,
-  dynamicShippingInCents,
-  step,
-}: DerivedStateArgs) {
-  const { fmt, normalizeTestimonials, buildFooterPrimaryLine, formatCnpj } = helpers;
-  const productName =
-    config?.productDisplayName || plan?.name || product?.name || defaults.product.name;
-  const brandName =
-    config?.brandName ||
-    merchant?.companyName ||
-    merchant?.workspaceName ||
-    product?.name ||
-    defaults.product.brand;
-  const unitPriceInCents = Math.max(
-    0,
-    Math.round(Number(plan?.priceInCents || defaults.product.priceInCents)),
-  );
-  const shippingMode =
-    config?.shippingMode ||
-    (plan?.freeShipping ? 'FREE' : Number(plan?.shippingPrice || 0) > 0 ? 'FIXED' : 'FREE');
+type DerivedShippingMode = 'FREE' | 'FIXED' | 'VARIABLE';
+
+type DerivedShipping = {
+  shippingMode: DerivedShippingMode;
+  fixedShippingInCents: number;
+  variableShippingFloorInCents: number;
+  shippingInCents: number;
+};
+
+function resolveShippingModeDerived(
+  config: DerivedStateArgs['config'],
+  plan: DerivedStateArgs['plan'],
+): DerivedShippingMode {
+  if (config?.shippingMode) return config.shippingMode;
+  if (plan?.freeShipping) return 'FREE';
+  return Number(plan?.shippingPrice || 0) > 0 ? 'FIXED' : 'FREE';
+}
+
+function computeShippingInCentsDerived(
+  shippingMode: DerivedShippingMode,
+  fixedShippingInCents: number,
+  variableShippingFloorInCents: number,
+  dynamicShippingInCents: number | null,
+): number {
+  if (shippingMode === 'VARIABLE') {
+    return dynamicShippingInCents ?? variableShippingFloorInCents;
+  }
+  if (shippingMode === 'FIXED') return fixedShippingInCents;
+  return 0;
+}
+
+function deriveShipping(
+  config: DerivedStateArgs['config'],
+  plan: DerivedStateArgs['plan'],
+  dynamicShippingInCents: number | null,
+): DerivedShipping {
+  const shippingMode = resolveShippingModeDerived(config, plan);
   const fixedShippingInCents = Math.max(0, Math.round(Number(plan?.shippingPrice || 0)));
   const variableShippingFloorInCents = Math.max(
     0,
     Math.round(Number(config?.shippingVariableMinInCents || 0)),
   );
-  const shippingInCents =
-    shippingMode === 'VARIABLE'
-      ? (dynamicShippingInCents ?? variableShippingFloorInCents)
-      : shippingMode === 'FIXED'
-        ? fixedShippingInCents
-        : 0;
-  const supportsCard =
-    config?.enableCreditCard !== false && paymentProvider?.supportsCreditCard !== false;
-  const supportsPix = config?.enablePix !== false && paymentProvider?.supportsPix !== false;
-  const supportsBoleto = config?.enableBoleto === true && paymentProvider?.supportsBoleto !== false;
-  const productImage =
-    config?.productImage ||
-    product?.imageUrl ||
-    (Array.isArray(product?.images)
-      ? product.images.find((entry) => typeof entry === 'string' && entry.trim()) || ''
-      : '');
-  const checkoutUnavailableReason =
-    paymentProvider?.checkoutEnabled === false
-      ? paymentProvider.unavailableReason || 'Conecte sua conta Stripe para começar a vender.'
-      : '';
-  const testimonials = normalizeTestimonials(
-    brandName,
-    defaults.testimonials,
-    config?.testimonials,
-    config?.enableTestimonials,
+  const shippingInCents = computeShippingInCentsDerived(
+    shippingMode,
+    fixedShippingInCents,
+    variableShippingFloorInCents,
+    dynamicShippingInCents,
   );
-  const subtotal = unitPriceInCents * qty;
-  const total = Math.max(0, subtotal + shippingInCents - discount);
-  const installments = Math.max(1, Number.parseInt(form.installments || '1', 10) || 1);
-  const pricing = buildCheckoutPricing({
-    baseTotalInCents: total,
-    paymentMethod: payMethod === 'card' ? 'credit' : payMethod,
-    installments,
-    installmentInterestMonthlyPercent: paymentProvider?.installmentInterestMonthlyPercent ?? 3.99,
-  });
-  const totalWithInterest = payMethod === 'card' ? pricing.chargedTotalInCents : total;
+  return { shippingMode, fixedShippingInCents, variableShippingFloorInCents, shippingInCents };
+}
+
+function resolveDerivedProductImage(
+  config: DerivedStateArgs['config'],
+  product: DerivedStateArgs['product'],
+): string {
+  if (config?.productImage) return config.productImage;
+  if (product?.imageUrl) return product.imageUrl;
+  if (Array.isArray(product?.images)) {
+    return product.images.find((entry) => typeof entry === 'string' && entry.trim()) || '';
+  }
+  return '';
+}
+
+function resolveDerivedUnavailableReason(
+  paymentProvider: DerivedStateArgs['paymentProvider'],
+): string {
+  if (paymentProvider?.checkoutEnabled !== false) return '';
+  return paymentProvider.unavailableReason || 'Conecte sua conta Stripe para começar a vender.';
+}
+
+function resolveDerivedBrandName(
+  config: DerivedStateArgs['config'],
+  merchant: DerivedStateArgs['merchant'],
+  product: DerivedStateArgs['product'],
+  defaults: DerivedStateArgs['defaults'],
+): string {
+  return (
+    config?.brandName ||
+    merchant?.companyName ||
+    merchant?.workspaceName ||
+    product?.name ||
+    defaults.product.brand
+  );
+}
+
+function buildDerivedInstallmentOptions(
+  total: number,
+  plan: DerivedStateArgs['plan'],
+  paymentProvider: DerivedStateArgs['paymentProvider'],
+  fmt: Formatters,
+) {
   const maxInstallments = Math.max(1, Math.min(Number(plan?.maxInstallments || 12), 12));
-  const installmentOptions = Array.from({ length: maxInstallments }, (_, index) => {
+  return Array.from({ length: maxInstallments }, (_, index) => {
     const value = index + 1;
     const optionPricing = buildCheckoutPricing({
       baseTotalInCents: total,
@@ -182,18 +201,122 @@ export function deriveCheckoutExperienceState({
           : `${value}x de ${fmt.brl(optionPricing.perInstallmentInCents)}`,
     };
   });
-  const footerPrimary = buildFooterPrimaryLine(brandName, merchant);
-  const footerSecondary = merchant?.addressLine || '';
-  const footerLegal =
-    config?.footerText ||
-    `Copyright ${new Date().getFullYear()} ${merchant?.companyName || brandName}${merchant?.cnpj ? ` - CNPJ: ${formatCnpj(merchant.cnpj)}` : ''}`;
-  const popupCouponCode = String(config?.autoCouponCode || '')
-    .trim()
-    .toUpperCase();
-  const headerPrimary = config?.headerMessage || 'Envio Imediato após o Pagamento';
-  const headerSecondary = config?.headerSubMessage || 'OFERTA ESPECIAL DO MÊS!!!';
-  const mobileCanOpenStep1 = step > 1;
-  const mobileCanOpenStep2 = step > 2;
+}
+
+function buildDerivedFooterLegal(
+  config: DerivedStateArgs['config'],
+  merchant: DerivedStateArgs['merchant'],
+  brandName: string,
+  formatCnpj: (value?: string | null) => string,
+): string {
+  if (config?.footerText) return config.footerText;
+  const companyName = merchant?.companyName || brandName;
+  const cnpjSuffix = merchant?.cnpj ? ` - CNPJ: ${formatCnpj(merchant.cnpj)}` : '';
+  return `Copyright ${new Date().getFullYear()} ${companyName}${cnpjSuffix}`;
+}
+
+function resolveSupportedMethods(
+  config: DerivedStateArgs['config'],
+  paymentProvider: DerivedStateArgs['paymentProvider'],
+) {
+  return {
+    supportsCard:
+      config?.enableCreditCard !== false && paymentProvider?.supportsCreditCard !== false,
+    supportsPix: config?.enablePix !== false && paymentProvider?.supportsPix !== false,
+    supportsBoleto: config?.enableBoleto === true && paymentProvider?.supportsBoleto !== false,
+  };
+}
+
+function buildDerivedPricing(
+  total: number,
+  payMethod: DerivedStateArgs['payMethod'],
+  installments: number,
+  paymentProvider: DerivedStateArgs['paymentProvider'],
+) {
+  return buildCheckoutPricing({
+    baseTotalInCents: total,
+    paymentMethod: payMethod === 'card' ? 'credit' : payMethod,
+    installments,
+    installmentInterestMonthlyPercent: paymentProvider?.installmentInterestMonthlyPercent ?? 3.99,
+  });
+}
+
+function buildDerivedFooter(
+  config: DerivedStateArgs['config'],
+  merchant: DerivedStateArgs['merchant'],
+  brandName: string,
+  helpers: DerivedStateArgs['helpers'],
+) {
+  return {
+    footerPrimary: helpers.buildFooterPrimaryLine(brandName, merchant),
+    footerSecondary: merchant?.addressLine || '',
+    footerLegal: buildDerivedFooterLegal(config, merchant, brandName, helpers.formatCnpj),
+  };
+}
+
+function buildDerivedHeader(config: DerivedStateArgs['config']) {
+  return {
+    headerPrimary: config?.headerMessage || 'Envio Imediato após o Pagamento',
+    headerSecondary: config?.headerSubMessage || 'OFERTA ESPECIAL DO MÊS!!!',
+    popupCouponCode: String(config?.autoCouponCode || '')
+      .trim()
+      .toUpperCase(),
+  };
+}
+
+export function deriveCheckoutExperienceState({
+  product,
+  config,
+  plan,
+  paymentProvider,
+  merchant,
+  defaults,
+  helpers,
+  form,
+  qty,
+  discount,
+  payMethod,
+  dynamicShippingInCents,
+  step,
+}: DerivedStateArgs) {
+  const { fmt, normalizeTestimonials } = helpers;
+  const productName =
+    config?.productDisplayName || plan?.name || product?.name || defaults.product.name;
+  const brandName = resolveDerivedBrandName(config, merchant, product, defaults);
+  const unitPriceInCents = Math.max(
+    0,
+    Math.round(Number(plan?.priceInCents || defaults.product.priceInCents)),
+  );
+  const { shippingMode, variableShippingFloorInCents, shippingInCents } = deriveShipping(
+    config,
+    plan,
+    dynamicShippingInCents,
+  );
+  const { supportsCard, supportsPix, supportsBoleto } = resolveSupportedMethods(
+    config,
+    paymentProvider,
+  );
+  const productImage = resolveDerivedProductImage(config, product);
+  const checkoutUnavailableReason = resolveDerivedUnavailableReason(paymentProvider);
+  const testimonials = normalizeTestimonials(
+    brandName,
+    defaults.testimonials,
+    config?.testimonials,
+    config?.enableTestimonials,
+  );
+  const subtotal = unitPriceInCents * qty;
+  const total = Math.max(0, subtotal + shippingInCents - discount);
+  const installments = Math.max(1, Number.parseInt(form.installments || '1', 10) || 1);
+  const pricing = buildDerivedPricing(total, payMethod, installments, paymentProvider);
+  const totalWithInterest = payMethod === 'card' ? pricing.chargedTotalInCents : total;
+  const installmentOptions = buildDerivedInstallmentOptions(total, plan, paymentProvider, fmt);
+  const { footerPrimary, footerSecondary, footerLegal } = buildDerivedFooter(
+    config,
+    merchant,
+    brandName,
+    helpers,
+  );
+  const { headerPrimary, headerSecondary, popupCouponCode } = buildDerivedHeader(config);
   return {
     productName,
     brandName,
@@ -219,8 +342,8 @@ export function deriveCheckoutExperienceState({
     popupCouponCode,
     headerPrimary,
     headerSecondary,
-    mobileCanOpenStep1,
-    mobileCanOpenStep2,
+    mobileCanOpenStep1: step > 1,
+    mobileCanOpenStep2: step > 2,
   };
 }
 
@@ -245,4 +368,56 @@ export function isCheckoutAddressStepValid(form: CheckoutExperienceForm) {
     form.city.trim() &&
     form.state.trim(),
   );
+}
+
+/**
+ * Normalize an incoming coupon code (explicit > current state), uppercased and trimmed.
+ * Returns an empty string when neither source yielded a usable code.
+ */
+export function resolveCheckoutCouponCode(currentCode: string, explicitCode?: string) {
+  return String(explicitCode || currentCode || '')
+    .trim()
+    .toUpperCase();
+}
+
+/**
+ * Pure precondition check for finalize-order. Returns the first error encountered
+ * (so the hook can set submitError / bounce the user back) or null when every
+ * precondition holds. Kept as a small data-only function to tame the cyclomatic
+ * complexity of the orchestrator.
+ */
+export function computeFinalizeOrderPrecheckError(input: {
+  identityValid: boolean;
+  addressValid: boolean;
+  hasWorkspaceAndPlan: boolean;
+  checkoutUnavailableReason: string;
+  payMethod: 'card' | 'pix' | 'boleto';
+  supportsCard: boolean;
+  supportsPix: boolean;
+  supportsBoleto: boolean;
+  cpfDigits: number;
+}): { message: string; targetStep?: 1 | 2 } | null {
+  if (!input.identityValid) {
+    return { message: 'Revise os dados pessoais antes de finalizar.', targetStep: 1 };
+  }
+  if (!input.addressValid) {
+    return { message: 'Revise o endereço antes de finalizar.', targetStep: 2 };
+  }
+  if (!input.hasWorkspaceAndPlan) {
+    return { message: 'Checkout sem vínculo com workspace ou plano.' };
+  }
+  if (input.checkoutUnavailableReason) {
+    return { message: input.checkoutUnavailableReason };
+  }
+  const methodUnsupported =
+    (input.payMethod === 'card' && !input.supportsCard) ||
+    (input.payMethod === 'pix' && !input.supportsPix) ||
+    (input.payMethod === 'boleto' && !input.supportsBoleto);
+  if (methodUnsupported) {
+    return { message: 'Forma de pagamento indisponível neste checkout.' };
+  }
+  if (input.payMethod === 'boleto' && input.cpfDigits < 11) {
+    return { message: 'CPF válido é obrigatório para gerar boleto.' };
+  }
+  return null;
 }

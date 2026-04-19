@@ -375,6 +375,7 @@ export class WhatsAppCatchupService {
 
       // biome-ignore lint/performance/noAwaitInLoops: sequential multi-pass sync with state tracking
       for (let pass = 0; pass < this.maxPasses; pass += 1) {
+        // biome-ignore lint/performance/noAwaitInLoops: per-workspace provider getChats must be sequential to avoid provider thrashing
         const rawChats = await this.providerRegistry.getChats(workspaceId);
         const pendingChats = this.normalizeChats(rawChats)
           .filter((chat) => !!chat.id)
@@ -439,6 +440,7 @@ export class WhatsAppCatchupService {
             processedChats === estimatedTotalChats ||
             processedChats % 5 === 0
           ) {
+            // biome-ignore lint/performance/noAwaitInLoops: agent event publish per chat preserves catch-up ordering
             await this.agentEvents.publish({
               type: 'status',
               workspaceId,
@@ -484,6 +486,7 @@ export class WhatsAppCatchupService {
           // biome-ignore lint/performance/noAwaitInLoops: sequential message processing preserving order
           for (const message of messages) {
             if (message.fromMe) {
+              // biome-ignore lint/performance/noAwaitInLoops: per-message historical outbound persist must be sequential for timeline integrity
               const persisted = await this.persistHistoricalOutboundMessage(workspaceId, message);
               if (persisted) {
                 importedMessages += 1;
@@ -760,57 +763,67 @@ export class WhatsAppCatchupService {
             : [];
 
     return candidates
-      .map((chatRaw: unknown) => {
-        const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<
-          string,
-          unknown
-        >;
-        const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
-        const lastMessage = chat.lastMessage as Record<string, unknown> | null | undefined;
-        const lastMsgData = lastMessage?._data as Record<string, unknown> | undefined;
-        const lastMsgId = lastMessage?.id as Record<string, unknown> | undefined;
-        const chatChat = chat._chat as Record<string, unknown> | undefined;
-        const contact = chat.contact as Record<string, unknown> | undefined;
-        const lastMsgDataId = lastMsgData?.id as Record<string, unknown> | undefined;
-        return {
-          id:
-            (typeof chatIdObj === 'object' && chatIdObj ? chatIdObj._serialized : undefined) ||
-            chat.id ||
-            chat.chatId ||
-            chat.wid ||
-            '',
-          unreadCount: Number(chat.unreadCount || chat.unread || 0) || 0,
-          timestamp: this.resolveTimestamp(chat),
-          lastMessageTimestamp:
-            Number(
-              chat.lastMessageTimestamp ||
-                lastMessage?.timestamp ||
-                lastMsgData?.messageTimestamp ||
-                chat.last_time ||
-                chatChat?.conversationTimestamp ||
-                0,
-            ) || 0,
-          lastMessageRecvTimestamp:
-            Number(
-              chat.lastMessageRecvTimestamp ||
-                chatChat?.lastMessageRecvTimestamp ||
-                lastMessage?.timestamp ||
-                lastMsgData?.messageTimestamp ||
-                chatChat?.conversationTimestamp ||
-                0,
-            ) || 0,
-          lastMessageFromMe:
-            typeof lastMessage?.fromMe === 'boolean'
-              ? lastMessage.fromMe
-              : typeof lastMsgDataId?.fromMe === 'boolean'
-                ? lastMsgDataId.fromMe
-                : typeof lastMsgId?.fromMe === 'boolean'
-                  ? lastMsgId.fromMe
-                  : null,
-          name: chat.name || contact?.pushName || lastMsgData?.verifiedBizName || null,
-        } as WahaChatSummary;
-      })
+      .map((chatRaw: unknown) => this.normalizeChatEntry(chatRaw))
       .filter((chat) => !!chat.id);
+  }
+
+  private pickBooleanFromMe(
+    lastMessage: Record<string, unknown> | null | undefined,
+    lastMsgDataId: Record<string, unknown> | undefined,
+    lastMsgId: Record<string, unknown> | undefined,
+  ): boolean | null {
+    if (typeof lastMessage?.fromMe === 'boolean') return lastMessage.fromMe;
+    if (typeof lastMsgDataId?.fromMe === 'boolean') return lastMsgDataId.fromMe;
+    if (typeof lastMsgId?.fromMe === 'boolean') return lastMsgId.fromMe;
+    return null;
+  }
+
+  private normalizeChatEntry(chatRaw: unknown): WahaChatSummary {
+    const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<string, unknown>;
+    const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
+    const lastMessage = chat.lastMessage as Record<string, unknown> | null | undefined;
+    const lastMsgData = lastMessage?._data as Record<string, unknown> | undefined;
+    const lastMsgId = lastMessage?.id as Record<string, unknown> | undefined;
+    const chatChat = chat._chat as Record<string, unknown> | undefined;
+    const contact = chat.contact as Record<string, unknown> | undefined;
+    const lastMsgDataId = lastMsgData?.id as Record<string, unknown> | undefined;
+
+    const id =
+      (typeof chatIdObj === 'object' && chatIdObj ? chatIdObj._serialized : undefined) ||
+      chat.id ||
+      chat.chatId ||
+      chat.wid ||
+      '';
+
+    const lastMessageTimestamp =
+      Number(
+        chat.lastMessageTimestamp ||
+          lastMessage?.timestamp ||
+          lastMsgData?.messageTimestamp ||
+          chat.last_time ||
+          chatChat?.conversationTimestamp ||
+          0,
+      ) || 0;
+
+    const lastMessageRecvTimestamp =
+      Number(
+        chat.lastMessageRecvTimestamp ||
+          chatChat?.lastMessageRecvTimestamp ||
+          lastMessage?.timestamp ||
+          lastMsgData?.messageTimestamp ||
+          chatChat?.conversationTimestamp ||
+          0,
+      ) || 0;
+
+    return {
+      id,
+      unreadCount: Number(chat.unreadCount || chat.unread || 0) || 0,
+      timestamp: this.resolveTimestamp(chat),
+      lastMessageTimestamp,
+      lastMessageRecvTimestamp,
+      lastMessageFromMe: this.pickBooleanFromMe(lastMessage, lastMsgDataId, lastMsgId),
+      name: chat.name || contact?.pushName || lastMsgData?.verifiedBizName || null,
+    } as WahaChatSummary;
   }
 
   private normalizeMessages(raw: unknown, fallbackChatId: string): WahaChatMessage[] {
@@ -1121,6 +1134,7 @@ export class WhatsAppCatchupService {
 
     // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
     for (let page = 0; page < maxPages; page += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: per-chat provider getChatMessages uses cursor pagination; sequential required
       const rawMessages = await this.providerRegistry.getChatMessages(workspaceId, chat.id, {
         limit: this.maxMessagesPerChat,
         offset,
@@ -1489,6 +1503,7 @@ export class WhatsAppCatchupService {
       nextCustomFields.placeholderRelationCount = relationCount;
       nextCustomFields.nameResolutionStatus = trustedName ? 'resolved' : 'pending';
 
+      // biome-ignore lint/performance/noAwaitInLoops: per-contact updateMany batches; sequential to preserve audit ordering
       await this.prisma.contact.updateMany({
         where: { id: contact.id, workspaceId },
         data: {

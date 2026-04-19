@@ -2,12 +2,20 @@ import { BadRequestException } from '@nestjs/common';
 
 const MAX_META_SEGMENT_LENGTH = 128;
 
+const SAFE_META_EXTRA_CHARS = new Set(['_', '-', '.']);
+
+function isDigit(code: number): boolean {
+  return code >= 48 && code <= 57;
+}
+
+function isAsciiLetter(code: number): boolean {
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
 function isSafeMetaSegmentChar(char: string): boolean {
   const code = char.charCodeAt(0);
-  const isNumber = code >= 48 && code <= 57;
-  const isUpper = code >= 65 && code <= 90;
-  const isLower = code >= 97 && code <= 122;
-  return isNumber || isUpper || isLower || char === '_' || char === '-' || char === '.';
+  if (isDigit(code) || isAsciiLetter(code)) return true;
+  return SAFE_META_EXTRA_CHARS.has(char);
 }
 
 export function normalizeMetaGraphSegment(value: string, label = 'Meta identifier'): string {

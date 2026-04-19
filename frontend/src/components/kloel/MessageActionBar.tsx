@@ -1,8 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-
-type ActionIcon = 'copy' | 'edit' | 'retry' | 'thumbsUp' | 'thumbsDown';
+import {
+  MessageIcon,
+  resolveIconStroke,
+  useCanHover,
+  useTooltipController,
+  type ActionIcon,
+} from './MessageActionBar.helpers';
 
 export interface MessageActionBarItem {
   id: string;
@@ -25,87 +30,7 @@ const EMBER = '#E85D30';
 const TEXT_PRIMARY = 'var(--app-text-primary, #FFFFFF)';
 const TEXT_SECONDARY = 'var(--app-text-secondary, #8A8A8E)';
 const TOOLTIP_BG = 'var(--app-bg-tertiary, #1A1A1E)';
-
-function MessageIcon({
-  icon,
-  stroke,
-  active = false,
-}: {
-  icon: ActionIcon | 'check';
-  stroke: string;
-  active?: boolean;
-}) {
-  const common = {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 18 18',
-    fill: 'none',
-    stroke,
-    strokeWidth: 1.65,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-  };
-
-  switch (icon) {
-    case 'copy':
-      return (
-        <svg {...common} aria-hidden="true">
-          <rect x="6.1" y="5.9" width="8.4" height="9" rx="1.8" />
-          <path d="M4.5 11.4H3.8a1.8 1.8 0 0 1-1.8-1.8V3.8A1.8 1.8 0 0 1 3.8 2h5.8A1.8 1.8 0 0 1 11.4 3.8v.7" />
-        </svg>
-      );
-    case 'check':
-      return (
-        <svg {...common} aria-hidden="true">
-          <polyline points="3.4 9.5 7.1 12.8 14.6 5.2" />
-        </svg>
-      );
-    case 'edit':
-      return (
-        <svg {...common} aria-hidden="true">
-          <path d="M10.8 3.1l4.1 4.1" />
-          <path d="M4 14l2.7-.6 7-7a1.7 1.7 0 1 0-2.4-2.4l-7 7L4 14z" />
-        </svg>
-      );
-    case 'retry':
-      return (
-        <svg {...common} aria-hidden="true">
-          <path d="M14.4 7.3A5.8 5.8 0 0 0 4.1 5.9" />
-          <path d="M3.8 2.8v3.7h3.7" />
-          <path d="M3.6 10.7a5.8 5.8 0 0 0 10.3 1.5" />
-          <path d="M14.2 15.2v-3.7h-3.7" />
-        </svg>
-      );
-    case 'thumbsUp':
-      return (
-        <svg {...common} aria-hidden="true">
-          <path
-            d="M6.2 7.3V15H3.8A1.8 1.8 0 0 1 2 13.2V9.1a1.8 1.8 0 0 1 1.8-1.8h2.4Z"
-            fill={active ? EMBER : 'none'}
-          />
-          <path
-            d="M6.2 7.3 8.7 2.9c.3-.6 1.1-.8 1.7-.5.5.3.8.9.7 1.5l-.5 3.4h3a1.8 1.8 0 0 1 1.8 2l-.8 4.7a1.8 1.8 0 0 1-1.8 1.5H6.2Z"
-            fill={active ? EMBER : 'none'}
-          />
-        </svg>
-      );
-    case 'thumbsDown':
-      return (
-        <svg {...common} aria-hidden="true">
-          <path
-            d="M6.2 10.7V3H3.8A1.8 1.8 0 0 0 2 4.8v4.1a1.8 1.8 0 0 0 1.8 1.8h2.4Z"
-            fill={active ? EMBER : 'none'}
-          />
-          <path
-            d="M6.2 10.7 8.7 15.1c.3.6 1.1.8 1.7.5.5-.3.8-.9.7-1.5l-.5-3.4h3a1.8 1.8 0 0 0 1.8-2l-.8-4.7A1.8 1.8 0 0 0 12.8 3H6.2Z"
-            fill={active ? EMBER : 'none'}
-          />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
+const DISABLED_STROKE = '#4B4B50';
 
 export function MessageActionBar({
   content,
@@ -115,39 +40,15 @@ export function MessageActionBar({
   copyLabel = 'Copiar',
 }: MessageActionBarProps) {
   const [copied, setCopied] = useState(false);
-  const [tooltipId, setTooltipId] = useState<string | null>(null);
   const [hoveredAction, setHoveredAction] = useState<string | null>(null);
   const [focusedAction, setFocusedAction] = useState<string | null>(null);
-  const [canHover, setCanHover] = useState(true);
-  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const canHover = useCanHover();
+  const { tooltipId, showTooltip, hideTooltip } = useTooltipController();
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return undefined;
-    }
-
-    const media = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const update = () => setCanHover(media.matches);
-
-    update();
-    if (typeof media.addEventListener === 'function') {
-      media.addEventListener('change', update);
-      return () => media.removeEventListener('change', update);
-    }
-
-    media.addListener(update);
-    return () => media.removeListener(update);
-  }, []);
-
-  useEffect(() => {
     return () => {
-      if (tooltipTimerRef.current) {
-        clearTimeout(tooltipTimerRef.current);
-      }
-      if (copiedTimerRef.current) {
-        clearTimeout(copiedTimerRef.current);
-      }
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
     };
   }, []);
 
@@ -167,23 +68,6 @@ export function MessageActionBar({
     ],
     [actions, content, copyLabel],
   );
-
-  const showTooltip = (id: string) => {
-    if (tooltipTimerRef.current) {
-      clearTimeout(tooltipTimerRef.current);
-    }
-
-    tooltipTimerRef.current = setTimeout(() => {
-      setTooltipId(id);
-    }, 300);
-  };
-
-  const hideTooltip = () => {
-    if (tooltipTimerRef.current) {
-      clearTimeout(tooltipTimerRef.current);
-    }
-    setTooltipId(null);
-  };
 
   return (
     <div
@@ -210,13 +94,15 @@ export function MessageActionBar({
           const isFocused = focusedAction === action.id;
           const isActive = Boolean(action.active);
           const isDisabled = Boolean(action.disabled);
-          const stroke = isDisabled
-            ? '#4B4B50'
-            : isActive
-              ? EMBER
-              : isHovered || isFocused
-                ? EMBER
-                : TEXT_SECONDARY;
+          const stroke = resolveIconStroke({
+            disabled: isDisabled,
+            active: isActive,
+            hovered: isHovered,
+            focused: isFocused,
+            embeColor: EMBER,
+            secondaryColor: TEXT_SECONDARY,
+            disabledColor: DISABLED_STROKE,
+          });
 
           return (
             <div key={action.id} style={{ position: 'relative' }}>
@@ -275,6 +161,7 @@ export function MessageActionBar({
                   icon={isCopy && copied ? 'check' : action.icon}
                   stroke={stroke}
                   active={isActive}
+                  activeFill={EMBER}
                 />
               </button>
 

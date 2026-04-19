@@ -45,6 +45,24 @@ export function unwrapArray<T>(data: unknown, key?: string): T[] {
   return [];
 }
 
+function readMeta(obj: Record<string, unknown>): Record<string, unknown> | undefined {
+  return obj.meta as Record<string, unknown> | undefined;
+}
+
+function extractTotal(obj: Record<string, unknown>, fallback: number): number {
+  return (
+    (obj.count as number) ?? (obj.total as number) ?? (readMeta(obj)?.total as number) ?? fallback
+  );
+}
+
+function extractPage(obj: Record<string, unknown>): number {
+  return (obj.page as number) ?? (readMeta(obj)?.page as number) ?? 1;
+}
+
+function extractHasMore(obj: Record<string, unknown>): boolean | undefined {
+  return (obj.hasMore as boolean) ?? (readMeta(obj)?.hasMore as boolean) ?? undefined;
+}
+
 /**
  * Extracts a paginated result with { items, total, page, hasMore }
  */
@@ -54,24 +72,12 @@ export function unwrapPaginated<T>(data: unknown, key?: string): NormalizedList<
   const obj = data as Record<string, unknown>;
   const items = unwrapArray<T>(data, key);
 
-  // Extract total from common patterns
-  const total =
-    (obj.count as number) ??
-    (obj.total as number) ??
-    ((obj.meta as Record<string, unknown> | undefined)?.total as number) ??
-    items.length;
-
-  const page =
-    (obj.page as number) ??
-    ((obj.meta as Record<string, unknown> | undefined)?.page as number) ??
-    1;
-
-  const hasMore =
-    (obj.hasMore as boolean) ??
-    ((obj.meta as Record<string, unknown> | undefined)?.hasMore as boolean) ??
-    undefined;
-
-  return { items, total, page, hasMore };
+  return {
+    items,
+    total: extractTotal(obj, items.length),
+    page: extractPage(obj),
+    hasMore: extractHasMore(obj),
+  };
 }
 
 /**

@@ -76,25 +76,53 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const request = context.switchToHttp().getRequest();
     const path = request.path;
 
-    // 1. Verificar se é rota pública
+    // 1. Rotas públicas
     const isPublic = this.reflector.getAllAndOverride<boolean>(KLOEL_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
     if (isPublic) return true;
 
-    // 2. Verificar API Key interna (para comunicação worker <-> backend)
-    const internalKey = request.headers['x-internal-key'];
-    const expectedKey = process.env.INTERNAL_API_KEY;
-    if (internalKey && expectedKey && internalKey === expectedKey) {
-      this.logger.debug('Internal API key validated');
-      return true;
-    }
+    // 2. API Key interna (worker <-> backend)
+    if (this.isInternalApiRequest(request)) return true;
 
-    // 3. Extrair workspaceId da rota
+    // 3. Extrair workspaceId
     const workspaceId = request.params.workspaceId || request.body?.workspaceId;
 
     // 4. Rate Limiting
+    this.enforceRateLimit(context, request, workspaceId, path);
+
+    // 5. Validação de workspace + billing + planos
+    if (workspaceId) {
+      await this.validateWorkspaceContext(request, workspaceId, path);
+    }
+
+    // 6. Validar usuário autenticado (se não for API interna)
+    this.enforceAuthRequirement(request, workspaceId, path);
+
+    return true;
+  }
+
+  private isInternalApiRequest(request: { headers: Record<string, unknown> }): boolean {
+    const internalKey = request.headers['x-internal-key'];
+    const expectedKey = process.env.INTERNAL_API_KEY;
+    if (
+      typeof internalKey === 'string' &&
+      typeof expectedKey === 'string' &&
+      internalKey === expectedKey
+    ) {
+      this.logger.debug('Internal API key validated');
+      return true;
+    }
+    return false;
+  }
+
+  private enforceRateLimit(
+    context: ExecutionContext,
+    request: { ip?: string },
+    workspaceId: string | undefined,
+    path: string,
+  ): void {
     const rateLimitConfig = this.reflector.getAllAndOverride<{
       requests: number;
       windowMs: number;
@@ -102,7 +130,6 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
 
     const rateLimit = rateLimitConfig?.requests || this.DEFAULT_RATE_LIMIT;
     const windowMs = rateLimitConfig?.windowMs || this.DEFAULT_WINDOW_MS;
-
     const rateLimitKey = workspaceId ? `ws:${workspaceId}` : `ip:${request.ip || 'unknown'}`;
 
     if (!this.checkRateLimit(rateLimitKey, rateLimit, windowMs)) {
@@ -116,79 +143,85 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
+  }
 
-    // 5. Se tem workspaceId, validar workspace
-    if (workspaceId) {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: {
-          id: true,
-          name: true,
-          providerSettings: true,
-        },
+  private async validateWorkspaceContext(
+    request: { workspace?: unknown },
+    workspaceId: string,
+    path: string,
+  ): Promise<void> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true, name: true, providerSettings: true },
+    });
+
+    if (!workspace) {
+      throw new UnauthorizedException('Workspace not found');
+    }
+
+    const settings = asProviderSettings(workspace.providerSettings);
+    this.enforceBillingNotSuspended(settings, workspaceId, path);
+    await this.enforcePlanLimits(settings, workspaceId, path);
+
+    request.workspace = workspace;
+  }
+
+  private enforceBillingNotSuspended(
+    settings: ReturnType<typeof asProviderSettings>,
+    workspaceId: string,
+    path: string,
+  ): void {
+    if (settings?.billingSuspended !== true) return;
+
+    const allowedPaths = ['/health', '/diag', '/status', '/billing'];
+    const isAllowed = allowedPaths.some((p) => path.includes(p));
+    if (isAllowed) return;
+
+    this.logger.warn('Billing suspended, blocking request', { workspaceId, path });
+    throw new ForbiddenException({
+      message: 'Billing suspended. Please update your payment to continue.',
+      code: 'BILLING_SUSPENDED',
+    });
+  }
+
+  private async enforcePlanLimits(
+    settings: ReturnType<typeof asProviderSettings>,
+    workspaceId: string,
+    path: string,
+  ): Promise<void> {
+    const aiRequestsPerDay =
+      typeof settings?.planLimits?.aiRequestsPerDay === 'number' &&
+      Number.isFinite(settings.planLimits.aiRequestsPerDay) &&
+      settings.planLimits.aiRequestsPerDay > 0
+        ? settings.planLimits.aiRequestsPerDay
+        : null;
+
+    if (aiRequestsPerDay === null) return;
+    if (!path.includes('/agent/process')) return;
+
+    const dailyUsage = await this.getDailyAIUsage(workspaceId);
+    if (dailyUsage >= aiRequestsPerDay) {
+      throw new ForbiddenException({
+        message: 'Daily AI request limit exceeded',
+        code: 'PLAN_LIMIT_EXCEEDED',
+        limit: aiRequestsPerDay,
+        used: dailyUsage,
       });
-
-      if (!workspace) {
-        throw new UnauthorizedException('Workspace not found');
-      }
-
-      // 6. Verificar se billing está suspenso
-      const settings = asProviderSettings(workspace.providerSettings);
-      if (settings?.billingSuspended === true) {
-        // Permitir apenas endpoints de status/diagnóstico
-        const allowedPaths = ['/health', '/diag', '/status', '/billing'];
-        const isAllowed = allowedPaths.some((p) => path.includes(p));
-
-        if (!isAllowed) {
-          this.logger.warn('Billing suspended, blocking request', {
-            workspaceId,
-            path,
-          });
-          throw new ForbiddenException({
-            message: 'Billing suspended. Please update your payment to continue.',
-            code: 'BILLING_SUSPENDED',
-          });
-        }
-      }
-
-      // 7. Verificar limites do plano
-      const aiRequestsPerDay =
-        typeof settings?.planLimits?.aiRequestsPerDay === 'number' &&
-        Number.isFinite(settings.planLimits.aiRequestsPerDay) &&
-        settings.planLimits.aiRequestsPerDay > 0
-          ? settings.planLimits.aiRequestsPerDay
-          : null;
-      if (aiRequestsPerDay !== null) {
-        // Verificar endpoints específicos
-        if (path.includes('/agent/process')) {
-          const dailyUsage = await this.getDailyAIUsage(workspaceId);
-          if (dailyUsage >= aiRequestsPerDay) {
-            throw new ForbiddenException({
-              message: 'Daily AI request limit exceeded',
-              code: 'PLAN_LIMIT_EXCEEDED',
-              limit: aiRequestsPerDay,
-              used: dailyUsage,
-            });
-          }
-        }
-      }
-
-      // Adicionar workspace ao request para uso posterior
-      request.workspace = workspace;
     }
+  }
 
-    // 8. Validar usuário autenticado (se não for API interna)
+  private enforceAuthRequirement(
+    request: { user?: unknown },
+    workspaceId: string | undefined,
+    path: string,
+  ): void {
     const user = request.user;
-    if (!user && workspaceId) {
-      // Verificar se o endpoint requer autenticação
-      const requiresAuth = !path.includes('/webhook') && !path.includes('/public');
+    if (user || !workspaceId) return;
 
-      if (requiresAuth && process.env.AUTH_REQUIRED === 'true') {
-        throw new UnauthorizedException('Authentication required');
-      }
+    const requiresAuth = !path.includes('/webhook') && !path.includes('/public');
+    if (requiresAuth && process.env.AUTH_REQUIRED === 'true') {
+      throw new UnauthorizedException('Authentication required');
     }
-
-    return true;
   }
 
   private checkRateLimit(key: string, limit: number, windowMs: number): boolean {

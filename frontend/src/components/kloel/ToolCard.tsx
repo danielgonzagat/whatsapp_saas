@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { resolveBadgeLabel, resolveCursor, triggerClickOnActivation } from './ToolCard.helpers';
 
 interface ToolCardProps {
   icon: string;
@@ -13,33 +14,33 @@ interface ToolCardProps {
 
 export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCardProps) {
   const [hovered, setHovered] = useState(false);
-  const effectiveBadge = disabled ? 'Planejado' : badge;
+  const effectiveBadge = resolveBadgeLabel(badge, disabled);
   const interactive = typeof onClick === 'function';
+  const isHot = hovered && interactive;
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: role/tabIndex applied when interactive; hover handlers are decorative and do not require keyboard parity
     <div
       onClick={interactive ? onClick : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-disabled={disabled || undefined}
       style={{
         position: 'relative',
         display: 'flex',
         alignItems: 'flex-start',
         gap: 14,
-        background: hovered && interactive ? '#19191C' : '#111113',
-        border: `1px solid ${hovered && interactive ? '#333338' : '#222226'}`,
+        background: isHot ? '#19191C' : '#111113',
+        border: `1px solid ${isHot ? '#333338' : '#222226'}`,
         borderRadius: 6,
         padding: '18px 20px',
-        cursor: interactive ? 'pointer' : disabled ? 'not-allowed' : 'default',
+        cursor: resolveCursor(interactive, disabled),
         opacity: disabled ? 0.72 : 1,
         transition: 'all 150ms ease',
       }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
-        }
-      }}
+      onKeyDown={interactive ? triggerClickOnActivation : undefined}
     >
       {/* Badge */}
       {effectiveBadge && (

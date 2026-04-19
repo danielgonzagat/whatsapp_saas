@@ -524,15 +524,19 @@ interface SkeletonEmptyStateProps {
 }
 
 export function SkeletonEmptyState({ lines = 3, className }: SkeletonEmptyStateProps) {
+  const lineItems = Array.from({ length: lines }, (_, i) => ({
+    id: `skeleton-line-${i}-of-${lines}`,
+    isLast: i === lines - 1,
+  }));
   return (
     <div className={cn('animate-pulse space-y-3', className)}>
-      {Array.from({ length: lines }).map((_, i) => (
+      {lineItems.map((line) => (
         <div
-          key={`skeleton-line-${i}`}
+          key={line.id}
           className="h-4 rounded"
           style={{
             backgroundColor: colors.background.surface2,
-            width: i === lines - 1 ? '60%' : '100%',
+            width: line.isLast ? '60%' : '100%',
           }}
         />
       ))}

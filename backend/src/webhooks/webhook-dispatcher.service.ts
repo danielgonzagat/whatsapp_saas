@@ -35,6 +35,7 @@ export class WebhookDispatcherService {
     for (const sub of subscriptions) {
       // Deduplicate via jobId: same subscription + event + payload hash
       const jobId = `webhook-dispatch:${sub.id}:${event}:${randomUUID()}`;
+      // biome-ignore lint/performance/noAwaitInLoops: BullMQ webhookQueue.add per subscription preserves delivery ordering
       await webhookQueue.add(
         'send-webhook',
         {

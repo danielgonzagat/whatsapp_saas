@@ -216,6 +216,7 @@ export class FlowTemplateService {
         created.push(existing);
         continue;
       }
+      // biome-ignore lint/performance/noAwaitInLoops: sequential template insertion to preserve install order and dependencies
       const inserted = await this.create(tpl);
       created.push(inserted);
     }

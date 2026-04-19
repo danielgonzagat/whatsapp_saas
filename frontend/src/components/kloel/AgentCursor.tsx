@@ -2,14 +2,17 @@
 
 import type { WhatsAppProofEntry } from '@/lib/api';
 import { type RefObject, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  clamp,
+  computeMovement,
+  easeInOutQuart,
+  isClickAction,
+  readProofCoordinates,
+  resolveBubblePlacement,
+  type AgentCursorTarget,
+} from './AgentCursor.helpers';
 
-export interface AgentCursorTarget {
-  x: number;
-  y: number;
-  actionType?: string;
-  text?: string;
-  timestamp: number;
-}
+export type { AgentCursorTarget } from './AgentCursor.helpers';
 
 interface AgentCursorProps {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -27,47 +30,6 @@ interface RippleState {
   id: string;
   x: number;
   y: number;
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function easeInOutQuart(t: number) {
-  return t < 0.5 ? 8 * t * t * t * t : 1 - (-2 * t + 2) ** 4 / 2;
-}
-
-function readProofCoordinates(proofs: WhatsAppProofEntry[]): AgentCursorTarget | null {
-  for (const proof of proofs) {
-    const actions = Array.isArray(proof.action) ? proof.action : proof.action ? [proof.action] : [];
-
-    for (const action of actions) {
-      const x =
-        typeof action?.x === 'number'
-          ? action.x
-          : Array.isArray(action?.coordinate) && typeof action.coordinate[0] === 'number'
-            ? action.coordinate[0]
-            : null;
-      const y =
-        typeof action?.y === 'number'
-          ? action.y
-          : Array.isArray(action?.coordinate) && typeof action.coordinate[1] === 'number'
-            ? action.coordinate[1]
-            : null;
-
-      if (x == null || y == null) continue;
-
-      return {
-        x,
-        y,
-        actionType: typeof action?.type === 'string' ? action.type : undefined,
-        text: typeof action?.text === 'string' ? action.text : undefined,
-        timestamp: Date.parse(proof.createdAt) || Date.now(),
-      };
-    }
-  }
-
-  return null;
 }
 
 export function AgentCursor({
@@ -165,7 +127,7 @@ export function AgentCursor({
 
     const surface = imageRef?.current || containerRef.current;
     const rect = surface?.getBoundingClientRect();
-    if (!rect || !rect.width || !rect.height) {
+    if (!rect?.width || !rect?.height) {
       return;
     }
 
@@ -215,16 +177,11 @@ export function AgentCursor({
     }, 10000);
 
     const from = hasPosition ? displayPointRef.current : { x: rect.width / 2, y: rect.height / 2 };
-    const distance = Math.hypot(targetPoint.x - from.x, targetPoint.y - from.y);
-    // Human-like: longer duration, proportional to distance
-    const duration = Math.min(1500, Math.max(500, distance * 1.2));
+    // Human-like: longer duration, proportional to distance, with a slight arc
+    const { duration, arcAmplitude, arcDirection } = computeMovement({ from, to: targetPoint });
     const startedAt = performance.now();
     const movementToken = movementTokenRef.current + 1;
     movementTokenRef.current = movementToken;
-
-    // Add a slight arc to the movement (like a human hand moves)
-    const arcAmplitude = Math.min(40, distance * 0.15);
-    const arcDirection = targetPoint.x > from.x ? -1 : 1;
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -251,7 +208,7 @@ export function AgentCursor({
       }
 
       animationFrameRef.current = null;
-      if (resolvedTarget.actionType === 'click' || resolvedTarget.actionType === 'double_click') {
+      if (isClickAction(resolvedTarget.actionType)) {
         const rippleId = `${movementToken}-${Date.now()}`;
         setRipples((prev) => [...prev, { id: rippleId, ...targetPoint }]);
         setTimeout(() => {
@@ -272,6 +229,7 @@ export function AgentCursor({
     viewport?.width,
   ]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: resolvedTarget?.timestamp change is the intentional trigger to restart the idle animation when a new target arrives
   useEffect(() => {
     if (!hasPosition || takeoverActive || !streamConnected) {
       return;
@@ -297,24 +255,13 @@ export function AgentCursor({
         idleAnimationRef.current = null;
       }
     };
-    // biome-ignore lint/correctness/useExhaustiveDependencies: resolvedTarget?.timestamp change is the intentional trigger to restart the idle animation when a new target arrives
   }, [hasPosition, streamConnected, takeoverActive, resolvedTarget?.timestamp]);
 
   if (!streamConnected || takeoverActive || !hasPosition) {
     return null;
   }
 
-  const sideRight = displayPoint.x < 220;
-  const bubbleTop = Math.max(12, displayPoint.y - 54);
-  const bubbleStyle = sideRight
-    ? {
-        left: `${displayPoint.x + 22}px`,
-        top: `${bubbleTop}px`,
-      }
-    : {
-        left: `${Math.max(12, displayPoint.x - 250)}px`,
-        top: `${bubbleTop}px`,
-      };
+  const { sideRight, style: bubbleStyle } = resolveBubblePlacement(displayPoint);
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">

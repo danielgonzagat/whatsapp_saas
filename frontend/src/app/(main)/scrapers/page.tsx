@@ -160,19 +160,18 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         justifyContent: 'center',
       }}
     >
-      <div
+      <button
+        type="button"
         onClick={onClose}
+        aria-label="Fechar modal"
         style={{
           position: 'absolute',
           inset: 0,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
         }}
       />
       <div

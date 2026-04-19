@@ -384,8 +384,8 @@ export class FlowEngineGlobal {
         let retryCount = 0;
         const MAX_RETRIES = 3;
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-        while (true) {
+        // biome-ignore lint/performance/noAwaitInLoops: retry-with-exponential-backoff — each attempt must observe the previous attempt's outcome (success/thrown error) and sleep 2^retryCount seconds before retrying the same node
+        for (;;) {
           try {
             result = await this.executeNode(state, node);
             break;
@@ -1148,7 +1148,7 @@ export class FlowEngineGlobal {
           // Ideally we would suspend flow execution and use a webhook/event to resume.
           // But for < 10s generation, polling is acceptable.
           let audioUrl: string | null = null;
-          // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
+          // biome-ignore lint/performance/noAwaitInLoops: polling VoiceJob status — must sleep 1s between each findFirst so the worker has time to update the row; parallel queries would hammer the DB and defeat the 45s budget
           for (let i = 0; i < 45; i++) {
             // 45 seconds timeout
             await this.sleep(1000);
@@ -1282,24 +1282,29 @@ export class FlowEngineGlobal {
     }) || { id: 'default' };
     let contactId: string | null = null;
     let conversationId: string | null = null;
-    const extractExternalId = (res: unknown): string | null => {
-      if (!res || typeof res !== 'object') return null;
-      const r = res as Record<string, unknown>;
-      const msgs = r.messages;
-      if (Array.isArray(msgs) && msgs[0] && typeof msgs[0] === 'object') {
-        const firstId = (msgs[0] as Record<string, unknown>).id;
-        if (typeof firstId === 'string') return firstId;
-      }
-      const msg = r.message;
-      if (msg && typeof msg === 'object') {
-        const msgId = (msg as Record<string, unknown>).id;
-        if (typeof msgId === 'string') return msgId;
-      }
-      const candidates = [r.id, r.messageId, r.sid];
-      for (const c of candidates) {
+    const readIdFromObject = (value: unknown): string | null => {
+      if (!value || typeof value !== 'object') return null;
+      const id = (value as Record<string, unknown>).id;
+      return typeof id === 'string' ? id : null;
+    };
+    const extractIdFromMessages = (messages: unknown): string | null => {
+      if (!Array.isArray(messages)) return null;
+      return readIdFromObject(messages[0]);
+    };
+    const extractFirstStringCandidate = (r: Record<string, unknown>): string | null => {
+      for (const c of [r.id, r.messageId, r.sid]) {
         if (typeof c === 'string') return c;
       }
       return null;
+    };
+    const extractExternalId = (res: unknown): string | null => {
+      if (!res || typeof res !== 'object') return null;
+      const r = res as Record<string, unknown>;
+      return (
+        extractIdFromMessages(r.messages) ||
+        readIdFromObject(r.message) ||
+        extractFirstStringCandidate(r)
+      );
     };
 
     // Rate Limiter Check

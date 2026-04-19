@@ -46,12 +46,14 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
       </div>
 
       <div className="flex justify-between mt-3">
+        {/* biome-ignore lint/correctness/useUniqueElementIds: reactflow Handle id is a semantic routing key; edges reference "true"/"false" handles, so it MUST be a stable literal, not useId(). */}
         <Handle
           type="source"
           position={Position.Bottom}
           id="true"
           className="!bg-green-500 !w-3 !h-3 !left-[25%]"
         />
+        {/* biome-ignore lint/correctness/useUniqueElementIds: reactflow Handle id is a semantic routing key; edges reference "true"/"false" handles, so it MUST be a stable literal, not useId(). */}
         <Handle
           type="source"
           position={Position.Bottom}

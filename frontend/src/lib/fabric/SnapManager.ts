@@ -17,63 +17,86 @@ export class SnapManager {
     return this.guidelines.includes(obj as Line);
   }
 
+  private _snapToCanvasCenter(
+    target: FabricObject,
+    cx: number,
+    cy: number,
+    cw: number,
+    ch: number,
+  ): void {
+    if (Math.abs(cx - cw / 2) < THRESHOLD) {
+      target.left = (target.left ?? 0) + (cw / 2 - cx);
+      this._addVerticalLine(cw / 2);
+    }
+    if (Math.abs(cy - ch / 2) < THRESHOLD) {
+      target.top = (target.top ?? 0) + (ch / 2 - cy);
+      this._addHorizontalLine(ch / 2);
+    }
+  }
+
+  private _snapHorizontal(target: FabricObject, currentPosition: number, snapLineX: number): void {
+    if (Math.abs(currentPosition - snapLineX) < THRESHOLD) {
+      target.left = (target.left ?? 0) + (snapLineX - currentPosition);
+      this._addVerticalLine(snapLineX);
+    }
+  }
+
+  private _snapVertical(target: FabricObject, currentPosition: number, snapLineY: number): void {
+    if (Math.abs(currentPosition - snapLineY) < THRESHOLD) {
+      target.top = (target.top ?? 0) + (snapLineY - currentPosition);
+      this._addHorizontalLine(snapLineY);
+    }
+  }
+
+  private _snapToCanvasEdges(
+    target: FabricObject,
+    bound: { left: number; top: number; width: number; height: number },
+    cw: number,
+    ch: number,
+  ): void {
+    this._snapHorizontal(target, bound.left, 0);
+    this._snapVertical(target, bound.top, 0);
+    this._snapHorizontal(target, bound.left + bound.width, cw);
+    this._snapVertical(target, bound.top + bound.height, ch);
+  }
+
+  private _snapToOtherObjects(target: FabricObject, cx: number, cy: number): void {
+    const objects = this.canvas.getObjects().filter((o) => o !== target && !this._isGuideline(o));
+    for (const obj of objects) {
+      const ob = obj.getBoundingRect();
+      const ocx = ob.left + ob.width / 2;
+      const ocy = ob.top + ob.height / 2;
+      if (Math.abs(cx - ocx) < THRESHOLD) {
+        target.left = (target.left ?? 0) + (ocx - cx);
+        this._addVerticalLine(ocx);
+      }
+      if (Math.abs(cy - ocy) < THRESHOLD) {
+        target.top = (target.top ?? 0) + (ocy - cy);
+        this._addHorizontalLine(ocy);
+      }
+    }
+  }
+
+  private _handleObjectMoving(target: FabricObject | undefined): void {
+    this._clearGuidelines();
+    if (!target) return;
+
+    const cw = this.canvas.width;
+    const ch = this.canvas.height;
+    const bound = target.getBoundingRect();
+    const cx = bound.left + bound.width / 2;
+    const cy = bound.top + bound.height / 2;
+
+    this._snapToCanvasCenter(target, cx, cy, cw, ch);
+    this._snapToCanvasEdges(target, bound, cw, ch);
+    this._snapToOtherObjects(target, cx, cy);
+
+    target.setCoords();
+  }
+
   private _initSnapping(): void {
     this.canvas.on('object:moving', (e) => {
-      this._clearGuidelines();
-      const target = e.target;
-      if (!target) return;
-
-      const cw = this.canvas.width;
-      const ch = this.canvas.height;
-      const bound = target.getBoundingRect();
-      const cx = bound.left + bound.width / 2;
-      const cy = bound.top + bound.height / 2;
-
-      // Snap to canvas center
-      if (Math.abs(cx - cw / 2) < THRESHOLD) {
-        target.left = (target.left ?? 0) + (cw / 2 - cx);
-        this._addVerticalLine(cw / 2);
-      }
-      if (Math.abs(cy - ch / 2) < THRESHOLD) {
-        target.top = (target.top ?? 0) + (ch / 2 - cy);
-        this._addHorizontalLine(ch / 2);
-      }
-
-      // Snap to canvas edges
-      if (Math.abs(bound.left) < THRESHOLD) {
-        target.left = (target.left ?? 0) - bound.left;
-        this._addVerticalLine(0);
-      }
-      if (Math.abs(bound.top) < THRESHOLD) {
-        target.top = (target.top ?? 0) - bound.top;
-        this._addHorizontalLine(0);
-      }
-      if (Math.abs(bound.left + bound.width - cw) < THRESHOLD) {
-        target.left = (target.left ?? 0) + (cw - (bound.left + bound.width));
-        this._addVerticalLine(cw);
-      }
-      if (Math.abs(bound.top + bound.height - ch) < THRESHOLD) {
-        target.top = (target.top ?? 0) + (ch - (bound.top + bound.height));
-        this._addHorizontalLine(ch);
-      }
-
-      // Snap to other objects
-      const objects = this.canvas.getObjects().filter((o) => o !== target && !this._isGuideline(o));
-      for (const obj of objects) {
-        const ob = obj.getBoundingRect();
-        const ocx = ob.left + ob.width / 2;
-        const ocy = ob.top + ob.height / 2;
-        if (Math.abs(cx - ocx) < THRESHOLD) {
-          target.left = (target.left ?? 0) + (ocx - cx);
-          this._addVerticalLine(ocx);
-        }
-        if (Math.abs(cy - ocy) < THRESHOLD) {
-          target.top = (target.top ?? 0) + (ocy - cy);
-          this._addHorizontalLine(ocy);
-        }
-      }
-
-      target.setCoords();
+      this._handleObjectMoving(e.target);
     });
 
     this.canvas.on('object:modified', () => this._clearGuidelines());

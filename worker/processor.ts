@@ -42,12 +42,12 @@ const DEFAULT_WHATSAPP_PROVIDER = getWhatsAppProviderFromEnv();
 
 type JsonObject = Record<string, Prisma.JsonValue>;
 
-function asJsonObject(value: Prisma.JsonValue | null | undefined): JsonObject {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
-  }
+function isPlainJsonObject(value: Prisma.JsonValue | null | undefined): value is JsonObject {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
-  return value as JsonObject;
+function asJsonObject(value: Prisma.JsonValue | null | undefined): JsonObject {
+  return isPlainJsonObject(value) ? (value as JsonObject) : {};
 }
 
 function getErrorMessage(error: unknown): string {
@@ -73,15 +73,12 @@ if (SHOULD_EXECUTE) {
  * Send fallback email when WhatsApp delivery fails
  * Uses Resend/SendGrid/SMTP based on env vars
  */
-async function sendFallbackEmail(
-  to: string,
+function buildFallbackEmailHtml(
   contactName: string | null,
   message: string,
   workspaceName: string | null,
-): Promise<boolean> {
-  const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
-  const subject = `Mensagem de ${workspaceName || 'sua empresa'}`;
-  const html = `
+): string {
+  return `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2>Olá${contactName ? ` ${contactName}` : ''}!</h2>
       <p style="white-space: pre-wrap;">${message}</p>
@@ -91,63 +88,92 @@ async function sendFallbackEmail(
       </p>
     </div>
   `;
+}
 
-  // Try Resend first
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ from: fromEmail, to, subject, html }),
-        signal: AbortSignal.timeout(30000),
-      });
-      if (response.ok) {
-        log.info('fallback_email_resend_sent', { to });
-        return true;
-      }
-    } catch (e) {
-      log.warn('fallback_email_resend_error', {
-        error: e instanceof Error ? e.message : String(e),
-      });
+async function trySendFallbackEmailViaResend(args: {
+  to: string;
+  fromEmail: string;
+  subject: string;
+  html: string;
+}): Promise<boolean> {
+  if (!process.env.RESEND_API_KEY) return false;
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: args.fromEmail,
+        to: args.to,
+        subject: args.subject,
+        html: args.html,
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (response.ok) {
+      log.info('fallback_email_resend_sent', { to: args.to });
+      return true;
     }
+  } catch (e) {
+    log.warn('fallback_email_resend_error', {
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
+  return false;
+}
 
-  // Try SendGrid
-  if (process.env.SENDGRID_API_KEY) {
-    try {
-      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: to }] }],
-          from: { email: fromEmail },
-          subject,
-          content: [{ type: 'text/html', value: html }],
-        }),
-        signal: AbortSignal.timeout(30000),
-      });
-      if (response.ok || response.status === 202) {
-        log.info('fallback_email_sendgrid_sent', { to });
-        return true;
-      }
-    } catch (e) {
-      log.warn('fallback_email_sendgrid_error', {
-        error: e instanceof Error ? e.message : String(e),
-      });
+async function trySendFallbackEmailViaSendGrid(args: {
+  to: string;
+  fromEmail: string;
+  subject: string;
+  html: string;
+}): Promise<boolean> {
+  if (!process.env.SENDGRID_API_KEY) return false;
+  try {
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: args.to }] }],
+        from: { email: args.fromEmail },
+        subject: args.subject,
+        content: [{ type: 'text/html', value: args.html }],
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (response.ok || response.status === 202) {
+      log.info('fallback_email_sendgrid_sent', { to: args.to });
+      return true;
     }
+  } catch (e) {
+    log.warn('fallback_email_sendgrid_error', {
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
+  return false;
+}
 
-  // No email provider configured
+async function sendFallbackEmail(
+  to: string,
+  contactName: string | null,
+  message: string,
+  workspaceName: string | null,
+): Promise<boolean> {
+  const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
+  const subject = `Mensagem de ${workspaceName || 'sua empresa'}`;
+  const html = buildFallbackEmailHtml(contactName, message, workspaceName);
+
+  if (await trySendFallbackEmailViaResend({ to, fromEmail, subject, html })) return true;
+  if (await trySendFallbackEmailViaSendGrid({ to, fromEmail, subject, html })) return true;
+
   if (!process.env.RESEND_API_KEY && !process.env.SENDGRID_API_KEY) {
     log.warn('fallback_email_no_provider', { to });
   }
-
   return false;
 }
 
@@ -227,29 +253,39 @@ async function sendOpsAlert(message: string, meta: Record<string, unknown> = {})
   }
 }
 
-const autopilotMonitorInterval = setInterval(async () => {
+const QUEUE_ALERT_COOLDOWN_MS = 5 * 60_000;
+
+async function maybeAlertHighQueue(waiting: number, failed: number, now: number): Promise<void> {
+  if (waiting <= QUEUE_THRESHOLD || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) return;
+  lastQueueAlert = now;
+  log.warn('autopilot_queue_high', { waiting, failed, threshold: QUEUE_THRESHOLD });
+  await sendOpsAlert('Autopilot queue high', { waiting, failed, threshold: QUEUE_THRESHOLD });
+}
+
+async function maybeAlertFailedJobs(failed: number, waiting: number, now: number): Promise<void> {
+  if (failed <= 0 || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) return;
+  lastQueueAlert = now;
+  log.warn('autopilot_queue_failed', { failed, waiting });
+  await sendOpsAlert('Autopilot queue has failed jobs', { failed, waiting });
+}
+
+async function checkAutopilotQueueHealth(): Promise<void> {
   try {
     const counts = await autopilotQueue.getJobCounts();
     const waiting = (counts.waiting || 0) + (counts.delayed || 0);
     const failed = counts.failed || 0;
     const now = Date.now();
 
-    if (waiting > QUEUE_THRESHOLD && now - lastQueueAlert > 5 * 60_000) {
-      lastQueueAlert = now;
-      log.warn('autopilot_queue_high', { waiting, failed, threshold: QUEUE_THRESHOLD });
-      await sendOpsAlert('Autopilot queue high', { waiting, failed, threshold: QUEUE_THRESHOLD });
-    }
-    if (failed > 0 && now - lastQueueAlert > 5 * 60_000) {
-      lastQueueAlert = now;
-      log.warn('autopilot_queue_failed', { failed, waiting });
-      await sendOpsAlert('Autopilot queue has failed jobs', { failed, waiting });
-    }
+    await maybeAlertHighQueue(waiting, failed, now);
+    await maybeAlertFailedJobs(failed, waiting, now);
   } catch (err: unknown) {
     const errInstanceofError =
       err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     log.warn('autopilot_queue_monitor_error', { error: errInstanceofError?.message });
   }
-}, 60_000);
+}
+
+const autopilotMonitorInterval = setInterval(checkAutopilotQueueHealth, 60_000);
 
 async function gracefulShutdown(signal: string) {
   log.info('shutdown_started', { signal });
@@ -272,6 +308,94 @@ process.on('SIGINT', () => {
   void gracefulShutdown('SIGINT');
 });
 
+type SkippedFlowResult = { ok: false; skipped: true; reason: string };
+
+async function checkFlowSubscription(
+  jobId: Job['id'],
+  workspaceId: string,
+): Promise<SkippedFlowResult | null> {
+  const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(workspaceId);
+  if (subStatus.active) return null;
+  log.warn('flow_blocked_subscription', { jobId, workspaceId, reason: subStatus.reason });
+  return { ok: false, skipped: true, reason: subStatus.reason };
+}
+
+async function checkFlowRateLimit(
+  jobId: Job['id'],
+  workspaceId: string,
+): Promise<SkippedFlowResult | null> {
+  const rate = await PlanLimitsProvider.checkFlowRunRate(workspaceId);
+  if (rate.allowed) return null;
+  log.warn('flow_blocked_rate', { jobId, workspaceId, reason: rate.reason });
+  return { ok: false, skipped: true, reason: rate.reason };
+}
+
+async function resolveFlowDefinition(
+  job: Job,
+  flowId: string,
+  workspaceId: string | undefined,
+): Promise<Awaited<ReturnType<FlowEngineGlobal['loadFlow']>>> {
+  if (!job.data.flow?.nodes) {
+    // Load from DB scoped to workspace if provided
+    return engine.loadFlow(flowId, workspaceId);
+  }
+  // Use runtime definition from editor
+  const flowDef = engine.parseFlowDefinition(
+    flowId || 'temp-run',
+    job.data.flow.nodes,
+    job.data.flow.edges,
+    job.data.workspace?.id || 'default',
+  );
+  if (job.data.startNode) flowDef.startNode = job.data.startNode;
+  return flowDef;
+}
+
+async function checkIdempotentCompletion(
+  jobId: Job['id'],
+  executionId: string | undefined,
+  workspaceId: string | undefined,
+): Promise<{ ok: true; skipped: true; reason: 'already_completed' } | null> {
+  if (!executionId) return null;
+  const existingExec = await engine.getExecution(executionId, workspaceId);
+  if (!existingExec) return null;
+  if (existingExec.status !== 'COMPLETED' && existingExec.status !== 'FAILED') return null;
+  log.warn('flow_already_completed', { jobId, executionId, status: existingExec.status });
+  return { ok: true, skipped: true, reason: 'already_completed' };
+}
+
+async function runSubscriptionAndRateGuards(
+  jobId: Job['id'],
+  workspaceId: string | undefined,
+  subscriptionChecked: boolean,
+): Promise<SkippedFlowResult | null> {
+  if (!subscriptionChecked && workspaceId) {
+    const blocked = await checkFlowSubscription(jobId, workspaceId);
+    if (blocked) return blocked;
+  }
+
+  if (workspaceId) {
+    const blocked = await checkFlowRateLimit(jobId, workspaceId);
+    if (blocked) return blocked;
+  }
+  return null;
+}
+
+async function executeResolvedFlow(
+  job: Job,
+  flowDef: Awaited<ReturnType<typeof resolveFlowDefinition>>,
+  user: string,
+  flowId: string | undefined,
+  initialVars: Parameters<typeof engine.startFlow>[2],
+  executionId: string | undefined,
+): Promise<void> {
+  if (flowDef) {
+    await engine.startFlow(user, flowDef, initialVars, executionId);
+    log.info('flow_completed', { jobId: job.id, flowId, user });
+  } else {
+    log.error('flow_not_found', { jobId: job.id, flowId });
+  }
+}
+
 async function handleRunFlow(job: Job) {
   log.info('flow_start', { jobId: job.id, queue: job.queueName });
 
@@ -282,80 +406,26 @@ async function handleRunFlow(job: Job) {
 
   // 1. Check Subscription Status (if workspace known)
   if (workspace?.id) {
-    const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(workspace.id);
+    const blocked = await checkFlowSubscription(job.id, workspace.id);
     subscriptionChecked = true;
-    if (!subStatus.active) {
-      log.warn('flow_blocked_subscription', {
-        jobId: job.id,
-        workspaceId: workspace.id,
-        reason: subStatus.reason,
-      });
-      return { ok: false, skipped: true, reason: subStatus.reason };
-    }
+    if (blocked) return blocked;
   }
 
   // Idempotency Check
-  if (executionId) {
-    const existingExec = await engine.getExecution(executionId, workspaceId);
-    if (existingExec && (existingExec.status === 'COMPLETED' || existingExec.status === 'FAILED')) {
-      log.warn('flow_already_completed', {
-        jobId: job.id,
-        executionId,
-        status: existingExec.status,
-      });
-      return { ok: true, skipped: true, reason: 'already_completed' };
-    }
-  }
+  const alreadyCompleted = await checkIdempotentCompletion(job.id, executionId, workspaceId);
+  if (alreadyCompleted) return alreadyCompleted;
 
-  let flowDef: Awaited<ReturnType<FlowEngineGlobal['loadFlow']>>;
-  if (job.data.flow?.nodes) {
-    // Use runtime definition from editor
-    flowDef = engine.parseFlowDefinition(
-      flowId || 'temp-run',
-      job.data.flow.nodes,
-      job.data.flow.edges,
-      job.data.workspace?.id || 'default',
-    );
-    // Override startNode if provided
-    if (job.data.startNode) flowDef.startNode = job.data.startNode;
-  } else {
-    // Load from DB scoped to workspace if provided
-    flowDef = await engine.loadFlow(flowId, workspaceId);
-  }
+  const flowDef = await resolveFlowDefinition(job, flowId, workspaceId);
 
   // Derive workspaceId if not provided
   if (!workspaceId && flowDef?.workspaceId) {
     workspaceId = flowDef.workspaceId;
   }
 
-  // If no subscription check yet and workspaceId known, check now
-  if (!subscriptionChecked && workspaceId) {
-    const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(workspaceId);
-    if (!subStatus.active) {
-      log.warn('flow_blocked_subscription', {
-        jobId: job.id,
-        workspaceId,
-        reason: subStatus.reason,
-      });
-      return { ok: false, skipped: true, reason: subStatus.reason };
-    }
-  }
+  const guarded = await runSubscriptionAndRateGuards(job.id, workspaceId, subscriptionChecked);
+  if (guarded) return guarded;
 
-  // Rate-limit flow runs per plan
-  if (workspaceId) {
-    const rate = await PlanLimitsProvider.checkFlowRunRate(workspaceId);
-    if (!rate.allowed) {
-      log.warn('flow_blocked_rate', { jobId: job.id, workspaceId, reason: rate.reason });
-      return { ok: false, skipped: true, reason: rate.reason };
-    }
-  }
-
-  if (flowDef) {
-    await engine.startFlow(user, flowDef, initialVars, executionId);
-    log.info('flow_completed', { jobId: job.id, flowId, user });
-  } else {
-    log.error('flow_not_found', { jobId: job.id, flowId });
-  }
+  await executeResolvedFlow(job, flowDef, user, flowId, initialVars, executionId);
 
   return { ok: true };
 }
@@ -1002,70 +1072,89 @@ function hasKeyword(text: string, ...keys: string[]) {
   return keys.some((k) => lower.includes(k));
 }
 
+type KeywordRule = {
+  readonly keywords: readonly string[];
+  readonly decision: AutopilotDecision;
+};
+
+const KEYWORD_RULES: readonly KeywordRule[] = [
+  {
+    keywords: ['quanto custa', 'preco', 'preço', 'valor', 'preco?'],
+    decision: { intent: 'BUYING', action: 'SEND_PRICE', reason: 'price_question' },
+  },
+  {
+    keywords: ['quero', 'comprar', 'fechar', 'vamos', 'contratar', 'assinar'],
+    decision: { intent: 'BUYING', action: 'SEND_OFFER', reason: 'buy_signal' },
+  },
+  {
+    keywords: ['pix', 'boleto', 'pagar', 'pagamento', 'checkout', 'link de pagamento'],
+    decision: { intent: 'BUYING', action: 'SEND_OFFER', reason: 'payment_intent' },
+  },
+  {
+    keywords: ['agendar', 'agenda', 'calend', 'marcar', 'reuni', 'call'],
+    decision: { intent: 'SCHEDULING', action: 'SEND_CALENDAR', reason: 'schedule' },
+  },
+  {
+    keywords: ['problema', 'erro', 'bug', 'não funciona', 'nao funciona', 'suporte'],
+    decision: { intent: 'SUPPORT', action: 'TRANSFER_AGENT', reason: 'support' },
+  },
+  {
+    keywords: ['caro', 'muito caro', 'sem dinheiro', 'agora não', 'agora nao', 'talvez depois'],
+    decision: { intent: 'OBJECTION', action: 'HANDLE_OBJECTION', reason: 'price_objection' },
+  },
+  {
+    keywords: ['cancel', 'cancelar', 'desistir', 'parar', 'não quero mais', 'nao quero mais'],
+    decision: { intent: 'CHURN_RISK', action: 'ANTI_CHURN', reason: 'churn_risk' },
+  },
+  {
+    keywords: ['já uso', 'ja uso', 'sou cliente', 'renovar', 'upgrade', 'plano maior'],
+    decision: { intent: 'UPSELL', action: 'UPSELL', reason: 'existing_customer' },
+  },
+];
+
+function classifyByKeywords(text: string): AutopilotDecision | null {
+  for (const rule of KEYWORD_RULES) {
+    if (hasKeyword(text, ...rule.keywords)) return rule.decision;
+  }
+  return null;
+}
+
+async function classifyWithAi(text: string, apiKey: string): Promise<AutopilotDecision | null> {
+  try {
+    const { AIProvider } = await import('./providers/ai-provider');
+    const ai = new AIProvider(apiKey);
+    const prompt = `
+      Classifique a intenção para atendimento de vendas em JSON:
+      Campos: intent (BUYING|SCHEDULING|SUPPORT|OBJECTION|CHURN_RISK|UPSELL|IDLE), action (SEND_OFFER|SEND_PRICE|SEND_CALENDAR|TRANSFER_AGENT|FOLLOW_UP|HANDLE_OBJECTION|ANTI_CHURN|UPSELL|NONE), reason.
+      Mensagem: "${text}"
+      `;
+    const res = await ai.generateResponse('Responda apenas JSON.', prompt);
+    const parsed = JSON.parse(res.replace(JSON_RE, '').replace(PATTERN_RE, ''));
+    return {
+      intent: parsed.intent || 'IDLE',
+      action: parsed.action || 'NONE',
+      reason: parsed.reason || 'ai_decision',
+    };
+  } catch {
+    // PULSE:OK — AI intent parse failure falls back to default IDLE intent below
+    return null;
+  }
+}
+
 async function decideAction(
   messageContent: string,
   settings: AutopilotSettings,
 ): Promise<AutopilotDecision> {
   const text = messageContent || '';
 
-  if (hasKeyword(text, 'quanto custa', 'preco', 'preço', 'valor', 'preco?')) {
-    return { intent: 'BUYING', action: 'SEND_PRICE', reason: 'price_question' };
-  }
-  if (hasKeyword(text, 'quero', 'comprar', 'fechar', 'vamos', 'contratar', 'assinar')) {
-    return { intent: 'BUYING', action: 'SEND_OFFER', reason: 'buy_signal' };
-  }
-  if (hasKeyword(text, 'pix', 'boleto', 'pagar', 'pagamento', 'checkout', 'link de pagamento')) {
-    return { intent: 'BUYING', action: 'SEND_OFFER', reason: 'payment_intent' };
-  }
-  if (hasKeyword(text, 'agendar', 'agenda', 'calend', 'marcar', 'reuni', 'call')) {
-    return { intent: 'SCHEDULING', action: 'SEND_CALENDAR', reason: 'schedule' };
-  }
-  if (hasKeyword(text, 'problema', 'erro', 'bug', 'não funciona', 'nao funciona', 'suporte')) {
-    return { intent: 'SUPPORT', action: 'TRANSFER_AGENT', reason: 'support' };
-  }
-  if (
-    hasKeyword(
-      text,
-      'caro',
-      'muito caro',
-      'sem dinheiro',
-      'agora não',
-      'agora nao',
-      'talvez depois',
-    )
-  ) {
-    return { intent: 'OBJECTION', action: 'HANDLE_OBJECTION', reason: 'price_objection' };
-  }
-  if (
-    hasKeyword(text, 'cancel', 'cancelar', 'desistir', 'parar', 'não quero mais', 'nao quero mais')
-  ) {
-    return { intent: 'CHURN_RISK', action: 'ANTI_CHURN', reason: 'churn_risk' };
-  }
-  if (hasKeyword(text, 'já uso', 'ja uso', 'sou cliente', 'renovar', 'upgrade', 'plano maior')) {
-    return { intent: 'UPSELL', action: 'UPSELL', reason: 'existing_customer' };
-  }
+  const keywordDecision = classifyByKeywords(text);
+  if (keywordDecision) return keywordDecision;
 
   // If AI key available, try richer intent
   const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
   if (apiKey) {
-    try {
-      const { AIProvider } = await import('./providers/ai-provider');
-      const ai = new AIProvider(apiKey);
-      const prompt = `
-      Classifique a intenção para atendimento de vendas em JSON:
-      Campos: intent (BUYING|SCHEDULING|SUPPORT|OBJECTION|CHURN_RISK|UPSELL|IDLE), action (SEND_OFFER|SEND_PRICE|SEND_CALENDAR|TRANSFER_AGENT|FOLLOW_UP|HANDLE_OBJECTION|ANTI_CHURN|UPSELL|NONE), reason.
-      Mensagem: "${text}"
-      `;
-      const res = await ai.generateResponse('Responda apenas JSON.', prompt);
-      const parsed = JSON.parse(res.replace(JSON_RE, '').replace(PATTERN_RE, ''));
-      return {
-        intent: parsed.intent || 'IDLE',
-        action: parsed.action || 'NONE',
-        reason: parsed.reason || 'ai_decision',
-      };
-    } catch {
-      // PULSE:OK — AI intent parse failure falls back to default IDLE intent below
-    }
+    const aiDecision = await classifyWithAi(text, apiKey);
+    if (aiDecision) return aiDecision;
   }
 
   return { intent: 'IDLE', action: 'FOLLOW_UP', reason: 'default_follow_up' };

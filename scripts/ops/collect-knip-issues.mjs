@@ -8,10 +8,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 const knipBin = path.join(repoRoot, 'node_modules', '.bin', 'knip');
 const ISSUE_TYPES = ['files', 'dependencies', 'unlisted', 'unresolved', 'exports', 'types'];
+const PATH_SEPARATOR_RE = /[\\/]/;
 
 function inferWorkspace(file) {
   if (typeof file !== 'string' || file.length === 0) return 'root';
-  const [segment] = file.split(/[\\/]/);
+  const [segment] = file.split(PATH_SEPARATOR_RE);
   if (['backend', 'frontend', 'worker', 'e2e', 'scripts'].includes(segment)) {
     return segment;
   }
@@ -46,28 +47,38 @@ function normalizeIssueEntry(issueType, file, entry) {
   };
 }
 
+function pushEntriesForType(issueType, file, entries, issues) {
+  for (const entry of entries) {
+    issues.push(normalizeIssueEntry(issueType, file, entry));
+  }
+}
+
+function normalizeFileIssues(issueFile, issues) {
+  const file = typeof issueFile?.file === 'string' ? issueFile.file : '';
+  for (const issueType of ISSUE_TYPES) {
+    const entries = Array.isArray(issueFile?.[issueType]) ? issueFile[issueType] : [];
+    pushEntriesForType(issueType, file, entries, issues);
+  }
+}
+
+function normalizeTopLevelIssues(payload, issues) {
+  for (const [issueType, issueValue] of Object.entries(payload)) {
+    if (!ISSUE_TYPES.includes(issueType) || !Array.isArray(issueValue)) continue;
+    pushEntriesForType(issueType, '', issueValue, issues);
+  }
+}
+
 function normalizeIssues(payload, issues) {
   if (!payload || typeof payload !== 'object') return;
 
   if (Array.isArray(payload.issues)) {
     for (const issueFile of payload.issues) {
-      const file = typeof issueFile?.file === 'string' ? issueFile.file : '';
-      for (const issueType of ISSUE_TYPES) {
-        const entries = Array.isArray(issueFile?.[issueType]) ? issueFile[issueType] : [];
-        for (const entry of entries) {
-          issues.push(normalizeIssueEntry(issueType, file, entry));
-        }
-      }
+      normalizeFileIssues(issueFile, issues);
     }
     return;
   }
 
-  for (const [issueType, issueValue] of Object.entries(payload)) {
-    if (!ISSUE_TYPES.includes(issueType) || !Array.isArray(issueValue)) continue;
-    for (const entry of issueValue) {
-      issues.push(normalizeIssueEntry(issueType, '', entry));
-    }
-  }
+  normalizeTopLevelIssues(payload, issues);
 }
 
 export function collectKnipIssues() {

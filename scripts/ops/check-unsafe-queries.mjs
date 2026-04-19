@@ -176,6 +176,8 @@ function variableObjectContainsWorkspaceId(source, variableName) {
   }
 
   const objectLiteral = extractObjectLiteral(source, lastMatch.index + lastMatch[0].length);
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+  // Safe: literal \b anchored regex applied to repo TypeScript source read from readRepoFile (tracked files only). No user input, no nested quantifiers.
   return /\bworkspaceId\b/.test(objectLiteral?.body ?? '');
 }
 

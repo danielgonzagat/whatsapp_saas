@@ -27,7 +27,25 @@ import {
   updateAutopilotConfig,
   workspaceApi,
 } from '@/lib/api';
-import { aiAssistantApi, uploadKnowledgeBase } from '@/lib/api/misc';
+import { uploadKnowledgeBase } from '@/lib/api/misc';
+import {
+  type AiToolData,
+  type AiToolKind,
+  type CompanyProfile,
+  type EmergencyModeProfile,
+  type FaqItem,
+  type OpeningMessageProfile,
+  type VoiceToneProfile,
+  formatAiToolOutput,
+  formatCurrency,
+  invokeAiTool,
+  normalizeCompanyProfile,
+  normalizeEmergencyMode,
+  normalizeFaqs,
+  normalizeOpeningMessage,
+  normalizeVoiceToneProfile,
+  parseCurrency,
+} from './brain-settings-section.helpers';
 import {
   Building2,
   ChevronDown,
@@ -51,9 +69,6 @@ import { EmergencyModeCard } from './emergency-mode-card';
 import { KloelStatusCard } from './kloel-status-card';
 import { MissingStepsCard } from './missing-steps-card';
 import { OpeningMessageCard } from './opening-message-card';
-
-const D_RE = /[^\d,.-]/g;
-const D_3___D_RE = /\.(?=\d{3}(\D|$))/g;
 
 interface AccordionSectionProps {
   icon: React.ElementType;
@@ -108,117 +123,7 @@ interface Product {
   totalRevenue: number;
 }
 
-interface CompanyProfile {
-  name: string;
-  sector: string;
-  description: string;
-  mission: string;
-  differentials: string[];
-}
-
-interface VoiceToneProfile {
-  style: string;
-  customInstructions: string;
-  useProfessional: boolean;
-  useFriendly: boolean;
-  usePersuasive: boolean;
-}
-
-interface FaqItem {
-  id: string;
-  question: string;
-  answer: string;
-}
-
-interface OpeningMessageProfile {
-  message: string;
-  useEmojis: boolean;
-  isFormal: boolean;
-  isFriendly: boolean;
-}
-
-interface EmergencyModeProfile {
-  emergencyAction: string;
-  fixedMessage: string;
-}
-
-function formatCurrency(value?: number | null) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return '';
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
-}
-
-function parseCurrency(value: string) {
-  const normalized = String(value || '')
-    .replace(D_RE, '')
-    .replace(D_3___D_RE, '')
-    .replace(',', '.');
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function normalizeCompanyProfile(value: unknown): CompanyProfile {
-  const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
-  const differentials = Array.isArray(obj.differentials)
-    ? obj.differentials.filter((entry: unknown) => typeof entry === 'string')
-    : [];
-
-  return {
-    name: typeof obj.name === 'string' ? obj.name : '',
-    sector: typeof obj.sector === 'string' ? obj.sector : '',
-    description: typeof obj.description === 'string' ? obj.description : '',
-    mission: typeof obj.mission === 'string' ? obj.mission : '',
-    differentials: (differentials as string[]).length > 0 ? (differentials as string[]) : [''],
-  };
-}
-
-function normalizeVoiceToneProfile(value: unknown): VoiceToneProfile {
-  const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
-  return {
-    style: typeof obj.style === 'string' ? obj.style : '',
-    customInstructions: typeof obj.customInstructions === 'string' ? obj.customInstructions : '',
-    useProfessional: obj.useProfessional !== false,
-    useFriendly: obj.useFriendly === true,
-    usePersuasive: obj.usePersuasive === true,
-  };
-}
-
-function normalizeFaqs(value: unknown): FaqItem[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((entry: unknown, index: number) => {
-      const faq = (typeof entry === 'object' && entry !== null ? entry : {}) as Record<
-        string,
-        unknown
-      >;
-      return {
-        id: typeof faq.id === 'string' ? faq.id : `faq-${index + 1}`,
-        question: typeof faq.question === 'string' ? faq.question : '',
-        answer: typeof faq.answer === 'string' ? faq.answer : '',
-      };
-    })
-    .filter((faq) => faq.question || faq.answer);
-}
-
-function normalizeOpeningMessage(value: unknown): OpeningMessageProfile {
-  const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
-  return {
-    message: typeof obj.message === 'string' ? obj.message : '',
-    useEmojis: obj.useEmojis !== false,
-    isFormal: obj.isFormal === true,
-    isFriendly: obj.isFriendly !== false,
-  };
-}
-
-function normalizeEmergencyMode(value: unknown): EmergencyModeProfile {
-  const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
-  return {
-    emergencyAction: typeof obj.emergencyAction === 'string' ? obj.emergencyAction : '',
-    fixedMessage: typeof obj.fixedMessage === 'string' ? obj.fixedMessage : '',
-  };
-}
+// Pure helpers moved to ./brain-settings-section.helpers.ts.
 
 export function BrainSettingsSection() {
   const fid = useId();
@@ -723,49 +628,15 @@ export function BrainSettingsSection() {
     }
   };
 
-  const runAiTool = async (
-    tool: 'analyzeSentiment' | 'summarize' | 'suggest' | 'pitch',
-    label: string,
-  ) => {
+  const runAiTool = async (tool: AiToolKind, label: string) => {
     if (!aiToolInput.trim()) return;
     setAiToolLoading(true);
     setAiToolError('');
     setAiToolResult('');
     try {
-      type AiToolData = {
-        sentiment?: string;
-        score?: number;
-        label?: string;
-        summary?: string;
-        suggestion?: string;
-        pitch?: string;
-      };
-      let data: AiToolData | undefined;
-      let error: string | undefined;
-      const wsId = workspaceId || '';
-      // For tools that need workspaceId/conversationId, we use the text as the conversationId for testing
-      if (tool === 'analyzeSentiment') {
-        const res = await aiAssistantApi.analyzeSentiment(aiToolInput.trim());
-        error = res.error;
-        data = res.data as AiToolData | undefined;
-      } else if (tool === 'summarize') {
-        const res = await aiAssistantApi.summarize(aiToolInput.trim());
-        error = res.error;
-        data = res.data as AiToolData | undefined;
-      } else if (tool === 'suggest') {
-        const res = await aiAssistantApi.suggest(wsId, aiToolInput.trim());
-        error = res.error;
-        data = res.data as AiToolData | undefined;
-      } else {
-        const res = await aiAssistantApi.pitch(wsId, aiToolInput.trim());
-        error = res.error;
-        data = res.data as AiToolData | undefined;
-      }
+      const { data, error } = await invokeAiTool(tool, aiToolInput.trim(), workspaceId || '');
       if (error) throw new Error(error);
-      const output = data?.sentiment
-        ? `${data.sentiment} (score: ${data.score ?? '\u2014'}, label: ${data.label ?? '\u2014'})`
-        : data?.summary || data?.suggestion || data?.pitch || JSON.stringify(data, null, 2);
-      setAiToolResult(`[${label}]\n${output}`);
+      setAiToolResult(`[${label}]\n${formatAiToolOutput(data)}`);
     } catch (e: unknown) {
       setAiToolError(e instanceof Error ? e.message : `Erro ao executar ${label}`);
     } finally {
@@ -892,7 +763,8 @@ export function BrainSettingsSection() {
           <div className="space-y-2">
             <Label className="text-sm text-gray-700">Diferenciais competitivos</Label>
             {company.differentials.map((diff, i) => (
-              <div key={`differential-${i}`} className="flex gap-2">
+              // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — differentials is `string[]` with user-editable duplicates; refactor out of a11y pass scope.
+              <div key={`differential-${i}-${diff.slice(0, 10)}`} className="flex gap-2">
                 <Input
                   placeholder={`Diferencial ${i + 1}`}
                   value={diff}
@@ -1225,8 +1097,9 @@ export function BrainSettingsSection() {
           {rules.length > 0 && (
             <div className="space-y-2">
               {rules.map((rule, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — rules is `string[]` with user-editable duplicates; refactor out of a11y pass scope.
                 <div
-                  key={`rule-${i}`}
+                  key={`rule-${i}-${rule.slice(0, 10)}`}
                   className="flex items-center gap-3 rounded-xl bg-gray-50 p-3"
                 >
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-700">
@@ -1500,6 +1373,7 @@ export function BrainSettingsSection() {
                 {kbUploadError || kbUploadSuccess}
               </div>
             )}
+            {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -1508,6 +1382,9 @@ export function BrainSettingsSection() {
               onDragLeave={() => setKbDragOver(false)}
               onDrop={handleKbDrop}
               onClick={() => kbFileRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              aria-label="Selecionar arquivo para base de conhecimento"
               className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-6 text-center ${kbDragOver ? 'border-[#E85D30] bg-[#E85D30]/5' : 'border-gray-200 hover:border-gray-300'}`}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {

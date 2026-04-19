@@ -64,9 +64,24 @@ type StripeConfirmationFinalizeResult = {
 
 export type FinalizeCheckoutOrderResult = RedirectFinalizeResult | StripeConfirmationFinalizeResult;
 
-export async function finalizeCheckoutOrder(
-  args: FinalizeCheckoutOrderArgs,
-): Promise<FinalizeCheckoutOrderResult> {
+function resolveShippingMethod(
+  shippingMode: FinalizeCheckoutOrderArgs['shippingMode'],
+  shippingInCents: number,
+): string {
+  if (shippingMode === 'VARIABLE') return 'kloel-variable';
+  if (shippingInCents > 0) return 'standard';
+  return 'free';
+}
+
+function resolvePaymentMethodCode(
+  payMethod: FinalizeCheckoutOrderArgs['payMethod'],
+): CreateOrderData['paymentMethod'] {
+  if (payMethod === 'card') return 'CREDIT_CARD';
+  if (payMethod === 'pix') return 'PIX';
+  return 'BOLETO';
+}
+
+function buildOrderPayload(args: FinalizeCheckoutOrderArgs): CreateOrderData {
   const {
     affiliateContext,
     capturedLeadId,
@@ -76,7 +91,6 @@ export async function finalizeCheckoutOrder(
     form,
     installments,
     payMethod,
-    paymentProvider,
     planId,
     qty,
     shippingInCents,
@@ -86,7 +100,7 @@ export async function finalizeCheckoutOrder(
     workspaceId,
   } = args;
 
-  const payload: CreateOrderData = {
+  return {
     planId,
     workspaceId,
     checkoutCode,
@@ -106,44 +120,65 @@ export async function finalizeCheckoutOrder(
       state: form.state,
       destinatario: form.destinatario || form.name,
     },
-    shippingMethod:
-      shippingMode === 'VARIABLE' ? 'kloel-variable' : shippingInCents > 0 ? 'standard' : 'free',
+    shippingMethod: resolveShippingMethod(shippingMode, shippingInCents),
     shippingPrice: shippingInCents,
     orderQuantity: qty,
     subtotalInCents: subtotal,
     discountInCents: discount,
     totalInCents: total,
-    paymentMethod: payMethod === 'card' ? 'CREDIT_CARD' : payMethod === 'pix' ? 'PIX' : 'BOLETO',
+    paymentMethod: resolvePaymentMethodCode(payMethod),
     installments: payMethod === 'card' ? installments : 1,
     affiliateId: affiliateContext?.affiliateWorkspaceId,
   };
+}
 
+function buildStripeResult(
+  result: unknown,
+  successPath: string,
+  orderNumber: string,
+  orderId: string,
+): StripeConfirmationFinalizeResult {
+  const clientSecret = readNestedString(asRecord(result), ['paymentData', 'clientSecret']);
+  const paymentIntentId = readNestedString(asRecord(result), ['paymentData', 'paymentIntentId']);
+  if (!clientSecret || !paymentIntentId) {
+    throw new Error('Pedido criado sem dados do Stripe para confirmação do cartão.');
+  }
+  return {
+    mode: 'stripe_confirmation',
+    successPath,
+    orderNumber,
+    orderId,
+    clientSecret,
+    paymentIntentId,
+  };
+}
+
+function needsStripeConfirmation(
+  payMethod: FinalizeCheckoutOrderArgs['payMethod'],
+  paymentProvider: FinalizeCheckoutOrderArgs['paymentProvider'],
+): boolean {
+  return payMethod === 'card' && paymentProvider?.provider === 'stripe';
+}
+
+export async function finalizeCheckoutOrder(
+  args: FinalizeCheckoutOrderArgs,
+): Promise<FinalizeCheckoutOrderResult> {
+  const payload = buildOrderPayload(args);
   const result = await createOrder(payload);
+
   const orderId = resolveOrderId(result);
   if (!orderId) {
     throw new Error('Pedido criado sem ID.');
   }
 
   const orderNumber = resolveOrderNumber(result);
-  const successPath = resolveSuccessPath(payMethod, result, orderId);
+  const successPath = resolveSuccessPath(args.payMethod, result, orderId);
   if (!successPath) {
     throw new Error('Pedido criado sem rota de continuidade.');
   }
 
-  if (payMethod === 'card' && paymentProvider?.provider === 'stripe') {
-    const clientSecret = readNestedString(asRecord(result), ['paymentData', 'clientSecret']);
-    const paymentIntentId = readNestedString(asRecord(result), ['paymentData', 'paymentIntentId']);
-    if (!clientSecret || !paymentIntentId) {
-      throw new Error('Pedido criado sem dados do Stripe para confirmação do cartão.');
-    }
-    return {
-      mode: 'stripe_confirmation',
-      successPath,
-      orderNumber,
-      orderId,
-      clientSecret,
-      paymentIntentId,
-    };
+  if (needsStripeConfirmation(args.payMethod, args.paymentProvider)) {
+    return buildStripeResult(result, successPath, orderNumber, orderId);
   }
 
   return {

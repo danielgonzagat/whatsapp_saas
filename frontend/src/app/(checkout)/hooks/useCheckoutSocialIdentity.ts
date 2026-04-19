@@ -679,22 +679,60 @@ function prefillFromAuthenticatedGoogleProfile(
   };
 }
 
-function mergeSnapshot(
+function resolveIdentityProvider(
   current: CheckoutSocialIdentitySnapshot | null,
   incoming: PrefillResponse,
-  fallbackFingerprint: string,
-): CheckoutSocialIdentitySnapshot {
+): CheckoutSocialProvider {
+  return incoming.provider || current?.provider || 'google';
+}
+
+function resolveIdentityDisplayFields(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+): { name: string; email: string; avatarUrl: string | null } {
   return {
-    leadId: incoming.leadId || current?.leadId,
-    provider: incoming.provider || current?.provider || 'google',
     name: incoming.name || current?.name || '',
     email: incoming.email || current?.email || '',
     avatarUrl: incoming.avatarUrl ?? current?.avatarUrl ?? null,
+  };
+}
+
+function mergeIdentityCore(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+  fallbackFingerprint: string,
+): Pick<
+  CheckoutSocialIdentitySnapshot,
+  'leadId' | 'provider' | 'name' | 'email' | 'avatarUrl' | 'deviceFingerprint'
+> {
+  return {
+    leadId: incoming.leadId || current?.leadId,
+    provider: resolveIdentityProvider(current, incoming),
+    ...resolveIdentityDisplayFields(current, incoming),
     deviceFingerprint:
       incoming.deviceFingerprint || current?.deviceFingerprint || fallbackFingerprint,
+  };
+}
+
+function mergeContactFields(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+): Pick<CheckoutSocialIdentitySnapshot, 'phone' | 'birthday' | 'cpf'> {
+  return {
     phone: incoming.phone ?? current?.phone ?? null,
     birthday: incoming.birthday ?? current?.birthday ?? null,
     cpf: incoming.cpf ?? current?.cpf ?? null,
+  };
+}
+
+function mergeAddressFields(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+): Pick<
+  CheckoutSocialIdentitySnapshot,
+  'cep' | 'street' | 'number' | 'neighborhood' | 'city' | 'state' | 'complement'
+> {
+  return {
     cep: incoming.cep ?? current?.cep ?? null,
     street: incoming.street ?? current?.street ?? null,
     number: incoming.number ?? current?.number ?? null,
@@ -702,6 +740,18 @@ function mergeSnapshot(
     city: incoming.city ?? current?.city ?? null,
     state: incoming.state ?? current?.state ?? null,
     complement: incoming.complement ?? current?.complement ?? null,
+  };
+}
+
+function mergeSnapshot(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+  fallbackFingerprint: string,
+): CheckoutSocialIdentitySnapshot {
+  return {
+    ...mergeIdentityCore(current, incoming, fallbackFingerprint),
+    ...mergeContactFields(current, incoming),
+    ...mergeAddressFields(current, incoming),
   };
 }
 

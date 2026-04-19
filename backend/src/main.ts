@@ -13,6 +13,80 @@ import { PrismaService } from './prisma/prisma.service';
 const HTTPS_____KLOEL_FRONTEN_RE = /^https:\/\/kloel-frontend-.*\.vercel\.app$/;
 const HTTPS_____KLOEL_ADMIN_RE = /^https:\/\/kloel-admin-.*\.vercel\.app$/;
 
+function handleSchemaError(schemaErr: unknown): void {
+  const isSchemaMissing =
+    schemaErr instanceof Prisma.PrismaClientKnownRequestError &&
+    (schemaErr.code === 'P2021' || schemaErr.code === 'P2022');
+  if (process.env.NODE_ENV === 'production') {
+    if (isSchemaMissing) {
+      console.error('[STARTUP] FATAL: schema not initialized (migrations not applied).');
+    } else {
+      console.error('[STARTUP] FATAL: schema validation failed.', schemaErr);
+    }
+    process.exit(1);
+  }
+  if (isSchemaMissing) {
+    console.error('[STARTUP] Schema não inicializado (dev mode, continuando).');
+  } else {
+    console.error('[STARTUP] Falha ao validar schema (dev mode, continuando).', schemaErr);
+  }
+}
+
+async function runStartupDbCheck(app: NestExpressApplication): Promise<void> {
+  try {
+    const prisma = app.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('[STARTUP] DB conectado');
+
+    try {
+      await prisma.workspace.count();
+      console.log('[STARTUP] Schema OK');
+    } catch (schemaErr: unknown) {
+      handleSchemaError(schemaErr);
+    }
+  } catch (dbErr) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[STARTUP] FATAL: DB connection failed in production.', dbErr);
+      process.exit(1);
+    }
+    console.error('[STARTUP] DB check failed (dev mode, continuando).', dbErr);
+  }
+}
+
+function setupSwagger(app: NestExpressApplication): void {
+  const swaggerUser = process.env.SWAGGER_BASIC_USER;
+  const swaggerPass = process.env.SWAGGER_BASIC_PASS;
+  const allowSwagger = process.env.NODE_ENV !== 'production' || (swaggerUser && swaggerPass);
+
+  if (!allowSwagger) {
+    console.warn(
+      '[STARTUP] Swagger desabilitado em produção por falta de SWAGGER_BASIC_USER/PASS.',
+    );
+    return;
+  }
+
+  if (swaggerUser && swaggerPass) {
+    app.use(['/api', '/api-json'], (req, res, next) => {
+      const header = req.headers.authorization || '';
+      const expected = Buffer.from(`${swaggerUser}:${swaggerPass}`).toString('base64');
+      if (header !== `Basic ${expected}`) {
+        res.set('WWW-Authenticate', 'Basic realm="Swagger"');
+        return res.status(401).send('Authentication required for Swagger');
+      }
+      return next();
+    });
+  }
+
+  const config = new DocumentBuilder()
+    .setTitle('WhatsApp SaaS API')
+    .setDescription('The core API for the SaaS platform')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+}
+
 async function bootstrap() {
   console.log('[BOOTSTRAP] Iniciando aplicação...');
 
@@ -34,39 +108,7 @@ async function bootstrap() {
   // startup failure and does not route traffic to this instance. In
   // development we log and continue so devs can fix migrations interactively.
   // ============================================================
-  try {
-    const prisma = app.get(PrismaService);
-    await prisma.$queryRaw`SELECT 1`;
-    console.log('[STARTUP] DB conectado');
-
-    try {
-      await prisma.workspace.count();
-      console.log('[STARTUP] Schema OK');
-    } catch (schemaErr: unknown) {
-      const isSchemaMissing =
-        schemaErr instanceof Prisma.PrismaClientKnownRequestError &&
-        (schemaErr.code === 'P2021' || schemaErr.code === 'P2022');
-      if (process.env.NODE_ENV === 'production') {
-        if (isSchemaMissing) {
-          console.error('[STARTUP] FATAL: schema not initialized (migrations not applied).');
-        } else {
-          console.error('[STARTUP] FATAL: schema validation failed.', schemaErr);
-        }
-        process.exit(1);
-      }
-      if (isSchemaMissing) {
-        console.error('[STARTUP] Schema não inicializado (dev mode, continuando).');
-      } else {
-        console.error('[STARTUP] Falha ao validar schema (dev mode, continuando).', schemaErr);
-      }
-    }
-  } catch (dbErr) {
-    if (process.env.NODE_ENV === 'production') {
-      console.error('[STARTUP] FATAL: DB connection failed in production.', dbErr);
-      process.exit(1);
-    }
-    console.error('[STARTUP] DB check failed (dev mode, continuando).', dbErr);
-  }
+  await runStartupDbCheck(app);
 
   // ============================================================
   // STARTUP BANNER (PR P3-5): log every integration's status so
@@ -185,20 +227,25 @@ async function bootstrap() {
   // basic validation guard against misconfiguration / ReDoS from overly
   // complex patterns.
   const MAX_REGEX_PATTERN_LENGTH = 200;
+  const compileCorsRegex = (raw: string): RegExp | null => {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    if (trimmed.length > MAX_REGEX_PATTERN_LENGTH) {
+      console.warn('[CORS] Regex pattern too long, ignored (%d chars)', trimmed.length);
+      return null;
+    }
+    try {
+      return new RegExp(trimmed); // nosemgrep: non-literal-regexp — trusted server config
+    } catch {
+      console.warn('[CORS] Invalid regex pattern ignored: %s', trimmed);
+      return null;
+    }
+  };
   const extraRegex = process.env.CORS_ALLOWED_ORIGIN_REGEX;
   if (extraRegex) {
     for (const r of extraRegex.split(',')) {
-      const trimmed = r.trim();
-      if (trimmed && trimmed.length <= MAX_REGEX_PATTERN_LENGTH) {
-        try {
-          const re = new RegExp(trimmed); // nosemgrep: non-literal-regexp — trusted server config
-          allowedOriginsRegex.push(re);
-        } catch {
-          console.warn('[CORS] Invalid regex pattern ignored: %s', trimmed);
-        }
-      } else if (trimmed) {
-        console.warn('[CORS] Regex pattern too long, ignored (%d chars)', trimmed.length);
-      }
+      const re = compileCorsRegex(r);
+      if (re) allowedOriginsRegex.push(re);
     }
   }
 
@@ -222,20 +269,22 @@ async function bootstrap() {
 
   // CORS middleware for ALL responses (including SSE).
   // NestJS enableCors does not cover routes that use @Res().
-  app.use((req: Request, res: Response, next: NextFunction) => {
+  const applyCorsOriginHeader = (req: Request, res: Response): boolean => {
     const rawOrigin = req.headers.origin;
-    // If there is no Origin header, this is not a CORS request — skip origin setting.
-    if (rawOrigin) {
-      const matched = matchAllowedOrigin(rawOrigin);
-      if (matched) {
-        res.setHeader('Access-Control-Allow-Origin', matched);
-      } else {
-        // Disallowed origin in production — log and block preflight
-        console.warn('[CORS] Blocked origin: %s on %s %s', rawOrigin, req.method, req.path);
-        if (req.method === 'OPTIONS') {
-          return res.status(403).end();
-        }
-      }
+    if (!rawOrigin) return true;
+    const matched = matchAllowedOrigin(rawOrigin);
+    if (matched) {
+      res.setHeader('Access-Control-Allow-Origin', matched);
+      return true;
+    }
+    console.warn('[CORS] Blocked origin: %s on %s %s', rawOrigin, req.method, req.path);
+    return req.method !== 'OPTIONS';
+  };
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const allowed = applyCorsOriginHeader(req, res);
+    if (!allowed) {
+      return res.status(403).end();
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
     res.setHeader(
@@ -295,36 +344,7 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   // Swagger Documentation (desabilita em produção se não houver basic auth configurado)
-  const swaggerUser = process.env.SWAGGER_BASIC_USER;
-  const swaggerPass = process.env.SWAGGER_BASIC_PASS;
-  const allowSwagger = process.env.NODE_ENV !== 'production' || (swaggerUser && swaggerPass);
-
-  if (allowSwagger) {
-    if (swaggerUser && swaggerPass) {
-      app.use(['/api', '/api-json'], (req, res, next) => {
-        const header = req.headers.authorization || '';
-        const expected = Buffer.from(`${swaggerUser}:${swaggerPass}`).toString('base64');
-        if (header !== `Basic ${expected}`) {
-          res.set('WWW-Authenticate', 'Basic realm="Swagger"');
-          return res.status(401).send('Authentication required for Swagger');
-        }
-        return next();
-      });
-    }
-
-    const config = new DocumentBuilder()
-      .setTitle('WhatsApp SaaS API')
-      .setDescription('The core API for the SaaS platform')
-      .setVersion('1.0')
-      .addBearerAuth()
-      .build();
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, document);
-  } else {
-    console.warn(
-      '[STARTUP] Swagger desabilitado em produção por falta de SWAGGER_BASIC_USER/PASS.',
-    );
-  }
+  setupSwagger(app);
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');

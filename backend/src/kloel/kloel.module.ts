@@ -16,6 +16,10 @@ import { LLMBudgetService } from './llm-budget.service';
 import { MemoryManagementService } from './memory-management.service';
 import { MemoryController } from './memory.controller';
 import { MemoryService } from './memory.service';
+import { MarketingSkillContextBuilder } from './marketing-skills/marketing-skill.context';
+import { MarketingSkillLoader } from './marketing-skills/marketing-skill.loader';
+import { MarketingSkillRouter } from './marketing-skills/marketing-skill.router';
+import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
 import { PdfProcessorController } from './pdf-processor.controller';
 import { PdfProcessorService } from './pdf-processor.service';
 import { WalletLedgerService } from './wallet-ledger.service';
@@ -113,6 +117,10 @@ import { WebinarController } from './webinar.controller';
     ConversationalOnboardingService,
     MemoryService,
     MemoryManagementService,
+    MarketingSkillLoader,
+    MarketingSkillRouter,
+    MarketingSkillContextBuilder,
+    MarketingSkillService,
     PdfProcessorService,
     WalletService,
     WalletLedgerService,

@@ -100,96 +100,118 @@ function targetKey(action: { contactId?: string; phone?: string; conversationId:
   return String(action.contactId || action.phone || action.conversationId);
 }
 
+const HOT_COVER_TYPES = new Set(['RESPOND', 'ASK_CLARIFYING', 'SOCIAL_PROOF', 'OFFER']);
+
+function arePrioritiesMonotonic(actions: CiaDecisionBatch['actions']): boolean {
+  return actions.every((action, index, list) =>
+    index === 0 ? true : list[index - 1].priority >= action.priority,
+  );
+}
+
+function isPaymentCovered(state: CiaWorkspaceState, batch: CiaDecisionBatch): boolean {
+  if (state.clusters.PAYMENT.length === 0) return true;
+  return batch.actions.some((action) => action.type === 'PAYMENT_RECOVERY');
+}
+
+function isHotCovered(state: CiaWorkspaceState, batch: CiaDecisionBatch): boolean {
+  if (state.clusters.HOT.length === 0) return true;
+  return batch.actions.some(
+    (action) => action.cluster === 'HOT' || HOT_COVER_TYPES.has(action.type),
+  );
+}
+
+const isExplicitOutcomeNarrated = (batch: CiaDecisionBatch): boolean => {
+  if (typeof batch.summary !== 'string' || batch.summary.trim().length === 0) return false;
+  if (batch.actions.length > 0) return true;
+  return batch.summary.toLowerCase().includes('não encontrei');
+};
+
+interface GuaranteeChecks {
+  selectedTargets: string[];
+  uniqueTargets: boolean;
+  prioritiesMonotonic: boolean;
+  maxActionsRespected: boolean;
+  paymentCovered: boolean;
+  hotCovered: boolean;
+  actionTypesValid: boolean;
+  explicitOutcomeNarrated: boolean;
+}
+
+const evaluateGuaranteeChecks = (
+  state: CiaWorkspaceState,
+  batch: CiaDecisionBatch,
+  maxActions: number,
+): GuaranteeChecks => {
+  const selectedTargets = batch.actions.map(targetKey);
+  return {
+    selectedTargets,
+    uniqueTargets: new Set(selectedTargets).size === selectedTargets.length,
+    prioritiesMonotonic: arePrioritiesMonotonic(batch.actions),
+    maxActionsRespected: batch.actions.length <= maxActions,
+    paymentCovered: isPaymentCovered(state, batch),
+    hotCovered: isHotCovered(state, batch),
+    actionTypesValid: batch.actions.every((action) => VALID_TYPES.has(action.type)),
+    explicitOutcomeNarrated: isExplicitOutcomeNarrated(batch),
+  };
+};
+
+const allChecksPass = (checks: GuaranteeChecks): boolean =>
+  checks.maxActionsRespected &&
+  checks.uniqueTargets &&
+  checks.prioritiesMonotonic &&
+  checks.paymentCovered &&
+  checks.hotCovered &&
+  checks.actionTypesValid &&
+  checks.explicitOutcomeNarrated;
+
 export function buildCiaGuaranteeReport(
   state: CiaWorkspaceState,
   batch: CiaDecisionBatch,
   maxActions: number,
 ): CiaGuaranteeReport {
-  const selectedTargets = batch.actions.map(targetKey);
-  const uniqueTargets = new Set(selectedTargets).size === selectedTargets.length;
-  const prioritiesMonotonic = batch.actions.every((action, index, list) =>
-    index === 0 ? true : list[index - 1].priority >= action.priority,
-  );
-  const maxActionsRespected = batch.actions.length <= maxActions;
-  const paymentExists = state.clusters.PAYMENT.length > 0;
-  const hotExists = state.clusters.HOT.length > 0;
-  const paymentCovered =
-    !paymentExists || batch.actions.some((action) => action.type === 'PAYMENT_RECOVERY');
-  const hotCovered =
-    !hotExists ||
-    batch.actions.some(
-      (action) =>
-        action.cluster === 'HOT' ||
-        ['RESPOND', 'ASK_CLARIFYING', 'SOCIAL_PROOF', 'OFFER'].includes(action.type),
-    );
-  const actionTypesValid = batch.actions.every((action) => VALID_TYPES.has(action.type));
-  const explicitOutcomeNarrated =
-    typeof batch.summary === 'string' &&
-    batch.summary.trim().length > 0 &&
-    (batch.actions.length > 0 || batch.summary.toLowerCase().includes('não encontrei'));
-
-  const guaranteed =
-    maxActionsRespected &&
-    uniqueTargets &&
-    prioritiesMonotonic &&
-    paymentCovered &&
-    hotCovered &&
-    actionTypesValid &&
-    explicitOutcomeNarrated;
-
+  const checks = evaluateGuaranteeChecks(state, batch, maxActions);
   return {
-    maxActionsRespected,
-    uniqueTargets,
-    prioritiesMonotonic,
-    paymentCovered,
-    hotCovered,
-    actionTypesValid,
-    explicitOutcomeNarrated,
-    guaranteed,
+    maxActionsRespected: checks.maxActionsRespected,
+    uniqueTargets: checks.uniqueTargets,
+    prioritiesMonotonic: checks.prioritiesMonotonic,
+    paymentCovered: checks.paymentCovered,
+    hotCovered: checks.hotCovered,
+    actionTypesValid: checks.actionTypesValid,
+    explicitOutcomeNarrated: checks.explicitOutcomeNarrated,
+    guaranteed: allChecksPass(checks),
     details: {
       selectedCount: batch.actions.length,
       candidateCount: state.candidates.length,
       maxActions,
-      selectedTargets,
+      selectedTargets: checks.selectedTargets,
     },
   };
 }
 
-export function buildCiaExhaustionReport(
+function classifyDecisionGate(
+  selected: boolean,
+  governor: CiaGovernorVerdict,
+): { disposition: CiaExhaustionDisposition; gate: CiaExhaustionGate } {
+  if (selected) return { disposition: 'DISPATCHED_FOR_EXECUTION', gate: 'NONE' };
+  if (governor === 'WAIT') return { disposition: 'DEFERRED_BY_RULE', gate: 'TIMING' };
+  if (governor === 'ESCALATE') {
+    return { disposition: 'DEFERRED_BY_CYCLE_BUDGET', gate: 'HUMAN_REVIEW' };
+  }
+  if (governor === 'ASK') {
+    return { disposition: 'DEFERRED_BY_CYCLE_BUDGET', gate: 'CLARIFICATION' };
+  }
+  return { disposition: 'DEFERRED_BY_CYCLE_BUDGET', gate: 'EXECUTABLE' };
+}
+
+function buildClassifications(
   state: CiaWorkspaceState,
-  batch: CiaDecisionBatch,
-  maxActions: number,
+  selectedConversationIds: Set<string>,
   strategy?: CiaStrategyHints | null,
-): CiaExhaustionReport {
-  const selectedConversationIds = new Set(
-    batch.actions.map((action) => String(action.conversationId)),
-  );
-  const candidateConversationIds = new Set(
-    state.candidates.map((candidate) => String(candidate.conversationId)),
-  );
-  const classifications = state.candidates.map((candidate) => {
+): CiaCandidateExhaustionRecord[] {
+  return state.candidates.map((candidate) => {
     const decision = evaluateCiaCandidate(candidate, strategy);
     const selected = selectedConversationIds.has(String(candidate.conversationId));
-
-    let disposition: CiaExhaustionDisposition;
-    let gate: CiaExhaustionGate;
-
-    if (selected) {
-      disposition = 'DISPATCHED_FOR_EXECUTION';
-      gate = 'NONE';
-    } else if (decision.governor === 'WAIT') {
-      disposition = 'DEFERRED_BY_RULE';
-      gate = 'TIMING';
-    } else if (decision.governor === 'ESCALATE') {
-      disposition = 'DEFERRED_BY_CYCLE_BUDGET';
-      gate = 'HUMAN_REVIEW';
-    } else if (decision.governor === 'ASK') {
-      disposition = 'DEFERRED_BY_CYCLE_BUDGET';
-      gate = 'CLARIFICATION';
-    } else {
-      disposition = 'DEFERRED_BY_CYCLE_BUDGET';
-      gate = 'EXECUTABLE';
-    }
+    const { disposition, gate } = classifyDecisionGate(selected, decision.governor);
 
     return {
       conversationId: candidate.conversationId,
@@ -218,31 +240,63 @@ export function buildCiaExhaustionReport(
       reason: decision.reason,
     } satisfies CiaCandidateExhaustionRecord;
   });
+}
+
+interface ExhaustionAggregate {
+  dispatchableCount: number;
+  dispatchedCount: number;
+  deferredByBudgetCount: number;
+  deferredByRuleCount: number;
+  waitingTimingCount: number;
+  waitingHumanCount: number;
+  waitingClarificationCount: number;
+}
+
+function aggregateClassifications(
+  classifications: CiaCandidateExhaustionRecord[],
+): ExhaustionAggregate {
+  return {
+    dispatchableCount: classifications.filter((item) => item.governor !== 'WAIT').length,
+    dispatchedCount: classifications.filter(
+      (item) => item.disposition === 'DISPATCHED_FOR_EXECUTION',
+    ).length,
+    deferredByBudgetCount: classifications.filter(
+      (item) => item.disposition === 'DEFERRED_BY_CYCLE_BUDGET',
+    ).length,
+    deferredByRuleCount: classifications.filter((item) => item.disposition === 'DEFERRED_BY_RULE')
+      .length,
+    waitingTimingCount: classifications.filter((item) => item.gate === 'TIMING').length,
+    waitingHumanCount: classifications.filter((item) => item.gate === 'HUMAN_REVIEW').length,
+    waitingClarificationCount: classifications.filter((item) => item.gate === 'CLARIFICATION')
+      .length,
+  };
+}
+
+export function buildCiaExhaustionReport(
+  state: CiaWorkspaceState,
+  batch: CiaDecisionBatch,
+  maxActions: number,
+  strategy?: CiaStrategyHints | null,
+): CiaExhaustionReport {
+  const selectedConversationIds = new Set(
+    batch.actions.map((action) => String(action.conversationId)),
+  );
+  const candidateConversationIds = new Set(
+    state.candidates.map((candidate) => String(candidate.conversationId)),
+  );
+  const classifications = buildClassifications(state, selectedConversationIds, strategy);
 
   const orphanSelectedConversationIds = batch.actions
     .map((action) => String(action.conversationId))
     .filter((conversationId) => !candidateConversationIds.has(conversationId));
 
-  const dispatchableCount = classifications.filter((item) => item.governor !== 'WAIT').length;
-  const dispatchedCount = classifications.filter(
-    (item) => item.disposition === 'DISPATCHED_FOR_EXECUTION',
-  ).length;
-  const deferredByBudgetCount = classifications.filter(
-    (item) => item.disposition === 'DEFERRED_BY_CYCLE_BUDGET',
-  ).length;
-  const deferredByRuleCount = classifications.filter(
-    (item) => item.disposition === 'DEFERRED_BY_RULE',
-  ).length;
-  const waitingTimingCount = classifications.filter((item) => item.gate === 'TIMING').length;
-  const waitingHumanCount = classifications.filter((item) => item.gate === 'HUMAN_REVIEW').length;
-  const waitingClarificationCount = classifications.filter(
-    (item) => item.gate === 'CLARIFICATION',
-  ).length;
+  const aggregate = aggregateClassifications(classifications);
   const coveredCount = classifications.length;
   const silentCount = Math.max(state.candidates.length - coveredCount, 0);
-  const noLegalActions = dispatchableCount === 0;
+  const noLegalActions = aggregate.dispatchableCount === 0;
   const selectedCount = batch.actions.length;
-  const dispatchCoverageValid = dispatchedCount === Math.min(maxActions, dispatchableCount);
+  const dispatchCoverageValid =
+    aggregate.dispatchedCount === Math.min(maxActions, aggregate.dispatchableCount);
   const exhaustive =
     silentCount === 0 &&
     orphanSelectedConversationIds.length === 0 &&
@@ -254,13 +308,13 @@ export function buildCiaExhaustionReport(
     exhaustive,
     noLegalActions,
     silentCount,
-    dispatchableCount,
-    dispatchedCount,
-    deferredByBudgetCount,
-    deferredByRuleCount,
-    waitingTimingCount,
-    waitingHumanCount,
-    waitingClarificationCount,
+    dispatchableCount: aggregate.dispatchableCount,
+    dispatchedCount: aggregate.dispatchedCount,
+    deferredByBudgetCount: aggregate.deferredByBudgetCount,
+    deferredByRuleCount: aggregate.deferredByRuleCount,
+    waitingTimingCount: aggregate.waitingTimingCount,
+    waitingHumanCount: aggregate.waitingHumanCount,
+    waitingClarificationCount: aggregate.waitingClarificationCount,
     orphanSelectedCount: orphanSelectedConversationIds.length,
     details: {
       candidateCount: state.candidates.length,
@@ -273,19 +327,23 @@ export function buildCiaExhaustionReport(
   };
 }
 
+const GUARANTEE_FAILURE_CODES: Array<{ flag: keyof CiaGuaranteeReport; code: string }> = [
+  { flag: 'maxActionsRespected', code: 'max_actions' },
+  { flag: 'uniqueTargets', code: 'duplicate_target' },
+  { flag: 'prioritiesMonotonic', code: 'priority_order' },
+  { flag: 'paymentCovered', code: 'payment_not_covered' },
+  { flag: 'hotCovered', code: 'hot_not_covered' },
+  { flag: 'actionTypesValid', code: 'invalid_action_type' },
+  { flag: 'explicitOutcomeNarrated', code: 'silent_summary' },
+];
+
+function collectGuaranteeFailures(report: CiaGuaranteeReport): string[] {
+  return GUARANTEE_FAILURE_CODES.filter((item) => !report[item.flag]).map((item) => item.code);
+}
+
 export function assertCiaGuarantees(report: CiaGuaranteeReport): CiaGuaranteeReport {
   if (report.guaranteed) return report;
-
-  const failed = [
-    report.maxActionsRespected ? null : 'max_actions',
-    report.uniqueTargets ? null : 'duplicate_target',
-    report.prioritiesMonotonic ? null : 'priority_order',
-    report.paymentCovered ? null : 'payment_not_covered',
-    report.hotCovered ? null : 'hot_not_covered',
-    report.actionTypesValid ? null : 'invalid_action_type',
-    report.explicitOutcomeNarrated ? null : 'silent_summary',
-  ].filter(Boolean);
-
+  const failed = collectGuaranteeFailures(report);
   throw new Error(`cia_contract_violation:${failed.join(',')}`);
 }
 

@@ -16,19 +16,18 @@ export class ClipboardManager {
   async copy(): Promise<void> {
     const objs = this.canvas.getActiveObjects();
     if (objs.length === 0) return;
-    this._clipboard = [];
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-    for (const obj of objs) {
-      const clone = await obj.clone();
-      this._clipboard.push(clone);
-    }
+    // Fabric clone() is independent per object — parallelize and preserve
+    // selection order by mapping rather than pushing inside a for-await loop.
+    this._clipboard = await Promise.all(objs.map((obj) => obj.clone()));
   }
 
   async cut(): Promise<void> {
     await this.copy();
     const objs = this.canvas.getActiveObjects();
     this.canvas.discardActiveObject();
-    objs.forEach((obj) => this.canvas.remove(obj));
+    objs.forEach((obj) => {
+      this.canvas.remove(obj);
+    });
     this.canvas.requestRenderAll();
     this.history.saveState();
   }
@@ -37,7 +36,7 @@ export class ClipboardManager {
     if (this._clipboard.length === 0) return;
     this.canvas.discardActiveObject();
     const cloned: FabricObject[] = [];
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+    // biome-ignore lint/performance/noAwaitInLoops: paste z-index ordering — canvas.add(clone) stacks each object on top of the previous one, so the clipboard's original back-to-front order must be preserved; Promise.all would interleave add() calls and scramble the stacking order
     for (const obj of this._clipboard) {
       const clone = await obj.clone();
       clone.left = (clone.left ?? 0) + PASTE_OFFSET;

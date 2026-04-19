@@ -7,6 +7,32 @@
 
 ---
 
+## REGRA DE AUTONOMIA (2026-04-18)
+
+Quando Daniel pedir para trabalhar autonomamente (ex.: "trabalhe autonomamente", "continue autonomo", "até completar 100%"):
+
+1. **NÃO pare para relatar** progresso intermediário.
+2. **NÃO pare para pedir confirmação** ou tirar dúvidas — o escopo já está completo.
+3. **Trabalhe continuamente** até esgotar o que é tecnicamente seguro fazer ou até completar 100% do escopo.
+4. **Commits e pushes frequentes**, sem interrupções narrativas. Use apenas mensagens curtas entre commits quando houver um sinal importante (falha real de build, bloqueio intransponível).
+5. **Relatório final só no fim do escopo** ou quando um bloqueio objetivo impedir continuação.
+
+Parar sem necessidade quando Daniel pediu autonomia é violação desta regra.
+
+## REGRA DE CODACY (2026-04-19)
+
+1. O Codacy deste repo opera em **MAX-RIGOR LOCK**. O objetivo padrao e manter **todas** as ferramentas/patterns aplicaveis ativas, com gates/coverage/duplication/complexity no nivel mais estrito viavel.
+2. **Permitido**:
+   - `npm run codacy:sync` para snapshot read-only.
+   - `npm run codacy:check-max-rigor` para verificar drift.
+   - `npm run codacy:enforce-max-rigor` para reaplicar o estado canonico maximo quando houver drift autorizado.
+3. **Proibido** reduzir escopo, desativar regra, desativar pattern, criar draft para relaxamento, adicionar exclude path, trocar threshold por valor mais fraco, ou alterar qualquer configuracao live do Codacy fora do script canonico.
+4. **Proibido** usar comentarios para satisfazer Codacy. `biome-ignore`, `nosemgrep`, `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`, `codacy:disable`, `codacy:ignore`, `NOSONAR` e `noqa` sao bypasses proibidos.
+5. **Proibido** usar skip tags de commit para tentar desligar analise (`[codacy skip]`, `[skip codacy]`, `[ci skip]`, `[skip ci]`).
+6. Para reduzir issues, **corrija codigo real**. Se uma regra parecer ruido, documente a evidencia, mas nao enfraqueca o Codacy sem aprovacao humana explicita.
+
+---
+
 ## IDENTIDADE
 
 KLOEL é uma plataforma AI-native de marketing digital e vendas. Monorepo com:

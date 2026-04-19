@@ -56,6 +56,7 @@ export class TranscriptionService {
     // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
+        // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff; attempts must be sequential
         const fileBuffer = await readFile(filePath);
         const fileName = basename(filePath);
         const form = new FormData();

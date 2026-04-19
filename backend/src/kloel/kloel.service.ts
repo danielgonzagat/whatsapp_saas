@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { KloelLead, Prisma } from '@prisma/client';
 import { Response } from 'express';
 import type { ImageGenerateParamsNonStreaming, ImagesResponse } from 'openai/resources/images';
@@ -33,6 +33,7 @@ import {
   KLOEL_SALES_PROMPT,
   buildKloelResponseEnginePrompt,
 } from './kloel.prompts';
+import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 import { SmartPaymentService } from './smart-payment.service';
@@ -56,7 +57,7 @@ const RELAT_O__RIO_DOCUMENTO_RE =
 const CRIE_CADASTRAR_CADASTRE_RE =
   /(crie|cadastrar|cadastre|salve|liste|mostre|remova|delete|apague|ative|desative|ligue|desligue|conecte|conectar|envie|mande|sincronize|pesquise|busque|procure|pesquisar|buscar|abrir|feche|fechar|atualize|consultar|consulte|verifique|verificar|quero|preciso|gere|fa[cç]a|fazer|traga|me d[eê]|o que est[aá]|quais s[aã]o|qual [ée]|tem|existem)/i;
 const PRODUTO_CAT_A__LOGO_AUT_RE =
-  /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|not[ií]cia|noticias|hoje|status)/i;
+  /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|landing|homepage|copy|email|campanha|campanhas|checkout|carrinho|afiliad|seo|not[ií]cia|noticias|hoje|status)/i;
 const MODEL_RE = /model/i;
 const INVALID_RE = /invalid/i;
 
@@ -1055,6 +1056,7 @@ export class KloelService {
     private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,
     private readonly storageService: StorageService,
+    @Optional() private readonly marketingSkillService?: MarketingSkillService,
   ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -1085,6 +1087,125 @@ export class KloelService {
 
   private getAssistantWorkspaceLabel(): string {
     return 'Workspace';
+  }
+
+  private async buildMarketingPromptAddendum(
+    workspaceId: string | undefined,
+    mode: ThinkRequest['mode'],
+    message: string,
+  ): Promise<string | null> {
+    if (mode !== 'chat' || !workspaceId || !this.marketingSkillService) {
+      return null;
+    }
+
+    try {
+      return (
+        (await this.marketingSkillService.buildPacket(workspaceId, message))?.promptAddendum || null
+      );
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'unknown error';
+      this.logger.warn(`Falha ao montar contexto de marketing: ${errorMessage}`);
+      return null;
+    }
+  }
+
+  private buildChatModelMessages(params: {
+    systemPrompt: string;
+    dynamicContext: string;
+    marketingPromptAddendum?: string | null;
+    summaryMessage?: ChatCompletionMessageParam | null;
+    recentMessages: ChatMessage[];
+    userMessage: string;
+    assistantMessage?: {
+      content?: string | null;
+      tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
+    };
+    toolMessages?: Array<{
+      role?: 'tool';
+      tool_call_id: string;
+      name: string;
+      content: string;
+    }>;
+  }): ChatCompletionMessageParam[] {
+    return [
+      { role: 'system', content: params.systemPrompt },
+      { role: 'system', content: params.dynamicContext },
+      ...(params.marketingPromptAddendum
+        ? [{ role: 'system' as const, content: params.marketingPromptAddendum }]
+        : []),
+      ...(params.summaryMessage ? [params.summaryMessage] : []),
+      ...params.recentMessages.map((entry) => ({
+        role: entry.role as 'user' | 'assistant',
+        content: entry.content,
+      })),
+      { role: 'user', content: params.userMessage },
+      ...(params.assistantMessage ? [toAssistantCompletionMessage(params.assistantMessage)] : []),
+      ...(params.toolMessages?.length ? toToolCompletionMessages(params.toolMessages) : []),
+    ];
+  }
+
+  private inferImplicitComposerCapability(
+    message: string,
+    mode: ThinkRequest['mode'],
+  ): ComposerCapability | null {
+    if (mode !== 'chat') {
+      return null;
+    }
+
+    const normalized = String(message || '')
+      .trim()
+      .toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+
+    const wantsSite = [
+      'landing',
+      'landing page',
+      'pagina de vendas',
+      'página de vendas',
+      'pagina de captura',
+      'página de captura',
+      'homepage',
+      'home page',
+      'site',
+    ].some((term) => normalized.includes(term));
+    const wantsCreation = [
+      'crie',
+      'criar',
+      'gere',
+      'gerar',
+      'monte',
+      'montar',
+      'faça',
+      'faca',
+      'fazer',
+      'construa',
+      'construir',
+      'desenvolva',
+      'desenvolver',
+      'quero criar',
+      'preciso criar',
+    ].some((term) => normalized.includes(term));
+
+    if (wantsSite && wantsCreation) {
+      return 'create_site';
+    }
+
+    return null;
+  }
+
+  private resolveComposerCapability(
+    message: string,
+    mode: ThinkRequest['mode'],
+    explicitCapability?: ComposerCapability | null,
+  ): ComposerCapability | null {
+    return explicitCapability || this.inferImplicitComposerCapability(message, mode);
   }
 
   private hasLegacyProductMarker(value: string | null | undefined): boolean {
@@ -1281,6 +1402,11 @@ export class KloelService {
       companyContext,
     });
     const summaryMessage = this.buildThreadSummarySystemMessage(historyState.summary);
+    const marketingPromptAddendum = await this.buildMarketingPromptAddendum(
+      workspaceId,
+      mode,
+      message,
+    );
     const usesLongFormBudget = this.shouldUseLongFormBudget(message);
     const responseTemperature = 0.7;
     const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
@@ -1301,13 +1427,14 @@ export class KloelService {
         });
     }
 
-    const messages: ChatCompletionMessageParam[] = [
-      { role: 'system', content: systemPrompt },
-      { role: 'system', content: dynamicContext },
-      ...(summaryMessage ? [summaryMessage] : []),
-      ...historyState.recentMessages,
-      { role: 'user', content: message },
-    ];
+    const messages = this.buildChatModelMessages({
+      systemPrompt,
+      dynamicContext,
+      marketingPromptAddendum,
+      summaryMessage,
+      recentMessages: historyState.recentMessages,
+      userMessage: message,
+    });
     onTraceEvent?.(createKloelStatusEvent('thinking'));
 
     if (workspaceId) {
@@ -1374,15 +1501,16 @@ export class KloelService {
         this.openai,
         {
           model: resolveBackendOpenAIModel('writer'),
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'system', content: dynamicContext },
-            ...(summaryMessage ? [summaryMessage] : []),
-            ...historyState.recentMessages,
-            { role: 'user', content: message },
-            toAssistantCompletionMessage(initialAssistantMessage),
-            ...toToolCompletionMessages(toolMessages),
-          ],
+          messages: this.buildChatModelMessages({
+            systemPrompt,
+            dynamicContext,
+            marketingPromptAddendum,
+            summaryMessage,
+            recentMessages: historyState.recentMessages,
+            userMessage: message,
+            assistantMessage: initialAssistantMessage,
+            toolMessages,
+          }),
           temperature: finalResponseTemperature,
           top_p: 0.95,
           frequency_penalty: 0.3,
@@ -2138,6 +2266,7 @@ export class KloelService {
       .toLowerCase();
 
     if (!normalized) return false;
+    if (/ideias?/.test(normalized)) return false;
 
     const explicitToolIntent =
       CRIE_CADASTRAR_CADASTRE_RE.test(normalized) && PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized);
@@ -2795,11 +2924,23 @@ export class KloelService {
 
       // Buscar contexto da empresa se tiver workspaceId
       const composerMetadata = this.extractComposerMetadata(metadata);
+      const composerCapability = this.resolveComposerCapability(
+        message,
+        mode,
+        composerMetadata.capability,
+      );
       const enrichedCompanyContext = await this.buildComposerContext({
         workspaceId,
         metadata,
         companyContext,
       });
+      const marketingPromptAddendum = await this.buildMarketingPromptAddendum(
+        workspaceId,
+        mode,
+        message,
+      );
+      const effectiveCompanyContext =
+        [enrichedCompanyContext, marketingPromptAddendum].filter(Boolean).join('\n\n') || undefined;
       let context = enrichedCompanyContext || '';
       let companyName = 'sua empresa';
       let userName = 'Usuário';
@@ -2845,9 +2986,9 @@ export class KloelService {
         companyContext: enrichedCompanyContext,
       });
       const summaryMessage = this.buildThreadSummarySystemMessage(historyState.summary);
-      const usesLongFormBudget = this.shouldUseLongFormBudget(message);
       const shouldPlanWithTools =
         mode === 'chat' && !!workspaceId && this.shouldAttemptToolPlanningPass(message);
+      const usesLongFormBudget = this.shouldUseLongFormBudget(message);
       const responseTemperature = 0.7;
       const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
       const clientRequestId = this.resolveClientRequestId(metadata);
@@ -2887,15 +3028,15 @@ export class KloelService {
           )
         : null;
 
-      if (mode === 'chat' && composerMetadata.capability) {
+      if (mode === 'chat' && composerCapability) {
         safeWrite(createKloelStatusEvent('thinking'));
 
         const capabilityResult = await this.executeComposerCapability({
-          capability: composerMetadata.capability,
+          capability: composerCapability,
           message,
           workspaceId,
           metadata,
-          composerContext: enrichedCompanyContext,
+          composerContext: effectiveCompanyContext,
           signal,
         });
 
@@ -2913,7 +3054,7 @@ export class KloelService {
               transport: 'sse',
               requestState: 'completed',
               replyToMessageId: persistedUserMessage?.id,
-              capability: composerMetadata.capability,
+              capability: composerCapability,
               ...(capabilityResult.metadata || {}),
             }),
           );
@@ -2942,16 +3083,14 @@ export class KloelService {
       }
 
       // Montar mensagens para a API
-      const messages: ChatCompletionMessageParam[] = [
-        { role: 'system', content: systemPrompt },
-        { role: 'system', content: dynamicContext },
-        ...(summaryMessage ? [summaryMessage] : []),
-        ...historyState.recentMessages.map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })),
-        { role: 'user', content: message },
-      ];
+      const messages = this.buildChatModelMessages({
+        systemPrompt,
+        dynamicContext,
+        marketingPromptAddendum,
+        summaryMessage,
+        recentMessages: historyState.recentMessages,
+        userMessage: message,
+      });
 
       const streamWriterResponse = (
         writerMessages: ChatCompletionMessageParam[],
@@ -3068,18 +3207,16 @@ export class KloelService {
 
           if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
           const streamedFinal = await streamWriterResponse(
-            [
-              { role: 'system', content: systemPrompt },
-              { role: 'system', content: dynamicContext },
-              ...(summaryMessage ? [summaryMessage] : []),
-              ...historyState.recentMessages.map((m) => ({
-                role: m.role as 'user' | 'assistant',
-                content: m.content,
-              })),
-              { role: 'user', content: message },
-              toAssistantCompletionMessage(assistantMessage),
-              ...toToolCompletionMessages(toolMessages),
-            ] as OpenAI.ChatCompletionMessageParam[],
+            this.buildChatModelMessages({
+              systemPrompt,
+              dynamicContext,
+              marketingPromptAddendum,
+              summaryMessage,
+              recentMessages: historyState.recentMessages,
+              userMessage: message,
+              assistantMessage,
+              toolMessages,
+            }),
             finalResponseTemperature,
             {},
           );
@@ -4602,23 +4739,35 @@ export class KloelService {
           ? await this.resolveThread(workspaceId, conversationId)
           : null;
       const composerMetadata = this.extractComposerMetadata(metadata);
+      const composerCapability = this.resolveComposerCapability(
+        message,
+        mode,
+        composerMetadata.capability,
+      );
       const enrichedCompanyContext = await this.buildComposerContext({
         workspaceId,
         metadata,
         companyContext,
       });
+      const marketingPromptAddendum = await this.buildMarketingPromptAddendum(
+        workspaceId,
+        mode,
+        message,
+      );
+      const effectiveCompanyContext =
+        [enrichedCompanyContext, marketingPromptAddendum].filter(Boolean).join('\n\n') || undefined;
 
       const historyState = thread?.id
         ? await this.getThreadConversationState(thread.id, workspaceId)
         : { recentMessages: [], totalMessages: 0 };
       const capabilityResult =
-        mode === 'chat' && composerMetadata.capability
+        mode === 'chat' && composerCapability
           ? await this.executeComposerCapability({
-              capability: composerMetadata.capability,
+              capability: composerCapability,
               message,
               workspaceId,
               metadata,
-              composerContext: enrichedCompanyContext,
+              composerContext: effectiveCompanyContext,
             })
           : null;
       const assistantMessage =
@@ -4629,7 +4778,7 @@ export class KloelService {
           userId,
           userName: requestedUserName,
           mode,
-          companyContext: enrichedCompanyContext,
+          companyContext: effectiveCompanyContext,
           conversationState: historyState,
         }));
 
@@ -4673,7 +4822,7 @@ export class KloelService {
               replyToMessageId: persistedUserMessage?.id,
               responseVersions,
               activeResponseVersionIndex: 0,
-              capability: composerMetadata.capability,
+              capability: composerCapability,
               ...(capabilityResult?.metadata || {}),
             }),
           );

@@ -24,12 +24,6 @@ const CHAT_THEME = {
   iconTraceColor: KLOEL_THEME.textPrimary,
 } as const;
 
-function readMetaRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
 interface MessageBubbleProps {
   message: Message;
   onQuickAction?: (actionId: string, label: string) => void;
@@ -106,7 +100,9 @@ export function MessageBubble({
     !isUser && !isToolEvent && (processingTrace.length > 0 || isAssistantProcessing);
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: message bubble groups block-level content plus hover affordances; role="group" is the correct ARIA mapping
     <div
+      role="group"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -263,9 +259,10 @@ export function MessageBubble({
 
               {!isUser && quickActions.length > 0 && onQuickAction ? (
                 <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {quickActions.map((action: any) => {
-                    const actionId = String(action?.id || '');
-                    const label = String(action?.label || actionId);
+                  {quickActions.map((action: unknown) => {
+                    const actionObj = (action ?? {}) as { id?: unknown; label?: unknown };
+                    const actionId = String(actionObj.id || '');
+                    const label = String(actionObj.label || actionId);
                     const isPending = pendingActionId === actionId;
 
                     return (

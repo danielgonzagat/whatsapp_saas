@@ -1,7 +1,7 @@
 import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
-import { AdminUserStatus } from '@prisma/client';
+import { type AdminRole, AdminUserStatus } from '@prisma/client';
 import type { Request } from 'express';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { adminErrors } from '../../common/admin-api-errors';
@@ -56,64 +56,18 @@ export class AdminAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(ADMIN_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) return true;
+    if (this.isPublicRoute(context)) return true;
 
     const req = context.switchToHttp().getRequest<Request & { admin?: AuthenticatedAdmin }>();
-    const token = extractBearerToken(req.headers.authorization);
-    if (!token) throw adminErrors.invalidToken();
+    const payload = await this.verifyBearer(req);
+    this.assertScopeAllowed(context, payload);
 
-    let payload: AdminJwtPayload;
-    try {
-      payload = await this.jwt.verifyAsync<AdminJwtPayload>(token, {
-        audience: 'adm.kloel.com',
-        secret: resolveAdminJwtSecret(),
-      });
-    } catch {
-      throw adminErrors.invalidToken();
-    }
-
-    const allowPending = this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING_MFA_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (!allowPending && payload.scope !== 'full') {
-      throw adminErrors.invalidToken();
-    }
-
-    const admin = await this.prisma.adminUser.findUnique({
-      where: { id: payload.sub },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        mfaEnabled: true,
-        mfaPendingSetup: true,
-        passwordChangeRequired: true,
-      },
-    });
-    if (!admin) throw adminErrors.invalidToken();
-    if (admin.status === AdminUserStatus.SUSPENDED) throw adminErrors.userSuspended();
-    if (admin.status === AdminUserStatus.DEACTIVATED) throw adminErrors.userDeactivated();
+    const admin = await this.loadAdmin(payload.sub);
+    this.assertAdminStatus(admin);
 
     if (payload.scope === 'full') {
-      if (admin.passwordChangeRequired) throw adminErrors.invalidToken();
-      if (!admin.mfaEnabled || admin.mfaPendingSetup) throw adminErrors.invalidToken();
-      if (!payload.sid) throw adminErrors.invalidToken();
-
-      const session = await this.prisma.adminSession.findUnique({
-        where: { id: payload.sid },
-        select: { id: true, adminUserId: true, revokedAt: true, expiresAt: true },
-      });
-      if (!session || session.adminUserId !== admin.id) throw adminErrors.invalidToken();
-      if (session.revokedAt) throw adminErrors.invalidToken();
-      if (session.expiresAt.getTime() < Date.now()) throw adminErrors.tokenExpired();
+      this.assertFullScopeReadiness(admin);
+      await this.assertSessionActive(payload.sid, admin.id);
     }
 
     req.admin = {
@@ -126,4 +80,89 @@ export class AdminAuthGuard implements CanActivate {
     };
     return true;
   }
+
+  private isPublicRoute(context: ExecutionContext): boolean {
+    return (
+      this.reflector.getAllAndOverride<boolean>(ADMIN_PUBLIC_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]) === true
+    );
+  }
+
+  private async verifyBearer(req: Request): Promise<AdminJwtPayload> {
+    const token = extractBearerToken(req.headers.authorization);
+    if (!token) throw adminErrors.invalidToken();
+    try {
+      return await this.jwt.verifyAsync<AdminJwtPayload>(token, {
+        audience: 'adm.kloel.com',
+        secret: resolveAdminJwtSecret(),
+      });
+    } catch {
+      throw adminErrors.invalidToken();
+    }
+  }
+
+  private assertScopeAllowed(context: ExecutionContext, payload: AdminJwtPayload): void {
+    const allowPending = this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING_MFA_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!allowPending && payload.scope !== 'full') {
+      throw adminErrors.invalidToken();
+    }
+  }
+
+  private async loadAdmin(sub: string): Promise<AdminRowForGuard> {
+    const admin = await this.prisma.adminUser.findUnique({
+      where: { id: sub },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        mfaEnabled: true,
+        mfaPendingSetup: true,
+        passwordChangeRequired: true,
+      },
+    });
+    if (!admin) throw adminErrors.invalidToken();
+    return admin;
+  }
+
+  private assertAdminStatus(admin: AdminRowForGuard): void {
+    if (admin.status === AdminUserStatus.SUSPENDED) throw adminErrors.userSuspended();
+    if (admin.status === AdminUserStatus.DEACTIVATED) throw adminErrors.userDeactivated();
+  }
+
+  private assertFullScopeReadiness(admin: AdminRowForGuard): void {
+    if (admin.passwordChangeRequired) throw adminErrors.invalidToken();
+    if (!admin.mfaEnabled || admin.mfaPendingSetup) throw adminErrors.invalidToken();
+  }
+
+  private async assertSessionActive(
+    sessionId: string | undefined,
+    adminUserId: string,
+  ): Promise<void> {
+    if (!sessionId) throw adminErrors.invalidToken();
+    const session = await this.prisma.adminSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true, adminUserId: true, revokedAt: true, expiresAt: true },
+    });
+    if (!session || session.adminUserId !== adminUserId) throw adminErrors.invalidToken();
+    if (session.revokedAt) throw adminErrors.invalidToken();
+    if (session.expiresAt.getTime() < Date.now()) throw adminErrors.tokenExpired();
+  }
 }
+
+type AdminRowForGuard = {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+  status: AdminUserStatus;
+  mfaEnabled: boolean;
+  mfaPendingSetup: boolean;
+  passwordChangeRequired: boolean;
+};

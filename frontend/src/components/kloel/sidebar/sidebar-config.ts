@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Globe,
+  type LucideIcon,
   Megaphone,
   Package,
   Palette,
@@ -14,6 +15,7 @@ import {
   Wallet,
   Wrench,
 } from 'lucide-react';
+import type { ComponentType, SVGProps } from 'react';
 import { HomeIcon } from './HomeIcon';
 import { SalesIcon } from './SalesIcon';
 
@@ -77,7 +79,9 @@ export const NAV: NavItem[] = [
 // ICON MAP
 // ============================================
 
-export const ICON_MAP: Record<string, any> = {
+export type IconComponent = LucideIcon | ComponentType<SVGProps<SVGSVGElement>>;
+
+export const ICON_MAP: Record<string, IconComponent> = {
   HomeIcon,
   SalesIcon,
   Package,

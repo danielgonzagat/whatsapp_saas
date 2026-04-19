@@ -44,6 +44,286 @@ type UseCheckoutExperienceOptions = PublicCheckoutThemeProps & {
   };
 };
 
+type ShippingMode = 'FREE' | 'FIXED' | 'VARIABLE' | string;
+
+function resolveShippingMode(
+  config: UseCheckoutExperienceOptions['config'],
+  plan: UseCheckoutExperienceOptions['plan'],
+): ShippingMode {
+  if (config?.shippingMode) return config.shippingMode;
+  if (plan?.freeShipping) return 'FREE';
+  return Number(plan?.shippingPrice || 0) > 0 ? 'FIXED' : 'FREE';
+}
+
+function computeShippingInCents(
+  shippingMode: ShippingMode,
+  fixedShippingInCents: number,
+  variableShippingFloorInCents: number,
+  dynamicShippingInCents: number | null,
+): number {
+  if (shippingMode === 'VARIABLE') {
+    return dynamicShippingInCents ?? variableShippingFloorInCents;
+  }
+  if (shippingMode === 'FIXED') return fixedShippingInCents;
+  return 0;
+}
+
+function resolveProductImage(
+  config: UseCheckoutExperienceOptions['config'],
+  product: UseCheckoutExperienceOptions['product'],
+): string {
+  if (config?.productImage) return config.productImage;
+  if (product?.imageUrl) return product.imageUrl;
+  if (Array.isArray(product?.images)) {
+    return product.images.find((entry) => typeof entry === 'string' && entry.trim()) || '';
+  }
+  return '';
+}
+
+function resolveCheckoutUnavailableReason(
+  paymentProvider: UseCheckoutExperienceOptions['paymentProvider'],
+): string {
+  if (paymentProvider?.checkoutEnabled !== false) return '';
+  return paymentProvider.unavailableReason || 'Conecte sua conta Stripe para começar a vender.';
+}
+
+function applyFieldFormatter(field: string, raw: string, fmt: Formatters): string {
+  if (field === 'cpf' || field === 'cardCpf') return fmt.cpf(raw);
+  if (field === 'phone') return fmt.phone(raw);
+  if (field === 'cep') return fmt.cep(raw);
+  if (field === 'cardNumber') return fmt.card(raw);
+  if (field === 'cardExp') return fmt.exp(raw);
+  if (field === 'cardCvv') return raw.replace(D_RE, '').slice(0, 4);
+  return raw;
+}
+
+function resolvePaymentMethodCode(
+  method: 'card' | 'pix' | 'boleto',
+): 'CREDIT_CARD' | 'PIX' | 'BOLETO' {
+  if (method === 'card') return 'CREDIT_CARD';
+  return method === 'pix' ? 'PIX' : 'BOLETO';
+}
+
+function resolveShippingMethodLabel(shippingMode: ShippingMode, shippingInCents: number): string {
+  if (shippingMode === 'VARIABLE') return 'kloel-variable';
+  return shippingInCents > 0 ? 'standard' : 'free';
+}
+
+type PreflightContext = {
+  validateStep1: () => boolean;
+  validateStep2: () => boolean;
+  workspaceId: string | undefined;
+  planId: string | undefined;
+  checkoutUnavailableReason: string;
+  payMethod: 'card' | 'pix' | 'boleto';
+  supportsCard: boolean;
+  supportsPix: boolean;
+  supportsBoleto: boolean;
+  cpf: string;
+};
+
+type PreflightOutcome = { error: string; step?: 1 | 2 } | null;
+
+function useAutoSelectAvailablePayMethod(
+  payMethod: 'card' | 'pix' | 'boleto',
+  supports: { card: boolean; pix: boolean; boleto: boolean },
+  setPayMethod: (next: 'card' | 'pix' | 'boleto') => void,
+): void {
+  useEffect(() => {
+    const availableMethods = [
+      supports.card ? 'card' : null,
+      supports.pix ? 'pix' : null,
+      supports.boleto ? 'boleto' : null,
+    ].filter(Boolean) as Array<'card' | 'pix' | 'boleto'>;
+
+    if (availableMethods.length > 0 && !availableMethods.includes(payMethod)) {
+      setPayMethod(availableMethods[0]);
+    }
+  }, [payMethod, supports.boleto, supports.card, supports.pix, setPayMethod]);
+}
+
+function useRedirectTimerCleanup(redirectTimer: { current: number | null }): void {
+  useEffect(
+    () => () => {
+      if (redirectTimer.current) clearTimeout(redirectTimer.current);
+    },
+    [redirectTimer],
+  );
+}
+
+function useResetCouponOnQtyChange(
+  qty: number,
+  couponApplied: boolean,
+  setCouponApplied: (v: boolean) => void,
+  setDiscount: (v: number) => void,
+): void {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: qty change is the intentional trigger to drop any applied coupon; couponApplied is read as latest value inside the effect
+  useEffect(() => {
+    if (!couponApplied) return;
+    setCouponApplied(false);
+    setDiscount(0);
+  }, [qty]);
+}
+
+type VariableShippingParams = {
+  shippingMode: ShippingMode;
+  cep: string;
+  slug: string | undefined;
+  variableShippingFloorInCents: number;
+  setDynamicShippingInCents: (v: number | null) => void;
+  setDynamicShippingLoading: (v: boolean) => void;
+};
+
+function useVariableShippingCalculation(params: VariableShippingParams): void {
+  const {
+    shippingMode,
+    cep,
+    slug,
+    variableShippingFloorInCents,
+    setDynamicShippingInCents,
+    setDynamicShippingLoading,
+  } = params;
+
+  useEffect(() => {
+    if (shippingMode !== 'VARIABLE') {
+      setDynamicShippingInCents(null);
+      setDynamicShippingLoading(false);
+      return;
+    }
+
+    const cepDigits = cep.replace(D_RE, '').slice(0, 8);
+    if (cepDigits.length < 8 || !slug) {
+      setDynamicShippingInCents(variableShippingFloorInCents);
+      setDynamicShippingLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setDynamicShippingLoading(true);
+
+    checkoutPublicApi
+      .calculateShipping({ slug, cep: cepDigits })
+      .then((response) => {
+        if (cancelled) return;
+        const options = response?.data?.options || [];
+        const nextPrice = Math.max(
+          0,
+          Math.round(Number(options[0]?.price || variableShippingFloorInCents)),
+        );
+        setDynamicShippingInCents(nextPrice);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDynamicShippingInCents(variableShippingFloorInCents);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setDynamicShippingLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    cep,
+    shippingMode,
+    slug,
+    variableShippingFloorInCents,
+    setDynamicShippingInCents,
+    setDynamicShippingLoading,
+  ]);
+}
+
+type StringSetter = (value: string) => void;
+type BooleanSetter = (value: boolean) => void;
+
+type CouponPopupTimerParams = {
+  eligible: boolean;
+  couponApplied: boolean;
+  couponPopupHandled: boolean;
+  popupCouponCode: string;
+  delay: number | undefined;
+  setCouponCode: StringSetter;
+  setCouponError: StringSetter;
+  setShowCouponPopup: BooleanSetter;
+};
+
+function resolveCouponPopupDelay(delay: number | undefined): number {
+  return Math.max(600, Number(delay || 1800));
+}
+
+function useCouponPopupTimer(params: CouponPopupTimerParams): void {
+  const eligible = params.eligible;
+  const couponApplied = params.couponApplied;
+  const couponPopupHandled = params.couponPopupHandled;
+  const popupCouponCode = params.popupCouponCode;
+  const delay = params.delay;
+  const setCouponCode = params.setCouponCode;
+  const setCouponError = params.setCouponError;
+  const setShowCouponPopup = params.setShowCouponPopup;
+
+  const scheduleCouponPopup = () => {
+    if (!eligible || couponApplied || couponPopupHandled) return undefined;
+    const timer = window.setTimeout(() => {
+      setCouponCode(popupCouponCode);
+      setCouponError('');
+      setShowCouponPopup(true);
+    }, resolveCouponPopupDelay(delay));
+    return () => window.clearTimeout(timer);
+  };
+
+  useEffect(scheduleCouponPopup, [
+    delay,
+    couponApplied,
+    eligible,
+    couponPopupHandled,
+    popupCouponCode,
+    setCouponCode,
+    setCouponError,
+    setShowCouponPopup,
+  ]);
+}
+
+const PAYMENT_UNAVAILABLE_MESSAGES = {
+  card: 'Cartão indisponível neste checkout.',
+  pix: 'Pix indisponível neste checkout.',
+  boleto: 'Boleto indisponível neste checkout.',
+} as const;
+
+const PAYMENT_SUPPORT_KEYS = {
+  card: 'supportsCard',
+  pix: 'supportsPix',
+  boleto: 'supportsBoleto',
+} as const;
+
+const PREFLIGHT_RULES: Array<(ctx: PreflightContext) => PreflightOutcome> = [
+  (ctx) =>
+    ctx.validateStep1() ? null : { error: 'Revise os dados pessoais antes de finalizar.', step: 1 },
+  (ctx) =>
+    ctx.validateStep2() ? null : { error: 'Revise o endereço antes de finalizar.', step: 2 },
+  (ctx) =>
+    ctx.workspaceId && ctx.planId
+      ? null
+      : { error: 'Checkout sem vínculo com workspace ou plano.' },
+  (ctx) => (ctx.checkoutUnavailableReason ? { error: ctx.checkoutUnavailableReason } : null),
+  (ctx) =>
+    ctx[PAYMENT_SUPPORT_KEYS[ctx.payMethod]]
+      ? null
+      : { error: PAYMENT_UNAVAILABLE_MESSAGES[ctx.payMethod] },
+  (ctx) =>
+    ctx.payMethod === 'boleto' && ctx.cpf.replace(D_RE, '').length < 11
+      ? { error: 'CPF válido é obrigatório para gerar boleto.' }
+      : null,
+];
+
+function preflightFinalizeOrder(ctx: PreflightContext): PreflightOutcome {
+  for (const rule of PREFLIGHT_RULES) {
+    const outcome = rule(ctx);
+    if (outcome) return outcome;
+  }
+  return null;
+}
+
 export function useCheckoutExperience({
   product,
   config,
@@ -113,34 +393,24 @@ export function useCheckoutExperience({
     0,
     Math.round(Number(plan?.priceInCents || defaults.product.priceInCents)),
   );
-  const shippingMode =
-    config?.shippingMode ||
-    (plan?.freeShipping ? 'FREE' : Number(plan?.shippingPrice || 0) > 0 ? 'FIXED' : 'FREE');
+  const shippingMode = resolveShippingMode(config, plan);
   const fixedShippingInCents = Math.max(0, Math.round(Number(plan?.shippingPrice || 0)));
   const variableShippingFloorInCents = Math.max(
     0,
     Math.round(Number(config?.shippingVariableMinInCents || 0)),
   );
-  const shippingInCents =
-    shippingMode === 'VARIABLE'
-      ? (dynamicShippingInCents ?? variableShippingFloorInCents)
-      : shippingMode === 'FIXED'
-        ? fixedShippingInCents
-        : 0;
+  const shippingInCents = computeShippingInCents(
+    shippingMode,
+    fixedShippingInCents,
+    variableShippingFloorInCents,
+    dynamicShippingInCents,
+  );
   const supportsCard =
     config?.enableCreditCard !== false && paymentProvider?.supportsCreditCard !== false;
   const supportsPix = config?.enablePix !== false && paymentProvider?.supportsPix !== false;
   const supportsBoleto = config?.enableBoleto === true && paymentProvider?.supportsBoleto !== false;
-  const productImage =
-    config?.productImage ||
-    product?.imageUrl ||
-    (Array.isArray(product?.images)
-      ? product.images.find((entry) => typeof entry === 'string' && entry.trim())
-      : '');
-  const checkoutUnavailableReason =
-    paymentProvider?.checkoutEnabled === false
-      ? paymentProvider.unavailableReason || 'Conecte sua conta Stripe para começar a vender.'
-      : '';
+  const productImage = resolveProductImage(config, product);
+  const checkoutUnavailableReason = resolveCheckoutUnavailableReason(paymentProvider);
   const testimonials = useMemo(
     () =>
       normalizeTestimonials(
@@ -208,103 +478,35 @@ export function useCheckoutExperience({
   const headerPrimary = config?.headerMessage || 'Envio Imediato após o Pagamento';
   const headerSecondary = config?.headerSubMessage || 'OFERTA ESPECIAL DO MÊS!!!';
 
-  useEffect(() => {
-    const availableMethods = [
-      supportsCard ? 'card' : null,
-      supportsPix ? 'pix' : null,
-      supportsBoleto ? 'boleto' : null,
-    ].filter(Boolean) as Array<'card' | 'pix' | 'boleto'>;
-
-    if (availableMethods.length > 0 && !availableMethods.includes(payMethod)) {
-      setPayMethod(availableMethods[0]);
-    }
-  }, [payMethod, supportsBoleto, supportsCard, supportsPix]);
-
-  useEffect(
-    () => () => {
-      if (redirectTimer.current) clearTimeout(redirectTimer.current);
-    },
-    [],
+  useAutoSelectAvailablePayMethod(
+    payMethod,
+    { card: supportsCard, pix: supportsPix, boleto: supportsBoleto },
+    setPayMethod,
   );
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: qty change is the intentional trigger to drop any applied coupon; couponApplied is read as latest value inside the effect
-  useEffect(() => {
-    if (!couponApplied) return;
-    setCouponApplied(false);
-    setDiscount(0);
-  }, [qty]);
-
-  useEffect(() => {
-    if (shippingMode !== 'VARIABLE') {
-      setDynamicShippingInCents(null);
-      setDynamicShippingLoading(false);
-      return;
-    }
-
-    const cepDigits = form.cep.replace(D_RE, '').slice(0, 8);
-    if (cepDigits.length < 8 || !slug) {
-      setDynamicShippingInCents(variableShippingFloorInCents);
-      setDynamicShippingLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setDynamicShippingLoading(true);
-
-    checkoutPublicApi
-      .calculateShipping({ slug, cep: cepDigits })
-      .then((response) => {
-        if (cancelled) return;
-        const options = response?.data?.options || [];
-        const nextPrice = Math.max(
-          0,
-          Math.round(Number(options[0]?.price || variableShippingFloorInCents)),
-        );
-        setDynamicShippingInCents(nextPrice);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setDynamicShippingInCents(variableShippingFloorInCents);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setDynamicShippingLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [form.cep, shippingMode, slug, variableShippingFloorInCents]);
-
-  useEffect(() => {
-    if (!couponPopupEligible || couponApplied || couponPopupHandled) return;
-    const timer = window.setTimeout(
-      () => {
-        setCouponCode(popupCouponCode);
-        setCouponError('');
-        setShowCouponPopup(true);
-      },
-      Math.max(600, Number(config?.couponPopupDelay || 1800)),
-    );
-
-    return () => window.clearTimeout(timer);
-  }, [
-    config?.couponPopupDelay,
+  useRedirectTimerCleanup(redirectTimer);
+  useResetCouponOnQtyChange(qty, couponApplied, setCouponApplied, setDiscount);
+  useVariableShippingCalculation({
+    shippingMode,
+    cep: form.cep,
+    slug,
+    variableShippingFloorInCents,
+    setDynamicShippingInCents,
+    setDynamicShippingLoading,
+  });
+  useCouponPopupTimer({
+    eligible: couponPopupEligible,
     couponApplied,
-    couponPopupEligible,
     couponPopupHandled,
     popupCouponCode,
-  ]);
+    delay: config?.couponPopupDelay,
+    setCouponCode,
+    setCouponError,
+    setShowCouponPopup,
+  });
 
   const updateField = useCallback(
     (field: keyof typeof form) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      let value = e.target.value;
-      if (field === 'cpf' || field === 'cardCpf') value = fmt.cpf(value);
-      if (field === 'phone') value = fmt.phone(value);
-      if (field === 'cep') value = fmt.cep(value);
-      if (field === 'cardNumber') value = fmt.card(value);
-      if (field === 'cardExp') value = fmt.exp(value);
-      if (field === 'cardCvv') value = value.replace(D_RE, '').slice(0, 4);
+      const value = applyFieldFormatter(field, e.target.value, fmt);
       setForm((prev) => ({ ...prev, [field]: value }));
     },
     [fmt],
@@ -367,43 +569,82 @@ export function useCheckoutExperience({
     [mobileCanOpenStep1, mobileCanOpenStep2, step, validateStep1, validateStep2],
   );
 
+  const resolveCouponCodeForSubmission = useCallback(
+    (explicitCode?: string) => {
+      return String(explicitCode || couponCode || '')
+        .trim()
+        .toUpperCase();
+    },
+    [couponCode],
+  );
+
+  const handleCouponFailure = useCallback((message: string) => {
+    setCouponApplied(false);
+    setDiscount(0);
+    setCouponError(message);
+  }, []);
+
+  const handleCouponSuccess = useCallback(
+    (nextCode: string, result: Awaited<ReturnType<typeof validateCoupon>>) => {
+      setDiscount(Math.max(0, Math.round(Number(result.discountAmount || 0))));
+      setCouponApplied(true);
+      setCouponCode((result.code || nextCode).toUpperCase());
+      setCouponPopupHandled(true);
+      setShowCouponPopup(false);
+    },
+    [],
+  );
+
+  const validateCouponPrerequisites = useCallback(
+    (nextCode: string): string | null => {
+      if (!nextCode) return 'Digite um cupom.';
+      if (!workspaceId || !plan?.id) return 'Checkout sem contexto para validar cupom.';
+      return null;
+    },
+    [plan?.id, workspaceId],
+  );
+
+  const runCouponValidation = useCallback(
+    async (nextCode: string): Promise<boolean> => {
+      try {
+        const result = await validateCoupon(
+          workspaceId as string,
+          nextCode,
+          plan?.id as string,
+          subtotal,
+        );
+        if (!result.valid) {
+          handleCouponFailure(result.message || 'Cupom inválido ou expirado.');
+          return false;
+        }
+        handleCouponSuccess(nextCode, result);
+        return true;
+      } catch (error) {
+        handleCouponFailure(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
+        return false;
+      }
+    },
+    [handleCouponFailure, handleCouponSuccess, plan?.id, subtotal, workspaceId],
+  );
+
   const applyCoupon = useCallback(
     async (explicitCode?: string) => {
       setCouponError('');
       if (config?.enableCoupon === false) return false;
-      const nextCode = String(explicitCode || couponCode || '')
-        .trim()
-        .toUpperCase();
-      if (!nextCode) {
-        setCouponError('Digite um cupom.');
+      const nextCode = resolveCouponCodeForSubmission(explicitCode);
+      const prerequisiteError = validateCouponPrerequisites(nextCode);
+      if (prerequisiteError) {
+        setCouponError(prerequisiteError);
         return false;
       }
-      if (!workspaceId || !plan?.id) {
-        setCouponError('Checkout sem contexto para validar cupom.');
-        return false;
-      }
-      try {
-        const result = await validateCoupon(workspaceId, nextCode, plan.id, subtotal);
-        if (!result.valid) {
-          setCouponApplied(false);
-          setDiscount(0);
-          setCouponError(result.message || 'Cupom inválido ou expirado.');
-          return false;
-        }
-        setDiscount(Math.max(0, Math.round(Number(result.discountAmount || 0))));
-        setCouponApplied(true);
-        setCouponCode((result.code || nextCode).toUpperCase());
-        setCouponPopupHandled(true);
-        setShowCouponPopup(false);
-        return true;
-      } catch (error) {
-        setCouponApplied(false);
-        setDiscount(0);
-        setCouponError(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
-        return false;
-      }
+      return runCouponValidation(nextCode);
     },
-    [config?.enableCoupon, couponCode, plan?.id, subtotal, workspaceId],
+    [
+      config?.enableCoupon,
+      resolveCouponCodeForSubmission,
+      runCouponValidation,
+      validateCouponPrerequisites,
+    ],
   );
 
   const resolveSuccessRedirect = useCallback(
@@ -427,57 +668,11 @@ export function useCheckoutExperience({
     [payMethod],
   );
 
-  const finalizeOrder = useCallback(async () => {
-    setSubmitError('');
-
-    if (!validateStep1()) {
-      setSubmitError('Revise os dados pessoais antes de finalizar.');
-      setStep(1);
-      return;
-    }
-
-    if (!validateStep2()) {
-      setSubmitError('Revise o endereço antes de finalizar.');
-      setStep(2);
-      return;
-    }
-
-    if (!workspaceId || !plan?.id) {
-      setSubmitError('Checkout sem vínculo com workspace ou plano.');
-      return;
-    }
-
-    if (checkoutUnavailableReason) {
-      setSubmitError(checkoutUnavailableReason);
-      return;
-    }
-
-    if (payMethod === 'card' && !supportsCard) {
-      setSubmitError('Cartão indisponível neste checkout.');
-      return;
-    }
-
-    if (payMethod === 'pix' && !supportsPix) {
-      setSubmitError('Pix indisponível neste checkout.');
-      return;
-    }
-
-    if (payMethod === 'boleto' && !supportsBoleto) {
-      setSubmitError('Boleto indisponível neste checkout.');
-      return;
-    }
-
-    if (payMethod === 'boleto' && form.cpf.replace(D_RE, '').length < 11) {
-      setSubmitError('CPF válido é obrigatório para gerar boleto.');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
+  const buildOrderPayload = useCallback(
+    (resolvedPlanId: string, resolvedWorkspaceId: string): CreateOrderData => {
       const payload: CreateOrderData = {
-        planId: plan.id,
-        workspaceId,
+        planId: resolvedPlanId,
+        workspaceId: resolvedWorkspaceId,
         checkoutCode,
         customerName: form.name.trim(),
         customerEmail: form.email.trim(),
@@ -493,12 +688,7 @@ export function useCheckoutExperience({
           state: form.state,
           destinatario: form.destinatario || form.name,
         },
-        shippingMethod:
-          shippingMode === 'VARIABLE'
-            ? 'kloel-variable'
-            : shippingInCents > 0
-              ? 'standard'
-              : 'free',
+        shippingMethod: resolveShippingMethodLabel(shippingMode, shippingInCents),
         shippingPrice: shippingInCents,
         orderQuantity: qty,
         subtotalInCents: subtotal,
@@ -506,8 +696,7 @@ export function useCheckoutExperience({
         totalInCents: total,
         couponCode: couponApplied ? couponCode : undefined,
         couponDiscount: couponApplied ? discount : undefined,
-        paymentMethod:
-          payMethod === 'card' ? 'CREDIT_CARD' : payMethod === 'pix' ? 'PIX' : 'BOLETO',
+        paymentMethod: resolvePaymentMethodCode(payMethod),
         installments: payMethod === 'card' ? installments : 1,
         affiliateId: affiliateContext?.affiliateWorkspaceId,
       };
@@ -515,7 +704,103 @@ export function useCheckoutExperience({
       if (payMethod === 'card') {
         payload.cardHolderName = form.cardName || form.name;
       }
+      return payload;
+    },
+    [
+      affiliateContext?.affiliateWorkspaceId,
+      checkoutCode,
+      couponApplied,
+      couponCode,
+      discount,
+      form.cardName,
+      form.cep,
+      form.city,
+      form.complement,
+      form.cpf,
+      form.destinatario,
+      form.email,
+      form.name,
+      form.neighborhood,
+      form.number,
+      form.phone,
+      form.state,
+      form.street,
+      installments,
+      payMethod,
+      qty,
+      shippingInCents,
+      shippingMode,
+      subtotal,
+      total,
+    ],
+  );
 
+  const dispatchOrderCompletion = useCallback(
+    (result: Record<string, unknown>, successPath: string) => {
+      // successPath is built locally by resolveSuccessRedirect() as `/order/${orderId}/...` —
+      // always a same-origin relative path with orderId from our own backend response.
+      if (payMethod === 'card') {
+        const resultData = result?.data as Record<string, unknown> | undefined;
+        setSuccessOrderNumber(String(result?.orderNumber || resultData?.orderNumber || ''));
+        setShowSuccess(true);
+        redirectTimer.current = window.setTimeout(() => {
+          // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
+          // Safe: successPath is a relative /order/:id/* path built by resolveSuccessRedirect.
+          window.location.href = successPath;
+        }, 1200);
+        return;
+      }
+      // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
+      // Safe: successPath is a relative /order/:id/* path built by resolveSuccessRedirect.
+      window.location.href = successPath;
+    },
+    [payMethod],
+  );
+
+  const runPreflightForFinalize = useCallback((): PreflightOutcome => {
+    return preflightFinalizeOrder({
+      validateStep1,
+      validateStep2,
+      workspaceId,
+      planId: plan?.id,
+      checkoutUnavailableReason,
+      payMethod,
+      supportsCard,
+      supportsPix,
+      supportsBoleto,
+      cpf: form.cpf,
+    });
+  }, [
+    checkoutUnavailableReason,
+    form.cpf,
+    payMethod,
+    plan?.id,
+    supportsBoleto,
+    supportsCard,
+    supportsPix,
+    validateStep1,
+    validateStep2,
+    workspaceId,
+  ]);
+
+  const finalizeOrder = useCallback(async () => {
+    setSubmitError('');
+
+    const preflight = runPreflightForFinalize();
+    if (preflight) {
+      setSubmitError(preflight.error);
+      if (preflight.step) setStep(preflight.step);
+      return;
+    }
+
+    // Safe after preflight: workspaceId and plan.id were asserted present.
+    const resolvedPlanId = plan?.id as string;
+    const resolvedWorkspaceId = workspaceId as string;
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = buildOrderPayload(resolvedPlanId, resolvedWorkspaceId);
       const result = (await createOrder(payload)) as Record<string, unknown>;
       setPixelEvent('Purchase');
 
@@ -524,16 +809,7 @@ export function useCheckoutExperience({
         throw new Error('Pedido criado sem rota de continuidade.');
       }
 
-      if (payMethod === 'card') {
-        const resultData = result?.data as Record<string, unknown> | undefined;
-        setSuccessOrderNumber(String(result?.orderNumber || resultData?.orderNumber || ''));
-        setShowSuccess(true);
-        redirectTimer.current = window.setTimeout(() => {
-          window.location.href = successPath;
-        }, 1200);
-      } else {
-        window.location.href = successPath;
-      }
+      dispatchOrderCompletion(result, successPath);
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : 'Erro ao processar o checkout. Tente novamente.',
@@ -542,39 +818,11 @@ export function useCheckoutExperience({
       setIsSubmitting(false);
     }
   }, [
-    affiliateContext?.affiliateWorkspaceId,
-    checkoutCode,
-    checkoutUnavailableReason,
-    couponApplied,
-    couponCode,
-    discount,
-    form.cardName,
-    form.cep,
-    form.city,
-    form.complement,
-    form.cpf,
-    form.destinatario,
-    form.email,
-    form.name,
-    form.neighborhood,
-    form.number,
-    form.phone,
-    form.state,
-    form.street,
-    installments,
-    payMethod,
+    buildOrderPayload,
+    dispatchOrderCompletion,
     plan?.id,
-    qty,
     resolveSuccessRedirect,
-    shippingInCents,
-    shippingMode,
-    subtotal,
-    supportsCard,
-    supportsBoleto,
-    supportsPix,
-    total,
-    validateStep1,
-    validateStep2,
+    runPreflightForFinalize,
     workspaceId,
   ]);
 

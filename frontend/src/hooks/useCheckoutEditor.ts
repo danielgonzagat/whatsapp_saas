@@ -258,6 +258,28 @@ function normalizePixelTypeForEditor(value: unknown): string {
   }
 }
 
+function resolveBumpPrice(item: Record<string, unknown>): number {
+  return typeof item.price === 'number' ? item.price : Number(item.priceInCents || 0) / 100;
+}
+
+function normalizeOrderBumpEntry(entry: unknown) {
+  const item = entry as Record<string, unknown>;
+  return {
+    id: typeof item.id === 'string' ? item.id : undefined,
+    title: String(item.title || ''),
+    description: String(item.description || ''),
+    productName: String(item.productName || ''),
+    price: resolveBumpPrice(item),
+    image: typeof item.image === 'string' ? item.image : undefined,
+    compareAtPrice: typeof item.compareAtPrice === 'number' ? item.compareAtPrice / 100 : undefined,
+    highlightColor: typeof item.highlightColor === 'string' ? item.highlightColor : undefined,
+    checkboxLabel: typeof item.checkboxLabel === 'string' ? item.checkboxLabel : undefined,
+    position: typeof item.position === 'string' ? item.position : undefined,
+    sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : undefined,
+    isActive: typeof item.isActive === 'boolean' ? item.isActive : undefined,
+  };
+}
+
 function normalizeConfigForEditor(data: Record<string, unknown>): CheckoutConfig {
   const raw = data as Record<string, unknown> & {
     plan?: { slug?: string; referenceCode?: string };
@@ -290,24 +312,7 @@ function normalizeConfigForEditor(data: Record<string, unknown>): CheckoutConfig
     : DEFAULT_CONFIG.trustBadges;
 
   const orderBumps = Array.isArray(rest.orderBumps)
-    ? rest.orderBumps.map((entry) => {
-        const item = entry as Record<string, unknown>;
-        return {
-          id: typeof item.id === 'string' ? item.id : undefined,
-          title: String(item.title || ''),
-          description: String(item.description || ''),
-          productName: String(item.productName || ''),
-          price: typeof item.price === 'number' ? item.price : Number(item.priceInCents || 0) / 100,
-          image: typeof item.image === 'string' ? item.image : undefined,
-          compareAtPrice:
-            typeof item.compareAtPrice === 'number' ? item.compareAtPrice / 100 : undefined,
-          highlightColor: typeof item.highlightColor === 'string' ? item.highlightColor : undefined,
-          checkboxLabel: typeof item.checkboxLabel === 'string' ? item.checkboxLabel : undefined,
-          position: typeof item.position === 'string' ? item.position : undefined,
-          sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : undefined,
-          isActive: typeof item.isActive === 'boolean' ? item.isActive : undefined,
-        };
-      })
+    ? rest.orderBumps.map(normalizeOrderBumpEntry)
     : DEFAULT_CONFIG.orderBumps;
 
   const upsells = Array.isArray(rest.upsells)

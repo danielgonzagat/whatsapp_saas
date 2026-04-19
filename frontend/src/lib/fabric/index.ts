@@ -145,6 +145,7 @@ export class KloelEditor {
   }
 }
 
+// biome-ignore lint/performance/noBarrelFile: fabric manager re-exports; internal module surface, Next.js/Turbopack tree-shakes named re-exports
 // Re-export all managers
 export { HistoryManager } from './HistoryManager';
 export { TextManager } from './TextManager';

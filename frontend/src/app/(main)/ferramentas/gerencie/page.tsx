@@ -54,6 +54,7 @@ export default function GerenciePage() {
         }}
       >
         {live.map((tool) => {
+          const href = getCapabilityHref(tool);
           return (
             <ToolCard
               key={tool.title}
@@ -62,9 +63,7 @@ export default function GerenciePage() {
               desc={tool.desc}
               badge={getCapabilityBadge(tool)}
               disabled={tool.status === 'planned'}
-              onClick={
-                getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined
-              }
+              onClick={href ? () => router.push(href) : undefined}
             />
           );
         })}

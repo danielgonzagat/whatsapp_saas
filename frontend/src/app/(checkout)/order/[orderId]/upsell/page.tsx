@@ -4,40 +4,13 @@ import { API_BASE } from '@/lib/http';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { acceptUpsell, declineUpsell } from '../../../hooks/useCheckout';
-
-/* ─── Types ────────────────────────────────────────────────────────────────── */
-
-interface UpsellData {
-  id: string;
-  title: string;
-  headline: string;
-  description: string;
-  productName: string;
-  image?: string;
-  priceInCents: number;
-  compareAtPrice?: number;
-  acceptBtnText?: string;
-  declineBtnText?: string;
-  timerSeconds?: number;
-  chargeType: 'ONE_CLICK' | 'NEW_PAYMENT';
-}
-
-interface OrderUpsellsResponse {
-  upsells: UpsellData[];
-  currentIndex: number;
-}
-
-/* ─── Helpers ──────────────────────────────────────────────────────────────── */
-
-function formatBRL(cents: number): string {
-  return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
-}
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
+import {
+  formatBRL,
+  formatTime,
+  parseUpsellsQuery,
+  type OrderUpsellsResponse,
+  type UpsellData,
+} from './upsell.helpers';
 
 /* ─── Component ────────────────────────────────────────────────────────────── */
 
@@ -58,16 +31,11 @@ export default function UpsellPage() {
 
   // Load upsells from query or API
   useEffect(() => {
-    const upsellsParam = searchParams.get('upsells');
-    if (upsellsParam) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(upsellsParam)) as UpsellData[];
-        setUpsells(parsed);
-        setLoading(false);
-        return;
-      } catch {
-        /* fall through to API */
-      }
+    const parsed = parseUpsellsQuery(searchParams.get('upsells'));
+    if (parsed) {
+      setUpsells(parsed);
+      setLoading(false);
+      return;
     }
 
     // Fallback: fetch from API

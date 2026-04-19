@@ -27,25 +27,41 @@ const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
   backoffMultiplier: 2,
 };
 
+type RetryableErrorShape = { status?: number; code?: string; message?: string } | null;
+
+const RETRYABLE_NETWORK_CODES = new Set([
+  'ETIMEDOUT',
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+]);
+
+function isRetryableHttpStatus(status: number | undefined): boolean {
+  if (status === 429) return true;
+  if (typeof status !== 'number') return false;
+  return status >= 500 && status < 600;
+}
+
+function isRetryableNetworkCode(code: string | undefined): boolean {
+  return typeof code === 'string' && RETRYABLE_NETWORK_CODES.has(code);
+}
+
+function isRetryableTimeoutMessage(message: string | undefined): boolean {
+  if (typeof message !== 'string') return false;
+  const lower = message.toLowerCase();
+  return lower.includes('timeout');
+}
+
 /**
  * Verifica se o erro é retryable (temporário)
  */
 function isRetryableError(err: unknown): boolean {
-  const errObj = err as { status?: number; code?: string; message?: string } | null;
-  // Rate limit
-  if (errObj?.status === 429) return true;
-
-  // Server errors (5xx)
-  if (errObj?.status && errObj.status >= 500 && errObj.status < 600) return true;
-
-  // Network errors
-  const networkErrors = ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN'];
-  if (errObj?.code && networkErrors.includes(errObj.code)) return true;
-
-  // Timeout errors
-  if (errObj?.message?.includes('timeout') || errObj?.message?.includes('Timeout')) return true;
-
-  return false;
+  const errObj = err as RetryableErrorShape;
+  if (!errObj) return false;
+  if (isRetryableHttpStatus(errObj.status)) return true;
+  if (isRetryableNetworkCode(errObj.code)) return true;
+  return isRetryableTimeoutMessage(errObj.message);
 }
 
 /**
@@ -76,6 +92,7 @@ export async function callOpenAIWithRetry<T>(
   // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff
   for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: retry loop for OpenAI with exponential backoff on rate limit errors
       return await fn();
     } catch (err: unknown) {
       const errInstanceofError =
@@ -114,6 +131,82 @@ export async function callOpenAIWithRetry<T>(
   }
 
   throw lastError;
+}
+
+/**
+ * P6-7 / I16 — Mandatory clamps applied on every chat completion request.
+ *
+ * These are last-line defenses against runaway cost: even if a caller
+ * forgets to call `LLMBudgetService.assertBudget()`, a single request
+ * cannot exceed these bounds and blow the budget. They are NOT a
+ * replacement for the budget guard (which tracks cumulative spend) —
+ * they are a per-request ceiling.
+ *
+ * - LLM_MAX_COMPLETION_TOKENS: upper bound for output length. Defaults
+ *   to 4096 (a generous ceiling for Brazilian-Portuguese customer
+ *   replies; models may return less but never more).
+ * - LLM_MAX_INPUT_CHARS: upper bound for the serialized request body.
+ *   Prevents a prompt-assembly bug from sending a 10MB payload.
+ *
+ * Configurable via env vars for operator override. Rejections throw a
+ * plain Error with a structured code so callers can distinguish
+ * clamp-exceeded from provider errors.
+ */
+export const LLM_MAX_COMPLETION_TOKENS = Number(process.env.LLM_MAX_COMPLETION_TOKENS ?? 4096);
+export const LLM_MAX_INPUT_CHARS = Number(process.env.LLM_MAX_INPUT_CHARS ?? 100_000);
+
+export class LLMInputTooLargeError extends Error {
+  code = 'llm_input_too_large';
+  constructor(public readonly inputChars: number) {
+    super(`LLM input exceeds max serialized size: ${inputChars} chars > ${LLM_MAX_INPUT_CHARS}`);
+    this.name = 'LLMInputTooLargeError';
+  }
+}
+
+function clampMaxCompletionTokens(rawMaxTokens: unknown): number {
+  if (
+    rawMaxTokens === undefined ||
+    rawMaxTokens === null ||
+    !Number.isFinite(Number(rawMaxTokens))
+  ) {
+    return LLM_MAX_COMPLETION_TOKENS;
+  }
+  return Math.min(Math.max(Number(rawMaxTokens), 1), LLM_MAX_COMPLETION_TOKENS);
+}
+
+function assertMessagesFitInputLimit(messages: unknown): void {
+  const serialized = JSON.stringify(messages ?? []);
+  if (serialized.length > LLM_MAX_INPUT_CHARS) {
+    throw new LLMInputTooLargeError(serialized.length);
+  }
+}
+
+// PULSE:OK — normalization helpers do not call the provider; caller-level budget
+// enforcement happens before chatCompletionWithRetry/chatCompletionStreamWithRetry.
+export function normalizeChatCompletionParams(
+  params: NonStreamingChatParams,
+): NonStreamingChatParams;
+export function normalizeChatCompletionParams(params: StreamingChatParams): StreamingChatParams;
+export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatParams {
+  // Intersection keeps AnyChatParams structural compatibility while allowing
+  // dynamic writes to max_completion_tokens / delete max_tokens below.
+  const payload = { ...params } as AnyChatParams & Record<string, unknown>;
+
+  // --- Clamp 1: max output tokens ----------------------------------
+  const rawMaxTokens = payload.max_tokens ?? payload.max_completion_tokens;
+  payload.max_completion_tokens = clampMaxCompletionTokens(rawMaxTokens);
+  if ('max_tokens' in payload) {
+    delete payload.max_tokens;
+  }
+
+  // --- Clamp 2: serialized input size -------------------------------
+  // Fail-closed: reject gigantic payloads BEFORE they reach the wire.
+  // A bug in prompt assembly can easily produce a 10MB payload; we must
+  // not let that through.
+  assertMessagesFitInputLimit(payload.messages);
+
+  // PULSE:OK — returning a normalized payload object is not an LLM call.
+  return payload;
 }
 
 /**
@@ -246,75 +339,4 @@ export async function chatCompletionWithFallback(
       requestOptions,
     );
   }
-}
-
-/**
- * P6-7 / I16 — Mandatory clamps applied on every chat completion request.
- *
- * These are last-line defenses against runaway cost: even if a caller
- * forgets to call `LLMBudgetService.assertBudget()`, a single request
- * cannot exceed these bounds and blow the budget. They are NOT a
- * replacement for the budget guard (which tracks cumulative spend) —
- * they are a per-request ceiling.
- *
- * - LLM_MAX_COMPLETION_TOKENS: upper bound for output length. Defaults
- *   to 4096 (a generous ceiling for Brazilian-Portuguese customer
- *   replies; models may return less but never more).
- * - LLM_MAX_INPUT_CHARS: upper bound for the serialized request body.
- *   Prevents a prompt-assembly bug from sending a 10MB payload.
- *
- * Configurable via env vars for operator override. Rejections throw a
- * plain Error with a structured code so callers can distinguish
- * clamp-exceeded from provider errors.
- */
-export const LLM_MAX_COMPLETION_TOKENS = Number(process.env.LLM_MAX_COMPLETION_TOKENS ?? 4096);
-export const LLM_MAX_INPUT_CHARS = Number(process.env.LLM_MAX_INPUT_CHARS ?? 100_000);
-
-export class LLMInputTooLargeError extends Error {
-  code = 'llm_input_too_large';
-  constructor(public readonly inputChars: number) {
-    super(`LLM input exceeds max serialized size: ${inputChars} chars > ${LLM_MAX_INPUT_CHARS}`);
-    this.name = 'LLMInputTooLargeError';
-  }
-}
-
-// PULSE:OK — normalization helpers do not call the provider; caller-level budget
-// enforcement happens before chatCompletionWithRetry/chatCompletionStreamWithRetry.
-export function normalizeChatCompletionParams(
-  params: NonStreamingChatParams,
-): NonStreamingChatParams;
-export function normalizeChatCompletionParams(params: StreamingChatParams): StreamingChatParams;
-export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatParams {
-  // Intersection keeps AnyChatParams structural compatibility while allowing
-  // dynamic writes to max_completion_tokens / delete max_tokens below.
-  const payload = { ...params } as AnyChatParams & Record<string, unknown>;
-
-  // --- Clamp 1: max output tokens ----------------------------------
-  const rawMaxTokens = payload.max_tokens ?? payload.max_completion_tokens;
-  let clampedMaxTokens: number;
-  if (
-    rawMaxTokens === undefined ||
-    rawMaxTokens === null ||
-    !Number.isFinite(Number(rawMaxTokens))
-  ) {
-    clampedMaxTokens = LLM_MAX_COMPLETION_TOKENS;
-  } else {
-    clampedMaxTokens = Math.min(Math.max(Number(rawMaxTokens), 1), LLM_MAX_COMPLETION_TOKENS);
-  }
-  payload.max_completion_tokens = clampedMaxTokens;
-  if ('max_tokens' in payload) {
-    delete payload.max_tokens;
-  }
-
-  // --- Clamp 2: serialized input size -------------------------------
-  // Fail-closed: reject gigantic payloads BEFORE they reach the wire.
-  // A bug in prompt assembly can easily produce a 10MB payload; we must
-  // not let that through.
-  const serialized = JSON.stringify(payload.messages ?? []);
-  if (serialized.length > LLM_MAX_INPUT_CHARS) {
-    throw new LLMInputTooLargeError(serialized.length);
-  }
-
-  // PULSE:OK — returning a normalized payload object is not an LLM call.
-  return payload;
 }

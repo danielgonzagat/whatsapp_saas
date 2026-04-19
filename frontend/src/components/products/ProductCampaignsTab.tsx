@@ -436,6 +436,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             }
           }}
         >
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -582,6 +583,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
 
       {/* Create modal */}
       {showNew && (
+        // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
         <div
           style={{
             position: 'fixed',
@@ -594,6 +596,9 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             justifyContent: 'center',
           }}
           onClick={() => setShowNew(false)}
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar modal"
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -601,6 +606,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             }
           }}
         >
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
           <div
             onClick={(e) => e.stopPropagation()}
             style={{

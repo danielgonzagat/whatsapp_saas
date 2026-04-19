@@ -4,17 +4,6 @@ import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.
 import { createContext, useContext } from 'react';
 import type { ProductEditorPlanView } from './product-nerve-center.view-models';
 
-interface ProductData {
-  id: string;
-  name: string;
-  slug?: string;
-  description?: string;
-  price?: number;
-  images?: string[];
-  category?: string;
-  [key: string]: unknown;
-}
-
 interface PlanData {
   id: string;
   name: string;

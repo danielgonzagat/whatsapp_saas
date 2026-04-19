@@ -14,7 +14,7 @@ export interface ActionNodeData {
     | 'notification'
     | 'createLead'
     | 'updateLead';
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 const actionLabels: Record<string, string> = {

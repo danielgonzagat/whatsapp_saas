@@ -180,6 +180,30 @@ function computePriority(input: {
   );
 }
 
+function resolveCluster(
+  isPayment: boolean,
+  cognitiveState: { stage: string },
+  demandState: { lane: string },
+): CiaCluster {
+  if (isPayment) return 'PAYMENT';
+  if (cognitiveState.stage === 'HOT' || demandState.lane === 'HOT') return 'HOT';
+  if (demandState.lane === 'WARM') return 'WARM';
+  return 'COLD';
+}
+
+function computeSilenceMinutes(lastMessageAt: CiaSeedConversation['lastMessageAt']): number {
+  if (!lastMessageAt) return 0;
+  const elapsedMs = Date.now() - new Date(lastMessageAt).getTime();
+  return Math.max(0, Math.round(elapsedMs / 60_000));
+}
+
+function normalizeLastMessageAt(
+  lastMessageAt: CiaSeedConversation['lastMessageAt'],
+): string | null {
+  if (typeof lastMessageAt === 'string') return lastMessageAt;
+  return lastMessageAt?.toISOString?.() || null;
+}
+
 function toCandidate(seed: CiaSeedConversation): CiaCandidate {
   const lastMessageText = String(seed.lastMessageText || '');
   const normalized = normalizeText(lastMessageText);
@@ -206,17 +230,6 @@ function toCandidate(seed: CiaSeedConversation): CiaCandidate {
   });
   const suggestedAction: CiaActionType = cognitiveState.nextBestAction;
 
-  const cluster: CiaCluster = isPayment
-    ? 'PAYMENT'
-    : cognitiveState.stage === 'HOT' || demandState.lane === 'HOT'
-      ? 'HOT'
-      : demandState.lane === 'WARM'
-        ? 'WARM'
-        : 'COLD';
-  const silenceMinutes = seed.lastMessageAt
-    ? Math.max(0, Math.round((Date.now() - new Date(seed.lastMessageAt).getTime()) / 60_000))
-    : 0;
-
   return {
     conversationId: seed.conversationId,
     contactId: seed.contactId,
@@ -224,10 +237,7 @@ function toCandidate(seed: CiaSeedConversation): CiaCandidate {
     contactName: seed.contactName,
     unreadCount,
     pending: Boolean(seed.pending),
-    lastMessageAt:
-      (typeof seed.lastMessageAt === 'string'
-        ? seed.lastMessageAt
-        : seed.lastMessageAt?.toISOString?.()) || null,
+    lastMessageAt: normalizeLastMessageAt(seed.lastMessageAt),
     lastMessageText,
     priority: computePriority({
       demandState,
@@ -236,10 +246,10 @@ function toCandidate(seed: CiaSeedConversation): CiaCandidate {
       isPayment,
       cognitiveState,
     }),
-    cluster,
+    cluster: resolveCluster(isPayment, cognitiveState, demandState),
     suggestedAction,
     demandState,
-    silenceMinutes,
+    silenceMinutes: computeSilenceMinutes(seed.lastMessageAt),
     cognitiveState,
   };
 }

@@ -59,7 +59,7 @@ export class SemanticMemory {
       });
     }
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+    // biome-ignore lint/performance/noAwaitInLoops: OpenAI embeddings + Prisma create chain per fact — parallel fan-out would both blow OpenAI TPM limits and race two writers on the same KnowledgeBase row; each fact needs its preceding write committed
     for (const fact of facts) {
       // Generate Embedding
       const embeddingResponse = await this.openai.embeddings.create({

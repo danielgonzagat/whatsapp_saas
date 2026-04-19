@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Queue as BullQueue, QueueEvents } from 'bullmq';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
+import { classifyWebhook } from './webhook-classifier';
 
 // ============================================================================
 // LAZY INITIALIZATION - Conexão só é criada quando acessada pela primeira vez
@@ -177,27 +178,6 @@ async function notifyOps(input: {
   }
 }
 
-function classifyWebhook(webhook: string): 'slack' | 'teams' | 'generic' {
-  try {
-    const host = new URL(webhook).hostname.toLowerCase();
-    if (host === 'hooks.slack.com') {
-      return 'slack';
-    }
-    if (
-      host === 'outlook.office.com' ||
-      host === 'outlook.office365.com' ||
-      host.endsWith('.office.com') ||
-      host.endsWith('.office365.com')
-    ) {
-      return 'teams';
-    }
-  } catch {
-    return 'generic';
-  }
-
-  return 'generic';
-}
-
 function attachDlq(queue: BullQueue) {
   if (!_dlqQueues[queue.name]) {
     _dlqQueues[queue.name] = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
@@ -212,46 +192,70 @@ function attachDlq(queue: BullQueue) {
   const events = _queueEvents[queue.name];
 
   events.on('failed', (event) => {
-    void (async () => {
-      try {
-        const job = await queue.getJob(event.jobId);
-        if (!job) return;
-        const opts = getQueueOptions();
-        const maxAttempts = job.opts.attempts ?? opts.defaultJobOptions?.attempts ?? 1;
-        // Só envia para DLQ após esgotar as tentativas
-        if (
-          (event as { attemptsMade?: number }).attemptsMade !== undefined &&
-          (event as { attemptsMade?: number }).attemptsMade < maxAttempts
-        )
-          return;
-
-        await dlq.add(
-          'failed',
-          {
-            originalQueue: queue.name,
-            jobName: job.name,
-            data: job.data,
-            opts: job.opts,
-            failedReason: (event as { failedReason?: string }).failedReason,
-            failedAt: new Date().toISOString(),
-          },
-          {
-            jobId: job.id, // evita duplicar se múltiplos consumidores ouvirem o mesmo evento
-            removeOnComplete: true,
-          },
-        );
-        await notifyOps({
-          queue: queue.name,
-          jobId: job.id ?? undefined,
-          jobName: job.name,
-          reason: (event as { failedReason?: string }).failedReason,
-        });
-      } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : 'unknown_error';
-        queueLogger.error(`[DLQ] Falha ao mover job da fila ${queue.name}: ${errMsg}`);
-      }
-    })();
+    void handleQueueFailedEvent(queue, dlq, event);
   });
+}
+
+function hasAttemptsLeft(event: unknown, maxAttempts: number): boolean {
+  const attemptsMade = (event as { attemptsMade?: number }).attemptsMade;
+  return attemptsMade !== undefined && attemptsMade < maxAttempts;
+}
+
+function resolveMaxAttempts(jobOpts: { attempts?: number } | undefined): number {
+  const opts = getQueueOptions();
+  return jobOpts?.attempts ?? opts.defaultJobOptions?.attempts ?? 1;
+}
+
+async function moveJobToDlq(
+  queueName: string,
+  dlq: BullQueue,
+  job: {
+    id?: string | number;
+    name: string;
+    data: unknown;
+    opts: unknown;
+  },
+  failedReason: string | undefined,
+): Promise<void> {
+  const jobId = job.id !== undefined ? String(job.id) : undefined;
+  await dlq.add(
+    'failed',
+    {
+      originalQueue: queueName,
+      jobName: job.name,
+      data: job.data,
+      opts: job.opts,
+      failedReason,
+      failedAt: new Date().toISOString(),
+    },
+    {
+      jobId,
+      removeOnComplete: true,
+    },
+  );
+  await notifyOps({
+    queue: queueName,
+    jobId: jobId,
+    jobName: job.name,
+    reason: failedReason,
+  });
+}
+
+async function handleQueueFailedEvent(
+  queue: BullQueue,
+  dlq: BullQueue,
+  event: { jobId: string; failedReason?: string },
+): Promise<void> {
+  try {
+    const job = await queue.getJob(event.jobId);
+    if (!job) return;
+    const maxAttempts = resolveMaxAttempts(job.opts);
+    if (hasAttemptsLeft(event, maxAttempts)) return;
+    await moveJobToDlq(queue.name, dlq, job, event.failedReason);
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : 'unknown_error';
+    queueLogger.error(`[DLQ] Falha ao mover job da fila ${queue.name}: ${errMsg}`);
+  }
 }
 
 // ============================================================================
@@ -271,41 +275,51 @@ function getOrCreateQueue(name: string): BullQueue {
   return _queues[name];
 }
 
+function collectClosePromises(): Array<Promise<unknown>> {
+  const promises: Array<Promise<unknown>> = [];
+  for (const events of Object.values(_queueEvents)) {
+    promises.push(events.close().catch(() => undefined));
+  }
+  for (const queue of Object.values(_queues)) {
+    promises.push(queue.close().catch(() => undefined));
+  }
+  for (const queue of Object.values(_dlqQueues)) {
+    promises.push(queue.close().catch(() => undefined));
+  }
+  return promises;
+}
+
+async function closeConnectionSafely(): Promise<void> {
+  if (!_connection) return;
+  if (typeof _connection.quit === 'function') {
+    await _connection.quit().catch(() => undefined);
+    return;
+  }
+  if (typeof _connection.disconnect === 'function') {
+    await Promise.resolve(_connection.disconnect()).catch(() => undefined);
+  }
+}
+
+function resetQueueStateRegistries(): void {
+  for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
+  for (const k of Object.keys(_dlqQueues)) delete _dlqQueues[k];
+  for (const k of Object.keys(_queues)) delete _queues[k];
+  for (const k of Object.keys(queueRegistry)) delete queueRegistry[k];
+  _connection = null;
+  _queueOptions = null;
+  _initialized = false;
+}
+
 // Usado por Jest para evitar handles abertos (Redis/QueueEvents) após os testes.
 export async function shutdownQueueSystem() {
   try {
-    const closePromises: Array<Promise<unknown>> = [];
-
-    for (const events of Object.values(_queueEvents)) {
-      closePromises.push(events.close().catch(() => undefined));
-    }
-    for (const queue of Object.values(_queues)) {
-      closePromises.push(queue.close().catch(() => undefined));
-    }
-    for (const queue of Object.values(_dlqQueues)) {
-      closePromises.push(queue.close().catch(() => undefined));
-    }
-
-    await Promise.all(closePromises);
-
-    if (_connection) {
-      if (typeof _connection.quit === 'function') {
-        await _connection.quit().catch(() => undefined);
-      } else if (typeof _connection.disconnect === 'function') {
-        await Promise.resolve(_connection.disconnect()).catch(() => undefined);
-      }
-    }
+    await Promise.all(collectClosePromises());
+    await closeConnectionSafely();
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : 'unknown_error';
     warn('[QUEUE] Falha ao encerrar filas (ignorado em teardown):', errMsg);
   } finally {
-    for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
-    for (const k of Object.keys(_dlqQueues)) delete _dlqQueues[k];
-    for (const k of Object.keys(_queues)) delete _queues[k];
-    for (const k of Object.keys(queueRegistry)) delete queueRegistry[k];
-    _connection = null;
-    _queueOptions = null;
-    _initialized = false;
+    resetQueueStateRegistries();
   }
 }
 

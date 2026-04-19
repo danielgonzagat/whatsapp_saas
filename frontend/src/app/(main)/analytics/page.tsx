@@ -1172,7 +1172,7 @@ function VendasTab({
   const gid = useId();
 
   const { data: summary, isLoading: ls } = useReport<VendasSummary>('vendas/summary', filters);
-  const { data: daily, isLoading: ld } = useReport<ReportRow[]>('vendas/daily', filters);
+  const { data: daily } = useReport<ReportRow[]>('vendas/daily', filters);
   const { data: vendas, isLoading: lv } = useReport<PaginatedReport>('vendas', baseFilters);
   const rows = vendas?.data || [];
   const dailyData = Array.isArray(daily) ? daily : [];
@@ -1342,8 +1342,10 @@ function VendasTab({
             const st = stMap[s.status ?? ''] || { c: V.bl, l: s.status };
             const FI = formIcon[s.paymentMethod ?? ''] || IC.card;
             return (
+              // biome-ignore lint/a11y/useSemanticElements: grid-based report layout needs role="row" without table semantics; native <tr> requires <table> ancestry not used here
               <div
                 key={s.id}
+                role="row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '0.7fr 1.4fr 0.5fr 0.8fr 0.7fr 0.4fr',
@@ -2073,62 +2075,60 @@ function AfiliadosTab({ filters }: { filters: RF }) {
   const { data, isLoading } = useReport<ReportRow[]>('afiliados', filters);
   const rows = Array.isArray(data) ? data : [];
   return (
-    <>
-      <div style={{ ...cs, overflow: 'hidden' }}>
-        <TableHeader
-          cols={[
-            { l: 'Afiliado', w: '2fr' },
-            { l: 'Vendas', w: '0.8fr' },
-            { l: 'Receita', w: '1fr' },
-            { l: 'Comissão', w: '1fr' },
-            { l: 'Status', w: '0.4fr' },
-          ]}
-        />
-        {isLoading ? (
-          <div style={{ padding: 20 }}>
-            <NP w={200} h={20} />
-          </div>
-        ) : rows.length === 0 ? (
-          <EmptyState message="Nenhum afiliado encontrado" />
-        ) : (
-          rows.map((a: ReportRow, i: number) => (
-            <div
-              key={a.id || i}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr .8fr 1fr 1fr .4fr',
-                padding: '12px 14px',
-                borderBottom: i < rows.length - 1 ? `1px solid ${V.b}` : 'none',
-                alignItems: 'center',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = V.e;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              <div>
-                <span style={{ fontSize: 12, fontWeight: 500, color: V.t, display: 'block' }}>
-                  {a.partnerName || '—'}
-                </span>
-                <span style={{ fontSize: 9, color: V.t3 }}>{a.partnerEmail}</span>
-              </div>
-              <span style={{ fontFamily: M, fontSize: 12, color: V.bl, fontWeight: 600 }}>
-                {a.totalSales || 0}
+    <div style={{ ...cs, overflow: 'hidden' }}>
+      <TableHeader
+        cols={[
+          { l: 'Afiliado', w: '2fr' },
+          { l: 'Vendas', w: '0.8fr' },
+          { l: 'Receita', w: '1fr' },
+          { l: 'Comissão', w: '1fr' },
+          { l: 'Status', w: '0.4fr' },
+        ]}
+      />
+      {isLoading ? (
+        <div style={{ padding: 20 }}>
+          <NP w={200} h={20} />
+        </div>
+      ) : rows.length === 0 ? (
+        <EmptyState message="Nenhum afiliado encontrado" />
+      ) : (
+        rows.map((a: ReportRow, i: number) => (
+          <div
+            key={a.id || i}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '2fr .8fr 1fr 1fr .4fr',
+              padding: '12px 14px',
+              borderBottom: i < rows.length - 1 ? `1px solid ${V.b}` : 'none',
+              alignItems: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = V.e;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <div>
+              <span style={{ fontSize: 12, fontWeight: 500, color: V.t, display: 'block' }}>
+                {a.partnerName || '—'}
               </span>
-              <span style={{ fontFamily: M, fontSize: 11, color: V.t2 }}>
-                {R$((a.totalRevenue || 0) * 100)}
-              </span>
-              <span style={{ fontFamily: M, fontSize: 12, fontWeight: 700, color: V.em }}>
-                {R$((a.totalCommission || 0) * 100)}
-              </span>
-              <StatusDot color={(stMap[a.status ?? ''] || { c: V.t3 }).c} />
+              <span style={{ fontSize: 9, color: V.t3 }}>{a.partnerEmail}</span>
             </div>
-          ))
-        )}
-      </div>
-    </>
+            <span style={{ fontFamily: M, fontSize: 12, color: V.bl, fontWeight: 600 }}>
+              {a.totalSales || 0}
+            </span>
+            <span style={{ fontFamily: M, fontSize: 11, color: V.t2 }}>
+              {R$((a.totalRevenue || 0) * 100)}
+            </span>
+            <span style={{ fontFamily: M, fontSize: 12, fontWeight: 700, color: V.em }}>
+              {R$((a.totalCommission || 0) * 100)}
+            </span>
+            <StatusDot color={(stMap[a.status ?? ''] || { c: V.t3 }).c} />
+          </div>
+        ))
+      )}
+    </div>
   );
 }
 
@@ -2423,6 +2423,7 @@ function RecusaTab({
           <EmptyState message="Nenhuma recusa no período" />
         ) : (
           rows.map((r: ReportRow, i: number) => (
+            // biome-ignore lint/a11y/noStaticElementInteractions: hover handlers are purely decorative; row has no click behavior
             <div
               key={r.id || i}
               style={{
@@ -3157,10 +3158,9 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                 {h}h
               </span>
             ))}
-            {DAYS.map((day, di) => (
-              <>
+            {DAYS.map((day) => (
+              <React.Fragment key={day}>
                 <span
-                  key={`d-${di}`}
                   style={{
                     fontSize: 9,
                     color: V.t2,
@@ -3177,7 +3177,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                   const opacity = Math.min(score, 1);
                   return (
                     <div
-                      key={`${di}-${h}`}
+                      key={`${day}-${h}`}
                       title={`${day} ${h}h — score: ${(score * 100).toFixed(0)}%`}
                       style={{
                         height: 16,
@@ -3188,7 +3188,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                     />
                   );
                 })}
-              </>
+              </React.Fragment>
             ))}
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 12 }}>

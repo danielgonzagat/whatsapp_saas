@@ -240,6 +240,55 @@ function fireTikTok(pixelId: string, event: PixelEvent, params?: Record<string, 
   }
 }
 
+const MARKETING_PIXEL_TYPES = new Set([
+  'FACEBOOK',
+  'GOOGLE_ADS',
+  'TIKTOK',
+  'KWAI',
+  'TABOOLA',
+  'CUSTOM',
+]);
+
+function buildPixelParams(
+  value?: number,
+  currency?: string,
+  orderId?: string,
+): Record<string, unknown> {
+  const params: Record<string, unknown> = {};
+  if (value != null) params.value = value / 100;
+  if (currency) params.currency = currency;
+  if (orderId) params.order_id = orderId;
+  return params;
+}
+
+function isConsentAllowed(pixel: PixelConfig, consent: CookieConsentPreferences): boolean {
+  if (pixel.type === 'GOOGLE_ANALYTICS' && !consent.analytics) return false;
+  if (MARKETING_PIXEL_TYPES.has(pixel.type) && !consent.marketing) return false;
+  return true;
+}
+
+function dispatchPixel(
+  pixel: PixelConfig,
+  event: PixelEvent,
+  params: Record<string, unknown>,
+): void {
+  switch (pixel.type) {
+    case 'FACEBOOK':
+      fireFacebook(pixel.pixelId, event, params);
+      break;
+    case 'GOOGLE_ADS':
+    case 'GOOGLE_ANALYTICS':
+      fireGoogle(pixel.pixelId, event, params);
+      break;
+    case 'TIKTOK':
+      fireTikTok(pixel.pixelId, event, params);
+      break;
+    // KWAI, TABOOLA, CUSTOM — extend as needed
+    default:
+      break;
+  }
+}
+
 /* ─── Component ────────────────────────────────────────────────────────────── */
 
 export default function PixelTracker({
@@ -258,36 +307,12 @@ export default function PixelTracker({
     if (!consent) return;
     firedRef.current = true;
 
-    const params: Record<string, unknown> = {};
-    if (value != null) params.value = value / 100;
-    if (currency) params.currency = currency;
-    if (orderId) params.order_id = orderId;
+    const params = buildPixelParams(value, currency, orderId);
 
     for (const pixel of pixels) {
       if (!shouldTrack(pixel, event)) continue;
-      if (pixel.type === 'GOOGLE_ANALYTICS' && !consent.analytics) continue;
-      if (
-        ['FACEBOOK', 'GOOGLE_ADS', 'TIKTOK', 'KWAI', 'TABOOLA', 'CUSTOM'].includes(pixel.type) &&
-        !consent.marketing
-      ) {
-        continue;
-      }
-
-      switch (pixel.type) {
-        case 'FACEBOOK':
-          fireFacebook(pixel.pixelId, event, params);
-          break;
-        case 'GOOGLE_ADS':
-        case 'GOOGLE_ANALYTICS':
-          fireGoogle(pixel.pixelId, event, params);
-          break;
-        case 'TIKTOK':
-          fireTikTok(pixel.pixelId, event, params);
-          break;
-        // KWAI, TABOOLA, CUSTOM — extend as needed
-        default:
-          break;
-      }
+      if (!isConsentAllowed(pixel, consent)) continue;
+      dispatchPixel(pixel, event, params);
     }
   }, [pixels, event, value, currency, orderId]);
 

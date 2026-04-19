@@ -1,5 +1,10 @@
 # noSecrets Triage — 2026-04-15
 
+> Historical note: the recommendation below that mentions inline
+> `biome-ignore` suppressions is superseded. Under the Codacy MAX-RIGOR lock,
+> this repository no longer allows suppression comments as a response to Codacy
+> noise.
+
 **Source**: Biome `lint/nursery/noSecrets` (1.9.4) on HEAD `a72ca6dbfee626f2626d70685b50b5d15a75f56b`.
 Scanned trees: `frontend/src`, `worker`, `backend/src`. Backend uses `/tmp/biome-secrets.json` with `unsafeParameterDecoratorsEnabled: true`. Frontend was split into subdirectories (`app`, `components/kloel`, `components/products`, `lib/fabric`, `lib/frontend-capabilities.ts`, `lib/machine-rails.ts`, `proxy.ts`) to bypass Biome 1.9.4's hard 100-diagnostic cap so all results were captured.
 

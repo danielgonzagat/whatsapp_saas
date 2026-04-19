@@ -274,6 +274,7 @@ export class AutopilotService {
     let result: Record<string, unknown> | null = null;
     // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for async result
     while (Date.now() - startedAt < waitMs) {
+      // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for smoke test status in Redis
       const current = await this.redisClient.get(smokeKey);
       if (current) {
         try {
@@ -931,6 +932,7 @@ Answer in Portuguese, short and actionable.`;
       let deals = 0;
 
       // PULSE:OK — each campaign has unique JSON path filter on customFields; cannot batch
+      // biome-ignore lint/performance/noAwaitInLoops: per-campaign JSON path query cannot be batched across campaigns
       const taggedContacts = await this.prisma.contact.findMany({
         take: 500,
         where: {
@@ -1133,26 +1135,47 @@ Answer in Portuguese, short and actionable.`;
     });
     const map = new Map(contacts.map((c) => [c.id, c]));
 
-    return events.map((l) => {
-      const contact = l.contactId ? map.get(l.contactId) : null;
-      const nextRetryAt = this.readOptionalText(
-        this.readRecord(contact?.customFields).autopilotNextRetryAt,
-      );
-      const meta = this.readRecord(l.meta);
-      return {
-        createdAt: l.createdAt,
-        contact: contact?.name || contact?.phone || l.contactId,
-        contactId: l.contactId,
-        contactPhone: contact?.phone || null,
-        action: l.action || 'UNKNOWN',
-        intent: l.intent || 'UNKNOWN',
-        status: l.status || 'executed',
-        reason: l.reason || '',
-        nextRetryAt,
-        intentConfidence: meta?.confidence ?? meta?.intentConfidence ?? null,
-        meta: l.meta || null,
-      };
-    });
+    return events.map((l) => this.serializeRecentAction(l, map));
+  }
+
+  private serializeRecentAction(
+    event: {
+      createdAt: Date;
+      contactId: string | null;
+      intent: string | null;
+      action: string | null;
+      status: string | null;
+      reason: string | null;
+      meta: unknown;
+    },
+    contactMap: Map<
+      string,
+      {
+        id: string;
+        phone: string | null;
+        name: string | null;
+        customFields: unknown;
+      }
+    >,
+  ) {
+    const contact = event.contactId ? contactMap.get(event.contactId) : null;
+    const nextRetryAt = this.readOptionalText(
+      this.readRecord(contact?.customFields).autopilotNextRetryAt,
+    );
+    const meta = this.readRecord(event.meta);
+    return {
+      createdAt: event.createdAt,
+      contact: contact?.name || contact?.phone || event.contactId,
+      contactId: event.contactId,
+      contactPhone: contact?.phone || null,
+      action: event.action || 'UNKNOWN',
+      intent: event.intent || 'UNKNOWN',
+      status: event.status || 'executed',
+      reason: event.reason || '',
+      nextRetryAt,
+      intentConfidence: meta?.confidence ?? meta?.intentConfidence ?? null,
+      meta: event.meta || null,
+    };
   }
 
   /**
@@ -1679,6 +1702,7 @@ Answer in Portuguese, short and actionable.`;
       // biome-ignore lint/performance/noAwaitInLoops: sequential BullMQ queue.add per campaign
       for (const id of createdIds) {
         // PULSE:OK — queue.add is not a Prisma query; must be sequential per BullMQ contract
+        // biome-ignore lint/performance/noAwaitInLoops: BullMQ queue.add must be sequential per job to honor delay ordering
         await this.campaignQueue.add(
           'process-campaign',
           { campaignId: id, workspaceId },
@@ -1780,6 +1804,7 @@ Answer in Portuguese, short and actionable.`;
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation autopilot processing
     for (const conv of conversations) {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation autopilot processing to respect rate limits
       await this.processConversation(conv, isOptimalTime);
     }
   }
@@ -1816,6 +1841,7 @@ Answer in Portuguese, short and actionable.`;
     for (const conv of stalled) {
       const isHot = true; // Mock score
       if (isHot) {
+        // biome-ignore lint/performance/noAwaitInLoops: sequential lead_unlocker action per conversation to avoid WhatsApp rate limit
         await this.executeAction('lead_unlocker', conv);
       }
     }

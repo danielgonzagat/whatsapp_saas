@@ -1,14 +1,8 @@
 // kloelApi object (chat streaming)
-import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { apiFetch, tokenStorage } from './core';
 
 const API_URL = API_BASE;
-
-/** Invalidate SWR cache for chat-related keys after streaming completes */
-function invalidateChatCache() {
-  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
-}
 
 export const kloelApi = {
   // Send message and get streaming response.
@@ -74,8 +68,8 @@ export const kloelApi = {
         };
 
         try {
-          // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-          while (true) {
+          // biome-ignore lint/performance/noAwaitInLoops: SSE reader.read() must resolve before appending to buffer and splitting on newline — parallel reads would interleave chunks and corrupt multi-line data: frames
+          for (;;) {
             const { done, value } = await reader.read();
             if (done) break;
 

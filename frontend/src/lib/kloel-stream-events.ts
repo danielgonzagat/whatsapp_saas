@@ -72,6 +72,77 @@ function normalizePhase(raw: unknown): KloelStreamPhase | null {
   }
 }
 
+function tryAppendThread(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  const hasConversationId = typeof event.conversationId === 'string';
+  if (!hasConversationId) return;
+  if (event.type !== 'thread' && !hasConversationId) return;
+  events.push({
+    type: 'thread',
+    conversationId: event.conversationId as string,
+    title: typeof event.title === 'string' ? event.title : undefined,
+  });
+}
+
+function tryAppendStatus(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  const normalizedPhase = normalizePhase(event.phase);
+  if (event.type !== 'status' || !normalizedPhase) return;
+  events.push({
+    type: 'status',
+    phase: normalizedPhase,
+    label: typeof event.message === 'string' ? event.message : undefined,
+    streaming: event.streaming === true || normalizedPhase === 'streaming',
+  });
+}
+
+function tryAppendToolCall(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  if (event.type !== 'tool_call' || typeof event.tool !== 'string') return;
+  events.push({
+    type: 'tool_call',
+    callId: typeof event.callId === 'string' ? event.callId : undefined,
+    tool: event.tool,
+    args: isRecord(event.args) ? event.args : undefined,
+  });
+}
+
+function tryAppendToolResult(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  if (event.type !== 'tool_result' || typeof event.tool !== 'string') return;
+  events.push({
+    type: 'tool_result',
+    callId: typeof event.callId === 'string' ? event.callId : undefined,
+    tool: event.tool,
+    success: typeof event.success === 'boolean' ? event.success : undefined,
+    result: event.result,
+    error: typeof event.error === 'string' ? event.error : undefined,
+  });
+}
+
+function tryAppendContent(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  if (typeof event.content !== 'string' || event.content.length === 0) return;
+  events.push({
+    type: 'content',
+    content: event.content,
+  });
+}
+
+function tryAppendError(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  if (typeof event.error !== 'string' || event.error.length === 0) return;
+  events.push({
+    type: 'error',
+    error: event.error,
+    content:
+      typeof event.content === 'string' && event.content.length > 0 ? event.content : undefined,
+    done: event.done === true,
+  });
+}
+
+function shouldAppendDone(event: Record<string, unknown>, events: KloelStreamEvent[]): boolean {
+  const isDoneSignal = event.type === 'done' || event.done === true;
+  if (!isDoneSignal) return false;
+  if (events.some((entry) => entry.type === 'done')) return false;
+  if (events.some((entry) => entry.type === 'error')) return false;
+  return true;
+}
+
 export function parseKloelStreamPayload(payload: unknown): KloelStreamEvent[] {
   if (!payload || typeof payload !== 'object') {
     return [];
@@ -80,69 +151,14 @@ export function parseKloelStreamPayload(payload: unknown): KloelStreamEvent[] {
   const event = payload as Record<string, unknown>;
   const events: KloelStreamEvent[] = [];
 
-  if (
-    (event.type === 'thread' || typeof event.conversationId === 'string') &&
-    typeof event.conversationId === 'string'
-  ) {
-    events.push({
-      type: 'thread',
-      conversationId: event.conversationId,
-      title: typeof event.title === 'string' ? event.title : undefined,
-    });
-  }
+  tryAppendThread(event, events);
+  tryAppendStatus(event, events);
+  tryAppendToolCall(event, events);
+  tryAppendToolResult(event, events);
+  tryAppendContent(event, events);
+  tryAppendError(event, events);
 
-  const normalizedPhase = normalizePhase(event.phase);
-  if (event.type === 'status' && normalizedPhase) {
-    events.push({
-      type: 'status',
-      phase: normalizedPhase,
-      label: typeof event.message === 'string' ? event.message : undefined,
-      streaming: event.streaming === true || normalizedPhase === 'streaming',
-    });
-  }
-
-  if (event.type === 'tool_call' && typeof event.tool === 'string') {
-    events.push({
-      type: 'tool_call',
-      callId: typeof event.callId === 'string' ? event.callId : undefined,
-      tool: event.tool,
-      args: isRecord(event.args) ? event.args : undefined,
-    });
-  }
-
-  if (event.type === 'tool_result' && typeof event.tool === 'string') {
-    events.push({
-      type: 'tool_result',
-      callId: typeof event.callId === 'string' ? event.callId : undefined,
-      tool: event.tool,
-      success: typeof event.success === 'boolean' ? event.success : undefined,
-      result: event.result,
-      error: typeof event.error === 'string' ? event.error : undefined,
-    });
-  }
-
-  if (typeof event.content === 'string' && event.content.length > 0) {
-    events.push({
-      type: 'content',
-      content: event.content,
-    });
-  }
-
-  if (typeof event.error === 'string' && event.error.length > 0) {
-    events.push({
-      type: 'error',
-      error: event.error,
-      content:
-        typeof event.content === 'string' && event.content.length > 0 ? event.content : undefined,
-      done: event.done === true,
-    });
-  }
-
-  if (
-    (event.type === 'done' || event.done === true) &&
-    !events.some((entry) => entry.type === 'done') &&
-    !events.some((entry) => entry.type === 'error')
-  ) {
+  if (shouldAppendDone(event, events)) {
     events.push({ type: 'done' });
   }
 

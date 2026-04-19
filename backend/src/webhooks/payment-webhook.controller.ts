@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import type { Contact, WebhookEvent } from '@prisma/client';
+import type { ConnectAccountType, Contact, WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 // Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -24,6 +24,8 @@ import type {
   StripePaymentIntent,
 } from '../billing/stripe-types';
 import { validatePaymentTransition } from '../common/payment-state-machine';
+import { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.processor';
+import type { SplitRole } from '../payments/split/split.types';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -136,6 +138,8 @@ interface StripePaymentIntentLike {
   id?: string;
   status?: string | null;
   currency?: string | null;
+  on_behalf_of?: string | null;
+  transfer_group?: string | null;
   metadata?: {
     workspaceId?: string;
     workspace_id?: string;
@@ -163,6 +167,44 @@ interface StripeEventLike {
   };
 }
 
+const ROLE_TO_ACCOUNT_TYPE: Record<SplitRole, ConnectAccountType> = {
+  supplier: 'SUPPLIER',
+  affiliate: 'AFFILIATE',
+  coproducer: 'COPRODUCER',
+  manager: 'MANAGER',
+  seller: 'SELLER',
+};
+
+type CheckoutIntentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
+
+const STRIPE_INTENT_STATUS_MAP: Array<{
+  event?: string;
+  status?: string;
+  result: CheckoutIntentStatus;
+}> = [
+  { event: 'payment_intent.succeeded', status: 'succeeded', result: 'APPROVED' },
+  { event: 'payment_intent.payment_failed', result: 'DECLINED' },
+  { event: 'payment_intent.processing', status: 'processing', result: 'PROCESSING' },
+  { event: 'payment_intent.canceled', status: 'canceled', result: 'CANCELED' },
+];
+
+function mapStripeIntentStatusForCheckout(
+  eventType?: string,
+  intentStatus?: string,
+): CheckoutIntentStatus {
+  const event = String(eventType || '').toLowerCase();
+  const status = String(intentStatus || '').toLowerCase();
+
+  for (const rule of STRIPE_INTENT_STATUS_MAP) {
+    const eventMatches = rule.event !== undefined && event === rule.event;
+    const statusMatches = rule.status !== undefined && status === rule.status;
+    if (eventMatches || statusMatches) {
+      return rule.result;
+    }
+  }
+  return 'PENDING';
+}
+
 /**
  * Webhook genérico de pagamento/loja para marcar conversões reais no Autopilot.
  * Use header X-Webhook-Secret para autenticar.
@@ -178,6 +220,7 @@ export class PaymentWebhookController {
     private readonly prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
     private readonly webhooksService: WebhooksService,
+    private readonly stripeWebhookProcessor: StripeWebhookProcessor,
   ) {}
 
   @Public()
@@ -256,6 +299,8 @@ export class PaymentWebhookController {
               id: intent.id,
               status: intent.status,
               currency: intent.currency ?? null,
+              on_behalf_of: typeof intent.on_behalf_of === 'string' ? intent.on_behalf_of : null,
+              transfer_group: intent.transfer_group ?? null,
               metadata: intent.metadata ?? null,
               next_action:
                 intent.next_action?.type === 'pix_display_qr_code'
@@ -367,6 +412,13 @@ export class PaymentWebhookController {
             })
             .catch(() => undefined);
         }
+      }
+
+      if (checkoutPaymentStatus === 'APPROVED' && intent.metadata?.type === 'sale') {
+        await this.stripeWebhookProcessor.processSaleSucceeded(
+          intent as StripePaymentIntent,
+          await this.buildMatureAtResolver(orderId),
+        );
       }
 
       if (workspaceId && orderId) {
@@ -736,6 +788,63 @@ export class PaymentWebhookController {
     return { ok: true };
   }
 
+  private async buildMatureAtResolver(orderId?: string) {
+    const now = new Date();
+    if (!orderId) {
+      return (role: SplitRole) => this.offsetDays(now, this.defaultDelayDays(role));
+    }
+
+    const order = await this.prisma.checkoutOrder.findUnique({
+      where: { id: orderId },
+      select: {
+        plan: {
+          select: {
+            productId: true,
+          },
+        },
+      },
+    });
+    const productId = order?.plan?.productId;
+    if (!productId) {
+      return (role: SplitRole) => this.offsetDays(now, this.defaultDelayDays(role));
+    }
+
+    const rules = await this.prisma.connectMaturationRule.findMany({
+      where: {
+        active: true,
+        OR: [{ productId }, { productId: null }],
+      },
+      select: {
+        productId: true,
+        accountType: true,
+        delayDays: true,
+      },
+    });
+
+    const delayByType = new Map<ConnectAccountType, number>();
+    for (const rule of rules
+      .slice()
+      .sort((left, right) => Number(Boolean(right.productId)) - Number(Boolean(left.productId)))) {
+      if (!delayByType.has(rule.accountType)) {
+        delayByType.set(rule.accountType, rule.delayDays);
+      }
+    }
+
+    return (role: SplitRole) =>
+      this.offsetDays(
+        now,
+        delayByType.get(ROLE_TO_ACCOUNT_TYPE[role]) ?? this.defaultDelayDays(role),
+      );
+  }
+
+  private defaultDelayDays(_role: SplitRole) {
+    return 0;
+  }
+
+  private offsetDays(base: Date, delayDays: number) {
+    return new Date(base.getTime() + delayDays * 24 * 60 * 60 * 1000);
+  }
+
   /**
    * Shopify webhook (order paid)
    * - Verifica HMAC X-Shopify-Hmac-SHA256 com SHOPIFY_WEBHOOK_SECRET
@@ -1027,26 +1136,4 @@ export class PaymentWebhookController {
       // ignore
     }
   }
-}
-
-function mapStripeIntentStatusForCheckout(
-  eventType?: string,
-  intentStatus?: string,
-): 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED' {
-  const event = String(eventType || '').toLowerCase();
-  const status = String(intentStatus || '').toLowerCase();
-
-  if (event === 'payment_intent.succeeded' || status === 'succeeded') {
-    return 'APPROVED';
-  }
-  if (event === 'payment_intent.payment_failed') {
-    return 'DECLINED';
-  }
-  if (event === 'payment_intent.processing' || status === 'processing') {
-    return 'PROCESSING';
-  }
-  if (event === 'payment_intent.canceled' || status === 'canceled') {
-    return 'CANCELED';
-  }
-  return 'PENDING';
 }

@@ -107,39 +107,39 @@ export class MarketingController {
     };
   }
 
+  private pickStringOr(value: unknown, fallback: string): string {
+    return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+  }
+
+  private pickOptionalTrimmedString(value: unknown, fallbackValue?: unknown): string | null {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof fallbackValue === 'string' && fallbackValue.trim()) return fallbackValue.trim();
+    return null;
+  }
+
+  private serializeWhatsAppSelectedProduct(product: Record<string, unknown>) {
+    const id = this.pickStringOr(
+      product.id ?? (typeof product.productId === 'string' ? product.productId : ''),
+      '',
+    );
+    const name = this.pickStringOr(product.name, 'Produto');
+    return {
+      id,
+      name,
+      price: Number(product.price || 0) || 0,
+      type: product.type === 'affiliate' ? 'affiliate' : 'own',
+      affiliateComm: product.affiliateComm == null ? null : Number(product.affiliateComm || 0) || 0,
+      imageUrl: this.pickOptionalTrimmedString(product.imageUrl, product.image),
+      producer: this.pickOptionalTrimmedString(product.producer),
+    };
+  }
+
   private normalizeWhatsAppSelectedProducts(raw: unknown) {
-    if (!Array.isArray(raw)) {
-      return [];
-    }
+    if (!Array.isArray(raw)) return [];
 
     return raw
-      .filter((item) => item && typeof item === 'object')
-      .map((item) => {
-        const product = item as Record<string, unknown>;
-        return {
-          id: (typeof product.id === 'string'
-            ? product.id
-            : typeof product.productId === 'string'
-              ? product.productId
-              : ''
-          ).trim(),
-          name: (typeof product.name === 'string' ? product.name.trim() : '') || 'Produto',
-          price: Number(product.price || 0) || 0,
-          type: product.type === 'affiliate' ? 'affiliate' : 'own',
-          affiliateComm:
-            product.affiliateComm == null ? null : Number(product.affiliateComm || 0) || 0,
-          imageUrl:
-            typeof product.imageUrl === 'string' && product.imageUrl.trim()
-              ? product.imageUrl.trim()
-              : typeof product.image === 'string' && product.image.trim()
-                ? product.image.trim()
-                : null,
-          producer:
-            typeof product.producer === 'string' && product.producer.trim()
-              ? product.producer.trim()
-              : null,
-        };
-      })
+      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+      .map((item) => this.serializeWhatsAppSelectedProduct(item))
       .filter((product) => product.id);
   }
 
@@ -731,6 +731,7 @@ export class MarketingController {
       try {
         if (provider === 'resend') {
           // Not SSRF: hardcoded Resend API endpoint
+          // biome-ignore lint/performance/noAwaitInLoops: retry loop for Resend email API with sequential attempts
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {

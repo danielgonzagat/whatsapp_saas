@@ -2,7 +2,7 @@
 
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bt, Fd, PanelLoadingState, Tg, V, cs, is } from './product-nerve-center.shared';
 
@@ -58,11 +58,16 @@ export function ProductNerveCenterIATab() {
   const [whobuys, setWhobuys] = useState('');
   const [pains, setPains] = useState('');
   const [promise, setPromise] = useState('');
-  const [objs, setObjs] = useState<{ label: string; response: string }[]>([
-    { label: 'É caro', response: '' },
-    { label: 'Não confio', response: '' },
-    { label: 'Funciona?', response: '' },
+  const [objs, setObjs] = useState<{ id: string; label: string; response: string }[]>([
+    { id: 'obj-seed-1', label: 'É caro', response: '' },
+    { id: 'obj-seed-2', label: 'Não confio', response: '' },
+    { id: 'obj-seed-3', label: 'Funciona?', response: '' },
   ]);
+  const objIdCounter = useRef(0);
+  const nextObjId = () => {
+    objIdCounter.current += 1;
+    return `obj-${Date.now()}-${objIdCounter.current}`;
+  };
   const [tone, setTone] = useState('CONSULTIVE');
   const [persist, setPersist] = useState('3');
   const [msgLimit, setMsgLimit] = useState('10');
@@ -78,7 +83,8 @@ export function ProductNerveCenterIATab() {
     setPromise(cp.promise || cp.promisedResult || '');
     if (Array.isArray(aiCfg.objections) && aiCfg.objections.length)
       setObjs(
-        aiCfg.objections.map((obj) => ({
+        aiCfg.objections.map((obj, idx) => ({
+          id: `obj-loaded-${idx}-${Date.now()}`,
           label: obj.label || obj.q || '',
           response: obj.response || obj.a || '',
         })),
@@ -203,7 +209,7 @@ export function ProductNerveCenterIATab() {
               </h3>
               {objs.map((o, i) => (
                 <div
-                  key={`objection-${i}`}
+                  key={o.id}
                   style={{
                     padding: '8px 0',
                     borderBottom: i < objs.length - 1 ? `1px solid ${V.b}` : 'none',
@@ -240,7 +246,7 @@ export function ProductNerveCenterIATab() {
                 </div>
               ))}
               <Bt
-                onClick={() => setObjs([...objs, { label: '', response: '' }])}
+                onClick={() => setObjs([...objs, { id: nextObjId(), label: '', response: '' }])}
                 style={{ marginTop: 10, width: '100%', justifyContent: 'center' }}
               >
                 + Adicionar objeção

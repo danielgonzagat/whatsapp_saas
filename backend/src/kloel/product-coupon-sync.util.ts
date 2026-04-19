@@ -150,6 +150,7 @@ export async function syncAllWorkspaceCheckoutCouponsForProduct(
 
   // biome-ignore lint/performance/noAwaitInLoops: sequential coupon sync with external payment provider
   for (const coupon of coupons) {
+    // biome-ignore lint/performance/noAwaitInLoops: per-coupon workspace sync must be sequential to avoid duplicate upserts
     await syncWorkspaceCheckoutCouponForProduct(prisma, workspaceId, productId, coupon.code);
   }
 }

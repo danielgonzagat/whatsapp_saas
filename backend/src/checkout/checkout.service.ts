@@ -342,6 +342,7 @@ export class CheckoutService {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential legacy plan migration
     for (const legacyPlan of legacyPlans) {
+      // biome-ignore lint/performance/noAwaitInLoops: per-plan legacy checkout migration must be sequential to avoid duplicate creation
       await this.ensureLegacyCheckoutForPlan(legacyPlan.id);
     }
   }

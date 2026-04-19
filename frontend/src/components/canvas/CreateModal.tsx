@@ -44,6 +44,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
   };
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
       style={{
         position: 'fixed',
@@ -57,6 +58,9 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
         animation: 'fi 0.15s ease',
       }}
       onClick={onClose}
+      role="button"
+      tabIndex={0}
+      aria-label="Fechar modal"
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -66,6 +70,8 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
         style={{
           background: '#0A0A0C',
           border: '1px solid #1C1C1F',
@@ -238,7 +244,9 @@ function CustomSizePanel({
   customH: string;
   setCustomW: (v: string) => void;
   setCustomH: (v: string) => void;
-  openEditor: (fmt: any) => void;
+  openEditor: (
+    fmt: FormatItem | { l: string; w: number; h: number; c: [string, string]; m: string },
+  ) => void;
 }) {
   const fid = useId();
   return (
@@ -450,6 +458,7 @@ function UploadPanel() {
         gap: 16,
       }}
     >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: hover handlers toggle border color only; drop/click behavior sits on the inner interactive controls */}
       <div
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = '#E85D3040';
@@ -674,8 +683,8 @@ function FormatGrid({
           gap: 10,
         }}
       >
-        {fmts.map((f, i) => (
-          <FormatCard key={f.l + i} item={f} onClick={openEditor} />
+        {fmts.map((f) => (
+          <FormatCard key={`${f.l}-${f.w}-${f.h}`} item={f} onClick={openEditor} />
         ))}
       </div>
 

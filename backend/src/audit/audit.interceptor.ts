@@ -1,4 +1,10 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+  SetMetadata,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -8,8 +14,6 @@ import { AuditService } from './audit.service';
 export const AUDIT_ACTION_KEY = 'audit_action';
 export const AuditAction = (action: string, resource: string) =>
   SetMetadata(AUDIT_ACTION_KEY, { action, resource });
-
-import { SetMetadata } from '@nestjs/common';
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {

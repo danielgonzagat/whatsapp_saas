@@ -27,6 +27,7 @@ async function main() {
   for (const product of products) {
     console.log(`   → ${product.name} (id: ${product.id})`);
 
+    // biome-ignore lint/performance/noAwaitInLoops: seed script iterates products sequentially for clear logging
     const existing = await prisma.affiliateProduct.findUnique({
       where: { productId: product.id },
     });

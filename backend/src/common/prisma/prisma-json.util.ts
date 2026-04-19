@@ -1,39 +1,20 @@
 import { Prisma } from '@prisma/client';
+import { coerceScalarJson, isPlainJsonObject } from './prisma-json-scalar.util';
+
+function coerceObjectEntries(value: object): Prisma.InputJsonObject {
+  const result: Record<string, Prisma.InputJsonValue> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (entry === undefined) continue;
+    result[key] = toPrismaJsonValue(entry);
+  }
+  return result as Prisma.InputJsonObject;
+}
 
 export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
-  if (value === null) {
-    return null;
-  }
-
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value;
-  }
-
-  if (typeof value === 'bigint') {
-    return value.toString();
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => toPrismaJsonValue(entry));
-  }
-
-  if (value && typeof value === 'object') {
-    const result: Record<string, Prisma.InputJsonValue> = {};
-
-    for (const [key, entry] of Object.entries(value)) {
-      if (entry === undefined) {
-        continue;
-      }
-      result[key] = toPrismaJsonValue(entry);
-    }
-
-    return result as Prisma.InputJsonObject;
-  }
-
+  const scalar = coerceScalarJson(value);
+  if (scalar !== undefined) return scalar;
+  if (Array.isArray(value)) return value.map((entry) => toPrismaJsonValue(entry));
+  if (isPlainJsonObject(value)) return coerceObjectEntries(value);
   throw new TypeError(`Unsupported Prisma JSON value type: ${typeof value}`);
 }
 

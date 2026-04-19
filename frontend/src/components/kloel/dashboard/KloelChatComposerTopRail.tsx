@@ -252,9 +252,12 @@ export function ComposerTopRail({
           }}
         >
           {linkedProduct.imageUrl ? (
+            // biome-ignore lint/performance/noImgElement: dynamic user/product image URL (remote); next/image remote loader adds latency + not configured for arbitrary hosts
             <img
               src={linkedProduct.imageUrl}
               alt=""
+              width={36}
+              height={36}
               style={{
                 width: 36,
                 height: 36,

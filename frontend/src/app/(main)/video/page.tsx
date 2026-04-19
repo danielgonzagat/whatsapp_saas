@@ -10,6 +10,7 @@ import { type VoiceProfile, mediaApi, videoApi, voiceApi } from '@/lib/api/misc'
 import { swrFetcher } from '@/lib/fetcher';
 import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
+import { errorMessage, readStringField } from './page.helpers';
 
 interface VideoJob {
   id: string;
@@ -230,7 +231,7 @@ export default function VideoPage() {
         Array.isArray(d) ? d : ((d && 'profiles' in d ? d.profiles : undefined) ?? []),
       );
     } catch (e: unknown) {
-      setVoiceError(e instanceof Error ? e.message : 'Erro ao carregar perfis');
+      setVoiceError(errorMessage(e, 'Erro ao carregar perfis'));
     } finally {
       setVoiceLoading(false);
     }
@@ -254,7 +255,7 @@ export default function VideoPage() {
       setNewVoiceId('');
       await loadVoiceProfiles();
     } catch (e: unknown) {
-      setVoiceError(e instanceof Error ? e.message : 'Erro ao criar perfil');
+      setVoiceError(errorMessage(e, 'Erro ao criar perfil'));
     } finally {
       setCreatingVoice(false);
     }
@@ -271,14 +272,9 @@ export default function VideoPage() {
         voiceProfileId: genProfileId || undefined,
       });
       if (res.error) throw new Error(res.error);
-      const d = res.data as Record<string, unknown> | null;
-      setGenResult(
-        (d && typeof d === 'object' && 'audioUrl' in d && typeof d.audioUrl === 'string'
-          ? d.audioUrl
-          : null) || 'Audio gerado (sem URL)',
-      );
+      setGenResult(readStringField(res.data, 'audioUrl') || 'Audio gerado (sem URL)');
     } catch (e: unknown) {
-      setGenError(e instanceof Error ? e.message : 'Erro ao gerar audio');
+      setGenError(errorMessage(e, 'Erro ao gerar audio'));
     } finally {
       setGenerating(false);
     }
@@ -305,11 +301,10 @@ export default function VideoPage() {
         type: mediaType,
       });
       if (res.error) throw new Error(res.error);
-      const d = res.data as Record<string, unknown> | null;
-      setMediaJobId(d && typeof d.id === 'string' ? d.id : null);
-      setMediaStatus(d && typeof d.status === 'string' ? d.status : 'PENDING');
+      setMediaJobId(readStringField(res.data, 'id'));
+      setMediaStatus(readStringField(res.data, 'status', 'PENDING'));
     } catch (e: unknown) {
-      setMediaError(e instanceof Error ? e.message : 'Erro ao processar midia');
+      setMediaError(errorMessage(e, 'Erro ao processar midia'));
     } finally {
       setProcessingMedia(false);
     }
@@ -320,10 +315,9 @@ export default function VideoPage() {
     try {
       const res = await mediaApi.getJob(mediaJobId);
       if (res.error) throw new Error(res.error);
-      const d = res.data as Record<string, unknown> | null;
-      setMediaStatus((d && typeof d.status === 'string' ? d.status : null) || mediaStatus);
+      setMediaStatus(readStringField(res.data, 'status') || mediaStatus);
     } catch (e: unknown) {
-      setMediaError(e instanceof Error ? e.message : 'Erro ao verificar job');
+      setMediaError(errorMessage(e, 'Erro ao verificar job'));
     }
   }, [mediaJobId, mediaStatus]);
 
@@ -366,49 +360,46 @@ export default function VideoPage() {
       </div>
 
       {/* Jobs tab */}
-      {activeTab === 'jobs' && (
-        <>
-          {isLoading ? (
-            <Card>
-              <div
-                style={{
-                  padding: 32,
-                  textAlign: 'center',
-                  color: 'var(--app-text-secondary)',
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                Carregando jobs...
-              </div>
-            </Card>
-          ) : error ? (
-            <Card>
-              <div
-                style={{
-                  padding: 32,
-                  textAlign: 'center',
-                  color: '#EF4444',
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                Erro ao carregar video jobs
-              </div>
-            </Card>
-          ) : jobs.length === 0 ? (
-            <ContextualEmptyState
-              context="generic"
-              title="Nenhum job de video"
-              description="Crie um job para gerar ou processar videos com IA."
-            />
-          ) : (
-            <Card>
-              {jobs.map((job) => (
-                <VideoJobRow key={job.id} job={job} onRefresh={handleRefreshJob} />
-              ))}
-            </Card>
-          )}
-        </>
-      )}
+      {activeTab === 'jobs' &&
+        (isLoading ? (
+          <Card>
+            <div
+              style={{
+                padding: 32,
+                textAlign: 'center',
+                color: 'var(--app-text-secondary)',
+                fontFamily: "'Sora', sans-serif",
+              }}
+            >
+              Carregando jobs...
+            </div>
+          </Card>
+        ) : error ? (
+          <Card>
+            <div
+              style={{
+                padding: 32,
+                textAlign: 'center',
+                color: '#EF4444',
+                fontFamily: "'Sora', sans-serif",
+              }}
+            >
+              Erro ao carregar video jobs
+            </div>
+          </Card>
+        ) : jobs.length === 0 ? (
+          <ContextualEmptyState
+            context="generic"
+            title="Nenhum job de video"
+            description="Crie um job para gerar ou processar videos com IA."
+          />
+        ) : (
+          <Card>
+            {jobs.map((job) => (
+              <VideoJobRow key={job.id} job={job} onRefresh={handleRefreshJob} />
+            ))}
+          </Card>
+        ))}
 
       {/* Create video tab */}
       {activeTab === 'create' && (

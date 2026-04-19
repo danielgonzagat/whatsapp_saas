@@ -6,11 +6,54 @@ jest.mock('./openai-wrapper', () => ({
 import { KloelService } from './kloel.service';
 import { chatCompletionStreamWithRetry, chatCompletionWithFallback } from './openai-wrapper';
 
+type KloelPrismaMock = {
+  chatThread: {
+    findFirst: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+  };
+  chatMessage: {
+    findMany: jest.Mock;
+    create: jest.Mock;
+    update?: jest.Mock;
+    deleteMany?: jest.Mock;
+  };
+  kloelMessage: {
+    findMany: jest.Mock;
+    create: jest.Mock;
+  };
+  product: {
+    create: jest.Mock;
+    count: jest.Mock;
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+  };
+  workspace: {
+    findUnique: jest.Mock;
+    update: jest.Mock;
+  };
+  flow: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+  };
+  contact: {
+    findFirst: jest.Mock;
+    create: jest.Mock;
+  };
+  message: {
+    create: jest.Mock;
+    update: jest.Mock;
+  };
+  $transaction: jest.Mock;
+};
+
 describe('KloelService', () => {
   let service: KloelService;
-  let prisma: any;
-  let whatsappService: any;
-  let unifiedAgentService: any;
+  let prisma: KloelPrismaMock;
+  let whatsappService: { listChats: jest.Mock };
+  let unifiedAgentService: { executeTool: jest.Mock };
+  let marketingSkillService: { buildPacket: jest.Mock };
 
   beforeEach(() => {
     process.env.OPENAI_API_KEY = 'test-key';
@@ -30,7 +73,9 @@ describe('KloelService', () => {
         findMany: jest.fn().mockResolvedValue([]),
         create: jest
           .fn()
-          .mockImplementation(({ data }: any) => Promise.resolve({ id: `${data.role}-1` })),
+          .mockImplementation(({ data }: { data: { role: string } }) =>
+            Promise.resolve({ id: `${data.role}-1` }),
+          ),
       },
       kloelMessage: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -85,15 +130,19 @@ describe('KloelService', () => {
       executeTool: jest.fn().mockResolvedValue({ error: 'Unknown tool' }),
     };
 
+    marketingSkillService = {
+      buildPacket: jest.fn().mockResolvedValue(null),
+    };
+
     service = new KloelService(
-      prisma,
+      prisma as unknown as ConstructorParameters<typeof KloelService>[0],
       { createSmartPayment: jest.fn() } as any,
-      whatsappService,
+      whatsappService as unknown as ConstructorParameters<typeof KloelService>[2],
       {
         getSessionStatus: jest.fn(),
         startSession: jest.fn(),
       } as any,
-      unifiedAgentService,
+      unifiedAgentService as unknown as ConstructorParameters<typeof KloelService>[4],
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as any,
       {
         trackAiUsage: jest.fn().mockResolvedValue(undefined),
@@ -104,6 +153,7 @@ describe('KloelService', () => {
         upload: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
         uploadFromUrl: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
       } as never,
+      marketingSkillService as unknown as ConstructorParameters<typeof KloelService>[8],
     );
 
     jest.spyOn(service as any, 'getWorkspaceContext').mockResolvedValue('');
@@ -213,11 +263,88 @@ describe('KloelService', () => {
     expect(response.end).toHaveBeenCalled();
   });
 
+  it('injects the selected marketing framework into seller chat prompts', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({});
+    marketingSkillService.buildPacket.mockResolvedValue({
+      isMarketingRequest: true,
+      selectedSkills: [],
+      snapshot: {},
+      promptAddendum: 'MODO MARKETING ATIVADO\n- priorize framework de paid-ads.',
+    });
+
+    (chatCompletionWithFallback as jest.Mock).mockResolvedValueOnce({
+      choices: [{ message: { content: 'Plano pronto.' } }],
+      usage: { total_tokens: 21 },
+    });
+
+    const reply = await (
+      service as unknown as {
+        buildAssistantReply(input: {
+          message: string;
+          workspaceId: string;
+          mode: 'chat';
+          conversationState: { recentMessages: never[]; totalMessages: number };
+        }): Promise<string>;
+      }
+    ).buildAssistantReply({
+      message: 'Meu ROAS caiu e preciso de ajuda com as campanhas',
+      workspaceId: 'ws-1',
+      mode: 'chat',
+      conversationState: { recentMessages: [], totalMessages: 0 },
+    });
+
+    expect(marketingSkillService.buildPacket).toHaveBeenCalledWith(
+      'ws-1',
+      'Meu ROAS caiu e preciso de ajuda com as campanhas',
+    );
+    expect((chatCompletionWithFallback as jest.Mock).mock.calls[0][1].messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: 'system',
+          content: expect.stringContaining('MODO MARKETING ATIVADO'),
+        }),
+      ]),
+    );
+    expect(reply).toBe('Plano pronto.');
+  });
+
+  it('implicitly routes landing-page requests to the site composer capability', async () => {
+    const executeComposerCapability = jest
+      .spyOn(
+        service as unknown as {
+          executeComposerCapability: (input: Record<string, unknown>) => Promise<{
+            content: string;
+            metadata: Record<string, unknown>;
+          }>;
+        },
+        'executeComposerCapability',
+      )
+      .mockResolvedValue({
+        content: 'Site gerado e pronto para revisão.',
+        metadata: { generatedSiteHtml: '<html><body>Oferta</body></html>' },
+      });
+
+    const result = await service.thinkSync({
+      workspaceId: 'ws-1',
+      message: 'Crie uma landing page para vender meu ebook de R$47',
+      mode: 'chat',
+    });
+
+    expect(executeComposerCapability).toHaveBeenCalledWith(
+      expect.objectContaining({
+        capability: 'create_site',
+        workspaceId: 'ws-1',
+      }),
+    );
+    expect(result.response).toBe('Site gerado e pronto para revisão.');
+  });
+
   it('streams long-form prompts directly, skipping the extra planning pass and persisting the user first', async () => {
     const createdMessages: Array<Record<string, unknown>> = [];
-    prisma.chatMessage.create.mockImplementation(({ data }: any) => {
+    prisma.chatMessage.create.mockImplementation(({ data }: { data: Record<string, unknown> }) => {
       createdMessages.push(data);
-      return Promise.resolve({ id: `${data.role}-${createdMessages.length}` });
+      const role = typeof data.role === 'string' ? data.role : 'message';
+      return Promise.resolve({ id: `${role}-${createdMessages.length}` });
     });
 
     (chatCompletionStreamWithRetry as jest.Mock).mockResolvedValueOnce(

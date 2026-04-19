@@ -84,7 +84,7 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
 
     console.log(`[IG] Found ${postLinks.length} posts. Analyzing profiles...`);
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+    // biome-ignore lint/performance/noAwaitInLoops: Instagram anti-bot enforcement — opening >1 puppeteer pages simultaneously from the same session triggers rate-limit / captcha; sequential newPage/goto keeps the scrape below IG's concurrent-request threshold
     for (const link of postLinks) {
       try {
         const newPage = await browser.newPage();

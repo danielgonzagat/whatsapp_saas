@@ -89,18 +89,19 @@ export default function ImpulsionePage() {
               gap: 12,
             }}
           >
-            {roadmap.map((tool) => (
-              <ToolCard
-                key={tool.title}
-                icon={tool.icon}
-                title={tool.title}
-                desc={tool.desc}
-                badge={getCapabilityBadge(tool)}
-                onClick={
-                  getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined
-                }
-              />
-            ))}
+            {roadmap.map((tool) => {
+              const href = getCapabilityHref(tool);
+              return (
+                <ToolCard
+                  key={tool.title}
+                  icon={tool.icon}
+                  title={tool.title}
+                  desc={tool.desc}
+                  badge={getCapabilityBadge(tool)}
+                  onClick={href ? () => router.push(href) : undefined}
+                />
+              );
+            })}
           </div>
         </div>
       ) : null}

@@ -3,6 +3,42 @@ import { NextFunction, Request, Response } from 'express';
 
 const RX_1_50_RE = /(.)\1{50,}/g;
 
+const FORBIDDEN_CONTROL_CHAR_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [0x00, 0x08],
+  [0x0b, 0x0c],
+  [0x0e, 0x1f],
+  [0x7f, 0x9f],
+];
+
+function isForbiddenLatinControlChar(char: string): boolean {
+  const codePoint = char.codePointAt(0) ?? 0;
+  return FORBIDDEN_CONTROL_CHAR_RANGES.some(([lo, hi]) => codePoint >= lo && codePoint <= hi);
+}
+
+function stripForbiddenControlChars(input: string): string {
+  return Array.from(input)
+    .filter((char) => !isForbiddenLatinControlChar(char))
+    .join('');
+}
+
+function stripAlwaysRespondDirective(input: string): string {
+  const normalized = input.toLowerCase();
+  const startNeedle = 'por favor responda';
+  const endNeedle = ' sempre';
+  const start = normalized.indexOf(startNeedle);
+
+  if (start < 0) {
+    return input;
+  }
+
+  const end = normalized.indexOf(endNeedle, start + startNeedle.length);
+  if (end < 0) {
+    return input;
+  }
+
+  return `${input.slice(0, start)}[removed]${input.slice(end + endNeedle.length)}`.trim();
+}
+
 /**
  * Middleware para sanitizar inputs de texto que vão para a IA.
  * Remove tentativas comuns de prompt injection e jailbreak.
@@ -59,26 +95,42 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
   /** Property names that must never be accessed via bracket notation. */
   private static readonly BLOCKED_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
 
+  private isSanitizableKey(obj: Record<string, unknown>, key: string): boolean {
+    if (PromptSanitizerMiddleware.BLOCKED_PROPS.has(key)) return false;
+    return Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  private sanitizeStringValueAt(
+    obj: Record<string, unknown>,
+    key: string,
+    value: string,
+    path: string,
+  ): void {
+    const sanitized = this.sanitizeString(value);
+    if (sanitized === value) return;
+    this.logger.warn(`Prompt injection detectado em ${path}.${key}`);
+    obj[key] = sanitized;
+  }
+
+  private sanitizeEntry(obj: Record<string, unknown>, key: string, path: string): void {
+    const value = obj[key];
+    if (typeof value === 'string') {
+      this.sanitizeStringValueAt(obj, key, value, path);
+      return;
+    }
+    if (value && typeof value === 'object') {
+      this.sanitizeObject(value as Record<string, unknown>, `${path}.${key}`);
+    }
+  }
+
   private sanitizeObject(obj: Record<string, unknown>, path: string): void {
     if (!obj || typeof obj !== 'object') return;
 
     // Object.keys() returns own enumerable properties only — safe from prototype chain.
     // The BLOCKED_PROPS guard adds defense-in-depth against prototype pollution.
     for (const key of Object.keys(obj)) {
-      if (PromptSanitizerMiddleware.BLOCKED_PROPS.has(key)) continue;
-      if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-
-      const value = obj[key];
-
-      if (typeof value === 'string') {
-        const sanitized = this.sanitizeString(value);
-        if (sanitized !== value) {
-          this.logger.warn(`Prompt injection detectado em ${path}.${key}`);
-          obj[key] = sanitized;
-        }
-      } else if (value && typeof value === 'object') {
-        this.sanitizeObject(value as Record<string, unknown>, `${path}.${key}`);
-      }
+      if (!this.isSanitizableKey(obj, key)) continue;
+      this.sanitizeEntry(obj, key, path);
     }
   }
 
@@ -93,18 +145,7 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     result = stripAlwaysRespondDirective(result);
 
     // Remove caracteres de controle Unicode (exceto newlines e tabs)
-    result = Array.from(result)
-      .filter((char) => {
-        const codePoint = char.codePointAt(0) ?? 0;
-        const isForbiddenLatinControl =
-          (codePoint >= 0x00 && codePoint <= 0x08) ||
-          codePoint === 0x0b ||
-          codePoint === 0x0c ||
-          (codePoint >= 0x0e && codePoint <= 0x1f) ||
-          (codePoint >= 0x7f && codePoint <= 0x9f);
-        return !isForbiddenLatinControl;
-      })
-      .join('');
+    result = stripForbiddenControlChars(result);
 
     // Limita repetições excessivas (anti-flood)
     result = result.replace(RX_1_50_RE, '$1$1$1');
@@ -119,22 +160,4 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
 export function sanitizePromptInput(input: string): string {
   const middleware = new PromptSanitizerMiddleware();
   return middleware.sanitizeString(input);
-}
-
-function stripAlwaysRespondDirective(input: string): string {
-  const normalized = input.toLowerCase();
-  const startNeedle = 'por favor responda';
-  const endNeedle = ' sempre';
-  const start = normalized.indexOf(startNeedle);
-
-  if (start < 0) {
-    return input;
-  }
-
-  const end = normalized.indexOf(endNeedle, start + startNeedle.length);
-  if (end < 0) {
-    return input;
-  }
-
-  return `${input.slice(0, start)}[removed]${input.slice(end + endNeedle.length)}`.trim();
 }

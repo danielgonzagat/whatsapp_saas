@@ -10,11 +10,18 @@ const YOUTUBE_HOSTS = new Set([
 
 const VIMEO_HOSTS = new Set(['vimeo.com', 'www.vimeo.com', 'player.vimeo.com']);
 
+function coerceToString(value: unknown): string {
+  return String(value || '');
+}
+
+function stripTrailingDots(value: string): string {
+  return value.replace(PATTERN_RE, '');
+}
+
 function normalizeHost(hostname: string): string {
-  return String(hostname || '')
-    .trim()
-    .replace(PATTERN_RE, '')
-    .toLowerCase();
+  const coerced = coerceToString(hostname).trim();
+  const stripped = stripTrailingDots(coerced);
+  return stripped.toLowerCase();
 }
 
 function isValidYouTubeId(value: string | null | undefined): value is string {
@@ -60,6 +67,36 @@ function extractVimeoId(pathname: string): string | null {
   return null;
 }
 
+function splitPathSegments(pathname: string): string[] {
+  return pathname
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function extractYouTubeIdFromShortHost(segments: string[]): string | null {
+  return segments[0] ?? null;
+}
+
+function extractYouTubeIdFromEmbed(segments: string[]): string | null {
+  if (segments[0] !== 'embed') return null;
+  return segments[1] ?? null;
+}
+
+function extractYouTubeId(url: URL, host: string): string | null {
+  const queryId = url.searchParams.get('v');
+  if (queryId) return queryId;
+
+  const segments = splitPathSegments(url.pathname);
+
+  if (host === 'youtu.be') {
+    const shortId = extractYouTubeIdFromShortHost(segments);
+    if (shortId) return shortId;
+  }
+
+  return extractYouTubeIdFromEmbed(segments);
+}
+
 export function toYouTubeEmbedUrl(rawUrl: string): string {
   try {
     const url = new URL(rawUrl);
@@ -68,21 +105,7 @@ export function toYouTubeEmbedUrl(rawUrl: string): string {
       return '';
     }
 
-    const firstSegment = url.pathname
-      .split('/')
-      .map((segment) => segment.trim())
-      .filter(Boolean)[0];
-
-    const videoId =
-      url.searchParams.get('v') ||
-      (host === 'youtu.be' ? firstSegment : null) ||
-      (firstSegment === 'embed'
-        ? url.pathname
-            .split('/')
-            .map((segment) => segment.trim())
-            .filter(Boolean)[1]
-        : null);
-
+    const videoId = extractYouTubeId(url, host);
     if (!isValidYouTubeId(videoId)) {
       return '';
     }

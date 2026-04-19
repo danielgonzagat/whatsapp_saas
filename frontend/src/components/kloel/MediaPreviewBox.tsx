@@ -121,8 +121,12 @@ export function MediaPreviewBox({
         </label>
       ) : null}
 
+      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
       <div
         aria-busy={uploading}
+        role="button"
+        tabIndex={0}
+        aria-label="Selecionar arquivo de mídia"
         onClick={() => {
           if (!uploading) inputRef.current?.click();
         }}

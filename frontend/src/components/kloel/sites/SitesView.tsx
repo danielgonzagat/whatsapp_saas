@@ -714,31 +714,72 @@ function NeuralPulse({ w, h, color = EMBER }: { w: number; h: number; color?: st
 // TAB: Visao Geral
 // ══════════════════════════════════════════
 
+type OverviewSite = {
+  name: string;
+  domain: string;
+  status: 'online' | 'offline' | 'warning' | 'building';
+  views: number;
+  uptime: number;
+};
+
+const OVERVIEW_SITES: OverviewSite[] = [
+  {
+    name: 'Landing Page Principal',
+    domain: 'meusite.com.br',
+    status: 'online',
+    views: 12450,
+    uptime: 99.9,
+  },
+  {
+    name: 'Pagina de Vendas',
+    domain: 'vendas.meusite.com.br',
+    status: 'online',
+    views: 8320,
+    uptime: 99.8,
+  },
+  {
+    name: 'Blog',
+    domain: 'blog.meusite.com.br',
+    status: 'building',
+    views: 0,
+    uptime: 0,
+  },
+];
+
+function OverviewSiteCard({ site, isMobile }: { site: OverviewSite; isMobile: boolean }) {
+  return (
+    <Card
+      style={{
+        display: 'flex',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: 14,
+        cursor: 'pointer',
+      }}
+    >
+      <StatusDot status={site.status} />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: SORA, fontSize: 14, color: TEXT }}>{site.name}</div>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{site.domain}</div>
+      </div>
+      <Badge color={site.status === 'online' ? '#10B981' : '#8b5cf6'}>
+        {site.status === 'online' ? 'Online' : 'Construindo'}
+      </Badge>
+      {site.views > 0 && (
+        <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>
+          {Fmt(site.views)} visitas
+        </span>
+      )}
+      {site.uptime > 0 && (
+        <span style={{ fontFamily: MONO, fontSize: 11, color: '#10B981' }}>{site.uptime}%</span>
+      )}
+    </Card>
+  );
+}
+
 function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
   const { isMobile } = useResponsiveViewport();
-  const sites = [
-    {
-      name: 'Landing Page Principal',
-      domain: 'meusite.com.br',
-      status: 'online' as const,
-      views: 12450,
-      uptime: 99.9,
-    },
-    {
-      name: 'Pagina de Vendas',
-      domain: 'vendas.meusite.com.br',
-      status: 'online' as const,
-      views: 8320,
-      uptime: 99.8,
-    },
-    {
-      name: 'Blog',
-      domain: 'blog.meusite.com.br',
-      status: 'building' as const,
-      views: 0,
-      uptime: 0,
-    },
-  ];
+  const sites = OVERVIEW_SITES;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -782,35 +823,7 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
         <SectionLabel>Seus Sites</SectionLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {sites.map((s) => (
-            <Card
-              key={s.domain}
-              style={{
-                display: 'flex',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                flexDirection: isMobile ? 'column' : 'row',
-                gap: 14,
-                cursor: 'pointer',
-              }}
-            >
-              <StatusDot status={s.status} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: SORA, fontSize: 14, color: TEXT }}>{s.name}</div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{s.domain}</div>
-              </div>
-              <Badge color={s.status === 'online' ? '#10B981' : '#8b5cf6'}>
-                {s.status === 'online' ? 'Online' : 'Construindo'}
-              </Badge>
-              {s.views > 0 && (
-                <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>
-                  {Fmt(s.views)} visitas
-                </span>
-              )}
-              {s.uptime > 0 && (
-                <span style={{ fontFamily: MONO, fontSize: 11, color: '#10B981' }}>
-                  {s.uptime}%
-                </span>
-              )}
-            </Card>
+            <OverviewSiteCard key={s.domain} site={s} isMobile={isMobile} />
           ))}
         </div>
       </div>
@@ -1609,7 +1622,11 @@ function CriarSite({ mode }: { mode?: string }) {
                     padding: '10px 14px',
                   }}
                 >
+                  {/* biome-ignore lint/a11y/useSemanticElements: span carries an SVG icon trigger alongside an adjacent native button; role="button" is the correct ARIA mapping without disrupting inline flow */}
                   <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Abrir site salvo"
                     style={{ color: EMBER }}
                     onClick={() => loadSavedSite(site)}
                     onKeyDown={(e) => {
@@ -2004,9 +2021,13 @@ function EditarSite({ mode }: { mode?: string }) {
                   padding: '12px 16px',
                 }}
               >
+                {/* biome-ignore lint/a11y/useSemanticElements: span carries an SVG icon trigger alongside an adjacent native button; role="button" is the correct ARIA mapping without disrupting inline flow */}
                 <span
                   style={{ color: EMBER }}
                   onClick={() => setSelectedSite(site)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Abrir ${site.name || 'site'}`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -2016,9 +2037,13 @@ function EditarSite({ mode }: { mode?: string }) {
                 >
                   {IC.site(20)}
                 </span>
+                {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
                 <div
                   style={{ flex: 1, cursor: 'pointer' }}
                   onClick={() => setSelectedSite(site)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Abrir ${site.name || 'site'}`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();

@@ -400,25 +400,36 @@ export class CiaService {
       take: 12,
     });
 
-    return items.map((item) => {
-      const value = this.readRecord(item.value);
-      const metadata = this.readRecord(item.metadata);
-      return {
-        id: item.id,
-        category: item.category,
-        type: item.type,
-        contactId: value.contactId || metadata.contactId || null,
-        conversationId: value.conversationId || metadata.conversationId || null,
-        phone: value.phone || metadata.phone || null,
-        summary: value.summary || value.message || item.content || 'Sinal cognitivo disponível.',
-        nextBestAction: value.nextBestAction || value.action || null,
-        intent: value.intent || null,
-        stage: value.stage || null,
-        outcome: value.outcome || null,
-        confidence: value.classificationConfidence || null,
-        updatedAt: value.updatedAt || item.createdAt,
-      };
-    });
+    return items.map((item) => this.serializeCognitiveHighlight(item));
+  }
+
+  private serializeCognitiveHighlight(item: {
+    id: string;
+    key: string;
+    value: unknown;
+    category: string;
+    type: string | null;
+    content: string | null;
+    metadata: unknown;
+    createdAt: Date;
+  }) {
+    const value = this.readRecord(item.value);
+    const metadata = this.readRecord(item.metadata);
+    return {
+      id: item.id,
+      category: item.category,
+      type: item.type,
+      contactId: value.contactId || metadata.contactId || null,
+      conversationId: value.conversationId || metadata.conversationId || null,
+      phone: value.phone || metadata.phone || null,
+      summary: value.summary || value.message || item.content || 'Sinal cognitivo disponível.',
+      nextBestAction: value.nextBestAction || value.action || null,
+      intent: value.intent || null,
+      stage: value.stage || null,
+      outcome: value.outcome || null,
+      confidence: value.classificationConfidence || null,
+      updatedAt: value.updatedAt || item.createdAt,
+    };
   }
 
   private async findHumanTask(workspaceId: string, taskId: string) {

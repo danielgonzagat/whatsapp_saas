@@ -1,4 +1,5 @@
 #!/bin/zsh
+# shellcheck shell=bash
 set -euo pipefail
 
 STATUS_DIR="${KLOEL_SYNC_STATUS_DIR:-$HOME/Library/Application Support/Kloel}"

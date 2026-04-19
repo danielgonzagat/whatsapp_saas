@@ -27,6 +27,24 @@ import { AgentEventsService } from './agent-events.service';
 
 type ApprovalStatus = 'OPEN' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 
+type WorkItemUpsertInput = {
+  kind: string;
+  entityType: string;
+  entityId?: string | null;
+  state: string;
+  title: string;
+  summary?: string | null;
+  priority: number;
+  utility: number;
+  requiresApproval: boolean;
+  requiresInput: boolean;
+  approvalState?: string | null;
+  inputState?: string | null;
+  blockedBy?: Record<string, unknown> | null;
+  evidence?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown> | null;
+};
+
 type InputSessionStatus =
   | 'WAITING_DESCRIPTION'
   | 'WAITING_OFFERS'
@@ -1141,6 +1159,7 @@ export class AccountAgentService {
     // biome-ignore lint/performance/noAwaitInLoops: sequential offer creation with unique constraints
     for (const offer of offers.filter((item) => item.url && !existingUrls.has(String(item.url)))) {
       // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
+      // biome-ignore lint/performance/noAwaitInLoops: per-plan externalPaymentLink create must be sequential for idempotency key uniqueness
       await this.prisma.externalPaymentLink.create({
         data: {
           workspaceId,
@@ -1575,103 +1594,90 @@ export class AccountAgentService {
     });
   }
 
-  private async upsertAccountWorkItem(
-    workspaceId: string,
-    input: {
-      kind: string;
-      entityType: string;
-      entityId?: string | null;
+  private async findPreviousWorkItem(workspaceId: string, id: string) {
+    const select = {
+      id: true,
+      state: true,
+      title: true,
+      summary: true,
+      priority: true,
+      utility: true,
+      metadata: true,
+    };
+    if (typeof this.prisma.agentWorkItem.findFirst === 'function') {
+      return this.prisma.agentWorkItem.findFirst({
+        where: { id, workspaceId },
+        select,
+      });
+    }
+    return this.prisma.agentWorkItem.findUnique({
+      where: { id },
+      select,
+    });
+  }
+
+  private buildWorkItemUpdateData(
+    input: WorkItemUpsertInput,
+    missingValue: Prisma.InputJsonValue | null | undefined,
+  ) {
+    return {
+      state: input.state,
+      owner: input.state === 'BLOCKED' ? 'RULES' : 'AGENT',
+      title: input.title,
+      summary: input.summary || null,
+      priority: input.priority,
+      utility: input.utility,
+      blockedBy: input.blockedBy ? this.toJson(input.blockedBy) : missingValue,
+      requiresApproval: input.requiresApproval,
+      requiresInput: input.requiresInput,
+      approvalState: input.approvalState || null,
+      inputState: input.inputState || null,
+      evidence: input.evidence ? this.toJson(input.evidence) : missingValue,
+      metadata: input.metadata ? this.toJson(input.metadata) : missingValue,
+    };
+  }
+
+  private isWorkItemChanged(
+    previous: {
       state: string;
       title: string;
-      summary?: string | null;
+      summary: string | null;
       priority: number;
       utility: number;
-      requiresApproval: boolean;
-      requiresInput: boolean;
-      approvalState?: string | null;
-      inputState?: string | null;
-      blockedBy?: Record<string, unknown> | null;
-      evidence?: Record<string, unknown> | null;
-      metadata?: Record<string, unknown> | null;
-    },
-  ) {
+    } | null,
+    input: WorkItemUpsertInput,
+  ): boolean {
+    if (!previous) return true;
+    if (previous.state !== input.state) return true;
+    if (previous.title !== input.title) return true;
+    if (String(previous.summary || '') !== String(input.summary || '')) return true;
+    if (Number(previous.priority || 0) !== Number(input.priority || 0)) return true;
+    if (Number(previous.utility || 0) !== Number(input.utility || 0)) return true;
+    return false;
+  }
+
+  private async upsertAccountWorkItem(workspaceId: string, input: WorkItemUpsertInput) {
     const entityKey = String(input.entityId || 'global');
     const id = `${workspaceId}:${input.kind}:${input.entityType}:${entityKey}`;
-    const previous =
-      typeof this.prisma.agentWorkItem.findFirst === 'function'
-        ? await this.prisma.agentWorkItem.findFirst({
-            where: { id, workspaceId },
-            select: {
-              id: true,
-              state: true,
-              title: true,
-              summary: true,
-              priority: true,
-              utility: true,
-              metadata: true,
-            },
-          })
-        : await this.prisma.agentWorkItem.findUnique({
-            where: { id },
-            select: {
-              id: true,
-              state: true,
-              title: true,
-              summary: true,
-              priority: true,
-              utility: true,
-              metadata: true,
-            },
-          });
+    const previous = await this.findPreviousWorkItem(workspaceId, id);
+
+    const updateData = this.buildWorkItemUpdateData(input, null);
+    const createData = {
+      id,
+      workspaceId,
+      kind: input.kind,
+      entityType: input.entityType,
+      entityId: input.entityId || null,
+      ...this.buildWorkItemUpdateData(input, undefined),
+    };
 
     const record = await this.prisma.agentWorkItem.upsert({
       where: { id },
-      create: {
-        id,
-        workspaceId,
-        kind: input.kind,
-        entityType: input.entityType,
-        entityId: input.entityId || null,
-        state: input.state,
-        owner: input.state === 'BLOCKED' ? 'RULES' : 'AGENT',
-        title: input.title,
-        summary: input.summary || null,
-        priority: input.priority,
-        utility: input.utility,
-        blockedBy: input.blockedBy ? this.toJson(input.blockedBy) : undefined,
-        requiresApproval: input.requiresApproval,
-        requiresInput: input.requiresInput,
-        approvalState: input.approvalState || null,
-        inputState: input.inputState || null,
-        evidence: input.evidence ? this.toJson(input.evidence) : undefined,
-        metadata: input.metadata ? this.toJson(input.metadata) : undefined,
-      },
-      update: {
-        state: input.state,
-        owner: input.state === 'BLOCKED' ? 'RULES' : 'AGENT',
-        title: input.title,
-        summary: input.summary || null,
-        priority: input.priority,
-        utility: input.utility,
-        blockedBy: input.blockedBy ? this.toJson(input.blockedBy) : null,
-        requiresApproval: input.requiresApproval,
-        requiresInput: input.requiresInput,
-        approvalState: input.approvalState || null,
-        inputState: input.inputState || null,
-        evidence: input.evidence ? this.toJson(input.evidence) : null,
-        metadata: input.metadata ? this.toJson(input.metadata) : null,
-      },
+      create: createData,
+      update: updateData,
     });
 
-    const changed =
-      !previous ||
-      previous.state !== input.state ||
-      previous.title !== input.title ||
-      String(previous.summary || '') !== String(input.summary || '') ||
-      Number(previous.priority || 0) !== Number(input.priority || 0) ||
-      Number(previous.utility || 0) !== Number(input.utility || 0);
-
-    if (changed) {
+    if (this.isWorkItemChanged(previous, input)) {
       await this.agentEvents.publish({
         type: 'account',
         workspaceId,

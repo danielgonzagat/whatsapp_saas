@@ -90,6 +90,49 @@ export class OmnichannelService {
    * Processa e armazena attachments
    * Retorna URLs públicas ou metadados para acesso posterior
    */
+  private buildProcessed(url: string, attachment: MessageAttachment): ProcessedAttachment {
+    return {
+      url,
+      mimeType: attachment.mimeType || 'application/octet-stream',
+      name: attachment.name || 'attachment',
+      size: attachment.size,
+    };
+  }
+
+  private async processBase64Attachment(
+    workspaceId: string,
+    attachment: MessageAttachment,
+  ): Promise<ProcessedAttachment | null> {
+    if (!attachment.base64) return null;
+    const uploadedUrl = await this.uploadBase64ToStorage(
+      workspaceId,
+      attachment.base64,
+      attachment.mimeType || 'application/octet-stream',
+      attachment.name || `file_${Date.now()}`,
+    );
+    if (!uploadedUrl) return null;
+    return this.buildProcessed(uploadedUrl, attachment);
+  }
+
+  private async processSingleAttachment(
+    workspaceId: string,
+    attachment: MessageAttachment,
+  ): Promise<ProcessedAttachment | null> {
+    const directUrl = attachment.url;
+    if (directUrl && directUrl.startsWith('http')) {
+      return this.buildProcessed(directUrl, attachment);
+    }
+    return await this.processBase64Attachment(workspaceId, attachment);
+  }
+
+  private logAttachmentError(error: unknown): void {
+    const errorInstanceofError =
+      error instanceof Error
+        ? error
+        : new Error(typeof error === 'string' ? error : 'unknown error');
+    this.logger.error(`[OMNI] Erro ao processar attachment: ${errorInstanceofError.message}`);
+  }
+
   private async processAttachments(
     workspaceId: string,
     attachments: MessageAttachment[],
@@ -99,41 +142,10 @@ export class OmnichannelService {
     // biome-ignore lint/performance/noAwaitInLoops: sequential attachment processing
     for (const attachment of attachments) {
       try {
-        // Se já tem URL pública, usar diretamente
-        if (attachment.url?.startsWith('http')) {
-          processed.push({
-            url: attachment.url,
-            mimeType: attachment.mimeType || 'application/octet-stream',
-            name: attachment.name || 'attachment',
-            size: attachment.size,
-          });
-          continue;
-        }
-
-        // Se tiver base64, fazer upload para storage
-        if (attachment.base64) {
-          const uploadedUrl = await this.uploadBase64ToStorage(
-            workspaceId,
-            attachment.base64,
-            attachment.mimeType || 'application/octet-stream',
-            attachment.name || `file_${Date.now()}`,
-          );
-
-          if (uploadedUrl) {
-            processed.push({
-              url: uploadedUrl,
-              mimeType: attachment.mimeType || 'application/octet-stream',
-              name: attachment.name || 'attachment',
-              size: attachment.size,
-            });
-          }
-        }
+        const result = await this.processSingleAttachment(workspaceId, attachment);
+        if (result) processed.push(result);
       } catch (error: unknown) {
-        const errorInstanceofError =
-          error instanceof Error
-            ? error
-            : new Error(typeof error === 'string' ? error : 'unknown error');
-        this.logger.error(`[OMNI] Erro ao processar attachment: ${errorInstanceofError.message}`);
+        this.logAttachmentError(error);
       }
     }
 

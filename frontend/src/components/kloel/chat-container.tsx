@@ -32,6 +32,7 @@ import { AgentDesktopViewer } from './AgentDesktopViewer';
 import { KloelMushroomVisual } from './KloelBrand';
 import { AuthModal } from './auth/auth-modal';
 import { useAuth } from './auth/auth-provider';
+import { AUTH_ERROR_MESSAGES, SEED_PRODUCT_KNOWLEDGE_PROMPT } from './chat-container.data';
 import { FooterMinimal } from './footer-minimal';
 import { HeaderMinimal } from './header-minimal';
 import { InputComposer } from './input-composer';
@@ -52,6 +53,32 @@ const ACESSANDO_SEU_WHATS_APP_RE =
 const SENTENCE_END_RE = /[.!?]/;
 
 const SLOW_HINT_DELAY_MS = 30_000;
+
+function resolveActivityType(event: AgentStreamEvent): AgentActivity['type'] {
+  if (event.type === 'thought' || event.type === 'typing') return 'agent_thinking';
+  if (event.type === 'action' || event.type === 'proof' || event.type === 'account') {
+    return 'action_executed';
+  }
+  if (event.type === 'contact') return 'message_sent';
+  if (event.type === 'error') return 'error';
+  if (event.type === 'sale') return 'lead_qualified';
+  if (event.type === 'status' && (event.phase || '').includes('session')) {
+    return 'connection_status';
+  }
+  return 'action_executed';
+}
+
+function resolveActivityStatus(event: AgentStreamEvent): AgentActivity['status'] {
+  if (event.type === 'error') return 'error';
+  if (event.type === 'thought' || event.type === 'typing') return 'pending';
+  return 'success';
+}
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  return error && typeof error === 'object' && 'message' in error
+    ? String((error as { message: string }).message)
+    : fallback;
+}
 
 export interface Message {
   id: string;
@@ -395,38 +422,55 @@ function ReasoningTraceBar({
   );
 }
 
-function createAgentActivity(event: AgentStreamEvent): AgentActivity {
-  const activityType =
-    event.type === 'thought'
-      ? 'agent_thinking'
-      : event.type === 'typing'
-        ? 'agent_thinking'
-        : event.type === 'action' || event.type === 'proof' || event.type === 'account'
-          ? 'action_executed'
-          : event.type === 'contact'
-            ? 'message_sent'
-            : event.type === 'error'
-              ? 'error'
-              : event.type === 'sale'
-                ? 'lead_qualified'
-                : event.type === 'status' && (event.phase || '').includes('session')
-                  ? 'connection_status'
-                  : 'action_executed';
+function EmptyStateGreetingHeader({
+  isAuthenticated,
+  userName,
+}: {
+  isAuthenticated: boolean;
+  userName?: string | null;
+}) {
+  return (
+    <div style={{ marginBottom: 32, textAlign: 'center' }}>
+      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
+        <KloelMushroomVisual
+          size={56}
+          traceColor={KLOEL_THEME.textPrimary}
+          spores="none"
+          ariaHidden
+        />
+      </div>
+      <h1
+        style={{
+          margin: '0 0 12px',
+          fontFamily: "'Sora', var(--font-serif), sans-serif",
+          fontSize: 'clamp(2rem, 4vw, 2.5rem)',
+          fontWeight: 600,
+          lineHeight: 1.05,
+          letterSpacing: '-0.03em',
+          color: KLOEL_THEME.textPrimary,
+        }}
+      >
+        {isAuthenticated && userName
+          ? `De volta ao trabalho, ${userName}?`
+          : 'Como posso ajudar seu negócio hoje?'}
+      </h1>
+      <p style={{ fontSize: 18, color: KLOEL_THEME.textSecondary }}>
+        Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o Kloel.
+      </p>
+    </div>
+  );
+}
 
+function createAgentActivity(event: AgentStreamEvent): AgentActivity {
   const meta = event.meta;
 
   return {
     id: createAgentEventKey(event),
-    type: activityType,
+    type: resolveActivityType(event),
     title: deriveActivityTitle(event),
     description: event.message,
     timestamp: new Date(event.ts || Date.now()),
-    status:
-      event.type === 'error'
-        ? 'error'
-        : event.type === 'thought' || event.type === 'typing'
-          ? 'pending'
-          : 'success',
+    status: resolveActivityStatus(event),
     metadata: {
       contactName: readMetaString(meta, 'contactName'),
       contactPhone: readMetaString(meta, 'phone'),
@@ -504,18 +548,7 @@ export function ChatContainer({
     if (!authError) return;
 
     // Mostra contexto para o usuário quando o OAuth falha no backend.
-    const messageByCode: Record<string, string> = {
-      email_exists: 'E-mail já cadastrado. Faça login para continuar.',
-      access_blocked: 'Acesso bloqueado. Contate o suporte.',
-      service_unavailable: 'Serviço indisponível no momento. Tente novamente em instantes.',
-      rate_limit_exceeded:
-        'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.',
-      oauth_backend_error_detailed:
-        'Não foi possível concluir o login com o provedor. Tente novamente mais tarde.',
-      oauth_network_error:
-        'Falha de rede ao concluir o login. Verifique sua conexão e tente novamente.',
-    };
-    const message = messageByCode[authError];
+    const message = AUTH_ERROR_MESSAGES[authError];
     if (message) {
       setMessages((prev) => {
         const id = `auth_error_${authError}`;
@@ -580,7 +613,9 @@ export function ChatContainer({
 
     if (!hasAuthQuery) return;
 
-    authKeys.forEach((key) => nextParams.delete(key));
+    authKeys.forEach((key) => {
+      nextParams.delete(key);
+    });
     const nextQuery = nextParams.toString();
     const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
 
@@ -1241,8 +1276,8 @@ export function ChatContainer({
         let fullContent = '';
         let buffer = '';
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-        while (true) {
+        // biome-ignore lint/performance/noAwaitInLoops: chat-container SSE stream — each reader.read() chunk must append to buffer and split on '\n' to surface [DONE] and data: frames to the token renderer in order; parallel reads would interleave partial JSON across boundaries
+        for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -1440,10 +1475,10 @@ export function ChatContainer({
     } catch (error: unknown) {
       setIsCancelableReply(false);
       setShowSlowHint(false);
-      const errMsg =
-        error && typeof error === 'object' && 'message' in error
-          ? String((error as { message: string }).message)
-          : 'Desculpe, ocorreu um erro ao continuar sua conversa.';
+      const errMsg = extractErrorMessage(
+        error,
+        'Desculpe, ocorreu um erro ao continuar sua conversa.',
+      );
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
@@ -1568,10 +1603,10 @@ export function ChatContainer({
         });
         void refreshConversations();
       } catch (error: unknown) {
-        const errMsg =
-          error && typeof error === 'object' && 'message' in error
-            ? String((error as { message: string }).message)
-            : 'Desculpe, ocorreu uma instabilidade ao tentar gerar uma nova versão.';
+        const errMsg = extractErrorMessage(
+          error,
+          'Desculpe, ocorreu uma instabilidade ao tentar gerar uma nova versão.',
+        );
         setMessages((prev) =>
           prev.map((message) =>
             message.id === messageId
@@ -1642,10 +1677,7 @@ export function ChatContainer({
         throw new Error(response.error);
       }
     } catch (error: unknown) {
-      const errMsg =
-        error && typeof error === 'object' && 'message' in error
-          ? String((error as { message: string }).message)
-          : 'erro desconhecido';
+      const errMsg = extractErrorMessage(error, 'erro desconhecido');
       appendAssistantMessage(`Não consegui iniciar essa ação. Motivo: ${errMsg}.`);
       setIsAgentThinking(false);
     } finally {
@@ -1654,34 +1686,7 @@ export function ChatContainer({
   };
 
   const handleSeedProductKnowledge = () => {
-    const teachPrompt = `Kloel, agora irei te ensinar sobre meus produtos e preciso que você salve todas as respostas dentro da sua memória permanente:
-
-Quais são os meus produtos?
-O que eu vendo?
-Como eu vendo?
-O que eu entrego?
-Como eu entrego?
-Quando eu entrego?
-O que eu ofereço?
-Como eu ofereço?
-Quem são os meus clientes?
-Como são os meus clientes?
-Quais os problemas dos meus clientes?
-Qual a idade dos meus clientes?
-Qual o gênero dos meus clientes?
-O que meus clientes esperam de mim?
-Quais são as perguntas que meus clientes sempre me fazem?
-Quais são as respostas para essas perguntas?
-Como devo agir para ser o melhor vendedor da sua empresa?
-Como devo agir para ser o melhor agente comercial possível?
-O que eu não posso esquecer jamais?
-Como devo agir quando não tenho respostas?
-Como devo me apresentar?
-Você quer que eu me apresente como inteligência artificial comercial autônoma da sua empresa ou prefere outro modo?
-
-Lembre-se de subir arquivos, fotos, PDFs e tudo que você possui sobre o seu negócio. Quanto mais informações você enviar, melhor o Kloel irá operar.`;
-
-    setInputValue(teachPrompt);
+    setInputValue(SEED_PRODUCT_KNOWLEDGE_PROMPT);
   };
 
   const handleOpenSettings = () => {
@@ -1765,35 +1770,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que você possui sobre o seu neg
                 }}
               >
                 {!showAgentDesktop && (
-                  <div style={{ marginBottom: 32, textAlign: 'center' }}>
-                    <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
-                      <KloelMushroomVisual
-                        size={56}
-                        traceColor={KLOEL_THEME.textPrimary}
-                        spores="none"
-                        ariaHidden
-                      />
-                    </div>
-                    <h1
-                      style={{
-                        margin: '0 0 12px',
-                        fontFamily: "'Sora', var(--font-serif), sans-serif",
-                        fontSize: 'clamp(2rem, 4vw, 2.5rem)',
-                        fontWeight: 600,
-                        lineHeight: 1.05,
-                        letterSpacing: '-0.03em',
-                        color: KLOEL_THEME.textPrimary,
-                      }}
-                    >
-                      {isAuthenticated && userName
-                        ? `De volta ao trabalho, ${userName}?`
-                        : 'Como posso ajudar seu negócio hoje?'}
-                    </h1>
-                    <p style={{ fontSize: 18, color: KLOEL_THEME.textSecondary }}>
-                      Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o
-                      Kloel.
-                    </p>
-                  </div>
+                  <EmptyStateGreetingHeader isAuthenticated={isAuthenticated} userName={userName} />
                 )}
 
                 {showAgentDesktop ? (

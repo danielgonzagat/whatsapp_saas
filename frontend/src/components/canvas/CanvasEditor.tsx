@@ -126,6 +126,7 @@ export default function CanvasEditor() {
   const currentId = useRef<string | null>(designId || null);
 
   /* ═══ Initialize editor ═══ */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deliberately run once on mount to instantiate the editor; canvas dims (w/h) are only consumed for initial sizing
   useEffect(() => {
     if (!canvasRef.current) return;
     const editor = new KloelEditor(canvasRef.current, w, h);
@@ -227,7 +228,6 @@ export default function CanvasEditor() {
       editorRef.current = null;
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-    // biome-ignore lint/correctness/useExhaustiveDependencies: deliberately run once on mount to instantiate the editor; canvas dims (w/h) are only consumed for initial sizing
   }, []);
 
   /* ═══ Handlers ═══ */
@@ -619,6 +619,7 @@ export default function CanvasEditor() {
         return (
           <div>
             <p style={panelHeading}>Uploads</p>
+            {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -626,6 +627,9 @@ export default function CanvasEditor() {
               }}
               onDragLeave={() => setUploadDrag(false)}
               onDrop={handleDrop}
+              role="button"
+              tabIndex={0}
+              aria-label="Área de upload. Solte arquivos aqui."
               style={{
                 border: `2px dashed ${uploadDrag ? '#E85D30' : '#2A2A2E'}`,
                 borderRadius: 8,
@@ -800,14 +804,15 @@ export default function CanvasEditor() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {[...objects].reverse().map((obj, i) => {
                   const objType = obj.type || 'object';
+                  const layerNumber = objects.length - i;
                   const objName =
                     ('name' in obj && typeof obj.name === 'string' ? obj.name : '') ||
-                    `${objType} ${objects.length - i}`;
+                    `${objType} ${layerNumber}`;
                   const isActive = editorRef.current?.canvas.getActiveObject() === obj;
                   return (
                     <button
                       type="button"
-                      key={`layer-${objName}-${i}`}
+                      key={`layer-${objType}-${layerNumber}-${objName}`}
                       onClick={() => {
                         if (!editorRef.current) return;
                         editorRef.current.canvas.setActiveObject(obj);
@@ -1244,6 +1249,7 @@ export default function CanvasEditor() {
         </div>
 
         {/* ── Canvas viewport ── */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: drop zone receives HTML5 drag events; no click/key interaction needed */}
         <div
           style={{
             flex: 1,
@@ -1787,13 +1793,18 @@ export default function CanvasEditor() {
             }
           }}
         >
-          {ctxMenu.items.map((item, i) =>
-            item.separator ? (
-              <div key={`sep-${i}`} style={{ height: 1, background: '#1C1C1F', margin: '4px 0' }} />
+          {ctxMenu.items.map((item, i, arr) => {
+            const priorLabels = arr
+              .slice(0, i)
+              .map((it) => it.label ?? '-')
+              .join('|');
+            const key = `${item.separator ? 'sep' : (item.label ?? 'item')}::${priorLabels}`;
+            return item.separator ? (
+              <div key={key} style={{ height: 1, background: '#1C1C1F', margin: '4px 0' }} />
             ) : (
               <button
                 type="button"
-                key={item.label || `item-${i}`}
+                key={key}
                 onClick={() => {
                   if (!item.disabled) {
                     item.action();
@@ -1822,8 +1833,8 @@ export default function CanvasEditor() {
               >
                 {item.label}
               </button>
-            ),
-          )}
+            );
+          })}
         </div>
       )}
 

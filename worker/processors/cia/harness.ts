@@ -21,7 +21,7 @@ export interface CiaHarnessEvent {
   message: string;
   contactId?: string;
   phone?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 export interface CiaHarnessSummary {
@@ -34,6 +34,7 @@ export interface CiaHarnessSummary {
   approvedRevenue: number;
   recoveredRevenue: number;
   cyclesRun: number;
+  [key: string]: unknown;
 }
 
 export interface CiaHarnessResult {

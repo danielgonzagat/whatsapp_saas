@@ -1,5 +1,6 @@
 import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
+import { toTransactionRow } from './list-transactions.row';
 
 export interface AdminTransactionRow {
   id: string;
@@ -124,27 +125,7 @@ export async function listAdminTransactions(
   const nameMap = new Map(workspaces.map((w) => [w.id, w.name]));
 
   return {
-    items: items.map((i) => ({
-      id: i.id,
-      orderNumber: i.orderNumber,
-      workspaceId: i.workspaceId,
-      workspaceName: nameMap.get(i.workspaceId) ?? null,
-      customerEmail: i.customerEmail,
-      customerName: i.customerName,
-      customerCPF: i.customerCPF,
-      totalInCents: i.totalInCents,
-      subtotalInCents: i.subtotalInCents,
-      status: i.status,
-      paymentMethod: i.paymentMethod,
-      paymentStatus: i.payment?.status ?? null,
-      gateway: i.payment?.gateway ?? null,
-      cardBrand: i.payment?.cardBrand ?? null,
-      cardLast4: i.payment?.cardLast4 ?? null,
-      installments: i.installments,
-      createdAt: i.createdAt.toISOString(),
-      paidAt: i.paidAt?.toISOString() ?? null,
-      affiliateId: i.affiliateId,
-    })),
+    items: items.map((i) => toTransactionRow(i, nameMap)),
     total,
     sum: { totalInCents: Number(sum._sum.totalInCents ?? 0) },
   };

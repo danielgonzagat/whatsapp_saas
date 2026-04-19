@@ -350,15 +350,11 @@ export function AuthModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity border-none p-0 cursor-pointer"
         onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
-        }}
+        aria-label="Fechar modal"
       />
 
       {/* Modal */}

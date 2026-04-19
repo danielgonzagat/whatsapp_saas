@@ -55,12 +55,17 @@ function OnboardingChatContent() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [status, setStatus] = useState<any>(null);
+  const [status, setStatus] = useState<{
+    messagesCount?: number;
+    completed?: boolean;
+    [key: string]: unknown;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Scroll para a última mensagem
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages change is the intentional trigger to scroll the newest message into view; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -84,6 +89,7 @@ function OnboardingChatContent() {
     ]);
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: addMessage is a stable local setter wrapper and mutate is the SWR global mutator; only workspaceId should drive recomputation
   const startOnboarding = useCallback(async () => {
     if (!workspaceId) return;
     setLoading(true);
@@ -157,8 +163,8 @@ function OnboardingChatContent() {
       let buffer = '';
 
       if (reader) {
-        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-        while (true) {
+        // biome-ignore lint/performance/noAwaitInLoops: onboarding-chat SSE stream — each reader.read() chunk must decode and update the `assistantMessage` accumulator before the next read so the welcome-flow renders token-by-token rather than jumping from empty to final state
+        for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -245,10 +251,10 @@ function OnboardingChatContent() {
             <p className="text-base text-gray-400">Configuração Inteligente</p>
           </div>
           <div className="ml-auto flex items-center gap-4">
-            {status?.messagesCount > 0 && (
+            {(status?.messagesCount ?? 0) > 0 && (
               <div className="flex items-center gap-2 text-base text-gray-400">
                 <MessageSquare className="w-4 h-4" aria-hidden="true" />
-                {status.messagesCount} mensagens
+                {status?.messagesCount} mensagens
               </div>
             )}
             {!isAuthenticated && (

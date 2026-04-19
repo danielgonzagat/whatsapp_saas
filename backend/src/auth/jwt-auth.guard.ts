@@ -8,6 +8,12 @@ import {
 import { Reflector } from '@nestjs/core';
 import { verify } from 'jsonwebtoken';
 import { getJwtSecret } from './jwt-config';
+import {
+  describeJwtVerifyError,
+  extractJwtToken,
+  isAuthOptionalInNonProd,
+  type JwtRequestLike,
+} from './jwt-auth.helpers';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
 /**
@@ -23,55 +29,37 @@ export class JwtAuthGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+    if (this.isPublicRoute(context)) return true;
+
+    const request = context.switchToHttp().getRequest<JwtRequestLike>();
+    const optional = isAuthOptionalInNonProd();
+    const token = extractJwtToken(request);
+
+    if (!token) return this.handleMissingToken(request, optional);
+    return this.verifyToken(request, token, optional);
+  }
+
+  private isPublicRoute(context: ExecutionContext): boolean {
+    return !!this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) return true;
+  }
 
-    const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization as string | undefined;
-    const optional = process.env.NODE_ENV !== 'production' && process.env.AUTH_OPTIONAL === 'true';
-
-    // Extract token from Authorization header OR httpOnly cookie
-    let token: string | undefined;
-
-    if (authHeader) {
-      const [scheme, headerToken] = authHeader.split(' ');
-      if (scheme === 'Bearer' && headerToken) {
-        token = headerToken;
-      }
+  private handleMissingToken(request: JwtRequestLike, optional: boolean): boolean {
+    if (optional) {
+      request.user = null;
+      return true;
     }
+    throw new UnauthorizedException('Missing Authorization header');
+  }
 
-    // Fallback to shared auth cookies used across app/auth subdomains.
-    if (!token && request.cookies?.kloel_access_token) {
-      token = request.cookies.kloel_access_token;
-    }
-
-    if (!token && request.cookies?.kloel_token) {
-      token = request.cookies.kloel_token;
-    }
-
-    if (!token) {
-      if (optional) {
-        request.user = null;
-        return true;
-      }
-      throw new UnauthorizedException('Missing Authorization header');
-    }
-
+  private verifyToken(request: JwtRequestLike, token: string, optional: boolean): boolean {
     try {
-      const payload = verify(token, getJwtSecret());
-      request.user = payload;
+      request.user = verify(token, getJwtSecret());
       return true;
     } catch (error: unknown) {
-      const details =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'string'
-            ? error
-            : 'unknown verification error';
-      this.logger.warn(`JWT verification failed: ${details}`);
+      this.logger.warn(`JWT verification failed: ${describeJwtVerifyError(error)}`);
       if (optional) {
         request.user = null;
         return true;

@@ -53,6 +53,7 @@ export class CheckoutSocialRecoveryService {
       const age = now - lead.createdAt.getTime();
 
       if (!lead.abandonedAt && age >= THIRTY_MINUTES_MS) {
+        // biome-ignore lint/performance/noAwaitInLoops: per-lead social recovery update must be sequential for Prisma write ordering
         await this.prisma.checkoutSocialLead.update({
           where: { id: lead.id },
           data: {

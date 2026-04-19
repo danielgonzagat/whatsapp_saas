@@ -49,7 +49,7 @@ const CSS_FONT_RE = /font-size\s*:\s*['"`]?(\d{1,2})px/gi;
 const INLINE_FONT_RE = /fontSize\s*:\s*['"`]?(\d{1,2})px/gi;
 const EMOJI_RE = /\p{Extended_Pictographic}/gu;
 const CHAT_FILE_HINT_RE =
-  /(chat|inbox|conversation|composer|assistant|thread|onboarding-chat|kloel-message|kloel-chat)/i;
+  /(?:chat|inbox|conversation|composer|assistant|thread|onboarding-chat|kloel-message|kloel-chat)/i;
 const AI_SPEECH_PATTERNS = [
   /Entendendo sua/i,
   /Redigindo a resposta/i,
@@ -97,6 +97,22 @@ const IGNORED_TRACKED_SEGMENTS = new Set([
   '__mocks__',
   'test',
 ]);
+const SPEC_OR_TEST_FILE_RE = /\.(?:spec|test)\.[jt]sx?$/;
+const PATH_SEPARATOR_RE = /[\\/]/;
+const PRISMA_TOKEN_RE = /(?:prisma|prismaAny|Prisma)/;
+const COMMENT_MARKERS_RE = /(?:\/\/|\/\*|\*\/|\{\/\*|\* )/;
+const LINE_SUFFIX_COMMENT_RE = /\/\/.*$/;
+const STRING_OR_JSX_CHAR_RE = /['"`<>]/;
+const TS_IGNORE_RE = /@ts-ignore\b/;
+const ESLINT_DISABLE_RE = /eslint-disable(?:-next-line|-line)?\b/;
+const BIOME_IGNORE_RE = /\bbiome-ignore\b/;
+const NOSEMGREP_RE = /\bnosemgrep\b/;
+const TS_EXPECT_ERROR_RE = /@ts-expect-error\b/;
+const TS_NOCHECK_RE = /@ts-nocheck\b/;
+const CODACY_DISABLE_RE = /codacy:disable(?:-next-line|-line)?\b/;
+const CODACY_IGNORE_RE = /codacy:ignore\b/;
+const NOSONAR_RE = /\bNOSONAR\b/;
+const NOQA_RE = /\bnoqa\b/;
 
 function runGit(args) {
   return execFileSync('git', args, {
@@ -104,6 +120,15 @@ function runGit(args) {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
+}
+
+function shouldIgnoreTrackedFile(relPath) {
+  if (SPEC_OR_TEST_FILE_RE.test(relPath)) {
+    return true;
+  }
+
+  const segments = relPath.split(PATH_SEPARATOR_RE);
+  return segments.some((segment) => IGNORED_TRACKED_SEGMENTS.has(segment));
 }
 
 function getTrackedFiles(prefixes, allowedExtensions) {
@@ -115,15 +140,6 @@ function getTrackedFiles(prefixes, allowedExtensions) {
     .filter((relPath) => existsSync(path.join(repoRoot, relPath)))
     .filter((relPath) => !shouldIgnoreTrackedFile(relPath))
     .filter((relPath) => allowedExtensions.has(path.extname(relPath)));
-}
-
-function shouldIgnoreTrackedFile(relPath) {
-  if (/\.(spec|test)\.[jt]sx?$/.test(relPath)) {
-    return true;
-  }
-
-  const segments = relPath.split(/[\\/]/);
-  return segments.some((segment) => IGNORED_TRACKED_SEGMENTS.has(segment));
 }
 
 function readLines(relPath) {
@@ -179,7 +195,7 @@ function countExplicitAnyMetrics(files) {
         samples.push(sampleEntry(relPath, index + 1, line));
       }
 
-      if (/(prisma|prismaAny|Prisma)/.test(line)) {
+      if (PRISMA_TOKEN_RE.test(line)) {
         prismaTotal += lineCount;
         if (prismaSamples.length < 20) {
           prismaSamples.push(sampleEntry(relPath, index + 1, line));
@@ -194,26 +210,6 @@ function countExplicitAnyMetrics(files) {
   };
 }
 
-function countLiteralMatches(files, regex, comparator = 'max') {
-  let total = 0;
-  const samples = [];
-
-  for (const relPath of files) {
-    const lines = readLines(relPath);
-    lines.forEach((line, index) => {
-      if (COMMENT_ONLY_RE.test(line)) return;
-      const matches = countRegexMatches(line, regex);
-      if (matches === 0) return;
-      total += matches;
-      if (samples.length < 20) {
-        samples.push(sampleEntry(relPath, index + 1, line));
-      }
-    });
-  }
-
-  return createMetric(total, comparator, samples);
-}
-
 function countCommentDirective(files, directive) {
   let total = 0;
   const samples = [];
@@ -221,8 +217,10 @@ function countCommentDirective(files, directive) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: `directive` is a call-site literal RegExp passed from collectRatchetMetrics; `line` is a repo-source line. No user input.
       if (!directive.test(line)) return;
-      if (!/(\/\/|\/\*|\*\/|\{\/\*|\* )/.test(line)) return;
+      if (!COMMENT_MARKERS_RE.test(line)) return;
       total += 1;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line));
@@ -240,6 +238,8 @@ function countHardcodedAiSpeech(files) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+      // Safe: AI_SPEECH_PATTERNS are module-scope literal RegExps; `line` is a repo-source line. No user input, no nested quantifiers.
       const matched = AI_SPEECH_PATTERNS.some((pattern) => pattern.test(line));
       if (!matched) return;
       total += 1;
@@ -260,8 +260,8 @@ function countEmojiOccurrences(files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
       if (COMMENT_ONLY_RE.test(line)) return;
-      const sanitizedLine = line.replace(/\/\/.*$/, '');
-      if (!/['"`<>]/.test(sanitizedLine)) return;
+      const sanitizedLine = line.replace(LINE_SUFFIX_COMMENT_RE, '');
+      if (!STRING_OR_JSX_CHAR_RE.test(sanitizedLine)) return;
       const matches = sanitizedLine.match(EMOJI_RE);
       if (!matches || matches.length === 0) return;
       total += matches.length;
@@ -393,6 +393,19 @@ function readPulseArtifacts() {
   const health = JSON.parse(readFileSync(pulseHealthPath, 'utf8'));
   const certificate = JSON.parse(readFileSync(pulseCertificatePath, 'utf8'));
   return { health, certificate };
+}
+
+function readRatchetBaseline() {
+  if (!existsSync(ratchetBaselinePath)) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(ratchetBaselinePath, 'utf8'));
+    return parsed?.ratchet || {};
+  } catch {
+    return {};
+  }
 }
 
 function collectPulseMetrics({ refreshPulse = false } = {}) {
@@ -567,19 +580,6 @@ function collectCodacyMetrics() {
   }
 }
 
-function readRatchetBaseline() {
-  if (!existsSync(ratchetBaselinePath)) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(readFileSync(ratchetBaselinePath, 'utf8'));
-    return parsed?.ratchet || {};
-  } catch {
-    return {};
-  }
-}
-
 export function collectRatchetMetrics(options = {}) {
   const codeFiles = getTrackedFiles(CODE_PATHS, SOURCE_EXTENSIONS);
   const productFiles = getTrackedFiles(PRODUCT_CODE_PATHS, SOURCE_EXTENSIONS);
@@ -587,11 +587,16 @@ export function collectRatchetMetrics(options = {}) {
   const lineCountFiles = getTrackedFiles([...CODE_PATHS, 'backend/prisma'], LINE_COUNT_EXTENSIONS);
 
   const anyMetrics = countExplicitAnyMetrics(codeFiles);
-  const tsIgnoreMetric = countCommentDirective(codeFiles, /@ts-ignore\b/);
-  const eslintDisableMetric = countCommentDirective(
-    codeFiles,
-    /eslint-disable(?:-next-line|-line)?\b/,
-  );
+  const tsIgnoreMetric = countCommentDirective(codeFiles, TS_IGNORE_RE);
+  const eslintDisableMetric = countCommentDirective(codeFiles, ESLINT_DISABLE_RE);
+  const biomeIgnoreMetric = countCommentDirective(codeFiles, BIOME_IGNORE_RE);
+  const nosemgrepMetric = countCommentDirective(codeFiles, NOSEMGREP_RE);
+  const tsExpectErrorMetric = countCommentDirective(codeFiles, TS_EXPECT_ERROR_RE);
+  const tsNoCheckMetric = countCommentDirective(codeFiles, TS_NOCHECK_RE);
+  const codacyDisableMetric = countCommentDirective(codeFiles, CODACY_DISABLE_RE);
+  const codacyIgnoreMetric = countCommentDirective(codeFiles, CODACY_IGNORE_RE);
+  const nosonarMetric = countCommentDirective(codeFiles, NOSONAR_RE);
+  const noqaMetric = countCommentDirective(codeFiles, NOQA_RE);
   const hardcodedAiSpeechMetric = countHardcodedAiSpeech(productFiles);
   const emojiMetric = countEmojiOccurrences(productFiles);
   const hardcodedHexMetric = countHardcodedHexColors(frontendFiles);
@@ -611,6 +616,14 @@ export function collectRatchetMetrics(options = {}) {
       prisma_any_max: anyMetrics.prismaAny.value,
       ts_ignore_max: tsIgnoreMetric.value,
       eslint_disable_max: eslintDisableMetric.value,
+      biome_ignore_max: biomeIgnoreMetric.value,
+      nosemgrep_max: nosemgrepMetric.value,
+      ts_expect_error_max: tsExpectErrorMetric.value,
+      ts_nocheck_max: tsNoCheckMetric.value,
+      codacy_disable_max: codacyDisableMetric.value,
+      codacy_ignore_max: codacyIgnoreMetric.value,
+      nosonar_max: nosonarMetric.value,
+      noqa_max: noqaMetric.value,
       hardcoded_ai_speech_max: hardcodedAiSpeechMetric.value,
       emoji_in_prompts_max: emojiMetric.value,
       hardcoded_hex_outside_tokens_max: hardcodedHexMetric.value,
@@ -635,6 +648,14 @@ export function collectRatchetMetrics(options = {}) {
       prisma_any_max: anyMetrics.prismaAny,
       ts_ignore_max: tsIgnoreMetric,
       eslint_disable_max: eslintDisableMetric,
+      biome_ignore_max: biomeIgnoreMetric,
+      nosemgrep_max: nosemgrepMetric,
+      ts_expect_error_max: tsExpectErrorMetric,
+      ts_nocheck_max: tsNoCheckMetric,
+      codacy_disable_max: codacyDisableMetric,
+      codacy_ignore_max: codacyIgnoreMetric,
+      nosonar_max: nosonarMetric,
+      noqa_max: noqaMetric,
       hardcoded_ai_speech_max: hardcodedAiSpeechMetric,
       emoji_in_prompts_max: emojiMetric,
       hardcoded_hex_outside_tokens_max: hardcodedHexMetric,

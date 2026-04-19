@@ -31,7 +31,7 @@ export function ProductNerveCenterCampanhasTab({
   recommendedProducts: Array<JsonRecord>;
   productName: string;
 }) {
-  const { productId, router, initialFocus } = useNerveCenterContext();
+  const { productId, router } = useNerveCenterContext();
   const { showToast } = useToast();
   const [camps, setCamps] = useState<Array<JsonRecord>>([]);
   const [campsLoading, setCampsLoading] = useState(true);

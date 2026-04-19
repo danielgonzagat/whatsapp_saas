@@ -137,6 +137,7 @@ export class LedgerReconciliationService {
         continue;
       }
 
+      // biome-ignore lint/performance/noAwaitInLoops: per-order webhook lookup for drift detection; each order is independent audit path
       const webhookEvent = await this.prisma.webhookEvent.findFirst({
         where: {
           provider: order.payment.gateway,
@@ -264,6 +265,7 @@ export class LedgerReconciliationService {
       // BigInt column requires the raw form because Prisma's groupBy
       // type system does not always cooperate with `_sum` on BigInt
       // — we cast to `any` and trust the runtime shape.
+      // biome-ignore lint/performance/noAwaitInLoops: per-wallet ledger aggregate; groupBy scoped to a single walletId
       const aggregates = (await prismaExt.kloelWalletLedger.groupBy({
         by: ['bucket', 'direction'],
         where: { walletId: wallet.id },

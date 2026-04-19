@@ -15,6 +15,8 @@ import { mutate } from 'swr';
 const S = "var(--font-sora), 'Sora', sans-serif";
 const _M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+const SKELETON_SLOTS = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'] as const;
+
 function RecentSkeletonGrid() {
   return (
     <div
@@ -24,9 +26,9 @@ function RecentSkeletonGrid() {
         gap: 12,
       }}
     >
-      {Array.from({ length: 6 }).map((_, index) => (
+      {SKELETON_SLOTS.map((slot) => (
         <div
-          key={`canvas-skeleton-${index}`}
+          key={`canvas-skeleton-${slot}`}
           style={{
             background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
@@ -72,10 +74,13 @@ export default function CanvasInicio() {
   const handleAiSubmit = async () => {
     if (!ai.trim()) return;
     try {
-      const res: any = await apiFetch('/canvas/generate', {
-        method: 'POST',
-        body: { prompt: ai, width: 1080, height: 1080 },
-      });
+      const res = await apiFetch<{ imageUrl?: string; data?: { imageUrl?: string } }>(
+        '/canvas/generate',
+        {
+          method: 'POST',
+          body: { prompt: ai, width: 1080, height: 1080 },
+        },
+      );
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
       if (res?.data?.imageUrl) {
         router.push(
@@ -244,6 +249,7 @@ function DesignCard({
   const dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: hover handlers toggle visibility of action buttons only; container itself is non-interactive
     <div
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
@@ -300,8 +306,12 @@ function DesignCard({
           </svg>
         </button>
       )}
+      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
       <div
         onClick={onClick}
+        role="button"
+        tabIndex={0}
+        aria-label="Abrir template"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();

@@ -203,29 +203,12 @@ interface TeamApiResponse {
   invites?: TeamInvite[];
 }
 
-// BrasilAPI CNPJ response subset used for auto-fill.
-interface BrasilApiCnpjResponse {
-  razao_social?: string;
-  nome_fantasia?: string;
-  cep?: string;
-  logradouro?: string;
-  numero?: string;
-  complemento?: string;
-  bairro?: string;
-  municipio?: string;
-  uf?: string;
-  qsa?: Array<{ nome_socio?: string; cnpj_cpf_do_socio?: string }>;
-}
-
-// ViaCEP response subset used for address auto-fill.
-interface ViaCepResponse {
-  logradouro?: string;
-  complemento?: string;
-  bairro?: string;
-  localidade?: string;
-  uf?: string;
-  erro?: boolean;
-}
+import {
+  type BrasilApiCnpjResponse,
+  type ViaCepResponse,
+  mergeCepIntoForm,
+  mergeCnpjIntoForm,
+} from './ContaView.helpers';
 
 // ═══ HELPERS ═══
 
@@ -848,6 +831,75 @@ function SaveButton({
   );
 }
 
+// ═══ SAVE STATUS ROW ═══
+// Shared inline status label + error message used by every editable section.
+// Extracted to reduce per-section render complexity (Lizard CCN hotspots).
+
+function SaveStatusLabel({ status }: { status: 'idle' | 'success' | 'error' }) {
+  if (status === 'success') {
+    return (
+      <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
+        Salvo!
+      </span>
+    );
+  }
+  if (status === 'error') {
+    return (
+      <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>
+        Erro ao salvar
+      </span>
+    );
+  }
+  return null;
+}
+
+function ErrorText({ message }: { message: string | null | undefined }) {
+  if (!message) return null;
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        color: '#EF4444',
+        marginTop: 8,
+        display: 'block',
+        fontFamily: SORA,
+      }}
+    >
+      {message}
+    </span>
+  );
+}
+
+function SaveActions({
+  error,
+  saveStatus,
+  saving,
+  onSave,
+}: {
+  error: string | null | undefined;
+  saveStatus: 'idle' | 'success' | 'error';
+  saving: boolean;
+  onSave: () => void;
+}) {
+  return (
+    <>
+      <ErrorText message={error} />
+      <div
+        style={{
+          marginTop: 20,
+          display: 'flex',
+          justifyContent: 'flex-end' as const,
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <SaveStatusLabel status={saveStatus} />
+        <SaveButton saving={saving} onClick={onSave} />
+      </div>
+    </>
+  );
+}
+
 // ═══ SECTION CARD WRAPPER ═══
 
 function SectionCard({
@@ -898,6 +950,139 @@ function SectionCard({
 }
 
 // ═══ SECTION 1: DADOS PESSOAIS ═══
+
+// Derive uppercase 2-letter initials from a display name (Brazilian UX default).
+// Extracted to drop Lizard CCN on sections that render an avatar fallback.
+function initialsFromName(name: string): string {
+  return (name || 'U')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
+
+// Clickable avatar with file picker + hover camera overlay used by DadosPessoaisSection.
+// Extracted to simplify the section's render (Lizard CCN).
+function AvatarUploader({
+  previewUrl,
+  fallbackUrl,
+  initials,
+  fileRef,
+  onFileChange,
+  displayName,
+  displayEmail,
+}: {
+  previewUrl: string | null;
+  fallbackUrl: string | null | undefined;
+  initials: string;
+  fileRef: React.RefObject<HTMLInputElement | null>;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  displayName: string;
+  displayEmail: string;
+}) {
+  const imgSrc = previewUrl || fallbackUrl || undefined;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+      <div
+        onClick={() => fileRef.current?.click()}
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: 6,
+          background: 'var(--app-bg-secondary)',
+          border: '1px solid var(--app-border-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative' as const,
+          cursor: 'pointer',
+          padding: 8,
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
+      >
+        {imgSrc ? (
+          // biome-ignore lint/performance/noImgElement: user-selected avatar blob or arbitrary CDN URL, sized by container
+          <img
+            src={imgSrc}
+            alt=""
+            width={120}
+            height={120}
+            style={{
+              objectFit: 'contain',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              borderRadius: 4,
+              display: 'block',
+            }}
+          />
+        ) : (
+          <span
+            style={{
+              fontFamily: SORA,
+              fontSize: 22,
+              fontWeight: 700,
+              color: 'var(--app-text-tertiary)',
+            }}
+          >
+            {initials}
+          </span>
+        )}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: hover-only overlay that reveals the camera icon; not an interactive target */}
+        <div
+          style={{
+            position: 'absolute' as const,
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: 0,
+            transition: 'opacity .15s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '0';
+          }}
+        >
+          <span style={{ color: 'var(--app-text-primary)' }}>{Icons.camera(18)}</span>
+        </div>
+      </div>
+      <div>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--app-text-primary)',
+            display: 'block',
+            fontFamily: SORA,
+          }}
+        >
+          {displayName}
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
+          {displayEmail}
+        </span>
+      </div>
+      <input
+        aria-label="Foto de perfil"
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={onFileChange}
+      />
+    </div>
+  );
+}
 
 function DadosPessoaisSection({
   profile,
@@ -982,113 +1167,20 @@ function DadosPessoaisSection({
     }
   };
 
-  const initials = (form.name || 'U')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
+  const initials = initialsFromName(form.name);
 
   return (
     <SectionCard title="Dados pessoais" subtitle="Informacoes basicas da sua conta">
       {/* Avatar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-        <div
-          onClick={() => fileRef.current?.click()}
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 6,
-            background: 'var(--app-bg-secondary)',
-            border: '1px solid var(--app-border-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative' as const,
-            cursor: 'pointer',
-            padding: 8,
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              (e.currentTarget as HTMLElement).click();
-            }
-          }}
-        >
-          {avatarPreviewUrl || profile?.avatarUrl ? (
-            // biome-ignore lint/performance/noImgElement: user-selected avatar blob or arbitrary CDN URL, sized by container
-            <img
-              src={avatarPreviewUrl || profile?.avatarUrl || undefined}
-              alt=""
-              width={120}
-              height={120}
-              style={{
-                objectFit: 'contain',
-                maxWidth: '100%',
-                maxHeight: '100%',
-                borderRadius: 4,
-                display: 'block',
-              }}
-            />
-          ) : (
-            <span
-              style={{
-                fontFamily: SORA,
-                fontSize: 22,
-                fontWeight: 700,
-                color: 'var(--app-text-tertiary)',
-              }}
-            >
-              {initials}
-            </span>
-          )}
-          <div
-            style={{
-              position: 'absolute' as const,
-              inset: 0,
-              background: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: 0,
-              transition: 'opacity .15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '1';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '0';
-            }}
-          >
-            <span style={{ color: 'var(--app-text-primary)' }}>{Icons.camera(18)}</span>
-          </div>
-        </div>
-        <div>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: 'var(--app-text-primary)',
-              display: 'block',
-              fontFamily: SORA,
-            }}
-          >
-            {form.name || 'Seu nome'}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-            {form.email}
-          </span>
-        </div>
-        <input
-          aria-label="Foto de perfil"
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleAvatarChange}
-        />
-      </div>
+      <AvatarUploader
+        previewUrl={avatarPreviewUrl}
+        fallbackUrl={profile?.avatarUrl}
+        initials={initials}
+        fileRef={fileRef}
+        onFileChange={handleAvatarChange}
+        displayName={form.name || 'Seu nome'}
+        displayEmail={form.email}
+      />
 
       {/* Fields */}
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
@@ -1114,40 +1206,7 @@ function DadosPessoaisSection({
         />
       </div>
 
-      {error && (
-        <span
-          style={{
-            fontSize: 11,
-            color: '#EF4444',
-            marginTop: 8,
-            display: 'block',
-            fontFamily: SORA,
-          }}
-        >
-          {error}
-        </span>
-      )}
-      <div
-        style={{
-          marginTop: 20,
-          display: 'flex',
-          justifyContent: 'flex-end' as const,
-          alignItems: 'center',
-          gap: 12,
-        }}
-      >
-        {saveStatus === 'success' && (
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
-            Salvo!
-          </span>
-        )}
-        {saveStatus === 'error' && (
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>
-            Erro ao salvar
-          </span>
-        )}
-        <SaveButton saving={saving} onClick={handleSave} />
-      </div>
+      <SaveActions error={error} saveStatus={saveStatus} saving={saving} onSave={handleSave} />
     </SectionCard>
   );
 }
@@ -1170,6 +1229,29 @@ function Spinner({ size = 14 }: { size?: number }) {
       <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
     </svg>
   );
+}
+
+// Normalize a KycFiscal record into the form shape used by DadosFiscaisSection.
+// Extracted to drop Lizard CCN on the section's useEffect (many `|| ''` fallbacks).
+function fiscalToFormState(fiscal: KycFiscal) {
+  return {
+    cpf: fiscal.cpf || '',
+    legalName: fiscal.fullName || '',
+    cnpj: fiscal.cnpj || '',
+    razaoSocial: fiscal.razaoSocial || '',
+    nomeFantasia: fiscal.nomeFantasia || '',
+    inscricaoEstadual: fiscal.inscricaoEstadual || '',
+    inscricaoMunicipal: fiscal.inscricaoMunicipal || '',
+    responsavelCpf: fiscal.responsavelCpf || '',
+    responsavelNome: fiscal.responsavelNome || '',
+    cep: fiscal.cep || '',
+    rua: fiscal.street || '',
+    numero: fiscal.number || '',
+    complemento: fiscal.complement || '',
+    bairro: fiscal.neighborhood || '',
+    cidade: fiscal.city || '',
+    uf: fiscal.state || '',
+  };
 }
 
 function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mutate: () => void }) {
@@ -1210,24 +1292,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
   useEffect(() => {
     if (fiscal) {
       setTipo(fiscal.type === 'PJ' || fiscal.cnpj ? 'PJ' : 'PF');
-      setForm({
-        cpf: fiscal.cpf || '',
-        legalName: fiscal.fullName || '',
-        cnpj: fiscal.cnpj || '',
-        razaoSocial: fiscal.razaoSocial || '',
-        nomeFantasia: fiscal.nomeFantasia || '',
-        inscricaoEstadual: fiscal.inscricaoEstadual || '',
-        inscricaoMunicipal: fiscal.inscricaoMunicipal || '',
-        responsavelCpf: fiscal.responsavelCpf || '',
-        responsavelNome: fiscal.responsavelNome || '',
-        cep: fiscal.cep || '',
-        rua: fiscal.street || '',
-        numero: fiscal.number || '',
-        complemento: fiscal.complement || '',
-        bairro: fiscal.neighborhood || '',
-        cidade: fiscal.city || '',
-        uf: fiscal.state || '',
-      });
+      setForm(fiscalToFormState(fiscal));
     }
   }, [fiscal]);
 
@@ -1242,20 +1307,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
       if (!res.ok) return;
       const data: BrasilApiCnpjResponse = await res.json();
-      setForm((prev) => ({
-        ...prev,
-        razaoSocial: data.razao_social || prev.razaoSocial,
-        nomeFantasia: data.nome_fantasia || prev.nomeFantasia,
-        cep: data.cep || prev.cep,
-        rua: data.logradouro || prev.rua,
-        numero: data.numero || prev.numero,
-        complemento: data.complemento || prev.complemento,
-        bairro: data.bairro || prev.bairro,
-        cidade: data.municipio || prev.cidade,
-        uf: data.uf || prev.uf,
-        responsavelNome: data.qsa?.[0]?.nome_socio || prev.responsavelNome,
-        responsavelCpf: data.qsa?.[0]?.cnpj_cpf_do_socio || prev.responsavelCpf,
-      }));
+      setForm((prev) => mergeCnpjIntoForm(prev, data));
     } catch {
       /* API offline, don't block */
     } finally {
@@ -1273,14 +1325,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
       if (!res.ok) return;
       const data: ViaCepResponse = await res.json();
       if (data.erro) return;
-      setForm((prev) => ({
-        ...prev,
-        rua: data.logradouro || prev.rua,
-        complemento: data.complemento || prev.complemento,
-        bairro: data.bairro || prev.bairro,
-        cidade: data.localidade || prev.cidade,
-        uf: data.uf || prev.uf,
-      }));
+      setForm((prev) => mergeCepIntoForm(prev, data));
     } catch {
       /* API offline */
     } finally {
@@ -1552,40 +1597,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
         </div>
       </div>
 
-      {error && (
-        <span
-          style={{
-            fontSize: 11,
-            color: '#EF4444',
-            marginTop: 8,
-            display: 'block',
-            fontFamily: SORA,
-          }}
-        >
-          {error}
-        </span>
-      )}
-      <div
-        style={{
-          marginTop: 20,
-          display: 'flex',
-          justifyContent: 'flex-end' as const,
-          alignItems: 'center',
-          gap: 12,
-        }}
-      >
-        {saveStatus === 'success' && (
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
-            Salvo!
-          </span>
-        )}
-        {saveStatus === 'error' && (
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>
-            Erro ao salvar
-          </span>
-        )}
-        <SaveButton saving={saving} onClick={handleSave} />
-      </div>
+      <SaveActions error={error} saveStatus={saveStatus} saving={saving} onSave={handleSave} />
     </SectionCard>
   );
 }
@@ -1847,6 +1859,256 @@ function DocumentosSection({
 
 // ═══ SECTION 4: DADOS BANCARIOS ═══
 
+// Single row in the bank dropdown list. Extracted to reduce CCN of
+// DadosBancariosSection's render (Lizard hotspot).
+function BankListItem({
+  bank,
+  code3,
+  isSelected,
+  onSelect,
+}: {
+  bank: (typeof BRAZILIAN_BANKS)[number];
+  code3: string;
+  isSelected: boolean;
+  onSelect: (bank: (typeof BRAZILIAN_BANKS)[number]) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(bank)}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 14px',
+        background: isSelected ? 'rgba(232,93,48,0.06)' : 'transparent',
+        border: 'none',
+        borderBottom: '1px solid var(--app-border-subtle)',
+        cursor: 'pointer',
+        textAlign: 'left' as const,
+        transition: 'background .1s',
+      }}
+      onMouseEnter={(e) => {
+        if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'var(--app-bg-hover)';
+      }}
+      onMouseLeave={(e) => {
+        if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent';
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          overflow: 'hidden',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: MONO,
+            fontSize: 11,
+            fontWeight: 600,
+            color: EMBER,
+            width: 32,
+            flexShrink: 0,
+          }}
+        >
+          {code3}
+        </span>
+        <span
+          style={{
+            fontSize: 12,
+            color: 'var(--app-text-primary)',
+            fontFamily: SORA,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {bank.fullName}
+        </span>
+      </div>
+      {isSelected && <span style={{ color: EMBER, flexShrink: 0 }}>{Icons.check(14)}</span>}
+    </button>
+  );
+}
+
+// Normalize a KycBankAccount record into the form shape used by DadosBancariosSection.
+// Extracted to drop Lizard CCN on the section's bankAccount sync useEffect.
+function bankAccountToFormState(
+  bankAccount: KycBankAccount,
+  autoHolderName: string,
+  autoHolderDoc: string,
+) {
+  return {
+    bankName: bankAccount.bankName || '',
+    bankCode: bankAccount.bankCode || '',
+    agency: bankAccount.agency || '',
+    account: bankAccount.account || '',
+    accountType: bankAccount.accountType || 'CHECKING',
+    pixKey: bankAccount.pixKey || '',
+    pixKeyType: bankAccount.pixKeyType || '',
+    holderName: bankAccount.holderName || autoHolderName,
+    holderDocument: bankAccount.holderDocument || autoHolderDoc,
+  };
+}
+
+// Floating panel with search input and bank list. Extracted from DadosBancariosSection's
+// render to lower Lizard CCN; behaviour and DOM structure are identical.
+function BankDropdownPanel({
+  bankSearch,
+  onBankSearchChange,
+  searchTerm,
+  showAllBanks,
+  onShowAllBanks,
+  filteredBanks,
+  selectedCode,
+  onSelectBank,
+}: {
+  bankSearch: string;
+  onBankSearchChange: (v: string) => void;
+  searchTerm: string;
+  showAllBanks: boolean;
+  onShowAllBanks: () => void;
+  filteredBanks: typeof BRAZILIAN_BANKS;
+  selectedCode: string;
+  onSelectBank: (bank: (typeof BRAZILIAN_BANKS)[number]) => void;
+}) {
+  return (
+    <div
+      style={{
+        position: 'absolute' as const,
+        top: '100%',
+        left: 0,
+        right: 0,
+        marginTop: 4,
+        zIndex: 100,
+        background: 'var(--app-bg-card)',
+        border: '1px solid var(--app-border-primary)',
+        borderRadius: 6,
+        boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
+        maxHeight: 280,
+        display: 'flex',
+        flexDirection: 'column' as const,
+      }}
+    >
+      <div
+        style={{
+          padding: '8px 10px',
+          borderBottom: '1px solid var(--app-border-subtle)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'var(--app-bg-primary)',
+            border: '1px solid var(--app-border-primary)',
+            borderRadius: 4,
+            padding: '6px 10px',
+          }}
+        >
+          <svg
+            width={13}
+            height={13}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--app-text-placeholder)"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            aria-label="Buscar banco ou codigo"
+            value={bankSearch}
+            onChange={(e) => onBankSearchChange(e.target.value)}
+            placeholder="Buscar banco ou codigo..."
+            // biome-ignore lint/a11y/noAutofocus: intentional for primary input
+            autoFocus
+            style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              outline: 'none',
+              color: 'var(--app-text-primary)',
+              fontSize: 12,
+              fontFamily: SORA,
+            }}
+          />
+        </div>
+      </div>
+      <div style={{ overflowY: 'auto' as const, flex: 1, maxHeight: 220 }}>
+        {!searchTerm && !showAllBanks && (
+          <div
+            style={{
+              padding: '6px 14px 2px',
+              fontSize: 9,
+              fontWeight: 600,
+              color: 'var(--app-text-tertiary)',
+              letterSpacing: '.06em',
+              textTransform: 'uppercase' as const,
+              fontFamily: SORA,
+            }}
+          >
+            Mais populares
+          </div>
+        )}
+        {filteredBanks.length === 0 ? (
+          <div
+            style={{
+              padding: '16px 14px',
+              textAlign: 'center' as const,
+              color: 'var(--app-text-tertiary)',
+              fontSize: 12,
+              fontFamily: SORA,
+            }}
+          >
+            Nenhum banco encontrado
+          </div>
+        ) : (
+          filteredBanks.map((bank) => {
+            const code3 = formatBankCode(bank.code);
+            return (
+              <BankListItem
+                key={`${bank.code}-${bank.ispb}`}
+                bank={bank}
+                code3={code3}
+                isSelected={selectedCode === code3}
+                onSelect={onSelectBank}
+              />
+            );
+          })
+        )}
+        {!searchTerm && !showAllBanks && (
+          <button
+            type="button"
+            onClick={onShowAllBanks}
+            style={{
+              width: '100%',
+              padding: '10px 14px',
+              background: 'none',
+              border: 'none',
+              borderTop: '1px solid var(--app-border-primary)',
+              color: EMBER,
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: SORA,
+              textAlign: 'center' as const,
+            }}
+          >
+            Ver todos os bancos
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DadosBancariosSection({
   bankAccount,
   fiscal,
@@ -1936,17 +2198,7 @@ function DadosBancariosSection({
 
   useEffect(() => {
     if (bankAccount) {
-      setForm({
-        bankName: bankAccount.bankName || '',
-        bankCode: bankAccount.bankCode || '',
-        agency: bankAccount.agency || '',
-        account: bankAccount.account || '',
-        accountType: bankAccount.accountType || 'CHECKING',
-        pixKey: bankAccount.pixKey || '',
-        pixKeyType: bankAccount.pixKeyType || '',
-        holderName: bankAccount.holderName || autoHolderName,
-        holderDocument: bankAccount.holderDocument || autoHolderDoc,
-      });
+      setForm(bankAccountToFormState(bankAccount, autoHolderName, autoHolderDoc));
     } else {
       setForm((prev) => ({
         ...prev,
@@ -2035,8 +2287,12 @@ function DadosBancariosSection({
             >
               Banco <span style={{ color: EMBER, fontSize: 8 }}>*</span>
             </span>
-            <div
+            <button
+              type="button"
               onClick={() => setBankDropdownOpen(true)}
+              aria-haspopup="listbox"
+              aria-expanded={bankDropdownOpen}
+              aria-label="Selecionar banco"
               style={{
                 width: '100%',
                 padding: '11px 14px',
@@ -2053,12 +2309,7 @@ function DadosBancariosSection({
                 justifyContent: 'space-between',
                 transition: 'border-color .15s, box-shadow .15s',
                 boxSizing: 'border-box' as const,
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  (e.currentTarget as HTMLElement).click();
-                }
+                textAlign: 'inherit' as const,
               }}
             >
               <span
@@ -2087,196 +2338,18 @@ function DadosBancariosSection({
               >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
-            </div>
+            </button>
             {bankDropdownOpen && (
-              <div
-                style={{
-                  position: 'absolute' as const,
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  marginTop: 4,
-                  zIndex: 100,
-                  background: 'var(--app-bg-card)',
-                  border: '1px solid var(--app-border-primary)',
-                  borderRadius: 6,
-                  boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
-                  maxHeight: 280,
-                  display: 'flex',
-                  flexDirection: 'column' as const,
-                }}
-              >
-                <div
-                  style={{
-                    padding: '8px 10px',
-                    borderBottom: '1px solid var(--app-border-subtle)',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      background: 'var(--app-bg-primary)',
-                      border: '1px solid var(--app-border-primary)',
-                      borderRadius: 4,
-                      padding: '6px 10px',
-                    }}
-                  >
-                    <svg
-                      width={13}
-                      height={13}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--app-text-placeholder)"
-                      strokeWidth={2}
-                      aria-hidden="true"
-                    >
-                      <circle cx="11" cy="11" r="7" />
-                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <input
-                      aria-label="Buscar banco ou codigo"
-                      value={bankSearch}
-                      onChange={(e) => setBankSearch(e.target.value)}
-                      placeholder="Buscar banco ou codigo..."
-                      // biome-ignore lint/a11y/noAutofocus: intentional for primary input
-                      autoFocus
-                      style={{
-                        flex: 1,
-                        background: 'none',
-                        border: 'none',
-                        outline: 'none',
-                        color: 'var(--app-text-primary)',
-                        fontSize: 12,
-                        fontFamily: SORA,
-                      }}
-                    />
-                  </div>
-                </div>
-                <div style={{ overflowY: 'auto' as const, flex: 1, maxHeight: 220 }}>
-                  {!searchTerm && !showAllBanks && (
-                    <div
-                      style={{
-                        padding: '6px 14px 2px',
-                        fontSize: 9,
-                        fontWeight: 600,
-                        color: 'var(--app-text-tertiary)',
-                        letterSpacing: '.06em',
-                        textTransform: 'uppercase' as const,
-                        fontFamily: SORA,
-                      }}
-                    >
-                      Mais populares
-                    </div>
-                  )}
-                  {filteredBanks.length === 0 ? (
-                    <div
-                      style={{
-                        padding: '16px 14px',
-                        textAlign: 'center' as const,
-                        color: 'var(--app-text-tertiary)',
-                        fontSize: 12,
-                        fontFamily: SORA,
-                      }}
-                    >
-                      Nenhum banco encontrado
-                    </div>
-                  ) : (
-                    filteredBanks.map((bank) => {
-                      const code3 = formatBankCode(bank.code);
-                      const isSelected = form.bankCode === code3;
-                      return (
-                        <button
-                          type="button"
-                          key={`${bank.code}-${bank.ispb}`}
-                          onClick={() => selectBank(bank)}
-                          style={{
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '10px 14px',
-                            background: isSelected ? 'rgba(232,93,48,0.06)' : 'transparent',
-                            border: 'none',
-                            borderBottom: '1px solid var(--app-border-subtle)',
-                            cursor: 'pointer',
-                            textAlign: 'left' as const,
-                            transition: 'background .1s',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected)
-                              (e.currentTarget as HTMLElement).style.background =
-                                'var(--app-bg-hover)';
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected)
-                              (e.currentTarget as HTMLElement).style.background = 'transparent';
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 10,
-                              overflow: 'hidden',
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontFamily: MONO,
-                                fontSize: 11,
-                                fontWeight: 600,
-                                color: EMBER,
-                                width: 32,
-                                flexShrink: 0,
-                              }}
-                            >
-                              {code3}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: 12,
-                                color: 'var(--app-text-primary)',
-                                fontFamily: SORA,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {bank.fullName}
-                            </span>
-                          </div>
-                          {isSelected && (
-                            <span style={{ color: EMBER, flexShrink: 0 }}>{Icons.check(14)}</span>
-                          )}
-                        </button>
-                      );
-                    })
-                  )}
-                  {!searchTerm && !showAllBanks && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllBanks(true)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        background: 'none',
-                        border: 'none',
-                        borderTop: '1px solid var(--app-border-primary)',
-                        color: EMBER,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        fontFamily: SORA,
-                        textAlign: 'center' as const,
-                      }}
-                    >
-                      Ver todos os bancos
-                    </button>
-                  )}
-                </div>
-              </div>
+              <BankDropdownPanel
+                bankSearch={bankSearch}
+                onBankSearchChange={setBankSearch}
+                searchTerm={searchTerm}
+                showAllBanks={showAllBanks}
+                onShowAllBanks={() => setShowAllBanks(true)}
+                filteredBanks={filteredBanks}
+                selectedCode={form.bankCode}
+                onSelectBank={selectBank}
+              />
             )}
           </div>
 
@@ -2480,40 +2553,7 @@ function DadosBancariosSection({
         </div>
       </div>
 
-      {error && (
-        <span
-          style={{
-            fontSize: 11,
-            color: '#EF4444',
-            marginTop: 8,
-            display: 'block',
-            fontFamily: SORA,
-          }}
-        >
-          {error}
-        </span>
-      )}
-      <div
-        style={{
-          marginTop: 20,
-          display: 'flex',
-          justifyContent: 'flex-end' as const,
-          alignItems: 'center',
-          gap: 12,
-        }}
-      >
-        {saveStatus === 'success' && (
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
-            Salvo!
-          </span>
-        )}
-        {saveStatus === 'error' && (
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>
-            Erro ao salvar
-          </span>
-        )}
-        <SaveButton saving={saving} onClick={handleSave} />
-      </div>
+      <SaveActions error={error} saveStatus={saveStatus} saving={saving} onSave={handleSave} />
     </SectionCard>
   );
 }
@@ -2786,13 +2826,7 @@ function PerfilPublicoSection({
     setSaving(false);
   };
 
-  const initials = (form.publicName || 'U')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
+  const initials = initialsFromName(form.publicName);
 
   return (
     <>
@@ -2835,40 +2869,7 @@ function PerfilPublicoSection({
           </div>
         </div>
 
-        {error && (
-          <span
-            style={{
-              fontSize: 11,
-              color: '#EF4444',
-              marginTop: 8,
-              display: 'block',
-              fontFamily: SORA,
-            }}
-          >
-            {error}
-          </span>
-        )}
-        <div
-          style={{
-            marginTop: 20,
-            display: 'flex',
-            justifyContent: 'flex-end' as const,
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          {saveStatus === 'success' && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
-              Salvo!
-            </span>
-          )}
-          {saveStatus === 'error' && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>
-              Erro ao salvar
-            </span>
-          )}
-          <SaveButton saving={saving} onClick={handleSave} />
-        </div>
+        <SaveActions error={error} saveStatus={saveStatus} saving={saving} onSave={handleSave} />
       </SectionCard>
 
       {/* Preview card */}
@@ -2898,6 +2899,8 @@ function PerfilPublicoSection({
             }}
           >
             {avatarPreviewUrl || profile?.avatarUrl ? (
+              // biome-ignore lint/correctness/useImageSize: avatar URL is dynamic (user-uploaded) and rendered within a max-sized container via CSS
+              // biome-ignore lint/performance/noImgElement: dynamic user avatar (uploaded/blob URL); next/image remote loader not configured for arbitrary hosts
               <img
                 src={avatarPreviewUrl || profile?.avatarUrl || undefined}
                 alt=""
@@ -2990,6 +2993,120 @@ function PerfilPublicoSection({
 
 // ═══ SECTION 8: IDIOMAS ═══
 
+interface LanguageDef {
+  key: string;
+  label: string;
+  code: string;
+  disabled: boolean;
+}
+
+const LANGUAGES: ReadonlyArray<LanguageDef> = [
+  { key: 'pt-BR', label: 'Portugues (BR)', code: 'BR', disabled: false },
+  { key: 'en', label: 'English', code: 'EN', disabled: true },
+  { key: 'es', label: 'Espanol', code: 'ES', disabled: true },
+];
+
+// Extracted from IdiomasSection's .map callback to lower render CCN.
+function LanguageOption({
+  lang,
+  isActive,
+  onActivate,
+}: {
+  lang: LanguageDef;
+  isActive: boolean;
+  onActivate: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (!lang.disabled) onActivate();
+      }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        padding: '14px 18px',
+        background: isActive
+          ? 'var(--app-accent-light)'
+          : lang.disabled
+            ? 'var(--app-bg-primary)'
+            : 'var(--app-bg-card)',
+        border: isActive ? `1px solid ${EMBER}` : '1px solid var(--app-border-primary)',
+        borderRadius: 8,
+        cursor: lang.disabled ? 'not-allowed' : 'pointer',
+        transition: 'all 150ms ease',
+        textAlign: 'left' as const,
+        fontFamily: SORA,
+        opacity: lang.disabled ? 0.5 : 1,
+        width: '100%',
+      }}
+    >
+      {/* Radio indicator */}
+      <div
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: '50%',
+          border: isActive ? `2px solid ${EMBER}` : '2px solid var(--app-text-placeholder)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'border-color 150ms ease',
+        }}
+      >
+        {isActive && (
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: EMBER }} />
+        )}
+      </div>
+      <span
+        style={{
+          fontSize: 10,
+          lineHeight: '16px',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase' as const,
+          color: '#8A8A91',
+          minWidth: 24,
+          flexShrink: 0,
+        }}
+      >
+        {lang.code}
+      </span>
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: isActive ? 600 : 400,
+          color: isActive ? 'var(--app-text-primary)' : 'var(--app-text-secondary)',
+          flex: 1,
+        }}
+      >
+        {lang.label}
+      </span>
+      {lang.disabled && (
+        <span
+          style={{
+            fontSize: 9,
+            fontWeight: 700,
+            color: EMBER,
+            background: 'rgba(232,93,48,0.1)',
+            padding: '2px 8px',
+            borderRadius: 4,
+            textTransform: 'uppercase' as const,
+            fontFamily: SORA,
+            flexShrink: 0,
+          }}
+        >
+          Planejado
+        </span>
+      )}
+      {isActive && !lang.disabled && (
+        <span style={{ color: EMBER, flexShrink: 0 }}>{Icons.check(14)}</span>
+      )}
+    </button>
+  );
+}
+
 function IdiomasSection() {
   const [language, setLanguage] = useState(() => {
     if (typeof window === 'undefined') return 'pt-BR';
@@ -3001,108 +3118,17 @@ function IdiomasSection() {
     localStorage.setItem('kloel:language', value);
   };
 
-  const languages = [
-    { key: 'pt-BR', label: 'Portugues (BR)', code: 'BR', disabled: false },
-    { key: 'en', label: 'English', code: 'EN', disabled: true },
-    { key: 'es', label: 'Espanol', code: 'ES', disabled: true },
-  ];
-
   return (
     <SectionCard title="Idiomas" subtitle="Selecione o idioma de preferencia da plataforma">
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
-        {languages.map((lang) => {
-          const isActive = language === lang.key;
-          return (
-            <button
-              type="button"
-              key={lang.key}
-              onClick={() => {
-                if (!lang.disabled) handleChange(lang.key);
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: '14px 18px',
-                background: isActive
-                  ? 'var(--app-accent-light)'
-                  : lang.disabled
-                    ? 'var(--app-bg-primary)'
-                    : 'var(--app-bg-card)',
-                border: isActive ? `1px solid ${EMBER}` : '1px solid var(--app-border-primary)',
-                borderRadius: 8,
-                cursor: lang.disabled ? 'not-allowed' : 'pointer',
-                transition: 'all 150ms ease',
-                textAlign: 'left' as const,
-                fontFamily: SORA,
-                opacity: lang.disabled ? 0.5 : 1,
-                width: '100%',
-              }}
-            >
-              {/* Radio indicator */}
-              <div
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  border: isActive ? `2px solid ${EMBER}` : '2px solid var(--app-text-placeholder)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'border-color 150ms ease',
-                }}
-              >
-                {isActive && (
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: EMBER }} />
-                )}
-              </div>
-              <span
-                style={{
-                  fontSize: 10,
-                  lineHeight: '16px',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase' as const,
-                  color: '#8A8A91',
-                  minWidth: 24,
-                  flexShrink: 0,
-                }}
-              >
-                {lang.code}
-              </span>
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive ? 'var(--app-text-primary)' : 'var(--app-text-secondary)',
-                  flex: 1,
-                }}
-              >
-                {lang.label}
-              </span>
-              {lang.disabled && (
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: EMBER,
-                    background: 'rgba(232,93,48,0.1)',
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                    textTransform: 'uppercase' as const,
-                    fontFamily: SORA,
-                    flexShrink: 0,
-                  }}
-                >
-                  Planejado
-                </span>
-              )}
-              {isActive && !lang.disabled && (
-                <span style={{ color: EMBER, flexShrink: 0 }}>{Icons.check(14)}</span>
-              )}
-            </button>
-          );
-        })}
+        {LANGUAGES.map((lang) => (
+          <LanguageOption
+            key={lang.key}
+            lang={lang}
+            isActive={language === lang.key}
+            onActivate={() => handleChange(lang.key)}
+          />
+        ))}
       </div>
       <div
         style={{
@@ -3127,6 +3153,91 @@ function IdiomasSection() {
 }
 
 // ═══ SECTION 9: AJUDA ═══
+
+// Single FAQ entry extracted from AjudaSection's .map callback to reduce CCN.
+function FaqItem({
+  question,
+  answer,
+  isOpen,
+  onToggle,
+}: {
+  question: string;
+  answer: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      style={{
+        background: 'var(--app-bg-secondary)',
+        border: '1px solid var(--app-border-primary)',
+        borderRadius: 6,
+        overflow: 'hidden',
+      }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          width: '100%',
+          padding: '12px 16px',
+          background: 'transparent',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          fontFamily: SORA,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'var(--app-text-primary)',
+            textAlign: 'left' as const,
+          }}
+        >
+          {question}
+        </span>
+        <span
+          style={{
+            color: 'var(--app-text-tertiary)',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform .15s',
+            flexShrink: 0,
+            marginLeft: 8,
+          }}
+        >
+          <svg
+            width={12}
+            height={12}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </span>
+      </button>
+      {isOpen && (
+        <div
+          style={{
+            padding: '0 16px 12px',
+            fontSize: 11,
+            color: 'var(--app-text-secondary)',
+            lineHeight: 1.6,
+            fontFamily: SORA,
+          }}
+        >
+          {answer}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AjudaSection() {
   const [openQuestion, setOpenQuestion] = useState<number | null>(null);
@@ -3165,220 +3276,151 @@ function AjudaSection() {
   ];
 
   return (
-    <>
-      <SectionCard
-        title="Precisa de ajuda?"
-        subtitle="Entre em contato conosco ou consulte as perguntas frequentes"
-      >
-        {/* Quick links */}
-        <div
-          style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginBottom: 24 }}
-        >
-          {helpLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              target={link.target}
-              rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '14px 18px',
-                background: 'var(--app-bg-card)',
-                border: '1px solid var(--app-border-primary)',
-                borderRadius: 8,
-                textDecoration: 'none',
-                color: 'var(--app-text-primary)',
-                fontSize: 13,
-                fontFamily: SORA,
-                transition: 'all 150ms ease',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = EMBER;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--app-border-primary)';
-              }}
-            >
-              <span style={{ color: EMBER, flexShrink: 0 }}>{link.icon(16)}</span>
-              <span style={{ flex: 1 }}>{link.label}</span>
-              <svg
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--app-text-placeholder)"
-                strokeWidth={2}
-                aria-hidden="true"
-              >
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
-            </a>
-          ))}
-        </div>
-
-        {/* Contact buttons */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+    <SectionCard
+      title="Precisa de ajuda?"
+      subtitle="Entre em contato conosco ou consulte as perguntas frequentes"
+    >
+      {/* Quick links */}
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginBottom: 24 }}>
+        {helpLinks.map((link) => (
           <a
-            href="https://wa.me/5500000000000"
-            target="_blank"
-            rel="noopener noreferrer"
+            key={link.label}
+            href={link.href}
+            target={link.target}
+            rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
             style={{
-              flex: 1,
-              padding: '14px 20px',
-              background: 'rgba(37,211,102,.06)',
-              border: '1px solid rgba(37,211,102,.2)',
-              borderRadius: 6,
-              color: '#25D366',
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: SORA,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '14px 18px',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
+              borderRadius: 8,
               textDecoration: 'none',
-              textAlign: 'center' as const,
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-              display: 'block',
-            }}
-          >
-            WhatsApp
-          </a>
-          <a
-            href="mailto:suporte@kloel.com"
-            style={{
-              flex: 1,
-              padding: '14px 20px',
-              background: 'rgba(232,93,48,.06)',
-              border: `1px solid rgba(232,93,48,.2)`,
-              borderRadius: 6,
-              color: EMBER,
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: SORA,
-              textDecoration: 'none',
-              textAlign: 'center' as const,
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-              display: 'block',
-            }}
-          >
-            E-mail
-          </a>
-        </div>
-
-        {/* FAQ Accordion */}
-        <div style={{ borderTop: '1px solid var(--app-border-subtle)', paddingTop: 20 }}>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
               color: 'var(--app-text-primary)',
-              display: 'block',
-              marginBottom: 14,
+              fontSize: 13,
               fontFamily: SORA,
+              transition: 'all 150ms ease',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = EMBER;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--app-border-primary)';
             }}
           >
-            Perguntas frequentes
-          </span>
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-            {faqs.map((faq, idx) => (
-              <div
-                key={faq.q}
-                style={{
-                  background: 'var(--app-bg-secondary)',
-                  border: '1px solid var(--app-border-primary)',
-                  borderRadius: 6,
-                  overflow: 'hidden',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggle(idx)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: 'transparent',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    fontFamily: SORA,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: 'var(--app-text-primary)',
-                      textAlign: 'left' as const,
-                    }}
-                  >
-                    {faq.q}
-                  </span>
-                  <span
-                    style={{
-                      color: 'var(--app-text-tertiary)',
-                      transform: openQuestion === idx ? 'rotate(180deg)' : 'rotate(0deg)',
-                      transition: 'transform .15s',
-                      flexShrink: 0,
-                      marginLeft: 8,
-                    }}
-                  >
-                    <svg
-                      width={12}
-                      height={12}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      aria-hidden="true"
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </span>
-                </button>
-                {openQuestion === idx && (
-                  <div
-                    style={{
-                      padding: '0 16px 12px',
-                      fontSize: 11,
-                      color: 'var(--app-text-secondary)',
-                      lineHeight: 1.6,
-                      fontFamily: SORA,
-                    }}
-                  >
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+            <span style={{ color: EMBER, flexShrink: 0 }}>{link.icon(16)}</span>
+            <span style={{ flex: 1 }}>{link.label}</span>
+            <svg
+              width={14}
+              height={14}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--app-text-placeholder)"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
+        ))}
+      </div>
 
-        {/* Platform version */}
-        <div
+      {/* Contact buttons */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        <a
+          href="https://wa.me/5500000000000"
+          target="_blank"
+          rel="noopener noreferrer"
           style={{
-            borderTop: '1px solid var(--app-border-subtle)',
-            marginTop: 20,
-            paddingTop: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
+            flex: 1,
+            padding: '14px 20px',
+            background: 'rgba(37,211,102,.06)',
+            border: '1px solid rgba(37,211,102,.2)',
+            borderRadius: 6,
+            color: '#25D366',
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: SORA,
+            textDecoration: 'none',
+            textAlign: 'center' as const,
+            cursor: 'pointer',
+            transition: 'all 150ms ease',
+            display: 'block',
           }}
         >
-          <span style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }}>
-            {Icons.shield(14)}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-            Versao da plataforma: Kloel v1.0.0-beta
-          </span>
+          WhatsApp
+        </a>
+        <a
+          href="mailto:suporte@kloel.com"
+          style={{
+            flex: 1,
+            padding: '14px 20px',
+            background: 'rgba(232,93,48,.06)',
+            border: `1px solid rgba(232,93,48,.2)`,
+            borderRadius: 6,
+            color: EMBER,
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: SORA,
+            textDecoration: 'none',
+            textAlign: 'center' as const,
+            cursor: 'pointer',
+            transition: 'all 150ms ease',
+            display: 'block',
+          }}
+        >
+          E-mail
+        </a>
+      </div>
+
+      {/* FAQ Accordion */}
+      <div style={{ borderTop: '1px solid var(--app-border-subtle)', paddingTop: 20 }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--app-text-primary)',
+            display: 'block',
+            marginBottom: 14,
+            fontFamily: SORA,
+          }}
+        >
+          Perguntas frequentes
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          {faqs.map((faq, idx) => (
+            <FaqItem
+              key={faq.q}
+              question={faq.q}
+              answer={faq.a}
+              isOpen={openQuestion === idx}
+              onToggle={() => toggle(idx)}
+            />
+          ))}
         </div>
-      </SectionCard>
-    </>
+      </div>
+
+      {/* Platform version */}
+      <div
+        style={{
+          borderTop: '1px solid var(--app-border-subtle)',
+          marginTop: 20,
+          paddingTop: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <span style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }}>{Icons.shield(14)}</span>
+        <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
+          Versao da plataforma: Kloel v1.0.0-beta
+        </span>
+      </div>
+    </SectionCard>
   );
 }
 

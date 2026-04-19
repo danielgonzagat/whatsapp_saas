@@ -22,36 +22,13 @@ import {
   unwrapApiPayload,
   JsonRecord,
 } from './product-nerve-center.shared';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
-function sanitizeHtml(html: string): string {
-  if (!DOMPurify) return html;
-  return (DOMPurify as { sanitize: (html: string, opts: JsonRecord) => string }).sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
-    ALLOWED_ATTR: ['href', 'target'],
-  });
-}
-
-function clampNumber(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function parseLocalePercent(value: string, fallback: number) {
-  const parsed = Number(String(value ?? '').replace(',', '.'));
-  return Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
-}
-
-function formatPercentInput(value: unknown, fallback: number) {
-  const parsed = Number(value);
-  const safe = Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
-  return String(safe).replace('.', ',');
-}
-
-function clampIntegerValue(value: unknown, fallback: number, min: number, max: number) {
-  const parsed = Math.round(Number(value));
-  return Number.isFinite(parsed) ? clampNumber(parsed, min, max) : fallback;
-}
+import {
+  clampIntegerValue,
+  clampNumber,
+  formatPercentInput,
+  parseLocalePercent,
+  sanitizeHtml,
+} from './ProductNerveCenterComissaoTab.helpers';
 
 /* ── Data shapes for affiliate / coproduction records ── */
 interface AffiliateRequestRecord {
@@ -81,15 +58,6 @@ interface AffiliateStatsRecord {
   pendingRequests?: number;
   activeLinks?: number;
   commission?: number;
-  [key: string]: unknown;
-}
-
-interface CoproducerRecord {
-  id: string;
-  agentName?: string;
-  agentEmail?: string;
-  role?: string;
-  percentage?: number;
   [key: string]: unknown;
 }
 
@@ -129,7 +97,7 @@ function AfiliadosSubTab({
   const handleRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
     setRequestActionId(`${action}-${requestId}`);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates/requests/${requestId}/${action}`, {
           method: 'POST',
         }),
@@ -145,7 +113,7 @@ function AfiliadosSubTab({
   const handleLinkToggle = async (linkId: string, active: boolean) => {
     setLinkActionId(linkId);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates/links/${linkId}`, {
           method: 'PUT',
           body: { active },
@@ -437,7 +405,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
   const handleSaveMerchan = async () => {
     setMSaving(true);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates`, {
           method: 'PUT',
           body: { merchandContent: edRef.current?.innerHTML || merchan },
@@ -556,7 +524,7 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
   const handleSaveTerms = async () => {
     setTSaving(true);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates`, {
           method: 'PUT',
           body: { affiliateTerms: edRef.current?.innerHTML || terms },
@@ -1100,7 +1068,7 @@ export function ProductNerveCenterComissaoTab() {
   const handleComSave = async () => {
     setComSaving(true);
     try {
-      const summary = unwrapApiPayload(
+      const summary = unwrapApiPayload<JsonRecord | null>(
         await apiFetch(`/products/${productId}/affiliates`, {
           method: 'PUT',
           body: {

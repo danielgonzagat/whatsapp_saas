@@ -51,6 +51,134 @@
       "lineContains": "eslint-disable"
     },
     {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_biome_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal biome-ignore directive to measure suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "biome-ignore"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_nosemgrep",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal nosemgrep directive to measure suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "nosemgrep"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_ts_expect_error",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal @ts-expect-error directive to measure suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-expect-error"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_ts_nocheck",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal @ts-nocheck directive to measure suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-nocheck"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_codacy_disable",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal codacy:disable directive to measure suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "codacy:disable"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_codacy_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal codacy:ignore directive to measure suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "codacy:ignore"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_nosonar",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal NOSONAR directive to measure suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "NOSONAR"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_noqa",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal noqa directive to measure suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "noqa"
+    },
+    {
+      "path": "scripts/ops/check-architecture-guardrails.mjs",
+      "rule": "no_new_biome_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "The architecture guardrail script must match the literal biome-ignore directive to ban new suppressions in diffs.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "biome-ignore"
+    },
+    {
+      "path": "scripts/ops/check-architecture-guardrails.mjs",
+      "rule": "no_new_nosemgrep",
+      "owner": "@danielgonzagat",
+      "reason": "The architecture guardrail script must match the literal nosemgrep directive to ban new suppressions in diffs.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "nosemgrep"
+    },
+    {
+      "path": "scripts/ops/check-architecture-guardrails.mjs",
+      "rule": "no_new_ts_expect_error",
+      "owner": "@danielgonzagat",
+      "reason": "The architecture guardrail script must match the literal @ts-expect-error directive to ban new suppressions in diffs.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-expect-error"
+    },
+    {
+      "path": "scripts/ops/check-architecture-guardrails.mjs",
+      "rule": "no_new_ts_nocheck",
+      "owner": "@danielgonzagat",
+      "reason": "The architecture guardrail script must match the literal @ts-nocheck directive to ban new suppressions in diffs.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-nocheck"
+    },
+    {
+      "path": "scripts/ops/check-architecture-guardrails.mjs",
+      "rule": "no_new_codacy_disable",
+      "owner": "@danielgonzagat",
+      "reason": "The architecture guardrail script must match the literal codacy:disable directive to ban new suppressions in diffs.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "codacy:disable"
+    },
+    {
+      "path": "scripts/ops/check-architecture-guardrails.mjs",
+      "rule": "no_new_codacy_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "The architecture guardrail script must match the literal codacy:ignore directive to ban new suppressions in diffs.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "codacy:ignore"
+    },
+    {
+      "path": "scripts/ops/check-architecture-guardrails.mjs",
+      "rule": "no_new_nosonar",
+      "owner": "@danielgonzagat",
+      "reason": "The architecture guardrail script must match the literal NOSONAR directive to ban new suppressions in diffs.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "NOSONAR"
+    },
+    {
+      "path": "scripts/ops/check-architecture-guardrails.mjs",
+      "rule": "no_new_noqa",
+      "owner": "@danielgonzagat",
+      "reason": "The architecture guardrail script must match the literal noqa directive to ban new suppressions in diffs.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "noqa"
+    },
+    {
       "path": "scripts/pulse/types.ts",
       "rule": "max_touched_file_lines",
       "maxLines": 1400,

@@ -157,12 +157,6 @@ function buildSuccessResponse<T>(payload: T, status: number): ApiResponse<T> {
   return { data: payload, status };
 }
 
-interface AuthTokens {
-  accessToken: string;
-  refreshToken?: string;
-  expiresIn?: number;
-}
-
 // ============================================
 // Storage keys & helpers
 // ============================================
@@ -183,6 +177,23 @@ function emitStorageChange() {
   window.dispatchEvent(new Event(STORAGE_EVENT));
 }
 
+function scoreTokenCandidate(token: string): number {
+  const payload = decodeKloelJwtPayload(token);
+  const authenticatedScore = hasAuthenticatedKloelToken(token) ? 1000 : 0;
+  const anonymousPenalty = isAnonymousKloelToken(token) ? -1000 : 0;
+  const nameScore = String(payload?.name || '').trim() ? 100 : 0;
+  const expScore = typeof payload?.exp === 'number' ? payload.exp : 0;
+  return authenticatedScore + anonymousPenalty + nameScore + expScore;
+}
+
+function pickBestTokenCandidate(candidates: string[]): string | null {
+  return (
+    [...candidates].sort(
+      (left, right) => scoreTokenCandidate(right) - scoreTokenCandidate(left),
+    )[0] || null
+  );
+}
+
 function readBrowserCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
 
@@ -197,22 +208,7 @@ function readBrowserCookie(name: string): string | null {
   if (candidates.length === 1) return candidates[0] || null;
 
   if (name === TOKEN_KEY || name === LEGACY_TOKEN_COOKIE_KEY) {
-    return [...candidates].sort((left, right) => {
-      const leftPayload = decodeKloelJwtPayload(left);
-      const rightPayload = decodeKloelJwtPayload(right);
-      const leftScore =
-        (hasAuthenticatedKloelToken(left) ? 1000 : 0) +
-        (isAnonymousKloelToken(left) ? -1000 : 0) +
-        (String(leftPayload?.name || '').trim() ? 100 : 0) +
-        (typeof leftPayload?.exp === 'number' ? leftPayload.exp : 0);
-      const rightScore =
-        (hasAuthenticatedKloelToken(right) ? 1000 : 0) +
-        (isAnonymousKloelToken(right) ? -1000 : 0) +
-        (String(rightPayload?.name || '').trim() ? 100 : 0) +
-        (typeof rightPayload?.exp === 'number' ? rightPayload.exp : 0);
-
-      return rightScore - leftScore;
-    })[0];
+    return pickBestTokenCandidate(candidates);
   }
 
   return candidates[candidates.length - 1] || null;
@@ -243,12 +239,15 @@ function setBrowserCookie(
   options?: { shareAcrossSubdomains?: boolean },
 ) {
   if (typeof document === 'undefined') return;
+  // biome-ignore lint/suspicious/noDocumentCookie: auth cookie name is a module-level constant; value URL-encoded. CookieStore API lacks required sync semantics for auth bootstrap.
   document.cookie = `${name}=${encodeURIComponent(value)}; ${browserCookieSuffix(maxAge, options)}`;
 }
 
 function clearBrowserCookie(name: string) {
   if (typeof document === 'undefined') return;
+  // biome-ignore lint/suspicious/noDocumentCookie: clearing auth cookie by module-level constant name; empty value.
   document.cookie = `${name}=; ${browserCookieSuffix(0)}`;
+  // biome-ignore lint/suspicious/noDocumentCookie: clearing host-only variant; same safety as above.
   document.cookie = `${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`;
 }
 
@@ -258,6 +257,7 @@ function setBrowserAuthCookie() {
 
 function clearHostOnlyBrowserCookie(name: string) {
   if (typeof document === 'undefined') return;
+  // biome-ignore lint/suspicious/noDocumentCookie: internal helper; name controlled by callers with module-level constants.
   document.cookie = `${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`;
 }
 
@@ -313,30 +313,46 @@ function reconcileFreshSharedAuthSession() {
   emitStorageChange();
 }
 
+function readStoredAccessToken(): string | null {
+  return (
+    localStorage.getItem(TOKEN_KEY) ||
+    readBrowserCookie(TOKEN_KEY) ||
+    readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY)
+  );
+}
+
+function extractTokenWorkspaceId(token: string | null): string {
+  const payload = decodeKloelJwtPayload(token);
+  return String(payload?.workspaceId || '').trim();
+}
+
+function persistWorkspaceIfChanged(
+  currentWorkspaceId: string | null,
+  tokenWorkspaceId: string,
+): void {
+  if (currentWorkspaceId !== tokenWorkspaceId) {
+    localStorage.setItem(WORKSPACE_KEY, tokenWorkspaceId);
+    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
+    emitStorageChange();
+    return;
+  }
+  if (readBrowserCookie(WORKSPACE_KEY) !== tokenWorkspaceId) {
+    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
+  }
+}
+
 function syncWorkspaceFromToken(): string | null {
   if (typeof window === 'undefined') return null;
 
-  const token =
-    localStorage.getItem(TOKEN_KEY) ||
-    readBrowserCookie(TOKEN_KEY) ||
-    readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY);
-
-  const payload = decodeKloelJwtPayload(token);
-  const tokenWorkspaceId = String(payload?.workspaceId || '').trim();
+  const token = readStoredAccessToken();
+  const tokenWorkspaceId = extractTokenWorkspaceId(token);
   const currentWorkspaceId = localStorage.getItem(WORKSPACE_KEY);
 
   if (!tokenWorkspaceId) {
     return currentWorkspaceId;
   }
 
-  if (currentWorkspaceId !== tokenWorkspaceId) {
-    localStorage.setItem(WORKSPACE_KEY, tokenWorkspaceId);
-    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
-    emitStorageChange();
-  } else if (readBrowserCookie(WORKSPACE_KEY) !== tokenWorkspaceId) {
-    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
-  }
-
+  persistWorkspaceIfChanged(currentWorkspaceId, tokenWorkspaceId);
   return tokenWorkspaceId;
 }
 
@@ -583,20 +599,20 @@ async function doRefreshAccessToken(): Promise<boolean> {
   }
 }
 
-export async function apiFetch<T = unknown>(
-  endpoint: string,
-  options: Omit<RequestInit, 'body'> & {
-    body?: unknown;
-    params?: Record<string, string | undefined>;
-  } = {},
-): Promise<ApiResponse<T>> {
-  const resolvedEndpoint =
-    endpoint === '/marketing' || endpoint.startsWith('/marketing/') ? `/api${endpoint}` : endpoint;
+function resolveApiEndpoint(endpoint: string): string {
+  return endpoint === '/marketing' || endpoint.startsWith('/marketing/')
+    ? `/api${endpoint}`
+    : endpoint;
+}
+
+function buildApiHeaders(
+  options: { headers?: HeadersInit; body?: unknown },
+  isProxyEndpoint: boolean,
+): Record<string, string> {
+  const isFormData = options.body instanceof FormData;
   const token = tokenStorage.getToken();
   const workspaceId = tokenStorage.getWorkspaceId();
-  const isProxyEndpoint = resolvedEndpoint.startsWith('/api/');
 
-  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     // CSRF mitigation: custom header prevents cross-origin form submissions
@@ -606,84 +622,102 @@ export async function apiFetch<T = unknown>(
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
-    if (isProxyEndpoint) {
-      headers['x-kloel-access-token'] = token;
-    }
+    if (isProxyEndpoint) headers['x-kloel-access-token'] = token;
   }
-
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
-    if (isProxyEndpoint) {
-      headers['x-kloel-workspace-id'] = workspaceId;
-    }
+    if (isProxyEndpoint) headers['x-kloel-workspace-id'] = workspaceId;
   }
+  return headers;
+}
 
-  let url = isProxyEndpoint ? resolvedEndpoint : `${API_URL}${endpoint}`;
-
-  // Append query params if provided
-  if (options.params) {
-    const searchParams = new URLSearchParams();
-    for (const [key, value] of Object.entries(options.params)) {
-      if (value !== undefined) searchParams.set(key, value);
-    }
-    const qs = searchParams.toString();
-    if (qs) url += (url.includes('?') ? '&' : '?') + qs;
+function appendQueryParams(baseUrl: string, params?: Record<string, string | undefined>): string {
+  if (!params) return baseUrl;
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) searchParams.set(key, value);
   }
+  const qs = searchParams.toString();
+  if (!qs) return baseUrl;
+  return baseUrl + (baseUrl.includes('?') ? '&' : '?') + qs;
+}
 
-  // Auto-stringify body if it's an object
-  const body: BodyInit | null | undefined =
-    options.body &&
-    typeof options.body === 'object' &&
-    !(options.body instanceof FormData) &&
-    !(options.body instanceof Blob) &&
-    !(options.body instanceof ArrayBuffer)
-      ? JSON.stringify(options.body)
-      : (options.body as BodyInit | null | undefined);
+function serializeApiBody(body: unknown): BodyInit | null | undefined {
+  if (
+    body &&
+    typeof body === 'object' &&
+    !(body instanceof FormData) &&
+    !(body instanceof Blob) &&
+    !(body instanceof ArrayBuffer)
+  ) {
+    return JSON.stringify(body);
+  }
+  return body as BodyInit | null | undefined;
+}
+
+function buildErrorResponse<T>(
+  data: { message?: unknown; error?: string },
+  status: number,
+): ApiResponse<T> {
+  const rawMsg = data.message;
+  const message = Array.isArray(rawMsg) ? rawMsg.join(', ') : (rawMsg as string | undefined);
+  return { error: message || data.error || `HTTP ${status}`, status };
+}
+
+async function performApiRequest<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
+  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+  // Safe: `url` is either a proxy endpoint starting with `/api/` (same-origin Next route) or `${API_URL}${endpoint}` where API_URL is fixed from NEXT_PUBLIC_API_URL env var and `endpoint` is a hardcoded path literal in every call site. No user-controlled host.
+  const res = await fetch(url, init);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return buildErrorResponse<T>(data, res.status);
+  return buildSuccessResponse(data, res.status);
+}
+
+async function retryApiRequestWithRefreshedToken<T>(
+  url: string,
+  baseInit: RequestInit,
+  headers: Record<string, string>,
+): Promise<ApiResponse<T> | null> {
+  const refreshed = await refreshAccessToken();
+  if (!refreshed) return null;
+  headers.Authorization = `Bearer ${tokenStorage.getToken()}`;
+  return performApiRequest<T>(url, { ...baseInit, headers });
+}
+
+export async function apiFetch<T = unknown>(
+  endpoint: string,
+  options: Omit<RequestInit, 'body'> & {
+    body?: unknown;
+    params?: Record<string, string | undefined>;
+  } = {},
+): Promise<ApiResponse<T>> {
+  const resolvedEndpoint = resolveApiEndpoint(endpoint);
+  const isProxyEndpoint = resolvedEndpoint.startsWith('/api/');
+  const headers = buildApiHeaders(options, isProxyEndpoint);
+  const url = appendQueryParams(
+    isProxyEndpoint ? resolvedEndpoint : `${API_URL}${endpoint}`,
+    options.params,
+  );
+  const body = serializeApiBody(options.body);
+  const baseInit: RequestInit = {
+    ...options,
+    credentials: 'include', // Send httpOnly cookies
+    body,
+    headers,
+  };
 
   try {
-    const res = await fetch(url, {
-      ...options,
-      credentials: 'include', // Send httpOnly cookies
-      body,
-      headers,
-    });
+    // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+    // Safe: see performApiRequest comment.
+    const res = await fetch(url, baseInit);
 
-    // Handle 401 - try refresh token
     if (res.status === 401 && tokenStorage.getRefreshToken()) {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
-        // Retry original request with new token
-        headers.Authorization = `Bearer ${tokenStorage.getToken()}`;
-        const retryRes = await fetch(url, {
-          ...options,
-          credentials: 'include', // Send httpOnly cookies
-          headers,
-          body,
-        });
-        const retryData = await retryRes.json().catch(() => ({}));
-        if (!retryRes.ok) {
-          const rawRetryMsg = retryData.message;
-          const retryMessage = Array.isArray(rawRetryMsg) ? rawRetryMsg.join(', ') : rawRetryMsg;
-          return {
-            error: retryMessage || retryData.error || `HTTP ${retryRes.status}`,
-            status: retryRes.status,
-          };
-        }
-        return buildSuccessResponse(retryData, retryRes.status);
-      }
+      const retryResponse = await retryApiRequestWithRefreshedToken<T>(url, baseInit, headers);
+      if (retryResponse) return retryResponse;
     }
 
     const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      const rawMsg = data.message;
-      const message = Array.isArray(rawMsg) ? rawMsg.join(', ') : rawMsg;
-      return {
-        error: message || data.error || `HTTP ${res.status}`,
-        status: res.status,
-      };
-    }
-
+    if (!res.ok) return buildErrorResponse<T>(data, res.status);
     return buildSuccessResponse(data, res.status);
   } catch (err: unknown) {
     return {
@@ -851,6 +885,8 @@ export async function getLeads(
 export const api = {
   async get<T = unknown>(endpoint: string): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
+      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+      // Safe: `endpoint` is never user input in any caller (see useFlows.ts — only hardcoded `/flows/...` literals). This branch is defensive and reachable only from internal code passing a compile-time absolute URL.
       const res = await fetch(endpoint);
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: res.statusText }));
@@ -867,6 +903,8 @@ export const api = {
 
   async post<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
+      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+      // Safe: `endpoint` is never user input in any caller — defensive branch reachable only from internal code passing a compile-time absolute URL.
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -890,6 +928,8 @@ export const api = {
 
   async put<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
+      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+      // Safe: `endpoint` is never user input in any caller — defensive branch reachable only from internal code passing a compile-time absolute URL.
       const res = await fetch(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

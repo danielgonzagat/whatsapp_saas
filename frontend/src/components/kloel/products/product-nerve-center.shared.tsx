@@ -6,7 +6,7 @@ import type React from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 
 /** Recursive JSON-safe record type — allows property access without `any` */
- 
+
 export type JsonValue =
   | string
   | number
@@ -80,12 +80,13 @@ export const ls: React.CSSProperties = {
 export const formatBrlCents = (value: number) =>
   (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export function unwrapApiPayload<T = any>(response: any): T {
-  if (response?.error) {
-    throw new Error(response.error);
+export function unwrapApiPayload<T = unknown>(response: unknown): T {
+  const envelope = response as { error?: string; data?: unknown } | null | undefined;
+  if (envelope?.error) {
+    throw new Error(envelope.error);
   }
 
-  return (response?.data ?? response) as T;
+  return (envelope?.data ?? response) as T;
 }
 
 export function NP({
@@ -539,7 +540,11 @@ export function Modal({
   const { isMobile } = useResponsiveViewport();
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Fechar ${title}`}
       style={{
         position: 'fixed',
         inset: 0,
@@ -559,6 +564,7 @@ export function Modal({
         }
       }}
     >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
       <div
         onClick={(event) => event.stopPropagation()}
         style={{

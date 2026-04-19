@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   let lastError: unknown;
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+  // biome-ignore lint/performance/noAwaitInLoops: PULSE heartbeat failover — first 2xx wins so telemetry is recorded exactly once; parallel fan-out would double-count liveness pings across backends and distort the heartbeat histogram
   for (const baseUrl of getBackendCandidateUrls()) {
     const response = await fetch(`${baseUrl}/pulse/live/heartbeat`, {
       method: 'POST',

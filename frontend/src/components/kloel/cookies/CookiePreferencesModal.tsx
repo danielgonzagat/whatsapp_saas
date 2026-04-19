@@ -92,11 +92,21 @@ export function CookiePreferencesModal({
   }, [onClose]);
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
       ref={overlayRef}
       className="kloel-cookie-modal__overlay"
+      role="button"
+      tabIndex={0}
+      aria-label="Fechar preferências de cookies"
       onMouseDown={(event) => {
         if (event.target === overlayRef.current) {
+          onClose();
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.target === overlayRef.current && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
           onClose();
         }
       }}

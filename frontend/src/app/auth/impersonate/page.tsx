@@ -1,32 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { tokenStorage } from '@/lib/api/core';
-
-type ImpersonationPayload = {
-  access_token?: string;
-  refresh_token?: string;
-  workspace?: { id?: string; name?: string } | null;
-  user?: { workspaceId?: string } | null;
-  next?: string;
-};
-
-function readPayloadFromHash(): ImpersonationPayload | null {
-  if (typeof window === 'undefined') return null;
-  const hash = window.location.hash.startsWith('#')
-    ? window.location.hash.slice(1)
-    : window.location.hash;
-  const params = new URLSearchParams(hash);
-  const raw = params.get('session');
-  if (!raw) return null;
-
-  try {
-    const decoded = window.atob(raw);
-    return JSON.parse(decoded) as ImpersonationPayload;
-  } catch {
-    return null;
-  }
-}
+import {
+  applyImpersonationPayload,
+  readImpersonationPayload,
+  resolveNextRoute,
+} from './impersonate.helpers';
 
 export default function AuthImpersonatePage() {
   const [status, setStatus] = useState<'booting' | 'invalid' | 'done'>('booting');
@@ -34,19 +13,13 @@ export default function AuthImpersonatePage() {
   const fallbackNext = useMemo(() => '/dashboard', []);
 
   useEffect(() => {
-    const payload = readPayloadFromHash();
+    const payload = readImpersonationPayload();
     if (!payload?.access_token) {
       setStatus('invalid');
       return;
     }
-
-    const workspaceId = payload.workspace?.id || payload.user?.workspaceId;
-    tokenStorage.setToken(payload.access_token);
-    if (payload.refresh_token) tokenStorage.setRefreshToken(payload.refresh_token);
-    if (workspaceId) tokenStorage.setWorkspaceId(workspaceId);
-    tokenStorage.ensureAuthCookie();
-
-    const next = payload.next?.startsWith('/') ? payload.next : fallbackNext;
+    applyImpersonationPayload(payload);
+    const next = resolveNextRoute(payload.next, fallbackNext);
     window.history.replaceState(null, '', '/auth/impersonate');
     setStatus('done');
     window.location.replace(next);

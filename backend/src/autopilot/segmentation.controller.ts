@@ -118,6 +118,7 @@ export class SegmentationController {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential preset creation with unique constraints
     for (const preset of presets) {
+      // biome-ignore lint/performance/noAwaitInLoops: iterate preset segments sequentially to preserve response ordering
       const result = await this.segmentationService.getPresetSegment(
         workspaceId,
         preset.name as keyof typeof PRESET_SEGMENTS,

@@ -7,6 +7,8 @@ import { type FormEvent, useCallback, useEffect, useRef, useState, useId } from 
 import { buildAppleAuthorizationUrl } from './apple-auth';
 import { useAuth } from './auth-provider';
 import { useFacebookSignIn } from './use-facebook-sign-in';
+import { HORIZONTAL_GRID_LINES, VERTICAL_GRID_LINES, typingDelayFor } from './auth-screen-data';
+import { usePrefersReducedMotion } from './use-prefers-reduced-motion';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
@@ -18,25 +20,6 @@ type Mode = 'login' | 'register';
 /* ─── constants ─── */
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-
-function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    apply();
-    mediaQuery.addEventListener?.('change', apply);
-    return () => mediaQuery.removeEventListener?.('change', apply);
-  }, []);
-
-  return prefersReducedMotion;
-}
 
 /* ────────────────────────────────────────────────────────────
    GOOGLE SIGN-IN HOOK
@@ -261,13 +244,6 @@ function AuthManifestTyping() {
       timeoutId = window.setTimeout(fn, delay);
     };
 
-    const delayFor = (character: string) => {
-      if (character === ' ') return 52 + Math.floor(Math.random() * 28);
-      if (character === ',') return 220 + Math.floor(Math.random() * 60);
-      if (character === '.') return 320 + Math.floor(Math.random() * 110);
-      return 64 + Math.floor(Math.random() * 38);
-    };
-
     const typePhrase = (source: string) => {
       let index = 0;
       const step = () => {
@@ -282,7 +258,7 @@ function AuthManifestTyping() {
           }, 8000);
           return;
         }
-        schedule(step, delayFor(source[index - 1]));
+        schedule(step, typingDelayFor(source[index - 1]));
       };
       schedule(step, 220);
     };
@@ -375,14 +351,14 @@ function TheMachine() {
       {/* grid lines */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         {/* horizontal */}
-        {Array.from({ length: 12 }).map((_, i) => (
+        {HORIZONTAL_GRID_LINES.map((line) => (
           <div
-            key={`h${i}`}
+            key={line.id}
             style={{
               position: 'absolute',
               left: 0,
               right: 0,
-              top: `${((i + 1) / 13) * 100}%`,
+              top: `${line.top}%`,
               height: 1,
               background: '#E0DDD8',
               opacity: 0.03,
@@ -390,14 +366,14 @@ function TheMachine() {
           />
         ))}
         {/* vertical */}
-        {Array.from({ length: 8 }).map((_, i) => (
+        {VERTICAL_GRID_LINES.map((line) => (
           <div
-            key={`v${i}`}
+            key={line.id}
             style={{
               position: 'absolute',
               top: 0,
               bottom: 0,
-              left: `${((i + 1) / 9) * 100}%`,
+              left: `${line.left}%`,
               width: 1,
               background: '#E0DDD8',
               opacity: 0.03,
@@ -575,6 +551,9 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       const nextPath = resolveNextPath(fallbackPath);
       const destination = new URL(buildAppUrl(nextPath, window.location.host));
       destination.searchParams.set('auth', '1');
+      // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
+      // Safe: fallbackPath/nextPath routed through sanitizeNextPath (rejects //, requires /, blocks auth paths);
+      // buildAppUrl constrains the host to the kloel app subdomain.
       window.location.replace(destination.toString());
     },
     [resolveNextPath],

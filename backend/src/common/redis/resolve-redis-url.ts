@@ -47,26 +47,13 @@ export class RedisConfigurationError extends Error {
   }
 }
 
-function isLocalhost(url: string): boolean {
-  return url.includes('localhost') || url.includes('127.0.0.1');
-}
-
-function isRailwayPublicProxy(url: string): boolean {
-  return url.includes('mainline.proxy.rlwy.net') || url.includes('.proxy.rlwy.net');
-}
-
-function isRailwayRuntime(): boolean {
-  return [
-    process.env.RAILWAY_PROJECT_ID,
-    process.env.RAILWAY_ENVIRONMENT_ID,
-    process.env.RAILWAY_SERVICE_ID,
-    process.env.RAILWAY_DEPLOYMENT_ID,
-  ].some((value) => typeof value === 'string' && value.trim().length > 0);
-}
-
-function isProductionLikeRuntime(): boolean {
-  return process.env.NODE_ENV === 'production' || isRailwayRuntime();
-}
+import {
+  isLocalhost,
+  isProductionLikeRuntime,
+  isRailwayPublicProxy,
+  isRailwayRuntime,
+} from './redis-url-predicates';
+export { isLocalhost, isProductionLikeRuntime, isRailwayPublicProxy, isRailwayRuntime };
 
 function assertProductionSafeRedisUrl(url: string): string {
   if (isProductionLikeRuntime() && isRailwayPublicProxy(url)) {
@@ -95,6 +82,49 @@ function getMode(): 'required' | 'disabled' | 'auto' {
   return isProductionLikeRuntime() ? 'required' : 'auto';
 }
 
+interface RedisComponents {
+  host: string | undefined;
+  port: string;
+  user: string;
+  password: string | undefined;
+}
+
+function readRedisComponents(): RedisComponents {
+  return {
+    host: process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME,
+    port: process.env.REDIS_PORT ?? process.env.REDISPORT ?? '6379',
+    user:
+      process.env.REDIS_USERNAME ?? process.env.REDISUSER ?? process.env.REDIS_USER ?? 'default',
+    password: process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS,
+  };
+}
+
+function resolveFromComponents(components: RedisComponents): string | null {
+  const { host, port, user, password } = components;
+  if (host && password) {
+    const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
+    return assertProductionSafeRedisUrl(`redis://${auth}${host}:${port}`);
+  }
+  if (host && !password && !isProductionLikeRuntime()) {
+    return `redis://${host}:${port}`;
+  }
+  return null;
+}
+
+function resolveFromModeFallback(): string | null {
+  const mode = getMode();
+  if (mode === 'disabled') return null;
+  if (mode === 'required') {
+    throw new RedisConfigurationError(
+      'Redis is required but no URL could be resolved. ' +
+        'Set REDIS_URL, REDIS_FALLBACK_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
+        'To opt out of Redis entirely, set REDIS_MODE=disabled.',
+    );
+  }
+  // mode === 'auto' (dev): localhost fallback
+  return 'redis://localhost:6379';
+}
+
 /**
  * Resolve a Redis URL from the environment. Returns:
  *   - a string URL when one is found OR when in dev fallback mode
@@ -110,22 +140,8 @@ export function resolveRedisUrl(): string | null {
   }
 
   // 2. Component assembly: REDIS_HOST + REDIS_PORT + REDIS_PASSWORD
-  const host = process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
-  const port = process.env.REDIS_PORT ?? process.env.REDISPORT ?? '6379';
-  const user =
-    process.env.REDIS_USERNAME ?? process.env.REDISUSER ?? process.env.REDIS_USER ?? 'default';
-  const password =
-    process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;
-
-  if (host && password) {
-    const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
-    return assertProductionSafeRedisUrl(`redis://${auth}${host}:${port}`);
-  }
-
-  // Dev convenience: host without password
-  if (host && !password && !isProductionLikeRuntime()) {
-    return `redis://${host}:${port}`;
-  }
+  const fromComponents = resolveFromComponents(readRedisComponents());
+  if (fromComponents !== null) return fromComponents;
 
   // 3. REDIS_FALLBACK_URL
   if (process.env.REDIS_FALLBACK_URL) {
@@ -133,22 +149,7 @@ export function resolveRedisUrl(): string | null {
   }
 
   // 4. Mode-dependent fallback
-  const mode = getMode();
-
-  if (mode === 'disabled') {
-    return null;
-  }
-
-  if (mode === 'required') {
-    throw new RedisConfigurationError(
-      'Redis is required but no URL could be resolved. ' +
-        'Set REDIS_URL, REDIS_FALLBACK_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
-        'To opt out of Redis entirely, set REDIS_MODE=disabled.',
-    );
-  }
-
-  // mode === 'auto' (dev): localhost fallback
-  return 'redis://localhost:6379';
+  return resolveFromModeFallback();
 }
 
 /**

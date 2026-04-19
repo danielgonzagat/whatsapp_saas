@@ -59,77 +59,22 @@ import {
   mapProductEditorCheckouts,
   mapProductEditorPlans,
 } from './product-nerve-center.view-models';
-
-const D_RE = /[^\d,.-]/g;
-const D_3___D_RE = /\.(?=\d{3}(\D|$))/g;
-const D_RE_2 = /\D/g;
+// Pure helpers extracted to ProductNerveCenter.helpers.ts to reduce
+// cyclomatic complexity; behaviour is unchanged.
+import {
+  COMMISSION_TYPE_OPTIONS,
+  INSTALLMENT_OPTIONS,
+  PLAN_SHIPPING_OPTIONS,
+  buildPlanSelectionPriceLabel,
+  formatPlanRangeLabel,
+  normalizeZipCodeInput,
+  parsePercentValue,
+} from './ProductNerveCenter.helpers';
 
 /* ═══════════════════════════════════════════════════
    V — KLOEL Terminator palette (Nerve Center)
    ═══════════════════════════════════════════════════ */
 const R$ = formatBrlCents;
-const _parseCurrencyInput = (value: string) => {
-  const normalized = String(value || '')
-    .replace(D_RE, '')
-    .replace(D_3___D_RE, '')
-    .replace(',', '.');
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-const _formatCurrencyMask = (value: string) => {
-  const digits = String(value || '').replace(D_RE_2, '');
-  const cents = Number(digits || '0');
-  return cents.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-};
-const _sanitizePositiveInteger = (value: string, fallback = 1) => {
-  const parsed = Number.parseInt(String(value || '').replace(D_RE_2, ''), 10);
-  return String(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback);
-};
-const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1));
-const _SHIPPING_LABELS: Record<string, string> = {
-  NONE: 'Sem frete',
-  FREE: 'Frete grátis',
-  FIXED: 'Frete fixo',
-  VARIABLE: 'Frete variável',
-};
-const PLAN_SHIPPING_OPTIONS = [
-  { value: 'FREE', label: 'Frete grátis' },
-  { value: 'FIXED', label: 'Frete fixo' },
-  { value: 'VARIABLE', label: 'Frete variável' },
-] as const;
-const COMMISSION_TYPE_OPTIONS = [
-  { value: 'AMOUNT', label: 'Valor (R$)' },
-  { value: 'PERCENT', label: 'Porcentagem (%)' },
-] as const;
-
-const normalizeZipCodeInput = (value: string) => {
-  const digits = String(value || '')
-    .replace(D_RE_2, '')
-    .slice(0, 8);
-  if (digits.length <= 5) return digits;
-  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-};
-
-const parsePercentValue = (value: string, fallback = 1) => {
-  const parsed = Number(String(value || '').replace(',', '.'));
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const formatPlanRangeLabel = (plans: Array<{ priceInCents?: number }>) => {
-  const values = (plans || [])
-    .map((plan) => Number(plan?.priceInCents || 0))
-    .filter((value) => value > 0)
-    .sort((left, right) => left - right);
-
-  if (values.length === 0) return 'Sem planos';
-  if (values[0] === values[values.length - 1]) return R$(values[0]);
-  return `${R$(values[0])} ate ${R$(values[values.length - 1])}`;
-};
-
-const buildPlanSelectionPriceLabel = (plan: { priceInCents?: number }) => {
-  const cents = Math.max(0, Math.round(Number(plan?.priceInCents || 0)));
-  return R$(cents);
-};
 
 const usePrefersReducedMotion = () => {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
@@ -558,6 +503,7 @@ export default function ProductNerveCenter({
     setPlanVisible(selectedPlanObj.vis);
     setPlanError('');
     planConfigInitRef.current = false;
+    // biome-ignore lint/correctness/useExhaustiveDependencies: selectedPlanObj is derived from selPlan+PLANS; tracking its individual fields avoids spurious reruns when the object reference changes without field changes
   }, [
     selectedPlanObj?.id,
     selectedPlanObj?.name,
@@ -569,6 +515,7 @@ export default function ProductNerveCenter({
     currentPlanRaw.shippingPrice,
   ]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only re-run when planCheckoutConfig changes (one-shot init guarded by planConfigInitRef); other reads are latest-value reads, not triggers
   useEffect(() => {
     if (!planCheckoutConfig) return;
     if (planConfigInitRef.current) return;
@@ -610,7 +557,6 @@ export default function ProductNerveCenter({
         planCheckoutConfig.affiliateCustomCommissionPercent ?? p.commissionPercent ?? 30,
       ).replace('.', ','),
     );
-    // biome-ignore lint/correctness/useExhaustiveDependencies: only re-run when planCheckoutConfig changes (one-shot init guarded by planConfigInitRef); other reads are latest-value reads, not triggers
   }, [planCheckoutConfig]);
 
   useEffect(() => {
@@ -1085,8 +1031,8 @@ export default function ProductNerveCenter({
               overflow: 'hidden',
             }}
           >
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div key={`tab-skeleton-${index}`} style={{ padding: '8px 14px' }}>
+            {['alpha', 'beta', 'gamma', 'delta', 'epsilon'].map((slot) => (
+              <div key={`tab-skeleton-${slot}`} style={{ padding: '8px 14px' }}>
                 <SkeletonBlock width={72} height={10} />
               </div>
             ))}
@@ -1133,8 +1079,10 @@ export default function ProductNerveCenter({
             flexDirection: isMobile ? 'column' : 'row',
           }}
         >
-          <div
+          <button
+            type="button"
             onClick={() => imgInputRef.current?.click()}
+            aria-label="Selecionar imagem do produto"
             style={{
               width: 80,
               height: 80,
@@ -1147,12 +1095,6 @@ export default function ProductNerveCenter({
               cursor: 'pointer',
               flexShrink: 0,
               padding: 6,
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).click();
-              }
             }}
           >
             {currentImageUrl ? (
@@ -1186,7 +1128,7 @@ export default function ProductNerveCenter({
                 <span style={{ fontSize: 7, color: V.t3, marginTop: 2 }}>Foto</span>
               </span>
             )}
-          </div>
+          </button>
           <input
             ref={imgInputRef}
             type="file"
@@ -2843,6 +2785,7 @@ export default function ProductNerveCenter({
                           }}
                         >
                           {product.coverImage ? (
+                            // biome-ignore lint/correctness/useImageSize: product cover URL is dynamic (merchant-uploaded); size is enforced by the parent container
                             <img
                               src={product.coverImage}
                               alt=""
@@ -2926,6 +2869,7 @@ export default function ProductNerveCenter({
                             }}
                           >
                             {image ? (
+                              // biome-ignore lint/performance/noImgElement: dynamic product image from user-entered URL; next/image remote loader not configured for arbitrary hosts
                               <img
                                 src={image}
                                 alt=""

@@ -675,6 +675,8 @@ export default function WebinariosPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
             style={{
               background: '#141416',
               border: '1px solid rgba(255,255,255,0.08)',
@@ -900,6 +902,8 @@ export default function WebinariosPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
             style={{
               background: '#141416',
               border: '1px solid rgba(255,255,255,0.08)',
@@ -1118,6 +1122,7 @@ export default function WebinariosPage() {
             }
           }}
         >
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
           <div
             onClick={(e) => e.stopPropagation()}
             style={{

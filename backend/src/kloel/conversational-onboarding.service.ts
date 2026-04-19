@@ -373,14 +373,90 @@ export class ConversationalOnboardingService {
     return fallback;
   }
 
+  private async runOnboardingCompletion(
+    workspaceId: string,
+    messages: OnboardingMessage[],
+    role: 'brain' | 'writer',
+  ): Promise<OpenAI.Chat.ChatCompletion> {
+    await this.planLimits.ensureTokenBudget(workspaceId);
+    const response = await chatCompletionWithRetry(this.openai, {
+      model: resolveBackendOpenAIModel(role),
+      messages: messages as OpenAI.ChatCompletionMessageParam[],
+      tools: ONBOARDING_TOOLS,
+      tool_choice: 'auto',
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
+    await this.planLimits
+      .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
+      .catch(() => {});
+    return response;
+  }
+
+  private async executeAndAppendToolCalls(
+    workspaceId: string,
+    messages: OnboardingMessage[],
+    toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[],
+  ): Promise<void> {
+    for (const toolCall of toolCalls) {
+      if (!('function' in toolCall)) continue;
+      const functionName = toolCall.function.name;
+      const args = JSON.parse(toolCall.function.arguments);
+
+      this.logger.log(`Executando tool: ${functionName}`, args);
+
+      const result = await this.executeToolCall(workspaceId, functionName, args);
+
+      messages.push({ role: 'assistant', content: null, tool_calls: [toolCall] });
+      messages.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        name: functionName,
+        content: JSON.stringify(result),
+      });
+    }
+  }
+
+  private async executeFollowupToolCalls(
+    workspaceId: string,
+    toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] | null | undefined,
+  ): Promise<void> {
+    if (!toolCalls) return;
+    for (const toolCall of toolCalls) {
+      if (!('function' in toolCall)) continue;
+      const functionName: string = toolCall.function.name;
+      const args: Record<string, unknown> = JSON.parse(toolCall.function.arguments);
+      await this.executeToolCall(workspaceId, functionName, args);
+    }
+  }
+
+  private async handleInitialToolCalls(
+    workspaceId: string,
+    messages: OnboardingMessage[],
+    initialToolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[],
+  ): Promise<string> {
+    await this.executeAndAppendToolCalls(workspaceId, messages, initialToolCalls);
+
+    const finalResponse = await this.runOnboardingCompletion(workspaceId, messages, 'writer');
+    const responseText = finalResponse.choices[0].message.content || '';
+    await this.executeFollowupToolCalls(workspaceId, finalResponse.choices[0].message.tool_calls);
+    return responseText;
+  }
+
+  private writeSseResponse(res: Response, responseText: string): void {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.write(`data: ${JSON.stringify({ content: responseText, done: true })}\n\n`);
+    res.end();
+  }
+
   /**
    * Inicia ou continua o onboarding conversacional
    */
   async chat(workspaceId: string, userMessage: string, res?: Response): Promise<string | void> {
-    // Buscar histórico de conversa do onboarding
     const history = await this.getOnboardingHistory(workspaceId);
 
-    // Montar mensagens
     const messages: OnboardingMessage[] = [
       { role: 'system', content: CONVERSATIONAL_ONBOARDING_PROMPT },
       ...history,
@@ -388,93 +464,20 @@ export class ConversationalOnboardingService {
     ];
 
     try {
-      // Chamar OpenAI com tools
-      await this.planLimits.ensureTokenBudget(workspaceId);
-      const response = await chatCompletionWithRetry(this.openai, {
-        model: resolveBackendOpenAIModel('brain'),
-        messages: messages as OpenAI.ChatCompletionMessageParam[],
-        tools: ONBOARDING_TOOLS,
-        tool_choice: 'auto',
-        temperature: 0.7,
-        max_tokens: 1000,
-      });
-
-      await this.planLimits
-        .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
-        .catch(() => {});
-
+      const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');
       const assistantMessage = response.choices[0].message;
       let responseText = assistantMessage.content || '';
 
-      // Processar tool calls se houver
-      if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-        // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
-        for (const toolCall of assistantMessage.tool_calls) {
-          // Type guard para tool calls com função
-          if (!('function' in toolCall)) continue;
-
-          const functionName = toolCall.function.name;
-          const args = JSON.parse(toolCall.function.arguments);
-
-          this.logger.log(`Executando tool: ${functionName}`, args);
-
-          // Executar a função correspondente
-          const result = await this.executeToolCall(workspaceId, functionName, args);
-
-          // Adicionar resultado da tool call ao histórico
-          messages.push({
-            role: 'assistant',
-            content: null,
-            tool_calls: [toolCall],
-          });
-          messages.push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            name: functionName,
-            content: JSON.stringify(result),
-          });
-        }
-
-        // Chamar novamente para obter a resposta final após executar tools
-        await this.planLimits.ensureTokenBudget(workspaceId);
-        const finalResponse = await chatCompletionWithRetry(this.openai, {
-          model: resolveBackendOpenAIModel('writer'),
-          messages: messages as OpenAI.ChatCompletionMessageParam[],
-          tools: ONBOARDING_TOOLS,
-          tool_choice: 'auto',
-          temperature: 0.7,
-          max_tokens: 1000,
-        });
-
-        await this.planLimits
-          .trackAiUsage(workspaceId, finalResponse?.usage?.total_tokens ?? 500)
-          .catch(() => {});
-        responseText = finalResponse.choices[0].message.content || '';
-
-        // Processar mais tool calls se houver (recursivamente simplificado)
-        const toolCalls = finalResponse.choices[0].message.tool_calls;
-        if (toolCalls) {
-          // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
-          for (const toolCall of toolCalls) {
-            if (!('function' in toolCall)) continue;
-            const functionName: string = toolCall.function.name;
-            const args: Record<string, unknown> = JSON.parse(toolCall.function.arguments);
-            await this.executeToolCall(workspaceId, functionName, args);
-          }
-        }
+      const initialToolCalls = assistantMessage.tool_calls;
+      if (initialToolCalls && initialToolCalls.length > 0) {
+        responseText = await this.handleInitialToolCalls(workspaceId, messages, initialToolCalls);
       }
 
-      // Salvar mensagens no histórico
       await this.saveOnboardingMessage(workspaceId, 'user', userMessage);
       await this.saveOnboardingMessage(workspaceId, 'assistant', responseText);
 
-      // Se usando SSE, enviar via stream
       if (res) {
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        res.write(`data: ${JSON.stringify({ content: responseText, done: true })}\n\n`);
-        res.end();
+        this.writeSseResponse(res, responseText);
         return;
       }
 

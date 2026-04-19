@@ -49,19 +49,43 @@ export class WorkerRuntimeService {
     return available;
   }
 
+  private buildWorkerHealthHeaders(): Record<string, string> | undefined {
+    const token = this.config.get<string>('WORKER_METRICS_TOKEN');
+    return token ? { Authorization: `Bearer ${token}` } : undefined;
+  }
+
+  private interpretWorkerHealthPayload(payload: unknown): boolean {
+    if (!payload || typeof payload !== 'object') return true;
+    const status = this.readText((payload as Record<string, unknown>).status)
+      .trim()
+      .toLowerCase();
+    if (!status) return true;
+    return status === 'ok' || status === 'up' || status === 'healthy';
+  }
+
+  private async readWorkerHealthResponse(response: Response): Promise<boolean> {
+    if (!response.ok) return false;
+    const payload = await response.json().catch(() => null);
+    return this.interpretWorkerHealthPayload(payload);
+  }
+
+  private logWorkerHealthError(error: unknown): void {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string' && error
+          ? error
+          : 'unknown_error';
+    this.logger.warn(`Worker health check failed: ${message}`);
+  }
+
   private async checkWorkerHealth(): Promise<boolean> {
     const workerHealthUrl =
       this.config.get<string>('WORKER_HEALTH_URL') || this.config.get<string>('WORKER_METRICS_URL');
-    const workerMetricsToken = this.config.get<string>('WORKER_METRICS_TOKEN');
-
-    if (!workerHealthUrl) {
-      return false;
-    }
+    if (!workerHealthUrl) return false;
 
     const fetchFn = globalThis.fetch?.bind(globalThis);
-    if (!fetchFn) {
-      return false;
-    }
+    if (!fetchFn) return false;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.getTimeoutMs());
@@ -69,40 +93,12 @@ export class WorkerRuntimeService {
     try {
       const response = await fetchFn(workerHealthUrl, {
         method: 'GET',
-        headers: workerMetricsToken
-          ? {
-              Authorization: `Bearer ${workerMetricsToken}`,
-            }
-          : undefined,
+        headers: this.buildWorkerHealthHeaders(),
         signal: controller.signal,
       });
-
-      if (!response.ok) {
-        return false;
-      }
-
-      const payload = await response.json().catch(() => null);
-      if (!payload || typeof payload !== 'object') {
-        return true;
-      }
-
-      const status = this.readText((payload as Record<string, unknown>).status)
-        .trim()
-        .toLowerCase();
-
-      if (!status) {
-        return true;
-      }
-
-      return status === 'ok' || status === 'up' || status === 'healthy';
+      return await this.readWorkerHealthResponse(response);
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.warn(
-        `Worker health check failed: ${errorInstanceofError?.message || 'unknown_error'}`,
-      );
+      this.logWorkerHealthError(error);
       return false;
     } finally {
       clearTimeout(timeout);

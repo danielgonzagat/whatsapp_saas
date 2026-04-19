@@ -99,15 +99,11 @@ export function SettingsDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-50 bg-[var(--app-bg-overlay)] backdrop-blur-sm transition-opacity"
+      <button
+        type="button"
+        className="fixed inset-0 z-50 bg-[var(--app-bg-overlay)] backdrop-blur-sm transition-opacity border-none p-0 cursor-pointer"
         onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
-        }}
+        aria-label="Fechar configurações"
       />
 
       {/* Drawer */}

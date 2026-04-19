@@ -85,6 +85,8 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
 
     const fetchStatus = async () => {
       try {
+        // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+        // Safe: URL is `${API_BASE}/checkout/public/order/${orderId}/status` — API_BASE is a compile-time env constant; `orderId` is an opaque identifier propagated from a previous backend-issued order response, interpolated into a fixed path. No user-controlled host.
         const res = await fetch(`${API_BASE}/checkout/public/order/${orderId}/status`);
         if (!res.ok) throw new Error('Erro ao buscar status do pedido');
         const json: OrderStatusData = await res.json();
@@ -156,6 +158,8 @@ export async function validateCoupon(
 /* ─── acceptUpsell / declineUpsell ─────────────────────────────────────────── */
 
 export async function acceptUpsell(orderId: string, upsellId: string) {
+  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+  // Safe: URL base is compile-time API_BASE; orderId/upsellId are opaque backend-issued identifiers interpolated into a fixed path template. No user-controlled host.
   const res = await fetch(`${API_BASE}/checkout/public/upsell/${orderId}/accept/${upsellId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -170,6 +174,8 @@ export async function acceptUpsell(orderId: string, upsellId: string) {
 }
 
 export async function declineUpsell(orderId: string, upsellId: string) {
+  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+  // Safe: URL base is compile-time API_BASE; orderId/upsellId are opaque backend-issued identifiers interpolated into a fixed path template. No user-controlled host.
   const res = await fetch(`${API_BASE}/checkout/public/upsell/${orderId}/decline/${upsellId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

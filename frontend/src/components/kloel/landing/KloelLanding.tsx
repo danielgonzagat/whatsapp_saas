@@ -6,6 +6,7 @@ import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
 import { useState, useEffect, useRef, useId } from 'react';
 import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
+import { delayForTypewriter } from './KloelLanding.helpers';
 import ThanosSection from './ThanosSection';
 
 const PATTERN_RE = /[.,!?]/;
@@ -207,7 +208,7 @@ function HeroLoop() {
         await wait(50);
         // RESOLVE
         setVis((d) => ({ ...d, phase: 'hidden' }));
-        // biome-ignore lint/performance/noAwaitInLoops: sequential indexed iteration
+        // biome-ignore lint/performance/noAwaitInLoops: resolve-phase animation — each of the 14 frames must render with its own setGx state before sleeping; Promise.all would render all frames in the same tick and skip the dissolve-to-resolve transition
         for (let i = 0; i < 14; i++) {
           if (!m.current) return;
           const p = i / 14;
@@ -222,6 +223,7 @@ function HeroLoop() {
             slices: p > 0.6 ? [] : mkSlices(),
             flash: false,
           });
+          // biome-ignore lint/performance/noAwaitInLoops: 38ms per-frame delay is the perceived animation cadence — removing the await collapses the 14-frame resolve effect into a single visual jump
           await wait(38);
         }
         // CLEAN
@@ -253,6 +255,7 @@ function HeroLoop() {
     return () => {
       m.current = false;
     };
+    // biome-ignore lint/correctness/useExhaustiveDependencies: mkSlices and scramble are pure helpers defined inline; including them would recreate on every render and restart the animation loop
   }, [prefersReducedMotion]);
 
   const ts = {
@@ -352,7 +355,7 @@ function HeroLoop() {
             </div>
           </>
         )}
-        {gx.slices.map((s, i) => (
+        {gx.slices.map((s, _i) => (
           <div
             key={`slice-${s.off}-${s.top}`}
             style={{
@@ -529,10 +532,10 @@ function MultiChannel() {
         </span>
       </div>
       <div style={{ padding: 8, minHeight: 120, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {(msgs[ch] || []).map((msg, i) =>
+        {(msgs[ch] || []).map((msg, _i) =>
           msg.f === 'ok' ? (
             <div
-              key={`${msg.f}-${msg.text}-${i}`}
+              key={`${msg.f}-${msg.ch}-${msg.t}-${msg.text}`}
               style={{ textAlign: 'center', padding: '5px 0', animation: 'fm .3s ease both' }}
             >
               <span
@@ -552,7 +555,7 @@ function MultiChannel() {
             </div>
           ) : (
             <div
-              key={`${msg.f}-${msg.text}-${i}`}
+              key={`${msg.f}-${msg.ch}-${msg.t}-${msg.text}`}
               style={{
                 alignSelf: msg.f === 'ai' ? 'flex-end' : 'flex-start',
                 maxWidth: '88%',
@@ -693,6 +696,7 @@ function FinalManifestLoop() {
   const [text, setText] = useState('');
   const [tone, setTone] = useState<'light' | 'ember'>('light');
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: FIRST/SECOND/SECOND_PREFIX/SECOND_EMPHASIS are component-local constants that never change; only prefersReducedMotion should restart the typewriter loop
   useEffect(() => {
     if (prefersReducedMotion) {
       setTone('ember');
@@ -702,39 +706,13 @@ function FinalManifestLoop() {
 
     let alive = true;
 
-    const delayFor = (
-      character: string,
-      mode: 'type' | 'delete',
-      index: number,
-      phrase: string,
-    ) => {
-      const prev = phrase[index - 1] ?? '';
-      const next = phrase[index + 1] ?? '';
-      const isPauseMark = PATTERN_RE.test(character);
-
-      if (mode === 'delete') {
-        if (index === phrase.length - 1) return 190 + Math.random() * 90;
-        if (isPauseMark) return 150 + Math.random() * 70;
-        if (character === ' ') return 105 + Math.random() * 55;
-        if (next === ' ') return 88 + Math.random() * 42;
-        return 68 + Math.random() * 54;
-      }
-
-      if (index === 0) return 150 + Math.random() * 90;
-      if (isPauseMark) return 240 + Math.random() * 150;
-      if (character === ' ') return 118 + Math.random() * 78;
-      if (prev === ' ') return 102 + Math.random() * 74;
-      if (next === ' ') return 88 + Math.random() * 54;
-      return 72 + Math.random() * 72;
-    };
-
     const typePhrase = async (phrase: string, nextTone: 'light' | 'ember') => {
       setTone(nextTone);
       for (let i = 1; i <= phrase.length; i++) {
         if (!alive) return;
         setText(phrase.slice(0, i));
         // biome-ignore lint/performance/noAwaitInLoops: sequential typing animation — each character renders after the previous frame's delay
-        await wait(delayFor(phrase[i - 1], 'type', i - 1, phrase));
+        await wait(delayForTypewriter(phrase[i - 1], 'type', i - 1, phrase));
         if (phrase === SECOND && i === SECOND_PREFIX.length) {
           await wait(320);
         }
@@ -747,7 +725,7 @@ function FinalManifestLoop() {
         if (!alive) return;
         setText(phrase.slice(0, i));
         // biome-ignore lint/performance/noAwaitInLoops: sequential delete animation — characters disappear one-by-one in order
-        await wait(delayFor(phrase[i], 'delete', i, phrase));
+        await wait(delayForTypewriter(phrase[i], 'delete', i, phrase));
       }
     };
 

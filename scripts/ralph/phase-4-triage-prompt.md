@@ -11,12 +11,10 @@ Classify every Opengrep / Semgrep / Trivy security finding (~1,287 total)
 into `FALSE_POSITIVE`, `WRONG_RULE`, or `REAL_BUG`, and act on each
 classification:
 
-- **FALSE_POSITIVE**: suppress with a `// codacy:disable-next-line <patternId> reason: <one-line>`
-  comment AND add an entry to the per-pattern ADR.
-- **WRONG_RULE**: disable the entire pattern globally via the Codacy
-  Coding Standard draft API path documented in
-  `docs/codacy/applied-overrides.md` (do NOT use repo-level toggle —
-  it's silently ignored). Add the rationale to the per-pattern ADR.
+- **FALSE_POSITIVE**: document the evidence in the per-pattern ADR and leave
+  the rule active. Do **not** suppress with comments.
+- **WRONG_RULE**: document the evidence in the per-pattern ADR and escalate to
+  the operator. Do **not** disable the pattern globally.
 - **REAL_BUG**: branch `security/<patternId>/<slug>`, refactor with a
   proper fix, write a regression test, open a PR with `--label security`
   (NO `auto-merge`). The operator (Daniel) reviews and merges
@@ -79,31 +77,16 @@ One iteration = classify ONE pattern cluster + take action.
        template at the bottom of this prompt. Reference the `patternId`,
        count, classification, rationale, sample evidence (3-5 file:line
        references), and decision.
-     - For **FALSE_POSITIVE**: edit each affected file with a
-       `// codacy:disable-next-line <patternId>` comment immediately
-       before the flagged line, plus a `// reason:` line.
-     - For **WRONG_RULE**: do NOT touch source. Instead, follow the
-       coding-standard draft mutation path in
-       `docs/codacy/applied-overrides.md`:
-       1. Create draft via `POST /coding-standards`.
-       2. PATCH `tools/{toolUuid}` body
-          `{"patterns":[{"id":"<patternId>","enabled":false}]}`.
-       3. `POST /coding-standards/{id}/promote`.
-       4. Link the repo to the new published standard via the API.
-       5. Unlink the previous standard.
-       6. Update `docs/codacy/applied-overrides.md` with the change.
-   - **REAL_BUG**:
-     - Create branch `security/<patternId-sanitized>`.
-     - Fix EVERY occurrence of the pattern (use the same `issues/search`
-       call to enumerate). Add a regression test in the same workspace
-       as the fix.
-     - Run scoped validation:
-       `npm --prefix <workspace> run typecheck && npm --prefix <workspace> test`.
-     - `git add` + commit + push branch.
-     - `gh pr create --label security --title "fix(security): <patternId>"
---body "<from ADR>"`. **Do NOT add `auto-merge` label**.
-     - Pause here for that pattern. Set `category: REAL_BUG_PENDING_REVIEW`.
-     - Continue to the next pattern in the next iteration.
+     - For **FALSE_POSITIVE**: write the ADR only. Do not touch product
+       source and do not add suppression comments.
+     - For **WRONG_RULE**: write the ADR only and escalate the evidence.
+       The Codacy MAX-RIGOR lock forbids disabling patterns, creating
+       relaxed drafts, or shrinking scope.
+   - **REAL_BUG**: - Create branch `security/<patternId-sanitized>`. - Fix EVERY occurrence of the pattern (use the same `issues/search`
+     call to enumerate). Add a regression test in the same workspace
+     as the fix. - Run scoped validation:
+     `npm --prefix <workspace> run typecheck && npm --prefix <workspace> test`. - `git add` + commit + push branch. - `gh pr create --label security --title "fix(security): <patternId>"
+--body "<from ADR>"`. **Do NOT add `auto-merge` label**. - Pause here for that pattern. Set `category: REAL_BUG_PENDING_REVIEW`. - Continue to the next pattern in the next iteration.
 
 6. Commit the updated triage JSON + any ADRs + any sources you touched
    (suppressions). For real-bug PRs, the source touches are in the PR
@@ -119,9 +102,9 @@ One iteration = classify ONE pattern cluster + take action.
 
 ## Hard rules — never violate
 
-- Never suppress a security finding without a written ADR. Suppression
-  with no rationale is forbidden — it converts security debt into
-  hidden security debt.
+- Never suppress a security finding with comments or Codacy config.
+- Never relax Codacy patterns, coding standards, or exclude paths from this
+  flow.
 - Never auto-merge a `REAL_BUG` PR. The operator reviews each one.
 - Never disable Trivy, Opengrep, or Semgrep entirely. Only specific
   patterns within them, and only with WRONG_RULE classification.
@@ -165,10 +148,8 @@ referencing the rule's intent and the actual code patterns observed.>
 
 ## Action taken
 
-<- For FALSE_POSITIVE: list the files where suppression comments were
-added, with the `reason:` text used.>
-<- For WRONG_RULE: reference the coding-standard mutation in
-docs/codacy/applied-overrides.md.>
+<- For FALSE_POSITIVE or WRONG_RULE: record the evidence only; no
+suppression comments, no Codacy mutation.>
 <- For REAL_BUG: link to the PR branch and the regression test added.>
 
 ## Alternatives rejected

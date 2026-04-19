@@ -28,84 +28,6 @@ import type {
  * Invariant (verified by property test):
  *   Σ(splits.amount) + kloelTotal + residue === buyerPaid
  */
-export function calculateSplit(input: SplitInput): SplitOutput {
-  validateInput(input);
-
-  const kloelTotal = input.platformFeeCents + input.interestCents;
-  let remaining = input.buyerPaidCents - kloelTotal;
-  if (remaining < 0n) {
-    // Pathological: Kloel's fee + interest exceeds what the buyer paid.
-    // Keep the entire amount as Kloel + residue so the conservation
-    // invariant still holds; the caller should validate inputs upstream.
-    return {
-      kloelTotalCents: input.buyerPaidCents,
-      splits: [],
-      residueCents: 0n,
-    };
-  }
-
-  const commissionBase = input.saleValueCents - input.platformFeeCents;
-  const splits: SplitLine[] = [];
-
-  if (input.supplier) {
-    const amount = clamp(input.supplier.amountCents, remaining);
-    if (amount > 0n) {
-      splits.push({
-        accountId: input.supplier.accountId,
-        role: 'supplier',
-        amountCents: amount,
-      });
-      remaining -= amount;
-    }
-  }
-
-  remaining = applyPercentRole(input.affiliate, 'affiliate', commissionBase, remaining, splits, {
-    keepZero: false,
-  });
-  remaining = applyPercentRole(input.coproducer, 'coproducer', commissionBase, remaining, splits, {
-    keepZero: false,
-  });
-  remaining = applyPercentRole(input.manager, 'manager', commissionBase, remaining, splits, {
-    keepZero: false,
-  });
-
-  splits.push({
-    accountId: input.seller.accountId,
-    role: 'seller',
-    amountCents: remaining,
-  });
-
-  return {
-    kloelTotalCents: kloelTotal,
-    splits,
-    residueCents: 0n,
-  };
-}
-
-function applyPercentRole(
-  role: PercentRoleInput | undefined,
-  roleKind: SplitRole,
-  commissionBase: CentsBigInt,
-  remaining: CentsBigInt,
-  splits: SplitLine[],
-  options: { keepZero: boolean },
-): CentsBigInt {
-  if (!role) return remaining;
-
-  const calculated = (commissionBase * BigInt(role.percentBp)) / 10_000n;
-  const amount = clamp(calculated, remaining);
-
-  if (amount > 0n || options.keepZero) {
-    splits.push({
-      accountId: role.accountId,
-      role: roleKind,
-      amountCents: amount,
-    });
-  }
-
-  return remaining - amount;
-}
-
 function clamp(value: CentsBigInt, ceiling: CentsBigInt): CentsBigInt {
   if (value < 0n) return 0n;
   if (value > ceiling) return ceiling;
@@ -147,4 +69,98 @@ function validateInput(input: SplitInput): void {
       );
     }
   }
+}
+
+function applyPercentRole(
+  role: PercentRoleInput | undefined,
+  roleKind: SplitRole,
+  commissionBase: CentsBigInt,
+  remaining: CentsBigInt,
+  splits: SplitLine[],
+  options: { keepZero: boolean },
+): CentsBigInt {
+  if (!role) return remaining;
+
+  const calculated = (commissionBase * BigInt(role.percentBp)) / 10_000n;
+  const amount = clamp(calculated, remaining);
+
+  if (amount > 0n || options.keepZero) {
+    splits.push({
+      accountId: role.accountId,
+      role: roleKind,
+      amountCents: amount,
+    });
+  }
+
+  return remaining - amount;
+}
+
+function applySupplier(
+  supplier: SplitInput['supplier'],
+  remaining: CentsBigInt,
+  splits: SplitLine[],
+): CentsBigInt {
+  if (!supplier) return remaining;
+  const amount = clamp(supplier.amountCents, remaining);
+  if (amount <= 0n) return remaining;
+  splits.push({
+    accountId: supplier.accountId,
+    role: 'supplier',
+    amountCents: amount,
+  });
+  return remaining - amount;
+}
+
+function applyPercentRoles(
+  input: SplitInput,
+  commissionBase: CentsBigInt,
+  remaining: CentsBigInt,
+  splits: SplitLine[],
+): CentsBigInt {
+  let current = remaining;
+  current = applyPercentRole(input.affiliate, 'affiliate', commissionBase, current, splits, {
+    keepZero: false,
+  });
+  current = applyPercentRole(input.coproducer, 'coproducer', commissionBase, current, splits, {
+    keepZero: false,
+  });
+  current = applyPercentRole(input.manager, 'manager', commissionBase, current, splits, {
+    keepZero: false,
+  });
+  return current;
+}
+
+export function calculateSplit(input: SplitInput): SplitOutput {
+  validateInput(input);
+
+  const kloelTotal = input.platformFeeCents + input.interestCents;
+  let remaining = input.buyerPaidCents - kloelTotal;
+  if (remaining < 0n) {
+    // Pathological: Kloel's fee + interest exceeds what the buyer paid.
+    // Keep the entire amount as Kloel + residue so the conservation
+    // invariant still holds; the caller should validate inputs upstream.
+    return {
+      kloelTotalCents: input.buyerPaidCents,
+      splits: [],
+      residueCents: 0n,
+    };
+  }
+
+  const commissionBase = input.saleValueCents - input.platformFeeCents;
+  const splits: SplitLine[] = [];
+
+  remaining = applySupplier(input.supplier, remaining, splits);
+  remaining = applyPercentRoles(input, commissionBase, remaining, splits);
+
+  splits.push({
+    accountId: input.seller.accountId,
+    role: 'seller',
+    amountCents: remaining,
+  });
+
+  return {
+    kloelTotalCents: kloelTotal,
+    splits,
+    residueCents: 0n,
+  };
 }

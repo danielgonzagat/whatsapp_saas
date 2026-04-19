@@ -46,6 +46,7 @@ export class AdRulesEngineService {
       // biome-ignore lint/performance/noAwaitInLoops: sequential ad rule evaluation with side effects
       for (const rule of rules) {
         try {
+          // biome-ignore lint/performance/noAwaitInLoops: per-rule evaluation with stateful side effects; sequential required for audit log
           const shouldFire = await this.shouldFireRule(rule);
           if (shouldFire) {
             await this.fireRule(rule);

@@ -131,82 +131,72 @@ const DESIRE_HINTS: Array<{ keyword: string; tag: string }> = [
   { keyword: 'pix', tag: 'facilidade_pagamento' },
 ];
 
-function clamp(value: number, min = 0, max = 1) {
-  return Math.min(max, Math.max(min, value));
-}
+const clamp = (value: number, min = 0, max = 1): number => Math.min(max, Math.max(min, value));
 
-function normalizeText(value?: string | null) {
-  return String(value || '')
+const normalizeText = (value?: string | null): string =>
+  String(value || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(U0300__U036F_RE, '');
-}
 
-function includesAny(text: string, keywords: string[]) {
-  return keywords.some((keyword) => text.includes(keyword));
-}
+const includesAny = (text: string, keywords: string[]): boolean =>
+  keywords.some((keyword) => text.includes(keyword));
 
-function uniqueTokens(values: Array<string | null | undefined>) {
-  return [...new Set(values.map((item) => String(item || '').trim()).filter(Boolean))];
-}
+const uniqueTokens = (values: Array<string | null | undefined>): string[] => [
+  ...new Set(values.map((item) => String(item || '').trim()).filter(Boolean)),
+];
 
-function inferPaymentState(text: string) {
-  if (RX.PAGO_PAGUEI_COMPENSADO_RE.test(text)) {
-    return 'PAID' as const;
-  }
-  if (RX.PIX_BOLETO_LINK_PAGAMEN_RE.test(text)) {
-    return 'PENDING' as const;
-  }
-  if (RX.QUERO_FECHAR_QUERO_PAGA_RE.test(text)) {
-    return 'READY_TO_PAY' as const;
-  }
+const inferPaymentState = (text: string): CustomerCognitiveState['paymentState'] => {
+  if (RX.PAGO_PAGUEI_COMPENSADO_RE.test(text)) return 'PAID' as const;
+  if (RX.PIX_BOLETO_LINK_PAGAMEN_RE.test(text)) return 'PENDING' as const;
+  if (RX.QUERO_FECHAR_QUERO_PAGA_RE.test(text)) return 'READY_TO_PAY' as const;
   return 'NONE' as const;
-}
+};
 
-function inferIntent(params: {
+interface InferIntentParams {
   text: string;
   unreadCount: number;
   paymentState: CustomerCognitiveState['paymentState'];
   leadScore?: number | null;
-}) {
-  const { text, unreadCount, paymentState } = params;
-  if (paymentState === 'PENDING' || paymentState === 'READY_TO_PAY') {
-    return 'PAYMENT' as const;
-  }
-  if (includesAny(text, SUPPORT_HINTS)) {
-    return 'SUPPORT' as const;
-  }
-  if (includesAny(text, BUYING_HINTS)) {
-    return 'BUYING' as const;
-  }
-  if (includesAny(text, TRUST_OBJECTION_HINTS)) {
-    return 'OBJECTION' as const;
-  }
-  if ((Number(params.leadScore || 0) || 0) >= 70 || unreadCount > 0) {
-    return 'CURIOUS' as const;
-  }
-  return 'UNKNOWN' as const;
 }
 
-function inferStage(params: {
+const isPaymentIntent = (paymentState: CustomerCognitiveState['paymentState']): boolean =>
+  paymentState === 'PENDING' || paymentState === 'READY_TO_PAY';
+
+const isCuriousByScore = (leadScore: number | null | undefined, unreadCount: number): boolean =>
+  (Number(leadScore || 0) || 0) >= 70 || unreadCount > 0;
+
+const inferIntent = (params: InferIntentParams): CustomerIntent => {
+  const { text, unreadCount, paymentState } = params;
+  if (isPaymentIntent(paymentState)) return 'PAYMENT' as const;
+  if (includesAny(text, SUPPORT_HINTS)) return 'SUPPORT' as const;
+  if (includesAny(text, BUYING_HINTS)) return 'BUYING' as const;
+  if (includesAny(text, TRUST_OBJECTION_HINTS)) return 'OBJECTION' as const;
+  if (isCuriousByScore(params.leadScore, unreadCount)) return 'CURIOUS' as const;
+  return 'UNKNOWN' as const;
+};
+
+interface InferStageParams {
   intent: CustomerIntent;
   paymentState: CustomerCognitiveState['paymentState'];
   trustScore: number;
   urgencyScore: number;
-}) {
+}
+
+const isHotByIntent = (params: InferStageParams): boolean =>
+  params.intent === 'BUYING' && (params.trustScore >= 0.58 || params.urgencyScore >= 0.72);
+
+const isWarmByIntent = (intent: CustomerIntent): boolean =>
+  intent === 'BUYING' || intent === 'CURIOUS' || intent === 'OBJECTION';
+
+const inferStage = (params: InferStageParams): CustomerStage => {
   if (params.intent === 'SUPPORT') return 'SUPPORT' as const;
   if (params.paymentState === 'PAID') return 'POST_SALE' as const;
-  if (params.paymentState === 'PENDING' || params.paymentState === 'READY_TO_PAY') {
-    return 'CHECKOUT' as const;
-  }
-  if (params.intent === 'BUYING' && (params.trustScore >= 0.58 || params.urgencyScore >= 0.72)) {
-    return 'HOT' as const;
-  }
-  if (params.intent === 'BUYING' || params.intent === 'CURIOUS' || params.intent === 'OBJECTION') {
-    return 'WARM' as const;
-  }
+  if (isPaymentIntent(params.paymentState)) return 'CHECKOUT' as const;
+  if (isHotByIntent(params)) return 'HOT' as const;
+  if (isWarmByIntent(params.intent)) return 'WARM' as const;
   return 'COLD' as const;
-}
+};
 
 function inferObjections(text: string) {
   const objections: string[] = [];
@@ -233,9 +223,13 @@ function inferRiskFlags(text: string, intent: CustomerIntent) {
   if (includesAny(text, LEGAL_RISK_HINTS)) {
     riskFlags.push('LEGAL_RISK');
   }
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a WhatsApp message (bounded length, sanitized upstream).
   if (RX.REEMBOLSO_CANCEL_DEVOLU_RE.test(text)) {
     riskFlags.push('REFUND_RISK');
   }
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a bounded WhatsApp message string.
   if (RX.MEDIC_RECEITA_LAUDO_REA_RE.test(text)) {
     riskFlags.push('HEALTH_RISK');
   }
@@ -295,6 +289,8 @@ function inferCorePain(text: string, objections: string[], desires: string[]) {
   if (objections.includes('timing')) return 'urgencia com receio de demora';
   if (desires.includes('resultado_rapido')) return 'quer resultado perceptivel rapido';
   if (desires.includes('seguranca')) return 'busca seguranca para decidir';
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a bounded WhatsApp message string.
   if (RX.NAO_RESOLVEU_N_O_RESOLV_RE.test(text)) {
     return 'frustracao por tentativas anteriores sem resultado';
   }
@@ -302,12 +298,16 @@ function inferCorePain(text: string, objections: string[], desires: string[]) {
 }
 
 function inferPreferredStyle(text: string, emotionalTone: string) {
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a bounded WhatsApp message string.
   if (RX.COMO_FUNCIONA_COMPOSI_T_RE.test(text)) {
     return 'technical' as const;
   }
   if (emotionalTone === 'frustrated' || emotionalTone === 'anxious') {
     return 'empathetic' as const;
   }
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
+  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a bounded WhatsApp message string.
   if (RX.PRECO_PRE_O_QUANTO_PRAZ_RE.test(text)) {
     return 'direct' as const;
   }
@@ -356,7 +356,7 @@ function inferConfidence(input: {
   return Number(clamp(confidence, 0.1, 0.98).toFixed(3));
 }
 
-function inferNextBestAction(input: {
+interface NextActionInput {
   intent: CustomerIntent;
   stage: CustomerStage;
   unreadCount: number;
@@ -369,44 +369,52 @@ function inferNextBestAction(input: {
   objections: string[];
   desires: string[];
   confidence: number;
-}) {
-  if (input.riskFlags.length > 0) {
-    return 'ESCALATE_HUMAN' as const;
-  }
-  if (input.intent === 'UNKNOWN' && input.unreadCount > 0 && input.confidence < 0.68) {
-    return 'ASK_CLARIFYING' as const;
-  }
-  if (
-    input.paymentState === 'PENDING' ||
-    input.paymentState === 'READY_TO_PAY' ||
-    input.intent === 'PAYMENT'
-  ) {
-    return 'PAYMENT_RECOVERY' as const;
-  }
-  if (input.unreadCount > 0) {
-    if (input.objections.includes('price') && input.trustScore < 0.62) {
-      return 'SOCIAL_PROOF' as const;
-    }
-    if (
-      input.stage === 'HOT' ||
-      input.stage === 'CHECKOUT' ||
-      input.urgencyScore >= 0.7 ||
-      input.desires.includes('resultado_rapido')
-    ) {
-      return 'OFFER' as const;
-    }
-    return 'RESPOND' as const;
-  }
-  if (input.silenceMinutes >= 24 * 60 || (input.urgencyScore >= 0.72 && input.stage === 'HOT')) {
-    return 'FOLLOWUP_URGENT' as const;
-  }
-  if (input.silenceMinutes >= 6 * 60 || input.stage === 'WARM') {
-    return 'FOLLOWUP_SOFT' as const;
-  }
-  return 'WAIT' as const;
 }
 
-function summarizeState(input: {
+const needsLowConfidenceClarification = (input: NextActionInput): boolean =>
+  input.intent === 'UNKNOWN' && input.unreadCount > 0 && input.confidence < 0.68;
+
+const hasPaymentRecoverySignal = (input: NextActionInput): boolean =>
+  input.paymentState === 'PENDING' ||
+  input.paymentState === 'READY_TO_PAY' ||
+  input.intent === 'PAYMENT';
+
+const nextActionForEscalation = (input: NextActionInput): CognitiveActionType | null => {
+  if (input.riskFlags.length > 0) return 'ESCALATE_HUMAN';
+  if (needsLowConfidenceClarification(input)) return 'ASK_CLARIFYING';
+  if (hasPaymentRecoverySignal(input)) return 'PAYMENT_RECOVERY';
+  return null;
+};
+
+const shouldOfferOnUnread = (input: NextActionInput): boolean =>
+  input.stage === 'HOT' ||
+  input.stage === 'CHECKOUT' ||
+  input.urgencyScore >= 0.7 ||
+  input.desires.includes('resultado_rapido');
+
+const nextActionForUnread = (input: NextActionInput): CognitiveActionType | null => {
+  if (input.unreadCount <= 0) return null;
+  if (input.objections.includes('price') && input.trustScore < 0.62) return 'SOCIAL_PROOF';
+  if (shouldOfferOnUnread(input)) return 'OFFER';
+  return 'RESPOND';
+};
+
+const isUrgentSilence = (input: NextActionInput): boolean =>
+  input.silenceMinutes >= 24 * 60 || (input.urgencyScore >= 0.72 && input.stage === 'HOT');
+
+const isSoftSilence = (input: NextActionInput): boolean =>
+  input.silenceMinutes >= 6 * 60 || input.stage === 'WARM';
+
+const nextActionForSilence = (input: NextActionInput): CognitiveActionType => {
+  if (isUrgentSilence(input)) return 'FOLLOWUP_URGENT';
+  if (isSoftSilence(input)) return 'FOLLOWUP_SOFT';
+  return 'WAIT';
+};
+
+const inferNextBestAction = (input: NextActionInput): CognitiveActionType =>
+  nextActionForEscalation(input) ?? nextActionForUnread(input) ?? nextActionForSilence(input);
+
+interface SummarizeStateInput {
   intent: CustomerIntent;
   stage: CustomerStage;
   objections: string[];
@@ -415,27 +423,23 @@ function summarizeState(input: {
   trustScore: number;
   urgencyScore: number;
   riskFlags: string[];
-}) {
+}
+
+const summarizeState = (input: SummarizeStateInput): string => {
   const parts = [
     `intenção ${input.intent.toLowerCase()}`,
     `estágio ${input.stage.toLowerCase()}`,
     `próxima ação ${input.nextBestAction.toLowerCase()}`,
   ];
-  if (input.paymentState !== 'NONE') {
-    parts.push(`pagamento ${input.paymentState.toLowerCase()}`);
-  }
-  if (input.objections.length > 0) {
-    parts.push(`objeções ${input.objections.join(', ')}`);
-  }
+  if (input.paymentState !== 'NONE') parts.push(`pagamento ${input.paymentState.toLowerCase()}`);
+  if (input.objections.length > 0) parts.push(`objeções ${input.objections.join(', ')}`);
   parts.push(`confiança ${Math.round(input.trustScore * 100)}%`);
   parts.push(`urgência ${Math.round(input.urgencyScore * 100)}%`);
-  if (input.riskFlags.length > 0) {
-    parts.push(`riscos ${input.riskFlags.join(', ')}`);
-  }
+  if (input.riskFlags.length > 0) parts.push(`riscos ${input.riskFlags.join(', ')}`);
   return parts.join(' • ');
-}
+};
 
-export function buildSeedCognitiveState(input: {
+interface SeedCognitiveStateInput {
   conversationId?: string | null;
   contactId?: string | null;
   phone?: string | null;
@@ -448,20 +452,111 @@ export function buildSeedCognitiveState(input: {
   demandState?: DemandState | null;
   lastOutcome?: string | null;
   lastAction?: string | null;
-}) {
+}
+
+const computeSilenceMinutes = (lastMessageAt?: Date | string | null): number => {
+  if (!lastMessageAt) return 0;
+  return Math.max(0, Math.round((Date.now() - new Date(lastMessageAt).getTime()) / 60_000));
+};
+
+interface ComputeTrustScoreParams {
+  previous: Partial<CustomerCognitiveState> | null;
+  leadScore?: number | null;
+  trustSignals: string[];
+  objections: string[];
+}
+
+const computeTrustScore = (params: ComputeTrustScoreParams): number => {
+  const previousTrust = Number(params.previous?.trustScore || 0.45) || 0.45;
+  const leadScoreNorm = clamp((Number(params.leadScore || 0) || 0) / 100, 0, 1);
+  const base =
+    previousTrust * 0.45 +
+    leadScoreNorm * 0.3 +
+    (params.trustSignals.includes('positive_ack') ? 0.12 : 0) +
+    (params.trustSignals.includes('buying_signal') ? 0.1 : 0) -
+    (params.objections.includes('trust') ? 0.08 : 0);
+  return Number(clamp(base, 0, 1).toFixed(3));
+};
+
+interface ComputeUrgencyScoreParams {
+  previous: Partial<CustomerCognitiveState> | null;
+  text: string;
+  unreadCount: number;
+  demandState?: DemandState | null;
+}
+
+const computeUrgencyScore = (params: ComputeUrgencyScoreParams): number => {
+  const previousUrgency = Number(params.previous?.urgencyScore || 0.2) || 0.2;
+  const base =
+    previousUrgency * 0.35 +
+    (includesAny(params.text, URGENCY_HINTS) ? 0.35 : 0) +
+    Math.min(params.unreadCount / 4, 0.2) +
+    (params.demandState?.attentionScore || 0) * 0.25;
+  return Number(clamp(base, 0, 1).toFixed(3));
+};
+
+interface ComputePriceSensitivityParams {
+  previous: Partial<CustomerCognitiveState> | null;
+  text: string;
+  objections: string[];
+}
+
+const computePriceSensitivity = (params: ComputePriceSensitivityParams): number => {
+  const previousPrice = Number(params.previous?.priceSensitivity || 0.15) || 0.15;
+  const base =
+    previousPrice * 0.45 +
+    (params.objections.includes('price') ? 0.4 : 0) +
+    (params.text.includes('parcel') ? 0.15 : 0) +
+    (params.text.includes('desconto') ? 0.15 : 0);
+  return Number(clamp(base, 0, 1).toFixed(3));
+};
+
+interface ComputeLtvEstimateParams {
+  leadScore?: number | null;
+  trustScore: number;
+  urgencyScore: number;
+  stage: CustomerStage;
+}
+
+const stageBonusFor = (stage: CustomerStage): number => {
+  if (stage === 'CHECKOUT') return 140;
+  if (stage === 'HOT') return 90;
+  return 30;
+};
+
+const computeLtvEstimate = (params: ComputeLtvEstimateParams): number => {
+  const base =
+    (Number(params.leadScore || 0) || 0) * 4 +
+    params.trustScore * 180 +
+    params.urgencyScore * 120 +
+    stageBonusFor(params.stage);
+  return Number(base.toFixed(2));
+};
+
+interface DerivedSignals {
+  text: string;
+  unreadCount: number;
+  silenceMinutes: number;
+  previous: Partial<CustomerCognitiveState> | null;
+  paymentState: CustomerCognitiveState['paymentState'];
+  intent: CustomerIntent;
+  objections: string[];
+  desires: string[];
+  trustSignals: string[];
+  riskFlags: string[];
+  emotionalTone: NonNullable<CustomerCognitiveState['emotionalTone']>;
+  disclosureLevel: number;
+  corePain: string | null;
+  preferredStyle: NonNullable<CustomerCognitiveState['preferredStyle']>;
+}
+
+function deriveSignals(input: SeedCognitiveStateInput): DerivedSignals {
   const text = normalizeText(input.lastMessageText);
   const unreadCount = Number(input.unreadCount || 0) || 0;
-  const silenceMinutes = input.lastMessageAt
-    ? Math.max(0, Math.round((Date.now() - new Date(input.lastMessageAt).getTime()) / 60_000))
-    : 0;
+  const silenceMinutes = computeSilenceMinutes(input.lastMessageAt);
   const previous = input.previousState || null;
   const paymentState = inferPaymentState(text);
-  const intent = inferIntent({
-    text,
-    unreadCount,
-    paymentState,
-    leadScore: input.leadScore,
-  });
+  const intent = inferIntent({ text, unreadCount, paymentState, leadScore: input.leadScore });
   const objections = uniqueTokens([...(previous?.objections || []), ...inferObjections(text)]);
   const desires = uniqueTokens([...(previous?.desires || []), ...inferDesires(text)]);
   const trustSignals = uniqueTokens([
@@ -473,108 +568,171 @@ export function buildSeedCognitiveState(input: {
   const disclosureLevel = inferDisclosureLevel(text);
   const corePain = inferCorePain(text, objections, desires);
   const preferredStyle = inferPreferredStyle(text, emotionalTone);
-  const trustScore = Number(
-    clamp(
-      (Number(previous?.trustScore || 0.45) || 0.45) * 0.45 +
-        clamp((Number(input.leadScore || 0) || 0) / 100, 0, 1) * 0.3 +
-        (trustSignals.includes('positive_ack') ? 0.12 : 0) +
-        (trustSignals.includes('buying_signal') ? 0.1 : 0) -
-        (objections.includes('trust') ? 0.08 : 0),
-      0,
-      1,
-    ).toFixed(3),
-  );
-  const urgencyScore = Number(
-    clamp(
-      (Number(previous?.urgencyScore || 0.2) || 0.2) * 0.35 +
-        (includesAny(text, URGENCY_HINTS) ? 0.35 : 0) +
-        Math.min(unreadCount / 4, 0.2) +
-        (input.demandState?.attentionScore || 0) * 0.25,
-      0,
-      1,
-    ).toFixed(3),
-  );
-  const priceSensitivity = Number(
-    clamp(
-      (Number(previous?.priceSensitivity || 0.15) || 0.15) * 0.45 +
-        (objections.includes('price') ? 0.4 : 0) +
-        (text.includes('parcel') ? 0.15 : 0) +
-        (text.includes('desconto') ? 0.15 : 0),
-      0,
-      1,
-    ).toFixed(3),
-  );
-  const stage = inferStage({
-    intent,
-    paymentState,
-    trustScore,
-    urgencyScore,
-  });
-  const confidence = inferConfidence({
-    intent,
-    riskFlags,
-    objections,
-    unreadCount,
-  });
-  const nextBestAction = inferNextBestAction({
-    intent,
-    stage,
+  return {
+    text,
     unreadCount,
     silenceMinutes,
-    trustScore,
-    urgencyScore,
-    priceSensitivity,
+    previous,
     paymentState,
-    riskFlags,
-    objections,
-    desires,
-    confidence,
-  });
-  const nextBestQuestion = inferNextBestQuestion({
-    stage,
-    emotionalTone,
-    objections,
-    corePain,
-  });
-  const ltvEstimate = Number(
-    (
-      (Number(input.leadScore || 0) || 0) * 4 +
-      trustScore * 180 +
-      urgencyScore * 120 +
-      (stage === 'CHECKOUT' ? 140 : stage === 'HOT' ? 90 : 30)
-    ).toFixed(2),
-  );
-
-  const state: CustomerCognitiveState = {
-    conversationId: input.conversationId || previous?.conversationId || null,
-    contactId: input.contactId || previous?.contactId || null,
-    phone: input.phone || previous?.phone || null,
-    contactName: input.contactName || previous?.contactName || null,
     intent,
-    stage,
-    trustScore,
-    urgencyScore,
-    priceSensitivity,
     objections,
     desires,
     trustSignals,
-    lastOffer: previous?.lastOffer || null,
-    lastAction: input.lastAction || previous?.lastAction || null,
-    nextBestAction,
-    silenceMinutes,
-    ltvEstimate,
-    paymentState,
-    lastOutcome: input.lastOutcome || previous?.lastOutcome || null,
     riskFlags,
     emotionalTone,
     disclosureLevel,
     corePain,
     preferredStyle,
-    nextBestQuestion,
-    classificationConfidence: confidence,
+  };
+}
+
+interface DerivedScores {
+  trustScore: number;
+  urgencyScore: number;
+  priceSensitivity: number;
+  stage: CustomerStage;
+  confidence: number;
+  ltvEstimate: number;
+}
+
+function computeDerivedScores(
+  input: SeedCognitiveStateInput,
+  signals: DerivedSignals,
+): DerivedScores {
+  const { previous } = signals;
+  const trustScore = computeTrustScore({
+    previous,
+    leadScore: input.leadScore,
+    trustSignals: signals.trustSignals,
+    objections: signals.objections,
+  });
+  const urgencyScore = computeUrgencyScore({
+    previous,
+    text: signals.text,
+    unreadCount: signals.unreadCount,
+    demandState: input.demandState,
+  });
+  const priceSensitivity = computePriceSensitivity({
+    previous,
+    text: signals.text,
+    objections: signals.objections,
+  });
+  const stage = inferStage({
+    intent: signals.intent,
+    paymentState: signals.paymentState,
+    trustScore,
+    urgencyScore,
+  });
+  const confidence = inferConfidence({
+    intent: signals.intent,
+    riskFlags: signals.riskFlags,
+    objections: signals.objections,
+    unreadCount: signals.unreadCount,
+  });
+  const ltvEstimate = computeLtvEstimate({
+    leadScore: input.leadScore,
+    trustScore,
+    urgencyScore,
+    stage,
+  });
+  return { trustScore, urgencyScore, priceSensitivity, stage, confidence, ltvEstimate };
+}
+
+function computeRecommendedActions(
+  signals: DerivedSignals,
+  scores: DerivedScores,
+): {
+  nextBestAction: CognitiveActionType;
+  nextBestQuestion: string | null | undefined;
+} {
+  const nextBestAction = inferNextBestAction({
+    intent: signals.intent,
+    stage: scores.stage,
+    unreadCount: signals.unreadCount,
+    silenceMinutes: signals.silenceMinutes,
+    trustScore: scores.trustScore,
+    urgencyScore: scores.urgencyScore,
+    priceSensitivity: scores.priceSensitivity,
+    paymentState: signals.paymentState,
+    riskFlags: signals.riskFlags,
+    objections: signals.objections,
+    desires: signals.desires,
+    confidence: scores.confidence,
+  });
+  const nextBestQuestion = inferNextBestQuestion({
+    stage: scores.stage,
+    emotionalTone: signals.emotionalTone,
+    objections: signals.objections,
+    corePain: signals.corePain,
+  });
+  return { nextBestAction, nextBestQuestion };
+}
+
+interface RecommendedActions {
+  nextBestAction: CognitiveActionType;
+  nextBestQuestion: string | null | undefined;
+}
+
+const pickContactIdentity = (
+  input: SeedCognitiveStateInput,
+  previous: Partial<CustomerCognitiveState> | null,
+): Pick<CustomerCognitiveState, 'conversationId' | 'contactId' | 'phone' | 'contactName'> => ({
+  conversationId: input.conversationId || previous?.conversationId || null,
+  contactId: input.contactId || previous?.contactId || null,
+  phone: input.phone || previous?.phone || null,
+  contactName: input.contactName || previous?.contactName || null,
+});
+
+const pickHistoryFields = (
+  input: SeedCognitiveStateInput,
+  previous: Partial<CustomerCognitiveState> | null,
+): Pick<CustomerCognitiveState, 'lastOffer' | 'lastAction' | 'lastOutcome'> => ({
+  lastOffer: previous?.lastOffer || null,
+  lastAction: input.lastAction || previous?.lastAction || null,
+  lastOutcome: input.lastOutcome || previous?.lastOutcome || null,
+});
+
+const buildCognitiveStatePayload = (
+  input: SeedCognitiveStateInput,
+  signals: DerivedSignals,
+  scores: DerivedScores,
+  recommended: RecommendedActions,
+): CustomerCognitiveState => {
+  const { previous } = signals;
+  return {
+    ...pickContactIdentity(input, previous),
+    intent: signals.intent,
+    stage: scores.stage,
+    trustScore: scores.trustScore,
+    urgencyScore: scores.urgencyScore,
+    priceSensitivity: scores.priceSensitivity,
+    objections: signals.objections,
+    desires: signals.desires,
+    trustSignals: signals.trustSignals,
+    ...pickHistoryFields(input, previous),
+    nextBestAction: recommended.nextBestAction,
+    silenceMinutes: signals.silenceMinutes,
+    ltvEstimate: scores.ltvEstimate,
+    paymentState: signals.paymentState,
+    riskFlags: signals.riskFlags,
+    emotionalTone: signals.emotionalTone,
+    disclosureLevel: signals.disclosureLevel,
+    corePain: signals.corePain,
+    preferredStyle: signals.preferredStyle,
+    nextBestQuestion: recommended.nextBestQuestion,
+    classificationConfidence: scores.confidence,
     summary: '',
     updatedAt: new Date().toISOString(),
   };
+};
+
+function assembleCognitiveState(
+  input: SeedCognitiveStateInput,
+  signals: DerivedSignals,
+): CustomerCognitiveState {
+  const scores = computeDerivedScores(input, signals);
+  const recommended = computeRecommendedActions(signals, scores);
+  const state = buildCognitiveStatePayload(input, signals, scores, recommended);
 
   state.summary = summarizeState({
     intent: state.intent,
@@ -588,6 +746,11 @@ export function buildSeedCognitiveState(input: {
   });
 
   return state;
+}
+
+export function buildSeedCognitiveState(input: SeedCognitiveStateInput): CustomerCognitiveState {
+  const signals = deriveSignals(input);
+  return assembleCognitiveState(input, signals);
 }
 
 function buildStateKey(input: {
@@ -623,35 +786,18 @@ export async function loadCustomerCognitiveState(
   return ((record?.value || null) as CustomerCognitiveState | null) || null;
 }
 
-export async function persistCustomerCognitiveState(
-  prisma: PrismaClient,
-  input: {
-    workspaceId: string;
-    conversationId?: string | null;
-    contactId?: string | null;
-    phone?: string | null;
-    contactName?: string | null;
-    state: CustomerCognitiveState;
-    source?: string;
-  },
-) {
-  if (!prisma?.kloelMemory?.upsert) return input.state;
+interface PersistCognitiveStateInput {
+  workspaceId: string;
+  conversationId?: string | null;
+  contactId?: string | null;
+  phone?: string | null;
+  contactName?: string | null;
+  state: CustomerCognitiveState;
+  source?: string;
+}
 
-  const key = buildStateKey(input);
-  const previous = prisma?.kloelMemory?.findUnique
-    ? await prisma.kloelMemory
-        .findUnique({
-          where: {
-            workspaceId_key: {
-              workspaceId: input.workspaceId,
-              key,
-            },
-          },
-        })
-        .catch(() => null /* not found */)
-    : null;
-
-  const normalizedState = {
+function normalizeStateForPersist(input: PersistCognitiveStateInput): CustomerCognitiveState {
+  return {
     ...input.state,
     conversationId: input.conversationId || input.state.conversationId || null,
     contactId: input.contactId || input.state.contactId || null,
@@ -659,135 +805,189 @@ export async function persistCustomerCognitiveState(
     contactName: input.contactName || input.state.contactName || null,
     updatedAt: new Date().toISOString(),
   } satisfies CustomerCognitiveState;
+}
 
+function buildPersistMetadata(normalizedState: CustomerCognitiveState, source: string) {
+  return {
+    source,
+    contactId: normalizedState.contactId || null,
+    conversationId: normalizedState.conversationId || null,
+    phone: normalizedState.phone || null,
+    nextBestAction: normalizedState.nextBestAction,
+    intent: normalizedState.intent,
+    stage: normalizedState.stage,
+  };
+}
+
+async function fetchPreviousMemory(prisma: PrismaClient, workspaceId: string, key: string) {
+  if (!prisma?.kloelMemory?.findUnique) return null;
+  return prisma.kloelMemory
+    .findUnique({ where: { workspaceId_key: { workspaceId, key } } })
+    .catch(() => null /* not found */);
+}
+
+async function upsertCognitiveMemory(
+  prisma: PrismaClient,
+  args: {
+    workspaceId: string;
+    key: string;
+    normalizedState: CustomerCognitiveState;
+    source: string;
+  },
+) {
+  const metadata = buildPersistMetadata(args.normalizedState, args.source);
+  const stateValue = args.normalizedState as unknown as Prisma.InputJsonValue;
   await prisma.kloelMemory.upsert({
-    where: {
-      workspaceId_key: {
-        workspaceId: input.workspaceId,
-        key,
-      },
-    },
+    where: { workspaceId_key: { workspaceId: args.workspaceId, key: args.key } },
     update: {
-      value: normalizedState,
-      metadata: {
-        source: input.source || 'autonomy',
-        contactId: normalizedState.contactId || null,
-        conversationId: normalizedState.conversationId || null,
-        phone: normalizedState.phone || null,
-        nextBestAction: normalizedState.nextBestAction,
-        intent: normalizedState.intent,
-        stage: normalizedState.stage,
-      },
-      content: normalizedState.summary,
+      value: stateValue,
+      metadata,
+      content: args.normalizedState.summary,
     },
     create: {
-      workspaceId: input.workspaceId,
-      key,
+      workspaceId: args.workspaceId,
+      key: args.key,
       category: 'cognitive_state',
-      type: normalizedState.intent,
-      content: normalizedState.summary,
-      value: normalizedState,
-      metadata: {
-        source: input.source || 'autonomy',
-        contactId: normalizedState.contactId || null,
-        conversationId: normalizedState.conversationId || null,
-        phone: normalizedState.phone || null,
-        nextBestAction: normalizedState.nextBestAction,
-        intent: normalizedState.intent,
-        stage: normalizedState.stage,
-      },
+      type: args.normalizedState.intent,
+      content: args.normalizedState.summary,
+      value: stateValue,
+      metadata,
     },
   });
+}
 
-  if (
-    prisma?.kloelMemory?.create &&
-    JSON.stringify(previous?.value || null) !== JSON.stringify(normalizedState)
-  ) {
-    await prisma.kloelMemory
-      .create({
-        data: {
-          workspaceId: input.workspaceId,
-          key: `cognitive_delta:${normalizedState.contactId || normalizedState.phone || 'workspace'}:${Date.now()}:${randomUUID()}`,
-          category: 'cognitive_delta',
-          type: normalizedState.nextBestAction,
-          content: normalizedState.summary,
-          value: {
-            previous: previous?.value || null,
-            current: normalizedState,
-            source: input.source || 'autonomy',
-          },
-          metadata: {
-            contactId: normalizedState.contactId || null,
-            conversationId: normalizedState.conversationId || null,
-            phone: normalizedState.phone || null,
-          },
-        },
-      })
-      .catch(() => null /* non-critical: best-effort cognitive delta persistence */);
-  }
+async function writeCognitiveDelta(
+  prisma: PrismaClient,
+  args: {
+    workspaceId: string;
+    previousValue: unknown;
+    normalizedState: CustomerCognitiveState;
+    source: string;
+  },
+) {
+  if (!prisma?.kloelMemory?.create) return;
+  if (JSON.stringify(args.previousValue || null) === JSON.stringify(args.normalizedState)) return;
 
-  if (normalizedState.contactId && prisma?.contact?.update) {
-    await prisma.contact
-      .update({
-        where: { id: normalizedState.contactId },
-        data: {
-          leadScore: Math.max(
-            0,
-            Math.min(
-              100,
-              Math.round(normalizedState.trustScore * 55 + normalizedState.urgencyScore * 45),
-            ),
-          ),
-          purchaseProbability: String(
-            clamp(
-              normalizedState.stage === 'CHECKOUT'
-                ? 0.86
-                : normalizedState.stage === 'HOT'
-                  ? 0.7
-                  : normalizedState.stage === 'WARM'
-                    ? 0.42
-                    : 0.18,
-              0,
-              1,
-            ).toFixed(3),
-          ),
-          nextBestAction: normalizedState.nextBestAction,
-          aiSummary: normalizedState.summary,
+  const { normalizedState } = args;
+  const deltaKey = `cognitive_delta:${normalizedState.contactId || normalizedState.phone || 'workspace'}:${Date.now()}:${randomUUID()}`;
+
+  const deltaValue = {
+    previous: (args.previousValue as Prisma.InputJsonValue) || null,
+    current: normalizedState as unknown as Prisma.InputJsonValue,
+    source: args.source,
+  } as unknown as Prisma.InputJsonValue;
+
+  await prisma.kloelMemory
+    .create({
+      data: {
+        workspaceId: args.workspaceId,
+        key: deltaKey,
+        category: 'cognitive_delta',
+        type: normalizedState.nextBestAction,
+        content: normalizedState.summary,
+        value: deltaValue,
+        metadata: {
+          contactId: normalizedState.contactId || null,
+          conversationId: normalizedState.conversationId || null,
+          phone: normalizedState.phone || null,
         },
-      })
-      .catch(() => null /* non-critical: best-effort contact score update */);
-  }
+      },
+    })
+    .catch(() => null /* non-critical: best-effort cognitive delta persistence */);
+}
+
+function computePurchaseProbability(stage: CustomerStage): string {
+  const raw = stage === 'CHECKOUT' ? 0.86 : stage === 'HOT' ? 0.7 : stage === 'WARM' ? 0.42 : 0.18;
+  return clamp(raw, 0, 1).toFixed(3);
+}
+
+async function projectStateToContact(
+  prisma: PrismaClient,
+  normalizedState: CustomerCognitiveState,
+) {
+  if (!normalizedState.contactId || !prisma?.contact?.update) return;
+  const leadScore = Math.max(
+    0,
+    Math.min(100, Math.round(normalizedState.trustScore * 55 + normalizedState.urgencyScore * 45)),
+  );
+  await prisma.contact
+    .update({
+      where: { id: normalizedState.contactId },
+      data: {
+        leadScore,
+        purchaseProbability: computePurchaseProbability(normalizedState.stage),
+        nextBestAction: normalizedState.nextBestAction,
+        aiSummary: normalizedState.summary,
+      },
+    })
+    .catch(() => null /* non-critical: best-effort contact score update */);
+}
+
+export async function persistCustomerCognitiveState(
+  prisma: PrismaClient,
+  input: PersistCognitiveStateInput,
+) {
+  if (!prisma?.kloelMemory?.upsert) return input.state;
+
+  const key = buildStateKey(input);
+  const source = input.source || 'autonomy';
+  const previous = await fetchPreviousMemory(prisma, input.workspaceId, key);
+  const normalizedState = normalizeStateForPersist(input);
+
+  await upsertCognitiveMemory(prisma, {
+    workspaceId: input.workspaceId,
+    key,
+    normalizedState,
+    source,
+  });
+  await writeCognitiveDelta(prisma, {
+    workspaceId: input.workspaceId,
+    previousValue: previous?.value,
+    normalizedState,
+    source,
+  });
+  await projectStateToContact(prisma, normalizedState);
 
   return normalizedState;
 }
+
+const resolveDecisionOwner = (input: RecordDecisionOutcomeInput): string =>
+  input.contactId || input.phone || input.conversationId || 'workspace';
+
+const buildDecisionKey = (input: RecordDecisionOutcomeInput): string =>
+  `decision_outcome:${resolveDecisionOwner(input)}:${Date.now()}:${randomUUID()}`;
+
+const buildDecisionValue = (input: RecordDecisionOutcomeInput) => ({
+  action: input.action,
+  outcome: input.outcome,
+  reward: input.reward || 0,
+  message: input.message || null,
+  conversationId: input.conversationId || null,
+  metadata: input.metadata || {},
+});
+
+const buildDecisionMetadata = (input: RecordDecisionOutcomeInput) => ({
+  contactId: input.contactId || null,
+  conversationId: input.conversationId || null,
+  phone: input.phone || null,
+  outcome: input.outcome,
+});
 
 export async function recordDecisionOutcome(
   prisma: PrismaClient,
   input: RecordDecisionOutcomeInput,
 ) {
   if (!prisma?.kloelMemory?.create) return null;
-
+  const action = String(input.action || 'UNKNOWN');
   return prisma.kloelMemory.create({
     data: {
       workspaceId: input.workspaceId,
-      key: `decision_outcome:${input.contactId || input.phone || input.conversationId || 'workspace'}:${Date.now()}:${randomUUID()}`,
+      key: buildDecisionKey(input),
       category: 'decision_outcome',
-      type: String(input.action || 'UNKNOWN'),
-      content: input.message || String(input.action || 'UNKNOWN'),
-      value: {
-        action: input.action,
-        outcome: input.outcome,
-        reward: input.reward || 0,
-        message: input.message || null,
-        conversationId: input.conversationId || null,
-        metadata: input.metadata || {},
-      },
-      metadata: {
-        contactId: input.contactId || null,
-        conversationId: input.conversationId || null,
-        phone: input.phone || null,
-        outcome: input.outcome,
-      },
+      type: action,
+      content: input.message || action,
+      value: buildDecisionValue(input),
+      metadata: buildDecisionMetadata(input),
     },
   });
 }

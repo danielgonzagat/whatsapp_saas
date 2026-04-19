@@ -94,13 +94,6 @@ interface OrderPipelineData {
   returned?: number;
 }
 
-interface OrderAlertItem {
-  id: string;
-  message: string;
-  type?: string;
-  severity?: string;
-}
-
 interface PipelineStage {
   id: string;
   name?: string;
@@ -132,188 +125,11 @@ interface DetailItemData {
   planName?: string;
 }
 
-const T_RE = /[:T]/g;
-const PATTERN_RE = /"/g;
-
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
-/* ── Icons ── */
-const IC = {
-  dollar: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-      <path d="M12 18V6" />
-    </svg>
-  ),
-  repeat: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <polyline points="17 1 21 5 17 9" />
-      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-      <polyline points="7 23 3 19 7 15" />
-      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-    </svg>
-  ),
-  truck: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <rect x="1" y="3" width="15" height="13" />
-      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-      <circle cx="5.5" cy="18.5" r="2.5" />
-      <circle cx="18.5" cy="18.5" r="2.5" />
-    </svg>
-  ),
-  search: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  ),
-  download: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  ),
-  undo: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <polyline points="1 4 1 10 7 10" />
-      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-    </svg>
-  ),
-  x: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  ),
-  pause: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <rect x="6" y="4" width="4" height="16" />
-      <rect x="14" y="4" width="4" height="16" />
-    </svg>
-  ),
-  play: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <polygon points="5 3 19 12 5 21 5 3" />
-    </svg>
-  ),
-  map: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
-  ),
-  trend: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-      <polyline points="17 6 23 6 23 12" />
-    </svg>
-  ),
-  trendD: (s: number) => (
-    <svg
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
-      <polyline points="17 18 23 18 23 12" />
-    </svg>
-  ),
-};
+/* ── Icons (extracted into VendasView.icons.tsx) ── */
+import { IC } from './VendasView.icons';
 
 /* ── Status configs ── */
 const SALE_STATUS: Record<string, { label: string; color: string }> = {
@@ -467,16 +283,21 @@ function TH({ children }: { children: React.ReactNode }) {
 
 function MiniChart({ data, color = '#E85D30' }: { data: number[]; color?: string }) {
   const max = Math.max(...data, 1);
+  const bars = data.map((value, idx) => ({
+    id: `bar-${idx}-of-${data.length}-${value}`,
+    value,
+    isLast: idx === data.length - 1,
+  }));
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
-      {data.map((v, i) => (
+      {bars.map((bar) => (
         <div
-          key={`bar-${i}`}
+          key={bar.id}
           style={{
             flex: 1,
-            height: `${(v / max) * 100}%`,
+            height: `${(bar.value / max) * 100}%`,
             minHeight: 2,
-            background: i === data.length - 1 ? color : 'var(--app-accent-light)',
+            background: bar.isLast ? color : 'var(--app-accent-light)',
             borderRadius: '2px 2px 0 0',
           }}
         />
@@ -557,6 +378,7 @@ function SmartPaymentModal({
         }
       }}
     >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -1838,9 +1660,19 @@ function GestaoVendas({
                 </div>
               </button>
             ) : (
+              // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
               <div
                 key={s.id}
                 onClick={() => onOpenDetail(s.id, 'sale')}
+                role="button"
+                tabIndex={0}
+                aria-label={`Abrir detalhes da venda ${s.id}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).click();
+                  }
+                }}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr',
@@ -1856,12 +1688,6 @@ function GestaoVendas({
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'none';
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    (e.currentTarget as HTMLElement).click();
-                  }
                 }}
               >
                 <div>
@@ -2760,115 +2586,6 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       )}
 
       {/* Action buttons removed from header for clean pill-tab layout */}
-      {false && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: 24,
-          }}
-        >
-          <div />
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button
-              type="button"
-              onClick={() => setShowSmartPayment(true)}
-              style={{
-                padding: '8px 16px',
-                background: '#E85D30',
-                border: 'none',
-                borderRadius: 6,
-                color: 'var(--app-text-on-accent)',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: SORA,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              {IC.dollar(14)} Cobrar
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const now = new Date().toISOString().slice(0, 19).replace(T_RE, '-');
-                const escape = (v: unknown) => {
-                  const s = String(v ?? '');
-                  return `"${s.replace(PATTERN_RE, '""')}"`;
-                };
-                let rows: Record<string, unknown>[] = [];
-                let filename = '';
-                if (tab === 'vendas') {
-                  filename = `vendas-${now}.csv`;
-                  rows = (sales as SaleItem[]).map((s) => ({
-                    id: s.id,
-                    cliente: s.leadPhone || s.customerName || '',
-                    produto: s.productName || '',
-                    valor: s.amount,
-                    status: s.status,
-                    metodo: s.paymentMethod || '',
-                    data: s.createdAt,
-                  }));
-                } else if (tab === 'assinaturas') {
-                  filename = `assinaturas-${now}.csv`;
-                  rows = (subscriptions as SubscriptionItem[]).map((s) => ({
-                    id: s.id,
-                    cliente: s.customerName || '',
-                    plano: s.planName || '',
-                    valor: s.amount,
-                    status: s.status,
-                    ltv: s.totalPaid || 0,
-                  }));
-                } else {
-                  filename = `pedidos-${now}.csv`;
-                  rows = (orders as OrderItem[]).map((o) => ({
-                    id: o.id,
-                    cliente: o.customerName || '',
-                    produto: o.productName || '',
-                    valor: o.amount,
-                    status: o.status,
-                    rastreio: o.trackingCode || '',
-                    destino: o.addressState || '',
-                  }));
-                }
-                if (!rows.length) return;
-                const headers = Object.keys(rows[0]);
-                const csv = [
-                  headers.join(';'),
-                  ...rows.map((r) => headers.map((h) => escape(r[h])).join(';')),
-                ].join('\n');
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-              style={{
-                padding: '8px 16px',
-                background: 'none',
-                border: '1px solid var(--app-border-primary)',
-                borderRadius: 6,
-                color: 'var(--app-text-secondary)',
-                fontSize: 12,
-                cursor: 'pointer',
-                fontFamily: SORA,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              {IC.download(14)} Exportar tudo
-            </button>
-          </div>
-        </div>
-      )}
 
       {orderAlerts.length > 0 && (
         <div

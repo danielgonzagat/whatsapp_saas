@@ -46,7 +46,7 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
     return NextResponse.json({ message: 'Servidor backend nao configurado.' }, { status: 502 });
   }
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+  // biome-ignore lint/performance/noAwaitInLoops: KYC backend failover — advance to next candidate only if previous returned 404/405 or threw; parallel fan-out would submit sensitive KYC documents to multiple upstreams and create duplicate records
   for (const baseUrl of candidates) {
     const url = `${baseUrl}${kycPath}`;
     const response = await fetch(url, {

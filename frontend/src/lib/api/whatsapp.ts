@@ -1,15 +1,15 @@
 // WhatsApp Connection API functions
 import { mutate } from 'swr';
 import { apiFetch } from './core';
-
-const invalidateWhatsApp = () =>
-  mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
 import type {
   WhatsAppConnectResponse,
   WhatsAppConnectionStatus,
   WhatsAppProofEntry,
   WhatsAppScreencastTokenResponse,
 } from './core';
+
+const invalidateWhatsApp = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
 
 const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
 const PATTERN_RE = /^\/+/;
@@ -39,6 +39,30 @@ function buildLegacyQrDisabledResponse() {
     status: 'legacy_disabled',
     message: 'Runtime legado descontinuado. Use a integração Meta.',
   } as const;
+}
+
+/**
+ * Executes a WhatsApp API call via `apiFetch` and throws a normalized
+ * error when the backend responds with a failure. Used by the many
+ * small "call this endpoint and return data or throw" helpers below.
+ */
+async function whatsappApiRequest<T = unknown>(
+  path: string,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<T> {
+  const res = await apiFetch<T>(path, options);
+  if (res.error) throw createWhatsAppApiError(res.error, res.status);
+  return res.data as T;
+}
+
+/** Runs a mutating WhatsApp request and invalidates cached SWR keys on success. */
+async function whatsappMutatingRequest<T = unknown>(
+  path: string,
+  options?: Parameters<typeof apiFetch>[1],
+): Promise<T> {
+  const data = await whatsappApiRequest<T>(path, options);
+  invalidateWhatsApp();
+  return data;
 }
 
 function isConnectedWhatsAppStatus(data: Record<string, unknown> | undefined): boolean {
@@ -166,26 +190,14 @@ interface WhatsAppStatusRaw {
   viewport?: { width: number; height: number };
 }
 
-export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
-  const res = await apiFetch<WhatsAppStatusRaw>(`/api/whatsapp-api/session/status`);
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-
-  const data = res.data as WhatsAppStatusRaw | undefined;
-  const connected = isConnectedWhatsAppStatus(data as Record<string, unknown>);
-  const rawStatus = String(data?.status || '');
-  const provider = normalizeWhatsAppProviderSurface(data?.provider || data?.providerType);
-  const activeProvider = normalizeWhatsAppProviderSurface(data?.activeProvider);
-  const legacyRuntime = isLegacyRuntimeProvider(provider || activeProvider);
-  const normalizedStatus = connected
-    ? 'connected'
-    : rawStatus === 'SCAN_QR_CODE' || rawStatus === 'STARTING' || rawStatus === 'OPENING'
-      ? 'connecting'
-    : rawStatus === 'CONNECTION_INCOMPLETE'
-      ? 'connection_incomplete'
-      : rawStatus
-        ? rawStatus.toLowerCase()
-        : 'disconnected';
-
+function mapWhatsAppStatusPayload(
+  data: WhatsAppStatusRaw | undefined,
+  connected: boolean,
+  normalizedStatus: string,
+  provider: string | undefined,
+  activeProvider: string | undefined,
+  legacyRuntime: boolean,
+): WhatsAppConnectionStatus {
   return {
     connected,
     status: normalizedStatus,
@@ -222,6 +234,36 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
     proofCount: Number(data?.proofCount || 0) || 0,
     viewport: data?.viewport,
   };
+}
+
+export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
+  const res = await apiFetch<WhatsAppStatusRaw>(`/api/whatsapp-api/session/status`);
+  if (res.error) throw createWhatsAppApiError(res.error, res.status);
+
+  const data = res.data as WhatsAppStatusRaw | undefined;
+  const connected = isConnectedWhatsAppStatus(data as Record<string, unknown>);
+  const rawStatus = String(data?.status || '');
+  const provider = normalizeWhatsAppProviderSurface(data?.provider || data?.providerType);
+  const activeProvider = normalizeWhatsAppProviderSurface(data?.activeProvider);
+  const legacyRuntime = isLegacyRuntimeProvider(provider || activeProvider);
+  const normalizedStatus = connected
+    ? 'connected'
+    : rawStatus === 'SCAN_QR_CODE' || rawStatus === 'STARTING' || rawStatus === 'OPENING'
+      ? 'connecting'
+      : rawStatus === 'CONNECTION_INCOMPLETE'
+        ? 'connection_incomplete'
+        : rawStatus
+          ? rawStatus.toLowerCase()
+          : 'disconnected';
+
+  return mapWhatsAppStatusPayload(
+    data,
+    connected,
+    normalizedStatus,
+    provider,
+    activeProvider,
+    legacyRuntime,
+  );
 }
 
 export async function initiateWhatsAppConnection(
@@ -267,21 +309,11 @@ export async function getWhatsAppQrImageOnly(
 }
 
 export async function disconnectWhatsApp(_workspaceId: string): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/disconnect`, {
-    method: 'DELETE',
-  });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  invalidateWhatsApp();
-  return res.data;
+  return whatsappMutatingRequest(`/api/whatsapp-api/session/disconnect`, { method: 'DELETE' });
 }
 
 export async function logoutWhatsApp(_workspaceId: string): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/logout`, {
-    method: 'POST',
-  });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  invalidateWhatsApp();
-  return res.data;
+  return whatsappMutatingRequest(`/api/whatsapp-api/session/logout`, { method: 'POST' });
 }
 
 export async function getWhatsAppViewer(_workspaceId: string): Promise<unknown> {
@@ -377,36 +409,19 @@ export async function runWhatsAppActionTurn(
 // ============= WHATSAPP SESSION MANAGEMENT (advanced) =============
 
 export async function getWhatsAppSessionDiagnostics(_workspaceId: string): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/diagnostics`);
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  return res.data;
+  return whatsappApiRequest(`/api/whatsapp-api/session/diagnostics`);
 }
 
 export async function forceWhatsAppSessionCheck(_workspaceId: string): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/force-check`, {
-    method: 'POST',
-  });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  invalidateWhatsApp();
-  return res.data;
+  return whatsappMutatingRequest(`/api/whatsapp-api/session/force-check`, { method: 'POST' });
 }
 
 export async function forceWhatsAppReconnect(_workspaceId: string): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/force-reconnect`, {
-    method: 'POST',
-  });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  invalidateWhatsApp();
-  return res.data;
+  return whatsappMutatingRequest(`/api/whatsapp-api/session/force-reconnect`, { method: 'POST' });
 }
 
 export async function repairWhatsAppSessionConfig(_workspaceId: string): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/repair-config`, {
-    method: 'POST',
-  });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  invalidateWhatsApp();
-  return res.data;
+  return whatsappMutatingRequest(`/api/whatsapp-api/session/repair-config`, { method: 'POST' });
 }
 
 export async function linkWhatsAppSession(
@@ -424,27 +439,22 @@ export async function linkWhatsAppSession(
 }
 
 export async function recreateWhatsAppSessionIfInvalid(_workspaceId: string): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/recreate-if-invalid`, {
+  return whatsappMutatingRequest(`/api/whatsapp-api/session/recreate-if-invalid`, {
     method: 'POST',
   });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  invalidateWhatsApp();
-  return res.data;
 }
 
 export async function getWhatsAppProviderStatus(_workspaceId: string): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/provider-status`);
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  return res.data;
+  return whatsappApiRequest(`/api/whatsapp-api/provider-status`);
 }
 
 export async function checkWhatsAppPhone(
   _workspaceId: string,
   phone: string,
 ): Promise<{ phone: string; registered: boolean }> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/check/${encodeURIComponent(phone)}`);
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  return res.data as { phone: string; registered: boolean };
+  return whatsappApiRequest<{ phone: string; registered: boolean }>(
+    `/api/whatsapp-api/check/${encodeURIComponent(phone)}`,
+  );
 }
 
 // ============= WHATSAPP CATALOG =============
@@ -460,6 +470,16 @@ export interface WhatsAppCatalogContact {
   [key: string]: unknown;
 }
 
+function extractWhatsAppContactList(data: Record<string, unknown> | undefined): {
+  contacts: WhatsAppCatalogContact[];
+  total: number;
+} {
+  return {
+    contacts: Array.isArray(data?.contacts) ? (data.contacts as WhatsAppCatalogContact[]) : [],
+    total: Number(data?.total || 0),
+  };
+}
+
 export async function getWhatsAppCatalogContacts(
   _workspaceId: string,
   params?: { days?: number; page?: number; limit?: number; onlyCataloged?: boolean },
@@ -470,15 +490,10 @@ export async function getWhatsAppCatalogContacts(
   if (params?.limit) qs.set('limit', String(params.limit));
   if (params?.onlyCataloged !== undefined) qs.set('onlyCataloged', String(params.onlyCataloged));
   const query = qs.toString();
-  const res = await apiFetch<unknown>(
+  const data = await whatsappApiRequest<Record<string, unknown>>(
     `/api/whatsapp-api/catalog/contacts${query ? `?${query}` : ''}`,
   );
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  const data = res.data as Record<string, unknown> | undefined;
-  return {
-    contacts: Array.isArray(data?.contacts) ? data.contacts : [],
-    total: Number(data?.total || 0),
-  };
+  return extractWhatsAppContactList(data);
 }
 
 export async function getWhatsAppCatalogRanking(
@@ -491,41 +506,30 @@ export async function getWhatsAppCatalogRanking(
   if (params?.minLeadScore !== undefined) qs.set('minLeadScore', String(params.minLeadScore));
   if (params?.excludeBuyers !== undefined) qs.set('excludeBuyers', String(params.excludeBuyers));
   const query = qs.toString();
-  const res = await apiFetch<unknown>(
-    `/api/whatsapp-api/catalog/ranking${query ? `?${query}` : ''}`,
+  const data = await whatsappApiRequest<Record<string, unknown>>(
+    `/api/whatsapp-api/catalog/ranking${query}`,
   );
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  const data = res.data as Record<string, unknown> | undefined;
-  return {
-    contacts: Array.isArray(data?.contacts) ? data.contacts : [],
-    total: Number(data?.total || 0),
-  };
+  return extractWhatsAppContactList(data);
 }
 
 export async function refreshWhatsAppCatalog(
   _workspaceId: string,
   params?: { days?: number; reason?: string },
 ): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/catalog/refresh`, {
+  return whatsappMutatingRequest(`/api/whatsapp-api/catalog/refresh`, {
     method: 'POST',
     body: { days: params?.days, reason: params?.reason },
   });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  invalidateWhatsApp();
-  return res.data;
 }
 
 export async function scoreWhatsAppCatalog(
   _workspaceId: string,
   params?: { contactId?: string; days?: number; limit?: number; reason?: string },
 ): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/catalog/score`, {
+  return whatsappMutatingRequest(`/api/whatsapp-api/catalog/score`, {
     method: 'POST',
     body: params,
   });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  invalidateWhatsApp();
-  return res.data;
 }
 
 // ============= WHATSAPP MESSAGING =============

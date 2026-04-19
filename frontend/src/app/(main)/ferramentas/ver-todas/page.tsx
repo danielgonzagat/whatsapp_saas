@@ -168,9 +168,20 @@ export default function VerTodasPage() {
         {CATEGORY_CARDS.map((cat) => {
           const isActive = category === cat.key;
           return (
+            // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
             <div
               key={cat.key}
               onClick={() => setCategory(isActive ? 'all' : cat.key)}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isActive}
+              aria-label={`Filtrar por categoria ${cat.title ?? cat.key}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -183,12 +194,6 @@ export default function VerTodasPage() {
                 borderRadius: 6,
                 cursor: 'pointer',
                 transition: `all ${motion.duration.normal} ${motion.easing.gravity}`,
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  (e.currentTarget as HTMLElement).click();
-                }
               }}
             >
               <span style={{ fontSize: 22 }}>{cat.icon}</span>
@@ -259,20 +264,19 @@ export default function VerTodasPage() {
                 gap: 12,
               }}
             >
-              {liveTools.map((tool) => (
-                <ToolCard
-                  key={tool.title}
-                  icon={tool.icon}
-                  title={tool.title}
-                  desc={tool.desc}
-                  badge={getCapabilityBadge(tool)}
-                  onClick={
-                    getCapabilityHref(tool)
-                      ? () => router.push(getCapabilityHref(tool)!)
-                      : undefined
-                  }
-                />
-              ))}
+              {liveTools.map((tool) => {
+                const href = getCapabilityHref(tool);
+                return (
+                  <ToolCard
+                    key={tool.title}
+                    icon={tool.icon}
+                    title={tool.title}
+                    desc={tool.desc}
+                    badge={getCapabilityBadge(tool)}
+                    onClick={href ? () => router.push(href) : undefined}
+                  />
+                );
+              })}
             </div>
           ) : null}
 

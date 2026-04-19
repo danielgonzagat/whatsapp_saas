@@ -86,6 +86,28 @@ function isPendingQrStatus(status?: string | null): boolean {
   );
 }
 
+function resolveStatusMessage(data: { connected: boolean; status?: string | null }): string {
+  if (data.connected) return 'Sessão ativa e sincronizada.';
+  if (isPendingQrStatus(data.status)) return 'Aguardando leitura do QR Code no aparelho.';
+  return 'WhatsApp desconectado.';
+}
+
+async function recoverAuthenticatedWorkspaceId(): Promise<string> {
+  const me = await authApi.getMe();
+  return resolveWorkspaceFromAuthPayload(me.data)?.id || '';
+}
+
+const CIA_ACTIVE_MODES = new Set(['LIVE', 'BACKLOG', 'FULL']);
+const CIA_MANUAL_PAUSE_MODES = new Set(['HUMAN_ONLY', 'SUSPENDED']);
+
+function isCiaAutonomyActive(autonomy: Record<string, unknown> | null | undefined): boolean {
+  const mode = String(autonomy?.mode || 'OFF').toUpperCase();
+  const reason = String(autonomy?.reason || '');
+  const isActive = CIA_ACTIVE_MODES.has(mode);
+  const isManualPause = reason === 'manual_pause' || CIA_MANUAL_PAUSE_MODES.has(mode);
+  return isActive && !isManualPause;
+}
+
 export function useWhatsAppSession({
   enabled = true,
   workspaceId: providedWorkspaceId,
@@ -127,22 +149,15 @@ export function useWhatsAppSession({
     };
   }, [resolveAuthToken, resolveWorkspaceId]);
 
-  const ensureSessionCredentials = useCallback(async () => {
-    const current = refreshCredentials();
-    if (current.authToken && current.workspaceId) {
-      return current;
-    }
-
-    if (current.authToken && !current.workspaceId) {
+  const tryRecoverAuthenticatedWorkspaceCredentials = useCallback(
+    async (authTokenValue: string) => {
       try {
-        const me = await authApi.getMe();
-        const recoveredWorkspaceId = resolveWorkspaceFromAuthPayload(me.data)?.id || '';
-
+        const recoveredWorkspaceId = await recoverAuthenticatedWorkspaceId();
         if (recoveredWorkspaceId) {
           tokenStorage.setWorkspaceId(recoveredWorkspaceId);
           setWorkspaceId(recoveredWorkspaceId);
           return {
-            authToken: current.authToken,
+            authToken: authTokenValue,
             workspaceId: providedWorkspaceId || recoveredWorkspaceId,
           };
         }
@@ -156,8 +171,12 @@ export function useWhatsAppSession({
       if (refreshedAfterClear.authToken && !refreshedAfterClear.workspaceId) {
         throw new Error('Workspace não carregado. Recarregue a página para sincronizar sua conta.');
       }
-    }
+      return null;
+    },
+    [providedWorkspaceId, refreshCredentials],
+  );
 
+  const fallbackToAnonymousCredentials = useCallback(async () => {
     const anonymous = await ensureAnonymousSession();
     const nextWorkspaceId = providedWorkspaceId || anonymous.workspaceId;
     setAuthToken(anonymous.token);
@@ -166,7 +185,25 @@ export function useWhatsAppSession({
       authToken: anonymous.token,
       workspaceId: nextWorkspaceId,
     };
-  }, [providedWorkspaceId, refreshCredentials]);
+  }, [providedWorkspaceId]);
+
+  const ensureSessionCredentials = useCallback(async () => {
+    const current = refreshCredentials();
+    if (current.authToken && current.workspaceId) {
+      return current;
+    }
+
+    if (current.authToken && !current.workspaceId) {
+      const recovered = await tryRecoverAuthenticatedWorkspaceCredentials(current.authToken);
+      if (recovered) return recovered;
+    }
+
+    return fallbackToAnonymousCredentials();
+  }, [
+    fallbackToAnonymousCredentials,
+    refreshCredentials,
+    tryRecoverAuthenticatedWorkspaceCredentials,
+  ]);
 
   const requireSessionCredentials = useCallback(async () => {
     const current = await ensureSessionCredentials();
@@ -367,42 +404,42 @@ export function useWhatsAppSession({
     }
   }, [requireSessionCredentials]);
 
-  const syncConnectedSessionRuntime = useCallback(async () => {
-    if (!enabled || !workspaceId || !authToken || !status?.connected) return;
+  const shouldSkipCiaRuntimeSync = useCallback((): boolean => {
+    if (!enabled || !workspaceId || !authToken || !status?.connected) return true;
+    if (bootstrapGuardRef.current === workspaceId) return true;
+    return false;
+  }, [authToken, enabled, status?.connected, workspaceId]);
 
-    const guardKey = workspaceId;
-    if (bootstrapGuardRef.current === guardKey) {
+  const resumeCiaAutomation = useCallback(async (activeWorkspaceId: string): Promise<void> => {
+    const surface = await ciaApi.getSurface(activeWorkspaceId);
+    const autonomy = (surface.error ? null : surface.data?.autonomy) as
+      | Record<string, unknown>
+      | null
+      | undefined;
+
+    setIsPaused(false);
+
+    if (isCiaAutonomyActive(autonomy)) {
       return;
     }
-    bootstrapGuardRef.current = guardKey;
+
+    await autostartCia(activeWorkspaceId);
+    setIsPaused(false);
+    setStatusMessage('Sessão ativa. A autonomia total foi retomada automaticamente.');
+  }, []);
+
+  const syncConnectedSessionRuntime = useCallback(async () => {
+    if (shouldSkipCiaRuntimeSync()) return;
+
+    bootstrapGuardRef.current = workspaceId;
 
     try {
-      const surface = await ciaApi.getSurface(workspaceId);
-      const autonomy = (surface.error ? null : surface.data?.autonomy) as
-        | Record<string, unknown>
-        | null
-        | undefined;
-
-      const mode = String(autonomy?.mode || 'OFF').toUpperCase();
-      const reason = String(autonomy?.reason || '');
-      const isActive = ['LIVE', 'BACKLOG', 'FULL'].includes(mode);
-      const isManualPause =
-        reason === 'manual_pause' || mode === 'HUMAN_ONLY' || mode === 'SUSPENDED';
-
-      setIsPaused(false);
-
-      if (isActive && !isManualPause) {
-        return;
-      }
-
-      await autostartCia(workspaceId);
-      setIsPaused(false);
-      setStatusMessage('Sessão ativa. A autonomia total foi retomada automaticamente.');
+      await resumeCiaAutomation(workspaceId);
     } catch (err) {
       console.error('Failed to sync CIA runtime for connected session:', err);
       bootstrapGuardRef.current = null;
     }
-  }, [authToken, enabled, status?.connected, workspaceId]);
+  }, [resumeCiaAutomation, shouldSkipCiaRuntimeSync, workspaceId]);
 
   useEffect(() => {
     refreshCredentials();

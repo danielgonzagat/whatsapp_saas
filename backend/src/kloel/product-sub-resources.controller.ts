@@ -180,27 +180,33 @@ function buildCommissionPayload(body: LooseObject, current?: LooseObject) {
   };
 }
 
+function findSingleAtIndex(email: string): number {
+  const atIndex = email.indexOf('@');
+  if (atIndex <= 0) return -1;
+  if (atIndex !== email.lastIndexOf('@')) return -1;
+  if (atIndex === email.length - 1) return -1;
+  return atIndex;
+}
+
+function isValidEmailDomain(domain: string): boolean {
+  if (!domain || domain.startsWith('.') || domain.endsWith('.')) return false;
+  const dotIndex = domain.lastIndexOf('.');
+  return dotIndex > 0 && dotIndex < domain.length - 1;
+}
+
 function isValidEmail(value: string): boolean {
   const email = String(value || '')
     .trim()
     .toLowerCase();
-  if (!email || email.includes(' ')) {
-    return false;
-  }
+  if (!email || email.includes(' ')) return false;
 
-  const atIndex = email.indexOf('@');
-  if (atIndex <= 0 || atIndex !== email.lastIndexOf('@') || atIndex === email.length - 1) {
-    return false;
-  }
+  const atIndex = findSingleAtIndex(email);
+  if (atIndex < 0) return false;
 
   const local = email.slice(0, atIndex);
-  const domain = email.slice(atIndex + 1);
-  if (!local || !domain || domain.startsWith('.') || domain.endsWith('.')) {
-    return false;
-  }
+  if (!local) return false;
 
-  const dotIndex = domain.lastIndexOf('.');
-  return dotIndex > 0 && dotIndex < domain.length - 1;
+  return isValidEmailDomain(email.slice(atIndex + 1));
 }
 
 async function ensureNoDuplicateCommission(
@@ -322,25 +328,35 @@ function buildPackagingConfig(body: LooseObject, current: LooseObject) {
   return next;
 }
 
-function buildShippingConfig(body: LooseObject, current: LooseObject) {
-  const next = { ...current };
-  const requestedFreightType =
-    typeof body.freightType === 'string'
-      ? body.freightType
-      : typeof body.shippingCost === 'string'
-        ? body.shippingCost
-        : undefined;
+function pickRequestedFreightType(body: LooseObject): string | undefined {
+  if (typeof body.freightType === 'string') return body.freightType;
+  if (typeof body.shippingCost === 'string') return body.shippingCost;
+  return undefined;
+}
 
-  let freightType = requestedFreightType;
-  if (body.freeShipping === true) freightType = 'free';
-  if (body.freeShipping === false && freightType === undefined) {
-    freightType = current.freightType === 'free' ? 'calculated' : safeStr(current.freightType);
+function resolveFreightType(body: LooseObject, current: LooseObject): string | undefined {
+  if (body.freeShipping === true) return 'free';
+  const requested = pickRequestedFreightType(body);
+  if (requested !== undefined) return requested;
+  if (body.freeShipping === false) {
+    return current.freightType === 'free' ? 'calculated' : safeStr(current.freightType);
   }
+  return undefined;
+}
 
-  const fixedFreight = parseNumber(body.fixedFreight) ?? parseNumber(body.shippingPrice);
-  const shippingCostNumber = fixedFreight ?? parseNumber(body.shippingCost);
+function pickRecordOrUndefined(value: unknown): LooseObject | undefined {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as LooseObject;
+  }
+  return undefined;
+}
 
-  const patches: LooseObject = {
+function buildShippingPatches(
+  body: LooseObject,
+  freightType: string | undefined,
+  shippingCostNumber: number | undefined,
+): LooseObject {
+  return {
     shipper: body.shipper ?? body.whoShips,
     shipFrom: body.shipFrom,
     dispatchTime: body.dispatchTime,
@@ -348,11 +364,17 @@ function buildShippingConfig(body: LooseObject, current: LooseObject) {
     freightType,
     fixedFreight: shippingCostNumber,
     tracking: body.tracking,
-    regionPrazos:
-      body.regionPrazos && typeof body.regionPrazos === 'object' ? body.regionPrazos : undefined,
-    faqAnswers:
-      body.faqAnswers && typeof body.faqAnswers === 'object' ? body.faqAnswers : undefined,
+    regionPrazos: pickRecordOrUndefined(body.regionPrazos),
+    faqAnswers: pickRecordOrUndefined(body.faqAnswers),
   };
+}
+
+function buildShippingConfig(body: LooseObject, current: LooseObject) {
+  const next = { ...current };
+  const freightType = resolveFreightType(body, current);
+  const fixedFreight = parseNumber(body.fixedFreight) ?? parseNumber(body.shippingPrice);
+  const shippingCostNumber = fixedFreight ?? parseNumber(body.shippingCost);
+  const patches = buildShippingPatches(body, freightType, shippingCostNumber);
 
   for (const [key, entry] of Object.entries(patches)) {
     if (entry !== undefined) next[key] = entry;
@@ -361,22 +383,30 @@ function buildShippingConfig(body: LooseObject, current: LooseObject) {
   return next;
 }
 
+function resolvePlanPrice(body: LooseObject): number | undefined {
+  const direct = parseNumber(body.price);
+  if (direct !== undefined) return direct;
+  const cents = parseNumber(body.priceInCents);
+  if (cents === undefined) return undefined;
+  return Number(cents / 100);
+}
+
+function resolveVisibleToAffiliates(body: LooseObject): unknown {
+  if (body.visibleToAffiliates !== undefined) return body.visibleToAffiliates;
+  if (body.hideAffiliates === undefined) return undefined;
+  return !body.hideAffiliates;
+}
+
 function buildPlanData(body: LooseObject, current?: LooseObject) {
   const currentExtra = parseObject(current?.checkoutImages);
   const currentPackaging = parseObject(current?.packagingConfig);
   const currentShipping = parseObject(current?.shippingConfig);
 
-  const price =
-    parseNumber(body.price) ??
-    (parseNumber(body.priceInCents) !== undefined
-      ? Number(parseNumber(body.priceInCents) / 100)
-      : undefined);
+  const price = resolvePlanPrice(body);
   const itemsPerPlan =
     parseNumber(body.itemsPerPlan) ?? parseNumber(body.quantity) ?? parseNumber(body.items);
   const active = body.active ?? body.isActive ?? body.available;
-  const visibleToAffiliates =
-    body.visibleToAffiliates ??
-    (body.hideAffiliates !== undefined ? !body.hideAffiliates : undefined);
+  const visibleToAffiliates = resolveVisibleToAffiliates(body);
   const maxNoInterest =
     parseNumber(body.maxNoInterest) ?? parseNumber(body.interestFreeInstallments);
   const recurringInterval = body.recurringInterval ?? body.subscriptionPeriod;
@@ -407,19 +437,13 @@ function buildPlanData(body: LooseObject, current?: LooseObject) {
   });
 }
 
-function serializePlan(plan: LooseObject) {
-  const extra = parseObject(plan.checkoutImages);
-  const packaging = parseObject(plan.packagingConfig);
-  const shipping = parseObject(plan.shippingConfig);
-  const freightType = typeof shipping.freightType === 'string' ? shipping.freightType : '';
+function serializePlanIdentity(plan: LooseObject) {
   const planName = safeStr(plan.name);
   const planId = safeStr(plan.id);
-
+  const upperRef = safeStr(plan.referenceCode).trim().toUpperCase();
   return {
-    ...plan,
     slug: slugifyPlan(planName, planId),
-    referenceCode:
-      safeStr(plan.referenceCode).trim().toUpperCase() || planId.slice(0, 8).toUpperCase(),
+    referenceCode: upperRef || planId.slice(0, 8).toUpperCase(),
     priceInCents: Math.round(Number(plan.price || 0) * 100),
     quantity: plan.itemsPerPlan,
     items: plan.itemsPerPlan,
@@ -428,11 +452,13 @@ function serializePlan(plan: LooseObject) {
     hideAffiliates: !plan.visibleToAffiliates,
     interestFreeInstallments: plan.maxNoInterest,
     subscriptionPeriod: plan.recurringInterval,
+  };
+}
+
+function serializePlanShipping(shipping: LooseObject, freightType: string) {
+  return {
     freeShipping: freightType.toLowerCase() === 'free' || shipping.freeShipping === true,
     shippingPrice: shipping.fixedFreight ?? shipping.shippingValue ?? null,
-    packageType: packaging.packageType || '',
-    dimensions: packaging.dimensions || {},
-    weight: packaging.weight ?? '',
     whoShips: shipping.shipper || '',
     shipper: shipping.shipper || '',
     shipFrom: shipping.shipFrom || '',
@@ -443,29 +469,74 @@ function serializePlan(plan: LooseObject) {
     tracking: shipping.tracking || '',
     regionPrazos: shipping.regionPrazos || {},
     faqAnswers: shipping.faqAnswers || {},
-    imageUrl: extra.imageUrl || null,
-    redirectUrl: extra.redirectUrl || '',
-    freeSample: extra.freeSample ?? false,
-    requireEmail: extra.requireEmail ?? true,
-    requireEmailConfirm: extra.requireEmailConfirm ?? false,
-    requireAddress: extra.requireAddress ?? false,
-    limitSales: extra.limitSales ?? false,
-    salesLimit: extra.salesLimit ?? '',
-    limitPerApproved: extra.limitPerApproved ?? false,
-    approvedLimit: extra.approvedLimit ?? '',
-    minStock: extra.minStock ?? false,
-    stockMin: extra.stockMin ?? '',
-    notifyBoleto: extra.notifyBoleto ?? true,
-    limitedBilling: extra.limitedBilling ?? false,
-    affiliateRecurring: extra.affiliateRecurring ?? true,
-    boletoInstallment: extra.boletoInstallment ?? false,
-    boletoInstallments: extra.boletoInstallments ?? '',
-    boletoInterest: extra.boletoInterest ?? false,
-    paymentMethods: extra.paymentMethods || {
-      credit: true,
-      boleto: true,
-      pix: true,
-    },
+  };
+}
+
+function serializePlanPackaging(packaging: LooseObject) {
+  return {
+    packageType: packaging.packageType || '',
+    dimensions: packaging.dimensions || {},
+    weight: packaging.weight ?? '',
+  };
+}
+
+const PLAN_CHECKOUT_FLAG_DEFAULTS: LooseObject = {
+  imageUrl: null,
+  redirectUrl: '',
+  freeSample: false,
+  requireEmail: true,
+  requireEmailConfirm: false,
+  requireAddress: false,
+  limitSales: false,
+  salesLimit: '',
+  limitPerApproved: false,
+  approvedLimit: '',
+  minStock: false,
+  stockMin: '',
+  notifyBoleto: true,
+  limitedBilling: false,
+  affiliateRecurring: true,
+  boletoInstallment: false,
+  boletoInstallments: '',
+  boletoInterest: false,
+};
+
+const DEFAULT_PAYMENT_METHODS = Object.freeze({
+  credit: true,
+  boleto: true,
+  pix: true,
+});
+
+function resolvePlanCheckoutFlag(extra: LooseObject, key: string, fallback: unknown): unknown {
+  const value = extra[key];
+  // `imageUrl` and `redirectUrl` treat empty string as "no value"; others only coalesce null/undefined.
+  if (key === 'imageUrl' || key === 'redirectUrl') {
+    return value || fallback;
+  }
+  return value ?? fallback;
+}
+
+function serializePlanCheckoutFlags(extra: LooseObject) {
+  const flags: LooseObject = {};
+  for (const [key, fallback] of Object.entries(PLAN_CHECKOUT_FLAG_DEFAULTS)) {
+    flags[key] = resolvePlanCheckoutFlag(extra, key, fallback);
+  }
+  flags.paymentMethods = extra.paymentMethods || DEFAULT_PAYMENT_METHODS;
+  return flags;
+}
+
+function serializePlan(plan: LooseObject) {
+  const extra = parseObject(plan.checkoutImages);
+  const packaging = parseObject(plan.packagingConfig);
+  const shipping = parseObject(plan.shippingConfig);
+  const freightType = typeof shipping.freightType === 'string' ? shipping.freightType : '';
+
+  return {
+    ...plan,
+    ...serializePlanIdentity(plan),
+    ...serializePlanShipping(shipping, freightType),
+    ...serializePlanPackaging(packaging),
+    ...serializePlanCheckoutFlags(extra),
   };
 }
 
@@ -862,6 +933,153 @@ function normalizeAiObjections(value: unknown): LooseObject[] {
     .filter(Boolean);
 }
 
+function pickDefined<T extends LooseObject, K extends string>(
+  source: T,
+  keys: readonly K[],
+): LooseObject {
+  const result: LooseObject = {};
+  for (const key of keys) {
+    if (source[key] !== undefined) {
+      result[key] = source[key];
+    }
+  }
+  return result;
+}
+
+function pickRenamed(
+  source: LooseObject,
+  mapping: ReadonlyArray<readonly [string, string]>,
+): LooseObject {
+  const result: LooseObject = {};
+  for (const [sourceKey, targetKey] of mapping) {
+    if (source[sourceKey] !== undefined) {
+      result[targetKey] = source[sourceKey];
+    }
+  }
+  return result;
+}
+
+const CUSTOMER_PROFILE_KEYS = [
+  'whobuys',
+  'pains',
+  'promise',
+  'idealCustomer',
+  'painPoints',
+  'promisedResult',
+  'genders',
+  'ages',
+  'moments',
+  'knowledge',
+  'buyingPower',
+  'problem',
+] as const;
+
+const POSITIONING_KEYS = [
+  'tier',
+  'whenOffer',
+  'differentiators',
+  'scarcity',
+  'objectionStates',
+] as const;
+
+const SALES_ARGUMENT_SHARED_KEYS = ['autoCheckoutLink', 'offerDiscount', 'useUrgency'] as const;
+
+const SALES_ARGUMENT_EXTRA_KEYS = [
+  'socialProof',
+  'socialProofValues',
+  'guarantee',
+  'guaranteeValues',
+  'benefits',
+  'benefitsValues',
+  'urgencyArgs',
+  'urgencyValues',
+] as const;
+
+const UPSELL_BODY_MAP = [
+  ['upsellEnabled', 'enabled'],
+  ['upsellTargetPlan', 'targetPlan'],
+  ['upsellWhen', 'when'],
+  ['upsellArgument', 'argument'],
+] as const;
+
+const DOWNSELL_BODY_MAP = [
+  ['downsellEnabled', 'enabled'],
+  ['downsellTargetPlan', 'targetPlan'],
+  ['downsellWhen', 'when'],
+  ['downsellArgument', 'argument'],
+] as const;
+
+const TECHNICAL_INFO_KEYS = [
+  'hasTechInfo',
+  'usageMode',
+  'duration',
+  'contraindications',
+  'expectedResults',
+] as const;
+
+function buildCustomerProfilePatch(body: LooseObject, current: LooseObject, input: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...input,
+    ...pickDefined(body, CUSTOMER_PROFILE_KEYS),
+  });
+}
+
+function buildPositioningPatch(body: LooseObject, current: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...pickDefined(body, POSITIONING_KEYS),
+  });
+}
+
+function buildSalesArgumentsPatch(
+  body: LooseObject,
+  current: LooseObject,
+  input: LooseObject,
+  followUpInput: LooseObject,
+) {
+  return removeUndefined({
+    ...current,
+    ...input,
+    ...pickDefined(body, SALES_ARGUMENT_SHARED_KEYS),
+    ...pickDefined(followUpInput, SALES_ARGUMENT_SHARED_KEYS),
+    ...pickDefined(body, SALES_ARGUMENT_EXTRA_KEYS),
+  });
+}
+
+function buildUpsellPatch(body: LooseObject, current: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...pickRenamed(body, UPSELL_BODY_MAP),
+  });
+}
+
+function buildDownsellPatch(body: LooseObject, current: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...pickRenamed(body, DOWNSELL_BODY_MAP),
+  });
+}
+
+function buildFollowUpPatch(body: LooseObject, current: LooseObject, input: LooseObject) {
+  const patch: LooseObject = {
+    ...current,
+    ...input,
+    ...pickDefined(body, SALES_ARGUMENT_SHARED_KEYS),
+  };
+  if (body.followUp !== undefined) patch.schedule = body.followUp;
+  if (body.followUpHours !== undefined) patch.hours = parseNumber(body.followUpHours);
+  if (body.followUpMax !== undefined) patch.maxFollowUps = parseNumber(body.followUpMax);
+  return removeUndefined(patch);
+}
+
+function buildTechnicalInfoPatch(body: LooseObject, current: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...pickDefined(body, TECHNICAL_INFO_KEYS),
+  });
+}
+
 function normalizeProductAiConfigInput(body: LooseObject, current?: LooseObject | null) {
   const currentCustomerProfile = parseObject(current?.customerProfile);
   const currentPositioning = parseObject(current?.positioning);
@@ -876,95 +1094,151 @@ function normalizeProductAiConfigInput(body: LooseObject, current?: LooseObject 
   const followUpConfigInput = parseObject(body.followUpConfig);
 
   return removeUndefined({
-    customerProfile: removeUndefined({
-      ...currentCustomerProfile,
-      ...customerProfileInput,
-      ...(body.whobuys !== undefined ? { whobuys: body.whobuys } : {}),
-      ...(body.pains !== undefined ? { pains: body.pains } : {}),
-      ...(body.promise !== undefined ? { promise: body.promise } : {}),
-      ...(body.idealCustomer !== undefined ? { idealCustomer: body.idealCustomer } : {}),
-      ...(body.painPoints !== undefined ? { painPoints: body.painPoints } : {}),
-      ...(body.promisedResult !== undefined ? { promisedResult: body.promisedResult } : {}),
-      ...(body.genders !== undefined ? { genders: body.genders } : {}),
-      ...(body.ages !== undefined ? { ages: body.ages } : {}),
-      ...(body.moments !== undefined ? { moments: body.moments } : {}),
-      ...(body.knowledge !== undefined ? { knowledge: body.knowledge } : {}),
-      ...(body.buyingPower !== undefined ? { buyingPower: body.buyingPower } : {}),
-      ...(body.problem !== undefined ? { problem: body.problem } : {}),
-    }),
-    positioning: removeUndefined({
-      ...currentPositioning,
-      ...(body.tier !== undefined ? { tier: body.tier } : {}),
-      ...(body.whenOffer !== undefined ? { whenOffer: body.whenOffer } : {}),
-      ...(body.differentiators !== undefined ? { differentiators: body.differentiators } : {}),
-      ...(body.scarcity !== undefined ? { scarcity: body.scarcity } : {}),
-      ...(body.objectionStates !== undefined ? { objectionStates: body.objectionStates } : {}),
-    }),
+    customerProfile: buildCustomerProfilePatch(body, currentCustomerProfile, customerProfileInput),
+    positioning: buildPositioningPatch(body, currentPositioning),
     objections: normalizeAiObjections(body.objections ?? current?.objections),
-    salesArguments: removeUndefined({
-      ...currentSalesArguments,
-      ...salesArgumentsInput,
-      ...(body.autoCheckoutLink !== undefined ? { autoCheckoutLink: body.autoCheckoutLink } : {}),
-      ...(body.offerDiscount !== undefined ? { offerDiscount: body.offerDiscount } : {}),
-      ...(body.useUrgency !== undefined ? { useUrgency: body.useUrgency } : {}),
-      ...(followUpConfigInput.autoCheckoutLink !== undefined
-        ? { autoCheckoutLink: followUpConfigInput.autoCheckoutLink }
-        : {}),
-      ...(followUpConfigInput.offerDiscount !== undefined
-        ? { offerDiscount: followUpConfigInput.offerDiscount }
-        : {}),
-      ...(followUpConfigInput.useUrgency !== undefined
-        ? { useUrgency: followUpConfigInput.useUrgency }
-        : {}),
-      ...(body.socialProof !== undefined ? { socialProof: body.socialProof } : {}),
-      ...(body.socialProofValues !== undefined
-        ? { socialProofValues: body.socialProofValues }
-        : {}),
-      ...(body.guarantee !== undefined ? { guarantee: body.guarantee } : {}),
-      ...(body.guaranteeValues !== undefined ? { guaranteeValues: body.guaranteeValues } : {}),
-      ...(body.benefits !== undefined ? { benefits: body.benefits } : {}),
-      ...(body.benefitsValues !== undefined ? { benefitsValues: body.benefitsValues } : {}),
-      ...(body.urgencyArgs !== undefined ? { urgencyArgs: body.urgencyArgs } : {}),
-      ...(body.urgencyValues !== undefined ? { urgencyValues: body.urgencyValues } : {}),
-    }),
-    upsellConfig: removeUndefined({
-      ...currentUpsellConfig,
-      ...(body.upsellEnabled !== undefined ? { enabled: body.upsellEnabled } : {}),
-      ...(body.upsellTargetPlan !== undefined ? { targetPlan: body.upsellTargetPlan } : {}),
-      ...(body.upsellWhen !== undefined ? { when: body.upsellWhen } : {}),
-      ...(body.upsellArgument !== undefined ? { argument: body.upsellArgument } : {}),
-    }),
-    downsellConfig: removeUndefined({
-      ...currentDownsellConfig,
-      ...(body.downsellEnabled !== undefined ? { enabled: body.downsellEnabled } : {}),
-      ...(body.downsellTargetPlan !== undefined ? { targetPlan: body.downsellTargetPlan } : {}),
-      ...(body.downsellWhen !== undefined ? { when: body.downsellWhen } : {}),
-      ...(body.downsellArgument !== undefined ? { argument: body.downsellArgument } : {}),
-    }),
+    salesArguments: buildSalesArgumentsPatch(
+      body,
+      currentSalesArguments,
+      salesArgumentsInput,
+      followUpConfigInput,
+    ),
+    upsellConfig: buildUpsellPatch(body, currentUpsellConfig),
+    downsellConfig: buildDownsellPatch(body, currentDownsellConfig),
     tone: normalizeAiTone(body.tone ?? current?.tone),
     persistenceLevel: parseNumber(body.persistenceLevel) ?? parseNumber(body.persistence),
     messageLimit: parseNumber(body.messageLimit),
-    followUpConfig: removeUndefined({
-      ...currentFollowUpConfig,
-      ...followUpConfigInput,
-      ...(body.followUp !== undefined ? { schedule: body.followUp } : {}),
-      ...(body.autoCheckoutLink !== undefined ? { autoCheckoutLink: body.autoCheckoutLink } : {}),
-      ...(body.offerDiscount !== undefined ? { offerDiscount: body.offerDiscount } : {}),
-      ...(body.useUrgency !== undefined ? { useUrgency: body.useUrgency } : {}),
-      ...(body.followUpHours !== undefined ? { hours: parseNumber(body.followUpHours) } : {}),
-      ...(body.followUpMax !== undefined ? { maxFollowUps: parseNumber(body.followUpMax) } : {}),
-    }),
-    technicalInfo: removeUndefined({
-      ...currentTechnicalInfo,
-      ...(body.hasTechInfo !== undefined ? { hasTechInfo: body.hasTechInfo } : {}),
-      ...(body.usageMode !== undefined ? { usageMode: body.usageMode } : {}),
-      ...(body.duration !== undefined ? { duration: body.duration } : {}),
-      ...(body.contraindications !== undefined
-        ? { contraindications: body.contraindications }
-        : {}),
-      ...(body.expectedResults !== undefined ? { expectedResults: body.expectedResults } : {}),
-    }),
+    followUpConfig: buildFollowUpPatch(body, currentFollowUpConfig, followUpConfigInput),
+    technicalInfo: buildTechnicalInfoPatch(body, currentTechnicalInfo),
   });
+}
+
+function pickFirstDefined(source: LooseObject, keys: readonly string[], fallback: unknown) {
+  for (const key of keys) {
+    const value = source[key];
+    if (value !== undefined && value !== null) return value;
+  }
+  return fallback;
+}
+
+function coerceArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function coerceString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+const CUSTOMER_PROFILE_ALIAS_FIELDS: ReadonlyArray<readonly [string, readonly string[]]> = [
+  ['whobuys', ['whobuys', 'idealCustomer']],
+  ['pains', ['pains', 'painPoints']],
+  ['promise', ['promise', 'promisedResult']],
+  ['idealCustomer', ['idealCustomer', 'whobuys']],
+  ['painPoints', ['painPoints', 'pains']],
+  ['promisedResult', ['promisedResult', 'promise']],
+] as const;
+
+const CUSTOMER_PROFILE_STRING_FIELDS = ['knowledge', 'buyingPower', 'problem'] as const;
+const CUSTOMER_PROFILE_ARRAY_FIELDS = ['genders', 'ages', 'moments'] as const;
+
+function flattenCustomerProfile(customerProfile: LooseObject): LooseObject {
+  const result: LooseObject = {};
+  for (const [field, candidates] of CUSTOMER_PROFILE_ALIAS_FIELDS) {
+    result[field] = pickFirstDefined(customerProfile, candidates, '');
+  }
+  for (const field of CUSTOMER_PROFILE_ARRAY_FIELDS) {
+    result[field] = coerceArray(customerProfile[field]);
+  }
+  for (const field of CUSTOMER_PROFILE_STRING_FIELDS) {
+    result[field] = coerceString(customerProfile[field]);
+  }
+  return result;
+}
+
+function flattenPositioning(positioning: LooseObject) {
+  return {
+    tier: positioning.tier || '',
+    whenOffer: positioning.whenOffer || [],
+    differentiators: positioning.differentiators || [],
+    scarcity: positioning.scarcity || [],
+    objectionStates: positioning.objectionStates || {},
+  };
+}
+
+const SALES_ARGUMENTS_ARRAY_FIELDS = [
+  'socialProof',
+  'guarantee',
+  'benefits',
+  'urgencyArgs',
+] as const;
+
+const SALES_ARGUMENTS_OBJECT_FIELDS = [
+  'socialProofValues',
+  'guaranteeValues',
+  'benefitsValues',
+  'urgencyValues',
+] as const;
+
+const SALES_ARGUMENTS_BOOLEAN_FALLBACK_FIELDS = [
+  'autoCheckoutLink',
+  'offerDiscount',
+  'useUrgency',
+] as const;
+
+function coerceObject(value: unknown): LooseObject {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as LooseObject) : {};
+}
+
+function flattenSalesArguments(
+  salesArguments: LooseObject,
+  followUpConfig: LooseObject,
+): LooseObject {
+  const result: LooseObject = {};
+  for (const field of SALES_ARGUMENTS_ARRAY_FIELDS) {
+    result[field] = coerceArray(salesArguments[field]);
+  }
+  for (const field of SALES_ARGUMENTS_OBJECT_FIELDS) {
+    result[field] = coerceObject(salesArguments[field]);
+  }
+  for (const field of SALES_ARGUMENTS_BOOLEAN_FALLBACK_FIELDS) {
+    result[field] = pickFirstDefined(
+      { primary: salesArguments[field], secondary: followUpConfig[field] },
+      ['primary', 'secondary'],
+      true,
+    );
+  }
+  return result;
+}
+
+function flattenUpsellDownsell(upsellConfig: LooseObject, downsellConfig: LooseObject) {
+  return {
+    upsellEnabled: Boolean(upsellConfig.enabled),
+    upsellTargetPlan: upsellConfig.targetPlan || '',
+    upsellWhen: upsellConfig.when || '',
+    upsellArgument: upsellConfig.argument || '',
+    downsellEnabled: Boolean(downsellConfig.enabled),
+    downsellTargetPlan: downsellConfig.targetPlan || '',
+    downsellWhen: downsellConfig.when || '',
+    downsellArgument: downsellConfig.argument || '',
+  };
+}
+
+function flattenFollowUpTechnical(
+  config: LooseObject,
+  followUpConfig: LooseObject,
+  technicalInfo: LooseObject,
+) {
+  return {
+    persistence: config.persistenceLevel ?? 3,
+    followUp: followUpConfig.schedule || '',
+    followUpHours: followUpConfig.hours ?? null,
+    followUpMax: followUpConfig.maxFollowUps ?? null,
+    hasTechInfo: Boolean(technicalInfo.hasTechInfo),
+    usageMode: technicalInfo.usageMode || '',
+    duration: technicalInfo.duration || '',
+    contraindications: technicalInfo.contraindications || [],
+    expectedResults: technicalInfo.expectedResults || [],
+  };
 }
 
 function serializeProductAiConfig(config: LooseObject | null | undefined) {
@@ -991,51 +1265,11 @@ function serializeProductAiConfig(config: LooseObject | null | undefined) {
     downsellConfig,
     technicalInfo,
     followUpConfig,
-    whobuys: customerProfile.whobuys ?? customerProfile.idealCustomer ?? '',
-    pains: customerProfile.pains ?? customerProfile.painPoints ?? '',
-    promise: customerProfile.promise ?? customerProfile.promisedResult ?? '',
-    idealCustomer: customerProfile.idealCustomer ?? customerProfile.whobuys ?? '',
-    painPoints: customerProfile.painPoints ?? customerProfile.pains ?? '',
-    promisedResult: customerProfile.promisedResult ?? customerProfile.promise ?? '',
-    genders: customerProfile.genders || [],
-    ages: customerProfile.ages || [],
-    moments: customerProfile.moments || [],
-    knowledge: customerProfile.knowledge || '',
-    buyingPower: customerProfile.buyingPower || '',
-    problem: customerProfile.problem || '',
-    tier: positioning.tier || '',
-    whenOffer: positioning.whenOffer || [],
-    differentiators: positioning.differentiators || [],
-    scarcity: positioning.scarcity || [],
-    objectionStates: positioning.objectionStates || {},
-    socialProof: salesArguments.socialProof || [],
-    socialProofValues: salesArguments.socialProofValues || {},
-    guarantee: salesArguments.guarantee || [],
-    guaranteeValues: salesArguments.guaranteeValues || {},
-    benefits: salesArguments.benefits || [],
-    benefitsValues: salesArguments.benefitsValues || {},
-    urgencyArgs: salesArguments.urgencyArgs || [],
-    urgencyValues: salesArguments.urgencyValues || {},
-    autoCheckoutLink: salesArguments.autoCheckoutLink ?? followUpConfig.autoCheckoutLink ?? true,
-    offerDiscount: salesArguments.offerDiscount ?? followUpConfig.offerDiscount ?? true,
-    useUrgency: salesArguments.useUrgency ?? followUpConfig.useUrgency ?? true,
-    upsellEnabled: Boolean(upsellConfig.enabled),
-    upsellTargetPlan: upsellConfig.targetPlan || '',
-    upsellWhen: upsellConfig.when || '',
-    upsellArgument: upsellConfig.argument || '',
-    downsellEnabled: Boolean(downsellConfig.enabled),
-    downsellTargetPlan: downsellConfig.targetPlan || '',
-    downsellWhen: downsellConfig.when || '',
-    downsellArgument: downsellConfig.argument || '',
-    persistence: config.persistenceLevel ?? 3,
-    followUp: followUpConfig.schedule || '',
-    followUpHours: followUpConfig.hours ?? null,
-    followUpMax: followUpConfig.maxFollowUps ?? null,
-    hasTechInfo: Boolean(technicalInfo.hasTechInfo),
-    usageMode: technicalInfo.usageMode || '',
-    duration: technicalInfo.duration || '',
-    contraindications: technicalInfo.contraindications || [],
-    expectedResults: technicalInfo.expectedResults || [],
+    ...flattenCustomerProfile(customerProfile),
+    ...flattenPositioning(positioning),
+    ...flattenSalesArguments(salesArguments, followUpConfig),
+    ...flattenUpsellDownsell(upsellConfig, downsellConfig),
+    ...flattenFollowUpTechnical(config, followUpConfig, technicalInfo),
   };
 }
 

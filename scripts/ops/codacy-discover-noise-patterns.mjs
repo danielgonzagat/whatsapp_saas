@@ -2,12 +2,12 @@
 /**
  * scripts/ops/codacy-discover-noise-patterns.mjs
  *
- * Phase 0 of the Codacy convergence plan
- * (docs/codacy/synthetic-whistling-meteor.md is the live spec).
+ * Historical Phase 0 helper from the Codacy convergence plan.
  *
  * Reads the byPatternId map from PULSE_CODACY_STATE.json and produces
- * docs/codacy/noise-patterns.json — the ordered list of pattern IDs that
- * scripts/ops/codacy-pattern-overrides.mjs (Phase 1) will PATCH off.
+ * docs/codacy/noise-patterns.json — a read-only inventory of historically
+ * noisy pattern families. It no longer authorizes or implies any Codacy
+ * mutation path.
  *
  * "Noise" here means: pattern families that are objectively wrong for this
  * Next.js 16 + NestJS + Vitest + Jest stack. Each entry is justified by:
@@ -24,7 +24,7 @@
  *     ]
  *   }
  *
- * No mutations — this script is read-only against Codacy's API.
+ * No mutations — this script is read-only and archival.
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -48,11 +48,17 @@ const TOOL_UUID = {
 
 // Family detectors. Each detector returns null if the pattern doesn't match
 // the family, or { family, toolUuid, justification } if it does.
+const ES_X_PATTERN_RE = /^ESLint8?_es-x_/;
+const FP_PATTERN_RE = /^ESLint8?_fp_/;
+const NO_UNSAFE_PATTERN_RE =
+  /^ESLint8?_@typescript-eslint_no-unsafe-(?:call|assignment|member-access|argument|return)$/;
+const BIOME_NURSERY_PATTERN_RE = /^Biome_lint_nursery_/;
+
 const FAMILIES = [
   {
     family: 'es-x (ECMAScript compat from eslint-plugin-es)',
     toolUuid: TOOL_UUID.ESLINT_DEPRECATED,
-    matches: (id) => /^ESLint8?_es-x_/.test(id),
+    matches: (id) => ES_X_PATTERN_RE.test(id),
     justification:
       'eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. ' +
       'Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas ' +
@@ -61,7 +67,7 @@ const FAMILIES = [
   {
     family: 'fp (eslint-plugin-fp)',
     toolUuid: TOOL_UUID.ESLINT_DEPRECATED,
-    matches: (id) => /^ESLint8?_fp_/.test(id),
+    matches: (id) => FP_PATTERN_RE.test(id),
     justification:
       'eslint-plugin-fp forbids `null`/`undefined` and mutation. NestJS controllers, Prisma ' +
       'optional relations, and React props all rely on `null`/`undefined` as domain values. ' +
@@ -70,10 +76,7 @@ const FAMILIES = [
   {
     family: '@typescript-eslint/no-unsafe-* (mirror local override)',
     toolUuid: TOOL_UUID.ESLINT_DEPRECATED,
-    matches: (id) =>
-      /^ESLint8?_@typescript-eslint_no-unsafe-(call|assignment|member-access|argument|return)$/.test(
-        id,
-      ),
+    matches: (id) => NO_UNSAFE_PATTERN_RE.test(id),
     justification:
       'Local backend/frontend/worker eslint.config.mjs files all set ' +
       "'@typescript-eslint/no-explicit-any': 'off' and the no-unsafe-* family is a downstream " +
@@ -83,7 +86,7 @@ const FAMILIES = [
   {
     family: 'Biome nursery (experimental)',
     toolUuid: TOOL_UUID.BIOME,
-    matches: (id) => /^Biome_lint_nursery_/.test(id),
+    matches: (id) => BIOME_NURSERY_PATTERN_RE.test(id),
     justification:
       'Biome explicitly marks nursery rules as unstable / pre-release. They are not recommended ' +
       'for production use and produce noise on otherwise-correct code.',

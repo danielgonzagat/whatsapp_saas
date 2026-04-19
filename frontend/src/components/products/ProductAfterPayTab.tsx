@@ -31,6 +31,10 @@ function Toggle({
   return (
     <div
       onClick={() => onChange(!checked)}
+      role="switch"
+      tabIndex={0}
+      aria-checked={checked}
+      aria-label={label}
       style={{
         display: 'flex',
         alignItems: 'center',

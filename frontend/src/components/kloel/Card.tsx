@@ -13,11 +13,14 @@ export function Card({ children, style, onClick, className }: CardProps) {
   const [hovered, setHovered] = useState(false);
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: role/tabIndex applied when onClick is provided; hover handlers are decorative and do not require keyboard parity
     <div
       className={className}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
       style={{
         background: 'var(--app-bg-card)',
         border: `1px solid ${hovered ? '#333338' : '#222226'}`,
@@ -29,7 +32,7 @@ export function Card({ children, style, onClick, className }: CardProps) {
         ...style,
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault();
           (e.currentTarget as HTMLElement).click();
         }

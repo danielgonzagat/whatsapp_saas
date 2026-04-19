@@ -7,7 +7,7 @@ async function retryFailedJobs() {
   const failed = await queue.getFailed();
   console.log(`Found ${failed.length} failed jobs.`);
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+  // biome-ignore lint/performance/noAwaitInLoops: BullMQ failed-job rehydration — each job.retry() acquires a Redis lock on the BullMQ queue and moves the job back to active; parallel retries would stampede the connection and trigger RedisError: MAXCLIENTS reached
   for (const job of failed) {
     console.log(`Retrying job ${job.id}...`);
     await job.retry();

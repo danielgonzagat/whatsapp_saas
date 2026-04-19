@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     let lastError: unknown;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+    // biome-ignore lint/performance/noAwaitInLoops: WhatsApp verification-code dispatch failover — parallel fan-out would send multiple OTP codes to the user's phone and burn WhatsApp template quota; must try one candidate at a time and stop on first 2xx
     for (const baseUrl of candidates) {
       const response = await fetch(`${baseUrl}/auth/whatsapp/send-code`, {
         method: 'POST',

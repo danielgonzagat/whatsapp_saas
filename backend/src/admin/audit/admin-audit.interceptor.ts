@@ -9,8 +9,8 @@ import type { Request } from 'express';
 import { type Observable, tap } from 'rxjs';
 import { NO_AUDIT_KEY } from '../auth/decorators/no-audit.decorator';
 import type { AuthenticatedAdmin } from '../auth/admin-token.types';
-import { sanitizeForAudit } from '../common/admin-sanitize';
 import { AdminAuditService } from './admin-audit.service';
+import { buildAdminAuditEntry } from './admin-audit-entry.builder';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -30,56 +30,30 @@ export class AdminAuditInterceptor implements NestInterceptor {
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const http = context.switchToHttp();
-    const req = http.getRequest<Request & { admin?: AuthenticatedAdmin }>();
-
-    if (!req || SAFE_METHODS.has(req.method)) {
+    const req = context.switchToHttp().getRequest<Request & { admin?: AuthenticatedAdmin }>();
+    if (!this.shouldAudit(context, req)) {
       return next.handle();
     }
 
-    // Only instrument admin routes.
-    const path = req.path ?? req.url ?? '';
-    if (!path.startsWith('/admin/')) {
-      return next.handle();
-    }
-
-    const noAudit = this.reflector.getAllAndOverride<boolean>(NO_AUDIT_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (noAudit) return next.handle();
-
-    const controllerName = context.getClass().name;
-    const handlerName = context.getHandler().name;
-    const action = `${controllerName}.${handlerName}`;
-
-    const details = {
-      method: req.method,
-      path,
-      query: sanitizeForAudit(req.query ?? {}),
-      body: sanitizeForAudit(req.body ?? {}),
-      params: sanitizeForAudit(req.params ?? {}),
-    };
-
-    const ip =
-      (req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() ?? '') ||
-      req.ip ||
-      req.socket?.remoteAddress ||
-      null;
-    const userAgent = req.headers['user-agent'] ?? null;
+    const entry = buildAdminAuditEntry(context, req);
 
     return next.handle().pipe(
       tap({
         next: () => {
-          void this.audit.append({
-            adminUserId: req.admin?.id ?? null,
-            action,
-            details,
-            ip,
-            userAgent,
-          });
+          void this.audit.append(entry);
         },
       }),
     );
+  }
+
+  private shouldAudit(context: ExecutionContext, req: Request | undefined): boolean {
+    if (!req || SAFE_METHODS.has(req.method)) return false;
+    const path = req.path ?? req.url ?? '';
+    if (!path.startsWith('/admin/')) return false;
+    const noAudit = this.reflector.getAllAndOverride<boolean>(NO_AUDIT_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    return !noAudit;
   }
 }

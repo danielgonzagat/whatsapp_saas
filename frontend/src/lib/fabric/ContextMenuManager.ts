@@ -96,7 +96,9 @@ export class ContextMenuManager {
           label: 'Bloquear',
           action: () => {
             const sel = this.deps.selection.getSelected();
-            sel.forEach((o) => this.deps.layers.lockObject(o));
+            sel.forEach((o) => {
+              this.deps.layers.lockObject(o);
+            });
           },
           disabled: !hasSelection,
         },

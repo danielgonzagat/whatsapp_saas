@@ -342,6 +342,35 @@ function blendSquare(
   }
 }
 
+function updateParticleMotion(particle: Particle, dtSec: number, frameScale: number) {
+  const localSec = particle.ageSec - particle.delaySec;
+  particle.ramp = Math.min(1, localSec / (30 / 60));
+  particle.vx += particle.dvx * 0.008 * particle.ramp * frameScale;
+  particle.vy += particle.dvy * 0.008 * particle.ramp * frameScale;
+  particle.vy += 0.035 * particle.ramp * frameScale;
+  const damping = 0.993 ** frameScale;
+  particle.vx *= damping;
+  particle.vy *= damping;
+  particle.x += particle.vx * frameScale;
+  particle.y += particle.vy * frameScale;
+
+  const ca = Math.min(1, localSec * 3);
+  particle.r += (particle.tr - particle.r) * 0.03 * ca * frameScale;
+  particle.g += (particle.tg - particle.g) * 0.03 * ca * frameScale;
+  particle.b += (particle.tb - particle.b) * 0.03 * ca * frameScale;
+  particle.size *= particle.shrink ** frameScale;
+  particle.life -= particle.decay * frameScale;
+}
+
+function isParticleOffscreen(particle: Particle, layout: LegacyLayout): boolean {
+  return (
+    particle.x + particle.size < -8 ||
+    particle.y + particle.size < -8 ||
+    particle.x > layout.width + 8 ||
+    particle.y > layout.height + 8
+  );
+}
+
 function ThanosOmniSales({ runToken }: { runToken: number }) {
   const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(EMPTY_MESSAGES);
 
@@ -351,7 +380,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     setMsgs(EMPTY_MESSAGES);
 
     const run = async () => {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
+      // biome-ignore lint/performance/noAwaitInLoops: staggered landing-page animation — each SALES_FLOW message renders after a per-message delay (900/600/400ms) to create the typing cadence; Promise.all would render all messages instantaneously and destroy the effect
       for (const msg of SALES_FLOW) {
         if (cancelled) return;
         await wait(msg.f === '$' ? 900 : msg.f === 'a' ? 600 : 400);
@@ -550,33 +579,9 @@ export default function ThanosSection() {
 
             if (particle.life <= 0 || particle.size <= 0.12) continue;
 
-            const localSec = particle.ageSec - particle.delaySec;
-            particle.ramp = Math.min(1, localSec / (30 / 60));
-            particle.vx += particle.dvx * 0.008 * particle.ramp * frameScale;
-            particle.vy += particle.dvy * 0.008 * particle.ramp * frameScale;
-            particle.vy += 0.035 * particle.ramp * frameScale;
-            const damping = 0.993 ** frameScale;
-            particle.vx *= damping;
-            particle.vy *= damping;
-            particle.x += particle.vx * frameScale;
-            particle.y += particle.vy * frameScale;
+            updateParticleMotion(particle, dtSec, frameScale);
 
-            const ca = Math.min(1, localSec * 3);
-            particle.r += (particle.tr - particle.r) * 0.03 * ca * frameScale;
-            particle.g += (particle.tg - particle.g) * 0.03 * ca * frameScale;
-            particle.b += (particle.tb - particle.b) * 0.03 * ca * frameScale;
-            particle.size *= particle.shrink ** frameScale;
-            particle.life -= particle.decay * frameScale;
-
-            if (
-              particle.x + particle.size < -8 ||
-              particle.y + particle.size < -8 ||
-              particle.x > layout.width + 8 ||
-              particle.y > layout.height + 8
-            ) {
-              continue;
-            }
-
+            if (isParticleOffscreen(particle, layout)) continue;
             if (particle.life <= 0 || particle.size <= 0.12) continue;
 
             active++;

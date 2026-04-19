@@ -55,7 +55,7 @@ function subscriptionLabel(status: BillingSettingsSectionProps['subscriptionStat
 
 export function BillingSettingsSection({
   subscriptionStatus,
-  trialDaysLeft,
+  trialDaysLeft: _trialDaysLeft,
   creditsBalance,
   hasCard,
   onActivateTrial,

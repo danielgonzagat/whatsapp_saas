@@ -91,6 +91,57 @@ export function stripHtmlTags(value: string): string {
     .trim();
 }
 
+function upsertCandidate(candidates: Map<string, number>, tag: string, score: number): void {
+  candidates.set(tag, Math.max(candidates.get(tag) || 0, score));
+}
+
+function collectQueryTokenMatches(
+  candidates: Map<string, number>,
+  queryTokens: string[],
+  combinedNormalized: string,
+): void {
+  for (const token of queryTokens) {
+    if (combinedNormalized.includes(token)) {
+      upsertCandidate(candidates, token, 100);
+    }
+  }
+}
+
+function collectDomainTagMatches(
+  candidates: Map<string, number>,
+  combinedTokens: Set<string>,
+): void {
+  for (const tag of DOMAIN_TAGS) {
+    const normalizedTag = normalizeWord(tag);
+    if (!normalizedTag || !combinedTokens.has(normalizedTag)) continue;
+    upsertCandidate(candidates, tag, 70);
+  }
+}
+
+function tokenMatchesAnyQueryToken(token: string, queryTokens: string[]): boolean {
+  return queryTokens.some((queryToken) => token.includes(queryToken) || queryToken.includes(token));
+}
+
+function collectContextualTokenMatches(
+  candidates: Map<string, number>,
+  combinedTokens: string[],
+  queryTokens: string[],
+  combinedNormalized: string,
+): void {
+  for (const token of combinedTokens) {
+    if (!combinedNormalized.includes(token)) continue;
+    if (!tokenMatchesAnyQueryToken(token, queryTokens)) continue;
+    upsertCandidate(candidates, token, 55);
+  }
+}
+
+function topScoredTags(candidates: Map<string, number>, maxTags: number): string[] {
+  return [...candidates.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxTags)
+    .map(([tag]) => tag);
+}
+
 export function extractThreadSearchTags(
   title: string,
   matchedContent: string,
@@ -99,34 +150,14 @@ export function extractThreadSearchTags(
 ): string[] {
   const combinedText = `${title} ${matchedContent}`;
   const combinedNormalized = stripDiacritics(combinedText).toLowerCase();
-  const combinedTokens = new Set(tokenize(combinedText));
+  const combinedTokenList = tokenize(combinedText);
+  const combinedTokens = new Set(combinedTokenList);
+  const queryTokens = tokenize(query);
   const candidates = new Map<string, number>();
 
-  for (const token of tokenize(query)) {
-    if (combinedNormalized.includes(token)) {
-      candidates.set(token, Math.max(candidates.get(token) || 0, 100));
-    }
-  }
+  collectQueryTokenMatches(candidates, queryTokens, combinedNormalized);
+  collectDomainTagMatches(candidates, combinedTokens);
+  collectContextualTokenMatches(candidates, combinedTokenList, queryTokens, combinedNormalized);
 
-  for (const tag of DOMAIN_TAGS) {
-    const normalizedTag = normalizeWord(tag);
-    if (!normalizedTag || !combinedTokens.has(normalizedTag)) {
-      continue;
-    }
-    candidates.set(tag, Math.max(candidates.get(tag) || 0, 70));
-  }
-
-  for (const token of tokenize(combinedText)) {
-    if (!combinedNormalized.includes(token)) continue;
-    const queryMatch = tokenize(query).some(
-      (queryToken) => token.includes(queryToken) || queryToken.includes(token),
-    );
-    if (!queryMatch) continue;
-    candidates.set(token, Math.max(candidates.get(token) || 0, 55));
-  }
-
-  return [...candidates.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, maxTags)
-    .map(([tag]) => tag);
+  return topScoredTags(candidates, maxTags);
 }

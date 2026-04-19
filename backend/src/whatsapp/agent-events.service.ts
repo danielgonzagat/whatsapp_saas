@@ -37,24 +37,35 @@ export interface AgentStreamEvent {
 
 type AgentListener = (event: AgentStreamEvent) => void;
 
-function normalizeAgentMessage(event: Omit<AgentStreamEvent, 'ts'> & { ts?: string }) {
-  let message = String(event.message || '')
+type NormalizableAgentEvent = Omit<AgentStreamEvent, 'ts'> & { ts?: string };
+
+function baseMessageText(event: NormalizableAgentEvent): string {
+  const primary = String(event.message || '')
     .replace(S_RE, ' ')
     .trim();
-
-  if (!message && event.streaming && event.token) {
-    message = String(event.token || '').trim();
+  if (primary) return primary;
+  if (event.streaming && event.token) {
+    return String(event.token || '').trim();
   }
+  return '';
+}
 
-  if (message.startsWith('Prova registrada:')) {
-    message = message.slice('Prova registrada:'.length).trim();
-  }
+function stripProvaRegistradaPrefix(message: string): string {
+  const prefix = 'Prova registrada:';
+  if (!message.startsWith(prefix)) return message;
+  return message.slice(prefix.length).trim();
+}
 
-  if (event.phase === 'compose_reply' && PENSANDO_NA_MELHOR_RESP_RE.test(message)) {
-    message = message.replace(PENSANDO_NA_MELHOR_RESP_RE, 'Preparando resposta para ');
-  }
+function rewriteComposeReplyPhrase(message: string, phase?: string): string {
+  if (phase !== 'compose_reply') return message;
+  if (!PENSANDO_NA_MELHOR_RESP_RE.test(message)) return message;
+  return message.replace(PENSANDO_NA_MELHOR_RESP_RE, 'Preparando resposta para ');
+}
 
-  return message;
+function normalizeAgentMessage(event: NormalizableAgentEvent) {
+  const base = baseMessageText(event);
+  const stripped = stripProvaRegistradaPrefix(base);
+  return rewriteComposeReplyPhrase(stripped, event.phase);
 }
 
 @Injectable()

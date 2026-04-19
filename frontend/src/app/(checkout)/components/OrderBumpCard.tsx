@@ -39,13 +39,18 @@ export default function OrderBumpCard({
   accentColor = '#D4AF37',
   cardBg = '#141416',
   mutedColor = '#8A8A8E',
-  textColor = '#E8E6E1',
+  textColor: _textColor = '#E8E6E1',
 }: OrderBumpCardProps) {
   const borderCol = bump.highlightColor || accentColor;
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: card contains block-level marketing copy and imagery, so native <input type="checkbox"> cannot wrap it; div+role="checkbox" is the correct ARIA mapping
     <div
       onClick={() => onToggle(bump.id)}
+      role="checkbox"
+      tabIndex={0}
+      aria-checked={checked}
+      aria-label={bump.productName ?? 'Order bump'}
       style={{
         border: `2px dashed ${checked ? borderCol : `${borderCol}44`}`,
         background: checked ? `${borderCol}08` : cardBg,

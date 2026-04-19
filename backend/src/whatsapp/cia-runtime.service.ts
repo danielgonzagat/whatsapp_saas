@@ -1016,50 +1016,53 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }, 0);
   }
 
+  private hasUnknownPendingSignal(chat: WahaChatSummary): boolean {
+    const lastFromMeIsUnknown =
+      chat.lastMessageFromMe === null || chat.lastMessageFromMe === undefined;
+    const recvTimestamp = Number(chat.lastMessageRecvTimestamp || 0);
+    return lastFromMeIsUnknown && recvTimestamp > 0;
+  }
+
+  private isRemotePendingChat(chat: WahaChatSummary, includeZeroUnreadActivity: boolean): boolean {
+    if ((chat.unreadCount || 0) > 0) {
+      return true;
+    }
+
+    const activityTimestamp = this.resolveChatActivityTimestamp(chat);
+
+    if (
+      this.hasUnknownPendingSignal(chat) &&
+      this.isFreshUnknownRemotePendingActivity(activityTimestamp)
+    ) {
+      return true;
+    }
+
+    if (!this.isFreshRemotePendingActivity(activityTimestamp)) {
+      return false;
+    }
+
+    return chat.lastMessageFromMe === false || includeZeroUnreadActivity;
+  }
+
+  private compareRemotePendingChats(left: WahaChatSummary, right: WahaChatSummary): number {
+    const activityDiff =
+      this.resolveChatActivityTimestamp(right) - this.resolveChatActivityTimestamp(left);
+    if (activityDiff !== 0) return activityDiff;
+
+    const unreadDiff = (Number(right.unreadCount || 0) || 0) - (Number(left.unreadCount || 0) || 0);
+    if (unreadDiff !== 0) return unreadDiff;
+
+    return String(left.id || '').localeCompare(String(right.id || ''));
+  }
+
   private selectRemotePendingChats(chats: WahaChatSummary[]): WahaChatSummary[] {
     const includeZeroUnreadActivity =
       String(process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'false').toLowerCase() ===
       'true';
 
     return [...chats]
-      .filter((chat) => {
-        if ((chat.unreadCount || 0) > 0) {
-          return true;
-        }
-
-        const activityTimestamp = this.resolveChatActivityTimestamp(chat);
-        const hasUnknownPendingSignal =
-          (chat.lastMessageFromMe === null || chat.lastMessageFromMe === undefined) &&
-          Number(chat.lastMessageRecvTimestamp || 0) > 0;
-
-        if (
-          hasUnknownPendingSignal &&
-          this.isFreshUnknownRemotePendingActivity(activityTimestamp)
-        ) {
-          return true;
-        }
-
-        if (!this.isFreshRemotePendingActivity(activityTimestamp)) {
-          return false;
-        }
-
-        return chat.lastMessageFromMe === false || includeZeroUnreadActivity;
-      })
-      .sort((left, right) => {
-        const activityDiff =
-          this.resolveChatActivityTimestamp(right) - this.resolveChatActivityTimestamp(left);
-        if (activityDiff !== 0) {
-          return activityDiff;
-        }
-
-        const unreadDiff =
-          (Number(right.unreadCount || 0) || 0) - (Number(left.unreadCount || 0) || 0);
-        if (unreadDiff !== 0) {
-          return unreadDiff;
-        }
-
-        return String(left.id || '').localeCompare(String(right.id || ''));
-      });
+      .filter((chat) => this.isRemotePendingChat(chat, includeZeroUnreadActivity))
+      .sort((left, right) => this.compareRemotePendingChats(left, right));
   }
 
   private estimatePendingMessages(chat: WahaChatSummary): number {
@@ -1259,6 +1262,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       const messages = conversation.messages as Record<string, unknown>[] | undefined;
       const contact = conversation.contact as Record<string, unknown> | undefined;
       const lastMessage = messages?.[0];
+      // biome-ignore lint/performance/noAwaitInLoops: per-chat pending inbound batch build; each batch depends on prior cursor
       const pendingBatch = await this.buildPendingInboundBatch({
         workspaceId,
         contactId: safeStr(conversation.contactId) || null,
@@ -1369,6 +1373,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
         for (const [replyIndex, replyItem] of replyPlan.entries()) {
           // messageLimit: enforced via PlanLimitsService.trackMessageSend
+          // biome-ignore lint/performance/noAwaitInLoops: WhatsApp sendMessage must be sequential per chat to respect provider rate limit
           const sendResult = await this.whatsappService.sendMessage(
             workspaceId,
             phone,
@@ -1694,6 +1699,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation processing with reply locks
     for (const [index, chat] of chats.entries()) {
+      // biome-ignore lint/performance/noAwaitInLoops: remote pending batch load uses cursor pagination; sequential required
       const remoteBatch = await this.loadRemotePendingBatch({
         workspaceId,
         chat,

@@ -489,6 +489,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       if (!node.stale) continue;
 
       const staleAlertKey = this.getStaleAlertKey(node.nodeId);
+      // biome-ignore lint/performance/noAwaitInLoops: per-alert Redis SET NX idempotency check; sequential required for rate-limit debounce
       const alreadyAlerted = await this.redis.set(
         staleAlertKey,
         String(now),
@@ -522,6 +523,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       if (!node.stale) continue;
       if ((node.staleMs || 0) <= FRONTEND_RETENTION_MS) continue;
 
+      // biome-ignore lint/performance/noAwaitInLoops: per-alert Redis notification publish preserves dashboard ordering
       await this.redis
         .multi()
         .hdel(FRONTEND_REGISTRY_KEY, node.nodeId)

@@ -4,10 +4,14 @@
  * Patches React 19 to re-expose __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
  * for backward compatibility with libraries compiled against React 18 (like Polotno).
  *
- * This runs as a postinstall script after npm install.
+ * This runs as a postinstall script after npm install. CommonJS is required because
+ * the frontend package is not declared as ESM (no "type": "module" in package.json),
+ * and converting to ESM without that flag would break postinstall execution.
  */
 
+
 const fs = require('node:fs');
+
 const path = require('node:path');
 
 const reactIndexPath = path.join(
@@ -29,8 +33,12 @@ const reactDevPath = path.join(
 const reactIndexMain = path.join(__dirname, '..', 'node_modules', 'react', 'index.js');
 
 function patchFile(filePath) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: filePath is path.join(__dirname, '..', 'node_modules', 'react', ...) — derived from this script's own directory, no user input. This is an npm postinstall script.
   if (!fs.existsSync(filePath)) return false;
 
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: filePath is path.join(__dirname, '..', 'node_modules', 'react', ...) — derived from this script's own directory, no user input.
   let content = fs.readFileSync(filePath, 'utf8');
 
   // Check if already patched
@@ -63,6 +71,8 @@ if (typeof exports !== 'undefined' && exports.${newInternalsName} && !exports.__
 `;
 
   content += patchCode;
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: filePath is path.join(__dirname, '..', 'node_modules', 'react', ...) — derived from this script's own directory, no user input.
   fs.writeFileSync(filePath, content);
   console.log(`  Patched: ${path.basename(filePath)}`);
   return true;
@@ -73,7 +83,11 @@ patchFile(reactIndexPath);
 patchFile(reactDevPath);
 
 // Also patch the main index.js if it's a re-export
+// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+// Safe: reactIndexMain = path.join(__dirname, '..', 'node_modules', 'react', 'index.js') — derived from this script's own directory, no user input.
 if (fs.existsSync(reactIndexMain)) {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
+  // Safe: reactIndexMain is path.join(__dirname, '..', 'node_modules', 'react', 'index.js') — derived from this script's own directory, no user input.
   let main = fs.readFileSync(reactIndexMain, 'utf8');
   if (!main.includes('__SECRET_INTERNALS')) {
     // The main index.js usually just re-exports from cjs/

@@ -51,7 +51,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   };
 
   const fetchPlans = useCallback(() => {
-    apiFetch<any>(`/products/${productId}/plans`)
+    apiFetch<Plan[]>(`/products/${productId}/plans`)
       .then((res) => setPlans(Array.isArray(res) ? res : []))
       .catch(() => setPlans([]))
       .finally(() => setLoading(false));
@@ -262,8 +262,12 @@ export function ProductPlansTab({ productId }: { productId: string }) {
 
       {/* Modal Links de Checkout */}
       {linkModalPlan && (
+        // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar modal"
           style={{
             backgroundColor: 'var(--cookie-overlay, rgba(0,0,0,0.6))',
             backdropFilter: 'blur(4px)',
@@ -276,6 +280,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
             }
           }}
         >
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
           <div
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-lg rounded-md p-6"

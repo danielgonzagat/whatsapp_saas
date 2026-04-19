@@ -68,6 +68,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
   const label = TOAST_LABELS[toast.type];
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
       style={{
         background: 'var(--app-bg-card)',
@@ -86,6 +87,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
         gap: 12,
       }}
       onClick={() => onRemove(toast.id)}
+      role="button"
+      tabIndex={0}
+      aria-label={`Fechar notificação ${label}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();

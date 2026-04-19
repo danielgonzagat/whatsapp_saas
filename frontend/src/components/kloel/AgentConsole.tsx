@@ -604,19 +604,18 @@ export function AgentConsole({
 
       {/* Backdrop on mobile */}
       {isOpen && (
-        <div
+        <button
+          type="button"
           className="fixed inset-0 lg:hidden"
           style={{
             backgroundColor: `color-mix(in srgb, ${colors.background.obsidian} 80%, transparent)`,
             zIndex: 44,
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
           }}
           onClick={onClose}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              (e.currentTarget as HTMLElement).click();
-            }
-          }}
+          aria-label="Fechar console"
         />
       )}
     </>

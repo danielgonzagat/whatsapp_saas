@@ -109,6 +109,8 @@ async function request<T>(
   body?: Record<string, unknown>,
 ): Promise<T> {
   const url = `${getBackendUrl()}${path}`;
+  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
+  // Safe: URL base comes from BACKEND_URL/API_URL/SERVICE_BASE_URL env vars (operator-controlled), `path` is hardcoded in every caller (see whatsappApiProvider methods below). No user-controlled data enters the URL.
   const response = await fetch(url, {
     method,
     headers: getInternalHeaders(),

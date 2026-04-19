@@ -376,8 +376,6 @@ const TRANSACTIONS: {
 const _WITHDRAWALS: Array<{ id: string; amount: number; status: string; date: string }> = [];
 const _ANTICIPATIONS: Array<{ id: string; amount: number; status: string; date: string }> = [];
 
-const MONTH_DAYS: { day: number; income: number; expense: number }[] = [];
-
 /* ═══ HELPERS ═══ */
 const TYPE_CONFIG: Record<
   string,
@@ -523,6 +521,7 @@ function WithdrawModal({
         }
       }}
     >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
@@ -822,6 +821,7 @@ function AntecipateModal({
         }
       }}
     >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
@@ -1582,8 +1582,10 @@ function TabExtrato({
           filtered.map((t, i) => {
             const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale;
             return (
+              // biome-ignore lint/a11y/useSemanticElements: grid-based transactions layout needs role="row" without table semantics; native <tr> requires <table> ancestry not used here
               <div
                 key={t.id}
+                role="row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: isMobile ? '1fr' : '36px 2fr 0.8fr 0.6fr 1fr 0.6fr',
@@ -1677,218 +1679,6 @@ function TabExtrato({
           })
         )}
       </div>
-    </>
-  );
-}
-
-/* --- TabMovimentacoes --- */
-function TabMovimentacoes({
-  monthlyData,
-}: {
-  monthlyData: {
-    daily?: { day: number; income: number; expense: number }[];
-    income?: number | null;
-    expense?: number | null;
-  } | null;
-}) {
-  const { isMobile } = useResponsiveViewport();
-  const monthDays = monthlyData?.daily?.length ? monthlyData.daily : MONTH_DAYS;
-  const totalIn = monthlyData?.income ?? MONTH_DAYS.reduce((a, d) => a + d.income, 0);
-  const totalOut = monthlyData?.expense ?? MONTH_DAYS.reduce((a, d) => a + d.expense, 0);
-  const maxDay = Math.max(...monthDays.map((d) => d.income), 1);
-  const hasMovements = totalIn > 0 || totalOut > 0 || monthDays.length > 0;
-
-  const now = new Date();
-  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  const monthLabelCapitalized = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
-
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const dayAxisLabels: string[] = [];
-  const step = Math.max(1, Math.floor(daysInMonth / 6));
-  for (let d = 1; d <= daysInMonth; d += step) {
-    dayAxisLabels.push(String(d));
-  }
-  if (dayAxisLabels[dayAxisLabels.length - 1] !== String(daysInMonth)) {
-    dayAxisLabels.push(String(daysInMonth));
-  }
-
-  return (
-    <>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
-          gap: 12,
-          marginBottom: 24,
-        }}
-      >
-        <div
-          style={{
-            background: 'var(--app-bg-card)',
-            border: '1px solid var(--app-border-primary)',
-            borderRadius: 6,
-            padding: 18,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'var(--app-text-secondary)',
-              letterSpacing: '.06em',
-              textTransform: 'uppercase',
-              display: 'block',
-              marginBottom: 6,
-            }}
-          >
-            Entradas do mes
-          </span>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono',monospace",
-              fontSize: 22,
-              fontWeight: 600,
-              color: '#E85D30',
-            }}
-          >
-            R$ {Fmt(totalIn)}
-          </span>
-        </div>
-        <div
-          style={{
-            background: 'var(--app-bg-card)',
-            border: '1px solid var(--app-border-primary)',
-            borderRadius: 6,
-            padding: 18,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'var(--app-text-secondary)',
-              letterSpacing: '.06em',
-              textTransform: 'uppercase',
-              display: 'block',
-              marginBottom: 6,
-            }}
-          >
-            Saidas do mes
-          </span>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono',monospace",
-              fontSize: 22,
-              fontWeight: 600,
-              color: 'var(--app-text-secondary)',
-            }}
-          >
-            R$ {Fmt(totalOut)}
-          </span>
-        </div>
-        <div
-          style={{
-            background: 'var(--app-bg-card)',
-            border: '1px solid var(--app-border-primary)',
-            borderRadius: 6,
-            padding: 18,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'var(--app-text-secondary)',
-              letterSpacing: '.06em',
-              textTransform: 'uppercase',
-              display: 'block',
-              marginBottom: 6,
-            }}
-          >
-            Saldo do mes
-          </span>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono',monospace",
-              fontSize: 22,
-              fontWeight: 600,
-              color: '#E85D30',
-            }}
-          >
-            R$ {Fmt(totalIn - totalOut)}
-          </span>
-        </div>
-      </div>
-      {!hasMovements ? (
-        <div
-          style={{
-            background: 'var(--app-bg-card)',
-            border: '1px solid var(--app-border-primary)',
-            borderRadius: 6,
-            padding: '40px 20px',
-            marginBottom: 24,
-            textAlign: 'center',
-          }}
-        >
-          <span style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
-            Nenhuma movimentacao neste periodo
-          </span>
-        </div>
-      ) : (
-        <div
-          style={{
-            background: 'var(--app-bg-card)',
-            border: '1px solid var(--app-border-primary)',
-            borderRadius: 6,
-            padding: 20,
-            marginBottom: 24,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--app-text-primary)',
-              display: 'block',
-              marginBottom: 16,
-            }}
-          >
-            Receita diaria — {monthLabelCapitalized}
-          </span>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 100 }}>
-            {monthDays.map((d, i) => (
-              <div
-                key={`day-${d.day}`}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    height: `${(d.income / maxDay) * 90}px`,
-                    background: i === monthDays.length - 1 ? '#E85D30' : '#E85D3030',
-                    borderRadius: '2px 2px 0 0',
-                    minHeight: 2,
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-            {dayAxisLabels.map((n) => (
-              <span
-                key={n}
-                style={{
-                  fontFamily: "'JetBrains Mono',monospace",
-                  fontSize: 8,
-                  color: 'var(--app-text-tertiary)',
-                }}
-              >
-                {n}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }
@@ -2694,13 +2484,9 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
     isLoading: balanceLoading,
     mutate: mutateBalance,
   } = useWalletBalance();
-  const {
-    transactions: realTransactions,
-    isLoading: txLoading,
-    mutate: mutateTransactions,
-  } = useWalletTransactions();
+  const { transactions: realTransactions, mutate: mutateTransactions } = useWalletTransactions();
   const { chart: realChart } = useWalletChart();
-  const { monthly: realMonthly } = useWalletMonthly();
+  useWalletMonthly();
   const { withdrawals: realWithdrawals, mutate: mutateWithdrawals } = useWalletWithdrawals();
   const { anticipations: realAnticipations, totals: realAntTotals } = useWalletAnticipations();
 

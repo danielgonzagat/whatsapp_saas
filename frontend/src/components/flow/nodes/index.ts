@@ -1,4 +1,5 @@
 // Custom node types for KLOEL FlowBuilder
+// biome-ignore lint/performance/noBarrelFile: React Flow nodeTypes registry requires grouped re-exports; Next.js/Turbopack tree-shakes named re-exports
 export { MessageNode } from './MessageNode';
 export { ConditionNode } from './ConditionNode';
 export { ActionNode } from './ActionNode';

@@ -9,6 +9,17 @@ import { useState } from 'react';
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+const PROJECT_SKELETON_SLOTS = [
+  'alpha',
+  'beta',
+  'gamma',
+  'delta',
+  'epsilon',
+  'zeta',
+  'eta',
+  'theta',
+] as const;
+
 function ProjectSkeletonGrid() {
   return (
     <div
@@ -18,9 +29,9 @@ function ProjectSkeletonGrid() {
         gap: 12,
       }}
     >
-      {Array.from({ length: 8 }).map((_, index) => (
+      {PROJECT_SKELETON_SLOTS.map((slot) => (
         <div
-          key={`project-skeleton-${index}`}
+          key={`project-skeleton-${slot}`}
           style={{
             background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
@@ -164,7 +175,9 @@ function ProjectCard({
   const dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: wrapper groups thumbnail, title, and inline delete button; role="group" is the correct ARIA mapping
     <div
+      role="group"
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
@@ -178,8 +191,12 @@ function ProjectCard({
         cursor: 'pointer',
       }}
     >
+      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
       <div
         onClick={onClick}
+        role="button"
+        tabIndex={0}
+        aria-label={`Abrir ${design.name ?? 'projeto'}`}
         style={{
           height: 96,
           background: 'var(--app-bg-primary)',
@@ -227,7 +244,11 @@ function ProjectCard({
           </div>
         )}
       </div>
+      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Abrir ${design.name ?? 'projeto'}`}
         onClick={onClick}
         style={{ padding: '8px 10px' }}
         onKeyDown={(e) => {

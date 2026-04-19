@@ -11,6 +11,47 @@ interface KeyboardDeps {
   zoom: ZoomManager;
 }
 
+type ModAction = (deps: KeyboardDeps) => void;
+
+const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+
+function buildModActions(): Map<string, ModAction> {
+  const actions = new Map<string, ModAction>();
+  actions.set('z', (deps) => deps.history.undo());
+  actions.set('shift+z', (deps) => deps.history.redo());
+  actions.set('c', (deps) => deps.clipboard.copy());
+  actions.set('x', (deps) => deps.clipboard.cut());
+  actions.set('v', (deps) => deps.clipboard.paste());
+  actions.set('d', (deps) => deps.clipboard.duplicate());
+  actions.set('a', (deps) => deps.selection.selectAll());
+  actions.set('=', (deps) => deps.zoom.zoomIn());
+  actions.set('+', (deps) => deps.zoom.zoomIn());
+  actions.set('-', (deps) => deps.zoom.zoomOut());
+  actions.set('0', (deps) => deps.zoom.resetZoom());
+  return actions;
+}
+
+const MOD_ACTIONS = buildModActions();
+
+function modKey(e: KeyboardEvent): string {
+  return e.shiftKey && e.key === 'z' ? 'shift+z' : e.key;
+}
+
+function nudgeActive(canvas: Canvas, key: string, amount: number): boolean {
+  const active = canvas.getActiveObject();
+  if (!active) return false;
+
+  if (key === 'ArrowUp') active.top = (active.top ?? 0) - amount;
+  else if (key === 'ArrowDown') active.top = (active.top ?? 0) + amount;
+  else if (key === 'ArrowLeft') active.left = (active.left ?? 0) - amount;
+  else if (key === 'ArrowRight') active.left = (active.left ?? 0) + amount;
+  else return false;
+
+  active.setCoords();
+  canvas.requestRenderAll();
+  return true;
+}
+
 export class KeyboardManager {
   private canvas: Canvas;
   private deps: KeyboardDeps;
@@ -30,101 +71,39 @@ export class KeyboardManager {
     return false;
   }
 
+  private _handleModAction(e: KeyboardEvent): boolean {
+    const action = MOD_ACTIONS.get(modKey(e));
+    if (!action) return false;
+    e.preventDefault();
+    action(this.deps);
+    return true;
+  }
+
+  private _handleDelete(e: KeyboardEvent): boolean {
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return false;
+    e.preventDefault();
+    this.deps.selection.deleteSelected();
+    this.deps.history.saveState();
+    return true;
+  }
+
+  private _handleArrow(e: KeyboardEvent): boolean {
+    if (!ARROW_KEYS.has(e.key)) return false;
+    const nudge = e.shiftKey ? 10 : 1;
+    if (nudgeActive(this.canvas, e.key, nudge)) {
+      e.preventDefault();
+    }
+    return true;
+  }
+
   private _init(): void {
     this._handler = (e: KeyboardEvent) => {
       if (this._isEditing()) return;
 
       const mod = e.metaKey || e.ctrlKey;
-
-      // Undo: Cmd+Z
-      if (mod && !e.shiftKey && e.key === 'z') {
-        e.preventDefault();
-        this.deps.history.undo();
-        return;
-      }
-      // Redo: Cmd+Shift+Z
-      if (mod && e.shiftKey && e.key === 'z') {
-        e.preventDefault();
-        this.deps.history.redo();
-        return;
-      }
-      // Copy: Cmd+C
-      if (mod && e.key === 'c') {
-        e.preventDefault();
-        this.deps.clipboard.copy();
-        return;
-      }
-      // Cut: Cmd+X
-      if (mod && e.key === 'x') {
-        e.preventDefault();
-        this.deps.clipboard.cut();
-        return;
-      }
-      // Paste: Cmd+V
-      if (mod && e.key === 'v') {
-        e.preventDefault();
-        this.deps.clipboard.paste();
-        return;
-      }
-      // Duplicate: Cmd+D
-      if (mod && e.key === 'd') {
-        e.preventDefault();
-        this.deps.clipboard.duplicate();
-        return;
-      }
-      // Select All: Cmd+A
-      if (mod && e.key === 'a') {
-        e.preventDefault();
-        this.deps.selection.selectAll();
-        return;
-      }
-      // Delete / Backspace
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        this.deps.selection.deleteSelected();
-        this.deps.history.saveState();
-        return;
-      }
-      // Zoom In: Cmd+=
-      if (mod && (e.key === '=' || e.key === '+')) {
-        e.preventDefault();
-        this.deps.zoom.zoomIn();
-        return;
-      }
-      // Zoom Out: Cmd+-
-      if (mod && e.key === '-') {
-        e.preventDefault();
-        this.deps.zoom.zoomOut();
-        return;
-      }
-      // Reset Zoom: Cmd+0
-      if (mod && e.key === '0') {
-        e.preventDefault();
-        this.deps.zoom.resetZoom();
-        return;
-      }
-      // Arrow nudge
-      const NUDGE = e.shiftKey ? 10 : 1;
-      const active = this.canvas.getActiveObject();
-      if (active && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        e.preventDefault();
-        switch (e.key) {
-          case 'ArrowUp':
-            active.top = (active.top ?? 0) - NUDGE;
-            break;
-          case 'ArrowDown':
-            active.top = (active.top ?? 0) + NUDGE;
-            break;
-          case 'ArrowLeft':
-            active.left = (active.left ?? 0) - NUDGE;
-            break;
-          case 'ArrowRight':
-            active.left = (active.left ?? 0) + NUDGE;
-            break;
-        }
-        active.setCoords();
-        this.canvas.requestRenderAll();
-      }
+      if (mod && this._handleModAction(e)) return;
+      if (this._handleDelete(e)) return;
+      this._handleArrow(e);
     };
 
     if (typeof document !== 'undefined') {

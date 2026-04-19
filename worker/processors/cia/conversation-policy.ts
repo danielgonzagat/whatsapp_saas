@@ -50,24 +50,21 @@ function normalizeText(value?: string | null): string {
     .replace(DIACRITICS_RE, '');
 }
 
+const EMOTIONAL_TONE_RULES: Array<{
+  pattern: RegExp;
+  tone: ActiveListeningSignals['emotionalTone'];
+}> = [
+  { pattern: ANSIOS_INSEGUR_MEDO_REC_RE, tone: 'anxious' },
+  { pattern: FRUSTR_CANSAD_IRRIT_RAI_RE, tone: 'frustrated' },
+  { pattern: AMEI_PERFEITO_ANIMAD_GO_RE, tone: 'excited' },
+  { pattern: NAO_ENTENDI_N_A__O_ENTE_RE, tone: 'confused' },
+  { pattern: OBRIGAD_VALEU__TIMO_OTI_RE, tone: 'positive' },
+  { pattern: NAO_N_A__O_RUIM_CARO_DE_RE, tone: 'negative' },
+];
+
 function inferEmotionalTone(text: string): ActiveListeningSignals['emotionalTone'] {
-  if (ANSIOS_INSEGUR_MEDO_REC_RE.test(text)) {
-    return 'anxious';
-  }
-  if (FRUSTR_CANSAD_IRRIT_RAI_RE.test(text)) {
-    return 'frustrated';
-  }
-  if (AMEI_PERFEITO_ANIMAD_GO_RE.test(text)) {
-    return 'excited';
-  }
-  if (NAO_ENTENDI_N_A__O_ENTE_RE.test(text)) {
-    return 'confused';
-  }
-  if (OBRIGAD_VALEU__TIMO_OTI_RE.test(text)) {
-    return 'positive';
-  }
-  if (NAO_N_A__O_RUIM_CARO_DE_RE.test(text)) {
-    return 'negative';
+  for (const rule of EMOTIONAL_TONE_RULES) {
+    if (rule.pattern.test(text)) return rule.tone;
   }
   return 'neutral';
 }
@@ -185,6 +182,63 @@ function buildActionDirective(
   return `${base}\nTATICA: ${tacticHint[tactic] || tactic}`;
 }
 
+const VALIDATION_TONES: ReadonlyArray<ActiveListeningSignals['emotionalTone']> = [
+  'frustrated',
+  'anxious',
+  'confused',
+];
+
+function isValidationTone(emotionalTone: ActiveListeningSignals['emotionalTone']): boolean {
+  return VALIDATION_TONES.includes(emotionalTone);
+}
+
+function needsValidation(
+  complaintDetected: boolean,
+  wordCount: number,
+  emotionalTone: ActiveListeningSignals['emotionalTone'],
+): boolean {
+  return complaintDetected || wordCount > 18 || isValidationTone(emotionalTone);
+}
+
+function inferNeed(normalized: string, personalDetailShared: boolean): string | null {
+  if (PRECO_VALOR_PARCELA_RE.test(normalized)) return 'seguranca sobre investimento';
+  if (PRAZO_URGENTE_HOJE_AGOR_RE.test(normalized)) return 'agilidade';
+  if (FUNCIONA_GARANTIA_RESUL_RE.test(normalized)) return 'confianca';
+  if (personalDetailShared) return 'ser compreendido';
+  return null;
+}
+
+const DEEPENING_TONE_QUESTIONS: Partial<Record<ActiveListeningSignals['emotionalTone'], string>> = {
+  frustrated: 'O que mais te trava nisso hoje?',
+  anxious: 'Qual parte te deixa mais inseguro agora?',
+};
+
+function buildDeepeningQuestion(
+  emotionalTone: ActiveListeningSignals['emotionalTone'],
+  inferredNeed: string | null,
+  personalDetailShared: boolean,
+): string | null {
+  const toneMatch = DEEPENING_TONE_QUESTIONS[emotionalTone];
+  if (toneMatch) return toneMatch;
+  if (inferredNeed === 'agilidade') return 'O que voce precisa resolver primeiro?';
+  if (personalDetailShared) return 'Quando isso acontece, o que pesa mais no seu dia a dia?';
+  return null;
+}
+
+function buildOpenLoopOpportunity(
+  normalized: string,
+  contactName: string | null | undefined,
+): string {
+  if (RESULTADO_FUNCIONA_PREC_RE.test(normalized)) {
+    return 'Tem um detalhe nisso que costuma mudar a decisao.';
+  }
+  if (contactName) {
+    const firstName = String(contactName).trim().split(WHITESPACE_RE)[0];
+    return `${firstName}, tem um ponto aqui que quase sempre passa despercebido.`;
+  }
+  return 'Tem um ponto aqui que quase sempre passa despercebido.';
+}
+
 export function analyzeForActiveListening(
   messageContent: string,
   contactName?: string | null,
@@ -196,39 +250,14 @@ export function analyzeForActiveListening(
 
   const personalDetailShared = B_MEU_MINHA_MEUS_MINHAS_RE.test(normalized) && wordCount >= 8;
   const complaintDetected = PROBLEMA_ERRO_RECLAMA_N_RE.test(normalized);
-  const validationNeeded =
-    complaintDetected ||
-    wordCount > 18 ||
-    emotionalTone === 'frustrated' ||
-    emotionalTone === 'anxious' ||
-    emotionalTone === 'confused';
-
-  const inferredNeed = PRECO_VALOR_PARCELA_RE.test(normalized)
-    ? 'seguranca sobre investimento'
-    : PRAZO_URGENTE_HOJE_AGOR_RE.test(normalized)
-      ? 'agilidade'
-      : FUNCIONA_GARANTIA_RESUL_RE.test(normalized)
-        ? 'confianca'
-        : personalDetailShared
-          ? 'ser compreendido'
-          : null;
-
-  const deepeningQuestion =
-    emotionalTone === 'frustrated'
-      ? 'O que mais te trava nisso hoje?'
-      : emotionalTone === 'anxious'
-        ? 'Qual parte te deixa mais inseguro agora?'
-        : inferredNeed === 'agilidade'
-          ? 'O que voce precisa resolver primeiro?'
-          : personalDetailShared
-            ? 'Quando isso acontece, o que pesa mais no seu dia a dia?'
-            : null;
-
-  const openLoopOpportunity = RESULTADO_FUNCIONA_PREC_RE.test(normalized)
-    ? 'Tem um detalhe nisso que costuma mudar a decisao.'
-    : contactName
-      ? `${String(contactName).trim().split(WHITESPACE_RE)[0]}, tem um ponto aqui que quase sempre passa despercebido.`
-      : 'Tem um ponto aqui que quase sempre passa despercebido.';
+  const validationNeeded = needsValidation(complaintDetected, wordCount, emotionalTone);
+  const inferredNeed = inferNeed(normalized, personalDetailShared);
+  const deepeningQuestion = buildDeepeningQuestion(
+    emotionalTone,
+    inferredNeed,
+    personalDetailShared,
+  );
+  const openLoopOpportunity = buildOpenLoopOpportunity(normalized, contactName);
 
   return {
     emotionalTone,
@@ -239,6 +268,61 @@ export function analyzeForActiveListening(
     openLoopOpportunity,
     inferredNeed,
   };
+}
+
+const CONVERSATION_IDENTITY_BLOCK = [
+  'IDENTIDADE:',
+  '- Soe humana, segura, viva e consultiva.',
+  '- Nao finja ser humana. Se perguntarem diretamente, diga com naturalidade que voce e a assistente virtual da empresa.',
+  '- Nao use emoji por padrao e nao escreva como template.',
+] as const;
+
+const CONVERSATION_HOW_TO_RESPOND_BLOCK = [
+  'COMO RESPONDER:',
+  '- Responda primeiro o que o contato quis dizer.',
+  '- Valide a emocao antes de empurrar informacao quando houver frustracao, ansiedade ou confusao.',
+  '- Use uma unica pergunta por mensagem quando estiver conduzindo.',
+  '- Se a mensagem dele foi curta, seja curta. Se foi rica, aprofunde sem virar bloco burocratico.',
+  '- Toda resposta deve ter valor concreto, contexto humano ou proximo passo claro.',
+  '- Considere o historico integral da conversa como fonte primaria.',
+  '- Nunca repita pergunta, assunto, historia, dado pedido ou oferta que ja aparecam no historico integral.',
+] as const;
+
+function buildListeningSignalsBlock(listening?: ActiveListeningSignals | null): string[] {
+  return [
+    'SINAIS DA CONVERSA:',
+    `- Tom emocional: ${listening?.emotionalTone || 'neutral'}`,
+    `- Precisa validacao: ${listening?.validationNeeded ? 'sim' : 'nao'}`,
+    `- Necessidade inferida: ${listening?.inferredNeed || 'nao identificada'}`,
+    `- Contexto pessoal compartilhado: ${listening?.personalDetailShared ? 'sim' : 'nao'}`,
+  ];
+}
+
+function buildConversationContextBlock(params: {
+  compressedContext?: string | null;
+  conversationHistory?: string | null;
+  conversationLedger?: string | null;
+  productSummary?: string | null;
+  matchedProducts?: string[];
+}): string[] {
+  const matchedProducts = params.matchedProducts?.length
+    ? params.matchedProducts.join(', ')
+    : 'nenhum';
+  return [
+    'CONTEXTO DO CONTATO:',
+    params.compressedContext || 'Sem resumo persistido.',
+    '',
+    'LEDGER INTEGRAL DO CONTATO:',
+    params.conversationLedger || 'Sem ledger acumulado.',
+    '',
+    'HISTORICO INTEGRAL DA CONVERSA:',
+    params.conversationHistory || 'Sem historico integral.',
+    '',
+    'PRODUTOS DISPONIVEIS:',
+    params.productSummary || 'Nenhum produto cadastrado.',
+    '',
+    `PRODUTOS MAIS RELEVANTES NESTA CONVERSA: ${matchedProducts}`,
+  ];
 }
 
 export function buildWhatsAppConversationPrompt(params: {
@@ -256,32 +340,18 @@ export function buildWhatsAppConversationPrompt(params: {
   tactic?: string | null;
 }): string {
   const state = params.cognitiveState;
-  const listening = params.listeningSignals;
   const stage = state?.stage || 'COLD';
   const trust = Number(state?.trustScore || 0.45);
   const urgency = Number(state?.urgencyScore || 0.2);
   const live = params.deliveryMode === 'reactive';
-  const matchedProducts = params.matchedProducts?.length
-    ? params.matchedProducts.join(', ')
-    : 'nenhum';
 
   return [
     `Voce responde no WhatsApp da ${params.workspaceName}.`,
     `Voce esta falando com ${params.contactName || 'o contato'}.`,
     '',
-    'IDENTIDADE:',
-    '- Soe humana, segura, viva e consultiva.',
-    '- Nao finja ser humana. Se perguntarem diretamente, diga com naturalidade que voce e a assistente virtual da empresa.',
-    '- Nao use emoji por padrao e nao escreva como template.',
+    ...CONVERSATION_IDENTITY_BLOCK,
     '',
-    'COMO RESPONDER:',
-    '- Responda primeiro o que o contato quis dizer.',
-    '- Valide a emocao antes de empurrar informacao quando houver frustracao, ansiedade ou confusao.',
-    '- Use uma unica pergunta por mensagem quando estiver conduzindo.',
-    '- Se a mensagem dele foi curta, seja curta. Se foi rica, aprofunde sem virar bloco burocratico.',
-    '- Toda resposta deve ter valor concreto, contexto humano ou proximo passo claro.',
-    '- Considere o historico integral da conversa como fonte primaria.',
-    '- Nunca repita pergunta, assunto, historia, dado pedido ou oferta que ja aparecam no historico integral.',
+    ...CONVERSATION_HOW_TO_RESPOND_BLOCK,
     '',
     buildStageDirective(stage, trust, urgency),
     '',
@@ -289,25 +359,9 @@ export function buildWhatsAppConversationPrompt(params: {
     '',
     `DIRETIVA DE ACAO:\n${buildActionDirective(params.action, params.tactic)}`,
     '',
-    'SINAIS DA CONVERSA:',
-    `- Tom emocional: ${listening?.emotionalTone || 'neutral'}`,
-    `- Precisa validacao: ${listening?.validationNeeded ? 'sim' : 'nao'}`,
-    `- Necessidade inferida: ${listening?.inferredNeed || 'nao identificada'}`,
-    `- Contexto pessoal compartilhado: ${listening?.personalDetailShared ? 'sim' : 'nao'}`,
+    ...buildListeningSignalsBlock(params.listeningSignals),
     '',
-    'CONTEXTO DO CONTATO:',
-    params.compressedContext || 'Sem resumo persistido.',
-    '',
-    'LEDGER INTEGRAL DO CONTATO:',
-    params.conversationLedger || 'Sem ledger acumulado.',
-    '',
-    'HISTORICO INTEGRAL DA CONVERSA:',
-    params.conversationHistory || 'Sem historico integral.',
-    '',
-    'PRODUTOS DISPONIVEIS:',
-    params.productSummary || 'Nenhum produto cadastrado.',
-    '',
-    `PRODUTOS MAIS RELEVANTES NESTA CONVERSA: ${matchedProducts}`,
+    ...buildConversationContextBlock(params),
     '',
     live
       ? 'A conversa esta ao vivo. Responda acompanhando o ritmo do contato.'

@@ -20,8 +20,7 @@ import {
 } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { type CSSProperties, useCallback, useEffect, useRef, useState, useId } from 'react';
-
-const A_Z0_9_RE = /[^A-Z0-9]/g;
+import { normalizeCheckoutCode } from './checkout-editor-utils';
 
 // ════════════════════════════════════════════
 // DESIGN TOKENS (inline — Kloel Monitor DNA)
@@ -115,14 +114,6 @@ const removeBtnStyle: CSSProperties = {
   border: 'none',
   padding: '4px 8px',
 };
-
-function normalizeCheckoutCode(value?: string | null) {
-  return String(value || '')
-    .trim()
-    .toUpperCase()
-    .replace(A_Z0_9_RE, '')
-    .slice(0, 8);
-}
 
 // ════════════════════════════════════════════
 // TOGGLE COMPONENT
@@ -544,7 +535,6 @@ export default function CheckoutEditorPage() {
             return `/products/${productId}?tab=ia&focus=urgency`;
           case 'payment-widget':
             return `/products/${productId}?tab=checkouts&focus=payment-widget`;
-          case 'checkout-appearance':
           default:
             return `/products/${productId}?tab=checkouts&focus=checkout-appearance`;
         }
@@ -1273,8 +1263,9 @@ export default function CheckoutEditorPage() {
               {config.enableTrustBadges && (
                 <>
                   {config.trustBadges.map((b, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — trustBadges is `{label:string}[]` with user-editable duplicate labels; refactoring state shape is out of scope for this a11y pass.
                     <div
-                      key={`trust-badge-${i}`}
+                      key={`trust-badge-${i}-${b.label.slice(0, 10)}`}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1634,6 +1625,9 @@ export default function CheckoutEditorPage() {
                 readOnly
                 value={[
                   '<div style="width:100%;max-width:560px;margin:0 auto;">',
+                  // nosemgrep: javascript.lang.security.html-in-template-string.html-in-template-string
+                  // Safe: rendered only as text in a read-only textarea for copy-to-clipboard.
+                  // checkoutPublicUrl is built server-side from the authenticated product owner's checkout slug.
                   `  <iframe src="${checkoutPublicUrl}"`,
                   '    loading="lazy"',
                   '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',

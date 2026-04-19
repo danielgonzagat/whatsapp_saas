@@ -32,7 +32,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
   const [creating, setCreating] = useState(false);
 
   const fetch_ = useCallback(() => {
-    apiFetch<any>(`/products/${productId}/coupons`)
+    apiFetch<Coupon[]>(`/products/${productId}/coupons`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));

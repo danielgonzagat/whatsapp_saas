@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { type AdminClientMetricMaps, buildAdminClientRow } from './admin-client-row.builder';
 
 export interface AdminClientRow {
   workspaceId: string;
@@ -36,29 +37,6 @@ const DEFAULT_TAKE = 50;
 const MAX_TAKE = 100;
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
-
-function computeGrowthRate(current: number, previous: number): number | null {
-  if (previous <= 0) return current > 0 ? null : 0;
-  return (current - previous) / previous;
-}
-
-function computeHealthScore(input: {
-  gmvLast30dInCents: number;
-  previousGmvLast30dInCents: number;
-  lastSaleAt: string | null;
-  kycStatus: string;
-  customDomain: string | null;
-  productCount: number;
-}): number {
-  let score = 35;
-  if (input.gmvLast30dInCents > 0) score += 25;
-  if (input.previousGmvLast30dInCents <= input.gmvLast30dInCents) score += 10;
-  if (input.lastSaleAt) score += 10;
-  if (input.kycStatus === 'approved') score += 10;
-  if (input.customDomain) score += 5;
-  if (input.productCount > 0) score += 5;
-  return Math.max(0, Math.min(100, score));
-}
 
 @Injectable()
 export class AdminClientsService {
@@ -178,39 +156,14 @@ export class AdminClientsService {
     );
     const productMap = new Map(productRows.map((row) => [row.workspaceId, row._count._all]));
 
-    const items = workspaces.map((workspace) => {
-      const owner = workspace.agents[0] ?? null;
-      const currentGmv = currentGmvMap.get(workspace.id) ?? 0;
-      const previousGmv = previousGmvMap.get(workspace.id) ?? 0;
-      const kycStatus = owner?.kycStatus ?? 'unknown';
-      const lastSaleAt = lastSaleMap.get(workspace.id) ?? null;
-      const productCount = productMap.get(workspace.id) ?? 0;
+    const maps: AdminClientMetricMaps = {
+      currentGmvMap,
+      previousGmvMap,
+      lastSaleMap,
+      productMap,
+    };
 
-      return {
-        workspaceId: workspace.id,
-        name: workspace.name,
-        ownerEmail: owner?.email ?? null,
-        ownerName: owner?.name ?? null,
-        createdAt: workspace.createdAt.toISOString(),
-        kycStatus,
-        gmvLast30dInCents: currentGmv,
-        previousGmvLast30dInCents: previousGmv,
-        growthRate: computeGrowthRate(currentGmv, previousGmv),
-        lastSaleAt,
-        productCount,
-        plan: workspace.subscription?.plan ?? null,
-        subscriptionStatus: workspace.subscription?.status ?? null,
-        customDomain: workspace.customDomain ?? null,
-        healthScore: computeHealthScore({
-          gmvLast30dInCents: currentGmv,
-          previousGmvLast30dInCents: previousGmv,
-          lastSaleAt,
-          kycStatus,
-          customDomain: workspace.customDomain ?? null,
-          productCount,
-        }),
-      };
-    });
+    const items = workspaces.map((workspace) => buildAdminClientRow(workspace, maps));
 
     return { items, total };
   }

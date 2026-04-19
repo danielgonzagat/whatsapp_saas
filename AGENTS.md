@@ -15,7 +15,9 @@ Eles incluem, entre outros:
 - `scripts/ops/**`
 - `ops/**`
 - `.github/workflows/**`
+- `docs/codacy/**`
 - `docs/design/**`
+- `.codacy.yml`
 - `package.json`
 - `.husky/pre-push`
 - `backend/eslint.config.mjs`
@@ -35,3 +37,13 @@ Se a mudanca tocar qualquer arquivo protegido:
 3. peca para o humano executar ou aprovar a mudanca.
 
 O gate `scripts/ops/check-governance-boundary.mjs` existe para reforcar essa fronteira.
+
+## Codacy Lock
+
+O estado de rigor maximo do Codacy faz parte da governance.
+
+- `.codacy.yml` e `docs/codacy/**` sao superfices protegidas.
+- IA CLI nao pode reduzir escopo do Codacy, desativar tool, pattern, gate, coverage, duplicacao ou complexidade.
+- IA CLI nao pode usar comentarios de supressao para "resolver" Codacy (`biome-ignore`, `nosemgrep`, `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`, `codacy:disable`, `codacy:ignore`, `NOSONAR`, `noqa`).
+- IA CLI nao pode usar skip tags de commit para burlar analise (`[codacy skip]`, `[skip codacy]`, `[ci skip]`, `[skip ci]`).
+- O unico fluxo permitido para estado live do Codacy e revalidar/sincronizar ou reaplicar o lock maximo via script oficial do repositorio.

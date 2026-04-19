@@ -2,8 +2,10 @@
   "protectedExact": [
     "AGENTS.md",
     "CLAUDE.md",
+    ".codacy.yml",
     "ratchet.json",
     "package.json",
+    ".husky/commit-msg",
     ".husky/pre-push",
     "backend/eslint.config.mjs",
     "frontend/eslint.config.mjs",
@@ -11,6 +13,12 @@
     "backend/src/lib/openai-models.ts",
     "backend/src/lib/ai-models.ts"
   ],
-  "protectedPrefixes": [".github/workflows/", "docs/design/", "ops/", "scripts/ops/"],
+  "protectedPrefixes": [
+    ".github/workflows/",
+    "docs/codacy/",
+    "docs/design/",
+    "ops/",
+    "scripts/ops/"
+  ],
   "approvalFile": "ops/governance-change-approvals.json"
 }

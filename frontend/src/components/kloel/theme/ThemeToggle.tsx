@@ -10,7 +10,7 @@ const pillStyle = {
 } as const;
 
 export function ThemeToggle() {
-  const { isDark, theme, toggleTheme } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <div
