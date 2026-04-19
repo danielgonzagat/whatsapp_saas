@@ -54,3 +54,62 @@ export function applyProductSync(p: ProductSyncSource, targets: ProductSyncTarge
   targets.setEditActive(p.active !== false);
   targets.setEditFormat(p.format || 'DIGITAL');
 }
+
+export interface PlanCheckoutConfig {
+  enableCreditCard?: unknown;
+  enablePix?: unknown;
+  enableBoleto?: unknown;
+  enableCoupon?: unknown;
+  showCouponPopup?: unknown;
+  autoCouponCode?: unknown;
+  productImage?: unknown;
+  shippingMode?: unknown;
+  shippingOriginZip?: unknown;
+  shippingVariableMinInCents?: unknown;
+  shippingVariableMaxInCents?: unknown;
+  shippingUseKloelCalculator?: unknown;
+  affiliateCustomCommissionEnabled?: unknown;
+  affiliateCustomCommissionType?: unknown;
+  affiliateCustomCommissionAmountInCents?: unknown;
+  affiliateCustomCommissionPercent?: unknown;
+  [key: string]: unknown;
+}
+
+export interface PlanPaymentConfig {
+  enableCreditCard: boolean;
+  enablePix: boolean;
+  enableBoleto: boolean;
+  enableCoupon: boolean;
+  showCouponPopup: boolean;
+  autoCouponCode: string;
+}
+
+export function deriveDefaultShippingMode(
+  planCheckoutConfig: PlanCheckoutConfig,
+  hasFreeShipFlag: boolean,
+  hasShippingPrice: boolean,
+): string {
+  const explicit = planCheckoutConfig.shippingMode;
+  if (explicit) return String(explicit);
+  if (hasFreeShipFlag) return 'FREE';
+  return hasShippingPrice ? 'FIXED' : 'FREE';
+}
+
+export function buildPlanPaymentConfig(planCheckoutConfig: PlanCheckoutConfig): PlanPaymentConfig {
+  return {
+    enableCreditCard: planCheckoutConfig.enableCreditCard !== false,
+    enablePix: planCheckoutConfig.enablePix !== false,
+    enableBoleto: !!planCheckoutConfig.enableBoleto,
+    enableCoupon: planCheckoutConfig.enableCoupon !== false,
+    showCouponPopup: !!planCheckoutConfig.showCouponPopup,
+    autoCouponCode: String(planCheckoutConfig.autoCouponCode || '').toUpperCase(),
+  };
+}
+
+export function normalizeCommissionPercent(
+  planCheckoutConfig: PlanCheckoutConfig,
+  fallbackProductCommission: unknown,
+): string {
+  const value = planCheckoutConfig.affiliateCustomCommissionPercent ?? fallbackProductCommission ?? 30;
+  return String(value).replace('.', ',');
+}

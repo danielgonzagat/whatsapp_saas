@@ -71,7 +71,12 @@ import {
   normalizeZipCodeInput,
   parsePercentValue,
 } from './ProductNerveCenter.helpers';
-import { applyProductSync } from './ProductNerveCenter.effects';
+import {
+  applyProductSync,
+  buildPlanPaymentConfig,
+  deriveDefaultShippingMode,
+  normalizeCommissionPercent,
+} from './ProductNerveCenter.effects';
 
 /* ═══════════════════════════════════════════════════
    V — KLOEL Terminator palette (Nerve Center)
@@ -521,23 +526,17 @@ export default function ProductNerveCenter({
     if (!planCheckoutConfig) return;
     if (planConfigInitRef.current) return;
     planConfigInitRef.current = true;
-    setPlanPaymentConfig({
-      enableCreditCard: planCheckoutConfig.enableCreditCard !== false,
-      enablePix: planCheckoutConfig.enablePix !== false,
-      enableBoleto: !!planCheckoutConfig.enableBoleto,
-      enableCoupon: planCheckoutConfig.enableCoupon !== false,
-      showCouponPopup: !!planCheckoutConfig.showCouponPopup,
-      autoCouponCode: String(planCheckoutConfig.autoCouponCode || '').toUpperCase(),
-    });
+    setPlanPaymentConfig(buildPlanPaymentConfig(planCheckoutConfig));
     setPlanImageUrl(
       String(planCheckoutConfig.productImage || currentPlanRaw?.checkoutConfig?.productImage || ''),
     );
     setPlanImagePreviewUrl('');
     setPlanImageCleared(false);
     setPlanShippingMode(
-      String(
-        planCheckoutConfig.shippingMode ||
-          (selectedPlanObj?.freeShip ? 'FREE' : currentPlanRaw.shippingPrice ? 'FIXED' : 'FREE'),
+      deriveDefaultShippingMode(
+        planCheckoutConfig,
+        Boolean(selectedPlanObj?.freeShip),
+        Boolean(currentPlanRaw.shippingPrice),
       ),
     );
     setPlanOriginZip(normalizeZipCodeInput(String(planCheckoutConfig.shippingOriginZip || '')));
@@ -553,11 +552,7 @@ export default function ProductNerveCenter({
     setPlanCommissionAmountCents(
       Math.max(0, Number(planCheckoutConfig.affiliateCustomCommissionAmountInCents || 0)),
     );
-    setPlanCommissionPercent(
-      String(
-        planCheckoutConfig.affiliateCustomCommissionPercent ?? p.commissionPercent ?? 30,
-      ).replace('.', ','),
-    );
+    setPlanCommissionPercent(normalizeCommissionPercent(planCheckoutConfig, p.commissionPercent));
   }, [
     currentPlanRaw?.checkoutConfig?.productImage,
     currentPlanRaw.shippingPrice,
