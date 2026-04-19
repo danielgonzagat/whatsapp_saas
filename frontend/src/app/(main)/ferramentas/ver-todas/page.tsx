@@ -264,20 +264,19 @@ export default function VerTodasPage() {
                 gap: 12,
               }}
             >
-              {liveTools.map((tool) => (
-                <ToolCard
-                  key={tool.title}
-                  icon={tool.icon}
-                  title={tool.title}
-                  desc={tool.desc}
-                  badge={getCapabilityBadge(tool)}
-                  onClick={
-                    getCapabilityHref(tool)
-                      ? () => router.push(getCapabilityHref(tool)!)
-                      : undefined
-                  }
-                />
-              ))}
+              {liveTools.map((tool) => {
+                const href = getCapabilityHref(tool);
+                return (
+                  <ToolCard
+                    key={tool.title}
+                    icon={tool.icon}
+                    title={tool.title}
+                    desc={tool.desc}
+                    badge={getCapabilityBadge(tool)}
+                    onClick={href ? () => router.push(href) : undefined}
+                  />
+                );
+              })}
             </div>
           ) : null}
 

@@ -1482,6 +1482,7 @@ export default function CheckoutBlanc({
               ) : null}
 
               {supportsBoleto ? (
+                // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
                 <div
                   role="button"
                   tabIndex={0}

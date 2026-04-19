@@ -1609,6 +1609,7 @@ function CriarSite({ mode }: { mode?: string }) {
                     padding: '10px 14px',
                   }}
                 >
+                  {/* biome-ignore lint/a11y/useSemanticElements: span carries an SVG icon trigger alongside an adjacent native button; role="button" is the correct ARIA mapping without disrupting inline flow */}
                   <span
                     role="button"
                     tabIndex={0}

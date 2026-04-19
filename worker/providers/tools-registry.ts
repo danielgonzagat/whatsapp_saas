@@ -89,12 +89,15 @@ function mockPaymentLink(productName: string, amount: number): string {
   return `(MOCK) https://checkout.stripe.com/pay/${linkId}?amount=${amount}&product=${encodeURIComponent(productName)}`;
 }
 
+const stripeClient: Stripe.Stripe | null = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
+
 async function handleCreatePaymentLink(args: ToolArgs): Promise<string> {
   const productName = asString(args.productName);
   const amount = Number(args.amount) || 0;
-  const stripe = ToolsRegistry.getStripe();
-  if (stripe) {
-    return createStripePaymentLink(stripe, productName, amount);
+  if (stripeClient) {
+    return createStripePaymentLink(stripeClient, productName, amount);
   }
   return mockPaymentLink(productName, amount);
 }
@@ -168,139 +171,139 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   update_deal_stage: handleUpdateDealStage,
 };
 
-export class ToolsRegistry {
-  private static stripe: Stripe.Stripe | null = process.env.STRIPE_SECRET_KEY
-    ? new Stripe(process.env.STRIPE_SECRET_KEY)
-    : null;
+function getStripe(): Stripe.Stripe | null {
+  return stripeClient;
+}
 
-  static getStripe(): Stripe.Stripe | null {
-    return ToolsRegistry.stripe;
-  }
+function getDefinitions(): ToolDefinition[] {
+  return [
+    {
+      type: 'function',
+      function: {
+        name: 'get_current_time',
+        description: 'Get the current date and time in ISO format.',
+        parameters: { type: 'object', properties: {} },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'update_contact_field',
+        description: "Update a specific field in the contact's CRM profile.",
+        parameters: {
+          type: 'object',
+          properties: {
+            field: {
+              type: 'string',
+              description: 'The field name (e.g., email, customFields.interest)',
+            },
+            value: { type: 'string', description: 'The value to set' },
+          },
+          required: ['field', 'value'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'add_tag',
+        description: 'Add a tag to the current contact.',
+        parameters: {
+          type: 'object',
+          properties: {
+            tag: { type: 'string', description: "The tag to add (e.g., 'interested', 'vip')" },
+          },
+          required: ['tag'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'check_availability',
+        description: 'Check availability for a meeting on a specific date.',
+        parameters: {
+          type: 'object',
+          properties: {
+            date: { type: 'string', description: 'Date in YYYY-MM-DD format' },
+          },
+          required: ['date'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'create_payment_link',
+        description: 'Create a Stripe payment link for a product.',
+        parameters: {
+          type: 'object',
+          properties: {
+            productName: { type: 'string', description: 'Name of the product' },
+            amount: { type: 'number', description: 'Amount in BRL (e.g. 100.00)' },
+          },
+          required: ['productName', 'amount'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'create_crm_deal',
+        description: 'Create a new sales deal for the current contact.',
+        parameters: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: "Deal title (e.g. 'Interested in Enterprise Plan')",
+            },
+            value: { type: 'number', description: 'Estimated value in BRL' },
+          },
+          required: ['title', 'value'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'update_deal_stage',
+        description: "Move the contact's open deals to a new stage in the CRM pipeline.",
+        parameters: {
+          type: 'object',
+          properties: {
+            stageName: {
+              type: 'string',
+              description: "Name of the target stage (e.g. 'Negotiation', 'Closed Won')",
+            },
+          },
+          required: ['stageName'],
+        },
+      },
+    },
+  ];
+}
 
-  static getDefinitions(): ToolDefinition[] {
-    return [
-      {
-        type: 'function',
-        function: {
-          name: 'get_current_time',
-          description: 'Get the current date and time in ISO format.',
-          parameters: { type: 'object', properties: {} },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'update_contact_field',
-          description: "Update a specific field in the contact's CRM profile.",
-          parameters: {
-            type: 'object',
-            properties: {
-              field: {
-                type: 'string',
-                description: 'The field name (e.g., email, customFields.interest)',
-              },
-              value: { type: 'string', description: 'The value to set' },
-            },
-            required: ['field', 'value'],
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'add_tag',
-          description: 'Add a tag to the current contact.',
-          parameters: {
-            type: 'object',
-            properties: {
-              tag: { type: 'string', description: "The tag to add (e.g., 'interested', 'vip')" },
-            },
-            required: ['tag'],
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'check_availability',
-          description: 'Check availability for a meeting on a specific date.',
-          parameters: {
-            type: 'object',
-            properties: {
-              date: { type: 'string', description: 'Date in YYYY-MM-DD format' },
-            },
-            required: ['date'],
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'create_payment_link',
-          description: 'Create a Stripe payment link for a product.',
-          parameters: {
-            type: 'object',
-            properties: {
-              productName: { type: 'string', description: 'Name of the product' },
-              amount: { type: 'number', description: 'Amount in BRL (e.g. 100.00)' },
-            },
-            required: ['productName', 'amount'],
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'create_crm_deal',
-          description: 'Create a new sales deal for the current contact.',
-          parameters: {
-            type: 'object',
-            properties: {
-              title: {
-                type: 'string',
-                description: "Deal title (e.g. 'Interested in Enterprise Plan')",
-              },
-              value: { type: 'number', description: 'Estimated value in BRL' },
-            },
-            required: ['title', 'value'],
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'update_deal_stage',
-          description: "Move the contact's open deals to a new stage in the CRM pipeline.",
-          parameters: {
-            type: 'object',
-            properties: {
-              stageName: {
-                type: 'string',
-                description: "Name of the target stage (e.g. 'Negotiation', 'Closed Won')",
-              },
-            },
-            required: ['stageName'],
-          },
-        },
-      },
-    ];
-  }
+async function execute(
+  name: string,
+  args: Record<string, unknown>,
+  context: { workspaceId: string; user: string },
+): Promise<string> {
+  console.log('[Tools] Executing %s with args: %O', name, args);
 
-  static async execute(
-    name: string,
-    args: Record<string, unknown>,
-    context: { workspaceId: string; user: string },
-  ): Promise<string> {
-    console.log('[Tools] Executing %s with args: %O', name, args);
-
-    try {
-      const handler = TOOL_HANDLERS[name];
-      if (!handler) return 'Tool not found.';
-      return await handler(args, context);
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      return `Error executing tool: ${errInstanceofError.message}`;
-    }
+  try {
+    const handler = TOOL_HANDLERS[name];
+    if (!handler) return 'Tool not found.';
+    return await handler(args, context);
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    return `Error executing tool: ${errInstanceofError.message}`;
   }
 }
+
+export const ToolsRegistry = {
+  getStripe,
+  getDefinitions,
+  execute,
+} as const;

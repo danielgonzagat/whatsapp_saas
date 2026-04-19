@@ -992,9 +992,8 @@ function AffiliateDetailModal({
         justifyContent: 'center',
       }}
     >
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         aria-label="Fechar modal"
         onClick={onClose}
         style={{
@@ -1002,12 +1001,9 @@ function AffiliateDetailModal({
           inset: 0,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
         }}
       />
       <div

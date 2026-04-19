@@ -1132,6 +1132,7 @@ export default function CheckoutNoir({
               ) : null}
 
               {supportsCard ? (
+                // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
                 <div
                   role="button"
                   tabIndex={0}

@@ -5,49 +5,51 @@ import { prisma } from '../db';
  * RAG provider — busca contexto real via pgvector.
  * Se falhar (sem chave ou sem dados), retorna string vazia para não quebrar fluxo.
  */
-export class RAGProvider {
-  static async getContext(workspaceId: string, query: string, topK = 3): Promise<string> {
-    if (!workspaceId || !query) return '';
+async function getContext(workspaceId: string, query: string, topK = 3): Promise<string> {
+  if (!workspaceId || !query) return '';
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return '';
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return '';
 
-    const client = new OpenAI({ apiKey });
+  const client = new OpenAI({ apiKey });
 
-    try {
-      // 1) Embedding da query
-      const embeddingRes = await client.embeddings.create({
-        model: 'text-embedding-3-small',
-        input: query.slice(0, 2000),
-      });
-      const vector = embeddingRes.data[0]?.embedding;
-      if (!vector || vector.length === 0) return '';
+  try {
+    // 1) Embedding da query
+    const embeddingRes = await client.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: query.slice(0, 2000),
+    });
+    const vector = embeddingRes.data[0]?.embedding;
+    if (!vector || vector.length === 0) return '';
 
-      const vectorString = `[${vector.join(',')}]`;
-      const safeLimit = Math.max(1, Math.min(topK, 10));
+    const vectorString = `[${vector.join(',')}]`;
+    const safeLimit = Math.max(1, Math.min(topK, 10));
 
-      // 2) Busca vetorial filtrada pelo workspace (JOIN em KnowledgeBase)
-      const rows: Array<{ content: string; distance: number }> = await prisma.$queryRaw`
-          SELECT v.content, (v.embedding <=> ${vectorString}::vector) AS distance
-          FROM "Vector" v
-          JOIN "KnowledgeSource" s ON v."sourceId" = s.id
-          JOIN "KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
-          WHERE kb."workspaceId" = ${workspaceId}
-          ORDER BY distance ASC
-          LIMIT ${safeLimit}
-        `;
+    // 2) Busca vetorial filtrada pelo workspace (JOIN em KnowledgeBase)
+    const rows: Array<{ content: string; distance: number }> = await prisma.$queryRaw`
+        SELECT v.content, (v.embedding <=> ${vectorString}::vector) AS distance
+        FROM "Vector" v
+        JOIN "KnowledgeSource" s ON v."sourceId" = s.id
+        JOIN "KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
+        WHERE kb."workspaceId" = ${workspaceId}
+        ORDER BY distance ASC
+        LIMIT ${safeLimit}
+      `;
 
-      if (!rows || rows.length === 0) return '';
+    if (!rows || rows.length === 0) return '';
 
-      // 3) Concatena contexto
-      return rows
-        .map((r, idx) => `#${idx + 1} (dist=${r.distance?.toFixed?.(3) ?? ''})\n${r.content}`)
-        .join('\n\n');
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      console.warn('[RAG] Context fetch failed:', errInstanceofError?.message || err);
-      return '';
-    }
+    // 3) Concatena contexto
+    return rows
+      .map((r, idx) => `#${idx + 1} (dist=${r.distance?.toFixed?.(3) ?? ''})\n${r.content}`)
+      .join('\n\n');
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    console.warn('[RAG] Context fetch failed:', errInstanceofError?.message || err);
+    return '';
   }
 }
+
+export const RAGProvider = {
+  getContext,
+} as const;
