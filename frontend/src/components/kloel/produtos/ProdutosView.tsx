@@ -56,6 +56,7 @@ function usePrefersReducedMotion() {
 // ── Icons (IC) ──
 // Extracted into a sibling module to keep this file focused on layout/logic.
 import { IC } from './ProdutosView.icons';
+import { normalizeDisplayProduct } from './ProdutosView.helpers';
 
 // ── NeuralPulse (NP) — canvas 2D with sin() waves ──
 function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; color?: string }) {
@@ -5310,41 +5311,9 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
 
   // ── Normalize products ──
   const displayProducts: DisplayProduct[] = Array.isArray(rawProducts)
-    ? (rawProducts as RawProductPayload[]).map((p) => {
-        const priceSummary = getProductPlanPriceSummary(p);
-        const backendStatus = String(p.status || '').toUpperCase();
-        const status =
-          backendStatus === 'APPROVED' || (!backendStatus && p.active !== false)
-            ? 'active'
-            : backendStatus === 'PENDING'
-              ? 'pending'
-              : 'draft';
-
-        return {
-          id: p.id,
-          name: p.name,
-          price: p.price || 0,
-          sales: p.totalSales || p.sales || 0,
-          revenue: p.totalRevenue || p.revenue || 0,
-          students: p.studentsCount || p.students || 0,
-          category: p.category || 'Digital',
-          status,
-          color: '#8B5CF6',
-          format: p.format || '',
-          active: status === 'active',
-          imageUrl: p.imageUrl || p.thumbnailUrl || '',
-          plansCount: p.plansCount || 0,
-          activePlansCount: p.activePlansCount || 0,
-          minPlanPriceInCents: priceSummary.minPlanPriceInCents,
-          maxPlanPriceInCents: priceSummary.maxPlanPriceInCents,
-          hasPlanPricing: priceSummary.hasPlanPricing,
-          priceLabel: priceSummary.priceLabel,
-          memberAreasCount: p.memberAreasCount || 0,
-          affiliateCount: p.affiliateCount || 0,
-          createdAt: p.createdAt || '',
-          updatedAt: p.updatedAt || '',
-        };
-      })
+    ? (rawProducts as RawProductPayload[]).map((p) =>
+        normalizeDisplayProduct(p, getProductPlanPriceSummary(p)),
+      )
     : [];
 
   // ── Normalize areas ──

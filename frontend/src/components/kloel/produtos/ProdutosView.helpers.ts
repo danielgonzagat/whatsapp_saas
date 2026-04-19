@@ -113,3 +113,98 @@ export const buildUpdateAreaBody = (form: AreaFormInput): UpdateAreaBody => ({
   ...buildAreaBaseBody(form),
   productId: form.productId || null,
 });
+
+export interface RawProductForNormalization {
+  id: string;
+  name: string;
+  price?: number;
+  totalSales?: number;
+  sales?: number;
+  totalRevenue?: number;
+  revenue?: number;
+  studentsCount?: number;
+  students?: number;
+  category?: string;
+  status?: string;
+  active?: boolean;
+  format?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  plansCount?: number;
+  activePlansCount?: number;
+  memberAreasCount?: number;
+  affiliateCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface NormalizedProduct {
+  id: string;
+  name: string;
+  price: number;
+  sales: number;
+  revenue: number;
+  students: number;
+  category: string;
+  status: 'active' | 'pending' | 'draft';
+  color: string;
+  format: string;
+  active: boolean;
+  imageUrl: string;
+  plansCount: number;
+  activePlansCount: number;
+  minPlanPriceInCents: number | null;
+  maxPlanPriceInCents: number | null;
+  hasPlanPricing: boolean;
+  priceLabel: string;
+  memberAreasCount: number;
+  affiliateCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PriceSummary {
+  minPlanPriceInCents: number | null;
+  maxPlanPriceInCents: number | null;
+  hasPlanPricing: boolean;
+  priceLabel: string;
+}
+
+function resolveProductStatus(rawStatus: string, active?: boolean): NormalizedProduct['status'] {
+  const backendStatus = rawStatus.toUpperCase();
+  if (backendStatus === 'APPROVED') return 'active';
+  if (!backendStatus && active !== false) return 'active';
+  if (backendStatus === 'PENDING') return 'pending';
+  return 'draft';
+}
+
+export function normalizeDisplayProduct(
+  p: RawProductForNormalization,
+  priceSummary: PriceSummary,
+): NormalizedProduct {
+  const status = resolveProductStatus(String(p.status || ''), p.active);
+  return {
+    id: p.id,
+    name: p.name,
+    price: p.price || 0,
+    sales: p.totalSales || p.sales || 0,
+    revenue: p.totalRevenue || p.revenue || 0,
+    students: p.studentsCount || p.students || 0,
+    category: p.category || 'Digital',
+    status,
+    color: '#8B5CF6',
+    format: p.format || '',
+    active: status === 'active',
+    imageUrl: p.imageUrl || p.thumbnailUrl || '',
+    plansCount: p.plansCount || 0,
+    activePlansCount: p.activePlansCount || 0,
+    minPlanPriceInCents: priceSummary.minPlanPriceInCents,
+    maxPlanPriceInCents: priceSummary.maxPlanPriceInCents,
+    hasPlanPricing: priceSummary.hasPlanPricing,
+    priceLabel: priceSummary.priceLabel,
+    memberAreasCount: p.memberAreasCount || 0,
+    affiliateCount: p.affiliateCount || 0,
+    createdAt: p.createdAt || '',
+    updatedAt: p.updatedAt || '',
+  };
+}
