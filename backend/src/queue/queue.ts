@@ -212,46 +212,70 @@ function attachDlq(queue: BullQueue) {
   const events = _queueEvents[queue.name];
 
   events.on('failed', (event) => {
-    void (async () => {
-      try {
-        const job = await queue.getJob(event.jobId);
-        if (!job) return;
-        const opts = getQueueOptions();
-        const maxAttempts = job.opts.attempts ?? opts.defaultJobOptions?.attempts ?? 1;
-        // Só envia para DLQ após esgotar as tentativas
-        if (
-          (event as { attemptsMade?: number }).attemptsMade !== undefined &&
-          (event as { attemptsMade?: number }).attemptsMade < maxAttempts
-        )
-          return;
-
-        await dlq.add(
-          'failed',
-          {
-            originalQueue: queue.name,
-            jobName: job.name,
-            data: job.data,
-            opts: job.opts,
-            failedReason: (event as { failedReason?: string }).failedReason,
-            failedAt: new Date().toISOString(),
-          },
-          {
-            jobId: job.id, // evita duplicar se múltiplos consumidores ouvirem o mesmo evento
-            removeOnComplete: true,
-          },
-        );
-        await notifyOps({
-          queue: queue.name,
-          jobId: job.id ?? undefined,
-          jobName: job.name,
-          reason: (event as { failedReason?: string }).failedReason,
-        });
-      } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : 'unknown_error';
-        queueLogger.error(`[DLQ] Falha ao mover job da fila ${queue.name}: ${errMsg}`);
-      }
-    })();
+    void handleQueueFailedEvent(queue, dlq, event);
   });
+}
+
+function hasAttemptsLeft(event: unknown, maxAttempts: number): boolean {
+  const attemptsMade = (event as { attemptsMade?: number }).attemptsMade;
+  return attemptsMade !== undefined && attemptsMade < maxAttempts;
+}
+
+function resolveMaxAttempts(jobOpts: { attempts?: number } | undefined): number {
+  const opts = getQueueOptions();
+  return jobOpts?.attempts ?? opts.defaultJobOptions?.attempts ?? 1;
+}
+
+async function moveJobToDlq(
+  queueName: string,
+  dlq: BullQueue,
+  job: {
+    id?: string | number;
+    name: string;
+    data: unknown;
+    opts: unknown;
+  },
+  failedReason: string | undefined,
+): Promise<void> {
+  const jobId = job.id !== undefined ? String(job.id) : undefined;
+  await dlq.add(
+    'failed',
+    {
+      originalQueue: queueName,
+      jobName: job.name,
+      data: job.data,
+      opts: job.opts,
+      failedReason,
+      failedAt: new Date().toISOString(),
+    },
+    {
+      jobId,
+      removeOnComplete: true,
+    },
+  );
+  await notifyOps({
+    queue: queueName,
+    jobId: jobId,
+    jobName: job.name,
+    reason: failedReason,
+  });
+}
+
+async function handleQueueFailedEvent(
+  queue: BullQueue,
+  dlq: BullQueue,
+  event: { jobId: string; failedReason?: string },
+): Promise<void> {
+  try {
+    const job = await queue.getJob(event.jobId);
+    if (!job) return;
+    const maxAttempts = resolveMaxAttempts(job.opts);
+    if (hasAttemptsLeft(event, maxAttempts)) return;
+    await moveJobToDlq(queue.name, dlq, job, event.failedReason);
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : 'unknown_error';
+    queueLogger.error(`[DLQ] Falha ao mover job da fila ${queue.name}: ${errMsg}`);
+  }
 }
 
 // ============================================================================

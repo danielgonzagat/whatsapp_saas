@@ -235,71 +235,7 @@ export class InboxService {
     const messageCreatedAt = this.normalizeDate(data.createdAt) || new Date();
 
     const { message, updatedConversation } = await this.prisma.$transaction(
-      async (tx) => {
-        // 1. Resolve the open conversation INSIDE the transaction, using
-        //    the partial unique index + P2002-retry loop. A concurrent
-        //    worker that wins the create() race forces us to re-read so
-        //    we always end up pointing at the current open conversation.
-        const conversation = await this.getOrCreateConversationWithClient(
-          tx,
-          data.workspaceId,
-          data.contactId,
-          data.channel || 'WHATSAPP',
-          { initialLastMessageAt: messageCreatedAt },
-        );
-
-        // 2. Insert the message.
-        const msg = await tx.message.create({
-          data: {
-            workspaceId: data.workspaceId,
-            contactId: data.contactId,
-            conversationId: conversation.id,
-            content: data.content,
-            direction: data.direction,
-            externalId: data.externalId,
-            type: data.type || 'TEXT',
-            mediaUrl: data.mediaUrl,
-            status: data.status || 'DELIVERED',
-            createdAt: messageCreatedAt,
-          },
-        });
-
-        // 3. Compute and apply the conversation metadata update in the
-        //    same transaction so a crash between steps 2 and 3 is
-        //    impossible — either both commits happen or neither does.
-        const shouldCountAsUnread = data.countAsUnread ?? data.direction === 'INBOUND';
-        const shouldResetUnread = data.resetUnreadOnOutbound ?? data.direction === 'OUTBOUND';
-        const currentLastMessageAt =
-          conversation.lastMessageAt instanceof Date
-            ? conversation.lastMessageAt
-            : this.normalizeDate(conversation.lastMessageAt);
-        const nextLastMessageAt =
-          currentLastMessageAt && currentLastMessageAt > messageCreatedAt
-            ? currentLastMessageAt
-            : messageCreatedAt;
-        const conversationUpdate: Prisma.ConversationUpdateInput = {
-          lastMessageAt: nextLastMessageAt,
-        };
-        if (shouldCountAsUnread) {
-          conversationUpdate.unreadCount = { increment: 1 };
-        } else if (shouldResetUnread) {
-          conversationUpdate.unreadCount = { set: 0 };
-        }
-
-        const updated = await tx.conversation.update({
-          where: { id: conversation.id },
-          data: conversationUpdate,
-          select: {
-            id: true,
-            status: true,
-            unreadCount: true,
-            lastMessageAt: true,
-            contact: { select: { id: true, name: true, phone: true } },
-          },
-        });
-
-        return { message: msg, updatedConversation: updated };
-      },
+      (tx) => this.saveMessageInTx(tx, data, messageCreatedAt),
       { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
     );
 
@@ -318,6 +254,92 @@ export class InboxService {
     }
 
     return message;
+  }
+
+  private resolveConversationLastMessageAt(
+    conversation: { lastMessageAt: Date | string | null | undefined },
+    messageCreatedAt: Date,
+  ): Date {
+    const currentLastMessageAt =
+      conversation.lastMessageAt instanceof Date
+        ? conversation.lastMessageAt
+        : this.normalizeDate(conversation.lastMessageAt);
+    return currentLastMessageAt && currentLastMessageAt > messageCreatedAt
+      ? currentLastMessageAt
+      : messageCreatedAt;
+  }
+
+  private buildConversationUpdate(
+    data: { countAsUnread?: boolean; resetUnreadOnOutbound?: boolean; direction: string },
+    nextLastMessageAt: Date,
+  ): Prisma.ConversationUpdateInput {
+    const shouldCountAsUnread = data.countAsUnread ?? data.direction === 'INBOUND';
+    const shouldResetUnread = data.resetUnreadOnOutbound ?? data.direction === 'OUTBOUND';
+    const update: Prisma.ConversationUpdateInput = { lastMessageAt: nextLastMessageAt };
+    if (shouldCountAsUnread) {
+      update.unreadCount = { increment: 1 };
+    } else if (shouldResetUnread) {
+      update.unreadCount = { set: 0 };
+    }
+    return update;
+  }
+
+  private async saveMessageInTx(
+    tx: Prisma.TransactionClient,
+    data: {
+      workspaceId: string;
+      contactId: string;
+      content: string;
+      direction: 'INBOUND' | 'OUTBOUND';
+      externalId?: string;
+      type?: string;
+      channel?: string;
+      mediaUrl?: string;
+      status?: string;
+      countAsUnread?: boolean;
+      resetUnreadOnOutbound?: boolean;
+    },
+    messageCreatedAt: Date,
+  ) {
+    const conversation = await this.getOrCreateConversationWithClient(
+      tx,
+      data.workspaceId,
+      data.contactId,
+      data.channel || 'WHATSAPP',
+      { initialLastMessageAt: messageCreatedAt },
+    );
+
+    const msg = await tx.message.create({
+      data: {
+        workspaceId: data.workspaceId,
+        contactId: data.contactId,
+        conversationId: conversation.id,
+        content: data.content,
+        direction: data.direction,
+        externalId: data.externalId,
+        type: data.type || 'TEXT',
+        mediaUrl: data.mediaUrl,
+        status: data.status || 'DELIVERED',
+        createdAt: messageCreatedAt,
+      },
+    });
+
+    const nextLastMessageAt = this.resolveConversationLastMessageAt(conversation, messageCreatedAt);
+    const conversationUpdate = this.buildConversationUpdate(data, nextLastMessageAt);
+
+    const updated = await tx.conversation.update({
+      where: { id: conversation.id },
+      data: conversationUpdate,
+      select: {
+        id: true,
+        status: true,
+        unreadCount: true,
+        lastMessageAt: true,
+        contact: { select: { id: true, name: true, phone: true } },
+      },
+    });
+
+    return { message: msg, updatedConversation: updated };
   }
 
   private normalizeDate(value?: Date | string | null): Date | null {

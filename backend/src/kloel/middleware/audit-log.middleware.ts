@@ -68,61 +68,84 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     res.on('finish', () => {
       const responseTimeMs = Date.now() - startTime;
       const statusCode = res.statusCode;
+      const workspaceId = this.resolveWorkspaceId(req);
 
-      // Extrair dados do request
-      const user = (req as Request & { user?: { userId?: string; sub?: string } }).user;
-      const workspaceId =
-        req.params.workspaceId || req.body?.workspaceId || (req.query.workspaceId as string);
-
-      // Sanitizar body para log (remover dados sensiveis via shared helper)
-      const sanitizedBody = sanitizePayload(req.body) as Record<string, unknown> | undefined;
-
-      // Determinar se deve logar
-      const shouldLog = this.shouldLog(method, path, statusCode);
-
-      if (shouldLog) {
-        const logEntry: AuditLogEntry = {
-          timestamp: new Date(),
+      if (this.shouldLog(method, path, statusCode)) {
+        const logEntry = this.buildAuditLogEntry({
+          req,
           method,
           path,
+          ip,
           workspaceId,
-          userId: user?.userId || user?.sub,
-          ip: ip || 'unknown',
-          userAgent: req.headers['user-agent'] || 'unknown',
           statusCode,
           responseTimeMs,
-          requestBody: sanitizedBody,
-          error: statusCode >= 400 ? this.extractError(responseBody) : undefined,
-        };
-
-        this.logBuffer.push(logEntry);
-
-        // Log imediato para erros ou operacoes criticas
-        if (statusCode >= 500 || this.isCriticalOperation(method, path)) {
-          this.logger.error('Critical operation', {
-            ...logEntry,
-            level: statusCode >= 500 ? 'error' : 'warn',
-          });
-        }
-
-        // Flush se buffer estiver cheio
-        if (this.logBuffer.length >= this.BUFFER_SIZE) {
-          void this.flushBuffer();
-        }
-      }
-
-      // Log de performance para requests lentos
-      if (responseTimeMs > 3000) {
-        this.logger.warn('Slow request detected', {
-          method,
-          path,
-          responseTimeMs,
-          workspaceId,
+          responseBody,
         });
+        this.recordAuditLogEntry(logEntry, method, path);
       }
+
+      this.maybeLogSlowRequest(responseTimeMs, method, path, workspaceId);
     });
 
     next();
+  }
+
+  private resolveWorkspaceId(req: Request): string | undefined {
+    return req.params.workspaceId || req.body?.workspaceId || (req.query.workspaceId as string);
+  }
+
+  private buildAuditLogEntry(params: {
+    req: Request;
+    method: string;
+    path: string;
+    ip: string;
+    workspaceId?: string;
+    statusCode: number;
+    responseTimeMs: number;
+    responseBody: unknown;
+  }): AuditLogEntry {
+    const { req, method, path, ip, workspaceId, statusCode, responseTimeMs, responseBody } = params;
+    const user = (req as Request & { user?: { userId?: string; sub?: string } }).user;
+    const sanitizedBody = sanitizePayload(req.body) as Record<string, unknown> | undefined;
+
+    return {
+      timestamp: new Date(),
+      method,
+      path,
+      workspaceId,
+      userId: user?.userId || user?.sub,
+      ip: ip || 'unknown',
+      userAgent: req.headers['user-agent'] || 'unknown',
+      statusCode,
+      responseTimeMs,
+      requestBody: sanitizedBody,
+      error: statusCode >= 400 ? this.extractError(responseBody) : undefined,
+    };
+  }
+
+  private recordAuditLogEntry(logEntry: AuditLogEntry, method: string, path: string): void {
+    this.logBuffer.push(logEntry);
+
+    if (logEntry.statusCode >= 500 || this.isCriticalOperation(method, path)) {
+      this.logger.error('Critical operation', {
+        ...logEntry,
+        level: logEntry.statusCode >= 500 ? 'error' : 'warn',
+      });
+    }
+
+    if (this.logBuffer.length >= this.BUFFER_SIZE) {
+      void this.flushBuffer();
+    }
+  }
+
+  private maybeLogSlowRequest(
+    responseTimeMs: number,
+    method: string,
+    path: string,
+    workspaceId?: string,
+  ): void {
+    if (responseTimeMs <= 3000) return;
+    this.logger.warn('Slow request detected', { method, path, responseTimeMs, workspaceId });
   }
 
   private shouldLog(method: string, path: string, statusCode: number): boolean {

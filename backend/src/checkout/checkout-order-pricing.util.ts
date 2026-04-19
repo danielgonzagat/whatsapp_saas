@@ -26,6 +26,30 @@ export function calculatePhysicalOrderUnitCount(planUnitQuantity: unknown, order
   return unitsPerPlan * normalizedOrderQuantity;
 }
 
+function normalizeNonNegativeCents(value: number | undefined): number {
+  return Math.max(0, Math.round(Number(value || 0)));
+}
+
+function dedupeAcceptedBumpIds(acceptedBumpIds: string[] | undefined): string[] {
+  return Array.from(
+    new Set((acceptedBumpIds || []).map((value) => String(value || '').trim()).filter(Boolean)),
+  );
+}
+
+function selectAcceptedBumps(
+  orderBumps: CheckoutBumpInput[] | undefined,
+  acceptedBumpIds: string[],
+): CheckoutBumpInput[] {
+  return (orderBumps || []).filter((bump) => acceptedBumpIds.includes(bump.id));
+}
+
+function sumBumpPriceInCents(selectedBumps: CheckoutBumpInput[]): number {
+  return selectedBumps.reduce(
+    (total, bump) => total + normalizeNonNegativeCents(bump.priceInCents),
+    0,
+  );
+}
+
 export function calculateCheckoutServerTotals(input: {
   planPriceInCents: number;
   orderQuantity: unknown;
@@ -35,22 +59,12 @@ export function calculateCheckoutServerTotals(input: {
   acceptedBumpIds?: string[];
 }) {
   const normalizedOrderQuantity = normalizeCheckoutOrderQuantity(input.orderQuantity);
-  const normalizedPlanPriceInCents = Math.max(0, Math.round(Number(input.planPriceInCents || 0)));
-  const normalizedShippingInCents = Math.max(0, Math.round(Number(input.shippingInCents || 0)));
-  const normalizedDiscountInCents = Math.max(0, Math.round(Number(input.discountInCents || 0)));
-  const acceptedBumpIds = Array.from(
-    new Set(
-      (input.acceptedBumpIds || []).map((value) => String(value || '').trim()).filter(Boolean),
-    ),
-  );
-
-  const selectedBumps = (input.orderBumps || []).filter((bump) =>
-    acceptedBumpIds.includes(bump.id),
-  );
-  const bumpTotalInCents = selectedBumps.reduce(
-    (total, bump) => total + Math.max(0, Math.round(Number(bump.priceInCents || 0))),
-    0,
-  );
+  const normalizedPlanPriceInCents = normalizeNonNegativeCents(input.planPriceInCents);
+  const normalizedShippingInCents = normalizeNonNegativeCents(input.shippingInCents);
+  const normalizedDiscountInCents = normalizeNonNegativeCents(input.discountInCents);
+  const acceptedBumpIds = dedupeAcceptedBumpIds(input.acceptedBumpIds);
+  const selectedBumps = selectAcceptedBumps(input.orderBumps, acceptedBumpIds);
+  const bumpTotalInCents = sumBumpPriceInCents(selectedBumps);
   const subtotalInCents = normalizedPlanPriceInCents * normalizedOrderQuantity;
   const totalInCents = Math.max(
     0,
