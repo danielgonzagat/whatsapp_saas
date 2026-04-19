@@ -480,32 +480,49 @@ function serializePlanPackaging(packaging: LooseObject) {
   };
 }
 
+const PLAN_CHECKOUT_FLAG_DEFAULTS: LooseObject = {
+  imageUrl: null,
+  redirectUrl: '',
+  freeSample: false,
+  requireEmail: true,
+  requireEmailConfirm: false,
+  requireAddress: false,
+  limitSales: false,
+  salesLimit: '',
+  limitPerApproved: false,
+  approvedLimit: '',
+  minStock: false,
+  stockMin: '',
+  notifyBoleto: true,
+  limitedBilling: false,
+  affiliateRecurring: true,
+  boletoInstallment: false,
+  boletoInstallments: '',
+  boletoInterest: false,
+};
+
+const DEFAULT_PAYMENT_METHODS = Object.freeze({
+  credit: true,
+  boleto: true,
+  pix: true,
+});
+
+function resolvePlanCheckoutFlag(extra: LooseObject, key: string, fallback: unknown): unknown {
+  const value = extra[key];
+  // `imageUrl` and `redirectUrl` treat empty string as "no value"; others only coalesce null/undefined.
+  if (key === 'imageUrl' || key === 'redirectUrl') {
+    return value || fallback;
+  }
+  return value ?? fallback;
+}
+
 function serializePlanCheckoutFlags(extra: LooseObject) {
-  return {
-    imageUrl: extra.imageUrl || null,
-    redirectUrl: extra.redirectUrl || '',
-    freeSample: extra.freeSample ?? false,
-    requireEmail: extra.requireEmail ?? true,
-    requireEmailConfirm: extra.requireEmailConfirm ?? false,
-    requireAddress: extra.requireAddress ?? false,
-    limitSales: extra.limitSales ?? false,
-    salesLimit: extra.salesLimit ?? '',
-    limitPerApproved: extra.limitPerApproved ?? false,
-    approvedLimit: extra.approvedLimit ?? '',
-    minStock: extra.minStock ?? false,
-    stockMin: extra.stockMin ?? '',
-    notifyBoleto: extra.notifyBoleto ?? true,
-    limitedBilling: extra.limitedBilling ?? false,
-    affiliateRecurring: extra.affiliateRecurring ?? true,
-    boletoInstallment: extra.boletoInstallment ?? false,
-    boletoInstallments: extra.boletoInstallments ?? '',
-    boletoInterest: extra.boletoInterest ?? false,
-    paymentMethods: extra.paymentMethods || {
-      credit: true,
-      boleto: true,
-      pix: true,
-    },
-  };
+  const flags: LooseObject = {};
+  for (const [key, fallback] of Object.entries(PLAN_CHECKOUT_FLAG_DEFAULTS)) {
+    flags[key] = resolvePlanCheckoutFlag(extra, key, fallback);
+  }
+  flags.paymentMethods = extra.paymentMethods || DEFAULT_PAYMENT_METHODS;
+  return flags;
 }
 
 function serializePlan(plan: LooseObject) {
@@ -916,6 +933,153 @@ function normalizeAiObjections(value: unknown): LooseObject[] {
     .filter(Boolean);
 }
 
+function pickDefined<T extends LooseObject, K extends string>(
+  source: T,
+  keys: readonly K[],
+): LooseObject {
+  const result: LooseObject = {};
+  for (const key of keys) {
+    if (source[key] !== undefined) {
+      result[key] = source[key];
+    }
+  }
+  return result;
+}
+
+function pickRenamed(
+  source: LooseObject,
+  mapping: ReadonlyArray<readonly [string, string]>,
+): LooseObject {
+  const result: LooseObject = {};
+  for (const [sourceKey, targetKey] of mapping) {
+    if (source[sourceKey] !== undefined) {
+      result[targetKey] = source[sourceKey];
+    }
+  }
+  return result;
+}
+
+const CUSTOMER_PROFILE_KEYS = [
+  'whobuys',
+  'pains',
+  'promise',
+  'idealCustomer',
+  'painPoints',
+  'promisedResult',
+  'genders',
+  'ages',
+  'moments',
+  'knowledge',
+  'buyingPower',
+  'problem',
+] as const;
+
+const POSITIONING_KEYS = [
+  'tier',
+  'whenOffer',
+  'differentiators',
+  'scarcity',
+  'objectionStates',
+] as const;
+
+const SALES_ARGUMENT_SHARED_KEYS = ['autoCheckoutLink', 'offerDiscount', 'useUrgency'] as const;
+
+const SALES_ARGUMENT_EXTRA_KEYS = [
+  'socialProof',
+  'socialProofValues',
+  'guarantee',
+  'guaranteeValues',
+  'benefits',
+  'benefitsValues',
+  'urgencyArgs',
+  'urgencyValues',
+] as const;
+
+const UPSELL_BODY_MAP = [
+  ['upsellEnabled', 'enabled'],
+  ['upsellTargetPlan', 'targetPlan'],
+  ['upsellWhen', 'when'],
+  ['upsellArgument', 'argument'],
+] as const;
+
+const DOWNSELL_BODY_MAP = [
+  ['downsellEnabled', 'enabled'],
+  ['downsellTargetPlan', 'targetPlan'],
+  ['downsellWhen', 'when'],
+  ['downsellArgument', 'argument'],
+] as const;
+
+const TECHNICAL_INFO_KEYS = [
+  'hasTechInfo',
+  'usageMode',
+  'duration',
+  'contraindications',
+  'expectedResults',
+] as const;
+
+function buildCustomerProfilePatch(body: LooseObject, current: LooseObject, input: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...input,
+    ...pickDefined(body, CUSTOMER_PROFILE_KEYS),
+  });
+}
+
+function buildPositioningPatch(body: LooseObject, current: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...pickDefined(body, POSITIONING_KEYS),
+  });
+}
+
+function buildSalesArgumentsPatch(
+  body: LooseObject,
+  current: LooseObject,
+  input: LooseObject,
+  followUpInput: LooseObject,
+) {
+  return removeUndefined({
+    ...current,
+    ...input,
+    ...pickDefined(body, SALES_ARGUMENT_SHARED_KEYS),
+    ...pickDefined(followUpInput, SALES_ARGUMENT_SHARED_KEYS),
+    ...pickDefined(body, SALES_ARGUMENT_EXTRA_KEYS),
+  });
+}
+
+function buildUpsellPatch(body: LooseObject, current: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...pickRenamed(body, UPSELL_BODY_MAP),
+  });
+}
+
+function buildDownsellPatch(body: LooseObject, current: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...pickRenamed(body, DOWNSELL_BODY_MAP),
+  });
+}
+
+function buildFollowUpPatch(body: LooseObject, current: LooseObject, input: LooseObject) {
+  const patch: LooseObject = {
+    ...current,
+    ...input,
+    ...pickDefined(body, SALES_ARGUMENT_SHARED_KEYS),
+  };
+  if (body.followUp !== undefined) patch.schedule = body.followUp;
+  if (body.followUpHours !== undefined) patch.hours = parseNumber(body.followUpHours);
+  if (body.followUpMax !== undefined) patch.maxFollowUps = parseNumber(body.followUpMax);
+  return removeUndefined(patch);
+}
+
+function buildTechnicalInfoPatch(body: LooseObject, current: LooseObject) {
+  return removeUndefined({
+    ...current,
+    ...pickDefined(body, TECHNICAL_INFO_KEYS),
+  });
+}
+
 function normalizeProductAiConfigInput(body: LooseObject, current?: LooseObject | null) {
   const currentCustomerProfile = parseObject(current?.customerProfile);
   const currentPositioning = parseObject(current?.positioning);
@@ -930,112 +1094,65 @@ function normalizeProductAiConfigInput(body: LooseObject, current?: LooseObject 
   const followUpConfigInput = parseObject(body.followUpConfig);
 
   return removeUndefined({
-    customerProfile: removeUndefined({
-      ...currentCustomerProfile,
-      ...customerProfileInput,
-      ...(body.whobuys !== undefined ? { whobuys: body.whobuys } : {}),
-      ...(body.pains !== undefined ? { pains: body.pains } : {}),
-      ...(body.promise !== undefined ? { promise: body.promise } : {}),
-      ...(body.idealCustomer !== undefined ? { idealCustomer: body.idealCustomer } : {}),
-      ...(body.painPoints !== undefined ? { painPoints: body.painPoints } : {}),
-      ...(body.promisedResult !== undefined ? { promisedResult: body.promisedResult } : {}),
-      ...(body.genders !== undefined ? { genders: body.genders } : {}),
-      ...(body.ages !== undefined ? { ages: body.ages } : {}),
-      ...(body.moments !== undefined ? { moments: body.moments } : {}),
-      ...(body.knowledge !== undefined ? { knowledge: body.knowledge } : {}),
-      ...(body.buyingPower !== undefined ? { buyingPower: body.buyingPower } : {}),
-      ...(body.problem !== undefined ? { problem: body.problem } : {}),
-    }),
-    positioning: removeUndefined({
-      ...currentPositioning,
-      ...(body.tier !== undefined ? { tier: body.tier } : {}),
-      ...(body.whenOffer !== undefined ? { whenOffer: body.whenOffer } : {}),
-      ...(body.differentiators !== undefined ? { differentiators: body.differentiators } : {}),
-      ...(body.scarcity !== undefined ? { scarcity: body.scarcity } : {}),
-      ...(body.objectionStates !== undefined ? { objectionStates: body.objectionStates } : {}),
-    }),
+    customerProfile: buildCustomerProfilePatch(body, currentCustomerProfile, customerProfileInput),
+    positioning: buildPositioningPatch(body, currentPositioning),
     objections: normalizeAiObjections(body.objections ?? current?.objections),
-    salesArguments: removeUndefined({
-      ...currentSalesArguments,
-      ...salesArgumentsInput,
-      ...(body.autoCheckoutLink !== undefined ? { autoCheckoutLink: body.autoCheckoutLink } : {}),
-      ...(body.offerDiscount !== undefined ? { offerDiscount: body.offerDiscount } : {}),
-      ...(body.useUrgency !== undefined ? { useUrgency: body.useUrgency } : {}),
-      ...(followUpConfigInput.autoCheckoutLink !== undefined
-        ? { autoCheckoutLink: followUpConfigInput.autoCheckoutLink }
-        : {}),
-      ...(followUpConfigInput.offerDiscount !== undefined
-        ? { offerDiscount: followUpConfigInput.offerDiscount }
-        : {}),
-      ...(followUpConfigInput.useUrgency !== undefined
-        ? { useUrgency: followUpConfigInput.useUrgency }
-        : {}),
-      ...(body.socialProof !== undefined ? { socialProof: body.socialProof } : {}),
-      ...(body.socialProofValues !== undefined
-        ? { socialProofValues: body.socialProofValues }
-        : {}),
-      ...(body.guarantee !== undefined ? { guarantee: body.guarantee } : {}),
-      ...(body.guaranteeValues !== undefined ? { guaranteeValues: body.guaranteeValues } : {}),
-      ...(body.benefits !== undefined ? { benefits: body.benefits } : {}),
-      ...(body.benefitsValues !== undefined ? { benefitsValues: body.benefitsValues } : {}),
-      ...(body.urgencyArgs !== undefined ? { urgencyArgs: body.urgencyArgs } : {}),
-      ...(body.urgencyValues !== undefined ? { urgencyValues: body.urgencyValues } : {}),
-    }),
-    upsellConfig: removeUndefined({
-      ...currentUpsellConfig,
-      ...(body.upsellEnabled !== undefined ? { enabled: body.upsellEnabled } : {}),
-      ...(body.upsellTargetPlan !== undefined ? { targetPlan: body.upsellTargetPlan } : {}),
-      ...(body.upsellWhen !== undefined ? { when: body.upsellWhen } : {}),
-      ...(body.upsellArgument !== undefined ? { argument: body.upsellArgument } : {}),
-    }),
-    downsellConfig: removeUndefined({
-      ...currentDownsellConfig,
-      ...(body.downsellEnabled !== undefined ? { enabled: body.downsellEnabled } : {}),
-      ...(body.downsellTargetPlan !== undefined ? { targetPlan: body.downsellTargetPlan } : {}),
-      ...(body.downsellWhen !== undefined ? { when: body.downsellWhen } : {}),
-      ...(body.downsellArgument !== undefined ? { argument: body.downsellArgument } : {}),
-    }),
+    salesArguments: buildSalesArgumentsPatch(
+      body,
+      currentSalesArguments,
+      salesArgumentsInput,
+      followUpConfigInput,
+    ),
+    upsellConfig: buildUpsellPatch(body, currentUpsellConfig),
+    downsellConfig: buildDownsellPatch(body, currentDownsellConfig),
     tone: normalizeAiTone(body.tone ?? current?.tone),
     persistenceLevel: parseNumber(body.persistenceLevel) ?? parseNumber(body.persistence),
     messageLimit: parseNumber(body.messageLimit),
-    followUpConfig: removeUndefined({
-      ...currentFollowUpConfig,
-      ...followUpConfigInput,
-      ...(body.followUp !== undefined ? { schedule: body.followUp } : {}),
-      ...(body.autoCheckoutLink !== undefined ? { autoCheckoutLink: body.autoCheckoutLink } : {}),
-      ...(body.offerDiscount !== undefined ? { offerDiscount: body.offerDiscount } : {}),
-      ...(body.useUrgency !== undefined ? { useUrgency: body.useUrgency } : {}),
-      ...(body.followUpHours !== undefined ? { hours: parseNumber(body.followUpHours) } : {}),
-      ...(body.followUpMax !== undefined ? { maxFollowUps: parseNumber(body.followUpMax) } : {}),
-    }),
-    technicalInfo: removeUndefined({
-      ...currentTechnicalInfo,
-      ...(body.hasTechInfo !== undefined ? { hasTechInfo: body.hasTechInfo } : {}),
-      ...(body.usageMode !== undefined ? { usageMode: body.usageMode } : {}),
-      ...(body.duration !== undefined ? { duration: body.duration } : {}),
-      ...(body.contraindications !== undefined
-        ? { contraindications: body.contraindications }
-        : {}),
-      ...(body.expectedResults !== undefined ? { expectedResults: body.expectedResults } : {}),
-    }),
+    followUpConfig: buildFollowUpPatch(body, currentFollowUpConfig, followUpConfigInput),
+    technicalInfo: buildTechnicalInfoPatch(body, currentTechnicalInfo),
   });
 }
 
-function flattenCustomerProfile(customerProfile: LooseObject) {
-  return {
-    whobuys: customerProfile.whobuys ?? customerProfile.idealCustomer ?? '',
-    pains: customerProfile.pains ?? customerProfile.painPoints ?? '',
-    promise: customerProfile.promise ?? customerProfile.promisedResult ?? '',
-    idealCustomer: customerProfile.idealCustomer ?? customerProfile.whobuys ?? '',
-    painPoints: customerProfile.painPoints ?? customerProfile.pains ?? '',
-    promisedResult: customerProfile.promisedResult ?? customerProfile.promise ?? '',
-    genders: customerProfile.genders || [],
-    ages: customerProfile.ages || [],
-    moments: customerProfile.moments || [],
-    knowledge: customerProfile.knowledge || '',
-    buyingPower: customerProfile.buyingPower || '',
-    problem: customerProfile.problem || '',
-  };
+function pickFirstDefined(source: LooseObject, keys: readonly string[], fallback: unknown) {
+  for (const key of keys) {
+    const value = source[key];
+    if (value !== undefined && value !== null) return value;
+  }
+  return fallback;
+}
+
+function coerceArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function coerceString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+const CUSTOMER_PROFILE_ALIAS_FIELDS: ReadonlyArray<readonly [string, readonly string[]]> = [
+  ['whobuys', ['whobuys', 'idealCustomer']],
+  ['pains', ['pains', 'painPoints']],
+  ['promise', ['promise', 'promisedResult']],
+  ['idealCustomer', ['idealCustomer', 'whobuys']],
+  ['painPoints', ['painPoints', 'pains']],
+  ['promisedResult', ['promisedResult', 'promise']],
+] as const;
+
+const CUSTOMER_PROFILE_STRING_FIELDS = ['knowledge', 'buyingPower', 'problem'] as const;
+const CUSTOMER_PROFILE_ARRAY_FIELDS = ['genders', 'ages', 'moments'] as const;
+
+function flattenCustomerProfile(customerProfile: LooseObject): LooseObject {
+  const result: LooseObject = {};
+  for (const [field, candidates] of CUSTOMER_PROFILE_ALIAS_FIELDS) {
+    result[field] = pickFirstDefined(customerProfile, candidates, '');
+  }
+  for (const field of CUSTOMER_PROFILE_ARRAY_FIELDS) {
+    result[field] = coerceArray(customerProfile[field]);
+  }
+  for (const field of CUSTOMER_PROFILE_STRING_FIELDS) {
+    result[field] = coerceString(customerProfile[field]);
+  }
+  return result;
 }
 
 function flattenPositioning(positioning: LooseObject) {
@@ -1048,20 +1165,49 @@ function flattenPositioning(positioning: LooseObject) {
   };
 }
 
-function flattenSalesArguments(salesArguments: LooseObject, followUpConfig: LooseObject) {
-  return {
-    socialProof: salesArguments.socialProof || [],
-    socialProofValues: salesArguments.socialProofValues || {},
-    guarantee: salesArguments.guarantee || [],
-    guaranteeValues: salesArguments.guaranteeValues || {},
-    benefits: salesArguments.benefits || [],
-    benefitsValues: salesArguments.benefitsValues || {},
-    urgencyArgs: salesArguments.urgencyArgs || [],
-    urgencyValues: salesArguments.urgencyValues || {},
-    autoCheckoutLink: salesArguments.autoCheckoutLink ?? followUpConfig.autoCheckoutLink ?? true,
-    offerDiscount: salesArguments.offerDiscount ?? followUpConfig.offerDiscount ?? true,
-    useUrgency: salesArguments.useUrgency ?? followUpConfig.useUrgency ?? true,
-  };
+const SALES_ARGUMENTS_ARRAY_FIELDS = [
+  'socialProof',
+  'guarantee',
+  'benefits',
+  'urgencyArgs',
+] as const;
+
+const SALES_ARGUMENTS_OBJECT_FIELDS = [
+  'socialProofValues',
+  'guaranteeValues',
+  'benefitsValues',
+  'urgencyValues',
+] as const;
+
+const SALES_ARGUMENTS_BOOLEAN_FALLBACK_FIELDS = [
+  'autoCheckoutLink',
+  'offerDiscount',
+  'useUrgency',
+] as const;
+
+function coerceObject(value: unknown): LooseObject {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as LooseObject) : {};
+}
+
+function flattenSalesArguments(
+  salesArguments: LooseObject,
+  followUpConfig: LooseObject,
+): LooseObject {
+  const result: LooseObject = {};
+  for (const field of SALES_ARGUMENTS_ARRAY_FIELDS) {
+    result[field] = coerceArray(salesArguments[field]);
+  }
+  for (const field of SALES_ARGUMENTS_OBJECT_FIELDS) {
+    result[field] = coerceObject(salesArguments[field]);
+  }
+  for (const field of SALES_ARGUMENTS_BOOLEAN_FALLBACK_FIELDS) {
+    result[field] = pickFirstDefined(
+      { primary: salesArguments[field], secondary: followUpConfig[field] },
+      ['primary', 'secondary'],
+      true,
+    );
+  }
+  return result;
 }
 
 function flattenUpsellDownsell(upsellConfig: LooseObject, downsellConfig: LooseObject) {

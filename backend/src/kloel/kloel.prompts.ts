@@ -368,6 +368,55 @@ CONVITE CERTO:
 - Sempre explique o benefício concreto do cadastro.
 - Exemplo de tom: "Consigo te ajudar com isso agora. Se você criar sua conta, eu já te levo direto para a parte útil e a gente conecta o WhatsApp sem enrolação."`;
 
+type ObjectionEntry = {
+  id?: string;
+  label?: string;
+  response?: string;
+  enabled?: boolean;
+};
+
+function isObjectionEntry(value: unknown): value is ObjectionEntry {
+  return typeof value === 'object' && value !== null;
+}
+
+const TONE_DESCRIPTIONS: Record<string, string> = {
+  CONSULTIVE: 'Consultivo — ajude a decidir com perguntas inteligentes',
+  AGGRESSIVE: 'Agressivo — conduza com energia e CTA firme',
+  DIRECT: 'Direto — vá ao ponto, sem rodeios',
+  FRIENDLY: 'Amigável — conversa leve, acolhedora e natural',
+  EMPATHETIC: 'Empático — valide a dor antes de vender',
+  EDUCATIVE: 'Educativo — ensine antes de oferecer',
+  URGENT: 'Urgente — use escassez e tempo',
+  TECHNICAL: 'Técnico — detalhe mecanismo, prova e especificação',
+  CASUAL: 'Casual — fale como conversa cotidiana, sem formalidade',
+  AUTO: 'Automático — adapte-se ao tom do cliente',
+};
+
+function formatJsonSection(label: string, value: unknown): string | null {
+  if (!value) return null;
+  return `${label}: ${JSON.stringify(value)}`;
+}
+
+function formatObjectionsSection(objections: unknown): string | null {
+  if (!Array.isArray(objections)) return null;
+  const active = objections.filter(isObjectionEntry).filter((o) => o.enabled !== false);
+  if (!active.length) return null;
+  const lines = active.map(
+    (o) => `- "${o.label || o.id}": Responda com estratégia "${o.response || 'valor e benefício'}"`,
+  );
+  return `OBJEÇÕES QUE VOCÊ SABE RESPONDER (${active.length}):\n${lines.join('\n')}`;
+}
+
+function formatToneSection(tone: unknown): string | null {
+  if (typeof tone !== 'string' || !tone) return null;
+  return `TOM: ${TONE_DESCRIPTIONS[tone] || tone}`;
+}
+
+function formatNumericSection(label: string, value: unknown): string | null {
+  if (!value || typeof value !== 'number') return null;
+  return label.replace('{value}', String(value));
+}
+
 /**
  * Builds a natural-language prompt section from ProductAIConfig data.
  * This is the "Marketing Artificial" secret weapon — it teaches the AI
@@ -381,81 +430,20 @@ export function buildProductAIConfigPrompt(
     [key: string]: unknown;
   } & Record<string, string | number | boolean | undefined | unknown>,
 ): string {
-  const parts: string[] = [];
+  const sections: Array<string | null> = [
+    formatJsonSection('PERFIL DO CLIENTE IDEAL', config.customerProfile),
+    formatJsonSection('POSICIONAMENTO', config.positioning),
+    formatObjectionsSection(config.objections),
+    formatJsonSection('ARGUMENTOS DE VENDA', config.salesArguments),
+    formatJsonSection('UPSELL', config.upsellConfig),
+    formatJsonSection('DOWNSELL', config.downsellConfig),
+    formatToneSection(config.tone),
+    formatNumericSection('INSISTÊNCIA: nível {value}/5', config.persistenceLevel),
+    formatNumericSection('LIMITE: máximo {value} mensagens por conversa', config.messageLimit),
+    formatJsonSection('INFO TÉCNICA DO PRODUTO', config.technicalInfo),
+  ];
 
-  if (config.customerProfile) {
-    const cp = config.customerProfile;
-    parts.push(`PERFIL DO CLIENTE IDEAL: ${JSON.stringify(cp)}`);
-  }
-
-  if (config.positioning) {
-    const pos = config.positioning;
-    parts.push(`POSICIONAMENTO: ${JSON.stringify(pos)}`);
-  }
-
-  if (config.objections && Array.isArray(config.objections)) {
-    type ObjectionEntry = {
-      id?: string;
-      label?: string;
-      response?: string;
-      enabled?: boolean;
-    };
-    const isObjectionEntry = (value: unknown): value is ObjectionEntry =>
-      typeof value === 'object' && value !== null;
-    const active = config.objections.filter(isObjectionEntry).filter((o) => o.enabled !== false);
-    if (active.length) {
-      parts.push(
-        `OBJEÇÕES QUE VOCÊ SABE RESPONDER (${active.length}):\n${active
-          .map(
-            (o) =>
-              `- "${o.label || o.id}": Responda com estratégia "${o.response || 'valor e benefício'}"`,
-          )
-          .join('\n')}`,
-      );
-    }
-  }
-
-  if (config.salesArguments) {
-    parts.push(`ARGUMENTOS DE VENDA: ${JSON.stringify(config.salesArguments)}`);
-  }
-
-  if (config.upsellConfig) {
-    parts.push(`UPSELL: ${JSON.stringify(config.upsellConfig)}`);
-  }
-
-  if (config.downsellConfig) {
-    parts.push(`DOWNSELL: ${JSON.stringify(config.downsellConfig)}`);
-  }
-
-  if (config.tone) {
-    const toneMap: Record<string, string> = {
-      CONSULTIVE: 'Consultivo — ajude a decidir com perguntas inteligentes',
-      AGGRESSIVE: 'Agressivo — conduza com energia e CTA firme',
-      DIRECT: 'Direto — vá ao ponto, sem rodeios',
-      FRIENDLY: 'Amigável — conversa leve, acolhedora e natural',
-      EMPATHETIC: 'Empático — valide a dor antes de vender',
-      EDUCATIVE: 'Educativo — ensine antes de oferecer',
-      URGENT: 'Urgente — use escassez e tempo',
-      TECHNICAL: 'Técnico — detalhe mecanismo, prova e especificação',
-      CASUAL: 'Casual — fale como conversa cotidiana, sem formalidade',
-      AUTO: 'Automático — adapte-se ao tom do cliente',
-    };
-    parts.push(`TOM: ${toneMap[config.tone] || config.tone}`);
-  }
-
-  if (config.persistenceLevel) {
-    parts.push(`INSISTÊNCIA: nível ${config.persistenceLevel}/5`);
-  }
-
-  if (config.messageLimit) {
-    parts.push(`LIMITE: máximo ${config.messageLimit} mensagens por conversa`);
-  }
-
-  if (config.technicalInfo) {
-    parts.push(`INFO TÉCNICA DO PRODUTO: ${JSON.stringify(config.technicalInfo)}`);
-  }
-
-  return parts.join('\n');
+  return sections.filter((part): part is string => part !== null).join('\n');
 }
 
 export function buildKloelLeadPrompt(params: {
