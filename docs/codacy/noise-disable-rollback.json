@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-04-19T01:09:55.354Z",
-  "newStandardId": 151881,
-  "newStandardName": "kloel-convergence-2026-04-19T01-06-56",
+  "timestamp": "2026-04-19T01:42:14.085Z",
+  "newStandardId": 151882,
+  "newStandardName": "kloel-convergence-2026-04-19T01-38-57",
   "oldStandardId": 151337,
   "oldStandardName": "Default coding standard",
   "appliedNoisePatterns": [
@@ -62,7 +62,11 @@
     "Semgrep_rules_lgpl_javascript_ssrf_rule-node-ssrf",
     "ESLint8_compat_compat",
     "ESLint8_import_no-unresolved",
-    "ESLint8_n_no-missing-import"
+    "ESLint8_n_no-missing-import",
+    "ESLint8_es-x_no-array-from",
+    "ESLint8_es-x_no-array-prototype-map",
+    "ESLint8_es-x_no-number-isfinite",
+    "ESLint8_@lwc_lwc_no-async-operation"
   ],
   "rollback": {
     "description": "To roll back: re-link 151337 to the repo and unlink the new standard.",
@@ -72,7 +76,7 @@
       "  -d '{\"link\":[\"whatsapp_saas\"],\"unlink\":[]}'",
       "",
       "curl -X PATCH -H \"api-token: $CODACY_ACCOUNT_TOKEN\" -H \"Content-Type: application/json\" \\",
-      "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151881/repositories\" \\",
+      "  \"https://api.codacy.com/api/v3/organizations/gh/danielgonzagat/coding-standards/151882/repositories\" \\",
       "  -d '{\"link\":[],\"unlink\":[\"whatsapp_saas\"]}'"
     ]
   }

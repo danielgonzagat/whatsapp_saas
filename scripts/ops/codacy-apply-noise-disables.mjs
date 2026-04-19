@@ -360,6 +360,26 @@ const NOISE_PATTERNS = [
     reason:
       'WRONG_RULE — duplicate of import_no-unresolved from eslint-plugin-n. Same monorepo path-alias resolution issue: Codacy scans each package in isolation without workspace context.',
   },
+  // ── More ES5-era polyfill rules revealed in later scans ──
+  {
+    id: 'ESLint8_es-x_no-array-from',
+    reason:
+      'WRONG_RULE — ES5 rule forbidding `Array.from`. Standard ES2015+ API, idiomatic for converting iterables.',
+  },
+  {
+    id: 'ESLint8_es-x_no-array-prototype-map',
+    reason:
+      'WRONG_RULE — ES5 rule forbidding `Array.prototype.map`. `map` is ES5 (year 2009); used pervasively.',
+  },
+  {
+    id: 'ESLint8_es-x_no-number-isfinite',
+    reason: 'WRONG_RULE — ES5 rule forbidding `Number.isFinite`. Standard ES2015+ API.',
+  },
+  // ── Salesforce LWC rules in a Next.js + NestJS repo ──
+  {
+    id: 'ESLint8_@lwc_lwc_no-async-operation',
+    reason: 'WRONG_RULE — Salesforce Lightning Web Components plugin. Not applicable.',
+  },
 ];
 
 // -------------------- Env --------------------
