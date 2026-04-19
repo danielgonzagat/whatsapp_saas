@@ -2839,6 +2839,7 @@ export default function ProductNerveCenter({
                           }}
                         >
                           {product.coverImage ? (
+                            // biome-ignore lint/correctness/useImageSize: product cover URL is dynamic (merchant-uploaded); size is enforced by the parent container
                             <img
                               src={product.coverImage}
                               alt=""

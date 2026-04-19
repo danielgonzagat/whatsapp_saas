@@ -55,7 +55,11 @@ function OnboardingChatContent() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [status, setStatus] = useState<any>(null);
+  const [status, setStatus] = useState<{
+    messagesCount?: number;
+    completed?: boolean;
+    [key: string]: unknown;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -245,10 +249,10 @@ function OnboardingChatContent() {
             <p className="text-base text-gray-400">Configuração Inteligente</p>
           </div>
           <div className="ml-auto flex items-center gap-4">
-            {status?.messagesCount > 0 && (
+            {(status?.messagesCount ?? 0) > 0 && (
               <div className="flex items-center gap-2 text-base text-gray-400">
                 <MessageSquare className="w-4 h-4" aria-hidden="true" />
-                {status.messagesCount} mensagens
+                {status?.messagesCount} mensagens
               </div>
             )}
             {!isAuthenticated && (

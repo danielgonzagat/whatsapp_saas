@@ -184,8 +184,9 @@ export function AccountSettingsSection() {
       }
 
       setFeedback('Configurações da conta salvas com sucesso.');
-    } catch (err: any) {
-      setError(err?.message || 'Falha ao salvar as configurações da conta.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(message || 'Falha ao salvar as configurações da conta.');
     } finally {
       setSavingAccount(false);
     }

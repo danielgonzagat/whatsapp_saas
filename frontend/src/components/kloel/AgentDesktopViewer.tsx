@@ -121,8 +121,9 @@ export function AgentDesktopViewer({
       }
 
       await refreshStatus(resolvedWorkspaceId);
-    } catch (nextError: any) {
-      setError(nextError?.message || 'Falha ao iniciar a conexao oficial com a Meta.');
+    } catch (nextError: unknown) {
+      const message = nextError instanceof Error ? nextError.message : undefined;
+      setError(message || 'Falha ao iniciar a conexao oficial com a Meta.');
     } finally {
       setWorking(false);
     }

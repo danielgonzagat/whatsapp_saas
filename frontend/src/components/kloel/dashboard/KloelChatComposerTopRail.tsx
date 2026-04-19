@@ -255,6 +255,8 @@ export function ComposerTopRail({
             <img
               src={linkedProduct.imageUrl}
               alt=""
+              width={36}
+              height={36}
               style={{
                 width: 36,
                 height: 36,

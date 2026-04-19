@@ -244,7 +244,9 @@ function CustomSizePanel({
   customH: string;
   setCustomW: (v: string) => void;
   setCustomH: (v: string) => void;
-  openEditor: (fmt: any) => void;
+  openEditor: (
+    fmt: FormatItem | { l: string; w: number; h: number; c: [string, string]; m: string },
+  ) => void;
 }) {
   const fid = useId();
   return (

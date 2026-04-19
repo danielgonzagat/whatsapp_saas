@@ -74,10 +74,13 @@ export default function CanvasInicio() {
   const handleAiSubmit = async () => {
     if (!ai.trim()) return;
     try {
-      const res: any = await apiFetch('/canvas/generate', {
-        method: 'POST',
-        body: { prompt: ai, width: 1080, height: 1080 },
-      });
+      const res = await apiFetch<{ imageUrl?: string; data?: { imageUrl?: string } }>(
+        '/canvas/generate',
+        {
+          method: 'POST',
+          body: { prompt: ai, width: 1080, height: 1080 },
+        },
+      );
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
       if (res?.data?.imageUrl) {
         router.push(

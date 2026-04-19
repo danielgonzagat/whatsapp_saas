@@ -259,9 +259,10 @@ export function MessageBubble({
 
               {!isUser && quickActions.length > 0 && onQuickAction ? (
                 <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {quickActions.map((action: any) => {
-                    const actionId = String(action?.id || '');
-                    const label = String(action?.label || actionId);
+                  {quickActions.map((action: unknown) => {
+                    const actionObj = (action ?? {}) as { id?: unknown; label?: unknown };
+                    const actionId = String(actionObj.id || '');
+                    const label = String(actionObj.label || actionId);
                     const isPending = pendingActionId === actionId;
 
                     return (

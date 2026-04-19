@@ -1528,6 +1528,7 @@ export function HomeView() {
                         }}
                       >
                         {conversation.avatarUrl ? (
+                          // biome-ignore lint/correctness/useImageSize: avatar URL is dynamic (user-supplied) and rendered at container-driven 100% size
                           <img
                             src={conversation.avatarUrl}
                             alt={conversation.contactName}

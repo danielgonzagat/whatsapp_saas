@@ -561,14 +561,14 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           const res = await loadKloelThreadMessages(String(convId));
           if (res.length > 0) {
             setMessages(
-              res.map((m: any) => ({
+              res.map((m) => ({
                 id: m.id,
                 role: m.role,
                 content: m.content,
                 displayedContent: m.content,
                 isThinking: false,
                 isTyping: false,
-                timestamp: new Date(m.createdAt),
+                timestamp: new Date(m.createdAt ?? Date.now()),
               })),
             );
           }
