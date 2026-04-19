@@ -33,7 +33,7 @@ import { KloelMushroomVisual } from './KloelBrand';
 import { AuthModal } from './auth/auth-modal';
 import { useAuth } from './auth/auth-provider';
 import { AUTH_ERROR_MESSAGES, SEED_PRODUCT_KNOWLEDGE_PROMPT } from './chat-container.data';
-import { parseGuestStreamLine } from './chat-container.helpers';
+import { applyAgentStatsEvent, parseGuestStreamLine } from './chat-container.helpers';
 import { FooterMinimal } from './footer-minimal';
 import { HeaderMinimal } from './header-minimal';
 import { InputComposer } from './input-composer';
@@ -863,45 +863,7 @@ export function ChatContainer({
   }, []);
 
   const updateAgentStats = useCallback((event: AgentStreamEvent) => {
-    setAgentStats((prev) => {
-      const next = { ...prev };
-
-      if (event.type === 'contact') {
-        next.messagesSent += 1;
-        next.actionsExecuted += 1;
-        if (typeof event.meta?.remaining === 'number') {
-          next.activeConversations = event.meta.remaining;
-        }
-      }
-
-      if (event.type === 'sale') {
-        next.leadsQualified += 1;
-        next.actionsExecuted += 1;
-      }
-
-      if (event.type === 'action' || event.type === 'proof' || event.type === 'account') {
-        next.actionsExecuted += 1;
-      }
-
-      if (event.type === 'backlog' || event.type === 'prompt') {
-        if (typeof event.meta?.pendingConversations === 'number') {
-          next.activeConversations = event.meta.pendingConversations;
-        }
-        if (typeof event.meta?.pendingMessages === 'number') {
-          next.messagesReceived = Math.max(next.messagesReceived, event.meta.pendingMessages);
-        }
-      }
-
-      if (event.type === 'status' && typeof event.meta?.importedMessages === 'number') {
-        next.messagesReceived = Math.max(next.messagesReceived, event.meta.importedMessages);
-      }
-
-      if (event.type === 'summary') {
-        next.activeConversations = 0;
-      }
-
-      return next;
-    });
+    setAgentStats((prev) => applyAgentStatsEvent(prev, event));
   }, []);
 
   const handleAgentEvent = useCallback(

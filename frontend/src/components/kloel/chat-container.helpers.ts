@@ -9,6 +9,62 @@ export interface GuestStreamLineUpdate {
   errorContent?: string;
 }
 
+interface AgentStatsShape {
+  messagesSent: number;
+  messagesReceived: number;
+  leadsQualified: number;
+  actionsExecuted: number;
+  activeConversations: number;
+}
+
+interface AgentStreamEventLite {
+  type?: string;
+  meta?: {
+    remaining?: number;
+    pendingConversations?: number;
+    pendingMessages?: number;
+    importedMessages?: number;
+  };
+}
+
+function applyContactEvent(next: AgentStatsShape, event: AgentStreamEventLite): void {
+  next.messagesSent += 1;
+  next.actionsExecuted += 1;
+  if (typeof event.meta?.remaining === 'number') {
+    next.activeConversations = event.meta.remaining;
+  }
+}
+
+function applyBacklogEvent(next: AgentStatsShape, event: AgentStreamEventLite): void {
+  if (typeof event.meta?.pendingConversations === 'number') {
+    next.activeConversations = event.meta.pendingConversations;
+  }
+  if (typeof event.meta?.pendingMessages === 'number') {
+    next.messagesReceived = Math.max(next.messagesReceived, event.meta.pendingMessages);
+  }
+}
+
+export function applyAgentStatsEvent<T extends AgentStatsShape>(
+  prev: T,
+  event: AgentStreamEventLite,
+): T {
+  const next = { ...prev };
+  if (event.type === 'contact') applyContactEvent(next, event);
+  if (event.type === 'sale') {
+    next.leadsQualified += 1;
+    next.actionsExecuted += 1;
+  }
+  if (event.type === 'action' || event.type === 'proof' || event.type === 'account') {
+    next.actionsExecuted += 1;
+  }
+  if (event.type === 'backlog' || event.type === 'prompt') applyBacklogEvent(next, event);
+  if (event.type === 'status' && typeof event.meta?.importedMessages === 'number') {
+    next.messagesReceived = Math.max(next.messagesReceived, event.meta.importedMessages);
+  }
+  if (event.type === 'summary') next.activeConversations = 0;
+  return next;
+}
+
 export function parseGuestStreamLine(line: string): GuestStreamLineUpdate | null {
   if (!line.startsWith('data: ')) return null;
   const data = line.slice(6);
