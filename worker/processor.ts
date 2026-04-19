@@ -337,6 +337,39 @@ async function checkIdempotentCompletion(
   return { ok: true, skipped: true, reason: 'already_completed' };
 }
 
+async function runSubscriptionAndRateGuards(
+  jobId: Job['id'],
+  workspaceId: string | undefined,
+  subscriptionChecked: boolean,
+): Promise<SkippedFlowResult | null> {
+  if (!subscriptionChecked && workspaceId) {
+    const blocked = await checkFlowSubscription(jobId, workspaceId);
+    if (blocked) return blocked;
+  }
+
+  if (workspaceId) {
+    const blocked = await checkFlowRateLimit(jobId, workspaceId);
+    if (blocked) return blocked;
+  }
+  return null;
+}
+
+async function executeResolvedFlow(
+  job: Job,
+  flowDef: Awaited<ReturnType<typeof resolveFlowDefinition>>,
+  user: string,
+  flowId: string | undefined,
+  initialVars: Parameters<typeof engine.startFlow>[2],
+  executionId: string | undefined,
+): Promise<void> {
+  if (flowDef) {
+    await engine.startFlow(user, flowDef, initialVars, executionId);
+    log.info('flow_completed', { jobId: job.id, flowId, user });
+  } else {
+    log.error('flow_not_found', { jobId: job.id, flowId });
+  }
+}
+
 async function handleRunFlow(job: Job) {
   log.info('flow_start', { jobId: job.id, queue: job.queueName });
 
@@ -363,24 +396,10 @@ async function handleRunFlow(job: Job) {
     workspaceId = flowDef.workspaceId;
   }
 
-  // If no subscription check yet and workspaceId known, check now
-  if (!subscriptionChecked && workspaceId) {
-    const blocked = await checkFlowSubscription(job.id, workspaceId);
-    if (blocked) return blocked;
-  }
+  const guarded = await runSubscriptionAndRateGuards(job.id, workspaceId, subscriptionChecked);
+  if (guarded) return guarded;
 
-  // Rate-limit flow runs per plan
-  if (workspaceId) {
-    const blocked = await checkFlowRateLimit(job.id, workspaceId);
-    if (blocked) return blocked;
-  }
-
-  if (flowDef) {
-    await engine.startFlow(user, flowDef, initialVars, executionId);
-    log.info('flow_completed', { jobId: job.id, flowId, user });
-  } else {
-    log.error('flow_not_found', { jobId: job.id, flowId });
-  }
+  await executeResolvedFlow(job, flowDef, user, flowId, initialVars, executionId);
 
   return { ok: true };
 }

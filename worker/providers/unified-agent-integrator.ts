@@ -142,6 +142,18 @@ function extractAutopilotSettings(
   ) as Record<string, unknown> | null;
 }
 
+const AGENT_MODE_DISABLES = new Set(['fallback_only', 'local_only']);
+const AGENT_MODE_ENABLES = new Set(['primary', 'unified_primary']);
+
+function resolveAgentModeOverride(autopilot: Record<string, unknown> | null): boolean | null {
+  const mode = String(autopilot?.agentMode || '')
+    .trim()
+    .toLowerCase();
+  if (AGENT_MODE_DISABLES.has(mode)) return false;
+  if (AGENT_MODE_ENABLES.has(mode)) return true;
+  return null;
+}
+
 /**
  * Checks explicit opt-in/opt-out hints from the autopilot settings.
  * Returns `true`/`false` when settings force a decision, `null` when undecided.
@@ -151,14 +163,7 @@ function resolveUnifiedAgentSettingOverride(
 ): boolean | null {
   if (autopilot?.useUnifiedAgent === false) return false;
   if (autopilot?.useUnifiedAgent === true) return true;
-
-  const mode = String(autopilot?.agentMode || '')
-    .trim()
-    .toLowerCase();
-  if (mode === 'fallback_only' || mode === 'local_only') return false;
-  if (mode === 'primary' || mode === 'unified_primary') return true;
-
-  return null;
+  return resolveAgentModeOverride(autopilot);
 }
 
 /**

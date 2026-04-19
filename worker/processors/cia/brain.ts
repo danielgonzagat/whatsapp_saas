@@ -415,10 +415,13 @@ function countBetterExecutableActions(
   return universe.slice(0, limit).filter((item) => item.executable).length;
 }
 
-function toDecision(
+function buildDecisionSelection(
   candidate: CiaCandidate,
-  strategy?: CiaStrategyHints | null,
-): CiaActionDecision {
+  strategy: CiaStrategyHints | null | undefined,
+): {
+  selectedDecision: CiaActionDecision;
+  actionUniverse: ConversationActionCandidate[];
+} {
   const options = buildOptions(candidate).sort((left, right) => {
     return actionUtility(right, strategy) - actionUtility(left, strategy);
   });
@@ -426,6 +429,13 @@ function toDecision(
   const selectedDecision = applyGovernor(selected, candidate);
   const bestUtility = actionUtility(selected, strategy);
   const actionUniverse = buildActionUniverse(options, candidate, strategy, bestUtility);
+  return { selectedDecision, actionUniverse };
+}
+
+function decorateDecisionWithUniverse(
+  selectedDecision: CiaActionDecision,
+  actionUniverse: ConversationActionCandidate[],
+): CiaActionDecision {
   const selectedAction = actionUniverse[0];
   const nextBestAction = actionUniverse[1];
   const betterExecutableActionCount = countBetterExecutableActions(actionUniverse, selectedAction);
@@ -440,6 +450,14 @@ function toDecision(
     nextBestActionUtility: nextBestAction?.utility || null,
     conversationActionUniverse: actionUniverse,
   };
+}
+
+function toDecision(
+  candidate: CiaCandidate,
+  strategy?: CiaStrategyHints | null,
+): CiaActionDecision {
+  const { selectedDecision, actionUniverse } = buildDecisionSelection(candidate, strategy);
+  return decorateDecisionWithUniverse(selectedDecision, actionUniverse);
 }
 
 export function evaluateCiaCandidate(
@@ -467,27 +485,19 @@ function takeBest(
   return null;
 }
 
+const ACTION_LABELS: Partial<Record<CiaActionType, string>> = {
+  RESPOND: 'resposta',
+  ASK_CLARIFYING: 'pergunta de qualificação',
+  SOCIAL_PROOF: 'prova social',
+  OFFER: 'oferta',
+  FOLLOWUP_SOFT: 'follow-up leve',
+  FOLLOWUP_URGENT: 'follow-up urgente',
+  PAYMENT_RECOVERY: 'recuperação de pagamento',
+  ESCALATE_HUMAN: 'escalada humana',
+};
+
 function actionLabel(action: CiaActionType) {
-  switch (action) {
-    case 'RESPOND':
-      return 'resposta';
-    case 'ASK_CLARIFYING':
-      return 'pergunta de qualificação';
-    case 'SOCIAL_PROOF':
-      return 'prova social';
-    case 'OFFER':
-      return 'oferta';
-    case 'FOLLOWUP_SOFT':
-      return 'follow-up leve';
-    case 'FOLLOWUP_URGENT':
-      return 'follow-up urgente';
-    case 'PAYMENT_RECOVERY':
-      return 'recuperação de pagamento';
-    case 'ESCALATE_HUMAN':
-      return 'escalada humana';
-    default:
-      return 'ação';
-  }
+  return ACTION_LABELS[action] || 'ação';
 }
 
 function resolveMaxActions(

@@ -47,28 +47,38 @@ function normalizeIssueEntry(issueType, file, entry) {
   };
 }
 
+function pushEntriesForType(issueType, file, entries, issues) {
+  for (const entry of entries) {
+    issues.push(normalizeIssueEntry(issueType, file, entry));
+  }
+}
+
+function normalizeFileIssues(issueFile, issues) {
+  const file = typeof issueFile?.file === 'string' ? issueFile.file : '';
+  for (const issueType of ISSUE_TYPES) {
+    const entries = Array.isArray(issueFile?.[issueType]) ? issueFile[issueType] : [];
+    pushEntriesForType(issueType, file, entries, issues);
+  }
+}
+
+function normalizeTopLevelIssues(payload, issues) {
+  for (const [issueType, issueValue] of Object.entries(payload)) {
+    if (!ISSUE_TYPES.includes(issueType) || !Array.isArray(issueValue)) continue;
+    pushEntriesForType(issueType, '', issueValue, issues);
+  }
+}
+
 function normalizeIssues(payload, issues) {
   if (!payload || typeof payload !== 'object') return;
 
   if (Array.isArray(payload.issues)) {
     for (const issueFile of payload.issues) {
-      const file = typeof issueFile?.file === 'string' ? issueFile.file : '';
-      for (const issueType of ISSUE_TYPES) {
-        const entries = Array.isArray(issueFile?.[issueType]) ? issueFile[issueType] : [];
-        for (const entry of entries) {
-          issues.push(normalizeIssueEntry(issueType, file, entry));
-        }
-      }
+      normalizeFileIssues(issueFile, issues);
     }
     return;
   }
 
-  for (const [issueType, issueValue] of Object.entries(payload)) {
-    if (!ISSUE_TYPES.includes(issueType) || !Array.isArray(issueValue)) continue;
-    for (const entry of issueValue) {
-      issues.push(normalizeIssueEntry(issueType, '', entry));
-    }
-  }
+  normalizeTopLevelIssues(payload, issues);
 }
 
 export function collectKnipIssues() {

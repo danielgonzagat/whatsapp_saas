@@ -234,42 +234,45 @@ function useVariableShippingCalculation(params: VariableShippingParams): void {
   ]);
 }
 
+type StringSetter = (value: string) => void;
+type BooleanSetter = (value: boolean) => void;
+
 type CouponPopupTimerParams = {
   eligible: boolean;
   couponApplied: boolean;
   couponPopupHandled: boolean;
   popupCouponCode: string;
   delay: number | undefined;
-  setCouponCode: (v: string) => void;
-  setCouponError: (v: string) => void;
-  setShowCouponPopup: (v: boolean) => void;
+  setCouponCode: StringSetter;
+  setCouponError: StringSetter;
+  setShowCouponPopup: BooleanSetter;
 };
 
+function resolveCouponPopupDelay(delay: number | undefined): number {
+  return Math.max(600, Number(delay || 1800));
+}
+
 function useCouponPopupTimer(params: CouponPopupTimerParams): void {
-  const {
-    eligible,
-    couponApplied,
-    couponPopupHandled,
-    popupCouponCode,
-    delay,
-    setCouponCode,
-    setCouponError,
-    setShowCouponPopup,
-  } = params;
+  const eligible = params.eligible;
+  const couponApplied = params.couponApplied;
+  const couponPopupHandled = params.couponPopupHandled;
+  const popupCouponCode = params.popupCouponCode;
+  const delay = params.delay;
+  const setCouponCode = params.setCouponCode;
+  const setCouponError = params.setCouponError;
+  const setShowCouponPopup = params.setShowCouponPopup;
 
-  useEffect(() => {
-    if (!eligible || couponApplied || couponPopupHandled) return;
-    const timer = window.setTimeout(
-      () => {
-        setCouponCode(popupCouponCode);
-        setCouponError('');
-        setShowCouponPopup(true);
-      },
-      Math.max(600, Number(delay || 1800)),
-    );
-
+  const scheduleCouponPopup = () => {
+    if (!eligible || couponApplied || couponPopupHandled) return undefined;
+    const timer = window.setTimeout(() => {
+      setCouponCode(popupCouponCode);
+      setCouponError('');
+      setShowCouponPopup(true);
+    }, resolveCouponPopupDelay(delay));
     return () => window.clearTimeout(timer);
-  }, [
+  };
+
+  useEffect(scheduleCouponPopup, [
     delay,
     couponApplied,
     eligible,
@@ -281,30 +284,42 @@ function useCouponPopupTimer(params: CouponPopupTimerParams): void {
   ]);
 }
 
+const PAYMENT_UNAVAILABLE_MESSAGES = {
+  card: 'Cartão indisponível neste checkout.',
+  pix: 'Pix indisponível neste checkout.',
+  boleto: 'Boleto indisponível neste checkout.',
+} as const;
+
+const PAYMENT_SUPPORT_KEYS = {
+  card: 'supportsCard',
+  pix: 'supportsPix',
+  boleto: 'supportsBoleto',
+} as const;
+
+const PREFLIGHT_RULES: Array<(ctx: PreflightContext) => PreflightOutcome> = [
+  (ctx) =>
+    ctx.validateStep1() ? null : { error: 'Revise os dados pessoais antes de finalizar.', step: 1 },
+  (ctx) =>
+    ctx.validateStep2() ? null : { error: 'Revise o endereço antes de finalizar.', step: 2 },
+  (ctx) =>
+    ctx.workspaceId && ctx.planId
+      ? null
+      : { error: 'Checkout sem vínculo com workspace ou plano.' },
+  (ctx) => (ctx.checkoutUnavailableReason ? { error: ctx.checkoutUnavailableReason } : null),
+  (ctx) =>
+    ctx[PAYMENT_SUPPORT_KEYS[ctx.payMethod]]
+      ? null
+      : { error: PAYMENT_UNAVAILABLE_MESSAGES[ctx.payMethod] },
+  (ctx) =>
+    ctx.payMethod === 'boleto' && ctx.cpf.replace(D_RE, '').length < 11
+      ? { error: 'CPF válido é obrigatório para gerar boleto.' }
+      : null,
+];
+
 function preflightFinalizeOrder(ctx: PreflightContext): PreflightOutcome {
-  if (!ctx.validateStep1()) {
-    return { error: 'Revise os dados pessoais antes de finalizar.', step: 1 };
-  }
-  if (!ctx.validateStep2()) {
-    return { error: 'Revise o endereço antes de finalizar.', step: 2 };
-  }
-  if (!ctx.workspaceId || !ctx.planId) {
-    return { error: 'Checkout sem vínculo com workspace ou plano.' };
-  }
-  if (ctx.checkoutUnavailableReason) {
-    return { error: ctx.checkoutUnavailableReason };
-  }
-  if (ctx.payMethod === 'card' && !ctx.supportsCard) {
-    return { error: 'Cartão indisponível neste checkout.' };
-  }
-  if (ctx.payMethod === 'pix' && !ctx.supportsPix) {
-    return { error: 'Pix indisponível neste checkout.' };
-  }
-  if (ctx.payMethod === 'boleto' && !ctx.supportsBoleto) {
-    return { error: 'Boleto indisponível neste checkout.' };
-  }
-  if (ctx.payMethod === 'boleto' && ctx.cpf.replace(D_RE, '').length < 11) {
-    return { error: 'CPF válido é obrigatório para gerar boleto.' };
+  for (const rule of PREFLIGHT_RULES) {
+    const outcome = rule(ctx);
+    if (outcome) return outcome;
   }
   return null;
 }
@@ -554,43 +569,82 @@ export function useCheckoutExperience({
     [mobileCanOpenStep1, mobileCanOpenStep2, step, validateStep1, validateStep2],
   );
 
+  const resolveCouponCodeForSubmission = useCallback(
+    (explicitCode?: string) => {
+      return String(explicitCode || couponCode || '')
+        .trim()
+        .toUpperCase();
+    },
+    [couponCode],
+  );
+
+  const handleCouponFailure = useCallback((message: string) => {
+    setCouponApplied(false);
+    setDiscount(0);
+    setCouponError(message);
+  }, []);
+
+  const handleCouponSuccess = useCallback(
+    (nextCode: string, result: Awaited<ReturnType<typeof validateCoupon>>) => {
+      setDiscount(Math.max(0, Math.round(Number(result.discountAmount || 0))));
+      setCouponApplied(true);
+      setCouponCode((result.code || nextCode).toUpperCase());
+      setCouponPopupHandled(true);
+      setShowCouponPopup(false);
+    },
+    [],
+  );
+
+  const validateCouponPrerequisites = useCallback(
+    (nextCode: string): string | null => {
+      if (!nextCode) return 'Digite um cupom.';
+      if (!workspaceId || !plan?.id) return 'Checkout sem contexto para validar cupom.';
+      return null;
+    },
+    [plan?.id, workspaceId],
+  );
+
+  const runCouponValidation = useCallback(
+    async (nextCode: string): Promise<boolean> => {
+      try {
+        const result = await validateCoupon(
+          workspaceId as string,
+          nextCode,
+          plan?.id as string,
+          subtotal,
+        );
+        if (!result.valid) {
+          handleCouponFailure(result.message || 'Cupom inválido ou expirado.');
+          return false;
+        }
+        handleCouponSuccess(nextCode, result);
+        return true;
+      } catch (error) {
+        handleCouponFailure(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
+        return false;
+      }
+    },
+    [handleCouponFailure, handleCouponSuccess, plan?.id, subtotal, workspaceId],
+  );
+
   const applyCoupon = useCallback(
     async (explicitCode?: string) => {
       setCouponError('');
       if (config?.enableCoupon === false) return false;
-      const nextCode = String(explicitCode || couponCode || '')
-        .trim()
-        .toUpperCase();
-      if (!nextCode) {
-        setCouponError('Digite um cupom.');
+      const nextCode = resolveCouponCodeForSubmission(explicitCode);
+      const prerequisiteError = validateCouponPrerequisites(nextCode);
+      if (prerequisiteError) {
+        setCouponError(prerequisiteError);
         return false;
       }
-      if (!workspaceId || !plan?.id) {
-        setCouponError('Checkout sem contexto para validar cupom.');
-        return false;
-      }
-      try {
-        const result = await validateCoupon(workspaceId, nextCode, plan.id, subtotal);
-        if (!result.valid) {
-          setCouponApplied(false);
-          setDiscount(0);
-          setCouponError(result.message || 'Cupom inválido ou expirado.');
-          return false;
-        }
-        setDiscount(Math.max(0, Math.round(Number(result.discountAmount || 0))));
-        setCouponApplied(true);
-        setCouponCode((result.code || nextCode).toUpperCase());
-        setCouponPopupHandled(true);
-        setShowCouponPopup(false);
-        return true;
-      } catch (error) {
-        setCouponApplied(false);
-        setDiscount(0);
-        setCouponError(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
-        return false;
-      }
+      return runCouponValidation(nextCode);
     },
-    [config?.enableCoupon, couponCode, plan?.id, subtotal, workspaceId],
+    [
+      config?.enableCoupon,
+      resolveCouponCodeForSubmission,
+      runCouponValidation,
+      validateCouponPrerequisites,
+    ],
   );
 
   const resolveSuccessRedirect = useCallback(
