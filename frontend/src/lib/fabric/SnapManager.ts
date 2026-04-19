@@ -60,20 +60,31 @@ export class SnapManager {
     this._snapVertical(target, bound.top + bound.height, ch);
   }
 
+  private _snapAxisToCenter(
+    target: FabricObject,
+    currentCenter: number,
+    otherCenter: number,
+    axis: 'x' | 'y',
+  ): void {
+    if (Math.abs(currentCenter - otherCenter) >= THRESHOLD) return;
+    const delta = otherCenter - currentCenter;
+    if (axis === 'x') {
+      target.left = (target.left ?? 0) + delta;
+      this._addVerticalLine(otherCenter);
+    } else {
+      target.top = (target.top ?? 0) + delta;
+      this._addHorizontalLine(otherCenter);
+    }
+  }
+
   private _snapToOtherObjects(target: FabricObject, cx: number, cy: number): void {
     const objects = this.canvas.getObjects().filter((o) => o !== target && !this._isGuideline(o));
     for (const obj of objects) {
       const ob = obj.getBoundingRect();
       const ocx = ob.left + ob.width / 2;
       const ocy = ob.top + ob.height / 2;
-      if (Math.abs(cx - ocx) < THRESHOLD) {
-        target.left = (target.left ?? 0) + (ocx - cx);
-        this._addVerticalLine(ocx);
-      }
-      if (Math.abs(cy - ocy) < THRESHOLD) {
-        target.top = (target.top ?? 0) + (ocy - cy);
-        this._addHorizontalLine(ocy);
-      }
+      this._snapAxisToCenter(target, cx, ocx, 'x');
+      this._snapAxisToCenter(target, cy, ocy, 'y');
     }
   }
 

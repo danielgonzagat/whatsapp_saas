@@ -70,21 +70,17 @@ export function parseKloelChatStreamLine(line: string): KloelChatStreamLineUpdat
  * Compute the per-character delay (in ms) for the HomeScreen typewriter
  * simulation. Preserves the original weighting table character-for-character.
  */
+const TYPING_DELAYS: Record<string, () => number> = {
+  '.': () => 150 + Math.random() * 100,
+  '!': () => 150 + Math.random() * 100,
+  '?': () => 150 + Math.random() * 100,
+  ',': () => 80 + Math.random() * 40,
+  '\n': () => 120 + Math.random() * 80,
+  ' ': () => 10 + Math.random() * 15,
+};
+
 export function typingSimulationDelay(char: string): number {
-  if (Math.random() < 0.08) {
-    return 2;
-  }
-  if (char === '.' || char === '!' || char === '?') {
-    return 150 + Math.random() * 100;
-  }
-  if (char === ',') {
-    return 80 + Math.random() * 40;
-  }
-  if (char === '\n') {
-    return 120 + Math.random() * 80;
-  }
-  if (char === ' ') {
-    return 10 + Math.random() * 15;
-  }
-  return 15 + Math.random() * 25;
+  if (Math.random() < 0.08) return 2;
+  const specific = TYPING_DELAYS[char];
+  return specific ? specific() : 15 + Math.random() * 25;
 }

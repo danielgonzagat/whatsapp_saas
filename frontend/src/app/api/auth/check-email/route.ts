@@ -37,39 +37,43 @@ function degradedCheckEmailResponse(message?: string) {
   );
 }
 
+function emailRequiredErrorResponse() {
+  return NextResponse.json({ exists: false }, { status: 200 });
+}
+
+function backendMisconfiguredResponse() {
+  return NextResponse.json(
+    { message: 'Servidor não configurado corretamente. Contate o suporte.' },
+    { status: 500 },
+  );
+}
+
+async function interpretCheckEmailResponse(response: Response) {
+  if (response.ok) {
+    const data = await response.json().catch(() => null);
+    return NextResponse.json({ exists: !!data?.exists }, { status: 200 });
+  }
+  const errorMessage = await readBackendMessage(response);
+  if (response.status >= 500) {
+    return degradedCheckEmailResponse(errorMessage);
+  }
+  return NextResponse.json({ message: errorMessage }, { status: response.status });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const email = url.searchParams.get('email') || '';
-
-    if (!email) {
-      return NextResponse.json({ exists: false }, { status: 200 });
-    }
+    if (!email) return emailRequiredErrorResponse();
 
     const backendUrl = getBackendUrl();
-    if (!backendUrl) {
-      return NextResponse.json(
-        { message: 'Servidor não configurado corretamente. Contate o suporte.' },
-        { status: 500 },
-      );
-    }
+    if (!backendUrl) return backendMisconfiguredResponse();
 
     const response = await fetch(
       `${backendUrl}/auth/check-email?email=${encodeURIComponent(email)}`,
       { method: 'GET' },
     );
-
-    if (response.ok) {
-      const data = await response.json().catch(() => null);
-      return NextResponse.json({ exists: !!data?.exists }, { status: 200 });
-    }
-
-    const errorMessage = await readBackendMessage(response);
-    if (response.status >= 500) {
-      return degradedCheckEmailResponse(errorMessage);
-    }
-
-    return NextResponse.json({ message: errorMessage }, { status: response.status });
+    return interpretCheckEmailResponse(response);
   } catch (error) {
     console.error('Check email (GET) error:', error);
     return degradedCheckEmailResponse();

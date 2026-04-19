@@ -251,17 +251,13 @@ export function isKnownAppPath(pathname: string): boolean {
   );
 }
 
+const STATIC_EXACT_PATHS = new Set<string>(['/favicon.ico', '/robots.txt', '/sitemap.xml']);
+const STATIC_PREFIX_PATHS = ['/_next', '/api', '/e2e', '/icon'];
+
 export function isStaticOrApiPath(pathname: string): boolean {
-  return (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/e2e') ||
-    pathname === '/favicon.ico' ||
-    pathname === '/robots.txt' ||
-    pathname === '/sitemap.xml' ||
-    pathname.startsWith('/icon') ||
-    STATIC_FILE_PATTERN.test(pathname)
-  );
+  if (STATIC_EXACT_PATHS.has(pathname)) return true;
+  if (STATIC_PREFIX_PATHS.some((prefix) => pathname.startsWith(prefix))) return true;
+  return STATIC_FILE_PATTERN.test(pathname);
 }
 
 export function isValidCheckoutCode(candidate: string): boolean {
