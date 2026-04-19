@@ -76,15 +76,20 @@ Alignment meetings aren't optional.
 
 ### Stage Definitions
 
-| Stage           | Entry Criteria                               | Exit Criteria                             | Owner             |
-| --------------- | -------------------------------------------- | ----------------------------------------- | ----------------- |
-| **Subscriber**  | Opts in to content (blog, newsletter)        | Provides company info or shows engagement | Marketing         |
-| **Lead**        | Identified contact with basic info           | Meets minimum fit criteria                | Marketing         |
-| **MQL**         | Passes fit + engagement threshold            | Sales accepts or rejects within SLA       | Marketing         |
-| **SQL**         | Sales accepts and qualifies via conversation | Opportunity created or recycled           | Sales (SDR/AE)    |
-| **Opportunity** | Budget, authority, need, timeline confirmed  | Closed-won or closed-lost                 | Sales (AE)        |
-| **Customer**    | Closed-won deal                              | Expands, renews, or churns                | CS / Account Mgmt |
-| **Evangelist**  | High NPS, referral activity, case study      | Ongoing program participation             | CS / Marketing    |
+- **Subscriber** (owner: Marketing). Entry: opts in to content (blog,
+  newsletter). Exit: provides company info or shows engagement.
+- **Lead** (owner: Marketing). Entry: identified contact with basic info.
+  Exit: meets minimum fit criteria.
+- **MQL** (owner: Marketing). Entry: passes fit + engagement threshold.
+  Exit: sales accepts or rejects within SLA.
+- **SQL** (owner: Sales — SDR/AE). Entry: sales accepts and qualifies via
+  conversation. Exit: opportunity created or recycled.
+- **Opportunity** (owner: Sales — AE). Entry: budget, authority, need,
+  timeline confirmed. Exit: closed-won or closed-lost.
+- **Customer** (owner: CS / Account Mgmt). Entry: closed-won deal. Exit:
+  expands, renews, or churns.
+- **Evangelist** (owner: CS / Marketing). Entry: high NPS, referral
+  activity, case study. Exit: ongoing program participation.
 
 ### MQL Definition
 
@@ -161,12 +166,14 @@ Define response times and document them:
 
 ### Routing Methods
 
-| Method              | How It Works                                        | Best For                              |
-| ------------------- | --------------------------------------------------- | ------------------------------------- |
-| **Round-robin**     | Distribute evenly across reps                       | Equal territories, similar deal sizes |
-| **Territory-based** | Assign by geography, vertical, or segment           | Regional teams, industry specialists  |
-| **Account-based**   | Named accounts go to named reps                     | ABM motions, strategic accounts       |
-| **Skill-based**     | Route by deal complexity, product line, or language | Diverse product lines, global teams   |
+- **Round-robin** — distribute evenly across reps. Best for equal
+  territories, similar deal sizes.
+- **Territory-based** — assign by geography, vertical, or segment. Best for
+  regional teams, industry specialists.
+- **Account-based** — named accounts go to named reps. Best for ABM
+  motions, strategic accounts.
+- **Skill-based** — route by deal complexity, product line, or language.
+  Best for diverse product lines, global teams.
 
 ### Routing Rules Essentials
 
@@ -197,15 +204,20 @@ SLA is missed.
 
 ### Pipeline Stages
 
-| Stage               | Required Fields                          | Exit Criteria                           |
-| ------------------- | ---------------------------------------- | --------------------------------------- |
-| **Qualified**       | Contact info, company, source, fit score | Discovery call scheduled                |
-| **Discovery**       | Pain points, current solution, timeline  | Needs confirmed, demo scheduled         |
-| **Demo/Evaluation** | Technical requirements, decision makers  | Positive evaluation, proposal requested |
-| **Proposal**        | Pricing, terms, stakeholder map          | Proposal delivered and reviewed         |
-| **Negotiation**     | Redlines, approval chain, close date     | Terms agreed, contract sent             |
-| **Closed Won**      | Signed contract, payment terms           | Handoff to CS complete                  |
-| **Closed Lost**     | Loss reason, competitor (if any)         | Post-mortem logged                      |
+- **Qualified** — required fields: contact info, company, source, fit
+  score. Exit: discovery call scheduled.
+- **Discovery** — required fields: pain points, current solution, timeline.
+  Exit: needs confirmed, demo scheduled.
+- **Demo / Evaluation** — required fields: technical requirements, decision
+  makers. Exit: positive evaluation, proposal requested.
+- **Proposal** — required fields: pricing, terms, stakeholder map. Exit:
+  proposal delivered and reviewed.
+- **Negotiation** — required fields: redlines, approval chain, close date.
+  Exit: terms agreed, contract sent.
+- **Closed Won** — required fields: signed contract, payment terms. Exit:
+  handoff to CS complete.
+- **Closed Lost** — required fields: loss reason, competitor (if any).
+  Exit: post-mortem logged.
 
 ### Stage Hygiene
 
@@ -326,16 +338,19 @@ quarterly.
 
 ### Key Metrics
 
-| Metric             | Formula / Definition                                   | Benchmark          |
-| ------------------ | ------------------------------------------------------ | ------------------ |
-| Lead-to-MQL rate   | MQLs / Total leads                                     | 5-15%              |
-| MQL-to-SQL rate    | SQLs / MQLs                                            | 30-50%             |
-| SQL-to-Opportunity | Opportunities / SQLs                                   | 50-70%             |
-| Pipeline velocity  | (# deals x avg deal size x win rate) / avg sales cycle | Varies by ACV      |
-| CAC                | Total sales + marketing spend / new customers          | LTV:CAC > 3:1      |
-| LTV:CAC ratio      | Customer lifetime value / CAC                          | 3:1 to 5:1 healthy |
-| Speed-to-lead      | Time from form fill to first rep contact               | < 5 minutes ideal  |
-| Win rate           | Closed-won / total opportunities                       | 20-30% (varies)    |
+- **Lead-to-MQL rate** — MQLs / total leads. Benchmark: 5-15%.
+- **MQL-to-SQL rate** — SQLs / MQLs. Benchmark: 30-50%.
+- **SQL-to-Opportunity** — opportunities / SQLs. Benchmark: 50-70%.
+- **Pipeline velocity** — (# deals x avg deal size x win rate) / avg sales
+  cycle. Benchmark: varies by ACV.
+- **CAC** — total sales + marketing spend / new customers. Benchmark:
+  LTV:CAC > 3:1.
+- **LTV:CAC ratio** — customer lifetime value / CAC. Benchmark: 3:1 to 5:1
+  is healthy.
+- **Speed-to-lead** — time from form fill to first rep contact. Benchmark:
+  < 5 minutes.
+- **Win rate** — closed-won / total opportunities. Benchmark: 20-30%
+  (varies).
 
 ### Dashboard Structure
 

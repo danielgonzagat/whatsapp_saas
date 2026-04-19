@@ -28,6 +28,9 @@ function makePrisma(
         }));
       },
     },
+    adminAuditLog: {
+      create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
+    },
   };
 }
 
@@ -44,12 +47,17 @@ describe('PlatformWalletReconcileService', () => {
       { direction: 'credit', bucket: 'AVAILABLE', amountInCents: BigInt(700) },
       { direction: 'debit', bucket: 'AVAILABLE', amountInCents: BigInt(200) },
     ]);
-    const svc = new PlatformWalletReconcileService(prisma as never);
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const svc = new PlatformWalletReconcileService(prisma as never, financialAlert as never);
     const report = await svc.reconcile('BRL');
     expect(report.healthy).toBe(true);
     expect(report.ledgerAvailableInCents).toBe(500);
     expect(report.walletAvailableInCents).toBe(500);
     expect(report.availableDriftInCents).toBe(0);
+    expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('reports drift when the materialised wallet disagrees with the ledger', async () => {
@@ -63,20 +71,58 @@ describe('PlatformWalletReconcileService', () => {
     const prisma = makePrisma(wallet, [
       { direction: 'credit', bucket: 'AVAILABLE', amountInCents: BigInt(500) },
     ]);
-    const svc = new PlatformWalletReconcileService(prisma as never);
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const svc = new PlatformWalletReconcileService(prisma as never, financialAlert as never);
     const report = await svc.reconcile('BRL');
     expect(report.healthy).toBe(false);
     expect(report.ledgerAvailableInCents).toBe(500);
     expect(report.walletAvailableInCents).toBe(999);
     expect(report.availableDriftInCents).toBe(499);
+    expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
+      'platform wallet reconcile drift detected',
+      {
+        details: {
+          currency: 'BRL',
+          availableDriftInCents: 499,
+          pendingDriftInCents: 0,
+          reservedDriftInCents: 0,
+        },
+      },
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        action: 'system.carteira.reconcile_drift',
+        entityType: 'platform_wallet',
+        entityId: 'BRL',
+        details: {
+          currency: 'BRL',
+          ledgerAvailableInCents: 500,
+          ledgerPendingInCents: 0,
+          ledgerReservedInCents: 0,
+          walletAvailableInCents: 999,
+          walletPendingInCents: 0,
+          walletReservedInCents: 0,
+          availableDriftInCents: 499,
+          pendingDriftInCents: 0,
+          reservedDriftInCents: 0,
+        },
+      },
+    });
   });
 
   it('returns a zero-state report when no wallet exists yet', async () => {
     const prisma = makePrisma(null, []);
-    const svc = new PlatformWalletReconcileService(prisma as never);
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const svc = new PlatformWalletReconcileService(prisma as never, financialAlert as never);
     const report = await svc.reconcile('BRL');
     expect(report.healthy).toBe(true);
     expect(report.ledgerAvailableInCents).toBe(0);
     expect(report.walletAvailableInCents).toBe(0);
+    expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 });

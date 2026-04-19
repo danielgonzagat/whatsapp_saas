@@ -104,11 +104,12 @@ reporting time by 80%."
 
 ### Customization by Buyer Type
 
-| Buyer           | Emphasize                                       | De-emphasize                                |
-| --------------- | ----------------------------------------------- | ------------------------------------------- |
-| Technical buyer | Architecture, security, integrations, API       | ROI calculations, business metrics          |
-| Economic buyer  | ROI, payback period, total cost, risk           | Technical details, implementation specifics |
-| Champion        | Internal selling points, quick wins, peer proof | Deep technical or financial detail          |
+- **Technical buyer** — emphasize architecture, security, integrations,
+  API. De-emphasize ROI calculations, business metrics.
+- **Economic buyer** — emphasize ROI, payback period, total cost, risk.
+  De-emphasize technical details, implementation specifics.
+- **Champion** — emphasize internal selling points, quick wins, peer proof.
+  De-emphasize deep technical or financial detail.
 
 **For full slide-by-slide guidance**: See
 [references/deck-frameworks.md](references/deck-frameworks.md)
@@ -147,14 +148,15 @@ reporting time by 80%."
 
 ### Objection Categories
 
-| Category    | Examples                                                            |
-| ----------- | ------------------------------------------------------------------- |
-| Price       | "Too expensive," "No budget this quarter," "Competitor is cheaper"  |
-| Timing      | "Not the right time," "Maybe next quarter," "Too busy to implement" |
-| Competition | "We already use X," "What makes you different?"                     |
-| Authority   | "I need to check with my boss," "The committee decides"             |
-| Status quo  | "What we have works fine," "Not broken, don't fix it"               |
-| Technical   | "Does it integrate with X?," "Security concerns," "Can it scale?"   |
+- **Price** — "Too expensive," "No budget this quarter," "Competitor is
+  cheaper."
+- **Timing** — "Not the right time," "Maybe next quarter," "Too busy to
+  implement."
+- **Competition** — "We already use X," "What makes you different?"
+- **Authority** — "I need to check with my boss," "The committee decides."
+- **Status quo** — "What we have works fine," "Not broken, don't fix it."
+- **Technical** — "Does it integrate with X?," "Security concerns," "Can it
+  scale?"
 
 ### Response Framework
 
@@ -203,12 +205,14 @@ For each objection, document:
 
 ### Value Prop by Persona
 
-| Persona      | Cares About                                  | Lead With                                     |
-| ------------ | -------------------------------------------- | --------------------------------------------- |
-| CTO / VP Eng | Architecture, scale, security, team velocity | Technical superiority, integration depth      |
-| VP Sales     | Pipeline, quota attainment, rep productivity | Revenue impact, time savings per rep          |
-| CFO          | Total cost, payback period, risk             | ROI, cost reduction, financial predictability |
-| End user     | Ease of use, daily workflow, learning curve  | Time saved, frustration eliminated            |
+- **CTO / VP Eng** — cares about architecture, scale, security, team
+  velocity. Lead with technical superiority and integration depth.
+- **VP Sales** — cares about pipeline, quota attainment, rep productivity.
+  Lead with revenue impact and time savings per rep.
+- **CFO** — cares about total cost, payback period, risk. Lead with ROI,
+  cost reduction, and financial predictability.
+- **End user** — cares about ease of use, daily workflow, learning curve.
+  Lead with time saved and frustration eliminated.
 
 ### Implementation Options
 
@@ -234,12 +238,13 @@ For each objection, document:
 
 ### Talk Track Types
 
-| Type                | Duration  | Focus                                        |
-| ------------------- | --------- | -------------------------------------------- |
-| Discovery call      | 30 min    | Qualify, understand pain, map buying process |
-| First demo          | 30-45 min | Show 3-4 workflows tied to their pain        |
-| Technical deep-dive | 45-60 min | Architecture, security, integrations, API    |
-| Executive overview  | 20-30 min | Business outcomes, ROI, strategic alignment  |
+- **Discovery call** — 30 min. Focus: qualify, understand pain, map buying
+  process.
+- **First demo** — 30-45 min. Focus: show 3-4 workflows tied to their pain.
+- **Technical deep-dive** — 45-60 min. Focus: architecture, security,
+  integrations, API.
+- **Executive overview** — 20-30 min. Focus: business outcomes, ROI,
+  strategic alignment.
 
 ### Key Principles
 
@@ -364,16 +369,19 @@ rots.
 
 Deliver the right format for each asset type:
 
-| Asset          | Deliverable                                                        |
-| -------------- | ------------------------------------------------------------------ |
-| Sales deck     | Slide-by-slide outline with headline, body copy, and speaker notes |
-| One-pager      | Full copy with layout guidance (visual hierarchy, sections)        |
-| Objection doc  | Table format: objection, response, proof point, follow-up          |
-| Demo script    | Scene-by-scene with timing, talk track, and interaction points     |
-| ROI calculator | Input fields, formulas, output display with sample data            |
-| Playbook       | Structured document with table of contents and sections            |
-| Persona card   | One-page card format per persona                                   |
-| Proposal       | Section-by-section copy with customization notes                   |
+- **Sales deck** — slide-by-slide outline with headline, body copy, and
+  speaker notes.
+- **One-pager** — full copy with layout guidance (visual hierarchy,
+  sections).
+- **Objection doc** — table format: objection, response, proof point,
+  follow-up.
+- **Demo script** — scene-by-scene with timing, talk track, and
+  interaction points.
+- **ROI calculator** — input fields, formulas, output display with sample
+  data.
+- **Playbook** — structured document with table of contents and sections.
+- **Persona card** — one-page card format per persona.
+- **Proposal** — section-by-section copy with customization notes.
 
 ---
 
@@ -394,9 +402,8 @@ If context is missing, ask:
 
 For partner sales enablement, see the [tools registry](../../tools/REGISTRY.md):
 
-| Tool       | What It Does                                                        | Guide                                           |
-| ---------- | ------------------------------------------------------------------- | ----------------------------------------------- |
-| **Introw** | Partner engagement tracking, deal registration, mutual action plans | [introw.md](../../tools/integrations/introw.md) |
+- **Introw** — partner engagement tracking, deal registration, mutual
+  action plans. Guide: [introw.md](../../tools/integrations/introw.md).
 
 ---
 

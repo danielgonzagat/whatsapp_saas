@@ -47,6 +47,18 @@ function extractErrorMessage(obj: Record<string, unknown>): string | null {
   return null;
 }
 
+const HEALTH_PATH_FRAGMENTS = ['/health', '/diag'] as const;
+const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const LOGGED_GET_PATH_FRAGMENTS = ['/kloel', '/agent', '/payment', '/autopilot'] as const;
+
+function isHealthCheckPath(path: string): boolean {
+  return HEALTH_PATH_FRAGMENTS.some((fragment) => path.includes(fragment));
+}
+
+function matchesLoggedGetPath(path: string): boolean {
+  return LOGGED_GET_PATH_FRAGMENTS.some((fragment) => path.includes(fragment));
+}
+
 /**
  * Middleware de Audit Logging para APIs KLOEL.
  * Registra todas as operacoes para auditoria e debugging.
@@ -178,22 +190,10 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
   }
 
   private shouldLog(method: string, path: string, statusCode: number): boolean {
-    // Sempre logar erros
     if (statusCode >= 400) return true;
-
-    // Nao logar health checks
-    if (path.includes('/health') || path.includes('/diag')) {
-      return statusCode >= 400;
-    }
-
-    // Logar todas as mutacoes
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      return true;
-    }
-
-    // Logar GETs apenas para certos endpoints
-    const logGetPaths = ['/kloel', '/agent', '/payment', '/autopilot'];
-    return logGetPaths.some((p) => path.includes(p));
+    if (isHealthCheckPath(path)) return false;
+    if (MUTATION_METHODS.has(method)) return true;
+    return matchesLoggedGetPath(path);
   }
 
   private isCriticalOperation(method: string, path: string): boolean {

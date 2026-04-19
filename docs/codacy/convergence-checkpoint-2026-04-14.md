@@ -18,16 +18,21 @@ autonomous session of ~5 hours.
 
 ## Phase-by-phase
 
-| Phase  | Mechanism                                          | From → To        |      Δ | Cumul Δ |
-| ------ | -------------------------------------------------- | ---------------- | -----: | ------: |
-| Base   | (initial state)                                    | 34,830           |      – |       – |
-| 0      | API discovery + tool UUID inventory                | 34,830 → 34,830  |      0 |   0.0 % |
-| 1      | `.codacy.yml` + `biome.json` exclude_paths         | 34,830 → 25,164  | −9,666 | −27.7 % |
-| 2A     | biome --write on frontend + worker + scripts       | 25,164 → 18,602  | −6,562 | −46.6 % |
-| 2B     | ts-morph regex hoist (118 sites, 65 files)         | 18,602 → 17,991  |   −611 | −48.4 % |
-| 2A.5   | biome --write on backend (safer ruleset)           | 17,991 → 13,231  | −4,760 | −62.0 % |
-| Hotfix | revert 46 module imports (Railway healthcheck fix) | 13,231 → ~13,310 |   ~+80 | −61.8 % |
-| 4      | Security triage — exclude wrong-rule clusters      | ~13,310 → 13,183 |  ~−127 | −62.2 % |
+- **Base** — initial state 34,830 issues.
+- **Phase 0** — API discovery + tool UUID inventory. 34,830 → 34,830
+  (Δ 0; cumul 0.0%).
+- **Phase 1** — `.codacy.yml` + `biome.json` exclude_paths. 34,830 →
+  25,164 (Δ −9,666; cumul −27.7%).
+- **Phase 2A** — biome `--write` on frontend + worker + scripts. 25,164
+  → 18,602 (Δ −6,562; cumul −46.6%).
+- **Phase 2B** — ts-morph regex hoist (118 sites, 65 files). 18,602 →
+  17,991 (Δ −611; cumul −48.4%).
+- **Phase 2A.5** — biome `--write` on backend (safer ruleset). 17,991 →
+  13,231 (Δ −4,760; cumul −62.0%).
+- **Hotfix** — revert 46 module imports (Railway healthcheck fix). 13,231
+  → ~13,310 (Δ ~+80; cumul −61.8%).
+- **Phase 4** — security triage; exclude wrong-rule clusters. ~13,310 →
+  13,183 (Δ ~−127; cumul −62.2%).
 
 ## What's locked in
 
@@ -71,18 +76,24 @@ autonomous session of ~5 hours.
 
 The remaining ~13,000 issues are dominated by these pattern clusters:
 
-| Cluster                                           | Count | Why it's stuck                                             |
-| ------------------------------------------------- | ----: | :--------------------------------------------------------- |
-| `Biome_lint_suspicious_noExplicitAny`             | 1,825 | Real type debt. Phase 3 Ralph Loop work.                   |
-| `Biome_lint_suspicious_noReactSpecificProps`      | 1,785 | WRONG_RULE for Next.js. Codacy API can't disable reliably. |
-| `Biome_lint_correctness_noUndeclaredDependencies` | 1,379 | WRONG_RULE for monorepo. Same API issue.                   |
-| `Biome_lint_nursery_noJsxPropsBind`               |   977 | WRONG_RULE — nursery experimental.                         |
-| `Biome_lint_style_useImportType`                  |   583 | NestJS DI breaks if applied to backend; biome.json off.    |
-| `Biome_lint_correctness_useQwikValidLexicalScope` |   497 | WRONG_RULE — Qwik framework, this is React.                |
-| `ESLint8_es-x_no-block-scoped-variables`          |   310 | WRONG_RULE — ES5 compat; this is ES2024.                   |
-| `ESLint8_es-x_no-modules`                         |   310 | WRONG_RULE — same family.                                  |
-| `Lizard_ccn-medium`                               |   272 | Real complexity debt. Phase 5 work.                        |
-| `Biome_lint_performance_useSolidForComponent`     |   247 | WRONG_RULE — Solid framework, this is React.               |
+- `Biome_lint_suspicious_noExplicitAny` — 1,825. Real type debt; Phase 3
+  Ralph Loop work.
+- `Biome_lint_suspicious_noReactSpecificProps` — 1,785. WRONG_RULE for
+  Next.js. Codacy API can't disable reliably.
+- `Biome_lint_correctness_noUndeclaredDependencies` — 1,379. WRONG_RULE
+  for monorepo. Same API issue.
+- `Biome_lint_nursery_noJsxPropsBind` — 977. WRONG_RULE — nursery
+  experimental.
+- `Biome_lint_style_useImportType` — 583. NestJS DI breaks if applied to
+  backend; biome.json off.
+- `Biome_lint_correctness_useQwikValidLexicalScope` — 497. WRONG_RULE —
+  Qwik framework, this is React.
+- `ESLint8_es-x_no-block-scoped-variables` — 310. WRONG_RULE — ES5 compat;
+  this is ES2024.
+- `ESLint8_es-x_no-modules` — 310. WRONG_RULE — same family.
+- `Lizard_ccn-medium` — 272. Real complexity debt; Phase 5 work.
+- `Biome_lint_performance_useSolidForComponent` — 247. WRONG_RULE — Solid
+  framework, this is React.
 
 **Sub-total stuck**: ~8,185 issues that are either (a) real type
 debt for Phase 3, (b) real complexity debt for Phase 5, or (c)

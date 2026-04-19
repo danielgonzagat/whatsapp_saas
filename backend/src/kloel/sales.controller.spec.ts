@@ -114,12 +114,27 @@ describe('SalesController', () => {
       'idem-1',
     );
 
-    expect(stripeService.stripe.refunds.create).toHaveBeenCalledWith({
-      payment_intent: 'pi_stripe_123',
-    });
+    expect(stripeService.stripe.refunds.create).toHaveBeenCalledWith(
+      {
+        payment_intent: 'pi_stripe_123',
+      },
+      {
+        idempotencyKey: 'idem-1',
+      },
+    );
     expect(prisma.kloelSale.updateMany).toHaveBeenCalledWith({
       where: { id: 'sale-1', workspaceId: 'ws-1' },
-      data: { status: 'refunded' },
+      data: { status: 'refund_requested' },
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        workspaceId: 'ws-1',
+        action: 'refund_requested',
+        resource: 'sale',
+        resourceId: 'sale-1',
+        agentId: 'agent-1',
+        details: expect.objectContaining({ status: 'pending_webhook' }),
+      }),
     });
   });
 });

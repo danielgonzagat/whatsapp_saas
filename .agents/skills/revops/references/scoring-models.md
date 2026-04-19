@@ -7,23 +7,13 @@ guidance.
 
 ### Company Attributes
 
-| Attribute        | Criteria                  | Points                                    |
-| ---------------- | ------------------------- | ----------------------------------------- |
-| **Company size** | 1-10 employees            | +5                                        |
-|                  | 11-50 employees           | +10                                       |
-|                  | 51-200 employees          | +15                                       |
-|                  | 201-1000 employees        | +20                                       |
-|                  | 1000+ employees           | +15 (unless enterprise-focused, then +25) |
-| **Industry**     | Primary target industry   | +20                                       |
-|                  | Secondary target industry | +10                                       |
-|                  | Non-target industry       | 0                                         |
-| **Revenue**      | Under $1M                 | +5                                        |
-|                  | $1M-$10M                  | +10                                       |
-|                  | $10M-$100M                | +15                                       |
-|                  | $100M+                    | +20                                       |
-| **Geography**    | Primary market            | +10                                       |
-|                  | Secondary market          | +5                                        |
-|                  | Non-target market         | 0                                         |
+- **Company size** — 1-10 employees: +5; 11-50: +10; 51-200: +15;
+  201-1000: +20; 1000+: +15 (unless enterprise-focused, then +25).
+- **Industry** — primary target: +20; secondary target: +10; non-target: 0.
+- **Revenue** — under $1M: +5; $1M-$10M: +10; $10M-$100M: +15;
+  $100M+: +20.
+- **Geography** — primary market: +10; secondary market: +5; non-target
+  market: 0.
 
 ### Contact Attributes
 
@@ -105,19 +95,18 @@ guidance.
 
 ## Negative Scoring Signals
 
-| Signal                            | Points | Notes                                 |
-| --------------------------------- | ------ | ------------------------------------- |
-| **Competitor email domain**       | -50    | Auto-flag for review                  |
-| **Student email (.edu)**          | -30    | May still be valid in some cases      |
-| **Personal email (gmail, yahoo)** | -10    | Less relevant for B2B; adjust for SMB |
-| **Unsubscribe from emails**       | -20    | Reduce engagement score               |
-| **Bounce (hard)**                 | -50    | Remove from scoring                   |
-| **Spam complaint**                | -100   | Remove from all sequences             |
-| **Job title: Student/Intern**     | -25    | Low buying authority                  |
-| **Job title: Consultant**         | -10    | May be evaluating for client          |
-| **No website visit in 90 days**   | -15    | Score decay                           |
-| **Invalid phone number**          | -10    | Data quality signal                   |
-| **Careers page visitor only**     | -30    | Likely a job seeker                   |
+- **Competitor email domain** (-50) — auto-flag for review.
+- **Student email (.edu)** (-30) — may still be valid in some cases.
+- **Personal email (gmail, yahoo)** (-10) — less relevant for B2B; adjust
+  for SMB.
+- **Unsubscribe from emails** (-20) — reduce engagement score.
+- **Bounce (hard)** (-50) — remove from scoring.
+- **Spam complaint** (-100) — remove from all sequences.
+- **Job title: Student / Intern** (-25) — low buying authority.
+- **Job title: Consultant** (-10) — may be evaluating for a client.
+- **No website visit in 90 days** (-15) — score decay.
+- **Invalid phone number** (-10) — data quality signal.
+- **Careers page visitor only** (-30) — likely a job seeker.
 
 ---
 
@@ -156,7 +145,7 @@ guidance.
 
 ### Model 2: Enterprise Sales-Led (ACV $50K+)
 
-**Weight: 60% fit / 40% engagement (fit is critical at this ACV)**
+Weighting: 60% fit / 40% engagement. Fit is critical at this ACV.
 
 **Fit criteria:**
 
@@ -188,7 +177,7 @@ guidance.
 
 ### Model 3: Mid-Market Hybrid (ACV $5K-$25K)
 
-**Weight: 50% fit / 50% engagement (balanced approach)**
+Weighting: 50% fit / 50% engagement. Balanced approach.
 
 **Fit criteria:**
 
@@ -232,11 +221,11 @@ guidance.
 
 ### Calibration Cadence
 
-| Business Type     | Recalibration Frequency    | Why                              |
-| ----------------- | -------------------------- | -------------------------------- |
-| PLG / High volume | Monthly                    | Fast feedback loop, lots of data |
-| Mid-market        | Quarterly                  | Moderate cycle length            |
-| Enterprise        | Quarterly to semi-annually | Long cycles, small sample size   |
+- **PLG / high volume** — recalibrate monthly. Fast feedback loop, lots
+  of data.
+- **Mid-market** — recalibrate quarterly. Moderate cycle length.
+- **Enterprise** — recalibrate quarterly to semi-annually. Long cycles,
+  small sample size.
 
 ### Calibration Steps
 

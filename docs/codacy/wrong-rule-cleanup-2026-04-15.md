@@ -46,18 +46,18 @@ must compile down to ES5. This monorepo targets Node 20 LTS (backend/worker)
 and modern browsers via Next.js 15 (frontend) — both ES2022+. Every `es-x`
 rule is structurally incompatible.
 
-| Pattern ID                                 | Count | What it flags                             |
-| ------------------------------------------ | ----: | ----------------------------------------- |
-| `ESLint8_es-x_no-modules`                  |   267 | `import` / `export` (we're ESM by design) |
-| `ESLint8_es-x_no-block-scoped-variables`   |   243 | `let` / `const`                           |
-| `ESLint8_es-x_no-trailing-commas`          |   118 | Trailing commas in arrays/objects         |
-| `ESLint8_es-x_no-property-shorthands`      |    68 | `{ x }` vs `{ x: x }`                     |
-| `ESLint8_es-x_no-template-literals`        |    53 | Backtick strings                          |
-| `ESLint8_es-x_no-arrow-functions`          |    44 | `() => {}`                                |
-| `ESLint8_es-x_no-trailing-function-commas` |    39 | `fn(a, b,)`                               |
-| `ESLint8_es-x_no-optional-chaining`        |    38 | `a?.b`                                    |
-| `ESLint8_es-x_no-destructuring`            |    38 | `const { x } = obj`                       |
-| `ESLint8_es-x_no-async-functions`          |    37 | `async function`                          |
+- `ESLint8_es-x_no-modules` — 267. Flags `import` / `export` (we're ESM
+  by design).
+- `ESLint8_es-x_no-block-scoped-variables` — 243. Flags `let` / `const`.
+- `ESLint8_es-x_no-trailing-commas` — 118. Flags trailing commas in
+  arrays / objects.
+- `ESLint8_es-x_no-property-shorthands` — 68. Flags `{ x }` vs `{ x: x }`.
+- `ESLint8_es-x_no-template-literals` — 53. Flags backtick strings.
+- `ESLint8_es-x_no-arrow-functions` — 44. Flags `() => {}`.
+- `ESLint8_es-x_no-trailing-function-commas` — 39. Flags `fn(a, b,)`.
+- `ESLint8_es-x_no-optional-chaining` — 38. Flags `a?.b`.
+- `ESLint8_es-x_no-destructuring` — 38. Flags `const { x } = obj`.
+- `ESLint8_es-x_no-async-functions` — 37. Flags `async function`.
 
 Plus the long tail (`no-generators`, `no-classes`, `no-let`, `no-spread-elements`, etc.) — **disable the entire `es-x` rule group** rather than one at a time if the Codacy UI supports bulk-disable by plugin.
 
@@ -99,9 +99,8 @@ workspace). Flow annotations (`// @flow`) would not even parse.
 **Rationale**: `eslint-plugin-lwc` is for Salesforce Lightning Web
 Components. This project has no Salesforce anything.
 
-| Pattern ID                        | Count | What it flags                                                 |
-| --------------------------------- | ----: | ------------------------------------------------------------- |
-| `ESLint8_@lwc_lwc_no-async-await` |    37 | `async`/`await` (LWC disallows it in certain lifecycle hooks) |
+- `ESLint8_@lwc_lwc_no-async-await` — 37. Flags `async` / `await` (LWC
+  disallows it in certain lifecycle hooks).
 
 **Disable the entire `@lwc` rule group.**
 
@@ -109,11 +108,23 @@ Components. This project has no Salesforce anything.
 
 ## Cluster 5 — Semgrep known-wrong rules
 
-| Pattern ID                                                                                                | Count | Why it's wrong                                                                                                                                                                                                                                                                                                   |
-| --------------------------------------------------------------------------------------------------------- | ----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check`                         |    85 | Flags every semver range like `^1.2.3` as "potential dependency hijack". This rule is for orgs that pin to exact versions; this repo follows standard npm semver conventions. Already excluded for `worker/package.json` in `.codacy.yml` — need the same treatment for root and every other `package.json`.     |
-| `Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator` |    85 | Flags strings containing `${...}` that aren't template literals (backticks), assuming they were meant to be interpolated. In practice, these are mostly strings like `"Use ${VARIABLE_NAME}"` in docs, `${}` in user-facing template prose, or SQL placeholders. False positive rate is near-total in this repo. |
-| `Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator`                                |    84 | Flags `Math.random()` as cryptographically insecure. One real case (`checkout` slug generator, tracked in `docs/security/deferred.json`); remaining 83 are legit non-crypto uses (sampling, retry jitter, animation, mock data).                                                                                 |
+- `Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check`
+  — 85. Flags every semver range like `^1.2.3` as a "potential dependency
+  hijack". This rule is for orgs that pin to exact versions; this repo
+  follows standard npm semver conventions. Already excluded for
+  `worker/package.json` in `.codacy.yml` — need the same treatment for
+  root and every other `package.json`.
+- `Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator`
+  — 85. Flags strings containing `${...}` that aren't template literals
+  (backticks), assuming they were meant to be interpolated. In practice,
+  these are mostly strings like `"Use ${VARIABLE_NAME}"` in docs, `${}`
+  in user-facing template prose, or SQL placeholders. False positive rate
+  is near-total in this repo.
+- `Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator`
+  — 84. Flags `Math.random()` as cryptographically insecure. One real
+  case (`checkout` slug generator, tracked in
+  `docs/security/deferred.json`); remaining 83 are legitimate non-crypto
+  uses (sampling, retry jitter, animation, mock data).
 
 **Recommendation**: disable all three globally. Track the one real
 insecure-random case via the existing `docs/security/deferred.json` entry.
@@ -126,13 +137,17 @@ Reverified 2026-04-15. These come from Biome rule packs that target
 specific JS frameworks we do not use. The convergence checkpoint already
 has them in the "stuck" table — they remain stuck for the same reason.
 
-| Pattern ID                                        | Count (2026-04-14) | Framework        | Why wrong                                       |
-| ------------------------------------------------- | -----------------: | ---------------- | ----------------------------------------------- |
-| `Biome_lint_suspicious_noReactSpecificProps`      |              1,785 | Next.js-specific | Flags Next.js-specific props on DOM elements    |
-| `Biome_lint_correctness_noUndeclaredDependencies` |              1,379 | Monorepo layout  | Can't resolve workspace imports across packages |
-| `Biome_lint_nursery_noJsxPropsBind`               |                977 | Experimental     | Nursery rule, not ready for production          |
-| `Biome_lint_correctness_useQwikValidLexicalScope` |                497 | Qwik             | Not a Qwik codebase                             |
-| `Biome_lint_performance_useSolidForComponent`     |                247 | Solid            | Not a Solid codebase                            |
+- `Biome_lint_suspicious_noReactSpecificProps` — 1,785 (2026-04-14).
+  Framework: Next.js-specific. Flags Next.js-specific props on DOM
+  elements.
+- `Biome_lint_correctness_noUndeclaredDependencies` — 1,379. Framework:
+  monorepo layout. Can't resolve workspace imports across packages.
+- `Biome_lint_nursery_noJsxPropsBind` — 977. Framework: experimental.
+  Nursery rule, not ready for production.
+- `Biome_lint_correctness_useQwikValidLexicalScope` — 497. Framework:
+  Qwik. Not a Qwik codebase.
+- `Biome_lint_performance_useSolidForComponent` — 247. Framework: Solid.
+  Not a Solid codebase.
 
 **Note**: between 2026-04-14 (13,183) and 2026-04-15 (6,700), these counts
 have dropped naturally — some were scoped out by `.codacy.yml` exclusions.

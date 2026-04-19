@@ -24,7 +24,13 @@ describe('PlatformWalletService — invariants', () => {
       methods.add(match[1]);
     }
     // Allowed public methods (v0 surface).
-    const allowed = new Set(['readBalance', 'listLedger', 'append']);
+    const allowed = new Set([
+      'readBalance',
+      'listLedger',
+      'append',
+      'debitAvailableForPayout',
+      'creditAvailableByAdjustment',
+    ]);
     // Disallow internal-looking names that could signal direct mutation.
     const forbidden = ['update', 'delete', 'drop', 'reset', 'zero'];
     for (const name of methods) {

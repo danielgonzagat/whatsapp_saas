@@ -41,20 +41,37 @@ Two standards available at the org level:
 I probed every plausible mutation endpoint with the
 `CODACY_ACCOUNT_TOKEN`. Findings:
 
-| Endpoint                                               | Method                                                                           | Result                                                                          | Verdict                                                                                         |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `/repositories/{repo}/tools/{tool}/patterns/{pattern}` | `GET`                                                                            | 200, returns full pattern definition                                            | read-only OK                                                                                    |
-| `/repositories/{repo}/tools/{tool}/patterns/{pattern}` | `PATCH`                                                                          | 405 Method Not Allowed                                                          | repo-level pattern toggle not allowed via direct endpoint                                       |
-| `/repositories/{repo}/tools/{tool}`                    | `PATCH` body `{patterns:[{id,enabled}]}`                                         | 409 `Cannot disable a pattern that is enabled by a Coding Standard`             | pattern enable/disable is gated by the linked standard                                          |
-| `/repositories/{repo}/tools/{tool}`                    | `PATCH` body `{settings:{isEnabled:false}}` or `{isEnabled:false}` or variations | 204 No Content but **state did not change** in subsequent reads                 | endpoint accepts the request shape but silently ignores the toggle when `followsStandard: true` |
-| `/coding-standards/{standardId}/tools/{tool}`          | `PATCH` body `{patterns:[...]}`                                                  | 409 `Standard is not a draft and cannot be updated` (on the published `151338`) | ✅ correct shape, requires draft mode                                                           |
-| `/coding-standards/{standardId}/tools/{tool}`          | `PATCH` body `{patterns:[...]}`                                                  | 204 (on the test draft `151378`) — confirmed `enabledPatternsCount` decremented | ✅ **mutates correctly when standard is in draft**                                              |
-| `/coding-standards`                                    | `POST` body `{name, languages}`                                                  | 201 with new id                                                                 | ✅ creates new draft standard                                                                   |
-| `/coding-standards/{id}/draft`                         | `POST`                                                                           | 404                                                                             | not the right path                                                                              |
-| `/coding-standards/{id}/clone`                         | `POST`                                                                           | 404                                                                             | not the right path                                                                              |
-| `/coding-standards/{id}/edit`                          | `POST`                                                                           | 404                                                                             | not the right path                                                                              |
-| `/coding-standards/{id}/promote`                       | `POST`                                                                           | 409 `Cannot update non-draft standard`                                          | promote requires the standard to already be a draft                                             |
-| `/coding-standards/{id}`                               | `DELETE`                                                                         | 204                                                                             | ✅ delete works (used for cleanup of test draft)                                                |
+- `GET /repositories/{repo}/tools/{tool}/patterns/{pattern}` → 200,
+  returns full pattern definition. Verdict: read-only OK.
+- `PATCH /repositories/{repo}/tools/{tool}/patterns/{pattern}` → 405
+  Method Not Allowed. Verdict: repo-level pattern toggle not allowed via
+  direct endpoint.
+- `PATCH /repositories/{repo}/tools/{tool}` body
+  `{patterns:[{id,enabled}]}` → 409 `Cannot disable a pattern that is
+enabled by a Coding Standard`. Verdict: enable / disable is gated by the
+  linked standard.
+- `PATCH /repositories/{repo}/tools/{tool}` body
+  `{settings:{isEnabled:false}}` (or variations) → 204 No Content but
+  state did not change in subsequent reads. Verdict: endpoint accepts the
+  request shape but silently ignores the toggle when
+  `followsStandard: true`.
+- `PATCH /coding-standards/{standardId}/tools/{tool}` body
+  `{patterns:[...]}` on published `151338` → 409 `Standard is not a draft
+and cannot be updated`. Verdict: correct shape, requires draft mode.
+- `PATCH /coding-standards/{standardId}/tools/{tool}` body
+  `{patterns:[...]}` on test draft `151378` → 204; confirmed
+  `enabledPatternsCount` decremented. Verdict: mutates correctly when
+  standard is in draft.
+- `POST /coding-standards` body `{name, languages}` → 201 with new id.
+  Verdict: creates a new draft standard.
+- `POST /coding-standards/{id}/draft` → 404. Verdict: not the right path.
+- `POST /coding-standards/{id}/clone` → 404. Verdict: not the right path.
+- `POST /coding-standards/{id}/edit` → 404. Verdict: not the right path.
+- `POST /coding-standards/{id}/promote` → 409 `Cannot update non-draft
+standard`. Verdict: promote requires the standard to already be a
+  draft.
+- `DELETE /coding-standards/{id}` → 204. Verdict: delete works (used for
+  cleanup of test draft).
 
 **Conclusion**: the API IS authorized for mutation, but the only viable
 mutation path goes through **draft coding standards**:
@@ -376,15 +393,20 @@ tool with +/- prefix).
 
 ### Disabled noise patterns (7 total)
 
-| Pattern                                           | PULSE count | Reason                                                                                  |
-| ------------------------------------------------- | ----------: | :-------------------------------------------------------------------------------------- |
-| `Biome_lint_suspicious_noReactSpecificProps`      |       1,785 | Biome rule for Solid/Qwik; codebase is Next.js 16 React.                                |
-| `Biome_lint_correctness_noUndeclaredDependencies` |       1,344 | Biome cannot resolve nested package.json in the monorepo.                               |
-| `Biome_lint_nursery_noJsxPropsBind`               |         977 | Biome nursery / experimental; not recommended for production.                           |
-| `Biome_lint_correctness_useQwikValidLexicalScope` |         497 | Qwik framework rule, this is React.                                                     |
-| `Biome_lint_performance_useSolidForComponent`     |         247 | Solid framework rule, this is React.                                                    |
-| `Biome_lint_correctness_noNodejsModules`          |         125 | False positive in a Next.js + NestJS monorepo where node: is legitimate.                |
-| `Biome_lint_style_useImportType`                  |         561 | Converts runtime class imports to `import type`, breaks NestJS DI (proven in Phase 2A). |
+- `Biome_lint_suspicious_noReactSpecificProps` — 1,785. Biome rule for
+  Solid / Qwik; codebase is Next.js 16 React.
+- `Biome_lint_correctness_noUndeclaredDependencies` — 1,344. Biome cannot
+  resolve nested `package.json` in the monorepo.
+- `Biome_lint_nursery_noJsxPropsBind` — 977. Biome nursery / experimental;
+  not recommended for production.
+- `Biome_lint_correctness_useQwikValidLexicalScope` — 497. Qwik framework
+  rule; this is React.
+- `Biome_lint_performance_useSolidForComponent` — 247. Solid framework
+  rule; this is React.
+- `Biome_lint_correctness_noNodejsModules` — 125. False positive in a
+  Next.js + NestJS monorepo where `node:` is legitimate.
+- `Biome_lint_style_useImportType` — 561. Converts runtime class imports
+  to `import type`, breaks NestJS DI (proven in Phase 2A).
 
 **Expected total delta**: −5,536 issues, baseline drop 13,183 → ~7,647
 after next Codacy reanalysis (typically ~5 min after a standard change).
@@ -402,14 +424,24 @@ delete `151398`. Both PATCHes are idempotent and 204 on success.
 Every "finicky" hypothesis turned out to have a precise root cause
 that yielded to careful probing:
 
-| Earlier complaint                           | Actual root cause                                                                                                                                 |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| "4/19 batch PATCH only disabled 4 of 19"    | 15 of 19 target patterns were never in the AI Policy draft — they live in 151337 (Default)                                                        |
-| "promote returns 405/409 with empty body"   | `POST /promote` works on drafts, returns 200. The earlier 405 was because the test called it on the already-published `151338`.                   |
-| "no link endpoint found"                    | `PATCH /coding-standards/{id}/repositories` with body `{link:[name], unlink:[name]}` — both fields required, strings, not numeric IDs.            |
-| "repo-level tool disable is 204-no-op"      | Tool disable is gated by `followsStandard: true`; only viable path is via a coding standard draft.                                                |
-| "fresh draft doesn't match 151337"          | `151337` is a curated superset (295 Biome enabled vs 232 default) and uses 57 languages vs 2. Mirror must copy languages + patterns tool-by-tool. |
-| "enabledPatternsCount mismatch after PATCH" | Draft languages restrict which tools are instantiated; tools outside the draft's language set silently ignore PATCHes.                            |
+- "4/19 batch PATCH only disabled 4 of 19" → 15 of 19 target patterns
+  were never in the AI Policy draft; they live in 151337 (Default).
+- "promote returns 405/409 with empty body" → `POST /promote` works on
+  drafts and returns 200. The earlier 405 was because the test called it
+  on the already-published `151338`.
+- "no link endpoint found" → `PATCH
+/coding-standards/{id}/repositories` with body
+  `{link:[name], unlink:[name]}`. Both fields required, strings (not
+  numeric IDs).
+- "repo-level tool disable is 204-no-op" → tool disable is gated by
+  `followsStandard: true`. Only viable path is via a coding standard
+  draft.
+- "fresh draft doesn't match 151337" → `151337` is a curated superset
+  (295 Biome enabled vs 232 default) using 57 languages vs 2. Mirror
+  must copy languages + patterns tool by tool.
+- "enabledPatternsCount mismatch after PATCH" → draft languages restrict
+  which tools are instantiated; tools outside the draft's language set
+  silently ignore PATCHes.
 
 This completes the "no gambiarra" recalibration for the Codacy API
 path. The orchestration script is idempotent, verifiable, and safe

@@ -534,9 +534,9 @@ export class SalesController {
     });
     if (!sale) throw new NotFoundException('Sale not found');
 
-    // Idempotency: if the sale is already refunded and caller sent an idempotency key,
+    // Idempotency: if the sale is already refunded/requested and caller sent an idempotency key,
     // return the existing record to avoid duplicate refund attempts.
-    if (idempotencyKey && sale.status === 'refunded') {
+    if (idempotencyKey && (sale.status === 'refunded' || sale.status === 'refund_requested')) {
       return { sale, success: true, idempotent: true };
     }
 
@@ -545,9 +545,12 @@ export class SalesController {
     if (sale.externalPaymentId) {
       try {
         if (sale.externalPaymentId.startsWith('pi_')) {
-          await this.stripeService.stripe.refunds.create({
-            payment_intent: sale.externalPaymentId,
-          });
+          await this.stripeService.stripe.refunds.create(
+            {
+              payment_intent: sale.externalPaymentId,
+            },
+            idempotencyKey ? { idempotencyKey } : undefined,
+          );
         } else {
           throw new BadRequestException(
             'Somente pagamentos Stripe são suportados para estorno nesta versão.',
@@ -560,6 +563,30 @@ export class SalesController {
           `Falha ao processar estorno no gateway: ${errInstanceofError.message}`,
         );
       }
+    }
+
+    if (sale.externalPaymentId?.startsWith('pi_')) {
+      await this.prisma.kloelSale.updateMany({
+        where: { id, workspaceId },
+        data: { status: 'refund_requested' },
+      });
+
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            workspaceId,
+            action: 'refund_requested',
+            resource: 'sale',
+            resourceId: id,
+            agentId: req.user?.sub,
+            details: { amount: sale.amount, status: 'pending_webhook' },
+          },
+        });
+      } catch (err) {
+        this.logger.error(`Failed to create audit log for refund request: ${err}`);
+      }
+
+      return { sale, success: true, pendingWebhook: true };
     }
 
     // Only update DB after successful gateway refund (or for manual sales with no externalPaymentId)

@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import { BillingModule } from '../billing/billing.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
+import { ConnectPayoutService } from './connect/connect-payout.service';
+import { ConnectReversalService } from './connect/connect-reversal.service';
 import { ConnectService } from './connect/connect.service';
 import { FraudEngine } from './fraud/fraud.engine';
 import { ConnectLedgerMaturationService } from './ledger/connect-ledger-maturation.service';
@@ -27,6 +29,8 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
     LedgerService,
     ConnectLedgerMaturationService,
     ConnectService,
+    ConnectPayoutService,
+    ConnectReversalService,
     FraudEngine,
     StripeChargeService,
     StripeWebhookProcessor,
@@ -35,6 +39,8 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
     LedgerService,
     ConnectLedgerMaturationService,
     ConnectService,
+    ConnectPayoutService,
+    ConnectReversalService,
     FraudEngine,
     StripeChargeService,
     StripeWebhookProcessor,

@@ -6,9 +6,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   AccountBalanceNotFoundError,
   type BalanceSnapshot,
+  type CreditAvailableAdjustmentInput,
   type CreditPendingInput,
   type DebitChargebackInput,
   type DebitPayoutInput,
+  type DebitRefundInput,
   InsufficientAvailableBalanceError,
 } from './ledger.types';
 
@@ -285,6 +287,139 @@ export class LedgerService {
             absorbedFromPendingCents: fromPending.toString(),
             absorbedFromAvailableCents: fromAvailable.toString(),
           } as Prisma.InputJsonValue,
+        },
+      });
+    });
+  }
+
+  /**
+   * Refund debits behave like chargebacks operationally: consume PENDING first,
+   * then AVAILABLE, and allow AVAILABLE to go negative if the platform/provider
+   * initiated the reversal before balances matured.
+   *
+   * Idempotent on `(reference.type, reference.id, DEBIT_REFUND)`.
+   */
+  async debitForRefund(input: DebitRefundInput): Promise<ConnectLedgerEntry> {
+    if (input.amountCents <= 0n) {
+      throw new RangeError(
+        `debitForRefund: amountCents must be > 0 (got ${input.amountCents.toString()})`,
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.connectLedgerEntry.findFirst({
+        where: {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          type: 'DEBIT_REFUND',
+        },
+      });
+      if (existing) {
+        this.logger.debug(
+          `debitForRefund idempotent skip: ref=${input.reference.type}:${input.reference.id}`,
+        );
+        return existing;
+      }
+
+      const balance = await tx.connectAccountBalance.findUnique({
+        where: { id: input.accountBalanceId },
+      });
+      if (!balance) throw new AccountBalanceNotFoundError(input.accountBalanceId);
+
+      const fromPending =
+        balance.pendingBalanceCents >= input.amountCents
+          ? input.amountCents
+          : balance.pendingBalanceCents;
+      const fromAvailable = input.amountCents - fromPending;
+      const newPending = balance.pendingBalanceCents - fromPending;
+      const newAvailable = balance.availableBalanceCents - fromAvailable;
+
+      await tx.connectAccountBalance.update({
+        where: { id: balance.id },
+        data: {
+          pendingBalanceCents: newPending,
+          availableBalanceCents: newAvailable,
+        },
+      });
+
+      return tx.connectLedgerEntry.create({
+        data: {
+          accountBalanceId: balance.id,
+          type: 'DEBIT_REFUND',
+          amountCents: input.amountCents,
+          balanceAfterPendingCents: newPending,
+          balanceAfterAvailableCents: newAvailable,
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          metadata: {
+            ...(input.metadata ?? {}),
+            absorbedFromPendingCents: fromPending.toString(),
+            absorbedFromAvailableCents: fromAvailable.toString(),
+          } as Prisma.InputJsonValue,
+        },
+      });
+    });
+  }
+
+  /**
+   * Re-credit AVAILABLE after an operational correction (for example a payout
+   * creation that failed after the local DEBIT_PAYOUT already landed).
+   *
+   * Idempotent on `(reference.type, reference.id, ADJUSTMENT)`.
+   */
+  async creditAvailableByAdjustment(
+    input: CreditAvailableAdjustmentInput,
+  ): Promise<ConnectLedgerEntry> {
+    if (input.amountCents <= 0n) {
+      throw new RangeError(
+        `creditAvailableByAdjustment: amountCents must be > 0 (got ${input.amountCents.toString()})`,
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.connectLedgerEntry.findFirst({
+        where: {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          type: 'ADJUSTMENT',
+        },
+      });
+      if (existing) {
+        this.logger.debug(
+          `creditAvailableByAdjustment idempotent skip: ref=${input.reference.type}:${input.reference.id}`,
+        );
+        return existing;
+      }
+
+      const balance = await tx.connectAccountBalance.findUnique({
+        where: { id: input.accountBalanceId },
+      });
+      if (!balance) throw new AccountBalanceNotFoundError(input.accountBalanceId);
+
+      const newAvailable = balance.availableBalanceCents + input.amountCents;
+      const newLifetimePaidOut =
+        balance.lifetimePaidOutCents >= input.amountCents
+          ? balance.lifetimePaidOutCents - input.amountCents
+          : 0n;
+
+      await tx.connectAccountBalance.update({
+        where: { id: balance.id },
+        data: {
+          availableBalanceCents: newAvailable,
+          lifetimePaidOutCents: newLifetimePaidOut,
+        },
+      });
+
+      return tx.connectLedgerEntry.create({
+        data: {
+          accountBalanceId: balance.id,
+          type: 'ADJUSTMENT',
+          amountCents: input.amountCents,
+          balanceAfterPendingCents: balance.pendingBalanceCents,
+          balanceAfterAvailableCents: newAvailable,
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null,
         },
       });
     });

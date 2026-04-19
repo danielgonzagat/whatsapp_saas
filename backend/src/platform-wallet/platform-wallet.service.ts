@@ -33,6 +33,34 @@ export interface ListLedgerFilters {
   take?: number;
 }
 
+export interface DebitPlatformPayoutInput {
+  currency?: string;
+  amountInCents: bigint;
+  requestId: string;
+  metadata?: Prisma.InputJsonValue;
+}
+
+export interface CreditPlatformAdjustmentInput {
+  currency?: string;
+  amountInCents: bigint;
+  requestId: string;
+  reason: string;
+  metadata?: Prisma.InputJsonValue;
+}
+
+export class PlatformWalletInsufficientAvailableBalanceError extends Error {
+  constructor(
+    public readonly currency: string,
+    public readonly attemptedAmountInCents: bigint,
+    public readonly availableAmountInCents: bigint,
+  ) {
+    super(
+      `platform wallet insufficient available balance for ${currency}: attempted=${attemptedAmountInCents.toString()} available=${availableAmountInCents.toString()}`,
+    );
+    this.name = 'PlatformWalletInsufficientAvailableBalanceError';
+  }
+}
+
 /**
  * PlatformWalletService is the only authorised writer of the
  * PlatformWalletLedger. It mirrors the KloelWalletLedger pattern:
@@ -40,9 +68,10 @@ export interface ListLedgerFilters {
  * appends the corresponding ledger row (I-ADMIN-W3). Read-only
  * consumers (controllers, reconciliation) use readBalance/listLedger.
  *
- * v0 scope: read balance, list ledger, append (used by the checkout
- * split engine in a follow-up PR). No payout queue, no reconcile
- * job — those land in SP-9 complete.
+ * Current scope: read balance, list ledger, append-only mutations,
+ * platform payout debits, and idempotent adjustment credits used by
+ * the platform payout runtime. Reconciliation and maturation live in
+ * sibling services under this module.
  */
 @Injectable()
 export class PlatformWalletService {
@@ -163,5 +192,113 @@ export class PlatformWalletService {
       // the same instance — no cast needed.
       await this.prisma.$transaction(async (inner) => runOnce(inner));
     }
+  }
+
+  async debitAvailableForPayout(input: DebitPlatformPayoutInput): Promise<void> {
+    if (input.amountInCents <= 0n) {
+      throw new RangeError(
+        `debitAvailableForPayout: amountInCents must be > 0 (got ${input.amountInCents.toString()})`,
+      );
+    }
+
+    const currency = input.currency ?? DEFAULT_CURRENCY;
+
+    await this.prisma.$transaction(async (tx) => {
+      const wallet = await tx.platformWallet.upsert({
+        where: { currency },
+        update: {},
+        create: { currency },
+      });
+
+      const existing = await tx.platformWalletLedger.findFirst({
+        where: {
+          currency,
+          kind: PlatformLedgerKind.PAYOUT_DEBIT,
+          orderId: input.requestId,
+        },
+      });
+      if (existing) {
+        return;
+      }
+
+      if (wallet.availableBalanceInCents < input.amountInCents) {
+        throw new PlatformWalletInsufficientAvailableBalanceError(
+          currency,
+          input.amountInCents,
+          wallet.availableBalanceInCents,
+        );
+      }
+
+      await tx.platformWalletLedger.create({
+        data: {
+          walletId: wallet.id,
+          currency,
+          direction: 'debit',
+          bucket: PlatformWalletBucket.AVAILABLE,
+          amountInCents: input.amountInCents,
+          kind: PlatformLedgerKind.PAYOUT_DEBIT,
+          orderId: input.requestId,
+          reason: 'platform_wallet_payout_debit',
+          metadata: input.metadata,
+        },
+      });
+
+      await tx.platformWallet.update({
+        where: { id: wallet.id },
+        data: {
+          availableBalanceInCents: { decrement: input.amountInCents },
+        },
+      });
+    });
+  }
+
+  async creditAvailableByAdjustment(input: CreditPlatformAdjustmentInput): Promise<void> {
+    if (input.amountInCents <= 0n) {
+      throw new RangeError(
+        `creditAvailableByAdjustment: amountInCents must be > 0 (got ${input.amountInCents.toString()})`,
+      );
+    }
+
+    const currency = input.currency ?? DEFAULT_CURRENCY;
+
+    await this.prisma.$transaction(async (tx) => {
+      const wallet = await tx.platformWallet.upsert({
+        where: { currency },
+        update: {},
+        create: { currency },
+      });
+
+      const existing = await tx.platformWalletLedger.findFirst({
+        where: {
+          currency,
+          kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
+          orderId: input.requestId,
+        },
+      });
+      if (existing) {
+        return;
+      }
+
+      await tx.platformWalletLedger.create({
+        data: {
+          walletId: wallet.id,
+          currency,
+          direction: 'credit',
+          bucket: PlatformWalletBucket.AVAILABLE,
+          amountInCents: input.amountInCents,
+          kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
+          orderId: input.requestId,
+          reason: input.reason,
+          metadata: input.metadata,
+        },
+      });
+
+      await tx.platformWallet.update({
+        where: { id: wallet.id },
+        data: {
+          availableBalanceInCents: { increment: input.amountInCents },
+        },
+      });
+    });
   }
 }

@@ -38,36 +38,52 @@ const MAX_TAKE = 100;
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
+function applySearchFilter(where: Prisma.WorkspaceWhereInput, search: string | undefined): void {
+  if (!search) return;
+  where.OR = [
+    { name: { contains: search, mode: 'insensitive' } },
+    { customDomain: { contains: search, mode: 'insensitive' } },
+    {
+      agents: {
+        some: {
+          OR: [
+            { email: { contains: search, mode: 'insensitive' } },
+            { name: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+      },
+    },
+  ];
+}
+
+function applyKycFilter(where: Prisma.WorkspaceWhereInput, kycStatus: string | undefined): void {
+  if (!kycStatus) return;
+  where.agents = {
+    some: { role: 'ADMIN', kycStatus },
+  };
+}
+
+function buildListClientsWhere(input: ListClientsInput): Prisma.WorkspaceWhereInput {
+  const where: Prisma.WorkspaceWhereInput = {};
+  applySearchFilter(where, input.search);
+  applyKycFilter(where, input.kycStatus);
+  return where;
+}
+
+function resolveListClientsPagination(input: ListClientsInput): { skip: number; take: number } {
+  return {
+    skip: Math.max(0, input.skip ?? 0),
+    take: Math.min(MAX_TAKE, Math.max(1, input.take ?? DEFAULT_TAKE)),
+  };
+}
+
 @Injectable()
 export class AdminClientsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(input: ListClientsInput): Promise<ListClientsResponse> {
-    const skip = Math.max(0, input.skip ?? 0);
-    const take = Math.min(MAX_TAKE, Math.max(1, input.take ?? DEFAULT_TAKE));
-
-    const workspaceWhere: Prisma.WorkspaceWhereInput = {};
-    if (input.search) {
-      workspaceWhere.OR = [
-        { name: { contains: input.search, mode: 'insensitive' } },
-        { customDomain: { contains: input.search, mode: 'insensitive' } },
-        {
-          agents: {
-            some: {
-              OR: [
-                { email: { contains: input.search, mode: 'insensitive' } },
-                { name: { contains: input.search, mode: 'insensitive' } },
-              ],
-            },
-          },
-        },
-      ];
-    }
-    if (input.kycStatus) {
-      workspaceWhere.agents = {
-        some: { role: 'ADMIN', kycStatus: input.kycStatus },
-      };
-    }
+    const { skip, take } = resolveListClientsPagination(input);
+    const workspaceWhere = buildListClientsWhere(input);
 
     const [workspaces, total] = await this.prisma.$transaction([
       this.prisma.workspace.findMany({

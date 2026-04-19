@@ -22,6 +22,20 @@ export interface DebitChargebackInput {
   metadata?: Record<string, unknown>;
 }
 
+export interface DebitRefundInput {
+  accountBalanceId: string;
+  amountCents: bigint;
+  reference: LedgerReference;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreditAvailableAdjustmentInput {
+  accountBalanceId: string;
+  amountCents: bigint;
+  reference: LedgerReference;
+  metadata?: Record<string, unknown>;
+}
+
 export interface LedgerReference {
   /** e.g. 'sale', 'payout', 'chargeback', 'refund', 'adjustment'. */
   type: string;

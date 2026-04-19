@@ -33,12 +33,14 @@ Day 14+:       Win-back sequence begins
 
 ### Card Expiry Management
 
-| Timing                | Action                                                    |
-| --------------------- | --------------------------------------------------------- |
-| 30 days before expiry | Email: "Your card ending in 4242 expires next month"      |
-| 15 days before expiry | Email: "Update your payment method to avoid interruption" |
-| 7 days before expiry  | Email: "Your card expires in 7 days — update now"         |
-| 3 days before expiry  | In-app banner: "Payment method expiring soon"             |
+- **30 days before expiry** — email: "Your card ending in 4242 expires
+  next month."
+- **15 days before expiry** — email: "Update your payment method to avoid
+  interruption."
+- **7 days before expiry** — email: "Your card expires in 7 days — update
+  now."
+- **3 days before expiry** — in-app banner: "Payment method expiring
+  soon."
 
 **Email template — Card expiring:**
 
@@ -62,11 +64,12 @@ This takes less than 30 seconds.
 
 Major card networks offer automatic card update programs:
 
-| Service                                    | Network          | What It Does                                      |
-| ------------------------------------------ | ---------------- | ------------------------------------------------- |
-| Visa Account Updater (VAU)                 | Visa             | Auto-updates stored card numbers and expiry dates |
-| Mastercard Automatic Billing Updater (ABU) | Mastercard       | Same for Mastercard                               |
-| Amex Cardrefresher                         | American Express | Same for Amex                                     |
+- **Visa Account Updater (VAU)** — network: Visa. Auto-updates stored card
+  numbers and expiry dates.
+- **Mastercard Automatic Billing Updater (ABU)** — network: Mastercard.
+  Same behavior for Mastercard cards.
+- **Amex Cardrefresher** — network: American Express. Same behavior for
+  Amex cards.
 
 **Impact:** Reduces hard declines from expired/replaced cards by 30-50%.
 
@@ -102,15 +105,18 @@ For annual plans or high-value subscriptions:
 
 ### Decline Type Classification
 
-| Code                      | Type      | Meaning                   | Retry?                               |
-| ------------------------- | --------- | ------------------------- | ------------------------------------ |
-| `insufficient_funds`      | Soft      | Temporarily low balance   | Yes — retry in 2-3 days              |
-| `card_declined` (generic) | Soft      | Various temporary reasons | Yes — retry 3-4 times                |
-| `processing_error`        | Soft      | Gateway/network issue     | Yes — retry within 24h               |
-| `expired_card`            | Hard      | Card is expired           | No — request new card                |
-| `stolen_card`             | Hard      | Card reported stolen      | No — request new card                |
-| `do_not_honor`            | Soft/Hard | Bank refused (ambiguous)  | Try once more, then ask for new card |
-| `authentication_required` | Auth      | SCA/3DS needed            | Send customer to authenticate        |
+- `insufficient_funds` (soft) — temporarily low balance. Retry: yes, in
+  2-3 days.
+- `card_declined` generic (soft) — various temporary reasons. Retry: yes,
+  3-4 times.
+- `processing_error` (soft) — gateway / network issue. Retry: yes, within
+  24h.
+- `expired_card` (hard) — card is expired. Retry: no; request new card.
+- `stolen_card` (hard) — card reported stolen. Retry: no; request new card.
+- `do_not_honor` (soft / hard) — bank refused (ambiguous). Try once more,
+  then ask for a new card.
+- `authentication_required` (auth) — SCA / 3DS needed. Send customer to
+  authenticate.
 
 ### Retry Schedule by Provider
 
@@ -257,13 +263,13 @@ will be paused automatically.
 
 ### Access Degradation Options
 
-**Option A: Full access during grace (recommended for B2B)**
+#### Option A: Full access during grace (recommended for B2B)
 
 - Lower friction, customer feels respected
 - Higher recovery rate (they still see value)
 - Risk: some customers exploit the grace period
 
-**Option B: Read-only access (recommended for B2C)**
+#### Option B: Read-only access (recommended for B2C)
 
 - Can view but not create/edit
 - Creates urgency without data loss fear
@@ -397,16 +403,19 @@ Don't rely on email alone. Show payment failures in the app:
 
 ### Key Metrics
 
-| Metric                            | How to Calculate                        | Target                 |
-| --------------------------------- | --------------------------------------- | ---------------------- |
-| Recovery rate                     | Recovered payments / Total failed       | 50-60%                 |
-| Recovery rate by decline type     | Recovered / Failed per type             | Soft: 70%+, Hard: 40%+ |
-| Time to recovery                  | Days from failure to successful payment | <5 days                |
-| Pre-dunning prevention rate       | Prevented failures / Expected failures  | 20-30%                 |
-| Dunning email open rate           | Opens / Sent per email                  | 60%+                   |
-| Dunning email click rate          | Clicks / Opens per email                | 30%+                   |
-| Revenue recovered (monthly)       | Sum of recovered payment amounts        | Track trend            |
-| Revenue lost to involuntary churn | Sum of failed + unrecovered amounts     | Track trend            |
+- **Recovery rate** — recovered payments / total failed. Target: 50-60%.
+- **Recovery rate by decline type** — recovered / failed per type. Target:
+  soft 70%+, hard 40%+.
+- **Time to recovery** — days from failure to successful payment. Target:
+  <5 days.
+- **Pre-dunning prevention rate** — prevented failures / expected failures.
+  Target: 20-30%.
+- **Dunning email open rate** — opens / sent per email. Target: 60%+.
+- **Dunning email click rate** — clicks / opens per email. Target: 30%+.
+- **Revenue recovered (monthly)** — sum of recovered payment amounts.
+  Track trend.
+- **Revenue lost to involuntary churn** — sum of failed + unrecovered
+  amounts. Track trend.
 
 ### Benchmarking
 

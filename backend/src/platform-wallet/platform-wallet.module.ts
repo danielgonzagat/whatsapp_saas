@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
+import { BillingModule } from '../billing/billing.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { PlatformPayoutService } from './platform-payout.service';
+import { PlatformWalletMaturationService } from './platform-wallet-maturation.service';
 import { PlatformWalletReconcileService } from './platform-wallet-reconcile.service';
 import { PlatformWalletService } from './platform-wallet.service';
 
@@ -12,8 +15,18 @@ import { PlatformWalletService } from './platform-wallet.service';
  * reconcile service used by the admin /carteira/reconcile endpoint.
  */
 @Module({
-  imports: [PrismaModule],
-  providers: [PlatformWalletService, PlatformWalletReconcileService],
-  exports: [PlatformWalletService, PlatformWalletReconcileService],
+  imports: [PrismaModule, BillingModule],
+  providers: [
+    PlatformWalletService,
+    PlatformWalletReconcileService,
+    PlatformWalletMaturationService,
+    PlatformPayoutService,
+  ],
+  exports: [
+    PlatformWalletService,
+    PlatformWalletReconcileService,
+    PlatformWalletMaturationService,
+    PlatformPayoutService,
+  ],
 })
 export class PlatformWalletModule {}

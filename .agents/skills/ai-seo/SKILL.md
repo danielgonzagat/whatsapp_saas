@@ -62,14 +62,18 @@ Gather this context (ask if not provided):
 
 ### The AI Search Landscape
 
-| Platform                  | How It Works                    | Source Selection                                      |
-| ------------------------- | ------------------------------- | ----------------------------------------------------- |
-| **Google AI Overviews**   | Summarizes top-ranking pages    | Strong correlation with traditional rankings          |
-| **ChatGPT (with search)** | Searches web, cites sources     | Draws from wider range, not just top-ranked           |
-| **Perplexity**            | Always cites sources with links | Favors authoritative, recent, well-structured content |
-| **Gemini**                | Google's AI assistant           | Pulls from Google index + Knowledge Graph             |
-| **Copilot**               | Bing-powered AI search          | Bing index + authoritative sources                    |
-| **Claude**                | Brave Search (when enabled)     | Training data + Brave search results                  |
+- **Google AI Overviews** — summarizes top-ranking pages. Sources:
+  strong correlation with traditional rankings.
+- **ChatGPT (with search)** — searches web, cites sources. Sources: draws
+  from a wider range, not just top-ranked.
+- **Perplexity** — always cites sources with links. Sources: favors
+  authoritative, recent, well-structured content.
+- **Gemini** — Google's AI assistant. Sources: Google index + Knowledge
+  Graph.
+- **Copilot** — Bing-powered AI search. Sources: Bing index +
+  authoritative sources.
+- **Claude** — Brave Search (when enabled). Sources: training data + Brave
+  search results.
 
 For a deep dive on how each platform selects sources and what to optimize per
 platform, see
@@ -103,10 +107,11 @@ Before optimizing, assess your current AI search presence.
 
 Test 10-20 of your most important queries across platforms:
 
-| Query     | Google AI Overview | ChatGPT | Perplexity | You Cited? | Competitors Cited? |
-| --------- | :----------------: | :-----: | :--------: | :--------: | :----------------: |
-| [query 1] |       Yes/No       | Yes/No  |   Yes/No   |   Yes/No   |       [who]        |
-| [query 2] |       Yes/No       | Yes/No  |   Yes/No   |   Yes/No   |       [who]        |
+Columns: Query | AIO (Google AI Overview) | CGP (ChatGPT) | PPX
+(Perplexity) | You cited? | Competitors cited?
+
+- `[query 1]` → AIO: y/n; CGP: y/n; PPX: y/n; you: y/n; competitors: [who].
+- `[query 2]` → AIO: y/n; CGP: y/n; PPX: y/n; you: y/n; competitors: [who].
 
 **Query types to test:**
 
@@ -209,17 +214,15 @@ AI systems prefer sources they can trust. Build citation-worthiness.
 **The Princeton GEO research** (KDD 2024, studied across Perplexity.ai) ranked 9
 optimization methods:
 
-| Method                   | Visibility Boost | How to Apply                            |
-| ------------------------ | :--------------: | --------------------------------------- |
-| **Cite sources**         |       +40%       | Add authoritative references with links |
-| **Add statistics**       |       +37%       | Include specific numbers with sources   |
-| **Add quotations**       |       +30%       | Expert quotes with name and title       |
-| **Authoritative tone**   |       +25%       | Write with demonstrated expertise       |
-| **Improve clarity**      |       +20%       | Simplify complex concepts               |
-| **Technical terms**      |       +18%       | Use domain-specific terminology         |
-| **Unique vocabulary**    |       +15%       | Increase word diversity                 |
-| **Fluency optimization** |     +15-30%      | Improve readability and flow            |
-| ~~Keyword stuffing~~     |     **-10%**     | **Actively hurts AI visibility**        |
+- **Cite sources** (+40%) — add authoritative references with links.
+- **Add statistics** (+37%) — include specific numbers with sources.
+- **Add quotations** (+30%) — expert quotes with name and title.
+- **Authoritative tone** (+25%) — write with demonstrated expertise.
+- **Improve clarity** (+20%) — simplify complex concepts.
+- **Technical terms** (+18%) — use domain-specific terminology.
+- **Unique vocabulary** (+15%) — increase word diversity.
+- **Fluency optimization** (+15-30%) — improve readability and flow.
+- ~~**Keyword stuffing**~~ (**-10%**) — actively hurts AI visibility.
 
 **Best combination:** Fluency + Statistics = maximum boost. Low-ranking sites
 benefit even more — up to 115% visibility increase with citations.
@@ -238,14 +241,14 @@ benefit even more — up to 115% visibility increase with citations.
 - "According to [Source]" framing for claims
 - Author bios with relevant expertise
 
-**Freshness signals**
+#### Freshness signals
 
 - "Last updated: [date]" prominently displayed
 - Regular content refreshes (quarterly minimum for competitive topics)
 - Current year references and recent statistics
 - Remove or update outdated information
 
-**E-E-A-T alignment**
+#### E-E-A-T alignment
 
 - First-hand experience demonstrated
 - Specific, detailed information (not generic)
@@ -337,15 +340,15 @@ overview of what your product does, who it's for, and links to key pages
 
 Structured data helps AI systems understand your content. Key schemas:
 
-| Content Type        | Schema                      | Why It Helps                        |
-| ------------------- | --------------------------- | ----------------------------------- |
-| Articles/Blog posts | `Article`, `BlogPosting`    | Author, date, topic identification  |
-| How-to content      | `HowTo`                     | Step extraction for process queries |
-| FAQs                | `FAQPage`                   | Direct Q&A extraction               |
-| Products            | `Product`                   | Pricing, features, reviews          |
-| Comparisons         | `ItemList`                  | Structured comparison data          |
-| Reviews             | `Review`, `AggregateRating` | Trust signals                       |
-| Organization        | `Organization`              | Entity recognition                  |
+- **Articles / blog posts** → `Article`, `BlogPosting`. Helps with author,
+  date, and topic identification.
+- **How-to content** → `HowTo`. Helps with step extraction for process
+  queries.
+- **FAQs** → `FAQPage`. Helps with direct Q&A extraction.
+- **Products** → `Product`. Helps expose pricing, features, reviews.
+- **Comparisons** → `ItemList`. Helps expose structured comparison data.
+- **Reviews** → `Review`, `AggregateRating`. Helps as trust signals.
+- **Organization** → `Organization`. Helps with entity recognition.
 
 Content with proper schema shows 30-40% higher AI visibility. For
 implementation, use the **schema-markup** skill.
@@ -356,15 +359,14 @@ implementation, use the **schema-markup** skill.
 
 Not all content is equally citable. Prioritize these formats:
 
-| Content Type               | Citation Share | Why AI Cites It                   |
-| -------------------------- | :------------: | --------------------------------- |
-| **Comparison articles**    |      ~33%      | Structured, balanced, high-intent |
-| **Definitive guides**      |      ~15%      | Comprehensive, authoritative      |
-| **Original research/data** |      ~12%      | Unique, citable statistics        |
-| **Best-of/listicles**      |      ~10%      | Clear structure, entity-rich      |
-| **Product pages**          |      ~10%      | Specific details AI can extract   |
-| **How-to guides**          |      ~8%       | Step-by-step structure            |
-| **Opinion/analysis**       |      ~10%      | Expert perspective, quotable      |
+- **Comparison articles** — ~33% citation share; structured, balanced,
+  high-intent.
+- **Definitive guides** — ~15%; comprehensive, authoritative.
+- **Original research / data** — ~12%; unique, citable statistics.
+- **Best-of / listicles** — ~10%; clear structure, entity-rich.
+- **Product pages** — ~10%; specific details AI can extract.
+- **How-to guides** — ~8%; step-by-step structure.
+- **Opinion / analysis** — ~10%; expert perspective, quotable.
 
 **Underperformers for AI citation:**
 
@@ -380,13 +382,16 @@ Not all content is equally citable. Prioritize these formats:
 
 ### What to Track
 
-| Metric               | What It Measures                         | How to Check                           |
-| -------------------- | ---------------------------------------- | -------------------------------------- |
-| AI Overview presence | Do AI Overviews appear for your queries? | Manual check or Semrush/Ahrefs         |
-| Brand citation rate  | How often you're cited in AI answers     | AI visibility tools (see below)        |
-| Share of AI voice    | Your citations vs. competitors           | Peec AI, Otterly, ZipTie               |
-| Citation sentiment   | How AI describes your brand              | Manual review + monitoring tools       |
-| Source attribution   | Which of your pages get cited            | Track referral traffic from AI sources |
+- **AI Overview presence** — do AI Overviews appear for your queries?
+  Check manually or via Semrush / Ahrefs.
+- **Brand citation rate** — how often you're cited in AI answers. Use AI
+  visibility tools (see below).
+- **Share of AI voice** — your citations vs. competitors. Tools: Peec AI,
+  Otterly, ZipTie.
+- **Citation sentiment** — how AI describes your brand. Use manual review
+  plus monitoring tools.
+- **Source attribution** — which of your pages get cited. Track referral
+  traffic from AI sources.
 
 ### AI Visibility Monitoring Tools
 

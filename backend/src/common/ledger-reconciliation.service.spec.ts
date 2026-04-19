@@ -18,10 +18,52 @@ function makePrisma(overrides: any = {}) {
       groupBy: jest.fn().mockResolvedValue([]),
       ...overrides.kloelWalletLedger,
     },
+    adminAuditLog: {
+      create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
+      ...overrides.adminAuditLog,
+    },
   };
 }
 
 describe('LedgerReconciliationService — invariant I8 (ledger consistency)', () => {
+  it('runs the checkout reconciliation cron on the default 24h window', async () => {
+    const prisma = makePrisma();
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = new LedgerReconciliationService(prisma as any, financialAlert as any);
+    const runSpy = jest.spyOn(service, 'runReconciliation').mockResolvedValue({
+      scannedOrders: 0,
+      drifts: [],
+      scannedAt: new Date().toISOString(),
+    });
+
+    await service.runCheckoutCron();
+
+    expect(runSpy).toHaveBeenCalledWith(24);
+    expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
+  });
+
+  it('alerts when the checkout reconciliation cron itself fails', async () => {
+    const prisma = makePrisma();
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = new LedgerReconciliationService(prisma as any, financialAlert as any);
+    jest.spyOn(service, 'runReconciliation').mockRejectedValue(new Error('cron boom'));
+
+    await service.runCheckoutCron();
+
+    expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
+      'ledger reconciliation cron failed',
+      {
+        details: {
+          error: 'cron boom',
+        },
+      },
+    );
+  });
+
   it('returns an empty result when no orders exist in the window', async () => {
     const prisma = makePrisma();
     const service = new LedgerReconciliationService(prisma as any);
@@ -47,7 +89,10 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
         ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as any);
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = new LedgerReconciliationService(prisma as any, financialAlert as any);
 
     const result = await service.runReconciliation(24);
 
@@ -57,6 +102,36 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
       orderId: 'order-1',
       workspaceId: 'ws-1',
       kind: 'order_without_payment',
+    });
+    expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
+      'ledger reconciliation drift detected',
+      {
+        details: {
+          scannedOrders: 1,
+          driftCount: 1,
+        },
+      },
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        action: 'system.checkout.reconcile_drift',
+        entityType: 'checkout_order',
+        details: {
+          scannedOrders: 1,
+          driftCount: 1,
+          kinds: {
+            order_without_payment: 1,
+          },
+          sampleDrifts: [
+            {
+              orderId: 'order-1',
+              workspaceId: 'ws-1',
+              kind: 'order_without_payment',
+              details: { orderStatus: 'PAID' },
+            },
+          ],
+        },
+      },
     });
   });
 
@@ -185,10 +260,49 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
 
     expect(result.scannedOrders).toBe(1);
     expect(result.drifts).toHaveLength(0);
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 });
 
 describe('LedgerReconciliationService — invariant I12 (wallet ledger consistency)', () => {
+  it('runs the wallet reconciliation cron', async () => {
+    const prisma = makePrisma();
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = new LedgerReconciliationService(prisma as any, financialAlert as any);
+    const runSpy = jest.spyOn(service, 'runWalletReconciliation').mockResolvedValue({
+      scannedWallets: 0,
+      drifts: [],
+      scannedAt: new Date().toISOString(),
+    });
+
+    await service.runWalletCron();
+
+    expect(runSpy).toHaveBeenCalled();
+    expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
+  });
+
+  it('alerts when the wallet reconciliation cron itself fails', async () => {
+    const prisma = makePrisma();
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = new LedgerReconciliationService(prisma as any, financialAlert as any);
+    jest.spyOn(service, 'runWalletReconciliation').mockRejectedValue(new Error('wallet cron boom'));
+
+    await service.runWalletCron();
+
+    expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
+      'wallet ledger reconciliation cron failed',
+      {
+        details: {
+          error: 'wallet cron boom',
+        },
+      },
+    );
+  });
+
   it('returns zero drifts when no wallets exist', async () => {
     const prisma = makePrisma();
     const service = new LedgerReconciliationService(prisma as any);
@@ -197,6 +311,7 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
 
     expect(result.scannedWallets).toBe(0);
     expect(result.drifts).toHaveLength(0);
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('returns zero drifts when balance equals ledger sum across all buckets', async () => {
@@ -226,6 +341,7 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
 
     expect(result.scannedWallets).toBe(1);
     expect(result.drifts).toHaveLength(0);
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('flags wallets where stored balance does NOT equal ledger sum (I12)', async () => {
@@ -251,7 +367,10 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
           ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as any);
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = new LedgerReconciliationService(prisma as any, financialAlert as any);
 
     const result = await service.runWalletReconciliation();
 
@@ -262,6 +381,40 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
     expect(result.drifts[0].details.bucket).toBe('available');
     expect(result.drifts[0].details.storedInCents).toBe('5000');
     expect(result.drifts[0].details.ledgerSumInCents).toBe('4000');
+    expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
+      'wallet ledger reconciliation drift detected',
+      {
+        details: {
+          scannedWallets: 1,
+          driftCount: 1,
+        },
+      },
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        action: 'system.wallet.reconcile_drift',
+        entityType: 'kloel_wallet',
+        details: {
+          scannedWallets: 1,
+          driftCount: 1,
+          sampleDrifts: [
+            {
+              orderId: 'wallet-drift',
+              workspaceId: 'ws-2',
+              kind: 'wallet_balance_ledger_mismatch',
+              details: {
+                walletId: 'wallet-drift',
+                bucket: 'available',
+                storedInCents: '5000',
+                ledgerSumInCents: '4000',
+                creditInCents: '4000',
+                debitInCents: '0',
+              },
+            },
+          ],
+        },
+      },
+    });
   });
 
   it('flags drift on multiple buckets independently', async () => {

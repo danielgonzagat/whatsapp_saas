@@ -14,7 +14,14 @@ type StripeStub = {
 };
 
 function makeStripeStub(): StripeStub {
-  return { stripe: { transfers: { create: jest.fn().mockResolvedValue({ id: 'tr_x' }) } } };
+  let nextTransferId = 1;
+  return {
+    stripe: {
+      transfers: {
+        create: jest.fn().mockImplementation(async () => ({ id: `tr_${nextTransferId++}` })),
+      },
+    },
+  };
 }
 
 function makeConnectStub(map: Record<string, string | null>) {
@@ -88,6 +95,37 @@ describe('StripeWebhookProcessor.processSaleSucceeded — happy path', () => {
 
     expect(result.transfersDispatched).toBe(4); // supplier + affiliate + coproducer + manager
     expect(result.ledgerEntriesCreated).toBe(5); // all five balances
+    expect(result.connectPostSale).toEqual({
+      transferGroup: 'sale:order_xyz',
+      sellerStripeAccountId: 'acct_seller',
+      sellerDestinationAmountCents: 656n,
+      transfers: [
+        {
+          role: 'supplier',
+          accountId: 'acct_supplier',
+          amountCents: 4_210n,
+          stripeTransferId: 'tr_1',
+        },
+        {
+          role: 'affiliate',
+          accountId: 'acct_affiliate',
+          amountCents: 3_604n,
+          stripeTransferId: 'tr_2',
+        },
+        {
+          role: 'coproducer',
+          accountId: 'acct_coproducer',
+          amountCents: 360n,
+          stripeTransferId: 'tr_3',
+        },
+        {
+          role: 'manager',
+          accountId: 'acct_manager',
+          amountCents: 180n,
+          stripeTransferId: 'tr_4',
+        },
+      ],
+    });
     expect(stripe.stripe.transfers.create).toHaveBeenCalledTimes(4);
     expect(ledger.creditPending).toHaveBeenCalledTimes(5);
   });

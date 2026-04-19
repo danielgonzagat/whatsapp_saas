@@ -12,10 +12,25 @@ interface PersistedSplitLine {
   amountCents: string;
 }
 
+interface PersistedTransferSnapshot {
+  role: SplitRole;
+  accountId: string;
+  amountCents: bigint;
+  stripeTransferId: string;
+}
+
+export interface ConnectPostSaleSnapshot {
+  transferGroup: string;
+  sellerStripeAccountId: string;
+  sellerDestinationAmountCents: bigint;
+  transfers: PersistedTransferSnapshot[];
+}
+
 export interface ProcessSaleSucceededResult {
   paymentIntentId: string;
   transfersDispatched: number;
   ledgerEntriesCreated: number;
+  connectPostSale?: ConnectPostSaleSnapshot;
   skippedReason?: 'no_metadata' | 'already_processed' | 'no_lines';
 }
 
@@ -134,6 +149,9 @@ export class StripeWebhookProcessor {
 
     let transfersDispatched = 0;
     let ledgerEntriesCreated = 0;
+    const transferGroup = paymentIntent.transfer_group ?? `sale:${paymentIntent.id}`;
+    const transfers: PersistedTransferSnapshot[] = [];
+    let sellerDestinationAmountCents = 0n;
 
     for (const line of lines) {
       const amountCents = BigInt(line.amountCents);
@@ -143,15 +161,23 @@ export class StripeWebhookProcessor {
       // separate transfer needed. Other roles need one.
       if (line.role !== 'seller') {
         // biome-ignore lint/performance/noAwaitInLoops: per-split Stripe transfer dispatch must be sequential for ledger idempotency
-        await this.dispatchTransfer({
+        const stripeTransferId = await this.dispatchTransfer({
           paymentIntentId: paymentIntent.id,
           sellerStripeAccountId,
           line,
           amountCents,
           currency: paymentIntent.currency,
-          transferGroup: paymentIntent.transfer_group ?? `sale:${paymentIntent.id}`,
+          transferGroup,
+        });
+        transfers.push({
+          role: line.role,
+          accountId: line.accountId,
+          amountCents,
+          stripeTransferId,
         });
         transfersDispatched += 1;
+      } else {
+        sellerDestinationAmountCents = amountCents;
       }
 
       const balance = await this.connectService.findBalanceByStripeAccountId(line.accountId);
@@ -184,6 +210,12 @@ export class StripeWebhookProcessor {
       paymentIntentId: paymentIntent.id,
       transfersDispatched,
       ledgerEntriesCreated,
+      connectPostSale: {
+        transferGroup,
+        sellerStripeAccountId,
+        sellerDestinationAmountCents,
+        transfers,
+      },
     };
   }
 
@@ -194,12 +226,12 @@ export class StripeWebhookProcessor {
     amountCents: bigint;
     currency: string;
     transferGroup: string;
-  }): Promise<void> {
+  }): Promise<string> {
     const { paymentIntentId, sellerStripeAccountId, line, amountCents, currency, transferGroup } =
       args;
 
     try {
-      await this.stripeService.stripe.transfers.create(
+      const transfer = await this.stripeService.stripe.transfers.create(
         {
           amount: Number(amountCents),
           currency,
@@ -215,6 +247,7 @@ export class StripeWebhookProcessor {
           idempotencyKey: `${paymentIntentId}:${line.role}`,
         },
       );
+      return transfer.id;
     } catch (err) {
       // Re-throw so the webhook handler returns non-2xx and Stripe retries.
       // Stripe's idempotencyKey ensures retries don't duplicate transfers.

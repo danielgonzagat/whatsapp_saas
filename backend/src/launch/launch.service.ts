@@ -8,6 +8,25 @@ function readWorkspacePhone(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
+type AddGroupInput = {
+  name?: string;
+  inviteLink?: string;
+  groupLink?: string;
+  groupId?: string;
+  role?: string;
+  capacity?: number;
+  current?: number;
+  isActive?: boolean;
+};
+
+function resolveLaunchInviteLink(data: AddGroupInput): string {
+  const inviteLink = data.inviteLink || data.groupLink || data.groupId;
+  if (!inviteLink) {
+    throw new NotFoundException('Invite link do grupo é obrigatório');
+  }
+  return inviteLink;
+}
+
 @Injectable()
 export class LaunchService {
   constructor(private prisma: PrismaService) {}
@@ -34,20 +53,26 @@ export class LaunchService {
     });
   }
 
-  async addGroup(
-    workspaceId: string,
+  async addGroup(workspaceId: string, launcherId: string, data: AddGroupInput) {
+    await this.ensureLauncherOwnedByWorkspace(launcherId, workspaceId);
+    const inviteLink = resolveLaunchInviteLink(data);
+
+    return this.prisma.launchGroup.create({
+      data: {
+        name: data.name || data.role || 'Grupo do lançamento',
+        inviteLink,
+        capacity: data.capacity,
+        current: data.current,
+        isActive: data.isActive,
+        launcher: { connect: { id: launcherId } },
+      },
+    });
+  }
+
+  private async ensureLauncherOwnedByWorkspace(
     launcherId: string,
-    data: {
-      name?: string;
-      inviteLink?: string;
-      groupLink?: string;
-      groupId?: string;
-      role?: string;
-      capacity?: number;
-      current?: number;
-      isActive?: boolean;
-    },
-  ) {
+    workspaceId: string,
+  ): Promise<void> {
     const launcher = await this.prisma.groupLauncher.findUnique({
       where: { id: launcherId },
       select: { id: true, workspaceId: true },
@@ -60,22 +85,6 @@ export class LaunchService {
     if (launcher.workspaceId !== workspaceId) {
       throw new ForbiddenException('Launcher não pertence a este workspace');
     }
-
-    const inviteLink = data.inviteLink || data.groupLink || data.groupId;
-    if (!inviteLink) {
-      throw new NotFoundException('Invite link do grupo é obrigatório');
-    }
-
-    return this.prisma.launchGroup.create({
-      data: {
-        name: data.name || data.role || 'Grupo do lançamento',
-        inviteLink,
-        capacity: data.capacity,
-        current: data.current,
-        isActive: data.isActive,
-        launcher: { connect: { id: launcherId } },
-      },
-    });
   }
 
   async generateStartLink(workspaceId: string, flowId: string, customCommand?: string) {

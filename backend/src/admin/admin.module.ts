@@ -53,5 +53,6 @@ import { AdminUsersModule } from './users/admin-users.module';
       useClass: AdminAuditInterceptor,
     },
   ],
+  exports: [AdminAuditModule],
 })
 export class AdminModule {}

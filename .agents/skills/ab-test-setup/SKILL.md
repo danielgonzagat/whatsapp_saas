@@ -7,12 +7,16 @@ metadata:
 
 # A/B Test Setup
 
-You are an expert in experimentation and A/B testing. Your goal is to help design tests that produce statistically valid, actionable results.
+You are an expert in experimentation and A/B testing. Your goal is to help
+design tests that produce statistically valid, actionable results.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered
+or specific to this task.
 
 Before designing a test, understand:
 
@@ -268,14 +272,16 @@ Individual tests are valuable. A continuous experimentation program is a compoun
 
 Feed your experiment backlog from multiple sources:
 
-| Source              | What to Look For                                                |
-| ------------------- | --------------------------------------------------------------- |
-| Analytics           | Drop-off points, low-converting pages, underperforming segments |
-| Customer research   | Pain points, confusion, unmet expectations                      |
-| Competitor analysis | Features, messaging, or UX patterns they use that you don't     |
-| Support tickets     | Recurring questions or complaints about conversion flows        |
-| Heatmaps/recordings | Where users hesitate, rage-click, or abandon                    |
-| Past experiments    | "Significant loser" tests often reveal new angles to try        |
+- **Analytics** — drop-off points, low-converting pages, underperforming
+  segments.
+- **Customer research** — pain points, confusion, unmet expectations.
+- **Competitor analysis** — features, messaging, or UX patterns they use
+  that you don't.
+- **Support tickets** — recurring questions or complaints about conversion
+  flows.
+- **Heatmaps / recordings** — where users hesitate, rage-click, or abandon.
+- **Past experiments** — "significant loser" tests often reveal new angles
+  to try.
 
 ### ICE Prioritization
 
@@ -295,13 +301,12 @@ Run highest-scoring experiments first. Re-score monthly as context changes.
 
 Track your experimentation rate as a leading indicator of growth:
 
-| Metric                         | Target                                                                                             |
-| ------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Experiments launched per month | 4-8 for most teams                                                                                 |
-| Win rate                       | 20-30% is common for mature programs (sustained higher rates may indicate conservative hypotheses) |
-| Average test duration          | 2-4 weeks                                                                                          |
-| Backlog depth                  | 20+ hypotheses queued                                                                              |
-| Cumulative lift                | Compound gains from all winners                                                                    |
+- **Experiments launched per month** — 4-8 for most teams.
+- **Win rate** — 20-30% is common for mature programs. Sustained higher
+  rates may indicate conservative hypotheses.
+- **Average test duration** — 2-4 weeks.
+- **Backlog depth** — 20+ hypotheses queued.
+- **Cumulative lift** — compound gains from all winners.
 
 ### The Experiment Playbook
 
@@ -316,18 +321,21 @@ When a test wins, don't just implement it — document the pattern:
 **Guardrails**: [any guardrail metrics and their outcomes]
 **Segment deltas**: [notable differences by device, segment, or cohort]
 **Why it worked/failed**: [analysis]
-**Pattern**: [the reusable insight — e.g., "social proof near pricing CTAs increases plan selection"]
+**Pattern**: [reusable insight — e.g., "social proof near pricing CTAs
+lifts plan selection"]
 **Apply to**: [other pages/flows where this pattern might work]
 **Status**: [implemented / parked / needs follow-up test]
 ```
 
-Over time, your playbook becomes a library of proven growth patterns specific to your product and audience.
+Over time, your playbook becomes a library of proven growth patterns
+specific to your product and audience.
 
 ### Experiment Cadence
 
 **Weekly (30 min)**: Review running experiments for technical issues and guardrail metrics. Don't call winners early — but do stop tests where guardrails are significantly negative.
 
-**Bi-weekly**: Conclude completed experiments. Analyze results, update playbook, launch next experiment from backlog.
+**Bi-weekly**: Conclude completed experiments. Analyze results, update the
+playbook, launch next experiment from backlog.
 
 **Monthly (1 hour)**: Review experiment velocity, win rate, cumulative lift. Replenish hypothesis backlog. Re-prioritize with ICE.
 

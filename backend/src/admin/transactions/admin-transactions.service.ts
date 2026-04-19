@@ -71,6 +71,26 @@ export class AdminTransactionsService {
     }
 
     await this.runGatewayRefund(order);
+
+    if (this.normalizeGateway(order.payment.gateway) === 'stripe') {
+      await this.audit.append({
+        adminUserId: actorId,
+        action: 'admin.transactions.refund_requested',
+        entityType: 'CheckoutOrder',
+        entityId: order.id,
+        details: {
+          workspaceId: order.workspaceId,
+          orderNumber: order.orderNumber,
+          paymentId: order.payment.id,
+          paymentGateway: order.payment.gateway,
+          externalPaymentId: order.payment.externalId,
+          note: note ?? null,
+          mode: 'webhook_driven',
+        },
+      });
+      return;
+    }
+
     await this.persistNegativeAdjustment(order, actorId, 'REFUNDED', note);
   }
 
@@ -84,6 +104,12 @@ export class AdminTransactionsService {
       order.status === OrderStatus.CHARGEBACK
     ) {
       return;
+    }
+
+    if (this.normalizeGateway(order.payment.gateway) === 'stripe') {
+      throw new BadRequestException(
+        'Chargeback manual não é suportado no runtime Stripe-only. Aguarde o webhook do provedor.',
+      );
     }
 
     await this.persistNegativeAdjustment(order, actorId, 'CHARGEBACK', note);

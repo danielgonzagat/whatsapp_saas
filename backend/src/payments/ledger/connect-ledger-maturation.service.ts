@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
+import { FinancialAlertService } from '../../common/financial-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import { LedgerService } from './ledger.service';
@@ -25,6 +26,7 @@ export class ConnectLedgerMaturationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledgerService: LedgerService,
+    private readonly financialAlert: FinancialAlertService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -54,9 +56,27 @@ export class ConnectLedgerMaturationService {
         matured += 1;
       } catch (error) {
         failed += 1;
-        this.logger.error(
-          `connect_ledger_maturation_failed entry=${entry.id}: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`connect_ledger_maturation_failed entry=${entry.id}: ${message}`);
+        this.financialAlert.reconciliationAlert('connect ledger maturation failed', {
+          details: {
+            entryId: entry.id,
+            error: message,
+          },
+        });
+        await this.prisma.adminAuditLog
+          .create({
+            data: {
+              action: 'system.connect.maturation_failed',
+              entityType: 'connect_ledger_entry',
+              entityId: entry.id,
+              details: {
+                entryId: entry.id,
+                error: message,
+              },
+            },
+          })
+          .catch(() => undefined);
       }
     }
 

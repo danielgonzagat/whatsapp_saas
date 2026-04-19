@@ -7,6 +7,25 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
         paymentIntentId: 'pi_sale_1',
         transfersDispatched: 4,
         ledgerEntriesCreated: 5,
+        connectPostSale: {
+          transferGroup: 'sale:order-1',
+          sellerStripeAccountId: 'acct_seller',
+          sellerDestinationAmountCents: 656n,
+          transfers: [
+            {
+              role: 'supplier',
+              accountId: 'acct_supplier',
+              amountCents: 4_210n,
+              stripeTransferId: 'tr_supplier_1',
+            },
+            {
+              role: 'affiliate',
+              accountId: 'acct_affiliate',
+              amountCents: 3_604n,
+              stripeTransferId: 'tr_affiliate_1',
+            },
+          ],
+        },
       }),
     };
     const autopilot = {
@@ -21,6 +40,16 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
         findUnique: jest.fn().mockResolvedValue({ id: 'ws-1' }),
       },
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue({
+          orderId: 'order-1',
+          order: { workspaceId: 'ws-1' },
+          webhookData: {
+            splitInput: {
+              platformFeeCents: '990',
+              interestCents: '3990',
+            },
+          },
+        }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       checkoutOrder: {
@@ -50,6 +79,22 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_1' }),
       markWebhookProcessed: jest.fn().mockResolvedValue(undefined),
     };
+    const connectReversalService = {
+      processRefund: jest.fn(),
+      processDispute: jest.fn(),
+    };
+    const connectPayoutService = {
+      handleFailedPayout: jest.fn(),
+    };
+    const platformWallet = {
+      append: jest.fn().mockResolvedValue(undefined),
+    };
+    const platformPayoutService = {
+      handleFailedPayout: jest.fn(),
+    };
+    const adminAudit = {
+      append: jest.fn().mockResolvedValue(undefined),
+    };
 
     const controller = new PaymentWebhookController(
       autopilot as never,
@@ -58,6 +103,11 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       redis as never,
       webhooksService as never,
       stripeWebhookProcessor as never,
+      connectReversalService as never,
+      connectPayoutService as never,
+      platformWallet as never,
+      platformPayoutService as never,
+      adminAudit as never,
     );
 
     return {
@@ -68,6 +118,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       autopilot,
       whatsapp,
       stripeWebhookProcessor,
+      platformWallet,
     };
   }
 
@@ -224,7 +275,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
 
   it('dispatches the Connect post-sale processor for sale payment intents using product-specific maturation rules', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-05-01T00:00:00Z'));
-    const { controller, prisma, stripeWebhookProcessor } = buildController();
+    const { controller, prisma, stripeWebhookProcessor, platformWallet } = buildController();
     prisma.checkoutOrder.findUnique.mockResolvedValueOnce({
       id: 'order-1',
       plan: { productId: 'prod-1' },
@@ -311,6 +362,49 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     expect(matureAtForRole('affiliate')).toEqual(new Date('2026-05-08T00:00:00Z'));
     expect(matureAtForRole('seller')).toEqual(new Date('2026-05-31T00:00:00Z'));
     expect(matureAtForRole('manager')).toEqual(new Date('2026-05-01T00:00:00Z'));
+    expect(platformWallet.append).toHaveBeenCalledWith({
+      direction: 'credit',
+      bucket: 'PENDING',
+      amountInCents: 4_980n,
+      kind: 'PLATFORM_FEE_CREDIT',
+      orderId: 'sale:pi_sale_1',
+      reason: 'stripe_sale_platform_fee_credit',
+      metadata: {
+        paymentIntentId: 'pi_sale_1',
+        platformFeeCents: '990',
+        interestCents: '3990',
+      },
+    });
+    expect(prisma.checkoutPayment.updateMany).toHaveBeenCalledWith({
+      where: { externalId: 'pi_sale_1' },
+      data: {
+        webhookData: {
+          splitInput: {
+            platformFeeCents: '990',
+            interestCents: '3990',
+          },
+          connectPostSale: {
+            transferGroup: 'sale:order-1',
+            sellerStripeAccountId: 'acct_seller',
+            sellerDestinationAmountCents: '656',
+            transfers: [
+              {
+                role: 'supplier',
+                accountId: 'acct_supplier',
+                amountCents: '4210',
+                stripeTransferId: 'tr_supplier_1',
+              },
+              {
+                role: 'affiliate',
+                accountId: 'acct_affiliate',
+                amountCents: '3604',
+                stripeTransferId: 'tr_affiliate_1',
+              },
+            ],
+          },
+        },
+      },
+    });
     jest.useRealTimers();
   });
 });

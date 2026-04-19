@@ -5,18 +5,49 @@ import { flowQueue } from '../queue';
  * Dispara um fluxo automaticamente após scraping, se configurado no workspace.
  * Usa um flowId salvo em providerSettings.scraper?.flowId.
  */
+
+async function resolveScraperFlowId(
+  workspaceId: string,
+  inputFlowId: string | undefined,
+): Promise<string | undefined> {
+  if (inputFlowId) return inputFlowId;
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+  const settings = ws?.providerSettings as Record<string, unknown> | null;
+  const scraper = settings?.scraper as Record<string, unknown> | undefined;
+  return typeof scraper?.flowId === 'string' ? scraper.flowId : undefined;
+}
+
+function isContactEligible(
+  contact: { phone: string | null; workspaceId: string } | null,
+  workspaceId: string,
+): contact is { phone: string; workspaceId: string } {
+  return Boolean(contact?.phone) && contact?.workspaceId === workspaceId;
+}
+
+async function enqueueScrapedContactFlow(
+  flowId: string,
+  workspaceId: string,
+  contactId: string,
+): Promise<void> {
+  const contact = await prisma.contact.findUnique({ where: { id: contactId } });
+  if (!isContactEligible(contact, workspaceId)) return;
+
+  await flowQueue.add('run-flow', {
+    flowId,
+    user: contact.phone,
+    flow: null, // engine vai carregar do DB
+    startNode: null, // engine usa start do fluxo salvo
+    workspaceId,
+    workspace: null,
+  });
+}
+
 export async function triggerFlowForScrapedLeads(
   workspaceId: string,
   contactIds: string[],
   inputFlowId?: string,
 ) {
-  let resolvedFlowId = inputFlowId;
-  if (!resolvedFlowId) {
-    const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
-    const settings = ws?.providerSettings as Record<string, unknown> | null;
-    const scraper = settings?.scraper as Record<string, unknown> | undefined;
-    resolvedFlowId = typeof scraper?.flowId === 'string' ? scraper.flowId : undefined;
-  }
+  const resolvedFlowId = await resolveScraperFlowId(workspaceId, inputFlowId);
   if (!resolvedFlowId || !contactIds.length) return;
 
   // Garante que o flow pertence ao workspace
@@ -25,16 +56,6 @@ export async function triggerFlowForScrapedLeads(
 
   // biome-ignore lint/performance/noAwaitInLoops: per-contact flow dispatch — each iteration does a workspace-isolation check (contact.workspaceId !== workspaceId) then adds to BullMQ; sequential bounds Redis connection pressure and preserves the dispatch order used by downstream flow scheduling metrics
   for (const contactId of contactIds) {
-    const contact = await prisma.contact.findUnique({ where: { id: contactId } });
-    if (!contact?.phone || contact.workspaceId !== workspaceId) continue;
-
-    await flowQueue.add('run-flow', {
-      flowId: resolvedFlowId,
-      user: contact.phone,
-      flow: null, // engine vai carregar do DB
-      startNode: null, // engine usa start do fluxo salvo
-      workspaceId,
-      workspace: null,
-    });
+    await enqueueScrapedContactFlow(resolvedFlowId, workspaceId, contactId);
   }
 }

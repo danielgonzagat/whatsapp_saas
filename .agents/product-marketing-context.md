@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-_Last updated: 2026-04-19_
+> Last updated: 2026-04-19.
 
 ## Product Overview
 
@@ -54,12 +54,18 @@ AI-assisted execution.
 
 ## Personas
 
-| Persona                         | Cares about                         | Challenge                                                 | Value we promise                              |
-| ------------------------------- | ----------------------------------- | --------------------------------------------------------- | --------------------------------------------- |
-| Founder / Infoprodutor          | sales velocity, cash flow, control  | too many disconnected tools and operators                 | one place to launch, sell, recover, and scale |
-| Growth / Revenue Operator       | speed, orchestration, repeatability | manual work across CRM, campaigns, pages, and checkout    | one stack for execution with AI support       |
-| Affiliate / Partnership Manager | payout logic, materials, activation | fragmented affiliate setup and poor follow-through        | built-in affiliate and split-aware workflows  |
-| Ecommerce / Offer Owner         | conversion and retention            | low checkout conversion, weak follow-up, poor remarketing | checkout + recovery + campaigns in one loop   |
+- **Founder / Infoprodutor** — cares about sales velocity, cash flow,
+  control. Challenge: too many disconnected tools and operators. Value: one
+  place to launch, sell, recover, and scale.
+- **Growth / Revenue Operator** — cares about speed, orchestration,
+  repeatability. Challenge: manual work across CRM, campaigns, pages, and
+  checkout. Value: one stack for execution with AI support.
+- **Affiliate / Partnership Manager** — cares about payout logic,
+  materials, activation. Challenge: fragmented affiliate setup and poor
+  follow-through. Value: built-in affiliate and split-aware workflows.
+- **Ecommerce / Offer Owner** — cares about conversion and retention.
+  Challenge: low checkout conversion, weak follow-up, poor remarketing.
+  Value: checkout + recovery + campaigns in one loop.
 
 ## Problems & Pain Points
 
@@ -110,11 +116,13 @@ AI help, and stronger alignment with Brazilian direct-response commerce.
 
 ## Objections
 
-| Objection                       | Response                                                                                                                  |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| "Já uso várias ferramentas."    | Kloel reduces tool-switching cost and gives one operating layer for revenue-critical workflows.                           |
-| "IA só escreve texto genérico." | CIA is meant to work from real workspace context and real execution surfaces, not blank-page prompting.                   |
-| "Migrar isso vai dar trabalho." | The practical win is replacing recurring chaos with a unified stack for checkout, recovery, campaigns, and affiliate ops. |
+- _"Já uso várias ferramentas."_ — Kloel reduces tool-switching cost and
+  gives one operating layer for revenue-critical workflows.
+- _"IA só escreve texto genérico."_ — CIA is meant to work from real
+  workspace context and real execution surfaces, not blank-page prompting.
+- _"Migrar isso vai dar trabalho."_ — the practical win is replacing
+  recurring chaos with a unified stack for checkout, recovery, campaigns,
+  and affiliate ops.
 
 **Anti-persona:** teams wanting only a single-purpose commodity tool with no
 need for orchestration, automation, or AI-assisted execution.
@@ -179,11 +187,13 @@ translated into Portuguese.
 **Testimonials:** none captured yet.
 
 **Value themes:**
-| Theme | Proof |
-|-------|-------|
-| Unified growth stack | checkout, sites, campaigns, WhatsApp, CRM, affiliate, wallet all exist in the product surface |
-| Embedded execution | CIA, site generation, campaigns, email, follow-ups, autopilot |
-| Brazil-native operator fit | PT-BR workflows, Pix/card, info-product and affiliate language, WhatsApp-first posture |
+
+- **Unified growth stack** — checkout, sites, campaigns, WhatsApp, CRM,
+  affiliate, and wallet all exist in the product surface.
+- **Embedded execution** — CIA, site generation, campaigns, email,
+  follow-ups, autopilot.
+- **Brazil-native operator fit** — PT-BR workflows, Pix / card,
+  info-product and affiliate language, WhatsApp-first posture.
 
 ## Goals
 

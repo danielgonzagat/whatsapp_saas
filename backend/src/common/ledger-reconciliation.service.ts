@@ -1,4 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import { Cron } from '@nestjs/schedule';
+import { FinancialAlertService } from './financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -69,7 +72,44 @@ export interface WalletReconciliationResult {
 export class LedgerReconciliationService {
   private readonly logger = new Logger(LedgerReconciliationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly financialAlert?: FinancialAlertService,
+  ) {}
+
+  @Cron('0 */15 * * * *')
+  async runCheckoutCron(): Promise<void> {
+    try {
+      await this.runReconciliation(24);
+    } catch (error) {
+      this.logger.error(
+        `ledger_reconciliation_cron_failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      this.financialAlert?.reconciliationAlert('ledger reconciliation cron failed', {
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+  }
+
+  @Cron('0 */15 * * * *')
+  async runWalletCron(): Promise<void> {
+    try {
+      await this.runWalletReconciliation();
+    } catch (error) {
+      this.logger.error(
+        `wallet_ledger_reconciliation_cron_failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      this.financialAlert?.reconciliationAlert('wallet ledger reconciliation cron failed', {
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+  }
 
   async runReconciliation(hoursBack = 24): Promise<ReconciliationResult> {
     const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
@@ -176,6 +216,25 @@ export class LedgerReconciliationService {
     };
 
     if (drifts.length > 0) {
+      this.financialAlert?.reconciliationAlert('ledger reconciliation drift detected', {
+        details: {
+          scannedOrders: result.scannedOrders,
+          driftCount: drifts.length,
+        },
+      });
+      await this.appendAuditSummary({
+        action: 'system.checkout.reconcile_drift',
+        entityType: 'checkout_order',
+        details: {
+          scannedOrders: result.scannedOrders,
+          driftCount: drifts.length,
+          kinds: drifts.reduce<Record<string, number>>((acc, drift) => {
+            acc[drift.kind] = (acc[drift.kind] || 0) + 1;
+            return acc;
+          }, {}),
+          sampleDrifts: drifts.slice(0, 25),
+        },
+      });
       this.logger.warn(
         `ledger_drift_detected: ${JSON.stringify({
           scannedOrders: result.scannedOrders,
@@ -323,6 +382,21 @@ export class LedgerReconciliationService {
     };
 
     if (drifts.length > 0) {
+      this.financialAlert?.reconciliationAlert('wallet ledger reconciliation drift detected', {
+        details: {
+          scannedWallets: result.scannedWallets,
+          driftCount: drifts.length,
+        },
+      });
+      await this.appendAuditSummary({
+        action: 'system.wallet.reconcile_drift',
+        entityType: 'kloel_wallet',
+        details: {
+          scannedWallets: result.scannedWallets,
+          driftCount: drifts.length,
+          sampleDrifts: drifts.slice(0, 25),
+        },
+      });
       this.logger.warn(
         `wallet_ledger_drift_detected: ${JSON.stringify({
           scannedWallets: result.scannedWallets,
@@ -348,5 +422,27 @@ export class LedgerReconciliationService {
     }
 
     return result;
+  }
+
+  private async appendAuditSummary(input: {
+    action: string;
+    entityType: string;
+    details: Record<string, unknown>;
+  }): Promise<void> {
+    try {
+      await this.prisma.adminAuditLog.create({
+        data: {
+          action: input.action,
+          entityType: input.entityType,
+          details: input.details as Prisma.JsonObject,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `ledger_reconcile_audit_failed action=${input.action}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 }

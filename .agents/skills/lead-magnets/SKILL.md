@@ -90,19 +90,26 @@ Gather this context (ask if not provided):
 
 ## Lead Magnet Types
 
-| Type                              | Best For                        | Effort  | Time to Create |
-| --------------------------------- | ------------------------------- | ------- | -------------- |
-| Checklist                         | Quick wins, process steps       | Low     | 1-2 hours      |
-| Cheat sheet                       | Reference material, shortcuts   | Low     | 2-4 hours      |
-| Template (doc/spreadsheet/Notion) | Repeatable processes, workflows | Low-Med | 2-8 hours      |
-| Swipe file                        | Inspiration, examples           | Medium  | 4-8 hours      |
-| Ebook/guide                       | Deep education, authority       | High    | 1-3 weeks      |
-| Mini-course (email)               | Education + nurture             | Medium  | 1-2 weeks      |
-| Mini-course (video)               | Education + personality         | High    | 2-4 weeks      |
-| Quiz/assessment                   | Segmentation, engagement        | Medium  | 1-2 weeks      |
-| Webinar                           | Authority, live engagement      | Medium  | 1 week prep    |
-| Resource library                  | Ongoing value, return visits    | High    | Ongoing        |
-| Free trial/community access       | Product experience              | Varies  | Varies         |
+- **Checklist** — quick wins, process steps. Effort: low. Time: 1-2 hours.
+- **Cheat sheet** — reference material, shortcuts. Effort: low. Time: 2-4
+  hours.
+- **Template** (doc, spreadsheet, Notion) — repeatable processes,
+  workflows. Effort: low-medium. Time: 2-8 hours.
+- **Swipe file** — inspiration, examples. Effort: medium. Time: 4-8 hours.
+- **Ebook / guide** — deep education, authority. Effort: high. Time: 1-3
+  weeks.
+- **Mini-course (email)** — education + nurture. Effort: medium. Time: 1-2
+  weeks.
+- **Mini-course (video)** — education + personality. Effort: high. Time:
+  2-4 weeks.
+- **Quiz / assessment** — segmentation, engagement. Effort: medium. Time:
+  1-2 weeks.
+- **Webinar** — authority, live engagement. Effort: medium. Time: 1 week
+  prep.
+- **Resource library** — ongoing value, return visits. Effort: high. Time:
+  ongoing.
+- **Free trial / community access** — product experience. Effort and time
+  vary.
 
 **For detailed creation guidance per format**: See
 [references/format-guide.md](references/format-guide.md)
@@ -137,12 +144,12 @@ Goal: Help evaluate solutions. Build trust and demonstrate expertise.
 
 Goal: Help implement. Remove friction to purchase.
 
-| Format               | Example                                                 |
-| -------------------- | ------------------------------------------------------- |
-| Template             | "Ready-to-Use Sales Email Templates"                    |
-| Free trial           | "14-Day Free Trial"                                     |
-| Implementation guide | "Migration Checklist: Switch in 30 Minutes"             |
-| ROI calculator       | "Calculate Your Savings" (→ see **free-tool-strategy**) |
+- **Template** — example: "Ready-to-Use Sales Email Templates."
+- **Free trial** — example: "14-Day Free Trial."
+- **Implementation guide** — example: "Migration Checklist: Switch in 30
+  Minutes."
+- **ROI calculator** — example: "Calculate Your Savings" (→ see
+  **free-tool-strategy**).
 
 ---
 
@@ -150,12 +157,14 @@ Goal: Help implement. Remove friction to purchase.
 
 ### Gating Options
 
-| Approach               | When to Use                       | Trade-off                    |
-| ---------------------- | --------------------------------- | ---------------------------- |
-| **Full gate**          | High-value content, bottom-funnel | Max capture, lower reach     |
-| **Partial gate**       | Preview + full version            | Balance of reach and capture |
-| **Ungated + optional** | Top-funnel education              | Max reach, lower capture     |
-| **Content upgrade**    | Blog post + bonus                 | Contextual, high-intent      |
+- **Full gate** — high-value content, bottom-funnel. Trade-off: max
+  capture, lower reach.
+- **Partial gate** — preview + full version. Trade-off: balance of reach
+  and capture.
+- **Ungated + optional** — top-funnel education. Trade-off: max reach,
+  lower capture.
+- **Content upgrade** — blog post + bonus. Trade-off: contextual, high
+  intent.
 
 ### What to Ask For
 
@@ -195,12 +204,14 @@ by 5-10%.
 
 ### Delivery Methods
 
-| Method                     | Pros                                     | Cons                    |
-| -------------------------- | ---------------------------------------- | ----------------------- |
-| **Instant download**       | Immediate gratification                  | No email verification   |
-| **Email delivery**         | Verifies email, starts relationship      | Slight delay            |
-| **Thank you page + email** | Best of both—instant access + email copy | Slightly more complex   |
-| **Drip delivery**          | Builds habit, multiple touchpoints       | Only for courses/series |
+- **Instant download** — pros: immediate gratification. Cons: no email
+  verification.
+- **Email delivery** — pros: verifies email, starts relationship. Cons:
+  slight delay.
+- **Thank you page + email** — pros: best of both (instant access + email
+  copy). Cons: slightly more complex.
+- **Drip delivery** — pros: builds habit, multiple touchpoints. Cons: only
+  for courses / series.
 
 ### Thank You Page Optimization
 

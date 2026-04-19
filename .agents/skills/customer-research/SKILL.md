@@ -50,7 +50,7 @@ Most engagements combine both. Establish which mode applies before proceeding.
 
 ### Asset Types
 
-**Customer interview / sales call transcripts**
+#### Customer interview / sales call transcripts
 
 - Extract: pains, triggers, desired outcomes, language used, objections,
   alternatives considered
@@ -129,11 +129,11 @@ After extracting from individual assets:
 
 Label every insight with a confidence level before presenting it:
 
-| Confidence | Criteria                                                                                  |
-| ---------- | ----------------------------------------------------------------------------------------- |
-| **High**   | Theme appears in 3+ independent sources; mentioned unprompted; consistent across segments |
-| **Medium** | Theme appears in 2 sources, or only prompted, or limited to one segment                   |
-| **Low**    | Single source; could be an outlier; needs validation                                      |
+- **High** — theme appears in 3+ independent sources; mentioned unprompted;
+  consistent across segments.
+- **Medium** — theme appears in 2 sources, or only prompted, or limited to
+  one segment.
+- **Low** — single source; could be an outlier; needs validation.
 
 **Recency window**: Weight sources from the last 12 months more heavily. Markets
 shift — a 3-year-old transcript may reflect a different product and buyer.
@@ -160,13 +160,16 @@ find authentic, unmoderated language about the problem space.
 Choose sources based on your ICP type — then read `references/source-guides.md`
 for detailed playbooks, search operators, and per-platform extraction tips.
 
-| ICP Type                    | Primary Sources                                                                                        |
-| --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| B2B SaaS / technical buyers | Reddit (role-specific subs), G2/Capterra, Hacker News, LinkedIn, Indie Hackers, SparkToro              |
-| SMB / founders              | Reddit (r/entrepreneur, r/smallbusiness), Indie Hackers, Product Hunt, Facebook Groups, SparkToro      |
-| Developer / DevOps          | r/devops, r/programming, Hacker News, Stack Overflow, Discord servers                                  |
-| B2C / consumer              | App store reviews (1-3 star), Reddit hobby/lifestyle subs, YouTube comments, TikTok/Instagram comments |
-| Enterprise                  | LinkedIn, industry analyst reports, G2 Enterprise filter, job postings, SparkToro                      |
+- **B2B SaaS / technical buyers** — Reddit (role-specific subs),
+  G2 / Capterra, Hacker News, LinkedIn, Indie Hackers, SparkToro.
+- **SMB / founders** — Reddit (r/entrepreneur, r/smallbusiness), Indie
+  Hackers, Product Hunt, Facebook Groups, SparkToro.
+- **Developer / DevOps** — r/devops, r/programming, Hacker News, Stack
+  Overflow, Discord servers.
+- **B2C / consumer** — app store reviews (1-3 star), Reddit hobby /
+  lifestyle subs, YouTube comments, TikTok / Instagram comments.
+- **Enterprise** — LinkedIn, industry analyst reports, G2 Enterprise
+  filter, job postings, SparkToro.
 
 **Quick decision guide:**
 
@@ -315,12 +318,11 @@ Don't ask all five at once — lead with #1 and #2, then follow up as needed.
 
 ## Related Skills
 
-| When to hand off                                         | Skill                     |
-| -------------------------------------------------------- | ------------------------- |
-| Writing copy informed by the research                    | `copywriting`             |
-| Optimizing a page using VOC insights                     | `page-cro`                |
-| Building a competitor comparison page                    | `competitor-alternatives` |
-| Creating a churn prevention strategy from churn research | `churn-prevention`        |
-| Planning paid ads informed by research                   | `paid-ads`                |
-| Writing cold email using research on pain/trigger        | `cold-email`              |
-| Planning content based on discovered topics              | `content-strategy`        |
+- Writing copy informed by the research → `copywriting`.
+- Optimizing a page using VOC insights → `page-cro`.
+- Building a competitor comparison page → `competitor-alternatives`.
+- Creating a churn prevention strategy from churn research →
+  `churn-prevention`.
+- Planning paid ads informed by research → `paid-ads`.
+- Writing cold email using research on pain / trigger → `cold-email`.
+- Planning content based on discovered topics → `content-strategy`.

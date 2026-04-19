@@ -10,9 +10,23 @@ export async function queryRevenueKloelInCents(
 
   const rows = await prisma.$queryRaw<Row[]>(Prisma.sql`
     SELECT
-      SUM("amount_in_cents")::bigint AS total
+      COALESCE(
+        SUM(
+          CASE
+            WHEN "direction" = 'credit' THEN "amount_in_cents"
+            ELSE -"amount_in_cents"
+          END
+        ),
+        0
+      )::bigint AS total
     FROM "platform_wallet_ledger"
-    WHERE "kind" = 'PLATFORM_FEE_CREDIT'
+    WHERE "kind" IN (
+      'PLATFORM_FEE_CREDIT',
+      'REFUND_DEBIT',
+      'CHARGEBACK_DEBIT',
+      'ADJUSTMENT_CREDIT',
+      'ADJUSTMENT_DEBIT'
+    )
       AND "created_at" BETWEEN ${from} AND ${to}
   `);
 

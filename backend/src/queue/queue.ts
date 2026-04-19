@@ -23,21 +23,26 @@ let _initialized = false;
 const queueLogger = new Logger('Queue');
 const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
-const serializeQueueLogArg = (value: unknown): string => {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-    return String(value);
-  }
-  if (value instanceof Error) {
-    return value.message;
-  }
+const serializePrimitiveQueueLogValue = (value: unknown): string | null => {
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'bigint') return value.toString();
+  return null;
+};
+
+const safeJsonStringifyQueueLog = (value: unknown): string => {
   try {
     return JSON.stringify(value);
   } catch {
     return '[unserializable]';
   }
+};
+
+const serializeQueueLogArg = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+  const primitive = serializePrimitiveQueueLogValue(value);
+  if (primitive !== null) return primitive;
+  if (value instanceof Error) return value.message;
+  return safeJsonStringifyQueueLog(value);
 };
 
 const log = (...args: unknown[]) => {
@@ -47,6 +52,24 @@ const warn = (...args: unknown[]) => {
   if (!isTestEnv) queueLogger.warn(args.map(serializeQueueLogArg).join(' '));
 };
 
+function readIntEnvWithFloor(envName: string, fallback: number, floor: number): number {
+  const raw = process.env[envName] || String(fallback);
+  const parsed = Number.parseInt(raw, 10) || fallback;
+  return Math.max(floor, parsed);
+}
+
+function resolveDefaultQueueJobOptions() {
+  return {
+    attempts: readIntEnvWithFloor('QUEUE_ATTEMPTS', 3, 1),
+    backoff: {
+      type: 'exponential',
+      delay: readIntEnvWithFloor('QUEUE_BACKOFF_MS', 5000, 1000),
+    },
+    removeOnComplete: true,
+    removeOnFail: 50,
+  };
+}
+
 function ensureInitialized() {
   if (_initialized) return;
 
@@ -55,21 +78,9 @@ function ensureInitialized() {
   log('✅ [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
 
   _connection = createRedisClient();
-
-  const defaultAttempts = Math.max(1, Number.parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3);
-  const defaultBackoff = Math.max(
-    1000,
-    Number.parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
-  );
-
   _queueOptions = {
     connection: _connection,
-    defaultJobOptions: {
-      attempts: defaultAttempts,
-      backoff: { type: 'exponential', delay: defaultBackoff },
-      removeOnComplete: true,
-      removeOnFail: 50,
-    },
+    defaultJobOptions: resolveDefaultQueueJobOptions(),
   };
 
   _initialized = true;

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PlatformWalletBucket, type Prisma } from '@prisma/client';
+import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const DEFAULT_CURRENCY = 'BRL';
@@ -24,8 +25,8 @@ export interface ReconcileReport {
  * PlatformWalletLedger and compares the derived totals per bucket
  * against the materialised `platform_wallets` columns. Any drift
  * is logged at ERROR, surfaced via the /admin/carteira/reconcile
- * endpoint, and (in a follow-up) emits a structured ops alert so
- * oncall can catch divergence within minutes.
+ * endpoint, and emits a structured ops alert so oncall can catch
+ * divergence within minutes.
  *
  * The service does NOT mutate balances — it only reads. If drift
  * is detected the operator decides whether to replay the ledger
@@ -36,7 +37,10 @@ export interface ReconcileReport {
 export class PlatformWalletReconcileService {
   private readonly logger = new Logger(PlatformWalletReconcileService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly financialAlert: FinancialAlertService,
+  ) {}
 
   async reconcile(currency: string = DEFAULT_CURRENCY): Promise<ReconcileReport> {
     const wallet = await this.prisma.platformWallet.findUnique({
@@ -80,6 +84,26 @@ export class PlatformWalletReconcileService {
         `[platform-wallet] reconcile drift currency=${currency} ` +
           `available=${availableDrift} pending=${pendingDrift} reserved=${reservedDrift}`,
       );
+      this.financialAlert.reconciliationAlert('platform wallet reconcile drift detected', {
+        details: {
+          currency,
+          availableDriftInCents: availableDrift,
+          pendingDriftInCents: pendingDrift,
+          reservedDriftInCents: reservedDrift,
+        },
+      });
+      await this.appendAuditDrift({
+        currency,
+        ledgerAvailableInCents: available,
+        ledgerPendingInCents: pending,
+        ledgerReservedInCents: reserved,
+        walletAvailableInCents: walletAvailable,
+        walletPendingInCents: walletPending,
+        walletReservedInCents: walletReserved,
+        availableDriftInCents: availableDrift,
+        pendingDriftInCents: pendingDrift,
+        reservedDriftInCents: reservedDrift,
+      });
     }
 
     return {
@@ -112,6 +136,36 @@ export class PlatformWalletReconcileService {
       else total -= amount;
     }
     return Number(total);
+  }
+
+  private async appendAuditDrift(details: {
+    currency: string;
+    ledgerAvailableInCents: number;
+    ledgerPendingInCents: number;
+    ledgerReservedInCents: number;
+    walletAvailableInCents: number;
+    walletPendingInCents: number;
+    walletReservedInCents: number;
+    availableDriftInCents: number;
+    pendingDriftInCents: number;
+    reservedDriftInCents: number;
+  }): Promise<void> {
+    try {
+      await this.prisma.adminAuditLog.create({
+        data: {
+          action: 'system.carteira.reconcile_drift',
+          entityType: 'platform_wallet',
+          entityId: details.currency,
+          details: details as Prisma.InputJsonValue,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `platform_wallet_reconcile_audit_failed currency=${details.currency}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   /**

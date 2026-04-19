@@ -1,18 +1,21 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AdminAction, AdminModule, PlatformLedgerKind } from '@prisma/client';
 import { Public } from '../../auth/public.decorator';
+import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
+import type { AuthenticatedAdmin } from '../auth/admin-token.types';
+import { AdminAuditService } from '../audit/admin-audit.service';
+import { PlatformPayoutService } from '../../platform-wallet/platform-payout.service';
 import { PlatformWalletReconcileService } from '../../platform-wallet/platform-wallet-reconcile.service';
 import { PlatformWalletService } from '../../platform-wallet/platform-wallet.service';
 
 /**
- * SP-9 v0 read-only endpoints for /carteira. The split engine that
- * actually writes to the ledger lands in a follow-up PR wired into
- * the checkout confirm flow. Until then, the wallet returns zeros
- * for a freshly-seeded currency and the ledger list is empty —
- * which is the correct honest state per CLAUDE.md.
+ * Admin endpoints for the platform wallet. Exposes read surfaces
+ * (balance, ledger, reconcile) plus controlled manual payouts for
+ * the platform account with admin audit logging.
  */
 @Public()
 @Controller('admin/carteira')
@@ -21,6 +24,8 @@ export class AdminCarteiraController {
   constructor(
     private readonly wallet: PlatformWalletService,
     private readonly reconcile: PlatformWalletReconcileService,
+    private readonly platformPayout: PlatformPayoutService,
+    private readonly audit: AdminAuditService,
   ) {}
 
   @Get('balance')
@@ -57,5 +62,109 @@ export class AdminCarteiraController {
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async runReconcile(@Query('currency') currency?: string) {
     return this.reconcile.reconcile(currency ?? 'BRL');
+  }
+
+  @Get('payouts')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
+  async listPayouts(@Query('skip') skip?: string, @Query('take') take?: string) {
+    const result = await this.audit.list({
+      action: 'carteira.payout',
+      entityType: 'platform_wallet',
+      skip: skip ? Number(skip) : undefined,
+      take: take ? Number(take) : undefined,
+    });
+
+    return {
+      items: result.items.map((item) => {
+        const details =
+          item.details && typeof item.details === 'object' && !Array.isArray(item.details)
+            ? (item.details as Record<string, unknown>)
+            : {};
+        const adminUser =
+          'adminUser' in item && item.adminUser && typeof item.adminUser === 'object'
+            ? item.adminUser
+            : null;
+
+        return {
+          id: item.id,
+          action: item.action,
+          createdAt: item.createdAt.toISOString(),
+          requestId: typeof details.requestId === 'string' ? details.requestId : null,
+          payoutId: typeof details.payoutId === 'string' ? details.payoutId : null,
+          status: typeof details.status === 'string' ? details.status : null,
+          amountCents: typeof details.amountCents === 'string' ? details.amountCents : null,
+          currency: typeof details.currency === 'string' ? details.currency : null,
+          error: typeof details.error === 'string' ? details.error : null,
+          adminUser,
+        };
+      }),
+      total: result.total,
+    };
+  }
+
+  @Post('payouts')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
+  async createPayout(
+    @Body()
+    body: {
+      amountCents?: number;
+      requestId?: string;
+      currency?: string;
+    },
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    const amountCents = Math.trunc(Number(body.amountCents ?? 0));
+    if (!Number.isSafeInteger(amountCents) || amountCents <= 0) {
+      throw new BadRequestException('amountCents must be a positive integer');
+    }
+
+    const currency = String(body.currency || 'BRL')
+      .trim()
+      .toUpperCase();
+    const requestId = String(body.requestId || '').trim() || `platform_po_${randomUUID()}`;
+
+    let result;
+    try {
+      result = await this.platformPayout.createPayout({
+        amountCents: BigInt(amountCents),
+        requestId,
+        currency,
+      });
+    } catch (error) {
+      await this.audit.append({
+        adminUserId: admin.id,
+        action: 'admin.carteira.payout_request_failed',
+        entityType: 'platform_wallet',
+        entityId: currency,
+        details: {
+          requestId,
+          amountCents: String(amountCents),
+          currency,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+      throw error;
+    }
+
+    await this.audit.append({
+      adminUserId: admin.id,
+      action: 'admin.carteira.payout_requested',
+      entityType: 'platform_wallet',
+      entityId: currency,
+      details: {
+        requestId,
+        payoutId: result.payoutId,
+        status: result.status,
+        amountCents: result.amountCents.toString(),
+      },
+    });
+
+    return {
+      success: true,
+      payoutId: result.payoutId,
+      status: result.status,
+      amountCents: result.amountCents.toString(),
+      currency: result.currency,
+    };
   }
 }

@@ -97,35 +97,41 @@ async function healQueue(dlqName: string, originalQueueName: string) {
   }
 }
 
+function toDlqMonitorError(err: unknown): Error {
+  if (err instanceof Error) return err;
+  return new Error(typeof err === 'string' ? err : 'unknown error');
+}
+
+async function notifyIfDlqHasBacklog(dlqName: string): Promise<void> {
+  const dlq = new Queue(dlqName, queueOptions);
+  const counts = await dlq.getJobCounts();
+  const waiting = (counts.waiting || 0) + (counts.delayed || 0);
+  const failed = counts.failed || 0;
+  if (waiting <= 0 && failed <= 0) return;
+  await notify(dlqName, waiting, failed);
+}
+
+async function checkSingleDlq(name: string): Promise<void> {
+  const dlqName = `${name}-dlq`;
+  try {
+    // 1. Attempt Self-Healing first
+    await healQueue(dlqName, name);
+    // 2. Monitor leftovers
+    await notifyIfDlqHasBacklog(dlqName);
+  } catch (err: unknown) {
+    // PULSE:OK — DLQ heal failure is non-critical; other queues still checked
+    console.warn('[DLQ Monitor] error checking/healing', dlqName, toDlqMonitorError(err).message);
+  }
+}
+
 async function checkDlqs() {
   // queueRegistry is an array of Queues. We need to access their names.
   // Importing queueRegistry as 'any' to bypass potential type strictness on iteration if it's an array
   const queues = queueRegistry as Array<{ name: string }>;
 
   for (const queue of queues) {
-    const name = queue.name; // e.g. 'flow-jobs'
-    const dlqName = `${name}-dlq`;
-
-    try {
-      // 1. Attempt Self-Healing first
-      // biome-ignore lint/performance/noAwaitInLoops: healQueue mutates Redis state per queue; parallel heals race and double-rescue the same jobs
-      await healQueue(dlqName, name);
-
-      // 2. Monitor leftovers
-      const dlq = new Queue(dlqName, queueOptions);
-      const counts = await dlq.getJobCounts();
-      const waiting = (counts.waiting || 0) + (counts.delayed || 0);
-      const failed = counts.failed || 0;
-
-      if (waiting > 0 || failed > 0) {
-        await notify(dlqName, waiting, failed);
-      }
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      // PULSE:OK — DLQ heal failure is non-critical; other queues still checked
-      console.warn('[DLQ Monitor] error checking/healing', dlqName, errInstanceofError?.message);
-    }
+    // biome-ignore lint/performance/noAwaitInLoops: healQueue mutates Redis state per queue; parallel heals race and double-rescue the same jobs
+    await checkSingleDlq(queue.name);
   }
 }
 

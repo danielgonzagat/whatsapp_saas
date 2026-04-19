@@ -1,0 +1,110 @@
+import { Injectable } from '@nestjs/common';
+
+import { StripeService } from '../billing/stripe.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
+
+import { PlatformWalletService } from './platform-wallet.service';
+
+export interface CreatePlatformPayoutInput {
+  amountCents: bigint;
+  requestId: string;
+  currency?: string;
+}
+
+export interface CreatePlatformPayoutResult {
+  payoutId: string;
+  status: string;
+  amountCents: bigint;
+  currency: string;
+}
+
+export interface HandleFailedPlatformPayoutInput {
+  payoutId: string;
+  amountCents: bigint;
+  requestId: string;
+  currency?: string;
+}
+
+@Injectable()
+export class PlatformPayoutService {
+  constructor(
+    private readonly stripeService: StripeService,
+    private readonly wallet: PlatformWalletService,
+    private readonly financialAlert: FinancialAlertService,
+  ) {}
+
+  async createPayout(input: CreatePlatformPayoutInput): Promise<CreatePlatformPayoutResult> {
+    const currency = (input.currency ?? 'BRL').toUpperCase();
+
+    await this.wallet.debitAvailableForPayout({
+      currency,
+      amountInCents: input.amountCents,
+      requestId: input.requestId,
+      metadata: {
+        requestId: input.requestId,
+      },
+    });
+
+    try {
+      const payout = await this.stripeService.stripe.payouts.create(
+        {
+          amount: Number(input.amountCents),
+          currency: currency.toLowerCase(),
+          metadata: {
+            platformWallet: 'true',
+            platformWalletCurrency: currency,
+            requestId: input.requestId,
+          },
+        },
+        {
+          idempotencyKey: input.requestId,
+        },
+      );
+
+      return {
+        payoutId: payout.id,
+        status: String(payout.status ?? 'pending'),
+        amountCents: input.amountCents,
+        currency,
+      };
+    } catch (error) {
+      await this.wallet.creditAvailableByAdjustment({
+        currency,
+        amountInCents: input.amountCents,
+        requestId: `payout_failed_request:${input.requestId}`,
+        reason: 'platform_wallet_payout_failed_request_credit',
+        metadata: {
+          requestId: input.requestId,
+        },
+      });
+      this.financialAlert.withdrawalFailed(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          amount: Number(input.amountCents),
+        },
+      );
+      throw error;
+    }
+  }
+
+  async handleFailedPayout(input: HandleFailedPlatformPayoutInput): Promise<void> {
+    const currency = (input.currency ?? 'BRL').toUpperCase();
+
+    await this.wallet.creditAvailableByAdjustment({
+      currency,
+      amountInCents: input.amountCents,
+      requestId: `payout_failed:${input.payoutId}`,
+      reason: 'platform_wallet_payout_failed_credit',
+      metadata: {
+        requestId: input.requestId,
+        stripePayoutId: input.payoutId,
+      },
+    });
+    this.financialAlert.withdrawalFailed(
+      new Error(`Stripe payout.failed webhook ${input.payoutId}`),
+      {
+        amount: Number(input.amountCents),
+      },
+    );
+  }
+}

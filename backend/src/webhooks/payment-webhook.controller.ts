@@ -11,11 +11,20 @@ import {
 } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import type { ConnectAccountType, Contact, WebhookEvent } from '@prisma/client';
+import {
+  PlatformLedgerKind,
+  PlatformWalletBucket,
+  type ConnectAccountType,
+  type Contact,
+  type WebhookEvent,
+} from '@prisma/client';
 import type { Redis } from 'ioredis';
 // Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import Stripe = require('stripe');
+import { AdminAuditService } from '../admin/audit/admin-audit.service';
+import { PlatformWalletService } from '../platform-wallet/platform-wallet.service';
+import { PlatformPayoutService } from '../platform-wallet/platform-payout.service';
 import { Public } from '../auth/public.decorator';
 import { AutopilotService } from '../autopilot/autopilot.service';
 import type {
@@ -24,7 +33,12 @@ import type {
   StripePaymentIntent,
 } from '../billing/stripe-types';
 import { validatePaymentTransition } from '../common/payment-state-machine';
-import { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.processor';
+import { ConnectPayoutService } from '../payments/connect/connect-payout.service';
+import { ConnectReversalService } from '../payments/connect/connect-reversal.service';
+import {
+  StripeWebhookProcessor,
+  type ConnectPostSaleSnapshot,
+} from '../payments/stripe/stripe-webhook.processor';
 import type { SplitRole } from '../payments/split/split.types';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -205,6 +219,23 @@ function mapStripeIntentStatusForCheckout(
   return 'PENDING';
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function parseBigIntNumberish(value: unknown): bigint {
+  if (typeof value === 'bigint') return value;
+  if (typeof value === 'number' && Number.isInteger(value)) return BigInt(value);
+  if (typeof value === 'string' && /^-?\d+$/.test(value)) return BigInt(value);
+  return 0n;
+}
+
 /**
  * Webhook genérico de pagamento/loja para marcar conversões reais no Autopilot.
  * Use header X-Webhook-Secret para autenticar.
@@ -221,6 +252,11 @@ export class PaymentWebhookController {
     @InjectRedis() private readonly redis: Redis,
     private readonly webhooksService: WebhooksService,
     private readonly stripeWebhookProcessor: StripeWebhookProcessor,
+    private readonly connectReversalService: ConnectReversalService,
+    private readonly connectPayoutService: ConnectPayoutService,
+    private readonly platformWallet: PlatformWalletService,
+    private readonly platformPayoutService: PlatformPayoutService,
+    private readonly adminAudit: AdminAuditService,
   ) {}
 
   @Public()
@@ -323,7 +359,13 @@ export class PaymentWebhookController {
           },
         };
       } else {
-        event = { id: verified.id, type: verified.type };
+        event = {
+          id: verified.id,
+          type: verified.type,
+          data: {
+            object: asRecord(verified.data.object) ?? undefined,
+          },
+        };
       }
     }
 
@@ -352,6 +394,220 @@ export class PaymentWebhookController {
         };
       }
       this.logger.warn(`Failed to log Stripe webhook event: ${errInstanceofError?.message}`);
+    }
+
+    if (event?.type === 'refund.created') {
+      const refund = asRecord(event.data?.object);
+      const refundId = asString(refund?.id);
+      const paymentIntentId = asString(refund?.payment_intent);
+      const requestedAmountCents = parseBigIntNumberish(refund?.amount);
+
+      if (refundId && paymentIntentId && requestedAmountCents > 0n) {
+        const reversal = await this.connectReversalService.processRefund({
+          paymentIntentId,
+          refundId,
+          amountCents: requestedAmountCents,
+        });
+
+        const checkoutContext = await this.loadCheckoutPaymentContext(paymentIntentId);
+        await this.prisma.checkoutPayment.updateMany({
+          where: { externalId: paymentIntentId },
+          data: { status: 'REFUNDED' },
+        });
+
+        const workspaceId = checkoutContext?.order?.workspaceId ?? null;
+        const orderId = checkoutContext?.orderId ?? null;
+        if (workspaceId && orderId) {
+          await this.prisma.checkoutOrder.updateMany({
+            where: { id: orderId, workspaceId },
+            data: { status: 'REFUNDED', refundedAt: new Date() },
+          });
+          await this.prisma.kloelSale
+            .updateMany({
+              where: { workspaceId, externalPaymentId: paymentIntentId },
+              data: { status: 'refunded' },
+            })
+            .catch(() => undefined);
+        }
+
+        const platformDebit = requestedAmountCents - reversal.reversedAmountCents;
+        await this.appendPlatformReversal({
+          triggerKind: 'refund',
+          triggerId: refundId,
+          paymentIntentId,
+          requestedAmountCents,
+          stakeholderReversedAmountCents: reversal.reversedAmountCents,
+          platformDebitCents: platformDebit,
+        });
+        await this.appendSaleReversalAudit({
+          action: 'system.sale.refund_processed',
+          paymentIntentId,
+          orderId,
+          workspaceId,
+          triggerId: refundId,
+          requestedAmountCents,
+          stakeholderReversedAmountCents: reversal.reversedAmountCents,
+          platformDebitCents: platformDebit,
+        });
+      }
+
+      if (webhookEvent?.id) {
+        await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+      }
+      return { received: true };
+    }
+
+    if (event?.type === 'charge.dispute.created') {
+      const dispute = asRecord(event.data?.object);
+      const disputeId = asString(dispute?.id);
+      const paymentIntentId = asString(dispute?.payment_intent);
+      const requestedAmountCents = parseBigIntNumberish(dispute?.amount);
+
+      if (disputeId && paymentIntentId && requestedAmountCents > 0n) {
+        const reversal = await this.connectReversalService.processDispute({
+          paymentIntentId,
+          disputeId,
+          amountCents: requestedAmountCents,
+        });
+
+        const checkoutContext = await this.loadCheckoutPaymentContext(paymentIntentId);
+        await this.prisma.checkoutPayment.updateMany({
+          where: { externalId: paymentIntentId },
+          data: { status: 'CHARGEBACK' },
+        });
+
+        const workspaceId = checkoutContext?.order?.workspaceId ?? null;
+        const orderId = checkoutContext?.orderId ?? null;
+        if (workspaceId && orderId) {
+          await this.prisma.checkoutOrder.updateMany({
+            where: { id: orderId, workspaceId },
+            data: { status: 'CHARGEBACK' },
+          });
+          await this.prisma.kloelSale
+            .updateMany({
+              where: { workspaceId, externalPaymentId: paymentIntentId },
+              data: { status: 'chargeback' },
+            })
+            .catch(() => undefined);
+        }
+
+        const platformDebit = requestedAmountCents - reversal.reversedAmountCents;
+        await this.appendPlatformReversal({
+          triggerKind: 'dispute',
+          triggerId: disputeId,
+          paymentIntentId,
+          requestedAmountCents,
+          stakeholderReversedAmountCents: reversal.reversedAmountCents,
+          platformDebitCents: platformDebit,
+        });
+        await this.appendSaleReversalAudit({
+          action: 'system.sale.chargeback_posted',
+          paymentIntentId,
+          orderId,
+          workspaceId,
+          triggerId: disputeId,
+          requestedAmountCents,
+          stakeholderReversedAmountCents: reversal.reversedAmountCents,
+          platformDebitCents: platformDebit,
+        });
+      }
+
+      if (webhookEvent?.id) {
+        await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+      }
+      return { received: true };
+    }
+
+    if (event?.type === 'payout.failed' || event?.type === 'payout.paid') {
+      const payout = asRecord(event.data?.object);
+      const payoutId = asString(payout?.id);
+      const amountCents = parseBigIntNumberish(payout?.amount);
+      const metadata = asRecord(payout?.metadata);
+      const accountBalanceId = asString(metadata?.accountBalanceId);
+      const requestId = asString(metadata?.requestId);
+      const isPlatformWalletPayout = asString(metadata?.platformWallet) === 'true';
+      const payoutCurrency =
+        asString(metadata?.platformWalletCurrency) ??
+        (asString(payout?.currency)?.toUpperCase() || 'BRL');
+
+      if (
+        event.type === 'payout.failed' &&
+        payoutId &&
+        accountBalanceId &&
+        requestId &&
+        amountCents > 0n
+      ) {
+        await this.connectPayoutService.handleFailedPayout({
+          payoutId,
+          accountBalanceId,
+          requestId,
+          amountCents,
+        });
+        await this.appendConnectPayoutAudit({
+          action: 'system.connect.payout_failed',
+          accountBalanceId,
+          payoutId,
+          requestId,
+          amountCents,
+          status: 'failed',
+        });
+      } else if (
+        event.type === 'payout.failed' &&
+        payoutId &&
+        requestId &&
+        amountCents > 0n &&
+        isPlatformWalletPayout
+      ) {
+        await this.platformPayoutService.handleFailedPayout({
+          payoutId,
+          requestId,
+          amountCents,
+          currency: payoutCurrency,
+        });
+        await this.appendPlatformPayoutAudit({
+          action: 'system.carteira.payout_failed',
+          payoutId,
+          requestId,
+          amountCents,
+          currency: payoutCurrency,
+          status: 'failed',
+        });
+      } else if (
+        event.type === 'payout.paid' &&
+        payoutId &&
+        accountBalanceId &&
+        requestId &&
+        amountCents > 0n
+      ) {
+        await this.appendConnectPayoutAudit({
+          action: 'system.connect.payout_paid',
+          accountBalanceId,
+          payoutId,
+          requestId,
+          amountCents,
+          status: 'paid',
+        });
+      } else if (
+        event.type === 'payout.paid' &&
+        payoutId &&
+        requestId &&
+        amountCents > 0n &&
+        isPlatformWalletPayout
+      ) {
+        await this.appendPlatformPayoutAudit({
+          action: 'system.carteira.payout_paid',
+          payoutId,
+          requestId,
+          amountCents,
+          currency: payoutCurrency,
+          status: 'paid',
+        });
+      }
+
+      if (webhookEvent?.id) {
+        await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+      }
+      return { received: true };
     }
 
     if (
@@ -415,10 +671,14 @@ export class PaymentWebhookController {
       }
 
       if (checkoutPaymentStatus === 'APPROVED' && intent.metadata?.type === 'sale') {
-        await this.stripeWebhookProcessor.processSaleSucceeded(
+        const postSaleResult = await this.stripeWebhookProcessor.processSaleSucceeded(
           intent as StripePaymentIntent,
           await this.buildMatureAtResolver(orderId),
         );
+        if (intent.id) {
+          await this.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
+          await this.appendPlatformSaleCredit(intent.id);
+        }
       }
 
       if (workspaceId && orderId) {
@@ -786,6 +1046,251 @@ export class PaymentWebhookController {
       await this.webhooksService.markWebhookProcessed(genericWebhookEvent.id).catch(() => {});
     }
     return { ok: true };
+  }
+
+  private async loadCheckoutPaymentContext(paymentIntentId: string) {
+    return this.prisma.checkoutPayment.findFirst({
+      where: { externalId: paymentIntentId },
+      select: {
+        orderId: true,
+        webhookData: true,
+        order: {
+          select: {
+            workspaceId: true,
+          },
+        },
+      },
+    });
+  }
+
+  private async persistConnectPostSaleSnapshot(
+    paymentIntentId: string,
+    connectPostSale: ConnectPostSaleSnapshot | undefined,
+  ): Promise<void> {
+    if (!connectPostSale) return;
+
+    const payment = await this.loadCheckoutPaymentContext(paymentIntentId);
+    const webhookData = asRecord(payment?.webhookData) ?? {};
+
+    await this.prisma.checkoutPayment.updateMany({
+      where: { externalId: paymentIntentId },
+      data: {
+        webhookData: {
+          ...webhookData,
+          connectPostSale: {
+            transferGroup: connectPostSale.transferGroup,
+            sellerStripeAccountId: connectPostSale.sellerStripeAccountId,
+            sellerDestinationAmountCents: connectPostSale.sellerDestinationAmountCents.toString(),
+            transfers: connectPostSale.transfers.map((transfer) => ({
+              role: transfer.role,
+              accountId: transfer.accountId,
+              amountCents: transfer.amountCents.toString(),
+              stripeTransferId: transfer.stripeTransferId,
+            })),
+          },
+        },
+      },
+    });
+  }
+
+  private async appendPlatformSaleCredit(paymentIntentId: string): Promise<void> {
+    const payment = await this.loadCheckoutPaymentContext(paymentIntentId);
+    const webhookData = asRecord(payment?.webhookData);
+    const splitInput = asRecord(webhookData?.splitInput);
+    if (!splitInput) return;
+
+    const platformFeeCents = parseBigIntNumberish(splitInput.platformFeeCents);
+    const interestCents = parseBigIntNumberish(splitInput.interestCents);
+    const totalCreditCents = platformFeeCents + interestCents;
+    if (totalCreditCents <= 0n) return;
+
+    await this.appendPlatformWalletEntry(
+      {
+        direction: 'credit',
+        bucket: PlatformWalletBucket.PENDING,
+        amountInCents: totalCreditCents,
+        kind: PlatformLedgerKind.PLATFORM_FEE_CREDIT,
+        orderId: `sale:${paymentIntentId}`,
+        reason: 'stripe_sale_platform_fee_credit',
+        metadata: {
+          paymentIntentId,
+          platformFeeCents: platformFeeCents.toString(),
+          interestCents: interestCents.toString(),
+        },
+      },
+      `sale:${paymentIntentId}`,
+      PlatformLedgerKind.PLATFORM_FEE_CREDIT,
+    );
+  }
+
+  private async appendPlatformReversal(args: {
+    triggerKind: 'refund' | 'dispute';
+    triggerId: string;
+    paymentIntentId: string;
+    requestedAmountCents: bigint;
+    stakeholderReversedAmountCents: bigint;
+    platformDebitCents: bigint;
+  }): Promise<void> {
+    if (args.platformDebitCents <= 0n) return;
+
+    const kind =
+      args.triggerKind === 'refund'
+        ? PlatformLedgerKind.REFUND_DEBIT
+        : PlatformLedgerKind.CHARGEBACK_DEBIT;
+    const reason =
+      args.triggerKind === 'refund'
+        ? 'stripe_refund_platform_debit'
+        : 'stripe_chargeback_platform_debit';
+    const baseOrderId = `${args.triggerKind}:${args.triggerId}`;
+    const balance = await this.platformWallet.readBalance('BRL');
+    const pendingBalanceCents = BigInt(balance.pendingInCents);
+    const pendingDebitCents =
+      pendingBalanceCents > 0n
+        ? pendingBalanceCents >= args.platformDebitCents
+          ? args.platformDebitCents
+          : pendingBalanceCents
+        : 0n;
+    const availableDebitCents = args.platformDebitCents - pendingDebitCents;
+    const metadata = {
+      paymentIntentId: args.paymentIntentId,
+      ...(args.triggerKind === 'refund'
+        ? { refundId: args.triggerId }
+        : { disputeId: args.triggerId }),
+      buyerRequestedAmountCents: args.requestedAmountCents.toString(),
+      stakeholderReversedAmountCents: args.stakeholderReversedAmountCents.toString(),
+    };
+
+    if (pendingDebitCents > 0n) {
+      const orderId = availableDebitCents > 0n ? `${baseOrderId}:pending` : baseOrderId;
+      await this.appendPlatformWalletEntry(
+        {
+          direction: 'debit',
+          bucket: PlatformWalletBucket.PENDING,
+          amountInCents: pendingDebitCents,
+          kind,
+          orderId,
+          reason,
+          metadata,
+        },
+        orderId,
+        kind,
+      );
+    }
+
+    if (availableDebitCents > 0n) {
+      const orderId = pendingDebitCents > 0n ? `${baseOrderId}:available` : baseOrderId;
+      await this.appendPlatformWalletEntry(
+        {
+          direction: 'debit',
+          bucket: PlatformWalletBucket.AVAILABLE,
+          amountInCents: availableDebitCents,
+          kind,
+          orderId,
+          reason,
+          metadata,
+        },
+        orderId,
+        kind,
+      );
+    }
+  }
+
+  private async appendPlatformWalletEntry(
+    input: Parameters<PlatformWalletService['append']>[0],
+    orderId: string,
+    kind: PlatformLedgerKind,
+  ): Promise<void> {
+    try {
+      await this.platformWallet.append(input);
+    } catch (error) {
+      if ((error as { code?: string } | null)?.code === 'P2002') {
+        this.logger.debug(`Platform wallet entry already recorded orderId=${orderId} kind=${kind}`);
+        return;
+      }
+      throw error;
+    }
+  }
+
+  private async appendPlatformPayoutAudit(input: {
+    action: string;
+    payoutId: string;
+    requestId: string;
+    amountCents: bigint;
+    currency: string;
+    status: 'failed' | 'paid';
+  }): Promise<void> {
+    await this.adminAudit.append({
+      action: input.action,
+      entityType: 'platform_wallet',
+      entityId: input.currency,
+      details: {
+        requestId: input.requestId,
+        payoutId: input.payoutId,
+        status: input.status,
+        amountCents: input.amountCents.toString(),
+        currency: input.currency,
+      },
+    });
+  }
+
+  private async appendConnectPayoutAudit(input: {
+    action: string;
+    accountBalanceId: string;
+    payoutId: string;
+    requestId: string;
+    amountCents: bigint;
+    status: 'failed' | 'paid';
+  }): Promise<void> {
+    const balance = await this.prisma.connectAccountBalance.findUnique({
+      where: { id: input.accountBalanceId },
+      select: {
+        workspaceId: true,
+        accountType: true,
+        stripeAccountId: true,
+      },
+    });
+
+    await this.adminAudit.append({
+      action: input.action,
+      entityType: 'connect_account_balance',
+      entityId: input.accountBalanceId,
+      details: {
+        requestId: input.requestId,
+        payoutId: input.payoutId,
+        status: input.status,
+        amountCents: input.amountCents.toString(),
+        accountBalanceId: input.accountBalanceId,
+        workspaceId: balance?.workspaceId ?? null,
+        accountType: balance?.accountType ?? null,
+        stripeAccountId: balance?.stripeAccountId ?? null,
+      },
+    });
+  }
+
+  private async appendSaleReversalAudit(input: {
+    action: string;
+    paymentIntentId: string;
+    orderId: string | null;
+    workspaceId: string | null;
+    triggerId: string;
+    requestedAmountCents: bigint;
+    stakeholderReversedAmountCents: bigint;
+    platformDebitCents: bigint;
+  }): Promise<void> {
+    await this.adminAudit.append({
+      action: input.action,
+      entityType: 'checkout_order',
+      entityId: input.orderId ?? input.paymentIntentId,
+      details: {
+        paymentIntentId: input.paymentIntentId,
+        orderId: input.orderId,
+        workspaceId: input.workspaceId,
+        triggerId: input.triggerId,
+        requestedAmountCents: input.requestedAmountCents.toString(),
+        stakeholderReversedAmountCents: input.stakeholderReversedAmountCents.toString(),
+        platformDebitCents: input.platformDebitCents.toString(),
+      },
+    });
   }
 
   private async buildMatureAtResolver(orderId?: string) {

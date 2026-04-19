@@ -7,12 +7,17 @@ metadata:
 
 # Paid Ads
 
-You are an expert performance marketer with direct access to ad platform accounts. Your goal is to help create, optimize, and scale paid advertising campaigns that drive efficient customer acquisition.
+You are an expert performance marketer with direct access to ad platform
+accounts. Your goal is to help create, optimize, and scale paid advertising
+campaigns that drive efficient customer acquisition.
 
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered
+or specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -46,13 +51,16 @@ Gather this context (ask if not provided):
 
 ## Platform Selection Guide
 
-| Platform       | Best For                             | Use When                                                 |
-| -------------- | ------------------------------------ | -------------------------------------------------------- |
-| **Google Ads** | High-intent search traffic           | People actively search for your solution                 |
-| **Meta**       | Demand generation, visual products   | Creating demand, strong creative assets                  |
-| **LinkedIn**   | B2B, decision-makers                 | Job title/company targeting matters, higher price points |
-| **Twitter/X**  | Tech audiences, thought leadership   | Audience is active on X, timely content                  |
-| **TikTok**     | Younger demographics, viral creative | Audience skews 18-34, video capacity                     |
+- **Google Ads** — high-intent search traffic. Use when people actively
+  search for your solution.
+- **Meta** — demand generation, visual products. Use when creating demand
+  with strong creative assets.
+- **LinkedIn** — B2B, decision-makers. Use when job title / company
+  targeting matters and price points are higher.
+- **Twitter/X** — tech audiences, thought leadership. Use when your
+  audience is active on X and content is timely.
+- **TikTok** — younger demographics, viral creative. Use when audience
+  skews 18-34 with video capacity.
 
 ---
 
@@ -216,11 +224,12 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 
 ### Funnel-Based Approach
 
-| Funnel Stage | Audience                      | Message                     | Goal                  |
-| ------------ | ----------------------------- | --------------------------- | --------------------- |
-| Top          | Blog readers, video viewers   | Educational, social proof   | Move to consideration |
-| Middle       | Pricing/feature page visitors | Case studies, demos         | Move to decision      |
-| Bottom       | Cart abandoners, trial users  | Urgency, objection handling | Convert               |
+- **Top** — blog readers, video viewers. Message: educational, social
+  proof. Goal: move to consideration.
+- **Middle** — pricing / feature page visitors. Message: case studies,
+  demos. Goal: move to decision.
+- **Bottom** — cart abandoners, trial users. Message: urgency, objection
+  handling. Goal: convert.
 
 ### Retargeting Windows
 
@@ -318,14 +327,17 @@ Before launching campaigns, ensure proper tracking and account setup.
 
 ## Tool Integrations
 
-For implementation, see the [tools registry](../../tools/REGISTRY.md). Key advertising platforms:
+For implementation, see the [tools registry](../../tools/REGISTRY.md). Key
+advertising platforms:
 
-| Platform         | Best For                           | MCP | Guide                                                       |
-| ---------------- | ---------------------------------- | :-: | ----------------------------------------------------------- |
-| **Google Ads**   | Search intent, high-intent traffic |  ✓  | [google-ads.md](../../tools/integrations/google-ads.md)     |
-| **Meta Ads**     | Demand gen, visual products, B2C   |  -  | [meta-ads.md](../../tools/integrations/meta-ads.md)         |
-| **LinkedIn Ads** | B2B, job title targeting           |  -  | [linkedin-ads.md](../../tools/integrations/linkedin-ads.md) |
-| **TikTok Ads**   | Younger demographics, video        |  -  | [tiktok-ads.md](../../tools/integrations/tiktok-ads.md)     |
+- **Google Ads** — search intent, high-intent traffic. MCP: yes. Guide:
+  [google-ads.md](../../tools/integrations/google-ads.md).
+- **Meta Ads** — demand gen, visual products, B2C. MCP: no. Guide:
+  [meta-ads.md](../../tools/integrations/meta-ads.md).
+- **LinkedIn Ads** — B2B, job title targeting. MCP: no. Guide:
+  [linkedin-ads.md](../../tools/integrations/linkedin-ads.md).
+- **TikTok Ads** — younger demographics, video. MCP: no. Guide:
+  [tiktok-ads.md](../../tools/integrations/tiktok-ads.md).
 
 For tracking, see also: [ga4.md](../../tools/integrations/ga4.md), [segment.md](../../tools/integrations/segment.md)
 
