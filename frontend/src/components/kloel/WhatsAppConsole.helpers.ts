@@ -117,43 +117,57 @@ export function formatClock(value?: string | number | Date | null) {
   });
 }
 
-export function normalizeChats(payload: unknown): ChatPreview[] {
+function extractChatRows(payload: unknown): Record<string, unknown>[] {
   const p = payload as Record<string, unknown> | unknown[];
-  const rows = Array.isArray(p)
-    ? p
-    : Array.isArray((p as Record<string, unknown>)?.chats)
-      ? ((p as Record<string, unknown>).chats as unknown[])
-      : [];
+  if (Array.isArray(p)) return p as Record<string, unknown>[];
+  const inner = (p as Record<string, unknown>)?.chats;
+  return (Array.isArray(inner) ? inner : []) as Record<string, unknown>[];
+}
 
-  return (rows as Record<string, unknown>[])
-    .map((chat: Record<string, unknown>) => ({
+function extractChatTitle(chat: Record<string, unknown>): string {
+  const contact = chat?.contact as Record<string, unknown> | undefined;
+  const candidate =
+    contact?.name ||
+    contact?.pushName ||
+    chat?.name ||
+    chat?.contactName ||
+    chat?.phone ||
+    contact?.phone ||
+    'Contato';
+  return String(candidate) || 'Contato';
+}
+
+function extractChatSubtitle(chat: Record<string, unknown>): string {
+  const inner = chat?._data as Record<string, unknown> | undefined;
+  return extractPreviewText(
+    chat?.lastMessagePreview || chat?.lastMessage || chat?.lastMessageText || inner?.body,
+  );
+}
+
+function extractChatLastMessageAt(chat: Record<string, unknown>): string | undefined {
+  return (
+    toIsoDateLike(
+      chat?.lastMessageAt || chat?.updatedAt || chat?.ts || chat?.timestamp || chat?.lastMessage,
+    ) ?? undefined
+  );
+}
+
+function compareChatsByLastMessage(left: ChatPreview, right: ChatPreview): number {
+  const leftTime = left.lastMessageAt ? new Date(left.lastMessageAt).getTime() : 0;
+  const rightTime = right.lastMessageAt ? new Date(right.lastMessageAt).getTime() : 0;
+  return rightTime - leftTime;
+}
+
+export function normalizeChats(payload: unknown): ChatPreview[] {
+  return extractChatRows(payload)
+    .map((chat) => ({
       id: String(chat?.id || chat?.chatId || chat?.contactId || ''),
-      title:
-        String(
-          (chat?.contact as Record<string, unknown>)?.name ||
-            (chat?.contact as Record<string, unknown>)?.pushName ||
-            chat?.name ||
-            chat?.contactName ||
-            chat?.phone ||
-            (chat?.contact as Record<string, unknown>)?.phone ||
-            'Contato',
-        ) || 'Contato',
-      subtitle: extractPreviewText(
-        chat?.lastMessagePreview ||
-          chat?.lastMessage ||
-          chat?.lastMessageText ||
-          (chat?._data as Record<string, unknown>)?.body,
-      ),
-      lastMessageAt: toIsoDateLike(
-        chat?.lastMessageAt || chat?.updatedAt || chat?.ts || chat?.timestamp || chat?.lastMessage,
-      ),
+      title: extractChatTitle(chat),
+      subtitle: extractChatSubtitle(chat),
+      lastMessageAt: extractChatLastMessageAt(chat),
     }))
     .filter((chat: ChatPreview) => chat.id)
-    .sort((left: ChatPreview, right: ChatPreview) => {
-      const leftTime = left.lastMessageAt ? new Date(left.lastMessageAt).getTime() : 0;
-      const rightTime = right.lastMessageAt ? new Date(right.lastMessageAt).getTime() : 0;
-      return rightTime - leftTime;
-    });
+    .sort(compareChatsByLastMessage);
 }
 
 export function normalizeMessages(payload: unknown): InboxMessage[] {
