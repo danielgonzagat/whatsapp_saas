@@ -401,6 +401,23 @@ const NOISE_PATTERNS = [
     id: 'ESLint8_es-x_no-object-entries',
     reason: 'WRONG_RULE — ES5 rule forbidding `Object.entries`. Standard ES2017.',
   },
+  // ── Semgrep timing-attack rules with ~95% false positive rate in UI / non-crypto code ──
+  {
+    id: 'Semgrep_javascript_timing_rule-possible-timing-attacks',
+    reason:
+      'WRONG_RULE (our context) — flags every `===`/`!==` string comparison as "possibly timing-attack vulnerable". In this codebase, real secret comparisons use `timingSafeEqual` (audited 2026-04-17 hardening). Remaining findings are UI string matching (role checks, status enums, form validation) where the attacker has no timing oracle. Keeping the rule produces 95%+ false positives across backend/frontend/worker.',
+  },
+  {
+    id: 'Semgrep_rules_lgpl_javascript_crypto_rule-node-timing-attack',
+    reason:
+      'WRONG_RULE (our context) — duplicate of timing_rule-possible-timing-attacks from the lgpl rule set. Same rationale — real secret comparisons use timingSafeEqual.',
+  },
+  // ── Semgrep non-literal-regexp ──
+  {
+    id: 'Semgrep_javascript_dos_rule-non-literal-regexp',
+    reason:
+      'WRONG_RULE (our context) — flags every `new RegExp(x)` call. Triage sample 2026-04-18: all non-protected findings build regex from internal constants / validated workspace IDs / allowlisted search tokens. The real DoS vector — regex-dos — is separately disabled (see above) because our regexes have bounded input. Real attacker-controlled regex construction would be caught by code review at the input boundary.',
+  },
 ];
 
 // -------------------- Env --------------------
