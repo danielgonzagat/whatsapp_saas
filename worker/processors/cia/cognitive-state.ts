@@ -131,82 +131,72 @@ const DESIRE_HINTS: Array<{ keyword: string; tag: string }> = [
   { keyword: 'pix', tag: 'facilidade_pagamento' },
 ];
 
-function clamp(value: number, min = 0, max = 1) {
-  return Math.min(max, Math.max(min, value));
-}
+const clamp = (value: number, min = 0, max = 1): number => Math.min(max, Math.max(min, value));
 
-function normalizeText(value?: string | null) {
-  return String(value || '')
+const normalizeText = (value?: string | null): string =>
+  String(value || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(U0300__U036F_RE, '');
-}
 
-function includesAny(text: string, keywords: string[]) {
-  return keywords.some((keyword) => text.includes(keyword));
-}
+const includesAny = (text: string, keywords: string[]): boolean =>
+  keywords.some((keyword) => text.includes(keyword));
 
-function uniqueTokens(values: Array<string | null | undefined>) {
-  return [...new Set(values.map((item) => String(item || '').trim()).filter(Boolean))];
-}
+const uniqueTokens = (values: Array<string | null | undefined>): string[] => [
+  ...new Set(values.map((item) => String(item || '').trim()).filter(Boolean)),
+];
 
-function inferPaymentState(text: string) {
-  if (RX.PAGO_PAGUEI_COMPENSADO_RE.test(text)) {
-    return 'PAID' as const;
-  }
-  if (RX.PIX_BOLETO_LINK_PAGAMEN_RE.test(text)) {
-    return 'PENDING' as const;
-  }
-  if (RX.QUERO_FECHAR_QUERO_PAGA_RE.test(text)) {
-    return 'READY_TO_PAY' as const;
-  }
+const inferPaymentState = (text: string): CustomerCognitiveState['paymentState'] => {
+  if (RX.PAGO_PAGUEI_COMPENSADO_RE.test(text)) return 'PAID' as const;
+  if (RX.PIX_BOLETO_LINK_PAGAMEN_RE.test(text)) return 'PENDING' as const;
+  if (RX.QUERO_FECHAR_QUERO_PAGA_RE.test(text)) return 'READY_TO_PAY' as const;
   return 'NONE' as const;
-}
+};
 
-function inferIntent(params: {
+interface InferIntentParams {
   text: string;
   unreadCount: number;
   paymentState: CustomerCognitiveState['paymentState'];
   leadScore?: number | null;
-}) {
-  const { text, unreadCount, paymentState } = params;
-  if (paymentState === 'PENDING' || paymentState === 'READY_TO_PAY') {
-    return 'PAYMENT' as const;
-  }
-  if (includesAny(text, SUPPORT_HINTS)) {
-    return 'SUPPORT' as const;
-  }
-  if (includesAny(text, BUYING_HINTS)) {
-    return 'BUYING' as const;
-  }
-  if (includesAny(text, TRUST_OBJECTION_HINTS)) {
-    return 'OBJECTION' as const;
-  }
-  if ((Number(params.leadScore || 0) || 0) >= 70 || unreadCount > 0) {
-    return 'CURIOUS' as const;
-  }
-  return 'UNKNOWN' as const;
 }
 
-function inferStage(params: {
+const isPaymentIntent = (paymentState: CustomerCognitiveState['paymentState']): boolean =>
+  paymentState === 'PENDING' || paymentState === 'READY_TO_PAY';
+
+const isCuriousByScore = (leadScore: number | null | undefined, unreadCount: number): boolean =>
+  (Number(leadScore || 0) || 0) >= 70 || unreadCount > 0;
+
+const inferIntent = (params: InferIntentParams): CustomerIntent => {
+  const { text, unreadCount, paymentState } = params;
+  if (isPaymentIntent(paymentState)) return 'PAYMENT' as const;
+  if (includesAny(text, SUPPORT_HINTS)) return 'SUPPORT' as const;
+  if (includesAny(text, BUYING_HINTS)) return 'BUYING' as const;
+  if (includesAny(text, TRUST_OBJECTION_HINTS)) return 'OBJECTION' as const;
+  if (isCuriousByScore(params.leadScore, unreadCount)) return 'CURIOUS' as const;
+  return 'UNKNOWN' as const;
+};
+
+interface InferStageParams {
   intent: CustomerIntent;
   paymentState: CustomerCognitiveState['paymentState'];
   trustScore: number;
   urgencyScore: number;
-}) {
+}
+
+const isHotByIntent = (params: InferStageParams): boolean =>
+  params.intent === 'BUYING' && (params.trustScore >= 0.58 || params.urgencyScore >= 0.72);
+
+const isWarmByIntent = (intent: CustomerIntent): boolean =>
+  intent === 'BUYING' || intent === 'CURIOUS' || intent === 'OBJECTION';
+
+const inferStage = (params: InferStageParams): CustomerStage => {
   if (params.intent === 'SUPPORT') return 'SUPPORT' as const;
   if (params.paymentState === 'PAID') return 'POST_SALE' as const;
-  if (params.paymentState === 'PENDING' || params.paymentState === 'READY_TO_PAY') {
-    return 'CHECKOUT' as const;
-  }
-  if (params.intent === 'BUYING' && (params.trustScore >= 0.58 || params.urgencyScore >= 0.72)) {
-    return 'HOT' as const;
-  }
-  if (params.intent === 'BUYING' || params.intent === 'CURIOUS' || params.intent === 'OBJECTION') {
-    return 'WARM' as const;
-  }
+  if (isPaymentIntent(params.paymentState)) return 'CHECKOUT' as const;
+  if (isHotByIntent(params)) return 'HOT' as const;
+  if (isWarmByIntent(params.intent)) return 'WARM' as const;
   return 'COLD' as const;
-}
+};
 
 function inferObjections(text: string) {
   const objections: string[] = [];
@@ -381,58 +371,50 @@ interface NextActionInput {
   confidence: number;
 }
 
-function needsLowConfidenceClarification(input: NextActionInput): boolean {
-  return input.intent === 'UNKNOWN' && input.unreadCount > 0 && input.confidence < 0.68;
-}
+const needsLowConfidenceClarification = (input: NextActionInput): boolean =>
+  input.intent === 'UNKNOWN' && input.unreadCount > 0 && input.confidence < 0.68;
 
-function hasPaymentRecoverySignal(input: NextActionInput): boolean {
-  return (
-    input.paymentState === 'PENDING' ||
-    input.paymentState === 'READY_TO_PAY' ||
-    input.intent === 'PAYMENT'
-  );
-}
+const hasPaymentRecoverySignal = (input: NextActionInput): boolean =>
+  input.paymentState === 'PENDING' ||
+  input.paymentState === 'READY_TO_PAY' ||
+  input.intent === 'PAYMENT';
 
-function nextActionForEscalation(input: NextActionInput): CognitiveActionType | null {
+const nextActionForEscalation = (input: NextActionInput): CognitiveActionType | null => {
   if (input.riskFlags.length > 0) return 'ESCALATE_HUMAN';
   if (needsLowConfidenceClarification(input)) return 'ASK_CLARIFYING';
   if (hasPaymentRecoverySignal(input)) return 'PAYMENT_RECOVERY';
   return null;
-}
+};
 
-function nextActionForUnread(input: NextActionInput): CognitiveActionType | null {
+const shouldOfferOnUnread = (input: NextActionInput): boolean =>
+  input.stage === 'HOT' ||
+  input.stage === 'CHECKOUT' ||
+  input.urgencyScore >= 0.7 ||
+  input.desires.includes('resultado_rapido');
+
+const nextActionForUnread = (input: NextActionInput): CognitiveActionType | null => {
   if (input.unreadCount <= 0) return null;
-  if (input.objections.includes('price') && input.trustScore < 0.62) {
-    return 'SOCIAL_PROOF';
-  }
-  if (
-    input.stage === 'HOT' ||
-    input.stage === 'CHECKOUT' ||
-    input.urgencyScore >= 0.7 ||
-    input.desires.includes('resultado_rapido')
-  ) {
-    return 'OFFER';
-  }
+  if (input.objections.includes('price') && input.trustScore < 0.62) return 'SOCIAL_PROOF';
+  if (shouldOfferOnUnread(input)) return 'OFFER';
   return 'RESPOND';
-}
+};
 
-function nextActionForSilence(input: NextActionInput): CognitiveActionType {
-  if (input.silenceMinutes >= 24 * 60 || (input.urgencyScore >= 0.72 && input.stage === 'HOT')) {
-    return 'FOLLOWUP_URGENT';
-  }
-  if (input.silenceMinutes >= 6 * 60 || input.stage === 'WARM') {
-    return 'FOLLOWUP_SOFT';
-  }
+const isUrgentSilence = (input: NextActionInput): boolean =>
+  input.silenceMinutes >= 24 * 60 || (input.urgencyScore >= 0.72 && input.stage === 'HOT');
+
+const isSoftSilence = (input: NextActionInput): boolean =>
+  input.silenceMinutes >= 6 * 60 || input.stage === 'WARM';
+
+const nextActionForSilence = (input: NextActionInput): CognitiveActionType => {
+  if (isUrgentSilence(input)) return 'FOLLOWUP_URGENT';
+  if (isSoftSilence(input)) return 'FOLLOWUP_SOFT';
   return 'WAIT';
-}
+};
 
-function inferNextBestAction(input: NextActionInput): CognitiveActionType {
-  return (
-    nextActionForEscalation(input) ?? nextActionForUnread(input) ?? nextActionForSilence(input)
-  );
-}
+const inferNextBestAction = (input: NextActionInput): CognitiveActionType =>
+  nextActionForEscalation(input) ?? nextActionForUnread(input) ?? nextActionForSilence(input);
 
-function summarizeState(input: {
+interface SummarizeStateInput {
   intent: CustomerIntent;
   stage: CustomerStage;
   objections: string[];
@@ -441,25 +423,21 @@ function summarizeState(input: {
   trustScore: number;
   urgencyScore: number;
   riskFlags: string[];
-}) {
+}
+
+const summarizeState = (input: SummarizeStateInput): string => {
   const parts = [
     `intenção ${input.intent.toLowerCase()}`,
     `estágio ${input.stage.toLowerCase()}`,
     `próxima ação ${input.nextBestAction.toLowerCase()}`,
   ];
-  if (input.paymentState !== 'NONE') {
-    parts.push(`pagamento ${input.paymentState.toLowerCase()}`);
-  }
-  if (input.objections.length > 0) {
-    parts.push(`objeções ${input.objections.join(', ')}`);
-  }
+  if (input.paymentState !== 'NONE') parts.push(`pagamento ${input.paymentState.toLowerCase()}`);
+  if (input.objections.length > 0) parts.push(`objeções ${input.objections.join(', ')}`);
   parts.push(`confiança ${Math.round(input.trustScore * 100)}%`);
   parts.push(`urgência ${Math.round(input.urgencyScore * 100)}%`);
-  if (input.riskFlags.length > 0) {
-    parts.push(`riscos ${input.riskFlags.join(', ')}`);
-  }
+  if (input.riskFlags.length > 0) parts.push(`riscos ${input.riskFlags.join(', ')}`);
   return parts.join(' • ');
-}
+};
 
 interface SeedCognitiveStateInput {
   conversationId?: string | null;
@@ -476,17 +454,19 @@ interface SeedCognitiveStateInput {
   lastAction?: string | null;
 }
 
-function computeSilenceMinutes(lastMessageAt?: Date | string | null): number {
+const computeSilenceMinutes = (lastMessageAt?: Date | string | null): number => {
   if (!lastMessageAt) return 0;
   return Math.max(0, Math.round((Date.now() - new Date(lastMessageAt).getTime()) / 60_000));
-}
+};
 
-function computeTrustScore(params: {
+interface ComputeTrustScoreParams {
   previous: Partial<CustomerCognitiveState> | null;
   leadScore?: number | null;
   trustSignals: string[];
   objections: string[];
-}): number {
+}
+
+const computeTrustScore = (params: ComputeTrustScoreParams): number => {
   const previousTrust = Number(params.previous?.trustScore || 0.45) || 0.45;
   const leadScoreNorm = clamp((Number(params.leadScore || 0) || 0) / 100, 0, 1);
   const base =
@@ -496,14 +476,16 @@ function computeTrustScore(params: {
     (params.trustSignals.includes('buying_signal') ? 0.1 : 0) -
     (params.objections.includes('trust') ? 0.08 : 0);
   return Number(clamp(base, 0, 1).toFixed(3));
-}
+};
 
-function computeUrgencyScore(params: {
+interface ComputeUrgencyScoreParams {
   previous: Partial<CustomerCognitiveState> | null;
   text: string;
   unreadCount: number;
   demandState?: DemandState | null;
-}): number {
+}
+
+const computeUrgencyScore = (params: ComputeUrgencyScoreParams): number => {
   const previousUrgency = Number(params.previous?.urgencyScore || 0.2) || 0.2;
   const base =
     previousUrgency * 0.35 +
@@ -511,13 +493,15 @@ function computeUrgencyScore(params: {
     Math.min(params.unreadCount / 4, 0.2) +
     (params.demandState?.attentionScore || 0) * 0.25;
   return Number(clamp(base, 0, 1).toFixed(3));
-}
+};
 
-function computePriceSensitivity(params: {
+interface ComputePriceSensitivityParams {
   previous: Partial<CustomerCognitiveState> | null;
   text: string;
   objections: string[];
-}): number {
+}
+
+const computePriceSensitivity = (params: ComputePriceSensitivityParams): number => {
   const previousPrice = Number(params.previous?.priceSensitivity || 0.15) || 0.15;
   const base =
     previousPrice * 0.45 +
@@ -525,22 +509,29 @@ function computePriceSensitivity(params: {
     (params.text.includes('parcel') ? 0.15 : 0) +
     (params.text.includes('desconto') ? 0.15 : 0);
   return Number(clamp(base, 0, 1).toFixed(3));
-}
+};
 
-function computeLtvEstimate(params: {
+interface ComputeLtvEstimateParams {
   leadScore?: number | null;
   trustScore: number;
   urgencyScore: number;
   stage: CustomerStage;
-}): number {
-  const stageBonus = params.stage === 'CHECKOUT' ? 140 : params.stage === 'HOT' ? 90 : 30;
+}
+
+const stageBonusFor = (stage: CustomerStage): number => {
+  if (stage === 'CHECKOUT') return 140;
+  if (stage === 'HOT') return 90;
+  return 30;
+};
+
+const computeLtvEstimate = (params: ComputeLtvEstimateParams): number => {
   const base =
     (Number(params.leadScore || 0) || 0) * 4 +
     params.trustScore * 180 +
     params.urgencyScore * 120 +
-    stageBonus;
+    stageBonusFor(params.stage);
   return Number(base.toFixed(2));
-}
+};
 
 interface DerivedSignals {
   text: string;
@@ -677,21 +668,39 @@ function computeRecommendedActions(
   return { nextBestAction, nextBestQuestion };
 }
 
-function buildCognitiveStatePayload(
+interface RecommendedActions {
+  nextBestAction: CognitiveActionType;
+  nextBestQuestion: string | null | undefined;
+}
+
+const pickContactIdentity = (
+  input: SeedCognitiveStateInput,
+  previous: Partial<CustomerCognitiveState> | null,
+): Pick<CustomerCognitiveState, 'conversationId' | 'contactId' | 'phone' | 'contactName'> => ({
+  conversationId: input.conversationId || previous?.conversationId || null,
+  contactId: input.contactId || previous?.contactId || null,
+  phone: input.phone || previous?.phone || null,
+  contactName: input.contactName || previous?.contactName || null,
+});
+
+const pickHistoryFields = (
+  input: SeedCognitiveStateInput,
+  previous: Partial<CustomerCognitiveState> | null,
+): Pick<CustomerCognitiveState, 'lastOffer' | 'lastAction' | 'lastOutcome'> => ({
+  lastOffer: previous?.lastOffer || null,
+  lastAction: input.lastAction || previous?.lastAction || null,
+  lastOutcome: input.lastOutcome || previous?.lastOutcome || null,
+});
+
+const buildCognitiveStatePayload = (
   input: SeedCognitiveStateInput,
   signals: DerivedSignals,
   scores: DerivedScores,
-  recommended: {
-    nextBestAction: CognitiveActionType;
-    nextBestQuestion: string | null | undefined;
-  },
-): CustomerCognitiveState {
+  recommended: RecommendedActions,
+): CustomerCognitiveState => {
   const { previous } = signals;
   return {
-    conversationId: input.conversationId || previous?.conversationId || null,
-    contactId: input.contactId || previous?.contactId || null,
-    phone: input.phone || previous?.phone || null,
-    contactName: input.contactName || previous?.contactName || null,
+    ...pickContactIdentity(input, previous),
     intent: signals.intent,
     stage: scores.stage,
     trustScore: scores.trustScore,
@@ -700,13 +709,11 @@ function buildCognitiveStatePayload(
     objections: signals.objections,
     desires: signals.desires,
     trustSignals: signals.trustSignals,
-    lastOffer: previous?.lastOffer || null,
-    lastAction: input.lastAction || previous?.lastAction || null,
+    ...pickHistoryFields(input, previous),
     nextBestAction: recommended.nextBestAction,
     silenceMinutes: signals.silenceMinutes,
     ltvEstimate: scores.ltvEstimate,
     paymentState: signals.paymentState,
-    lastOutcome: input.lastOutcome || previous?.lastOutcome || null,
     riskFlags: signals.riskFlags,
     emotionalTone: signals.emotionalTone,
     disclosureLevel: signals.disclosureLevel,
@@ -717,7 +724,7 @@ function buildCognitiveStatePayload(
     summary: '',
     updatedAt: new Date().toISOString(),
   };
-}
+};
 
 function assembleCognitiveState(
   input: SeedCognitiveStateInput,
@@ -944,33 +951,43 @@ export async function persistCustomerCognitiveState(
   return normalizedState;
 }
 
+const resolveDecisionOwner = (input: RecordDecisionOutcomeInput): string =>
+  input.contactId || input.phone || input.conversationId || 'workspace';
+
+const buildDecisionKey = (input: RecordDecisionOutcomeInput): string =>
+  `decision_outcome:${resolveDecisionOwner(input)}:${Date.now()}:${randomUUID()}`;
+
+const buildDecisionValue = (input: RecordDecisionOutcomeInput) => ({
+  action: input.action,
+  outcome: input.outcome,
+  reward: input.reward || 0,
+  message: input.message || null,
+  conversationId: input.conversationId || null,
+  metadata: input.metadata || {},
+});
+
+const buildDecisionMetadata = (input: RecordDecisionOutcomeInput) => ({
+  contactId: input.contactId || null,
+  conversationId: input.conversationId || null,
+  phone: input.phone || null,
+  outcome: input.outcome,
+});
+
 export async function recordDecisionOutcome(
   prisma: PrismaClient,
   input: RecordDecisionOutcomeInput,
 ) {
   if (!prisma?.kloelMemory?.create) return null;
-
+  const action = String(input.action || 'UNKNOWN');
   return prisma.kloelMemory.create({
     data: {
       workspaceId: input.workspaceId,
-      key: `decision_outcome:${input.contactId || input.phone || input.conversationId || 'workspace'}:${Date.now()}:${randomUUID()}`,
+      key: buildDecisionKey(input),
       category: 'decision_outcome',
-      type: String(input.action || 'UNKNOWN'),
-      content: input.message || String(input.action || 'UNKNOWN'),
-      value: {
-        action: input.action,
-        outcome: input.outcome,
-        reward: input.reward || 0,
-        message: input.message || null,
-        conversationId: input.conversationId || null,
-        metadata: input.metadata || {},
-      },
-      metadata: {
-        contactId: input.contactId || null,
-        conversationId: input.conversationId || null,
-        phone: input.phone || null,
-        outcome: input.outcome,
-      },
+      type: action,
+      content: input.message || action,
+      value: buildDecisionValue(input),
+      metadata: buildDecisionMetadata(input),
     },
   });
 }

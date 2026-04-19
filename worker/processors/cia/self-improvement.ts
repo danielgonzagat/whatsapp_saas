@@ -366,13 +366,13 @@ async function loadRecentDecisionLogs(
   return rows || [];
 }
 
-function outcomeToVariantScore(outcome: string): number {
+const outcomeToVariantScore = (outcome: string): number => {
   if (outcome === 'SOLD') return 10;
   if (outcome === 'REPLIED') return 2;
   if (outcome === 'SENT') return 1;
   if (outcome === 'FAILED') return -2;
   return 0;
-}
+};
 
 interface OutcomeAggregate {
   soldCount: number;
@@ -391,28 +391,27 @@ interface ExtractedOutcome {
   variantKey: string;
 }
 
-function extractOutcomeFromLog(item: DecisionLogItem): ExtractedOutcome {
+const extractOutcomeFromLog = (item: DecisionLogItem): ExtractedOutcome => {
   const value = (item?.value || {}) as Record<string, unknown>;
   const itemMeta = (item?.metadata || {}) as Record<string, unknown>;
   return {
     outcome: String(value?.outcome || itemMeta?.outcome || ''),
     variantKey: String(value?.variantKey || itemMeta?.variantKey || ''),
   };
-}
+};
 
-function isSoldOrSentOrReplied(outcome: string): boolean {
-  return outcome === 'SENT' || outcome === 'REPLIED' || outcome === 'SOLD';
-}
+const isSoldOrSentOrReplied = (outcome: string): boolean =>
+  outcome === 'SENT' || outcome === 'REPLIED' || outcome === 'SOLD';
 
-function accumulateVariantScore(
+const accumulateVariantScore = (
   variantScores: Map<string, number>,
   variantKey: string,
   outcome: string,
-): void {
+): void => {
   if (!variantKey) return;
   const score = outcomeToVariantScore(outcome);
   variantScores.set(variantKey, (variantScores.get(variantKey) || 0) + score);
-}
+};
 
 function aggregateDecisionOutcomes(logs: Array<DecisionLogItem>): OutcomeAggregate {
   const variantScores = new Map<string, number>();

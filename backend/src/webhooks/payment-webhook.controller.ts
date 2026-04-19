@@ -163,24 +163,32 @@ interface StripeEventLike {
   };
 }
 
+type CheckoutIntentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
+
+const STRIPE_INTENT_STATUS_MAP: Array<{
+  event?: string;
+  status?: string;
+  result: CheckoutIntentStatus;
+}> = [
+  { event: 'payment_intent.succeeded', status: 'succeeded', result: 'APPROVED' },
+  { event: 'payment_intent.payment_failed', result: 'DECLINED' },
+  { event: 'payment_intent.processing', status: 'processing', result: 'PROCESSING' },
+  { event: 'payment_intent.canceled', status: 'canceled', result: 'CANCELED' },
+];
+
 function mapStripeIntentStatusForCheckout(
   eventType?: string,
   intentStatus?: string,
-): 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED' {
+): CheckoutIntentStatus {
   const event = String(eventType || '').toLowerCase();
   const status = String(intentStatus || '').toLowerCase();
 
-  if (event === 'payment_intent.succeeded' || status === 'succeeded') {
-    return 'APPROVED';
-  }
-  if (event === 'payment_intent.payment_failed') {
-    return 'DECLINED';
-  }
-  if (event === 'payment_intent.processing' || status === 'processing') {
-    return 'PROCESSING';
-  }
-  if (event === 'payment_intent.canceled' || status === 'canceled') {
-    return 'CANCELED';
+  for (const rule of STRIPE_INTENT_STATUS_MAP) {
+    const eventMatches = rule.event !== undefined && event === rule.event;
+    const statusMatches = rule.status !== undefined && status === rule.status;
+    if (eventMatches || statusMatches) {
+      return rule.result;
+    }
   }
   return 'PENDING';
 }

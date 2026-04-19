@@ -5,37 +5,38 @@ const port = Number(process.env.PORT || process.env.WORKER_METRICS_PORT || 3003)
 const metricsToken = process.env.WORKER_METRICS_TOKEN;
 const internalApiKey = process.env.INTERNAL_API_KEY;
 
-function sendJson(res: http.ServerResponse, status: number, data: unknown) {
+type MaybeString = string | undefined;
+type MaybeHeader = string | string[] | undefined;
+
+const sendJson = (res: http.ServerResponse, status: number, data: unknown): void => {
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data));
-}
+};
 
-function extractBearerToken(auth: string | string[] | undefined): string | undefined {
+const extractBearerToken = (auth: MaybeHeader): MaybeString => {
   if (typeof auth !== 'string') return undefined;
   return auth.startsWith('Bearer ') ? auth.slice(7) : undefined;
-}
+};
 
-function readStringHeader(req: http.IncomingMessage, name: string): string | undefined {
+const readStringHeader = (req: http.IncomingMessage, name: string): MaybeString => {
   const raw = req.headers[name];
   return typeof raw === 'string' ? raw : undefined;
-}
+};
 
-function resolveRequestToken(req: http.IncomingMessage): string | undefined {
-  return (
-    extractBearerToken(req.headers.authorization) ||
-    readStringHeader(req, 'x-metrics-token') ||
-    readStringHeader(req, 'x-internal-key')
-  );
-}
+const resolveRequestToken = (req: http.IncomingMessage): MaybeString =>
+  extractBearerToken(req.headers.authorization) ||
+  readStringHeader(req, 'x-metrics-token') ||
+  readStringHeader(req, 'x-internal-key');
 
-function isAuthorized(req: http.IncomingMessage): boolean {
+const matchesToken = (expected: string | undefined, provided: MaybeString): boolean =>
+  Boolean(expected) && provided === expected;
+
+const isAuthorized = (req: http.IncomingMessage): boolean => {
   const headerToken = resolveRequestToken(req);
-
-  if (internalApiKey && headerToken === internalApiKey) return true;
-  if (metricsToken && headerToken === metricsToken) return true;
-
+  if (matchesToken(internalApiKey, headerToken)) return true;
+  if (matchesToken(metricsToken, headerToken)) return true;
   return !internalApiKey && !metricsToken;
-}
+};
 
 const server = http.createServer(async (req, res) => {
   if (!req.url) {

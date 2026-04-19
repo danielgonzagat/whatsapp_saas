@@ -134,55 +134,52 @@ const PRODUCT_KEYWORDS = [
   'comparar',
 ];
 
-function extractAutopilotSettings(
-  settings?: Record<string, unknown> | null,
-): Record<string, unknown> | null {
-  return (
-    settings?.autopilot && typeof settings.autopilot === 'object' ? settings.autopilot : null
-  ) as Record<string, unknown> | null;
-}
+type AutopilotSettings = Record<string, unknown> | null;
+
+const extractAutopilotSettings = (settings?: Record<string, unknown> | null): AutopilotSettings =>
+  (settings?.autopilot && typeof settings.autopilot === 'object'
+    ? settings.autopilot
+    : null) as AutopilotSettings;
 
 const AGENT_MODE_DISABLES = new Set(['fallback_only', 'local_only']);
 const AGENT_MODE_ENABLES = new Set(['primary', 'unified_primary']);
 
-function resolveAgentModeOverride(autopilot: Record<string, unknown> | null): boolean | null {
+const resolveAgentModeOverride = (autopilot: AutopilotSettings): boolean | null => {
   const mode = String(autopilot?.agentMode || '')
     .trim()
     .toLowerCase();
   if (AGENT_MODE_DISABLES.has(mode)) return false;
   if (AGENT_MODE_ENABLES.has(mode)) return true;
   return null;
-}
+};
 
 /**
  * Checks explicit opt-in/opt-out hints from the autopilot settings.
  * Returns `true`/`false` when settings force a decision, `null` when undecided.
  */
-function resolveUnifiedAgentSettingOverride(
-  autopilot: Record<string, unknown> | null,
-): boolean | null {
+const resolveUnifiedAgentSettingOverride = (autopilot: AutopilotSettings): boolean | null => {
   if (autopilot?.useUnifiedAgent === false) return false;
   if (autopilot?.useUnifiedAgent === true) return true;
   return resolveAgentModeOverride(autopilot);
-}
+};
+
+const hasEnoughQuestions = (messageContent: string): boolean =>
+  (messageContent.match(QUESTION_MARK_RE) || []).length >= 2;
+
+const matchesAnyKeyword = (text: string, keywords: readonly string[]): boolean =>
+  keywords.some((keyword) => text.includes(keyword));
 
 /**
  * Determines whether the message content itself signals a need for the
  * advanced unified agent (long copy, multiple questions, negotiation or
  * product-specific inquiries).
  */
-function hasUnifiedAgentContentSignals(messageContent: string): boolean {
+const hasUnifiedAgentContentSignals = (messageContent: string): boolean => {
   if (messageContent.length > 200) return true;
-
-  const questionCount = (messageContent.match(QUESTION_MARK_RE) || []).length;
-  if (questionCount >= 2) return true;
-
+  if (hasEnoughQuestions(messageContent)) return true;
   const text = messageContent.toLowerCase();
-  if (NEGOTIATION_KEYWORDS.some((keyword) => text.includes(keyword))) return true;
-  if (PRODUCT_KEYWORDS.some((keyword) => text.includes(keyword))) return true;
-
-  return false;
-}
+  return matchesAnyKeyword(text, NEGOTIATION_KEYWORDS) || matchesAnyKeyword(text, PRODUCT_KEYWORDS);
+};
 
 /**
  * Determina se a mensagem deve usar o UnifiedAgent ao invés do Autopilot básico.

@@ -4,26 +4,30 @@ export interface UploadedFileLike {
   originalname?: string;
 }
 
+function isSuspiciousControlByte(byte: number): boolean {
+  const isAllowedControl = byte === 9 || byte === 10 || byte === 13;
+  const isPrintable = byte >= 32 && byte <= 126;
+  const isExtended = byte >= 128;
+  return !isAllowedControl && !isPrintable && !isExtended;
+}
+
+function countSuspiciousControlBytes(sample: Buffer): number {
+  let count = 0;
+  for (const byte of sample) {
+    if (isSuspiciousControlByte(byte)) count += 1;
+  }
+  return count;
+}
+
 function looksLikeUtf8Text(buffer: Buffer): boolean {
   const sample = buffer.subarray(0, Math.min(buffer.length, 4096));
   if (!sample.length) return false;
 
-  const decoded = sample.toString('utf8');
-  if (decoded.includes('\uFFFD')) {
+  if (sample.toString('utf8').includes('\uFFFD')) {
     return false;
   }
 
-  let suspiciousControlBytes = 0;
-  for (const byte of sample) {
-    const isAllowedControl = byte === 9 || byte === 10 || byte === 13;
-    const isPrintable = byte >= 32 && byte <= 126;
-    const isExtended = byte >= 128;
-    if (!isAllowedControl && !isPrintable && !isExtended) {
-      suspiciousControlBytes += 1;
-    }
-  }
-
-  return suspiciousControlBytes / sample.length < 0.02;
+  return countSuspiciousControlBytes(sample) / sample.length < 0.02;
 }
 
 export function detectUploadedMime(file: UploadedFileLike): string | null {

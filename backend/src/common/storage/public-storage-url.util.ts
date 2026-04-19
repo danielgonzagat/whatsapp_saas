@@ -6,6 +6,20 @@ type MinimalRequest = {
   protocol?: string;
 };
 
+function pickHeaderValue(
+  headers: Record<string, string | string[] | undefined>,
+  name: string,
+): string | string[] | undefined {
+  return headers[name] ?? headers[name.toLowerCase()];
+}
+
+function headerValueToString(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) {
+    return String(value[0] || '');
+  }
+  return String(value || '');
+}
+
 function readHeader(req: MinimalRequest, name: string) {
   if (!req) return '';
 
@@ -16,13 +30,7 @@ function readHeader(req: MinimalRequest, name: string) {
   const headers = req.headers;
   if (!headers) return '';
 
-  const headerValue = headers[name] ?? headers[name.toLowerCase()];
-
-  if (Array.isArray(headerValue)) {
-    return String(headerValue[0] || '');
-  }
-
-  return String(headerValue || '');
+  return headerValueToString(pickHeaderValue(headers, name));
 }
 
 export function getRequestOrigin(req: MinimalRequest | undefined | null) {

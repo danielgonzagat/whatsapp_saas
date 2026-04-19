@@ -256,39 +256,66 @@ export function countByBuckets<T>(
   return sumByBuckets(rows, buckets, getDate, () => 1);
 }
 
-export function computeAverageResponseTimeSeconds(
-  rows: Array<{
-    conversationId?: string | null;
-    direction?: string | null;
-    createdAt?: Date | null;
-  }>,
-) {
+type ResponseTimeRow = {
+  conversationId?: string | null;
+  direction?: string | null;
+  createdAt?: Date | null;
+};
+
+type NormalizedResponseTimeRow = {
+  conversationId: string;
+  direction: 'INBOUND' | 'OUTBOUND' | 'OTHER';
+  createdAt: Date;
+};
+
+function normalizeResponseTimeRow(row: ResponseTimeRow): NormalizedResponseTimeRow | null {
+  const conversationId = String(row.conversationId || '').trim();
+  const createdAt = row.createdAt;
+  if (!conversationId || !isValidDate(createdAt)) return null;
+
+  const rawDirection = String(row.direction || '').toUpperCase();
+  const direction: NormalizedResponseTimeRow['direction'] =
+    rawDirection === 'INBOUND' || rawDirection === 'OUTBOUND' ? rawDirection : 'OTHER';
+
+  return { conversationId, direction, createdAt };
+}
+
+function measureOutboundResponseWindow(
+  pendingInbound: Map<string, Date>,
+  conversationId: string,
+  outboundAt: Date,
+): number | null {
+  const inboundAt = pendingInbound.get(conversationId);
+  if (!inboundAt) return null;
+
+  pendingInbound.delete(conversationId);
+  const diffMs = outboundAt.getTime() - inboundAt.getTime();
+  if (diffMs < 0 || diffMs > 7 * DAY_MS) return null;
+  return diffMs;
+}
+
+export function computeAverageResponseTimeSeconds(rows: ResponseTimeRow[]) {
   const pendingInbound = new Map<string, Date>();
   let diffMsTotal = 0;
   let pairs = 0;
 
-  rows.forEach((row) => {
-    const conversationId = String(row.conversationId || '').trim();
-    const createdAt = row.createdAt;
-    if (!conversationId || !isValidDate(createdAt)) return;
+  for (const rawRow of rows) {
+    const row = normalizeResponseTimeRow(rawRow);
+    if (!row) continue;
 
-    const direction = String(row.direction || '').toUpperCase();
-    if (direction === 'INBOUND') {
-      pendingInbound.set(conversationId, createdAt);
-      return;
+    if (row.direction === 'INBOUND') {
+      pendingInbound.set(row.conversationId, row.createdAt);
+      continue;
     }
 
-    if (direction !== 'OUTBOUND') return;
-    const inboundAt = pendingInbound.get(conversationId);
-    if (!inboundAt) return;
+    if (row.direction !== 'OUTBOUND') continue;
 
-    const diffMs = createdAt.getTime() - inboundAt.getTime();
-    if (diffMs >= 0 && diffMs <= 7 * DAY_MS) {
-      diffMsTotal += diffMs;
-      pairs += 1;
-    }
-    pendingInbound.delete(conversationId);
-  });
+    const diffMs = measureOutboundResponseWindow(pendingInbound, row.conversationId, row.createdAt);
+    if (diffMs === null) continue;
+
+    diffMsTotal += diffMs;
+    pairs += 1;
+  }
 
   return pairs > 0 ? Math.round(diffMsTotal / pairs / 1000) : 0;
 }

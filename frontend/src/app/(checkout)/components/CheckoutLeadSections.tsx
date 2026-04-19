@@ -2,28 +2,20 @@
 
 import { useId, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
-import { Ed, ValidationInput } from './checkout-theme-shared';
-import { CheckoutSocialIdentitySection } from './CheckoutSocialIdentitySection';
+import { Ed } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 import type {
   CheckoutSocialIdentitySnapshot,
   CheckoutSocialProvider,
 } from '../hooks/useCheckoutSocialIdentity';
+import {
+  DeliveryPanel,
+  IdentityPanel,
+  type LeadFieldChange,
+  type LeadFormState,
+} from './CheckoutLeadSections.parts';
 
-type FormState = {
-  name: string;
-  email: string;
-  cpf: string;
-  phone: string;
-  cep: string;
-  street: string;
-  number: string;
-  neighborhood: string;
-  complement: string;
-  city: string;
-  state: string;
-  destinatario: string;
-};
+type FormState = LeadFormState;
 
 type SharedProps = {
   theme: CheckoutVisualTheme;
@@ -32,9 +24,7 @@ type SharedProps = {
   setStep: Dispatch<SetStateAction<number>>;
   form: FormState;
   submitError: string;
-  updateField: (
-    field: keyof FormState,
-  ) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  updateField: LeadFieldChange;
 };
 
 type IdentityColumnProps = SharedProps & {
@@ -95,6 +85,22 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
     color: theme.mutedText,
     lineHeight: 1.6,
   } satisfies React.CSSProperties;
+
+  const renderIdentityHeader = () => (
+    <ActiveHeader theme={theme} title="Identificação Rápida" number={1} />
+  );
+  const renderDeliveryHeader = () => <ActiveHeader theme={theme} title="Entrega" number={2} />;
+  const renderIdentityAction = (children: React.ReactNode, loading = false) => (
+    <ActionButton theme={theme} loading={loading} onClick={() => void goStep(2)}>
+      {children}
+    </ActionButton>
+  );
+  const renderDeliveryAction = (children: React.ReactNode) => (
+    <ActionButton theme={theme} onClick={() => void goStep(3)}>
+      {children}
+    </ActionButton>
+  );
+
   return (
     <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
       {step > 1 ? (
@@ -116,85 +122,25 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
         </div>
       ) : (
         <div style={cardBase}>
-          <ActiveHeader theme={theme} title="Identificação Rápida" number={1} />
-          <CheckoutSocialIdentitySection
+          <IdentityPanel
             theme={theme}
+            config={config}
+            fid={fid}
+            form={form}
+            updateField={updateField}
+            submitError={submitError}
+            step={step}
+            loadingStep={loadingStep}
+            goStep={goStep}
+            socialIdentity={socialIdentity}
+            socialLoadingProvider={socialLoadingProvider}
+            socialError={socialError}
             googleAvailable={googleAvailable}
             googleButtonRef={googleButtonRef}
-            socialIdentity={socialIdentity}
-            loadingProvider={socialLoadingProvider}
-            error={socialError}
+            labelStyle={labelStyle}
+            renderHeader={renderIdentityHeader}
+            renderAction={renderIdentityAction}
           />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Field
-              theme={theme}
-              label="Nome completo"
-              id={`${fid}-name`}
-              value={form.name}
-              onChange={updateField('name')}
-              placeholder="ex.: Maria de Almeida Cruz"
-              labelStyle={labelStyle}
-            />
-            <Field
-              theme={theme}
-              label="E-mail"
-              id={`${fid}-email`}
-              value={form.email}
-              onChange={updateField('email')}
-              placeholder="ex.: maria@gmail.com"
-              type="email"
-              labelStyle={labelStyle}
-            />
-            <Field
-              theme={theme}
-              label="CPF"
-              id={`${fid}-cpf`}
-              value={form.cpf}
-              onChange={updateField('cpf')}
-              placeholder="000.000.000-00"
-              labelStyle={labelStyle}
-              wrapperStyle={{ width: 'fit-content', minWidth: 220 }}
-            />
-            <div>
-              <label htmlFor={`${fid}-phone`} style={labelStyle}>
-                {config?.phoneLabel || 'Celular / WhatsApp'}
-              </label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0 14px',
-                    background: theme.phonePrefixBackground,
-                    border: `1px solid ${theme.phonePrefixBorder}`,
-                    borderRadius: theme.input.radius,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: theme.phonePrefixText,
-                    flexShrink: 0,
-                  }}
-                >
-                  +55
-                </div>
-                <div style={{ flex: 1 }}>
-                  <ValidationInput
-                    theme={theme.input}
-                    id={`${fid}-phone`}
-                    value={form.phone}
-                    onChange={updateField('phone')}
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          {submitError && step === 1 ? (
-            <div style={{ marginTop: 14, fontSize: 13, color: theme.errorText }}>{submitError}</div>
-          ) : null}
-          <ActionButton theme={theme} loading={loadingStep} onClick={() => void goStep(2)}>
-            {config?.btnStep1Text || 'Ir para Entrega'}
-          </ActionButton>
         </div>
       )}
 
@@ -225,101 +171,19 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
           </div>
         ) : (
           <div style={{ ...cardBase, marginTop: 20 }}>
-            <ActiveHeader theme={theme} title="Entrega" number={2} />
-            <p style={{ fontSize: 13, color: theme.mutedText, marginBottom: 16 }}>
-              Cadastre o endereço para envio
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Field
-                theme={theme}
-                label="CEP"
-                id={`${fid}-cep`}
-                value={form.cep}
-                onChange={updateField('cep')}
-                placeholder="00000-000"
-                labelStyle={labelStyle}
-                wrapperStyle={{ minWidth: 180 }}
-              />
-              <Field
-                theme={theme}
-                label="Endereço"
-                id={`${fid}-street`}
-                value={form.street}
-                onChange={updateField('street')}
-                placeholder="Rua, avenida..."
-                labelStyle={labelStyle}
-              />
-              <div style={{ display: 'flex', gap: 12 }}>
-                <Field
-                  theme={theme}
-                  label="Número"
-                  id={`${fid}-number`}
-                  value={form.number}
-                  onChange={updateField('number')}
-                  placeholder="Nº"
-                  labelStyle={labelStyle}
-                  wrapperStyle={{ flex: '0 0 35%' }}
-                />
-                <Field
-                  theme={theme}
-                  label="Bairro"
-                  id={`${fid}-neighborhood`}
-                  value={form.neighborhood}
-                  onChange={updateField('neighborhood')}
-                  placeholder="Bairro"
-                  labelStyle={labelStyle}
-                  wrapperStyle={{ flex: 1 }}
-                />
-              </div>
-              <Field
-                theme={theme}
-                label="Complemento (opcional)"
-                id={`${fid}-complement`}
-                value={form.complement}
-                onChange={updateField('complement')}
-                placeholder="Apto, bloco..."
-                labelStyle={labelStyle}
-              />
-              <div style={{ display: 'flex', gap: 12 }}>
-                <Field
-                  theme={theme}
-                  label="Cidade"
-                  id={`${fid}-city`}
-                  value={form.city}
-                  onChange={updateField('city')}
-                  placeholder="Cidade"
-                  labelStyle={labelStyle}
-                  wrapperStyle={{ flex: 1 }}
-                />
-                <Field
-                  theme={theme}
-                  label="UF"
-                  id={`${fid}-state`}
-                  value={form.state}
-                  onChange={updateField('state')}
-                  placeholder="UF"
-                  labelStyle={labelStyle}
-                  wrapperStyle={{ flex: '0 0 28%' }}
-                />
-              </div>
-              <Field
-                theme={theme}
-                label="Destinatário"
-                id={`${fid}-destinatario`}
-                value={form.destinatario}
-                onChange={updateField('destinatario')}
-                placeholder="Nome do destinatário"
-                labelStyle={labelStyle}
-              />
-            </div>
-            {submitError && step === 2 ? (
-              <div style={{ marginTop: 14, fontSize: 13, color: theme.errorText }}>
-                {submitError}
-              </div>
-            ) : null}
-            <ActionButton theme={theme} onClick={() => void goStep(3)}>
-              {config?.btnStep2Text || 'Ir para Pagamento'}
-            </ActionButton>
+            <DeliveryPanel
+              theme={theme}
+              config={config}
+              fid={fid}
+              form={form}
+              updateField={updateField}
+              submitError={submitError}
+              step={step}
+              goStep={goStep}
+              labelStyle={labelStyle}
+              renderHeader={renderDeliveryHeader}
+              renderAction={renderDeliveryAction}
+            />
           </div>
         )
       ) : (
@@ -330,50 +194,6 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
           </p>
         </div>
       )}
-    </div>
-  );
-}
-
-function Field({
-  theme,
-  label,
-  id,
-  value,
-  onChange,
-  placeholder,
-  labelStyle,
-  wrapperStyle,
-  type,
-  disabled,
-  style,
-}: {
-  theme: CheckoutVisualTheme;
-  label: string;
-  id: string;
-  value: string;
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string;
-  labelStyle: React.CSSProperties;
-  wrapperStyle?: React.CSSProperties;
-  type?: string;
-  disabled?: boolean;
-  style?: React.CSSProperties;
-}) {
-  return (
-    <div style={wrapperStyle}>
-      <label htmlFor={id} style={labelStyle}>
-        {label}
-      </label>
-      <ValidationInput
-        theme={theme.input}
-        id={id}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        type={type}
-        disabled={disabled}
-        style={style}
-      />
     </div>
   );
 }

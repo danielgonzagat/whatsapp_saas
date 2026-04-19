@@ -143,14 +143,14 @@ function groupSignalsByDomainIntent(
   return grouped;
 }
 
-function outcomeScore(outcome: string): number {
+const outcomeScore = (outcome: string): number => {
   if (outcome === 'sold') return 4;
   if (outcome === 'replied') return 2;
   return 0;
-}
+};
 
-function pickBestHour(items: GlobalLearningSignal[]): { hour: number; score: number } | undefined {
-  return Array.from({ length: 24 }, (_, hour) => hour)
+const pickBestHour = (items: GlobalLearningSignal[]): { hour: number; score: number } | undefined =>
+  Array.from({ length: 24 }, (_, hour) => hour)
     .map((hour) => ({
       hour,
       score: items
@@ -158,41 +158,39 @@ function pickBestHour(items: GlobalLearningSignal[]): { hour: number; score: num
         .reduce((sum, item) => sum + outcomeScore(item.outcome), 0),
     }))
     .sort((left, right) => right.score - left.score)[0];
-}
 
-function countLengthBuckets(items: GlobalLearningSignal[]): Record<string, number> {
+const countLengthBuckets = (items: GlobalLearningSignal[]): Record<string, number> => {
   const acc: Record<string, number> = {};
   for (const item of items) {
     acc[item.lengthBucket] = (acc[item.lengthBucket] || 0) + 1;
   }
   return acc;
-}
+};
 
-function countVariantFamilies(items: GlobalLearningSignal[]): Record<string, number> {
+const countVariantFamilies = (items: GlobalLearningSignal[]): Record<string, number> => {
   const acc: Record<string, number> = {};
   for (const item of items) {
     if (!item.variantFamily) continue;
     acc[item.variantFamily] = (acc[item.variantFamily] || 0) + 1;
   }
   return acc;
-}
+};
 
 type Aggressiveness = 'LOW' | 'MEDIUM' | 'HIGH';
 type PreferredLength = 'short' | 'medium' | 'long';
 
-function mostFrequentKey(frequency: Record<string, number>): string | null {
-  return Object.entries(frequency).sort((left, right) => right[1] - left[1])[0]?.[0] || null;
-}
+const mostFrequentKey = (frequency: Record<string, number>): string | null =>
+  Object.entries(frequency).sort((left, right) => right[1] - left[1])[0]?.[0] || null;
 
-function resolveAggressiveness(
+const resolveAggressiveness = (
   soldRate: number,
   repliedRate: number,
   revenuePerSignal: number,
-): Aggressiveness {
+): Aggressiveness => {
   if (soldRate >= 0.3 || revenuePerSignal >= 150) return 'HIGH';
   if (soldRate >= 0.15 || repliedRate >= 0.4) return 'MEDIUM';
   return 'LOW';
-}
+};
 
 function buildPatternForGroup(key: string, items: GlobalLearningSignal[]): GlobalLearningPattern {
   const [domain, intent] = key.split(':');

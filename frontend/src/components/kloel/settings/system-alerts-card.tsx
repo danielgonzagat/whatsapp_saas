@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle2, ChevronRight, Info, X, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import {
   SettingsCard,
@@ -10,56 +10,52 @@ import {
   SettingsModal,
   SettingsNotice,
 } from './contract';
+import {
+  AlertRow,
+  resolveNoticeTone,
+  type AlertDefinition,
+  type AlertStyleTokens,
+  type AlertType,
+} from './system-alerts-card.helpers';
 
-interface Alert {
-  id: string;
-  type: 'success' | 'warning' | 'error' | 'info';
-  message: string;
-  detail?: string;
-}
+type Alert = AlertDefinition;
 
 interface SystemAlertsCardProps {
   alerts?: Alert[];
 }
+
+const ALERT_STYLES: Record<AlertType, AlertStyleTokens> = {
+  success: {
+    bg: 'bg-[#10B981]/12',
+    text: 'text-[#7FE2BC]',
+    icon: CheckCircle2,
+    iconColor: 'text-[#7FE2BC]',
+  },
+  warning: {
+    bg: 'bg-[#E85D30]/12',
+    text: 'text-[#F2B29D]',
+    icon: AlertTriangle,
+    iconColor: 'text-[#F2B29D]',
+  },
+  error: {
+    bg: 'bg-[#E05252]/12',
+    text: 'text-[#F7A8A8]',
+    icon: XCircle,
+    iconColor: 'text-[#F7A8A8]',
+  },
+  info: {
+    bg: 'bg-[#3B82F6]/12',
+    text: 'text-[#93C5FD]',
+    icon: Info,
+    iconColor: 'text-[#93C5FD]',
+  },
+};
 
 export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) {
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
   const alerts = propAlerts || [];
-
-  const getAlertStyles = (type: Alert['type']) => {
-    switch (type) {
-      case 'success':
-        return {
-          bg: 'bg-[#10B981]/12',
-          text: 'text-[#7FE2BC]',
-          icon: CheckCircle2,
-          iconColor: 'text-[#7FE2BC]',
-        };
-      case 'warning':
-        return {
-          bg: 'bg-[#E85D30]/12',
-          text: 'text-[#F2B29D]',
-          icon: AlertTriangle,
-          iconColor: 'text-[#F2B29D]',
-        };
-      case 'error':
-        return {
-          bg: 'bg-[#E05252]/12',
-          text: 'text-[#F7A8A8]',
-          icon: XCircle,
-          iconColor: 'text-[#F7A8A8]',
-        };
-      case 'info':
-        return {
-          bg: 'bg-[#3B82F6]/12',
-          text: 'text-[#93C5FD]',
-          icon: Info,
-          iconColor: 'text-[#93C5FD]',
-        };
-    }
-  };
 
   const handleShowResolve = (alert: Alert) => {
     setSelectedAlert(alert);
@@ -81,32 +77,14 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
               Nenhum alerta operacional carregado nesta sessao.
             </SettingsInset>
           ) : (
-            alerts.map((alert) => {
-              const styles = getAlertStyles(alert.type);
-              const Icon = styles.icon;
-              const hasDetail = Boolean(alert.detail?.trim());
-              return (
-                <div
-                  key={alert.id}
-                  className={`flex items-center justify-between rounded-md ${styles.bg} p-4`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`h-5 w-5 ${styles.iconColor}`} />
-                    <span className={`text-sm font-medium ${styles.text}`}>{alert.message}</span>
-                  </div>
-                  {alert.type !== 'success' && hasDetail && (
-                    <button
-                      type="button"
-                      onClick={() => handleShowResolve(alert)}
-                      className={`flex items-center gap-1 text-xs font-medium ${styles.text} hover:underline`}
-                    >
-                      Ver como resolver
-                      <ChevronRight className="h-3 w-3" aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
-              );
-            })
+            alerts.map((alert) => (
+              <AlertRow
+                key={alert.id}
+                alert={alert}
+                styles={ALERT_STYLES[alert.type]}
+                onResolve={handleShowResolve}
+              />
+            ))
           )}
         </div>
       </SettingsCard>
@@ -123,17 +101,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
-          <SettingsNotice
-            tone={
-              selectedAlert.type === 'error'
-                ? 'danger'
-                : selectedAlert.type === 'warning'
-                  ? 'warning'
-                  : selectedAlert.type === 'info'
-                    ? 'info'
-                    : 'neutral'
-            }
-          >
+          <SettingsNotice tone={resolveNoticeTone(selectedAlert.type)}>
             <p className="text-sm">
               {selectedAlert.detail ||
                 'Este alerta ainda nao traz um roteiro detalhado nesta superficie.'}

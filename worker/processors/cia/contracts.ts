@@ -120,49 +120,70 @@ function isHotCovered(state: CiaWorkspaceState, batch: CiaDecisionBatch): boolea
   );
 }
 
-function isExplicitOutcomeNarrated(batch: CiaDecisionBatch): boolean {
+const isExplicitOutcomeNarrated = (batch: CiaDecisionBatch): boolean => {
   if (typeof batch.summary !== 'string' || batch.summary.trim().length === 0) return false;
   if (batch.actions.length > 0) return true;
   return batch.summary.toLowerCase().includes('não encontrei');
+};
+
+interface GuaranteeChecks {
+  selectedTargets: string[];
+  uniqueTargets: boolean;
+  prioritiesMonotonic: boolean;
+  maxActionsRespected: boolean;
+  paymentCovered: boolean;
+  hotCovered: boolean;
+  actionTypesValid: boolean;
+  explicitOutcomeNarrated: boolean;
 }
+
+const evaluateGuaranteeChecks = (
+  state: CiaWorkspaceState,
+  batch: CiaDecisionBatch,
+  maxActions: number,
+): GuaranteeChecks => {
+  const selectedTargets = batch.actions.map(targetKey);
+  return {
+    selectedTargets,
+    uniqueTargets: new Set(selectedTargets).size === selectedTargets.length,
+    prioritiesMonotonic: arePrioritiesMonotonic(batch.actions),
+    maxActionsRespected: batch.actions.length <= maxActions,
+    paymentCovered: isPaymentCovered(state, batch),
+    hotCovered: isHotCovered(state, batch),
+    actionTypesValid: batch.actions.every((action) => VALID_TYPES.has(action.type)),
+    explicitOutcomeNarrated: isExplicitOutcomeNarrated(batch),
+  };
+};
+
+const allChecksPass = (checks: GuaranteeChecks): boolean =>
+  checks.maxActionsRespected &&
+  checks.uniqueTargets &&
+  checks.prioritiesMonotonic &&
+  checks.paymentCovered &&
+  checks.hotCovered &&
+  checks.actionTypesValid &&
+  checks.explicitOutcomeNarrated;
 
 export function buildCiaGuaranteeReport(
   state: CiaWorkspaceState,
   batch: CiaDecisionBatch,
   maxActions: number,
 ): CiaGuaranteeReport {
-  const selectedTargets = batch.actions.map(targetKey);
-  const uniqueTargets = new Set(selectedTargets).size === selectedTargets.length;
-  const prioritiesMonotonic = arePrioritiesMonotonic(batch.actions);
-  const maxActionsRespected = batch.actions.length <= maxActions;
-  const paymentCovered = isPaymentCovered(state, batch);
-  const hotCovered = isHotCovered(state, batch);
-  const actionTypesValid = batch.actions.every((action) => VALID_TYPES.has(action.type));
-  const explicitOutcomeNarrated = isExplicitOutcomeNarrated(batch);
-
-  const guaranteed =
-    maxActionsRespected &&
-    uniqueTargets &&
-    prioritiesMonotonic &&
-    paymentCovered &&
-    hotCovered &&
-    actionTypesValid &&
-    explicitOutcomeNarrated;
-
+  const checks = evaluateGuaranteeChecks(state, batch, maxActions);
   return {
-    maxActionsRespected,
-    uniqueTargets,
-    prioritiesMonotonic,
-    paymentCovered,
-    hotCovered,
-    actionTypesValid,
-    explicitOutcomeNarrated,
-    guaranteed,
+    maxActionsRespected: checks.maxActionsRespected,
+    uniqueTargets: checks.uniqueTargets,
+    prioritiesMonotonic: checks.prioritiesMonotonic,
+    paymentCovered: checks.paymentCovered,
+    hotCovered: checks.hotCovered,
+    actionTypesValid: checks.actionTypesValid,
+    explicitOutcomeNarrated: checks.explicitOutcomeNarrated,
+    guaranteed: allChecksPass(checks),
     details: {
       selectedCount: batch.actions.length,
       candidateCount: state.candidates.length,
       maxActions,
-      selectedTargets,
+      selectedTargets: checks.selectedTargets,
     },
   };
 }

@@ -3,6 +3,21 @@ import { NextFunction, Request, Response } from 'express';
 
 const RX_1_50_RE = /(.)\1{50,}/g;
 
+function isForbiddenLatinControlChar(char: string): boolean {
+  const codePoint = char.codePointAt(0) ?? 0;
+  if (codePoint >= 0x00 && codePoint <= 0x08) return true;
+  if (codePoint === 0x0b || codePoint === 0x0c) return true;
+  if (codePoint >= 0x0e && codePoint <= 0x1f) return true;
+  if (codePoint >= 0x7f && codePoint <= 0x9f) return true;
+  return false;
+}
+
+function stripForbiddenControlChars(input: string): string {
+  return Array.from(input)
+    .filter((char) => !isForbiddenLatinControlChar(char))
+    .join('');
+}
+
 function stripAlwaysRespondDirective(input: string): string {
   const normalized = input.toLowerCase();
   const startNeedle = 'por favor responda';
@@ -111,18 +126,7 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     result = stripAlwaysRespondDirective(result);
 
     // Remove caracteres de controle Unicode (exceto newlines e tabs)
-    result = Array.from(result)
-      .filter((char) => {
-        const codePoint = char.codePointAt(0) ?? 0;
-        const isForbiddenLatinControl =
-          (codePoint >= 0x00 && codePoint <= 0x08) ||
-          codePoint === 0x0b ||
-          codePoint === 0x0c ||
-          (codePoint >= 0x0e && codePoint <= 0x1f) ||
-          (codePoint >= 0x7f && codePoint <= 0x9f);
-        return !isForbiddenLatinControl;
-      })
-      .join('');
+    result = stripForbiddenControlChars(result);
 
     // Limita repetições excessivas (anti-flood)
     result = result.replace(RX_1_50_RE, '$1$1$1');

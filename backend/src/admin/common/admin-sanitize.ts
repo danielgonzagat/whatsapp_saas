@@ -24,26 +24,33 @@ const REDACTED_KEYS = new Set([
   'cookie',
 ]);
 
+function isScalarValue(value: unknown): value is string | number | boolean {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+}
+
+function sanitizeArrayForAudit(value: unknown[], depth: number): unknown[] {
+  return value.slice(0, 20).map((item) => sanitizeForAudit(item, depth + 1));
+}
+
+function sanitizeObjectForAudit(
+  value: Record<string, unknown>,
+  depth: number,
+): Record<string, unknown> {
+  const entries = Object.entries(value).slice(0, 40);
+  const out: Record<string, unknown> = {};
+  for (const [key, raw] of entries) {
+    out[key] = REDACTED_KEYS.has(key) ? '[REDACTED]' : sanitizeForAudit(raw, depth + 1);
+  }
+  return out;
+}
+
 export function sanitizeForAudit(value: unknown, depth = 0): unknown {
   if (depth > 6) return '[[depth]]';
   if (value === null || value === undefined) return value;
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return value.slice(0, 20).map((item) => sanitizeForAudit(item, depth + 1));
-  }
+  if (isScalarValue(value)) return value;
+  if (Array.isArray(value)) return sanitizeArrayForAudit(value, depth);
   if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>).slice(0, 40);
-    const out: Record<string, unknown> = {};
-    for (const [key, raw] of entries) {
-      if (REDACTED_KEYS.has(key)) {
-        out[key] = '[REDACTED]';
-      } else {
-        out[key] = sanitizeForAudit(raw, depth + 1);
-      }
-    }
-    return out;
+    return sanitizeObjectForAudit(value as Record<string, unknown>, depth);
   }
   return '[[unknown]]';
 }

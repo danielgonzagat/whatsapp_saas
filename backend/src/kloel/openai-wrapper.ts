@@ -147,6 +147,24 @@ export class LLMInputTooLargeError extends Error {
   }
 }
 
+function clampMaxCompletionTokens(rawMaxTokens: unknown): number {
+  if (
+    rawMaxTokens === undefined ||
+    rawMaxTokens === null ||
+    !Number.isFinite(Number(rawMaxTokens))
+  ) {
+    return LLM_MAX_COMPLETION_TOKENS;
+  }
+  return Math.min(Math.max(Number(rawMaxTokens), 1), LLM_MAX_COMPLETION_TOKENS);
+}
+
+function assertMessagesFitInputLimit(messages: unknown): void {
+  const serialized = JSON.stringify(messages ?? []);
+  if (serialized.length > LLM_MAX_INPUT_CHARS) {
+    throw new LLMInputTooLargeError(serialized.length);
+  }
+}
+
 // PULSE:OK — normalization helpers do not call the provider; caller-level budget
 // enforcement happens before chatCompletionWithRetry/chatCompletionStreamWithRetry.
 export function normalizeChatCompletionParams(
@@ -160,17 +178,7 @@ export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatPar
 
   // --- Clamp 1: max output tokens ----------------------------------
   const rawMaxTokens = payload.max_tokens ?? payload.max_completion_tokens;
-  let clampedMaxTokens: number;
-  if (
-    rawMaxTokens === undefined ||
-    rawMaxTokens === null ||
-    !Number.isFinite(Number(rawMaxTokens))
-  ) {
-    clampedMaxTokens = LLM_MAX_COMPLETION_TOKENS;
-  } else {
-    clampedMaxTokens = Math.min(Math.max(Number(rawMaxTokens), 1), LLM_MAX_COMPLETION_TOKENS);
-  }
-  payload.max_completion_tokens = clampedMaxTokens;
+  payload.max_completion_tokens = clampMaxCompletionTokens(rawMaxTokens);
   if ('max_tokens' in payload) {
     delete payload.max_tokens;
   }
@@ -179,10 +187,7 @@ export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatPar
   // Fail-closed: reject gigantic payloads BEFORE they reach the wire.
   // A bug in prompt assembly can easily produce a 10MB payload; we must
   // not let that through.
-  const serialized = JSON.stringify(payload.messages ?? []);
-  if (serialized.length > LLM_MAX_INPUT_CHARS) {
-    throw new LLMInputTooLargeError(serialized.length);
-  }
+  assertMessagesFitInputLimit(payload.messages);
 
   // PULSE:OK — returning a normalized payload object is not an LLM call.
   return payload;

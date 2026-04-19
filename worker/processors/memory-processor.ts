@@ -116,18 +116,25 @@ export const memoryWorker = new Worker(
   { connection, concurrency: 5 },
 );
 
-function findSentenceSplit(cleanText: string, startIndex: number, endIndex: number): number {
+const isSplitCandidate = (
+  idx: number,
+  startIndex: number,
+  endIndex: number,
+  splitIndex: number,
+): boolean => idx > startIndex + (endIndex - startIndex) * 0.5 && idx > splitIndex;
+
+const findSentenceSplit = (cleanText: string, startIndex: number, endIndex: number): number => {
   let splitIndex = -1;
   for (const ending of SENTENCE_ENDINGS) {
     const idx = cleanText.lastIndexOf(ending, endIndex);
-    if (idx > startIndex + (endIndex - startIndex) * 0.5 && idx > splitIndex) {
+    if (isSplitCandidate(idx, startIndex, endIndex, splitIndex)) {
       splitIndex = idx + 1;
     }
   }
   return splitIndex;
-}
+};
 
-function findChunkEnd(cleanText: string, startIndex: number, chunkSize: number): number {
+const findChunkEnd = (cleanText: string, startIndex: number, chunkSize: number): number => {
   const endIndex = startIndex + chunkSize;
   if (endIndex >= cleanText.length) return endIndex;
 
@@ -137,9 +144,9 @@ function findChunkEnd(cleanText: string, startIndex: number, chunkSize: number):
   const lastSpace = cleanText.lastIndexOf(' ', endIndex);
   if (lastSpace > startIndex) return lastSpace;
   return endIndex;
-}
+};
 
-function splitText(text: string, chunkSize: number, chunkOverlap = 200): string[] {
+const splitText = (text: string, chunkSize: number, chunkOverlap = 200): string[] => {
   if (!text) return [];
   const cleanText = text.replace(S_RE, ' ').trim();
   if (cleanText.length <= chunkSize) return [cleanText];
@@ -155,4 +162,4 @@ function splitText(text: string, chunkSize: number, chunkOverlap = 200): string[
     startIndex = Math.max(startIndex + 1, endIndex - chunkOverlap);
   }
   return chunks;
-}
+};
