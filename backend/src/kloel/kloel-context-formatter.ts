@@ -572,67 +572,71 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  private buildAffiliateEntryHeader(entry: Record<string, unknown>): string[] {
+    const status = typeof entry.status === 'string' ? entry.status : null;
+    const approvalMode = typeof entry.approvalMode === 'string' ? entry.approvalMode : null;
+    return [
+      typeof entry.productName === 'string' ? entry.productName : null,
+      status ? `status ${status}` : null,
+      Number.isFinite(Number(entry.commissionPct))
+        ? `comissão ${Number(entry.commissionPct)}%`
+        : null,
+      typeof entry.commissionType === 'string' ? entry.commissionType : null,
+      Number.isFinite(Number(entry.cookieDays)) ? `cookie ${Number(entry.cookieDays)} dias` : null,
+      approvalMode ? `aprovação ${approvalMode}` : null,
+      Number.isFinite(Number(entry.temperature))
+        ? `temperatura ${Number(entry.temperature)}`
+        : null,
+    ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+  }
+
+  private buildAffiliateEntryOffer(entry: Record<string, unknown>): string[] {
+    const category = typeof entry.category === 'string' ? entry.category : null;
+    const description = typeof entry.description === 'string' ? entry.description : null;
+    return [
+      entry.price ? this.formatPromptCurrency(entry.price, entry.currency || 'BRL') : null,
+      category ? `categoria ${category}` : null,
+      description ? this.truncatePromptText(description, 120) : null,
+    ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+  }
+
+  private buildAffiliateEntryPerformance(entry: Record<string, unknown>): string[] {
+    return [
+      Number.isFinite(Number(entry.linkClicks)) ? `${Number(entry.linkClicks)} clique(s)` : null,
+      Number.isFinite(Number(entry.linkSales)) ? `${Number(entry.linkSales)} venda(s)` : null,
+      Number.isFinite(Number(entry.linkRevenue))
+        ? `${this.formatPromptCurrency(entry.linkRevenue, 'BRL')} receita`
+        : null,
+      Number.isFinite(Number(entry.linkCommissionEarned))
+        ? `${this.formatPromptCurrency(entry.linkCommissionEarned, 'BRL')} comissão`
+        : null,
+    ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+  }
+
+  private formatAffiliateEntry(entry: Record<string, unknown>): string {
+    const lines = [`- ${this.buildAffiliateEntryHeader(entry).join(' | ')}`];
+
+    const offer = this.buildAffiliateEntryOffer(entry);
+    if (offer.length > 0) lines.push(`  Oferta: ${offer.join(' | ')}`);
+
+    const performance = this.buildAffiliateEntryPerformance(entry);
+    if (performance.length > 0) lines.push(`  Performance: ${performance.join(' | ')}`);
+
+    const code = this.truncatePromptText(entry.affiliateCode, 80);
+    if (code) lines.push(`  Código/link afiliado: ${code}`);
+
+    const promo = this.compactJsonForPrompt(entry.promoMaterials, 180);
+    if (promo) lines.push(`  Materiais promocionais: ${promo}`);
+
+    return lines.join('\n');
+  }
+
   buildWorkspaceAffiliateContext(entries: unknown): string | null {
     if (!Array.isArray(entries) || entries.length === 0) return null;
 
     return entries
       .slice(0, this.limits.workspaceAffiliateContextLimit)
-      .map((entry) => {
-        const parts = [
-          entry.productName,
-          entry.status ? `status ${entry.status}` : null,
-          Number.isFinite(Number(entry.commissionPct))
-            ? `comissão ${Number(entry.commissionPct)}%`
-            : null,
-          entry.commissionType ? entry.commissionType : null,
-          Number.isFinite(Number(entry.cookieDays))
-            ? `cookie ${Number(entry.cookieDays)} dias`
-            : null,
-          entry.approvalMode ? `aprovação ${entry.approvalMode}` : null,
-          Number.isFinite(Number(entry.temperature))
-            ? `temperatura ${Number(entry.temperature)}`
-            : null,
-        ].filter(Boolean);
-
-        const lines = [`- ${parts.join(' | ')}`];
-
-        const offer = [
-          entry.price ? this.formatPromptCurrency(entry.price, entry.currency || 'BRL') : null,
-          entry.category ? `categoria ${entry.category}` : null,
-          entry.description ? this.truncatePromptText(entry.description, 120) : null,
-        ].filter(Boolean);
-        if (offer.length > 0) {
-          lines.push(`  Oferta: ${offer.join(' | ')}`);
-        }
-
-        const performance = [
-          Number.isFinite(Number(entry.linkClicks))
-            ? `${Number(entry.linkClicks)} clique(s)`
-            : null,
-          Number.isFinite(Number(entry.linkSales)) ? `${Number(entry.linkSales)} venda(s)` : null,
-          Number.isFinite(Number(entry.linkRevenue))
-            ? `${this.formatPromptCurrency(entry.linkRevenue, 'BRL')} receita`
-            : null,
-          Number.isFinite(Number(entry.linkCommissionEarned))
-            ? `${this.formatPromptCurrency(entry.linkCommissionEarned, 'BRL')} comissão`
-            : null,
-        ].filter(Boolean);
-        if (performance.length > 0) {
-          lines.push(`  Performance: ${performance.join(' | ')}`);
-        }
-
-        const code = this.truncatePromptText(entry.affiliateCode, 80);
-        if (code) {
-          lines.push(`  Código/link afiliado: ${code}`);
-        }
-
-        const promo = this.compactJsonForPrompt(entry.promoMaterials, 180);
-        if (promo) {
-          lines.push(`  Materiais promocionais: ${promo}`);
-        }
-
-        return lines.join('\n');
-      })
+      .map((entry) => this.formatAffiliateEntry(entry))
       .join('\n');
   }
 

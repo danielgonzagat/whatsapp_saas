@@ -763,57 +763,67 @@ export class WhatsAppCatchupService {
             : [];
 
     return candidates
-      .map((chatRaw: unknown) => {
-        const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<
-          string,
-          unknown
-        >;
-        const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
-        const lastMessage = chat.lastMessage as Record<string, unknown> | null | undefined;
-        const lastMsgData = lastMessage?._data as Record<string, unknown> | undefined;
-        const lastMsgId = lastMessage?.id as Record<string, unknown> | undefined;
-        const chatChat = chat._chat as Record<string, unknown> | undefined;
-        const contact = chat.contact as Record<string, unknown> | undefined;
-        const lastMsgDataId = lastMsgData?.id as Record<string, unknown> | undefined;
-        return {
-          id:
-            (typeof chatIdObj === 'object' && chatIdObj ? chatIdObj._serialized : undefined) ||
-            chat.id ||
-            chat.chatId ||
-            chat.wid ||
-            '',
-          unreadCount: Number(chat.unreadCount || chat.unread || 0) || 0,
-          timestamp: this.resolveTimestamp(chat),
-          lastMessageTimestamp:
-            Number(
-              chat.lastMessageTimestamp ||
-                lastMessage?.timestamp ||
-                lastMsgData?.messageTimestamp ||
-                chat.last_time ||
-                chatChat?.conversationTimestamp ||
-                0,
-            ) || 0,
-          lastMessageRecvTimestamp:
-            Number(
-              chat.lastMessageRecvTimestamp ||
-                chatChat?.lastMessageRecvTimestamp ||
-                lastMessage?.timestamp ||
-                lastMsgData?.messageTimestamp ||
-                chatChat?.conversationTimestamp ||
-                0,
-            ) || 0,
-          lastMessageFromMe:
-            typeof lastMessage?.fromMe === 'boolean'
-              ? lastMessage.fromMe
-              : typeof lastMsgDataId?.fromMe === 'boolean'
-                ? lastMsgDataId.fromMe
-                : typeof lastMsgId?.fromMe === 'boolean'
-                  ? lastMsgId.fromMe
-                  : null,
-          name: chat.name || contact?.pushName || lastMsgData?.verifiedBizName || null,
-        } as WahaChatSummary;
-      })
+      .map((chatRaw: unknown) => this.normalizeChatEntry(chatRaw))
       .filter((chat) => !!chat.id);
+  }
+
+  private pickBooleanFromMe(
+    lastMessage: Record<string, unknown> | null | undefined,
+    lastMsgDataId: Record<string, unknown> | undefined,
+    lastMsgId: Record<string, unknown> | undefined,
+  ): boolean | null {
+    if (typeof lastMessage?.fromMe === 'boolean') return lastMessage.fromMe;
+    if (typeof lastMsgDataId?.fromMe === 'boolean') return lastMsgDataId.fromMe;
+    if (typeof lastMsgId?.fromMe === 'boolean') return lastMsgId.fromMe;
+    return null;
+  }
+
+  private normalizeChatEntry(chatRaw: unknown): WahaChatSummary {
+    const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<string, unknown>;
+    const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
+    const lastMessage = chat.lastMessage as Record<string, unknown> | null | undefined;
+    const lastMsgData = lastMessage?._data as Record<string, unknown> | undefined;
+    const lastMsgId = lastMessage?.id as Record<string, unknown> | undefined;
+    const chatChat = chat._chat as Record<string, unknown> | undefined;
+    const contact = chat.contact as Record<string, unknown> | undefined;
+    const lastMsgDataId = lastMsgData?.id as Record<string, unknown> | undefined;
+
+    const id =
+      (typeof chatIdObj === 'object' && chatIdObj ? chatIdObj._serialized : undefined) ||
+      chat.id ||
+      chat.chatId ||
+      chat.wid ||
+      '';
+
+    const lastMessageTimestamp =
+      Number(
+        chat.lastMessageTimestamp ||
+          lastMessage?.timestamp ||
+          lastMsgData?.messageTimestamp ||
+          chat.last_time ||
+          chatChat?.conversationTimestamp ||
+          0,
+      ) || 0;
+
+    const lastMessageRecvTimestamp =
+      Number(
+        chat.lastMessageRecvTimestamp ||
+          chatChat?.lastMessageRecvTimestamp ||
+          lastMessage?.timestamp ||
+          lastMsgData?.messageTimestamp ||
+          chatChat?.conversationTimestamp ||
+          0,
+      ) || 0;
+
+    return {
+      id,
+      unreadCount: Number(chat.unreadCount || chat.unread || 0) || 0,
+      timestamp: this.resolveTimestamp(chat),
+      lastMessageTimestamp,
+      lastMessageRecvTimestamp,
+      lastMessageFromMe: this.pickBooleanFromMe(lastMessage, lastMsgDataId, lastMsgId),
+      name: chat.name || contact?.pushName || lastMsgData?.verifiedBizName || null,
+    } as WahaChatSummary;
   }
 
   private normalizeMessages(raw: unknown, fallbackChatId: string): WahaChatMessage[] {

@@ -86,26 +86,7 @@ export class AdminAccountsService {
       updatedBy: actorId,
     };
 
-    if (action === AdminAccountStateAction.SUSPEND) {
-      nextAccountState.suspended = true;
-      nextAccountState.reason = input.reason?.trim() || 'Suspensão administrativa.';
-    }
-    if (action === AdminAccountStateAction.BLOCK) {
-      nextAccountState.blocked = true;
-      nextAccountState.reason = input.reason?.trim() || 'Bloqueio administrativo.';
-    }
-    if (action === AdminAccountStateAction.UNBLOCK) {
-      nextAccountState.blocked = false;
-      nextAccountState.reason = input.reason?.trim() || null;
-    }
-    if (action === AdminAccountStateAction.FREEZE) {
-      nextAccountState.frozenBalanceInCents = Math.max(0, input.frozenBalanceInCents ?? 0);
-      nextAccountState.reason = input.reason?.trim() || 'Saldo congelado manualmente.';
-    }
-    if (action === AdminAccountStateAction.UNFREEZE) {
-      nextAccountState.frozenBalanceInCents = 0;
-      nextAccountState.reason = input.reason?.trim() || null;
-    }
+    this.applyAccountStateAction(nextAccountState, action, input);
 
     const nextSettings = {
       ...currentSettings,
@@ -131,6 +112,38 @@ export class AdminAccountsService {
         frozenBalanceInCents: input.frozenBalanceInCents ?? null,
       },
     });
+  }
+
+  private applyAccountStateAction(
+    nextAccountState: Record<string, unknown>,
+    action: AdminAccountStateAction,
+    input: { reason?: string; frozenBalanceInCents?: number },
+  ): void {
+    const reason = input.reason?.trim();
+    switch (action) {
+      case AdminAccountStateAction.SUSPEND:
+        nextAccountState.suspended = true;
+        nextAccountState.reason = reason || 'Suspensão administrativa.';
+        return;
+      case AdminAccountStateAction.BLOCK:
+        nextAccountState.blocked = true;
+        nextAccountState.reason = reason || 'Bloqueio administrativo.';
+        return;
+      case AdminAccountStateAction.UNBLOCK:
+        nextAccountState.blocked = false;
+        nextAccountState.reason = reason || null;
+        return;
+      case AdminAccountStateAction.FREEZE:
+        nextAccountState.frozenBalanceInCents = Math.max(0, input.frozenBalanceInCents ?? 0);
+        nextAccountState.reason = reason || 'Saldo congelado manualmente.';
+        return;
+      case AdminAccountStateAction.UNFREEZE:
+        nextAccountState.frozenBalanceInCents = 0;
+        nextAccountState.reason = reason || null;
+        return;
+      default:
+        return;
+    }
   }
 
   async bulkUpdateState(

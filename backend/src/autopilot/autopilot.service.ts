@@ -1135,26 +1135,47 @@ Answer in Portuguese, short and actionable.`;
     });
     const map = new Map(contacts.map((c) => [c.id, c]));
 
-    return events.map((l) => {
-      const contact = l.contactId ? map.get(l.contactId) : null;
-      const nextRetryAt = this.readOptionalText(
-        this.readRecord(contact?.customFields).autopilotNextRetryAt,
-      );
-      const meta = this.readRecord(l.meta);
-      return {
-        createdAt: l.createdAt,
-        contact: contact?.name || contact?.phone || l.contactId,
-        contactId: l.contactId,
-        contactPhone: contact?.phone || null,
-        action: l.action || 'UNKNOWN',
-        intent: l.intent || 'UNKNOWN',
-        status: l.status || 'executed',
-        reason: l.reason || '',
-        nextRetryAt,
-        intentConfidence: meta?.confidence ?? meta?.intentConfidence ?? null,
-        meta: l.meta || null,
-      };
-    });
+    return events.map((l) => this.serializeRecentAction(l, map));
+  }
+
+  private serializeRecentAction(
+    event: {
+      createdAt: Date;
+      contactId: string | null;
+      intent: string | null;
+      action: string | null;
+      status: string | null;
+      reason: string | null;
+      meta: unknown;
+    },
+    contactMap: Map<
+      string,
+      {
+        id: string;
+        phone: string | null;
+        name: string | null;
+        customFields: unknown;
+      }
+    >,
+  ) {
+    const contact = event.contactId ? contactMap.get(event.contactId) : null;
+    const nextRetryAt = this.readOptionalText(
+      this.readRecord(contact?.customFields).autopilotNextRetryAt,
+    );
+    const meta = this.readRecord(event.meta);
+    return {
+      createdAt: event.createdAt,
+      contact: contact?.name || contact?.phone || event.contactId,
+      contactId: event.contactId,
+      contactPhone: contact?.phone || null,
+      action: event.action || 'UNKNOWN',
+      intent: event.intent || 'UNKNOWN',
+      status: event.status || 'executed',
+      reason: event.reason || '',
+      nextRetryAt,
+      intentConfidence: meta?.confidence ?? meta?.intentConfidence ?? null,
+      meta: event.meta || null,
+    };
   }
 
   /**

@@ -499,52 +499,9 @@ export class WhatsappService {
     ]);
 
     const items = Array.from(phoneSet)
-      .map((phone) => {
-        const remote = remoteByPhone.get(phone);
-        const local = localByPhone.get(phone);
-        const remoteUnreadCount = Math.max(0, Number(remote?.unreadCount || 0) || 0);
-        const localUnreadCount = Math.max(0, Number(local?.unreadCount || 0) || 0);
-        const localPendingMessages = Math.max(0, Number(local?.pendingMessages || 0) || 0);
-        const remotePending = remoteUnreadCount > 0;
-        const localPending = local?.pending === true;
-        const pending = remotePending || localPending;
-        const lastMessageTimestamp = Math.max(
-          this.resolveTimestamp(remote),
-          this.resolveTimestamp({ createdAt: local?.lastMessageAt }),
-        );
-        const pendingMessages = pending
-          ? Math.max(remoteUnreadCount, localPendingMessages, localUnreadCount, 1)
-          : 0;
-
-        return {
-          phone,
-          chatId: remote?.id || (phone ? `${phone}@c.us` : null),
-          name: this.resolveTrustedContactName(phone, remote?.name, local?.contactName) || null,
-          conversationId: local?.conversationId || null,
-          source: remote && local ? 'waha+crm' : remote ? 'waha' : 'crm',
-          pending,
-          needsReply: remotePending || local?.needsReply === true,
-          remotePending,
-          localPending,
-          remoteUnreadCount,
-          localUnreadCount,
-          pendingMessages,
-          blockedReason: pending ? null : local?.blockedReason || null,
-          owner: local?.owner || 'AGENT',
-          lastMessageDirection: local?.lastMessageDirection || null,
-          lastMessageAt:
-            this.toIsoTimestamp(lastMessageTimestamp) ||
-            remote?.lastMessageAt ||
-            local?.lastMessageAt ||
-            null,
-          lastMessageTimestamp,
-          remoteOnlyPending: remotePending && !localPending,
-          localOnlyPending: localPending && !remotePending,
-          conversationStatus: local?.status || null,
-          conversationMode: local?.mode || null,
-          assignedAgentId: local?.assignedAgentId || null,
-        };
-      })
+      .map((phone) =>
+        this.buildOperationalBacklogItem(phone, remoteByPhone.get(phone), localByPhone.get(phone)),
+      )
       .sort((a, b) => {
         if (a.pending !== b.pending) {
           return Number(b.pending) - Number(a.pending);
@@ -583,6 +540,57 @@ export class WhatsappService {
         latestPendingMessageAt: pendingItems[0]?.lastMessageAt || null,
       },
       items: visibleItems,
+    };
+  }
+
+  private buildOperationalBacklogItem(
+    phone: string,
+    remote: NormalizedChat | undefined,
+    local: ConversationOperationalState | undefined,
+  ) {
+    const remoteUnreadCount = Math.max(0, Number(remote?.unreadCount || 0) || 0);
+    const localUnreadCount = Math.max(0, Number(local?.unreadCount || 0) || 0);
+    const localPendingMessages = Math.max(0, Number(local?.pendingMessages || 0) || 0);
+    const remotePending = remoteUnreadCount > 0;
+    const localPending = local?.pending === true;
+    const pending = remotePending || localPending;
+    const lastMessageTimestamp = Math.max(
+      this.resolveTimestamp(remote),
+      this.resolveTimestamp({ createdAt: local?.lastMessageAt }),
+    );
+    const pendingMessages = pending
+      ? Math.max(remoteUnreadCount, localPendingMessages, localUnreadCount, 1)
+      : 0;
+    const source = remote && local ? 'waha+crm' : remote ? 'waha' : 'crm';
+    const lastMessageAt =
+      this.toIsoTimestamp(lastMessageTimestamp) ||
+      remote?.lastMessageAt ||
+      local?.lastMessageAt ||
+      null;
+
+    return {
+      phone,
+      chatId: remote?.id || (phone ? `${phone}@c.us` : null),
+      name: this.resolveTrustedContactName(phone, remote?.name, local?.contactName) || null,
+      conversationId: local?.conversationId || null,
+      source,
+      pending,
+      needsReply: remotePending || local?.needsReply === true,
+      remotePending,
+      localPending,
+      remoteUnreadCount,
+      localUnreadCount,
+      pendingMessages,
+      blockedReason: pending ? null : local?.blockedReason || null,
+      owner: local?.owner || 'AGENT',
+      lastMessageDirection: local?.lastMessageDirection || null,
+      lastMessageAt,
+      lastMessageTimestamp,
+      remoteOnlyPending: remotePending && !localPending,
+      localOnlyPending: localPending && !remotePending,
+      conversationStatus: local?.status || null,
+      conversationMode: local?.mode || null,
+      assignedAgentId: local?.assignedAgentId || null,
     };
   }
 
@@ -2083,61 +2091,60 @@ export class WhatsappService {
             : [];
 
     return candidates
-      .map((contact: unknown) => {
-        const c = contact as Record<string, unknown>;
-        const cId = c?.id as Record<string, unknown> | string | undefined;
-        const cWid = c?.wid as Record<string, unknown> | string | undefined;
-        const rawIdCandidates = [
-          typeof cId === 'object' ? cId?._serialized : undefined,
-          c?.id,
-          typeof cWid === 'object' ? cWid?._serialized : undefined,
-          c?.wid,
-          c?.chatId,
-        ];
-        const rawId = this.readText(
-          rawIdCandidates.find((v) => typeof v === 'string' && v.trim()) ?? '',
-        );
-        const phoneCandidates = [
-          c?.phone,
-          c?.number,
-          typeof cId === 'object' ? cId?.user : undefined,
-          typeof cWid === 'object' ? cWid?.user : undefined,
-        ];
-        const phoneCandidate = phoneCandidates.find((v) => typeof v === 'string' && v.trim());
-        const phone = this.normalizeNumber(
-          typeof phoneCandidate === 'string'
-            ? phoneCandidate
-            : this.providerRegistry.extractPhoneFromChatId(rawId),
-        );
-
-        if (!phone) {
-          return null;
-        }
-
-        return {
-          id: rawId || `${phone}@c.us`,
-          phone,
-          name:
-            this.resolveTrustedContactName(
-              phone,
-              c?.pushName,
-              c?.pushname,
-              c?.name,
-              c?.shortName,
-            ) || null,
-          pushName: this.isPlaceholderContactName(c?.pushName || c?.pushname, phone)
-            ? null
-            : c?.pushName || c?.pushname || null,
-          shortName: c?.shortName || null,
-          email: null,
-          localContactId: null,
-          source: 'provider',
-          registered: true,
-          createdAt: null,
-          updatedAt: null,
-        };
-      })
+      .map((contact: unknown) => this.normalizeContactEntry(contact))
       .filter((contact): contact is NormalizedContact => contact !== null);
+  }
+
+  private normalizeContactEntry(contact: unknown): NormalizedContact | null {
+    const c = contact as Record<string, unknown>;
+    const cId = c?.id as Record<string, unknown> | string | undefined;
+    const cWid = c?.wid as Record<string, unknown> | string | undefined;
+
+    const rawId = this.readText(
+      [
+        typeof cId === 'object' ? cId?._serialized : undefined,
+        c?.id,
+        typeof cWid === 'object' ? cWid?._serialized : undefined,
+        c?.wid,
+        c?.chatId,
+      ].find((v) => typeof v === 'string' && v.trim()) ?? '',
+    );
+
+    const phoneCandidate = [
+      c?.phone,
+      c?.number,
+      typeof cId === 'object' ? cId?.user : undefined,
+      typeof cWid === 'object' ? cWid?.user : undefined,
+    ].find((v) => typeof v === 'string' && v.trim());
+
+    const phone = this.normalizeNumber(
+      typeof phoneCandidate === 'string'
+        ? phoneCandidate
+        : this.providerRegistry.extractPhoneFromChatId(rawId),
+    );
+
+    if (!phone) return null;
+
+    const pushNameRaw = c?.pushName || c?.pushname;
+    const pushName = typeof pushNameRaw === 'string' && pushNameRaw.trim() ? pushNameRaw : null;
+    const resolvedPushName = this.isPlaceholderContactName(pushName, phone) ? null : pushName;
+    const shortName = typeof c?.shortName === 'string' ? c.shortName : null;
+
+    return {
+      id: rawId || `${phone}@c.us`,
+      phone,
+      name:
+        this.resolveTrustedContactName(phone, c?.pushName, c?.pushname, c?.name, c?.shortName) ||
+        null,
+      pushName: resolvedPushName,
+      shortName,
+      email: null,
+      localContactId: null,
+      source: 'provider',
+      registered: true,
+      createdAt: null,
+      updatedAt: null,
+    };
   }
 
   private normalizeChats(raw: unknown): NormalizedChat[] {
@@ -2153,56 +2160,56 @@ export class WhatsappService {
             : [];
 
     return candidates
-      .map((chatRaw: unknown) => {
-        const chat = chatRaw as Record<string, unknown>;
-        const chatId = chat?.id as Record<string, unknown> | string | undefined;
-        const chatContact = chat?.contact as Record<string, unknown> | undefined;
-        const chatLastMessage = chat?.lastMessage as Record<string, unknown> | undefined;
-        const chatLastMessageData = chatLastMessage?._data as Record<string, unknown> | undefined;
-        const chatIdCandidates = [
-          typeof chatId === 'object' ? chatId?._serialized : undefined,
-          chat?.id,
-          chat?.chatId,
-          chat?.wid,
-        ];
-        const rawId = this.readText(
-          chatIdCandidates.find((v) => typeof v === 'string' && v.trim()) ?? '',
-        );
-        const phone = this.normalizeNumber(
-          typeof chat?.phone === 'string'
-            ? chat.phone
-            : this.providerRegistry.extractPhoneFromChatId(rawId),
-        );
-        const timestamp = this.resolveTimestamp(chat);
-
-        if (!rawId || !phone) {
-          return null;
-        }
-
-        return {
-          id: rawId,
-          phone,
-          name:
-            this.resolveTrustedContactName(
-              phone,
-              chat?.name,
-              chat?.pushName,
-              chatContact?.name,
-              chatContact?.pushName,
-              chatLastMessageData?.verifiedBizName,
-            ) || null,
-          unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
-          pending:
-            (Number(chat?.unreadCount || chat?.unread || 0) || 0) > 0 ||
-            chatLastMessage?.fromMe === false,
-          timestamp,
-          lastMessageAt: this.toIsoTimestamp(timestamp),
-          conversationId: null,
-          status: null,
-          source: 'provider',
-        };
-      })
+      .map((chatRaw: unknown) => this.normalizeChatEntry(chatRaw))
       .filter((chat): chat is NormalizedChat => chat !== null);
+  }
+
+  private normalizeChatEntry(chatRaw: unknown): NormalizedChat | null {
+    const chat = chatRaw as Record<string, unknown>;
+    const chatId = chat?.id as Record<string, unknown> | string | undefined;
+    const chatContact = chat?.contact as Record<string, unknown> | undefined;
+    const chatLastMessage = chat?.lastMessage as Record<string, unknown> | undefined;
+    const chatLastMessageData = chatLastMessage?._data as Record<string, unknown> | undefined;
+
+    const rawId = this.readText(
+      [
+        typeof chatId === 'object' ? chatId?._serialized : undefined,
+        chat?.id,
+        chat?.chatId,
+        chat?.wid,
+      ].find((v) => typeof v === 'string' && v.trim()) ?? '',
+    );
+    const phone = this.normalizeNumber(
+      typeof chat?.phone === 'string'
+        ? chat.phone
+        : this.providerRegistry.extractPhoneFromChatId(rawId),
+    );
+
+    if (!rawId || !phone) return null;
+
+    const timestamp = this.resolveTimestamp(chat);
+    const unreadCount = Number(chat?.unreadCount || chat?.unread || 0) || 0;
+
+    return {
+      id: rawId,
+      phone,
+      name:
+        this.resolveTrustedContactName(
+          phone,
+          chat?.name,
+          chat?.pushName,
+          chatContact?.name,
+          chatContact?.pushName,
+          chatLastMessageData?.verifiedBizName,
+        ) || null,
+      unreadCount,
+      pending: unreadCount > 0 || chatLastMessage?.fromMe === false,
+      timestamp,
+      lastMessageAt: this.toIsoTimestamp(timestamp),
+      conversationId: null,
+      status: null,
+      source: 'provider',
+    };
   }
 
   private normalizeMessages(raw: unknown, fallbackChatId: string) {
@@ -2218,50 +2225,55 @@ export class WhatsappService {
             : [];
 
     return candidates
-      .map((msgRaw: unknown) => {
-        const message = msgRaw as Record<string, unknown>;
-        const mId = message?.id as Record<string, unknown> | string | undefined;
-        const mKey = message?.key as Record<string, unknown> | undefined;
-        const mText = message?.text as Record<string, unknown> | undefined;
-        const mMedia = message?.media as Record<string, unknown> | undefined;
-        const idCandidates = [
-          typeof mId === 'object' ? (mId?._serialized ?? mId?.id) : undefined,
-          mKey?.id,
-          message?.id,
-        ];
-        const id = this.readText(idCandidates.find((v) => typeof v === 'string' && v.trim()) ?? '');
-        const chatIdCandidates = [message?.chatId, message?.from, message?.to];
-        const chatId = this.readText(
-          chatIdCandidates.find((v) => typeof v === 'string' && v.trim()) ?? fallbackChatId,
-        );
-        const phone = this.normalizeNumber(
-          typeof message?.phone === 'string'
-            ? message.phone
-            : this.providerRegistry.extractPhoneFromChatId(chatId),
-        );
-        const timestamp = this.resolveTimestamp(message);
-
-        if (!id || !chatId) {
-          return null;
-        }
-
-        return {
-          id,
-          chatId,
-          phone,
-          body: message?.body || mText?.body || '',
-          direction: message?.fromMe === true ? 'OUTBOUND' : 'INBOUND',
-          fromMe: message?.fromMe === true,
-          type: (typeof message?.type === 'string' ? message.type : 'chat').toLowerCase(),
-          hasMedia: message?.hasMedia === true,
-          mediaUrl: message?.mediaUrl || mMedia?.url || null,
-          mimetype: message?.mimetype || mMedia?.mimetype || null,
-          timestamp,
-          isoTimestamp: this.toIsoTimestamp(timestamp),
-          source: 'provider',
-        };
-      })
+      .map((msgRaw: unknown) => this.normalizeMessageEntry(msgRaw, fallbackChatId))
       .filter(Boolean);
+  }
+
+  private normalizeMessageEntry(msgRaw: unknown, fallbackChatId: string) {
+    const message = msgRaw as Record<string, unknown>;
+    const mId = message?.id as Record<string, unknown> | string | undefined;
+    const mKey = message?.key as Record<string, unknown> | undefined;
+    const mText = message?.text as Record<string, unknown> | undefined;
+    const mMedia = message?.media as Record<string, unknown> | undefined;
+
+    const id = this.readText(
+      [
+        typeof mId === 'object' ? (mId?._serialized ?? mId?.id) : undefined,
+        mKey?.id,
+        message?.id,
+      ].find((v) => typeof v === 'string' && v.trim()) ?? '',
+    );
+    const chatId = this.readText(
+      [message?.chatId, message?.from, message?.to].find(
+        (v) => typeof v === 'string' && v.trim(),
+      ) ?? fallbackChatId,
+    );
+
+    if (!id || !chatId) return null;
+
+    const phone = this.normalizeNumber(
+      typeof message?.phone === 'string'
+        ? message.phone
+        : this.providerRegistry.extractPhoneFromChatId(chatId),
+    );
+    const timestamp = this.resolveTimestamp(message);
+    const fromMe = message?.fromMe === true;
+
+    return {
+      id,
+      chatId,
+      phone,
+      body: message?.body || mText?.body || '',
+      direction: fromMe ? 'OUTBOUND' : 'INBOUND',
+      fromMe,
+      type: (typeof message?.type === 'string' ? message.type : 'chat').toLowerCase(),
+      hasMedia: message?.hasMedia === true,
+      mediaUrl: message?.mediaUrl || mMedia?.url || null,
+      mimetype: message?.mimetype || mMedia?.mimetype || null,
+      timestamp,
+      isoTimestamp: this.toIsoTimestamp(timestamp),
+      source: 'provider',
+    };
   }
 
   private resolveTimestamp(value: unknown): number {

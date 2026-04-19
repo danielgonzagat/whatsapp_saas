@@ -198,36 +198,69 @@ export class AffiliateController {
       viewerLinks.map((link) => [link.affiliateProductId, link]),
     );
 
-    return affiliateProducts.map((affiliateProduct) => {
-      const product = productById.get(affiliateProduct.productId);
-      const request = requestByAffiliateProductId.get(affiliateProduct.id);
-      const link = linkByAffiliateProductId.get(affiliateProduct.id);
-      const rating = ratingByProductId.get(affiliateProduct.productId);
-      const thumbnailUrl =
-        normalizeStorageUrlForRequest(affiliateProduct.thumbnailUrl || product?.imageUrl, req) ||
-        null;
+    return affiliateProducts.map((affiliateProduct) =>
+      this.buildEnrichedAffiliateProduct(req, affiliateProduct, {
+        productById,
+        workspaceById,
+        ratingByProductId,
+        requestByAffiliateProductId,
+        linkByAffiliateProductId,
+      }),
+    );
+  }
 
-      return {
-        ...this.serializeAffiliateProductForResponse(req, affiliateProduct),
-        name: product?.name || 'Produto',
-        description: product?.description || '',
-        price: Number(product?.price || 0),
-        category: affiliateProduct.category || product?.category || 'Geral',
-        tags: affiliateProduct.tags?.length > 0 ? affiliateProduct.tags : product?.tags || [],
-        thumbnailUrl,
-        imageUrl: thumbnailUrl,
-        producer: workspaceById.get(product?.workspaceId || '') || 'Kloel',
-        commission: affiliateProduct.commissionPct,
-        rating: Number((rating?.average || 0).toFixed(1)),
-        totalReviews: rating?.total || 0,
-        materials: this.normalizePromoMaterials(affiliateProduct.promoMaterials),
-        requestStatus: request?.status || null,
-        affiliateLink: this.buildAffiliateLinkUrl(req, link?.code),
-        isSaved: request?.status === 'SAVED',
-        isApproved: request?.status === 'APPROVED',
-        isPending: request?.status === 'PENDING',
-      };
-    });
+  private buildEnrichedAffiliateProduct(
+    req: AuthenticatedRequest,
+    affiliateProduct: AffiliateProduct,
+    lookup: {
+      productById: Map<
+        string,
+        {
+          id: string;
+          workspaceId: string;
+          name: string;
+          description: string | null;
+          price: number | null;
+          category: string | null;
+          imageUrl: string | null;
+          tags: string[];
+        }
+      >;
+      workspaceById: Map<string, string>;
+      ratingByProductId: Map<string, { average: number; total: number }>;
+      requestByAffiliateProductId: Map<string, { affiliateProductId: string; status: string }>;
+      linkByAffiliateProductId: Map<string, { affiliateProductId: string; code: string }>;
+    },
+  ) {
+    const product = lookup.productById.get(affiliateProduct.productId);
+    const request = lookup.requestByAffiliateProductId.get(affiliateProduct.id);
+    const link = lookup.linkByAffiliateProductId.get(affiliateProduct.id);
+    const rating = lookup.ratingByProductId.get(affiliateProduct.productId);
+    const thumbnailUrl =
+      normalizeStorageUrlForRequest(affiliateProduct.thumbnailUrl || product?.imageUrl, req) ||
+      null;
+    const status = request?.status;
+
+    return {
+      ...this.serializeAffiliateProductForResponse(req, affiliateProduct),
+      name: product?.name || 'Produto',
+      description: product?.description || '',
+      price: Number(product?.price || 0),
+      category: affiliateProduct.category || product?.category || 'Geral',
+      tags: affiliateProduct.tags?.length > 0 ? affiliateProduct.tags : product?.tags || [],
+      thumbnailUrl,
+      imageUrl: thumbnailUrl,
+      producer: lookup.workspaceById.get(product?.workspaceId || '') || 'Kloel',
+      commission: affiliateProduct.commissionPct,
+      rating: Number((rating?.average || 0).toFixed(1)),
+      totalReviews: rating?.total || 0,
+      materials: this.normalizePromoMaterials(affiliateProduct.promoMaterials),
+      requestStatus: status || null,
+      affiliateLink: this.buildAffiliateLinkUrl(req, link?.code),
+      isSaved: status === 'SAVED',
+      isApproved: status === 'APPROVED',
+      isPending: status === 'PENDING',
+    };
   }
 
   private buildMarketplaceWhere(
