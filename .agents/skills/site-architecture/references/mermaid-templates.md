@@ -1,6 +1,7 @@
 # Mermaid Diagram Templates
 
-Copy-paste-ready Mermaid diagrams for visual sitemaps. Customize node labels and connections for your site.
+Copy-paste-ready Mermaid diagrams for visual sitemaps. Customize node labels and connections for
+your site.
 
 ---
 

@@ -51,7 +51,8 @@ Never translate US SaaS examples literally.
 
 Prefer:
 
-- Pix, WhatsApp, creators, infoprodutos, afiliados, checkout recovery, launch groups, operator workflows
+- Pix, WhatsApp, creators, infoprodutos, afiliados, checkout recovery, launch groups, operator
+  workflows
 - PT-BR idioms used by Brazilian sellers and growth operators
 - concrete guidance that fits Kloel's current surfaces
 

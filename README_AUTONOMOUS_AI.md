@@ -8,8 +8,8 @@ Use estes passos para provar fim-a-fim que a IA é o próprio SaaS.
 - Peça: “crie um produto X com preço Y, crie um fluxo de vendas e conecte meu WhatsApp”.
 - Esperado (eventos SSE): `tool_call`/`tool_result` para `save_product`, `create_flow_template`,
   `connect_whatsapp`; QR em base64.
-- Verifique no DB: tabela `product` contém X; tabela `flow` contém fluxo ativo; `kloelMemory` guarda
-  brand_voice/produtos.
+- Verifique no DB: tabela `product` contém X; tabela `flow` contém fluxo ativo;
+  `kloelMemory` guarda brand_voice/produtos.
 
 ### 2) Conexão WhatsApp
 

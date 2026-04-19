@@ -85,7 +85,8 @@ All data from support.google.com and developer.android.com as of March 2026.
 
 - **Max:** 50 per app (100 for Play partners)
 - **Customizable:** Title, short/full description, icon, screenshots, feature graphic, video
-- **Targeting:** Country/region, pre-registration, install state, Google Ads campaigns, inactive/churned users (28+ days)
+- **Targeting:** Country/region, pre-registration, install state, Google Ads campaigns,
+  inactive/churned users (28+ days)
 - **2025 addition:** Gemini AI auto-generates text for CSLs in Play Console
 
 ## Promotional Content (LiveOps)
@@ -111,8 +112,8 @@ Apps exceeding these thresholds get **reduced visibility** in search and recomme
 | User-Perceived ANR Rate      | **0.47%**         | 8%                   |
 | Excessive Partial Wake Locks | 5%                | N/A                  |
 
-**Consequences:** Reduced search visibility, warning labels on listing, quality alerts to users before install.
-**Recovery:** Google checks daily using 28-day rolling average.
+**Consequences:** Reduced search visibility, warning labels on listing, quality alerts to users
+before install. **Recovery:** Google checks daily using 28-day rolling average.
 
 ## Search Ranking — Official Factors
 

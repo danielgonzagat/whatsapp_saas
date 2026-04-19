@@ -219,4 +219,5 @@ When creating for multiple platforms simultaneously, start with the most restric
 3. **Expand to LinkedIn intro text** (150 chars) — add context and proof
 4. **Expand to Meta primary text** (125+ chars) — full hook and value prop
 
-This cascading approach ensures your core message works everywhere, then gets enriched for platforms that allow more space.
+This cascading approach ensures your core message works everywhere, then gets enriched for platforms
+that allow more space.

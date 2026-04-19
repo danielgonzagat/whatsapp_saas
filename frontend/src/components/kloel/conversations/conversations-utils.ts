@@ -11,28 +11,48 @@ export const VOID = KLOEL_THEME.bgPrimary;
 export const F = "'Sora', sans-serif";
 export const M = "'JetBrains Mono', monospace";
 
-export function formatRelativeTime(value?: string) {
-  if (!value) return 'Última mensagem agora';
+const AGORA_LABEL = 'Última mensagem agora';
 
-  const diffMs = Date.now() - new Date(value).getTime();
-  if (!Number.isFinite(diffMs) || diffMs < 0) return 'Última mensagem agora';
+type RelativeBucket = {
+  readonly limit: number;
+  readonly compute: (diffMs: number) => string;
+};
 
-  const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return 'Última mensagem agora';
-  if (minutes < 60) return `Última mensagem há ${minutes} min`;
+function pluralizeMonths(count: number): string {
+  return `Última mensagem há ${count} mês${count > 1 ? 'es' : ''}`;
+}
 
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Última mensagem há ${hours} h`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `Última mensagem há ${days} d`;
-
-  const weeks = Math.floor(days / 7);
-  if (weeks < 5) return `Última mensagem há ${weeks} sem`;
-
-  const months = Math.floor(days / 30);
-  if (months < 12) return `Última mensagem há ${months} mês${months > 1 ? 'es' : ''}`;
-
+function pluralizeYears(days: number): string {
   const years = Math.floor(days / 365);
   return `Última mensagem há ${years} ano${years > 1 ? 's' : ''}`;
+}
+
+const MS_MIN = 60_000;
+const MS_HOUR = 3_600_000;
+const MS_DAY = 86_400_000;
+const MS_WEEK = 604_800_000;
+const MS_5_WEEKS = MS_WEEK * 5;
+const MS_YEAR = MS_DAY * 365;
+
+const RELATIVE_BUCKETS: readonly RelativeBucket[] = [
+  { limit: MS_MIN, compute: () => AGORA_LABEL },
+  { limit: MS_HOUR, compute: (ms) => `Última mensagem há ${Math.floor(ms / MS_MIN)} min` },
+  { limit: MS_DAY, compute: (ms) => `Última mensagem há ${Math.floor(ms / MS_HOUR)} h` },
+  { limit: MS_WEEK, compute: (ms) => `Última mensagem há ${Math.floor(ms / MS_DAY)} d` },
+  { limit: MS_5_WEEKS, compute: (ms) => `Última mensagem há ${Math.floor(ms / MS_WEEK)} sem` },
+  { limit: MS_YEAR, compute: (ms) => pluralizeMonths(Math.floor(ms / MS_DAY / 30)) },
+];
+
+function formatDiffMs(diffMs: number): string {
+  for (const bucket of RELATIVE_BUCKETS) {
+    if (diffMs < bucket.limit) return bucket.compute(diffMs);
+  }
+  return pluralizeYears(Math.floor(diffMs / MS_DAY));
+}
+
+export function formatRelativeTime(value?: string) {
+  if (!value) return AGORA_LABEL;
+  const diffMs = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(diffMs) || diffMs < 0) return AGORA_LABEL;
+  return formatDiffMs(diffMs);
 }

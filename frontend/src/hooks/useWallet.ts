@@ -64,6 +64,33 @@ export function useWalletBalance() {
 }
 
 /* ── Wallet transactions ── */
+type WalletTransactionsPayload = WalletTransactionsResponse | WalletTransaction[] | undefined;
+
+function isWalletTransactionsResponse(
+  value: WalletTransactionsPayload,
+): value is WalletTransactionsResponse {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function extractTransactionItems(payload: WalletTransactionsPayload): WalletTransaction[] {
+  if (isWalletTransactionsResponse(payload)) {
+    if ('transactions' in payload) return payload.transactions || [];
+    if ('data' in payload) return payload.data || [];
+  }
+  if (Array.isArray(payload)) return payload;
+  return [];
+}
+
+function extractTransactionTotal(
+  payload: WalletTransactionsPayload,
+  fallback: number,
+): number {
+  if (isWalletTransactionsResponse(payload) && 'total' in payload) {
+    return payload.total ?? fallback;
+  }
+  return fallback;
+}
+
 export function useWalletTransactions() {
   const wsId = useWorkspaceId();
   const { data, error, isLoading, mutate } = useSWR(
@@ -71,19 +98,9 @@ export function useWalletTransactions() {
     swrFetcher,
     { keepPreviousData: true },
   );
-  const d = data as WalletTransactionsResponse | WalletTransaction[] | undefined;
-  const items: WalletTransaction[] =
-    d && typeof d === 'object' && !Array.isArray(d) && 'transactions' in d
-      ? d.transactions || []
-      : d && typeof d === 'object' && !Array.isArray(d) && 'data' in d
-        ? (d as WalletTransactionsResponse).data || []
-        : Array.isArray(d)
-          ? d
-          : [];
-  const total =
-    d && typeof d === 'object' && !Array.isArray(d) && 'total' in d
-      ? ((d as WalletTransactionsResponse).total ?? items.length)
-      : items.length;
+  const d = data as WalletTransactionsPayload;
+  const items = extractTransactionItems(d);
+  const total = extractTransactionTotal(d, items.length);
   return { transactions: items, total, isLoading, error, mutate };
 }
 

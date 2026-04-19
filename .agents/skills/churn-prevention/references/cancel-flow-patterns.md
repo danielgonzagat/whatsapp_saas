@@ -68,7 +68,8 @@ Cancel button → Exit survey → Offer (or route to CS) → Confirm → Post-ca
 
 ### Freemium / Free-to-Paid
 
-Users cancelling paid to return to free tier. Different psychology — they're not leaving, they're downgrading.
+Users cancelling paid to return to free tier. Different psychology — they're not leaving, they're
+downgrading.
 
 **Flow structure:**
 

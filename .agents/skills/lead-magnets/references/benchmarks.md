@@ -128,4 +128,5 @@ Reference data for planning and evaluating lead magnet performance.
 | Measurable impact on pipeline | 3-6 months                                |
 | Full ROI assessment           | 6-12 months                               |
 
-**Note**: These benchmarks are general guidelines. Your actual results depend on audience, niche, traffic volume, and offer quality. Start measuring from day one and build your own benchmarks.
+**Note**: These benchmarks are general guidelines. Your actual results depend on audience, niche,
+traffic volume, and offer quality. Start measuring from day one and build your own benchmarks.

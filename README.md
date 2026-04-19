@@ -1,7 +1,9 @@
 # KLOEL
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/de45b0033ec04323b31a4a3ec49b1ce9)](https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/de45b0033ec04323b31a4a3ec49b1ce9)](https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/de45b0033ec04323b31a4a3ec49b1ce9)
+](https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/de45b0033ec04323b31a4a3ec49b1ce9)
+](https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
 Plataforma AI-native de marketing digital e vendas. Monorepo com frontend (Next.js / Vercel),
 backend (NestJS / Railway), worker (BullMQ / Railway).

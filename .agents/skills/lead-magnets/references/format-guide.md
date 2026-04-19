@@ -186,8 +186,8 @@ they should still learn something useful.
 - Tailor follow-up emails by result type
 - Share-worthy result format ("I got: Growth Stage Marketer!")
 
-**Implementation**: Gate results behind email capture. The quiz itself is ungated — the personalized
-results require an email.
+**Implementation**: Gate results behind email capture. The quiz itself is ungated —
+the personalized results require an email.
 
 **For building interactive quizzes**: See **free-tool-strategy** skill for technical implementation
 guidance.

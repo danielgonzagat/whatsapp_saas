@@ -228,7 +228,8 @@ Looking to switch? See how [Your Product] compares to the tools you're evaluatin
 
 ## Footer Navigation
 
-The site footer appears on all marketing pages, making it a powerful internal linking opportunity for competitor pages.
+The site footer appears on all marketing pages, making it a powerful internal linking opportunity
+for competitor pages.
 
 ### Option 1: Link to Index Pages (Minimum)
 
@@ -245,7 +246,8 @@ This ensures every marketing page passes link equity to your comparison content 
 
 ### Option 2: Footer Columns by Format (Recommended for SEO)
 
-For stronger internal linking, create dedicated footer columns for each format you've built, linking directly to your top competitors:
+For stronger internal linking, create dedicated footer columns for each format you've built, linking
+directly to your top competitors:
 
 ```
 Footer
@@ -268,7 +270,8 @@ Footer
 
 ### Why Footer Links Matter
 
-1. **Sitewide distribution**: Footer links appear on every marketing page, passing link equity from your entire site to comparison content
+1. **Sitewide distribution**: Footer links appear on every marketing page, passing link equity from
+   your entire site to comparison content
 2. **Crawl efficiency**: Search engines discover all comparison pages quickly
 3. **User discovery**: Visitors evaluating your product can easily find comparisons
 4. **Competitive positioning**: Signals to search engines that you're a key player in the space

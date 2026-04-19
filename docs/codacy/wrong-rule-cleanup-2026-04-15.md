@@ -117,11 +117,10 @@ Components. This project has no Salesforce anything.
   `worker/package.json` in `.codacy.yml` — need the same treatment for
   root and every other `package.json`.
 - `Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator`
-  — 85. Flags strings containing `${...}` that aren't template literals
-  (backticks), assuming they were meant to be interpolated. In practice,
-  these are mostly strings like `"Use ${VARIABLE_NAME}"` in docs, `${}`
-  in user-facing template prose, or SQL placeholders. False positive rate
-  is near-total in this repo.
+  — 85. Flags strings containing `${...}` that aren't template literals (backticks), assuming they
+  were meant to be interpolated. In practice, these are mostly strings like `"Use ${VARIABLE_NAME}"`
+  in docs, `${}` in user-facing template prose, or SQL placeholders. False positive rate is
+  near-total in this repo.
 - `Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator`
   — 84. Flags `Math.random()` as cryptographically insecure. One real
   case (`checkout` slug generator, tracked in

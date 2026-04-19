@@ -178,8 +178,8 @@ Questions? Talk to [Champion name] or [Your name at email].
 1. **Headline** — Largest text, top of page, immediately communicates value
 2. **Section headers** — Bold, clear, act as scannable anchors
 3. **Body text** — Short sentences, bullet points preferred over paragraphs
-4. **Proof elements** — Metrics and quotes should visually stand out (larger font, color, or callout
-   box)
+4. **Proof elements** — Metrics and quotes should visually stand out
+   (larger font, color, or callout box)
 5. **CTA** — Prominent placement, bottom of page or bottom-right
 
 ### Whitespace

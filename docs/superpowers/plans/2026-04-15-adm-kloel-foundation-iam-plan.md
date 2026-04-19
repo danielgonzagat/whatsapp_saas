@@ -1,10 +1,8 @@
 # adm.kloel.com — Foundation + IAM — Implementation Plan
 
-**Plan ID:** SP-0..2 plan
-**Spec:**
+**Plan ID:** SP-0..2 plan **Spec:**
 [2026-04-15-adm-kloel-foundation-iam-design.md](../specs/2026-04-15-adm-kloel-foundation-iam-design.md)
-**Branch:** `feat/adm-foundation-iam`
-**Date:** 2026-04-15
+**Branch:** `feat/adm-foundation-iam` **Date:** 2026-04-15
 
 ## Ordered steps
 

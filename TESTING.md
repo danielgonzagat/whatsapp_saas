@@ -70,7 +70,8 @@ Testes end-to-end que simulam usuário real:
 
 ### Rodar tudo (infra + backend/worker/frontend + E2E)
 
-Este é o jeito mais confiável de rodar E2E local sem flakiness (alinha `DATABASE_URL` e `REDIS_URL` entre backend e worker):
+Este é o jeito mais confiável de rodar E2E local sem flakiness
+(alinha `DATABASE_URL` e `REDIS_URL` entre backend e worker):
 
 ```bash
 ./scripts/e2e_local.sh
@@ -92,7 +93,8 @@ Para validar Google real no backend durante E2E/API tests, defina também:
 export E2E_GOOGLE_TEST_CREDENTIAL="<id_token_emitido_pelo_google>"
 ```
 
-Sem essa variável, a suíte continua cobrindo auth por email/senha e o bloqueio do endpoint OAuth legado, mas pula o teste do fluxo Google real.
+Sem essa variável, a suíte continua cobrindo auth por email/senha e o bloqueio do
+endpoint OAuth legado, mas pula o teste do fluxo Google real.
 
 ### Visualizar Testes
 

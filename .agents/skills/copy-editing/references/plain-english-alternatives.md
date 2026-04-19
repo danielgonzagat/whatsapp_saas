@@ -2,7 +2,8 @@
 
 Replace complex or pompous words with plain English alternatives.
 
-Source: Plain English Campaign A-Z of Alternative Words (2001), Australian Government Style Manual (2024), plainlanguage.gov
+Source: Plain English Campaign A-Z of Alternative Words (2001), Australian Government Style Manual
+(2024), plainlanguage.gov
 
 ---
 

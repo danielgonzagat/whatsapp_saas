@@ -8,30 +8,47 @@ export type TypewriterMode = 'type' | 'delete';
 
 type ContinueWhile = () => boolean;
 
+type TypewriterContext = {
+  character: string;
+  index: number;
+  prev: string;
+  next: string;
+  isPauseMark: boolean;
+  isLastIndex: boolean;
+};
+
+function deleteDelay(ctx: TypewriterContext): number {
+  if (ctx.isLastIndex) return 190 + Math.random() * 90;
+  if (ctx.isPauseMark) return 150 + Math.random() * 70;
+  if (ctx.character === ' ') return 105 + Math.random() * 55;
+  if (ctx.next === ' ') return 88 + Math.random() * 42;
+  return 68 + Math.random() * 54;
+}
+
+function typeDelay(ctx: TypewriterContext): number {
+  if (ctx.index === 0) return 150 + Math.random() * 90;
+  if (ctx.isPauseMark) return 240 + Math.random() * 150;
+  if (ctx.character === ' ') return 118 + Math.random() * 78;
+  if (ctx.prev === ' ') return 102 + Math.random() * 74;
+  if (ctx.next === ' ') return 88 + Math.random() * 54;
+  return 72 + Math.random() * 72;
+}
+
 export function delayForTypewriter(
   character: string,
   mode: TypewriterMode,
   index: number,
   phrase: string,
 ): number {
-  const prev = phrase[index - 1] ?? '';
-  const next = phrase[index + 1] ?? '';
-  const isPauseMark = PAUSE_MARKS.has(character);
-
-  if (mode === 'delete') {
-    if (index === phrase.length - 1) return 190 + Math.random() * 90;
-    if (isPauseMark) return 150 + Math.random() * 70;
-    if (character === ' ') return 105 + Math.random() * 55;
-    if (next === ' ') return 88 + Math.random() * 42;
-    return 68 + Math.random() * 54;
-  }
-
-  if (index === 0) return 150 + Math.random() * 90;
-  if (isPauseMark) return 240 + Math.random() * 150;
-  if (character === ' ') return 118 + Math.random() * 78;
-  if (prev === ' ') return 102 + Math.random() * 74;
-  if (next === ' ') return 88 + Math.random() * 54;
-  return 72 + Math.random() * 72;
+  const ctx: TypewriterContext = {
+    character,
+    index,
+    prev: phrase[index - 1] ?? '',
+    next: phrase[index + 1] ?? '',
+    isPauseMark: PAUSE_MARKS.has(character),
+    isLastIndex: index === phrase.length - 1,
+  };
+  return mode === 'delete' ? deleteDelay(ctx) : typeDelay(ctx);
 }
 
 export async function runSequentialRange(

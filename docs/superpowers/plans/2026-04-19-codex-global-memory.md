@@ -412,8 +412,7 @@ Expected: at least one relevant result from prior Codex history.
 - [ ] **Step 4: Run startup brief smoke test**
 
 Run:
-`curl -sS
-'http://127.0.0.1:37777/memory/brief?cwd=/Users/danielpenin/whatsapp_saas&q=continuar%20trabalho%20anterior'`
+`curl -sS 'http://127.0.0.1:37777/memory/brief?cwd=/Users/danielpenin/whatsapp_saas&q=continuar%20trabalho%20anterior'`
 Expected: a short JSON payload with compact sections or an explicit low-confidence no-brief
 response.
 

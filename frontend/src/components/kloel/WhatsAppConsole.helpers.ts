@@ -12,50 +12,86 @@ export interface ChatPreview {
   lastMessageAt?: string;
 }
 
+const DATE_CANDIDATE_FIELDS = [
+  'createdAt',
+  'timestamp',
+  'ts',
+  'lastMessageAt',
+  'updatedAt',
+  'last_time',
+] as const;
+
+function parseDateFromNumber(value: number): Date | null {
+  const normalized = value > 1_000_000_000_000 ? value : value * 1000;
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function parseDateFromString(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (D_RE.test(trimmed)) return parseDateLike(Number(trimmed));
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function pickFirstDateCandidate(candidate: Record<string, unknown>): unknown {
+  for (const field of DATE_CANDIDATE_FIELDS) {
+    const raw = candidate[field];
+    if (raw) return raw;
+  }
+  return undefined;
+}
+
+function parseDateFromObject(candidate: Record<string, unknown>): Date | null {
+  if (typeof candidate._seconds === 'number' && typeof candidate._nanoseconds === 'number') {
+    return parseDateLike(candidate._seconds * 1000);
+  }
+  return parseDateLike(pickFirstDateCandidate(candidate));
+}
+
 export function parseDateLike(value?: unknown): Date | null {
   if (!value) return null;
-
   if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? null : value;
   }
-
-  if (typeof value === 'number') {
-    const normalized = value > 1_000_000_000_000 ? value : value * 1000;
-    const parsed = new Date(normalized);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-    if (D_RE.test(trimmed)) {
-      return parseDateLike(Number(trimmed));
-    }
-    const parsed = new Date(trimmed);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
+  if (typeof value === 'number') return parseDateFromNumber(value);
+  if (typeof value === 'string') return parseDateFromString(value);
   if (typeof value === 'object') {
-    const candidate = value as Record<string, unknown>;
-    if (typeof candidate._seconds === 'number' && typeof candidate._nanoseconds === 'number') {
-      return parseDateLike(candidate._seconds * 1000);
-    }
-
-    return parseDateLike(
-      candidate.createdAt ||
-        candidate.timestamp ||
-        candidate.ts ||
-        candidate.lastMessageAt ||
-        candidate.updatedAt ||
-        candidate.last_time,
-    );
+    return parseDateFromObject(value as Record<string, unknown>);
   }
-
   return null;
 }
 
 export function toIsoDateLike(value?: unknown): string | undefined {
   return parseDateLike(value)?.toISOString();
+}
+
+const PREVIEW_TEXT_FIELDS = [
+  'text',
+  'body',
+  'content',
+  'caption',
+  'message',
+  'lastMessage',
+  'lastMessagePreview',
+] as const;
+
+function extractPreviewFromArray(value: unknown[]): string {
+  return value
+    .map((entry) => extractPreviewText(entry))
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}
+
+function extractPreviewFromObject(candidate: Record<string, unknown>): string {
+  for (const field of PREVIEW_TEXT_FIELDS) {
+    const extracted = extractPreviewText(candidate[field]);
+    if (extracted) return extracted;
+  }
+  const nestedBody = (candidate._data as Record<string, unknown>)?.body;
+  return extractPreviewText(nestedBody).trim();
 }
 
 export function extractPreviewText(value: unknown): string {
@@ -64,26 +100,9 @@ export function extractPreviewText(value: unknown): string {
   if (typeof value === 'number' || typeof value === 'boolean') {
     return String(value).trim();
   }
-  if (Array.isArray(value)) {
-    return value
-      .map((entry) => extractPreviewText(entry))
-      .filter(Boolean)
-      .join(' ')
-      .trim();
-  }
+  if (Array.isArray(value)) return extractPreviewFromArray(value);
   if (typeof value === 'object') {
-    const candidate = value as Record<string, unknown>;
-    return (
-      extractPreviewText(candidate.text) ||
-      extractPreviewText(candidate.body) ||
-      extractPreviewText(candidate.content) ||
-      extractPreviewText(candidate.caption) ||
-      extractPreviewText(candidate.message) ||
-      extractPreviewText(candidate.lastMessage) ||
-      extractPreviewText(candidate.lastMessagePreview) ||
-      extractPreviewText((candidate._data as Record<string, unknown>)?.body) ||
-      ''
-    ).trim();
+    return extractPreviewFromObject(value as Record<string, unknown>);
   }
   return '';
 }

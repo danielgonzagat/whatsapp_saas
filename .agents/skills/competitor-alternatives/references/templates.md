@@ -12,7 +12,8 @@ Ready-to-use templates for each section of competitor comparison pages.
 - Who It's For Section
 - Migration Section
 - Social Proof Section
-- Comparison Table Best Practices (beyond checkmarks, organize by category, include ratings where useful)
+- Comparison Table Best Practices (beyond checkmarks, organize by category, include ratings where
+  useful)
 
 ## TL;DR Summary
 

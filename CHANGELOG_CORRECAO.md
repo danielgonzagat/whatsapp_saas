@@ -11,7 +11,9 @@
 **Commit:** `db92185` — refactor(anuncios): substituir UI fake por empty state "Em Breve"
 
 - **AnunciosView.tsx** reescrito de 627 para 75 linhas
-- Removidos: dados hardcoded de 3 plataformas (Meta/Google/TikTok), 10 campanhas fictitcias, 5 regras de IA fake, 6 acoes de IA simuladas, profit ticker animado, canvas NeuralPulse
+- Removidos: dados hardcoded de 3 plataformas (Meta/Google/TikTok), 10 campanhas
+  fictitcias, 5 regras de IA fake, 6 acoes de IA simuladas, profit ticker animado,
+  canvas NeuralPulse
 - Substituido por `ContextualEmptyState` com contexto "anuncios"
 - Navegacao de 6 tabs mantida funcional para uso futuro
 - Adicionado contexto 'anuncios' em EmptyStates.tsx
@@ -86,7 +88,8 @@
 
 **Commit:** `498f158` — fix(payment): remover fallback que criava registros falsos no banco
 
-- **Antes:** Quando legacy payment provider indisponivel, gerava ID fake `pay_${timestamp}`, criava KloelSale real no banco com URL inexistente
+- **Antes:** Quando legacy payment provider indisponivel, gerava ID fake
+  `pay_${timestamp}`, criava KloelSale real no banco com URL inexistente
 - **Depois:** Lanca erro claro "Provedor de pagamento nao configurado"
 - Evita poluicao da tabela de vendas com dados falsos
 

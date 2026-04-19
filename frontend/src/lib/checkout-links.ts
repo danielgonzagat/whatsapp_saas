@@ -84,26 +84,33 @@ interface RawCheckoutLink {
   };
 }
 
+function extractPaymentMethods(link: RawCheckoutLink): string[] {
+  const cfg = link.checkout?.checkoutConfig;
+  const methods: Array<string | null> = [
+    cfg?.enablePix !== false ? 'PIX' : null,
+    cfg?.enableCreditCard !== false ? 'CARTÃO' : null,
+    cfg?.enableBoleto ? 'BOLETO' : null,
+  ];
+  return methods.filter((entry): entry is string => Boolean(entry));
+}
+
+function mapRawCheckoutLink(rawLink: unknown): NormalizedCheckoutLink {
+  const link = (rawLink ?? {}) as RawCheckoutLink;
+  return {
+    id: String(link.id || ''),
+    slug: link.slug || null,
+    referenceCode: buildCheckoutDisplayCode(link.referenceCode) || null,
+    isPrimary: link.isPrimary === true,
+    isActive: link.isActive !== false,
+    checkoutName: link.checkout?.name || link.name || 'Checkout',
+    checkoutId: link.checkout?.id || link.checkoutId || null,
+    paymentMethods: extractPaymentMethods(link),
+  };
+}
+
 export function normalizeCheckoutLinks(links: unknown): NormalizedCheckoutLink[] {
-  return (Array.isArray(links) ? links : [])
-    .map((rawLink: unknown) => {
-      const link = (rawLink ?? {}) as RawCheckoutLink;
-      return {
-        id: String(link.id || ''),
-        slug: link.slug || null,
-        referenceCode: buildCheckoutDisplayCode(link.referenceCode) || null,
-        isPrimary: link.isPrimary === true,
-        isActive: link.isActive !== false,
-        checkoutName: link.checkout?.name || link.name || 'Checkout',
-        checkoutId: link.checkout?.id || link.checkoutId || null,
-        paymentMethods: [
-          link.checkout?.checkoutConfig?.enablePix !== false ? 'PIX' : null,
-          link.checkout?.checkoutConfig?.enableCreditCard !== false ? 'CARTÃO' : null,
-          link.checkout?.checkoutConfig?.enableBoleto ? 'BOLETO' : null,
-        ].filter((entry): entry is string => Boolean(entry)),
-      };
-    })
-    .filter((link) => Boolean(link.id));
+  const source = Array.isArray(links) ? links : [];
+  return source.map(mapRawCheckoutLink).filter((link) => Boolean(link.id));
 }
 
 export function getPrimaryCheckoutLinkForPlan(plan: CheckoutLinkContainer) {

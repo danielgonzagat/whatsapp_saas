@@ -1,10 +1,8 @@
 # adm.kloel.com — SP-3 — Home God View — Implementation Plan
 
-**Plan ID:** SP-3 plan
-**Spec:**
+**Plan ID:** SP-3 plan **Spec:**
 [2026-04-15-adm-kloel-sp3-home-god-view-design.md](../specs/2026-04-15-adm-kloel-sp3-home-god-view-design.md)
-**Branch (planned):** `feat/adm-sp3-home-god-view`
-**Date:** 2026-04-15
+**Branch (planned):** `feat/adm-sp3-home-god-view` **Date:** 2026-04-15
 
 ## Step 1 — Range helper + period DTO
 

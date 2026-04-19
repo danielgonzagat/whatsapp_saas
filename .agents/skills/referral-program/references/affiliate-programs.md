@@ -131,7 +131,8 @@ Provide affiliates with:
 
 **Partner Relationship Management (PRM):**
 
-- Introw — Full PRM with deal registration, commissions, tiers, QBRs, and partner engagement tracking ([integration guide](../../../tools/integrations/introw.md))
+- Introw — Full PRM with deal registration, commissions, tiers, QBRs, and partner engagement
+  tracking ([integration guide](../../../tools/integrations/introw.md))
 
 **Self-hosted:**
 

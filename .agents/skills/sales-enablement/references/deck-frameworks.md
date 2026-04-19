@@ -287,8 +287,8 @@ belongs in a leave-behind.
 
 ### The Missing Story Arc
 
-Slides exist in isolation — no narrative flow from problem to solution to proof. The deck feels like
-a brochure, not a conversation.
+Slides exist in isolation — no narrative flow from problem to solution to proof.
+The deck feels like a brochure, not a conversation.
 
 ### The Generic Screenshot
 
