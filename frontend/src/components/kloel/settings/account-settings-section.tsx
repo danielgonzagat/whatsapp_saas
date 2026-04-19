@@ -15,6 +15,7 @@ import { authApi, workspaceApi } from '@/lib/api';
 import { Camera, Eye, EyeOff, Laptop, Monitor, Smartphone } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { SettingsCard, SettingsSwitchRow, kloelSettingsClass } from './contract';
+import { buildAccountSettingsPayload } from './account-settings-section.helpers';
 
 const A_Z_RE = /[A-Z]/;
 const RX_0_9_RE = /[0-9]/;
@@ -105,35 +106,14 @@ export function AccountSettingsSection() {
 
         if (cancelled) return;
 
-        const workspace = (workspaceRes.data as Record<string, unknown>) || {};
-        const settings = (workspace.providerSettings as Record<string, unknown>) || {};
-        const user =
-          ((authRes.data as Record<string, unknown>)?.user as Record<string, unknown>) || {};
-        const channelData = (channelsRes.data as Record<string, unknown>) || {};
-
-        setProfile({
-          name: (workspace.name as string) || '',
-          email: (user.email as string) || '',
-          phone: (settings.phone as string) || '',
-          webhookUrl: (settings.webhookUrl as string) || '',
-          website: (settings.website as string) || (workspace.customDomain as string) || '',
-        });
-
-        const notifications = settings.notifications as Record<string, boolean> | undefined;
-        setPreferences({
-          language: (settings.language as string) || 'pt-BR',
-          timezone: (settings.timezone as string) || 'America/Sao_Paulo',
-          dateFormat: (settings.dateFormat as string) || 'DD/MM/YYYY',
-          emailImportant: notifications?.emailImportant ?? true,
-          emailTips: notifications?.emailTips ?? false,
-        });
-
-        setChannels({
-          provider: (settings.whatsappProvider as string) || 'meta-cloud',
-          jitterMin: (workspace.jitterMin as number) || 5,
-          jitterMax: (workspace.jitterMax as number) || 15,
-          emailEnabled: !!channelData.email,
-        });
+        const payload = buildAccountSettingsPayload(
+          workspaceRes.data,
+          authRes.data,
+          channelsRes.data,
+        );
+        setProfile(payload.profile);
+        setPreferences(payload.preferences);
+        setChannels(payload.channels);
       } catch (err: unknown) {
         if (cancelled) return;
         const msg = err instanceof Error ? err.message : undefined;
