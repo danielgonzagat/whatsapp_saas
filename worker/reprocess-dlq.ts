@@ -1,5 +1,6 @@
 import { type Job, Queue } from 'bullmq';
 import { connection } from './queue';
+import { forEachSequential } from './utils/async-sequence';
 
 /**
  * Reprocessa jobs do DLQ (<queue>-dlq) devolvendo-os para a fila original.
@@ -18,14 +19,13 @@ async function main() {
   const jobs: Job[] = await dlq.getJobs(['waiting', 'delayed', 'failed'], 0, limit - 1);
   console.log(`Found ${jobs.length} jobs in ${dlqName}. Requeueing to ${targetQueueName}...`);
 
-  for (const job of jobs) {
+  await forEachSequential(jobs, async (job) => {
     try {
       const data = job.data as Record<string, unknown>;
       const name = typeof data?.jobName === 'string' ? data.jobName : 'default';
       const payload = data?.data ?? data;
       const opts = (data?.opts || {}) as Record<string, unknown>;
 
-      // biome-ignore lint/performance/noAwaitInLoops: requeue must succeed before removing the original job to avoid losing work on crash mid-loop
       await target.add(name, payload, {
         attempts: Math.max(Number(opts?.attempts || 0), attempts),
         backoff: (opts?.backoff as { type: string; delay: number }) || {
@@ -41,7 +41,7 @@ async function main() {
       // PULSE:OK — Per-job requeue failure is non-critical; other jobs still processed
       console.error(`✖ Failed to requeue ${job.id}:`, errInstanceofError?.message || err);
     }
-  }
+  });
 
   console.log('Done.');
   process.exit(0);

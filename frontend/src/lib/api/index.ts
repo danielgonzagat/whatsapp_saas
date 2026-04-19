@@ -1,7 +1,6 @@
 // Barrel re-export — every symbol from the original api.ts
 // This ensures `import { X } from '@/lib/api'` continues to work.
 
-// biome-ignore lint/performance/noBarrelFile: central API surface for the frontend; Next.js/Turbopack tree-shake named re-exports
 // Core: types, tokenStorage, apiFetch, helpers, wallet, memory, leads, generic api
 export {
   // Types

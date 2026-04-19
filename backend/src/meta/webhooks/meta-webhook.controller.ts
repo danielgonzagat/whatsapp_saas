@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { Public } from '../../auth/public.decorator';
+import { forEachSequential } from '../../common/async-sequence';
 import { RawBodyRequest } from '../../common/interfaces/authenticated-request.interface';
 import {
   sanitizeWebhookChallenge,
@@ -156,12 +157,10 @@ export class MetaWebhookController {
     const object = body.object;
     this.logger.log(`Meta webhook: object=${object}, entries=${body.entry?.length || 0}`);
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential webhook entry processing with error isolation
-    for (const entry of body.entry || []) {
+    await forEachSequential(body.entry || [], async (entry) => {
       try {
         switch (object) {
           case 'instagram':
-            // biome-ignore lint/performance/noAwaitInLoops: webhook fan-out ordering required for Instagram message delivery
             await this.handleInstagram(entry);
             break;
           case 'page':
@@ -175,7 +174,7 @@ export class MetaWebhookController {
         // PULSE:OK — Per-entry webhook error must not block other entries; returns 200 to Meta
         this.logger.error(`Meta webhook processing error: ${err}`);
       }
-    }
+    });
 
     return 'ok';
   }
@@ -199,10 +198,8 @@ export class MetaWebhookController {
       return;
     }
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential Messenger message processing
-    for (const msg of entry.messaging || []) {
+    await forEachSequential(entry.messaging || [], async (msg) => {
       if (msg.message) {
-        // biome-ignore lint/performance/noAwaitInLoops: omnichannel handler must preserve Meta webhook message ordering
         await this.omnichannelService.handleIncomingMessage({
           workspaceId,
           channel: 'MESSENGER',
@@ -217,7 +214,7 @@ export class MetaWebhookController {
           },
         });
       }
-    }
+    });
   }
 
   private buildContactIndex(contacts: MetaWhatsAppContact[]): Map<string, string> {

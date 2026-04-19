@@ -229,7 +229,6 @@ export function AgentCursor({
     viewport?.width,
   ]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: resolvedTarget?.timestamp change is the intentional trigger to restart the idle animation when a new target arrives
   useEffect(() => {
     if (!hasPosition || takeoverActive || !streamConnected) {
       return;

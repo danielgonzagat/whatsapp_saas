@@ -114,7 +114,7 @@ export function FlowSidebar() {
     new Set(['trigger', 'message', 'logic', 'action', 'ai']),
   );
 
-  const onDragStart = (event: DragEvent<HTMLDivElement>, nodeType: string) => {
+  const onDragStart = (event: DragEvent<HTMLButtonElement>, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
   };
@@ -186,13 +186,11 @@ export function FlowSidebar() {
               {expandedCategories.has(categoryKey) && (
                 <div className="mt-1 space-y-1">
                   {nodes.map((node) => (
-                    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-                    <div
+                    <button
+                      type="button"
                       key={node.type}
                       className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg cursor-grab hover:bg-gray-100 transition-colors active:cursor-grabbing"
                       draggable
-                      role="button"
-                      tabIndex={0}
                       aria-label={`Arrastar nó ${node.label}`}
                       onDragStart={(e) => onDragStart(e, node.type)}
                     >
@@ -201,7 +199,7 @@ export function FlowSidebar() {
                         <div className="text-sm font-medium text-gray-800">{node.label}</div>
                         <div className="text-xs text-gray-500 truncate">{node.description}</div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}

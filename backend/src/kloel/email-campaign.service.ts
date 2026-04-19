@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { forEachSequential } from '../common/async-sequence';
 
 const NAME_RE = /\{\{name\}\}/g;
 const EMAIL_RE = /\{\{email\}\}/g;
@@ -41,9 +42,7 @@ export class EmailCampaignService {
     );
 
     // Rate limit: max 10 emails per second
-    // biome-ignore lint/performance/noAwaitInLoops: sequential email sending with rate limiting
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i];
+    await forEachSequential(recipients, async (recipient, index) => {
       try {
         const personalizedHtml = html
           .replace(NAME_RE, recipient.name || 'Cliente')
@@ -53,7 +52,6 @@ export class EmailCampaignService {
         const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(recipient.email)}`;
         const htmlWithUnsub = `${personalizedHtml}<br/><hr style="margin:24px 0;border:none;border-top:1px solid #ddd"/><p style="font-size:11px;color:#888;text-align:center"><a href="${unsubscribeUrl}" style="color:#888">Cancelar inscricao</a></p>`;
 
-        // biome-ignore lint/performance/noAwaitInLoops: per-recipient send respects SMTP rate limit and unsubscribe state
         const success = await this.sendEmail(recipient.email, subject, htmlWithUnsub);
         if (success) {
           sent++;
@@ -63,7 +61,7 @@ export class EmailCampaignService {
         }
 
         // Rate limiting: 100ms delay between sends
-        if (i < recipients.length - 1) {
+        if (index < recipients.length - 1) {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       } catch (err: unknown) {
@@ -72,7 +70,7 @@ export class EmailCampaignService {
         failed++;
         errors.push(`${recipient.email}: ${errInstanceofError.message}`);
       }
-    }
+    });
 
     this.logger.log(`Campaign complete: ${sent} sent, ${failed} failed`);
     return { sent, failed, errors };

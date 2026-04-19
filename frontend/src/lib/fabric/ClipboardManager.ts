@@ -1,4 +1,5 @@
 import type { Canvas, FabricObject } from 'fabric';
+import { forEachSequential } from '../async-sequence';
 import type { HistoryManager } from './HistoryManager';
 
 const PASTE_OFFSET = 10;
@@ -36,14 +37,13 @@ export class ClipboardManager {
     if (this._clipboard.length === 0) return;
     this.canvas.discardActiveObject();
     const cloned: FabricObject[] = [];
-    // biome-ignore lint/performance/noAwaitInLoops: paste z-index ordering — canvas.add(clone) stacks each object on top of the previous one, so the clipboard's original back-to-front order must be preserved; Promise.all would interleave add() calls and scramble the stacking order
-    for (const obj of this._clipboard) {
+    await forEachSequential(this._clipboard, async (obj) => {
       const clone = await obj.clone();
       clone.left = (clone.left ?? 0) + PASTE_OFFSET;
       clone.top = (clone.top ?? 0) + PASTE_OFFSET;
       this.canvas.add(clone);
       cloned.push(clone);
-    }
+    });
     // Update clipboard offsets for next paste
     this._clipboard = cloned;
     if (cloned.length === 1) {

@@ -241,8 +241,9 @@ export interface SafeRequestOptions {
 }
 
 function sanitizeHeaders(headers: Record<string, string>): Record<string, string> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { 'X-Forwarded-For': _xff, 'X-Real-IP': _xri, ...safeHeaders } = headers;
+  void _xff;
+  void _xri;
   return safeHeaders;
 }
 

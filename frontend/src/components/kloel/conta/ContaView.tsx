@@ -33,6 +33,7 @@ import { apiFetch, tokenStorage } from '@/lib/api/core';
 import { inviteTeamMember, removeTeamMember, revokeTeamInvite } from '@/lib/api/team';
 import { swrFetcher } from '@/lib/fetcher';
 import { readFileAsDataUrl } from '@/lib/media-upload';
+import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { mutate as globalMutate } from 'swr'; // PULSE:OK — globalMutate used after Meta disconnect; SWR mutate() used in TeamSection for invite/revoke/remove
@@ -918,10 +919,13 @@ function AvatarUploader({
   displayEmail: string;
 }) {
   const imgSrc = previewUrl || fallbackUrl || undefined;
+  const [isHovered, setIsHovered] = useState(false);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
       <div
         onClick={() => fileRef.current?.click()}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
           width: 72,
           height: 72,
@@ -943,10 +947,10 @@ function AvatarUploader({
         }}
       >
         {imgSrc ? (
-          // biome-ignore lint/performance/noImgElement: user-selected avatar blob or arbitrary CDN URL, sized by container
-          <img
+          <Image
             src={imgSrc}
             alt=""
+            unoptimized
             width={120}
             height={120}
             style={{
@@ -969,7 +973,6 @@ function AvatarUploader({
             {initials}
           </span>
         )}
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: hover-only overlay that reveals the camera icon; not an interactive target */}
         <div
           style={{
             position: 'absolute' as const,
@@ -978,14 +981,8 @@ function AvatarUploader({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: 0,
+            opacity: isHovered ? 1 : 0,
             transition: 'opacity .15s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = '1';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = '0';
           }}
         >
           <span style={{ color: 'var(--app-text-primary)' }}>{Icons.camera(18)}</span>
@@ -1910,6 +1907,13 @@ function BankDropdownPanel({
   selectedCode: string;
   onSelectBank: (bank: (typeof BRAZILIAN_BANKS)[number]) => void;
 }) {
+  const autoFocusRef = useCallback((element: HTMLInputElement | null) => {
+    if (!element) return;
+    requestAnimationFrame(() => {
+      element.focus();
+    });
+  }, []);
+
   return (
     <div
       style={{
@@ -1962,8 +1966,7 @@ function BankDropdownPanel({
             value={bankSearch}
             onChange={(e) => onBankSearchChange(e.target.value)}
             placeholder="Buscar banco ou codigo..."
-            // biome-ignore lint/a11y/noAutofocus: intentional for primary input
-            autoFocus
+            ref={autoFocusRef}
             style={{
               flex: 1,
               background: 'none',
@@ -2848,11 +2851,12 @@ function PerfilPublicoSection({
             }}
           >
             {avatarPreviewUrl || profile?.avatarUrl ? (
-              // biome-ignore lint/correctness/useImageSize: avatar URL is dynamic (user-uploaded) and rendered within a max-sized container via CSS
-              // biome-ignore lint/performance/noImgElement: dynamic user avatar (uploaded/blob URL); next/image remote loader not configured for arbitrary hosts
-              <img
-                src={avatarPreviewUrl || profile?.avatarUrl || undefined}
+              <Image
+                src={avatarPreviewUrl || profile?.avatarUrl || ''}
                 alt=""
+                unoptimized
+                width={224}
+                height={224}
                 style={{
                   objectFit: 'contain',
                   maxWidth: '100%',

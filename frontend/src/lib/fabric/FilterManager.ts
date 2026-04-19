@@ -1,8 +1,6 @@
-import { type Canvas, FabricImage } from 'fabric';
-// biome-ignore lint/performance/noNamespaceImport: fabric.filters subnamespace access is only viable via namespace import
-import * as fabric from 'fabric';
+import { type Canvas, FabricImage, filters } from 'fabric';
 
-type FilterInstance = InstanceType<typeof fabric.filters.BaseFilter>;
+type FilterInstance = InstanceType<typeof filters.BaseFilter>;
 
 export class FilterManager {
   private canvas: Canvas;
@@ -57,8 +55,10 @@ export class FilterManager {
     const img = this._getActiveImage();
     if (!img) return;
 
-    const FilterClass = (fabric.filters as Record<string, unknown>)[name] as
-      | (new (opts: Record<string, unknown>) => FilterInstance)
+    const FilterClass = (filters as Record<string, unknown>)[name] as
+      | (new (
+          opts: Record<string, unknown>,
+        ) => FilterInstance)
       | undefined;
     if (!FilterClass) return;
 

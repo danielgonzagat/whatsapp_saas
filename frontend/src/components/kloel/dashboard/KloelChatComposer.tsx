@@ -95,7 +95,6 @@ export function KloelChatComposer({
   const popoverRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: input value change is the intentional trigger to resize the textarea to its content; inputRef stays stable
   useEffect(() => {
     const textarea = inputRef.current;
     if (!textarea) return;

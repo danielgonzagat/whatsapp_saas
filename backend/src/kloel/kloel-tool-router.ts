@@ -1,5 +1,6 @@
 // PULSE:OK — tool router only serializes tool-call messages. It does not perform LLM calls;
 // KloelService enforces token budget before the follow-up completion that consumes this output.
+import { forEachSequential } from '../common/async-sequence';
 import {
   type KloelStreamEvent,
   createKloelStatusEvent,
@@ -97,8 +98,7 @@ export class KloelToolRouter {
       ? input.assistantMessage.tool_calls
       : [];
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential tool call execution with state dependencies
-    for (const toolCall of toolCalls) {
+    await forEachSequential(toolCalls, async (toolCall) => {
       const toolName = toolCall.function?.name || '';
       const callId =
         toolCall.id || `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -119,7 +119,6 @@ export class KloelToolRouter {
 
       try {
         result = toResultRecord(
-          // biome-ignore lint/performance/noAwaitInLoops: sequential tool execution to preserve agent conversation context
           await this.unifiedAgentService.executeTool(toolName, toolArgs, {
             workspaceId: input.workspaceId,
             phone: stringArgument(toolArgs.phone),
@@ -187,7 +186,7 @@ export class KloelToolRouter {
           error,
         }),
       );
-    }
+    });
 
     return {
       toolMessages,

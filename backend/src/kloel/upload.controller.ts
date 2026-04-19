@@ -16,6 +16,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import { forEachSequential } from '../common/async-sequence';
 import { type UploadedFileLike, detectUploadedMime } from '../common/file-signature.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
@@ -172,15 +173,14 @@ export class UploadController {
 
     const results: Array<Record<string, unknown>> = [];
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential file upload processing
-    for (const file of files) {
+    await forEachSequential(files, async (file) => {
       if (!file || !Buffer.isBuffer(file.buffer) || typeof file.originalname !== 'string') {
         results.push({
           success: false,
           filename: 'unknown',
           error: 'Arquivo enviado em formato inválido',
         });
-        continue;
+        return;
       }
       try {
         const detectedMime = detectUploadedMime(file as UploadedFileLike);
@@ -194,7 +194,6 @@ export class UploadController {
         }
         file.mimetype = detectedMime;
 
-        // biome-ignore lint/performance/noAwaitInLoops: per-file processing respects storage backpressure and memory limits
         const result = await this.processFile(file, workspaceId);
         results.push({
           success: true,
@@ -210,7 +209,7 @@ export class UploadController {
           error: error.message,
         });
       }
-    }
+    });
 
     return {
       total: files.length,

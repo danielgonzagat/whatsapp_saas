@@ -3,6 +3,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { forEachSequential } from '../common/async-sequence';
 import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { SystemHealthService } from '../health/system-health.service';
@@ -484,12 +485,10 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const nodes = await this.hydrateNodes(registry);
     const now = Date.now();
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential node health check
-    for (const node of nodes) {
-      if (!node.stale) continue;
+    await forEachSequential(nodes, async (node) => {
+      if (!node.stale) return;
 
       const staleAlertKey = this.getStaleAlertKey(node.nodeId);
-      // biome-ignore lint/performance/noAwaitInLoops: per-alert Redis SET NX idempotency check; sequential required for rate-limit debounce
       const alreadyAlerted = await this.redis.set(
         staleAlertKey,
         String(now),
@@ -511,26 +510,24 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           surface: node.surface,
         });
       }
-    }
+    });
   }
 
   private async pruneExpiredFrontendNodes() {
     const registry = await this.redis.hgetall(FRONTEND_REGISTRY_KEY);
     const nodes = await this.hydrateNodes(registry);
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential node health check
-    for (const node of nodes) {
-      if (!node.stale) continue;
-      if ((node.staleMs || 0) <= FRONTEND_RETENTION_MS) continue;
+    await forEachSequential(nodes, async (node) => {
+      if (!node.stale) return;
+      if ((node.staleMs || 0) <= FRONTEND_RETENTION_MS) return;
 
-      // biome-ignore lint/performance/noAwaitInLoops: per-alert Redis notification publish preserves dashboard ordering
       await this.redis
         .multi()
         .hdel(FRONTEND_REGISTRY_KEY, node.nodeId)
         .hdel(REGISTRY_KEY, node.nodeId)
         .del(this.getLiveKey(node.nodeId))
         .exec();
-    }
+    });
   }
 
   private readonly logBackgroundTaskFailure = (label: string, error: unknown) => {

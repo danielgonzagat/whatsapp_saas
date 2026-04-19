@@ -46,7 +46,7 @@ import {
   XCircle,
   Zap,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const PATTERN_RE = /[_-]+/g;
 const S_RE = /\s+/g;
@@ -136,7 +136,7 @@ export default function CiaPage() {
   const [sessionAnswers, setSessionAnswers] = useState<Record<string, string>>({});
   const [registriesExpanded, setRegistriesExpanded] = useState(false);
 
-  async function loadSurface() {
+  const loadSurface = useCallback(async () => {
     if (!workspaceId) return;
     setLoading((current) => (surface ? current : true));
     const res = await ciaApi.getSurface(workspaceId);
@@ -147,9 +147,9 @@ export default function CiaPage() {
       setError(null);
     }
     setLoading(false);
-  }
+  }, [surface, workspaceId]);
 
-  async function loadAdvancedData() {
+  const loadAdvancedData = useCallback(async () => {
     if (!workspaceId) return;
 
     const [
@@ -181,9 +181,8 @@ export default function CiaPage() {
     if (cycleProofRes.data) setCycleProof(cycleProofRes.data);
     if (capabilityRes.data) setCapabilityRegistry(capabilityRes.data);
     if (actionRes.data) setConversationActionRegistry(actionRes.data);
-  }
+  }, [workspaceId]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: poll the CIA surfaces only when workspace becomes available; loadSurface/loadAdvancedData are recreated every render with stable behavior
   useEffect(() => {
     if (!workspaceId) return;
     void loadSurface();
@@ -193,9 +192,8 @@ export default function CiaPage() {
       void loadAdvancedData();
     }, 15000);
     return () => clearInterval(interval);
-  }, [workspaceId]);
+  }, [loadAdvancedData, loadSurface, workspaceId]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: loadSurface is recreated every render with stable behavior; only surface/workspaceId should drive the autostart check
   useEffect(() => {
     if (!workspaceId || workspaceLoading || !surface || autoStartRef.current) return;
 
@@ -222,7 +220,7 @@ export default function CiaPage() {
         autoStartRef.current = false;
       }
     })();
-  }, [surface, workspaceId, workspaceLoading]);
+  }, [loadSurface, surface, workspaceId, workspaceLoading]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -246,10 +244,10 @@ export default function CiaPage() {
         const decoder = new TextDecoder();
         let buffer = '';
 
-        // biome-ignore lint/performance/noAwaitInLoops: CIA page SSE stream — each reader.read() chunk must honor the `cancelled` flag and split on '\n\n' to yield complete SSE events; parallel reads would fire after navigation-away and leak into stale React state
-        while (!cancelled) {
+        const readStream = async (): Promise<void> => {
+          if (cancelled) return;
           const { value, done } = await reader.read();
-          if (done) break;
+          if (done) return;
           buffer += decoder.decode(value, { stream: true });
           const chunks = buffer.split('\n\n');
           buffer = chunks.pop() || '';
@@ -280,7 +278,10 @@ export default function CiaPage() {
               };
             });
           }
-        }
+          await readStream();
+        };
+
+        await readStream();
       } catch {
         // mantém polling como fallback
       }

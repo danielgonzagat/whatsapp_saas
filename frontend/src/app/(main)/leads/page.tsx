@@ -8,7 +8,7 @@ import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 import { Check, Copy, Loader2, Search, Users, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const D_RE = /\D/g;
 
@@ -78,7 +78,7 @@ export default function LeadsPage() {
     [leads, selectedLeadId],
   );
 
-  const refreshLeads = async (opts?: { keepSelection?: boolean }) => {
+  const refreshLeads = useCallback(async (opts?: { keepSelection?: boolean }) => {
     if (!workspaceId) return;
     setError(null);
     setLoadingLeads(true);
@@ -104,23 +104,21 @@ export default function LeadsPage() {
     } finally {
       setLoadingLeads(false);
     }
-  };
+  }, [searchTerm, selectedLeadId, status, workspaceId]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshLeads is recreated every render and depends on these same values; we intentionally re-run only when auth/workspace readiness flips
   useEffect(() => {
     if (!isLoading && isAuthenticated && workspaceId) {
-      refreshLeads();
+      void refreshLeads();
     }
-  }, [isLoading, isAuthenticated, workspaceId]);
+  }, [isAuthenticated, isLoading, refreshLeads, workspaceId]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: debounce re-fetch only when search/status change; isAuthenticated and workspaceId are read as latest values inside the effect
   useEffect(() => {
     if (!isAuthenticated || !workspaceId) return;
     const handle = setTimeout(() => {
-      refreshLeads({ keepSelection: true });
+      void refreshLeads({ keepSelection: true });
     }, 350);
     return () => clearTimeout(handle);
-  }, [searchTerm, status]);
+  }, [isAuthenticated, refreshLeads, searchTerm, status, workspaceId]);
 
   useEffect(() => {
     if (!leads.length) return;

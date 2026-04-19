@@ -12,6 +12,7 @@ import OpenAI from 'openai';
 import { Prisma } from '@prisma/client';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { forEachSequential, pollUntil } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { renderTemplate } from '../common/sales-templates';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
@@ -270,28 +271,25 @@ export class AutopilotService {
       },
     );
 
-    const startedAt = Date.now();
-    let result: Record<string, unknown> | null = null;
-    // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for async result
-    while (Date.now() - startedAt < waitMs) {
-      // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for smoke test status in Redis
-      const current = await this.redisClient.get(smokeKey);
-      if (current) {
+    const result = await pollUntil<Record<string, unknown> | null>({
+      timeoutMs: waitMs,
+      intervalMs: 500,
+      read: async () => {
+        const current = await this.redisClient.get(smokeKey);
+        if (!current) return null;
         try {
-          result = this.readRecord(JSON.parse(current));
+          return this.readRecord(JSON.parse(current));
         } catch {
-          /* invalid JSON in Redis */
+          return null;
         }
-        if (
-          ['completed', 'failed', 'skipped', 'disabled', 'billing_suspended'].includes(
-            typeof result.status === 'string' ? result.status : '',
-          )
-        ) {
-          break;
-        }
-      }
-      await this.sleep(500);
-    }
+      },
+      stop: (current) =>
+        current !== null &&
+        ['completed', 'failed', 'skipped', 'disabled', 'billing_suspended'].includes(
+          typeof current.status === 'string' ? current.status : '',
+        ),
+      sleep: (ms) => this.sleep(ms),
+    });
 
     // Clean up smoke test key after result is consumed — cache.invalidate
     if (
@@ -924,15 +922,13 @@ Answer in Portuguese, short and actionable.`;
 
     const rows = [];
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential per-campaign revenue attribution query
-    for (const camp of campaigns) {
+    await forEachSequential(campaigns, async (camp) => {
       const filters = (camp.filters as Record<string, unknown>) || {};
       const phones: string[] = Array.isArray(filters.phones) ? (filters.phones as string[]) : [];
       let revenue = 0;
       let deals = 0;
 
       // PULSE:OK — each campaign has unique JSON path filter on customFields; cannot batch
-      // biome-ignore lint/performance/noAwaitInLoops: per-campaign JSON path query cannot be batched across campaigns
       const taggedContacts = await this.prisma.contact.findMany({
         take: 500,
         where: {
@@ -1016,7 +1012,7 @@ Answer in Portuguese, short and actionable.`;
         deals,
         // se houve receita via eventos (meta.value), revenue reflete a soma; fallback usa deals contatos
       });
-    }
+    });
 
     const campaignsMap = campaigns.map((c) => ({ id: c.id, name: c.name }));
     return {
@@ -1698,17 +1694,13 @@ Answer in Portuguese, short and actionable.`;
     if (autoSend) {
       const delay = await this.computeSmartDelay(workspaceId, useSmartTime);
       scheduledAt = delay > 0 ? new Date(Date.now() + delay) : new Date();
-      // Enqueue all campaigns
-      // biome-ignore lint/performance/noAwaitInLoops: sequential BullMQ queue.add per campaign
-      for (const id of createdIds) {
-        // PULSE:OK — queue.add is not a Prisma query; must be sequential per BullMQ contract
-        // biome-ignore lint/performance/noAwaitInLoops: BullMQ queue.add must be sequential per job to honor delay ordering
+      await forEachSequential(createdIds, async (id) => {
         await this.campaignQueue.add(
           'process-campaign',
           { campaignId: id, workspaceId },
           { delay },
         );
-      }
+      });
 
       // Batch update all campaigns to SCHEDULED
       await this.prisma.campaign.updateMany({
@@ -1802,11 +1794,9 @@ Answer in Portuguese, short and actionable.`;
       currentHour === bestTime.bestHour ||
       (currentHour >= bestTime.bestHour - 1 && currentHour <= bestTime.bestHour + 1);
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation autopilot processing
-    for (const conv of conversations) {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation autopilot processing to respect rate limits
+    await forEachSequential(conversations, async (conv) => {
       await this.processConversation(conv, isOptimalTime);
-    }
+    });
   }
 
   private async handleProactive(workspaceId: string) {
@@ -1837,14 +1827,12 @@ Answer in Portuguese, short and actionable.`;
       return;
     }
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation proactive processing
-    for (const conv of stalled) {
+    await forEachSequential(stalled, async (conv) => {
       const isHot = true; // Mock score
       if (isHot) {
-        // biome-ignore lint/performance/noAwaitInLoops: sequential lead_unlocker action per conversation to avoid WhatsApp rate limit
         await this.executeAction('lead_unlocker', conv);
       }
-    }
+    });
   }
 
   private async processConversation(conv: AutopilotConversation, isOptimalTime: boolean) {

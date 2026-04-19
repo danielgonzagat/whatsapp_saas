@@ -2088,19 +2088,11 @@ function TabAfiliados({
       {/* Affiliates list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {filtered.map((a) => (
-          // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-          <div
+          <button
+            type="button"
             key={a.id || a.email}
             onClick={() => setDetailId(a.id || null)}
-            role="button"
-            tabIndex={0}
             aria-label={`Abrir detalhes de ${a.name || a.email || 'afiliado'}`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).click();
-              }
-            }}
             style={{
               display: 'grid',
               gridTemplateColumns: '46px 1fr 90px 70px 110px 90px 60px 100px',
@@ -2112,6 +2104,8 @@ function TabAfiliados({
               borderRadius: 6,
               cursor: 'pointer',
               transition: 'border-color 150ms ease',
+              textAlign: 'left',
+              borderWidth: 1,
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLElement).style.borderColor = `${C.ember}40`;
@@ -2252,7 +2246,7 @@ function TabAfiliados({
                 }
               />
             </div>
-          </div>
+          </button>
         ))}
 
         {filtered.length === 0 && displayAffiliates.length === 0 && (
@@ -2816,7 +2810,6 @@ function TabChat({
   const displayMessages: PartnerMessage[] =
     (realMsgs as PartnerMessage[]).length > 0 ? (realMsgs as PartnerMessage[]) : messages;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: message count change is the intentional trigger to auto-scroll; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages.length]);

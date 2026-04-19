@@ -1,6 +1,7 @@
 import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
 import { connection, flowQueue } from './queue';
+import { forEachSequential } from './utils/async-sequence';
 
 /**
  * =======================================================
@@ -122,15 +123,14 @@ async function attributeCampaignToContacts(
   workspaceId: string,
   campaignId: string,
 ): Promise<void> {
-  for (const contact of contacts) {
-    if (!contact.id) continue;
+  await forEachSequential(contacts, async (contact) => {
+    if (!contact.id) return;
     const cf = (contact.customFields || {}) as Record<string, unknown>;
-    // biome-ignore lint/performance/noAwaitInLoops: per-contact customField merge must read its latest cf snapshot to avoid clobbering concurrent writes
     await prisma.contact.updateMany({
       where: { id: contact.id, workspaceId },
       data: { customFields: { ...cf, lastCampaignId: campaignId } },
     });
-  }
+  });
 }
 
 export const campaignWorker = new Worker(

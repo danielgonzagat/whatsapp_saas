@@ -1,12 +1,10 @@
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
-// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import Stripe = require('stripe');
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { StripeRuntime } from './stripe-runtime';
 import type {
   StripeCheckoutSession,
   StripeClient,
@@ -61,7 +59,7 @@ export class BillingService {
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (secretKey) {
-      this.stripe = new Stripe(secretKey);
+      this.stripe = new StripeRuntime(secretKey);
     } else {
       if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
         this.logger.warn(

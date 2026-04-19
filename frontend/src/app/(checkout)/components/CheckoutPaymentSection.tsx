@@ -374,10 +374,8 @@ function PaymentOption({
   children: React.ReactNode;
 }) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={onClick}
       style={{
         border: `1px solid ${selected ? theme.accent : theme.cardBorder}`,
@@ -386,12 +384,6 @@ function PaymentOption({
         marginBottom: 12,
         cursor: 'pointer',
         transition: 'border-color 0.2s',
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
       }}
     >
       <div
@@ -409,7 +401,7 @@ function PaymentOption({
         <span style={{ fontSize: 15, fontWeight: 600, color: theme.text }}>{title}</span>
       </div>
       {selected ? children : null}
-    </div>
+    </button>
   );
 }
 

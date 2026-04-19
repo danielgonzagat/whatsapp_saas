@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
+import { findFirstSequential } from '../common/async-sequence';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
@@ -133,11 +134,8 @@ export class GuestChatService implements OnModuleDestroy {
       );
     }
 
-    // tokenBudget: caller responsible for pre-flight budget check
-    // biome-ignore lint/performance/noAwaitInLoops: sequential fallback through model list
-    for (const model of emergencyModels) {
+    const reply = await findFirstSequential(emergencyModels, async (model) => {
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: retry loop for OpenAI chat completion with exponential backoff
         const completion = await chatCompletionWithRetry(this.openai, {
           model,
           messages: contextMessages,
@@ -145,15 +143,17 @@ export class GuestChatService implements OnModuleDestroy {
           temperature: 0.7,
         });
         this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, model);
-        const reply = completion.choices[0]?.message?.content?.trim();
-        if (reply) {
-          return reply;
-        }
+        return completion.choices[0]?.message?.content?.trim();
       } catch (error: unknown) {
         this.logger.warn(
           `Guest emergency model ${model} failed (${error instanceof Error ? error.message : 'unknown_error'}).`,
         );
+        return undefined;
       }
+    });
+
+    if (reply) {
+      return reply;
     }
 
     return this.unavailableMessage;

@@ -97,9 +97,7 @@ export class InboxService {
   ) {
     const initialLastMessageAt = this.normalizeDate(options?.initialLastMessageAt);
 
-    // biome-ignore lint/performance/noAwaitInLoops: retry loop for upsert race condition
-    for (let attempt = 0; attempt < GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS; attempt++) {
-      // biome-ignore lint/performance/noAwaitInLoops: per-channel conversation lookup; early return on first match prevents batching
+    const run = async (attempt: number) => {
       const existing = await client.conversation.findFirst({
         where: { workspaceId, contactId, channel, status: { not: 'CLOSED' } },
       });
@@ -124,10 +122,18 @@ export class InboxService {
           this.logger.log(
             `getOrCreateConversation lost race on (ws=${workspaceId}, contact=${contactId}, ch=${channel}); retrying`,
           );
-          continue;
+          if (attempt + 1 < GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS) {
+            return run(attempt + 1);
+          }
+          return undefined;
         }
         throw err;
       }
+    };
+
+    const resolved = await run(0);
+    if (resolved) {
+      return resolved;
     }
 
     throw new Error(

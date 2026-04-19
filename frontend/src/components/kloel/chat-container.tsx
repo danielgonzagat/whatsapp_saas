@@ -1077,10 +1077,10 @@ export function ChatContainer({
         const decoder = new TextDecoder();
         let buffer = '';
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-        while (!isCancelled) {
+        const readStream = async (): Promise<void> => {
+          if (isCancelled) return;
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) return;
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
@@ -1098,7 +1098,10 @@ export function ChatContainer({
               // ignore malformed events
             }
           }
-        }
+          await readStream();
+        };
+
+        await readStream();
       } catch (error) {
         if (isCancelled || controller?.signal.aborted) return;
 
@@ -1170,14 +1173,9 @@ export function ChatContainer({
     appliedInitialDeepLink.current = true;
   }, [initialOpenSettings, initialSettingsTab, initialScrollToCreditCard, isAuthenticated]);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: messages.length change is the intentional trigger to scroll-to-bottom; scrollToBottom reads ref imperatively
   useEffect(() => {
-    scrollToBottom();
-  }, [scrollToBottom, messages.length]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
 
   useEffect(() => {
     if (!isTyping || !isCancelableReply) {
@@ -1265,10 +1263,9 @@ export function ChatContainer({
         let fullContent = '';
         let buffer = '';
 
-        // biome-ignore lint/performance/noAwaitInLoops: chat-container SSE stream — each reader.read() chunk must append to buffer and split on '\n' to surface [DONE] and data: frames to the token renderer in order; parallel reads would interleave partial JSON across boundaries
-        for (;;) {
+        const readGuestStream = async (): Promise<void> => {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) return;
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
@@ -1306,7 +1303,10 @@ export function ChatContainer({
               // ignore
             }
           }
-        }
+          await readGuestStream();
+        };
+
+        await readGuestStream();
 
         if (!fullContent.trim()) {
           throw new Error('empty_stream');

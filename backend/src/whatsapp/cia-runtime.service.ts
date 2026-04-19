@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import type Redis from 'ioredis';
 import { AuditService } from '../audit/audit.service';
+import { findFirstSequential, forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
@@ -1257,12 +1258,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
     let processed = 0;
     let skipped = 0;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation processing with reply locks
-    for (const [index, conversation] of conversations.entries()) {
+    await forEachSequential(Array.from(conversations.entries()), async ([index, conversation]) => {
       const messages = conversation.messages as Record<string, unknown>[] | undefined;
       const contact = conversation.contact as Record<string, unknown> | undefined;
       const lastMessage = messages?.[0];
-      // biome-ignore lint/performance/noAwaitInLoops: per-chat pending inbound batch build; each batch depends on prior cursor
       const pendingBatch = await this.buildPendingInboundBatch({
         workspaceId,
         contactId: safeStr(conversation.contactId) || null,
@@ -1278,7 +1277,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
       if (!phone || !messageContent || messageDirection !== 'INBOUND') {
         skipped += 1;
-        continue;
+        return;
       }
 
       await this.agentEvents.publish({
@@ -1308,7 +1307,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       );
       if (!replyReserved) {
         skipped += 1;
-        continue;
+        return;
       }
 
       let keepReplyLock = false;
@@ -1335,7 +1334,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         if (this.hasOutboundAction(result.actions || [])) {
           keepReplyLock = true;
           processed += 1;
-          continue;
+          return;
         }
 
         const reply = String(
@@ -1366,14 +1365,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
             : [];
         if (!reply || !replyPlan.length) {
           skipped += 1;
-          continue;
+          return;
         }
 
         let sendFailed = false;
-        // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
-        for (const [replyIndex, replyItem] of replyPlan.entries()) {
-          // messageLimit: enforced via PlanLimitsService.trackMessageSend
-          // biome-ignore lint/performance/noAwaitInLoops: WhatsApp sendMessage must be sequential per chat to respect provider rate limit
+        await findFirstSequential(Array.from(replyPlan.entries()), async ([replyIndex, replyItem]) => {
           const sendResult = await this.whatsappService.sendMessage(
             workspaceId,
             phone,
@@ -1393,13 +1389,14 @@ export class CiaRuntimeService implements OnModuleDestroy {
             sendResult.error
           ) {
             sendFailed = true;
-            break;
+            return true;
           }
-        }
+          return undefined;
+        });
 
         if (sendFailed) {
           skipped += 1;
-          continue;
+          return;
         }
 
         keepReplyLock = true;
@@ -1412,7 +1409,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           await this.releaseSharedReplyLock(replyLockKey);
         }
       }
-    }
+    });
 
     await this.updateAutonomyRunStatus(workspaceId, runId, 'COMPLETED');
     await this.finalizeSilentLiveMode(workspaceId, 'inline_backlog_completed', runId);
@@ -1697,9 +1694,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     let processed = 0;
     let skipped = 0;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation processing with reply locks
-    for (const [index, chat] of chats.entries()) {
-      // biome-ignore lint/performance/noAwaitInLoops: remote pending batch load uses cursor pagination; sequential required
+    await forEachSequential(Array.from(chats.entries()), async ([index, chat]) => {
       const remoteBatch = await this.loadRemotePendingBatch({
         workspaceId,
         chat,
@@ -1707,7 +1702,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
       if (!remoteBatch?.phone || !remoteBatch.customerMessages.length) {
         skipped += 1;
-        continue;
+        return;
       }
 
       const phone = remoteBatch.phone;
@@ -1723,7 +1718,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       );
       if (!replyReserved) {
         skipped += 1;
-        continue;
+        return;
       }
 
       let keepReplyLock = false;
@@ -1793,13 +1788,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
         if (!replyPlan.length) {
           skipped += 1;
-          continue;
+          return;
         }
 
         let sendFailed = false;
-        // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
-        for (const [replyIndex, replyItem] of replyPlan.entries()) {
-          // messageLimit: enforced via PlanLimitsService.trackMessageSend
+        await findFirstSequential(Array.from(replyPlan.entries()), async ([replyIndex, replyItem]) => {
           const sendResult = await this.whatsappService.sendMessage(
             workspaceId,
             phone,
@@ -1819,13 +1812,14 @@ export class CiaRuntimeService implements OnModuleDestroy {
             sendResult.error
           ) {
             sendFailed = true;
-            break;
+            return true;
           }
-        }
+          return undefined;
+        });
 
         if (sendFailed) {
           skipped += 1;
-          continue;
+          return;
         }
 
         keepReplyLock = true;
@@ -1835,7 +1829,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           await this.releaseSharedReplyLock(replyLockKey);
         }
       }
-    }
+    });
 
     await this.updateAutonomyRunStatus(workspaceId, runId, 'COMPLETED');
     await this.finalizeSilentLiveMode(workspaceId, 'remote_inline_backlog_completed', runId);

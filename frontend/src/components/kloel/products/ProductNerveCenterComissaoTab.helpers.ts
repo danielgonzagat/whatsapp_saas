@@ -1,14 +1,11 @@
 import type { JsonRecord } from './product-nerve-center.shared';
+import DOMPurify from 'dompurify';
 
 // Pure helpers extracted from ProductNerveCenterComissaoTab.tsx to reduce
 // the host component's cyclomatic complexity; behaviour is unchanged.
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
-
 export function sanitizeHtml(html: string): string {
-  if (!DOMPurify) return html;
-  return (DOMPurify as { sanitize: (html: string, opts: JsonRecord) => string }).sanitize(html, {
+  return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
     ALLOWED_ATTR: ['href', 'target'],
   });

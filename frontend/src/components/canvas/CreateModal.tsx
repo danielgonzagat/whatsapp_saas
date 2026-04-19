@@ -44,7 +44,6 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
   };
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
       style={{
         position: 'fixed',
@@ -57,17 +56,13 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
         backdropFilter: 'blur(8px)',
         animation: 'fi 0.15s ease',
       }}
-      onClick={onClose}
-      role="button"
-      tabIndex={0}
-      aria-label="Fechar modal"
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
-        }
-      }}
     >
+      <button
+        type="button"
+        aria-label="Fechar modal"
+        onClick={onClose}
+        style={{ position: 'absolute', inset: 0, background: 'transparent', border: 'none' }}
+      />
       <div
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -85,12 +80,8 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
           overflow: 'hidden',
           animation: 'mi 0.25s ease',
           boxShadow: '0 40px 100px rgba(0,0,0,0.6)',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Header */}
@@ -458,14 +449,7 @@ function UploadPanel() {
         gap: 16,
       }}
     >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: hover handlers toggle border color only; drop/click behavior sits on the inner interactive controls */}
       <div
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = '#E85D3040';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#1C1C1F';
-        }}
         style={{
           width: '100%',
           maxWidth: 500,

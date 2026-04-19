@@ -1,6 +1,7 @@
 'use client';
 
 import { API_BASE } from '@/lib/http';
+import Image from 'next/image';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { acceptUpsell, declineUpsell } from '../../../hooks/useCheckout';
@@ -181,12 +182,12 @@ export default function UpsellPage() {
         {/* Product image */}
         {currentUpsell.image && (
           <div style={{ marginBottom: '24px' }}>
-            {/* biome-ignore lint/performance/noImgElement: merchant-configured upsell image URL, no need to optimize via next/image */}
-            <img
+            <Image
               src={currentUpsell.image}
               alt={currentUpsell.productName}
               width={560}
               height={280}
+              unoptimized
               style={{
                 maxWidth: '100%',
                 maxHeight: '280px',

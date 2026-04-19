@@ -78,9 +78,8 @@ function UserMessageRow({
   onRetry: (id: string) => Promise<void>;
 }) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: no native element groups block-level chat bubble + action affordances; role="group" is the correct ARIA mapping
-    <div
-      role="group"
+    <section
+      aria-label="Mensagem enviada"
       style={{ display: 'flex', justifyContent: 'flex-end' }}
       onMouseEnter={() => onHoverEnter(msg.id)}
       onMouseLeave={() => onHoverLeave(msg.id)}
@@ -111,7 +110,7 @@ function UserMessageRow({
           ]}
         />
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -205,7 +204,6 @@ export function FloatingChat({
     } catch {}
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: messages and isStreaming changes are the intentional triggers to auto-scroll; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isStreaming]);
@@ -248,10 +246,9 @@ export function FloatingChat({
       let buffer = '';
       let full = '';
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-      for (;;) {
+      const readGuestStream = async (): Promise<void> => {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) return;
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
@@ -278,7 +275,10 @@ export function FloatingChat({
             }
           } catch {}
         }
-      }
+        await readGuestStream();
+      };
+
+      await readGuestStream();
       return full;
     },
     [guestSessionId],
@@ -310,10 +310,9 @@ export function FloatingChat({
       let buffer = '';
       let full = '';
 
-      // biome-ignore lint/performance/noAwaitInLoops: SSE auth-chat stream from /kloel/think — each reader.read() must decode into the shared buffer and split on '\n' before the next read so data: frames stay intact across chunk boundaries
-      while (true) {
+      const readAuthStream = async (): Promise<void> => {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) return;
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
@@ -339,7 +338,10 @@ export function FloatingChat({
             }
           } catch {}
         }
-      }
+        await readAuthStream();
+      };
+
+      await readAuthStream();
       return full;
     },
     [conversationId],

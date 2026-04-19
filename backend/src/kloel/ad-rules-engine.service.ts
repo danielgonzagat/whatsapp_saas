@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
@@ -43,10 +44,8 @@ export class AdRulesEngineService {
       if (rules.length === 0) return;
       this.logger.log(`Evaluating ${rules.length} active ad rule(s)...`);
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential ad rule evaluation with side effects
-      for (const rule of rules) {
+      await forEachSequential(rules, async (rule) => {
         try {
-          // biome-ignore lint/performance/noAwaitInLoops: per-rule evaluation with stateful side effects; sequential required for audit log
           const shouldFire = await this.shouldFireRule(rule);
           if (shouldFire) {
             await this.fireRule(rule);
@@ -55,7 +54,7 @@ export class AdRulesEngineService {
           // PULSE:OK — Per-rule failure is non-critical; other rules continue executing
           this.logger.error(`Error evaluating rule ${rule.id}: ${err}`);
         }
-      }
+      });
     } catch (err) {
       // PULSE:OK — AdRules engine is a background job; errors are logged and retried next cycle
       this.logger.error(`AdRules engine error: ${err}`);

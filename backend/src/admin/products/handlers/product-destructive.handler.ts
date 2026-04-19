@@ -96,9 +96,8 @@ export class ProductDeleteHandler implements DestructiveHandler {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async undo(): Promise<DestructiveHandlerResult> {
+  undo(): Promise<DestructiveHandlerResult> {
     // Hard delete is irreversible (I-ADMIN-D1). Throw synchronously.
-    throw new UnsupportedUndoError(DestructiveIntentKind.PRODUCT_DELETE);
+    return Promise.reject(new UnsupportedUndoError(DestructiveIntentKind.PRODUCT_DELETE));
   }
 }

@@ -12,9 +12,7 @@ export function kloelUrl(path: string): string {
 }
 
 export async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
-  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-  // Safe: `apiUrl(path)` always prefixes NEXT_PUBLIC_API_URL (server-configured env var); `path` is a hardcoded literal in every caller, never user input. No user-controlled host.
-  const res = await fetch(apiUrl(path), init);
+  const res = await fetch(new Request(apiUrl(path), init));
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`);
   }

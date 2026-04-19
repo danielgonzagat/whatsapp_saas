@@ -2,6 +2,7 @@
 
 import { PulseLoader } from '@/components/kloel/PulseLoader';
 import { Upload, X } from 'lucide-react';
+import Image from 'next/image';
 import { type CSSProperties, type ReactNode, useId, useRef, useState } from 'react';
 
 type Theme = {
@@ -121,15 +122,10 @@ export function MediaPreviewBox({
         </label>
       ) : null}
 
-      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
-      <div
+      <label
+        htmlFor={fileInputId}
         aria-busy={uploading}
-        role="button"
-        tabIndex={0}
         aria-label="Selecionar arquivo de mídia"
-        onClick={() => {
-          if (!uploading) inputRef.current?.click();
-        }}
         onDragOver={(event) => {
           if (uploading) return;
           event.preventDefault();
@@ -144,21 +140,15 @@ export function MediaPreviewBox({
           if (file) onSelectFile(file);
         }}
         style={frameStyle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
-        }}
       >
         {displayUrl ? (
           <>
-            {/* biome-ignore lint/performance/noImgElement: user-selected preview blob URL or arbitrary CDN, sized by container layout */}
-            <img
+            <Image
               src={displayUrl}
               alt={alt}
               width={320}
               height={240}
+              unoptimized
               style={{
                 maxWidth: mergedLayout.imageMaxWidth,
                 maxHeight: mergedLayout.imageMaxHeight,
@@ -263,7 +253,7 @@ export function MediaPreviewBox({
             <PulseLoader width={104} height={20} />
           </div>
         ) : null}
-      </div>
+      </label>
 
       {hint ? (
         <p

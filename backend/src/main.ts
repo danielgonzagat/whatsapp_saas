@@ -12,6 +12,74 @@ import { PrismaService } from './prisma/prisma.service';
 
 const HTTPS_____KLOEL_FRONTEN_RE = /^https:\/\/kloel-frontend-.*\.vercel\.app$/;
 const HTTPS_____KLOEL_ADMIN_RE = /^https:\/\/kloel-admin-.*\.vercel\.app$/;
+const MAX_ORIGIN_PATTERN_LENGTH = 200;
+
+function matchesWildcardPattern(value: string, pattern: string): boolean {
+  if (!pattern.includes('*')) {
+    return value === pattern;
+  }
+
+  const parts = pattern.split('*');
+  let cursor = 0;
+
+  if (!pattern.startsWith('*')) {
+    const prefix = parts.shift() ?? '';
+    if (!value.startsWith(prefix)) {
+      return false;
+    }
+    cursor = prefix.length;
+  }
+
+  const suffix = pattern.endsWith('*') ? '' : (parts.pop() ?? '');
+
+  for (const part of parts) {
+    if (!part) {
+      continue;
+    }
+
+    const nextIndex = value.indexOf(part, cursor);
+    if (nextIndex === -1) {
+      return false;
+    }
+    cursor = nextIndex + part.length;
+  }
+
+  if (!suffix) {
+    return true;
+  }
+
+  const suffixIndex = value.indexOf(suffix, cursor);
+  return suffixIndex !== -1 && value.endsWith(suffix);
+}
+
+function normalizeCorsOriginPattern(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > MAX_ORIGIN_PATTERN_LENGTH) {
+    console.warn('[CORS] Origin pattern too long, ignored (%d chars)', trimmed.length);
+    return null;
+  }
+
+  const normalized = trimmed
+    .replace(/^\^/, '')
+    .replace(/\$$/, '')
+    .replace(/\\\./g, '.')
+    .replace(/\.\*/g, '*');
+
+  const isAllowedPattern = /^https?:\/\/[A-Za-z0-9.*:/_-]+$/.test(normalized);
+  if (!isAllowedPattern) {
+    console.warn('[CORS] Unsupported origin pattern ignored: %s', trimmed);
+    return null;
+  }
+
+  return normalized;
+}
+
+function compileCorsOriginMatcher(raw: string): ((origin: string) => boolean) | null {
+  const normalized = normalizeCorsOriginPattern(raw);
+  if (!normalized) return null;
+  return (origin: string) => matchesWildcardPattern(origin, normalized);
+}
 
 function handleSchemaError(schemaErr: unknown): void {
   const isSchemaMissing =
@@ -216,36 +284,19 @@ async function bootstrap() {
     }
   }
 
-  // Regex patterns para origens dinâmicas (ex: Vercel preview deploys)
-  const allowedOriginsRegex: RegExp[] = [HTTPS_____KLOEL_FRONTEN_RE, HTTPS_____KLOEL_ADMIN_RE];
-  // SECURITY: CORS_ALLOWED_ORIGIN_REGEX is a server-admin-controlled env var,
-  // not user input. The regex is compiled once at startup and never rebuilt
-  // from request data, so ReDoS from untrusted input is not applicable here.
-  // The try/catch below guards against malformed patterns from misconfiguration.
-  // SECURITY: CORS_ALLOWED_ORIGIN_REGEX is a server-admin-controlled env var,
-  // not user input. Patterns are compiled once at startup. A length cap and
-  // basic validation guard against misconfiguration / ReDoS from overly
-  // complex patterns.
-  const MAX_REGEX_PATTERN_LENGTH = 200;
-  const compileCorsRegex = (raw: string): RegExp | null => {
-    const trimmed = raw.trim();
-    if (!trimmed) return null;
-    if (trimmed.length > MAX_REGEX_PATTERN_LENGTH) {
-      console.warn('[CORS] Regex pattern too long, ignored (%d chars)', trimmed.length);
-      return null;
-    }
-    try {
-      return new RegExp(trimmed); // nosemgrep: non-literal-regexp — trusted server config
-    } catch {
-      console.warn('[CORS] Invalid regex pattern ignored: %s', trimmed);
-      return null;
-    }
-  };
+  // Dynamic origin matchers for preview/staging domains. Env overrides accept
+  // only a constrained wildcard syntax (`*`) or anchored regex-style strings
+  // that normalize to the same wildcard form, so startup never compiles
+  // arbitrary regular expressions from environment variables.
+  const allowedOriginMatchers: Array<(origin: string) => boolean> = [
+    (origin) => HTTPS_____KLOEL_FRONTEN_RE.test(origin),
+    (origin) => HTTPS_____KLOEL_ADMIN_RE.test(origin),
+  ];
   const extraRegex = process.env.CORS_ALLOWED_ORIGIN_REGEX;
   if (extraRegex) {
     for (const r of extraRegex.split(',')) {
-      const re = compileCorsRegex(r);
-      if (re) allowedOriginsRegex.push(re);
+      const matcher = compileCorsOriginMatcher(r);
+      if (matcher) allowedOriginMatchers.push(matcher);
     }
   }
 
@@ -259,8 +310,8 @@ async function bootstrap() {
     // This includes webhooks, health checks, internal polling, and server-to-server traffic.
     if (!origin) return null;
     if (allowedOriginsExact.has(origin)) return origin;
-    for (const re of allowedOriginsRegex) {
-      if (re.test(origin)) return origin;
+    for (const matcher of allowedOriginMatchers) {
+      if (matcher(origin)) return origin;
     }
     // In dev, accept any origin
     if (process.env.NODE_ENV !== 'production') return origin;

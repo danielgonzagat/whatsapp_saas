@@ -132,9 +132,7 @@ export function ConversationRow({
   onDelete,
 }: ConversationRowProps) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: conversation row groups block-level content (avatar + text + actions); role="group" is the correct ARIA mapping
     <div
-      role="group"
       onMouseEnter={() => onHoverEnter(conversation.id)}
       onMouseLeave={() => onHoverLeave(conversation.id)}
       style={{

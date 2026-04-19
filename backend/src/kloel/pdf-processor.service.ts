@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { forEachSequential } from '../common/async-sequence';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { MemoryService } from './memory.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
@@ -98,17 +99,14 @@ Retorne JSON:
       price?: number;
       benefits?: string[];
     }>;
-    // biome-ignore lint/performance/noAwaitInLoops: sequential product embedding with AI calls
-    for (let i = 0; i < products.length; i++) {
-      const product = products[i];
-      // biome-ignore lint/performance/noAwaitInLoops: per-product memory save preserves PDF parsing order
+    await forEachSequential(products, async (product, i) => {
       await this.memoryService.saveProduct(workspaceId, `${pdfId}_product_${i}`, {
         name: product.name,
         description: product.description,
         price: product.price,
         benefits: product.benefits,
       });
-    }
+    });
 
     if (analysis.companyInfo as string) {
       await this.memoryService.saveMemory(
@@ -134,10 +132,7 @@ Retorne JSON:
       objection: string;
       response: string;
     }>;
-    // biome-ignore lint/performance/noAwaitInLoops: sequential objection embedding with AI calls
-    for (let i = 0; i < objections.length; i++) {
-      const obj = objections[i];
-      // biome-ignore lint/performance/noAwaitInLoops: sequential memory persistence for PDF chunks maintains ordering
+    await forEachSequential(objections, async (obj, i) => {
       await this.memoryService.saveMemory(
         workspaceId,
         `${pdfId}_objection_${i}`,
@@ -145,7 +140,7 @@ Retorne JSON:
         'objection',
         `OBJEÇÃO: ${obj.objection}\nRESPOSTA: ${obj.response}`,
       );
-    }
+    });
 
     this.logger.log(
       'Analise salva: ' +

@@ -125,6 +125,12 @@ interface Product {
 
 // Pure helpers moved to ./brain-settings-section.helpers.ts.
 
+function buildDuplicateAwareKey(prefix: string, values: string[], position: number) {
+  const currentValue = values[position] ?? '';
+  const occurrence = values.slice(0, position).filter((value) => value === currentValue).length;
+  return `${prefix}-${currentValue.slice(0, 24)}-${occurrence}`;
+}
+
 export function BrainSettingsSection() {
   const fid = useId();
   const kbFileRef = useRef<HTMLInputElement>(null);
@@ -619,7 +625,7 @@ export function BrainSettingsSection() {
     }
   };
 
-  const handleKbDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleKbDrop = (e: React.DragEvent<HTMLElement>) => {
     e.preventDefault();
     setKbDragOver(false);
     const file = e.dataTransfer.files?.[0];
@@ -763,8 +769,10 @@ export function BrainSettingsSection() {
           <div className="space-y-2">
             <Label className="text-sm text-gray-700">Diferenciais competitivos</Label>
             {company.differentials.map((diff, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — differentials is `string[]` with user-editable duplicates; refactor out of a11y pass scope.
-              <div key={`differential-${i}-${diff.slice(0, 10)}`} className="flex gap-2">
+              <div
+                key={buildDuplicateAwareKey('differential', company.differentials, i)}
+                className="flex gap-2"
+              >
                 <Input
                   placeholder={`Diferencial ${i + 1}`}
                   value={diff}
@@ -1097,9 +1105,8 @@ export function BrainSettingsSection() {
           {rules.length > 0 && (
             <div className="space-y-2">
               {rules.map((rule, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — rules is `string[]` with user-editable duplicates; refactor out of a11y pass scope.
                 <div
-                  key={`rule-${i}-${rule.slice(0, 10)}`}
+                  key={buildDuplicateAwareKey('rule', rules, i)}
                   className="flex items-center gap-3 rounded-xl bg-gray-50 p-3"
                 >
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-700">
@@ -1373,25 +1380,16 @@ export function BrainSettingsSection() {
                 {kbUploadError || kbUploadSuccess}
               </div>
             )}
-            {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
-            <div
+            <label
+              htmlFor={`${fid}-kb-file-input`}
               onDragOver={(e) => {
                 e.preventDefault();
                 setKbDragOver(true);
               }}
               onDragLeave={() => setKbDragOver(false)}
               onDrop={handleKbDrop}
-              onClick={() => kbFileRef.current?.click()}
-              role="button"
-              tabIndex={0}
               aria-label="Selecionar arquivo para base de conhecimento"
               className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-6 text-center ${kbDragOver ? 'border-[#E85D30] bg-[#E85D30]/5' : 'border-gray-200 hover:border-gray-300'}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  (e.currentTarget as HTMLElement).click();
-                }
-              }}
             >
               <Upload className="mx-auto mb-2 h-6 w-6 text-gray-400" aria-hidden="true" />
               <p className="text-sm text-gray-600">
@@ -1410,7 +1408,7 @@ export function BrainSettingsSection() {
                   if (f) setKbUploadFile(f);
                 }}
               />
-            </div>
+            </label>
             {kbUploadFile && (
               <Button
                 onClick={() => void handleKbFileUpload(kbUploadFile)}

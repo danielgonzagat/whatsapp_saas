@@ -20,6 +20,7 @@ import { buildQueueJobId } from './job-id';
 import { dispatchOutboundThroughFlow } from './providers/outbound-dispatcher';
 import { WhatsAppEngine } from './providers/whatsapp-engine';
 import { redisPub } from './redis-client';
+import { forEachSequential } from './utils/async-sequence';
 
 /**
  * =======================================================
@@ -1228,11 +1229,10 @@ async function autopilotScanner() {
       select: { id: true, providerSettings: true, jitterMin: true, jitterMax: true },
     });
 
-    for (const workspace of workspaces) {
+    await forEachSequential(workspaces, async (workspace) => {
       const settings = parseAutopilotSettings(workspace.providerSettings);
-      if (!isAutonomyActive(settings)) continue;
+      if (!isAutonomyActive(settings)) return;
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential per-workspace DB fetch avoids hammering Postgres with a burst of parallel queries
       const convs = await prisma.conversation.findMany({
         where: { workspaceId: workspace.id, status: 'OPEN' },
         orderBy: { updatedAt: 'desc' },
@@ -1243,18 +1243,18 @@ async function autopilotScanner() {
         },
       });
 
-      for (const conv of convs) {
+      await forEachSequential(convs, async (conv) => {
         const lastMsg = conv.messages[0];
-        if (!lastMsg) continue;
+        if (!lastMsg) return;
 
         const cf = asJsonObject(conv.contact?.customFields);
         const lastActionAt = jsonDateMillis(cf.autopilotLastActionAt);
         const nextRetryAt = jsonDateMillis(cf.autopilotNextRetryAt);
         if (nextRetryAt && nextRetryAt > Date.now()) {
-          continue;
+          return;
         }
         if (lastActionAt && Date.now() - lastActionAt < 2 * 60 * 60 * 1000) {
-          continue;
+          return;
         }
 
         const now = Date.now();
@@ -1266,7 +1266,7 @@ async function autopilotScanner() {
           (ageHours >= 12 && lastMsg.direction === 'OUTBOUND') || (ageHours >= 24 && isInbound);
         const antiChurn = ageHours >= 72;
 
-        if (!isInbound && !shouldFollowUp && !antiChurn) continue;
+        if (!isInbound && !shouldFollowUp && !antiChurn) return;
 
         const hour = new Date().getHours();
         const isNight = hour >= 22 || hour < 7;
@@ -1276,8 +1276,7 @@ async function autopilotScanner() {
             ? { intent: 'BUYING_SIGNAL', action: 'GHOST_CLOSER', reason: 'silent_buying_signal' }
             : shouldFollowUp
               ? { intent: 'REENGAGE', action: 'FOLLOW_UP_STRONG', reason: 'silent_24h' }
-              : // biome-ignore lint/performance/noAwaitInLoops: LLM decision must be computed per-conversation with prior context; parallelism would reorder autopilot decisions
-                await decideAction(lastMsg.content || '', settings);
+              : await decideAction(lastMsg.content || '', settings);
         const action = decision.action || 'FOLLOW_UP';
 
         try {
@@ -1288,7 +1287,7 @@ async function autopilotScanner() {
             lastMsg.content || '',
             settings,
           );
-          if (!messageToSend) continue;
+          if (!messageToSend) return;
 
           const subscription = await PlanLimitsProvider.checkSubscriptionStatus(conv.workspaceId);
           if (!subscription.active) {
@@ -1305,7 +1304,7 @@ async function autopilotScanner() {
           const currentHour = new Date().getHours();
           const withinPrime = Math.abs(currentHour - bestHour) <= 2;
           const isHotAction = action === 'SEND_OFFER' || action === 'SEND_PRICE';
-          if (!withinPrime && !isHotAction) continue;
+          if (!withinPrime && !isHotAction) return;
 
           let status: 'executed' | 'error' = 'executed';
           let errorMsg: string | undefined;
@@ -1365,8 +1364,8 @@ async function autopilotScanner() {
         } catch (err: unknown) {
           log.warn('autopilot_scan_error', { error: getErrorMessage(err), convId: conv.id });
         }
-      }
-    }
+      });
+    });
   } catch (err: unknown) {
     log.error('autopilot_scan_loop_error', { error: getErrorMessage(err) });
   }

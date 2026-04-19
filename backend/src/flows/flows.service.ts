@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 
 const D_RE = /\D/g;
@@ -501,11 +502,10 @@ export class FlowsService {
       take: batchSize,
     });
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential flow execution processing
-    for (const execution of candidates) {
+    await forEachSequential(candidates, async (execution) => {
       const state = (execution.state as WaitState) || ({} as WaitState);
-      if (!state.waitExpiresAt) continue;
-      if (now <= new Date(state.waitExpiresAt)) continue;
+      if (!state.waitExpiresAt) return;
+      if (now <= new Date(state.waitExpiresAt)) return;
 
       // Expired — transition to Timeout
       const updatedState: Record<string, unknown> = {
@@ -514,8 +514,6 @@ export class FlowsService {
         resumeEdge: 'Timeout',
       };
 
-      // PULSE:OK — each execution has unique state/logs data; cannot batch with updateMany
-      // biome-ignore lint/performance/noAwaitInLoops: per-execution flow update must be sequential to honor node progression order
       await this.prisma.flowExecution.update({
         where: { id: execution.id },
         data: {
@@ -546,7 +544,7 @@ export class FlowsService {
         fallbackMessage: state.fallbackMessage,
         state: updatedState,
       });
-    }
+    });
 
     return results;
   }

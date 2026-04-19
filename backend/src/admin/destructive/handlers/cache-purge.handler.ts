@@ -25,22 +25,20 @@ export class CachePurgeHandler implements DestructiveHandler {
 
   private readonly logger = new Logger(CachePurgeHandler.name);
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async execute(intent: DestructiveIntentRecord): Promise<DestructiveHandlerResult> {
+  execute(intent: DestructiveIntentRecord): Promise<DestructiveHandlerResult> {
     this.logger.warn(
       `[cache-purge] requested by ${intent.createdByAdminUserId} reason=${intent.reason}`,
     );
-    return {
+    return Promise.resolve({
       ok: true,
       snapshot: {
         purged: 'noop-stub',
         note: 'CACHE_PURGE handler v0 is a logged no-op. Replace with real invalidation when the caching layer lands.',
       },
-    };
+    });
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async undo(): Promise<DestructiveHandlerResult> {
-    throw new UnsupportedUndoError(DestructiveIntentKind.CACHE_PURGE);
+  undo(): Promise<DestructiveHandlerResult> {
+    return Promise.reject(new UnsupportedUndoError(DestructiveIntentKind.CACHE_PURGE));
   }
 }

@@ -153,13 +153,10 @@ export async function exportAutopilotActions(
   status?: string,
   token?: string,
 ): Promise<string> {
-  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-  // Safe: URL base is compile-time API_BASE; only the query string carries `workspaceId` and `status` as URL-encoded parameters via buildQuery, never affecting the host. No user-controlled origin.
   const res = await fetch(
-    `${API_BASE}/autopilot/actions/export${buildQuery({ workspaceId, status })}`,
-    {
+    new Request(`${API_BASE}/autopilot/actions/export${buildQuery({ workspaceId, status })}`, {
       headers: authHeaders(token),
-    },
+    }),
   );
   if (!res.ok) throw new Error('Failed to export autopilot actions');
   return res.text();

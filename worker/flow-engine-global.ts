@@ -12,6 +12,7 @@ import { redis, redisPub } from './redis-client';
 
 import { sanitizeUserInput } from './utils/prompt-sanitizer';
 // Segurança
+import { forEachSequential, pollUntil } from './utils/async-sequence';
 import { safeEvaluateBoolean } from './utils/safe-eval';
 import { isUrlAllowed, safeRequest, validateUrl } from './utils/ssrf-protection';
 
@@ -350,8 +351,37 @@ export class FlowEngineGlobal {
     const MAX_ITERATIONS = 1000;
     let iterations = 0;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-    while (true) {
+    const executeNodeWithRetry = async (
+      currentState: ExecutionState,
+      node: FlowNode,
+      retryCount = 0,
+    ): Promise<string | 'WAIT' | 'END' | undefined> => {
+      try {
+        return await this.executeNode(currentState, node);
+      } catch (nodeErr) {
+        const nextRetryCount = retryCount + 1;
+        const MAX_RETRIES = 3;
+        if (nextRetryCount >= MAX_RETRIES) {
+          throw nodeErr;
+        }
+
+        this.log.warn('node_retry', {
+          nodeId: node.id,
+          attempt: nextRetryCount,
+          error: nodeErr instanceof Error ? nodeErr.message : String(nodeErr),
+        });
+        await this.appendLog(currentState, {
+          event: 'retry',
+          nodeId: node.id,
+          attempt: nextRetryCount,
+          message: nodeErr instanceof Error ? nodeErr.message : String(nodeErr),
+        });
+        await this.sleep(1000 * 2 ** nextRetryCount);
+        return executeNodeWithRetry(currentState, node, nextRetryCount);
+      }
+    };
+
+    const runNextNode = async (): Promise<void> => {
       iterations++;
       if (iterations > MAX_ITERATIONS) {
         this.log.error('flow_iteration_limit', {
@@ -360,7 +390,6 @@ export class FlowEngineGlobal {
           nodeId: state.nodeId,
           iterations,
         });
-        // biome-ignore lint/performance/noAwaitInLoops: terminal failure path writes state and exits the iteration loop; cannot be parallelized
         await this.failExecution(
           state,
           `Flow execution aborted: exceeded ${MAX_ITERATIONS} iterations (possible infinite loop)`,
@@ -379,35 +408,7 @@ export class FlowEngineGlobal {
         this.log.info('node_start', { user: state.user, nodeId: node.id, type: node.type });
         await this.appendLog(state, { event: 'node_start', nodeId: node.id, type: node.type });
 
-        // Automatic Retry Logic (Best in World Reliability)
-        let result: string | 'WAIT' | 'END' | undefined;
-        let retryCount = 0;
-        const MAX_RETRIES = 3;
-
-        // biome-ignore lint/performance/noAwaitInLoops: retry-with-exponential-backoff — each attempt must observe the previous attempt's outcome (success/thrown error) and sleep 2^retryCount seconds before retrying the same node
-        for (;;) {
-          try {
-            result = await this.executeNode(state, node);
-            break;
-          } catch (nodeErr) {
-            retryCount++;
-            // Only retry if it's not a user error (e.g. missing variable) - but for now retry all runtime errors
-            if (retryCount >= MAX_RETRIES) throw nodeErr;
-
-            this.log.warn('node_retry', {
-              nodeId: node.id,
-              attempt: retryCount,
-              error: nodeErr instanceof Error ? nodeErr.message : String(nodeErr),
-            });
-            await this.appendLog(state, {
-              event: 'retry',
-              nodeId: node.id,
-              attempt: retryCount,
-              message: nodeErr instanceof Error ? nodeErr.message : String(nodeErr),
-            });
-            await this.sleep(1000 * 2 ** retryCount); // Exponential Backoff
-          }
-        }
+        const result = await executeNodeWithRetry(state, node);
 
         this.log.info('node_end', { user: state.user, nodeId: node.id, result });
         await this.appendLog(state, { event: 'node_end', nodeId: node.id, result });
@@ -430,6 +431,7 @@ export class FlowEngineGlobal {
         state.nodeId = result ?? state.nodeId;
         await this.markStatus(state, 'RUNNING');
         await this.context.set(this.key(state.user, state.workspaceId), state);
+        return runNextNode();
       } catch (err) {
         this.log.error('node_error', {
           nodeId: node.id,
@@ -446,7 +448,7 @@ export class FlowEngineGlobal {
         const fallback = readOptionalString(node.data, 'onError');
         if (fallback) {
           state.nodeId = fallback;
-          continue;
+          return runNextNode();
         }
 
         await this.failExecution(
@@ -455,7 +457,9 @@ export class FlowEngineGlobal {
         );
         return;
       }
-    }
+    };
+
+    await runNextNode();
   }
 
   /**
@@ -886,12 +890,12 @@ export class FlowEngineGlobal {
         const aiRole =
           readString(node.data, 'aiRole') === 'brain' || enableTools ? 'brain' : 'writer';
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-        while (iterations < MAX_ITERATIONS) {
-          iterations++;
+        const runAiIteration = async (): Promise<void> => {
+          if (iterations >= MAX_ITERATIONS) {
+            return;
+          }
 
-          // Call AI
-          // biome-ignore lint/performance/noAwaitInLoops: LLM reasoning loop — each turn depends on the previous turn's tool outputs and assistant message
+          iterations++;
           const responseMessage = await ai.generateChatResponse(messages, aiRole, tools);
 
           // Add assistant response to history
@@ -901,9 +905,8 @@ export class FlowEngineGlobal {
           if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
             this.log.info('ai_tool_call', { count: responseMessage.tool_calls.length });
 
-            // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
-            for (const toolCall of responseMessage.tool_calls) {
-              if (!('function' in toolCall) || !toolCall.function) continue;
+            await forEachSequential(responseMessage.tool_calls, async (toolCall) => {
+              if (!('function' in toolCall) || !toolCall.function) return;
               const functionName = toolCall.function.name;
               let args: Record<string, unknown> = {};
               try {
@@ -916,7 +919,6 @@ export class FlowEngineGlobal {
               }
 
               // Execute Tool
-              // biome-ignore lint/performance/noAwaitInLoops: tool-call results must be appended to the conversation in order before the next AI turn
               const toolResult = await ToolsRegistry.execute(functionName, args, {
                 workspaceId: state.workspaceId,
                 user: state.user,
@@ -936,14 +938,15 @@ export class FlowEngineGlobal {
                 args,
                 result: toolResult,
               });
-            }
-            // Loop continues to let AI process the tool result
+            });
+            await runAiIteration();
           } else {
             // Final text response
             finalResponse = responseMessage.content || '';
-            break;
           }
-        }
+        };
+
+        await runAiIteration();
 
         // 5. Save variable
         state.variables[outputVariable || 'ai_response'] = finalResponse;
@@ -1147,22 +1150,20 @@ export class FlowEngineGlobal {
           // 3. Poll for Completion (Synchronous blocking for simplicity in MVP Flow)
           // Ideally we would suspend flow execution and use a webhook/event to resume.
           // But for < 10s generation, polling is acceptable.
-          let audioUrl: string | null = null;
-          // biome-ignore lint/performance/noAwaitInLoops: polling VoiceJob status — must sleep 1s between each findFirst so the worker has time to update the row; parallel queries would hammer the DB and defeat the 45s budget
-          for (let i = 0; i < 45; i++) {
-            // 45 seconds timeout
-            await this.sleep(1000);
-            const updated = await prisma.voiceJob.findFirst({
-              where: { id: job.id, workspaceId: state.workspaceId },
-            });
-            if (updated?.status === 'COMPLETED') {
-              audioUrl = updated.outputUrl;
-              break;
-            }
-            if (updated?.status === 'FAILED') {
-              this.log.error('voice_generation_failed', { jobId: job.id });
-              break; // Fallback or error
-            }
+          const voiceJob = await pollUntil({
+            timeoutMs: 45_000,
+            intervalMs: 1_000,
+            read: () =>
+              prisma.voiceJob.findFirst({
+                where: { id: job.id, workspaceId: state.workspaceId },
+              }),
+            stop: (updated) =>
+              updated?.status === 'COMPLETED' || updated?.status === 'FAILED',
+            sleep: (ms) => this.sleep(ms),
+          });
+          const audioUrl = voiceJob?.status === 'COMPLETED' ? voiceJob.outputUrl : null;
+          if (voiceJob?.status === 'FAILED') {
+            this.log.error('voice_generation_failed', { jobId: job.id });
           }
 
           // 4. Send Audio
@@ -1320,14 +1321,14 @@ export class FlowEngineGlobal {
     const { Watchdog } = await import('./providers/watchdog');
     const { HealthMonitor } = await import('./providers/health-monitor');
     const MAX_RETRIES = 3;
-    let attempt = 0;
     let lastError: unknown;
+    const sendWithRetry = async (attempt: number): Promise<Record<string, unknown>> => {
+      if (attempt >= MAX_RETRIES) {
+        throw lastError;
+      }
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-    while (attempt < MAX_RETRIES) {
       const start = Date.now();
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: health probe must precede every send attempt; parallelism would bypass circuit-breaker semantics
         if (!(await Watchdog.isHealthy(workspace.id))) {
           throw new Error('Instância instável (Circuit Breaker)');
         }
@@ -1446,7 +1447,6 @@ export class FlowEngineGlobal {
       } catch (err) {
         const latency = Date.now() - start;
         lastError = err;
-        attempt++;
         await Watchdog.reportError(workspace.id, err instanceof Error ? err.message : String(err));
         await HealthMonitor.updateMetrics(workspace.id, false, latency);
         // Persist failed send for analytics
@@ -1495,15 +1495,19 @@ export class FlowEngineGlobal {
         }
 
         // Smart Backoff with Jitter
-        const delay = Math.min(1000 * 2 ** attempt, 10000) + Math.random() * 500;
+        const delay = Math.min(1000 * 2 ** (attempt + 1), 10000) + Math.random() * 500;
         await this.sleep(delay);
 
         // Se for erro fatal (ex: 400 Bad Request), não retentar
-        if ((err instanceof Error ? err.message : String(err))?.includes('400')) break;
-      }
-    }
+        if ((err instanceof Error ? err.message : String(err))?.includes('400')) {
+          throw err;
+        }
 
-    throw lastError;
+        return sendWithRetry(attempt + 1);
+      }
+    };
+
+    return sendWithRetry(0);
   }
 
   private async getConversationHistory(
@@ -1668,17 +1672,16 @@ export class FlowEngineGlobal {
     const now = Date.now();
     const expiredMembers = await this.context.zrangeByScore('timeouts', 0, now);
 
-    for (const member of expiredMembers) {
+    await forEachSequential(expiredMembers, async (member) => {
       const { user, workspaceId } = this.parseTimeoutMember(member);
       this.log.warn('timeout_detected', { user, workspaceId });
-      // biome-ignore lint/performance/noAwaitInLoops: zrem must commit before resuming flow state read to avoid re-processing the same expired timeout
       await this.context.zrem('timeouts', member);
 
       let state = await this.context.get<ExecutionState>(this.key(user, workspaceId));
       if (!state && !workspaceId) {
         state = await this.context.get<ExecutionState>(this.key(user));
       }
-      if (!state) continue;
+      if (!state) return;
 
       state.waitingForResponse = false;
       state.timeoutAt = undefined;
@@ -1689,7 +1692,7 @@ export class FlowEngineGlobal {
 
       await this.context.set(this.key(user, state.workspaceId), state);
       await this.queue.push({ user, workspaceId: state.workspaceId });
-    }
+    });
   }
 
   private async appendLog(state: ExecutionState, logEntry: FlowLogEntry) {

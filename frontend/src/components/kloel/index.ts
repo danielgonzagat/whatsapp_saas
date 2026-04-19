@@ -4,7 +4,6 @@
 //  que enxerga o contexto e age sozinho."
 // ============================================
 
-// biome-ignore lint/performance/noBarrelFile: KLOEL design system public surface; Next.js/Turbopack tree-shake named re-exports
 // Core Components
 export { UniversalComposer } from './UniversalComposer';
 export type { UniversalComposerProps, ActionChip, ComposerChip } from './UniversalComposer';

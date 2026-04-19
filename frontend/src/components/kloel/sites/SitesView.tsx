@@ -1622,40 +1622,39 @@ function CriarSite({ mode }: { mode?: string }) {
                     padding: '10px 14px',
                   }}
                 >
-                  {/* biome-ignore lint/a11y/useSemanticElements: span carries an SVG icon trigger alongside an adjacent native button; role="button" is the correct ARIA mapping without disrupting inline flow */}
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     aria-label="Abrir site salvo"
-                    style={{ color: EMBER }}
-                    onClick={() => loadSavedSite(site)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        (e.currentTarget as HTMLElement).click();
-                      }
+                    style={{
+                      color: EMBER,
+                      background: 'transparent',
+                      border: 'none',
+                      padding: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      cursor: 'pointer',
                     }}
+                    onClick={() => loadSavedSite(site)}
                   >
                     {IC.site(16)}
-                  </span>
-                  <span
+                  </button>
+                  <button
+                    type="button"
                     style={{
                       fontFamily: SORA,
                       fontSize: 13,
                       color: TEXT,
                       flex: 1,
                       cursor: 'pointer',
+                      background: 'transparent',
+                      border: 'none',
+                      padding: 0,
+                      textAlign: 'left',
                     }}
                     onClick={() => loadSavedSite(site)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        (e.currentTarget as HTMLElement).click();
-                      }
-                    }}
                   >
                     {site.name || 'Site sem titulo'}
-                  </span>
+                  </button>
                   {site.published && <Badge color="#10B981">Publicado</Badge>}
                   <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_DIM }}>
                     {site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}
@@ -2021,35 +2020,34 @@ function EditarSite({ mode }: { mode?: string }) {
                   padding: '12px 16px',
                 }}
               >
-                {/* biome-ignore lint/a11y/useSemanticElements: span carries an SVG icon trigger alongside an adjacent native button; role="button" is the correct ARIA mapping without disrupting inline flow */}
-                <span
-                  style={{ color: EMBER }}
-                  onClick={() => setSelectedSite(site)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Abrir ${site.name || 'site'}`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      (e.currentTarget as HTMLElement).click();
-                    }
+                <button
+                  type="button"
+                  style={{
+                    color: EMBER,
+                    background: 'transparent',
+                    border: 'none',
+                    padding: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
                   }}
+                  onClick={() => setSelectedSite(site)}
+                  aria-label={`Abrir ${site.name || 'site'}`}
                 >
                   {IC.site(20)}
-                </span>
-                {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
-                <div
-                  style={{ flex: 1, cursor: 'pointer' }}
-                  onClick={() => setSelectedSite(site)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Abrir ${site.name || 'site'}`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      (e.currentTarget as HTMLElement).click();
-                    }
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: 0,
+                    textAlign: 'left',
                   }}
+                  onClick={() => setSelectedSite(site)}
+                  aria-label={`Abrir ${site.name || 'site'}`}
                 >
                   <div style={{ fontFamily: SORA, fontSize: 14, color: TEXT }}>
                     {site.name || 'Site sem titulo'}
@@ -2059,7 +2057,7 @@ function EditarSite({ mode }: { mode?: string }) {
                       ? new Date(site.updatedAt).toLocaleDateString('pt-BR')
                       : 'Sem data'}
                   </div>
-                </div>
+                </button>
                 {site.published && <Badge color="#10B981">Publicado</Badge>}
                 <Btn variant="ghost" small onClick={() => setSelectedSite(site)}>
                   {IC.edit(14)} Editar

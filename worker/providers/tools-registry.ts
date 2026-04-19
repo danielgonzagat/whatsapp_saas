@@ -1,8 +1,7 @@
-// Stripe v22 requires CJS-style import — `default` no longer exists at runtime.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import Stripe = require('stripe');
+import type Stripe from 'stripe';
 import { prisma } from '../db';
 import { CRM } from './crm';
+import { StripeRuntime } from './stripe-runtime';
 
 export type ToolDefinition = {
   type: 'function';
@@ -90,7 +89,7 @@ function mockPaymentLink(productName: string, amount: number): string {
 }
 
 const stripeClient: Stripe.Stripe | null = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  ? new StripeRuntime(process.env.STRIPE_SECRET_KEY)
   : null;
 
 async function handleCreatePaymentLink(args: ToolArgs): Promise<string> {

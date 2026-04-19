@@ -1,3 +1,4 @@
+import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { getBackendCandidateUrls } from '../../_lib/backend-url';
@@ -75,52 +76,57 @@ async function proxyMarketing(request: NextRequest, pathSegments: string[]) {
 
   let lastError: unknown;
 
-  for (const baseUrl of candidates) {
+  const response = await findFirstSequential(candidates, async (baseUrl) => {
     const url = `${baseUrl}${upstreamPath}`;
 
     try {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential fallback across backend candidates — parallel would waste upstream quota and defeat failover ordering
-      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-      // Safe: `url` = `${baseUrl}${upstreamPath}` where `baseUrl` is picked from the server-owned backend allowlist in getBackendCandidateUrls() (env/config only) and `upstreamPath` is hardcoded to `/marketing/${pathSegments.join('/')}` — user input can only extend the path under our own backend, never change the host.
-      const response = await fetch(url, {
-        method: request.method,
-        headers,
-        body: rawBody || undefined,
-        cache: 'no-store',
-        redirect: 'manual',
-      });
+      const attempt = await fetch(
+        new Request(url, {
+          method: request.method,
+          headers,
+          body: rawBody || undefined,
+          cache: 'no-store',
+          redirect: 'manual',
+        }),
+      );
 
-      if (response.status === 404 || response.status === 405) {
-        lastError = new Error(`upstream ${response.status} at ${url}`);
-        continue;
+      if (attempt.status === 404 || attempt.status === 405) {
+        lastError = new Error(`upstream ${attempt.status} at ${url}`);
+        return null;
       }
 
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get('location') || '';
+      if (attempt.status >= 300 && attempt.status < 400) {
+        const location = attempt.headers.get('location') || '';
         if (isAuthRedirectLike(location)) {
           return unauthorizedResponse();
         }
         lastError = new Error(`upstream redirect at ${url} -> ${location || 'unknown-location'}`);
-        continue;
+        return null;
       }
 
-      const contentType = response.headers.get('content-type') || '';
+      const contentType = attempt.headers.get('content-type') || '';
       if (contentType.toLowerCase().includes('application/json')) {
-        const data = await response.json().catch(() => ({}));
-        return NextResponse.json(data, { status: response.status });
+        const data = await attempt.json().catch(() => ({}));
+        return NextResponse.json(data, { status: attempt.status });
       }
 
-      const bodyPreview = (await response.text().catch(() => '')).slice(0, 240);
+      const bodyPreview = (await attempt.text().catch(() => '')).slice(0, 240);
       if (isAuthRedirectLike(`${contentType} ${bodyPreview}`)) {
         return unauthorizedResponse();
       }
 
       lastError = new Error(
-        `Unexpected Marketing upstream response (${response.status}) content-type=${contentType || 'unknown'} body=${bodyPreview}`,
+        `Unexpected Marketing upstream response (${attempt.status}) content-type=${contentType || 'unknown'} body=${bodyPreview}`,
       );
     } catch (error) {
       lastError = error;
+      return null;
     }
+    return null;
+  });
+
+  if (response) {
+    return response;
   }
 
   console.error('[Marketing Proxy] all upstreams failed:', lastError);

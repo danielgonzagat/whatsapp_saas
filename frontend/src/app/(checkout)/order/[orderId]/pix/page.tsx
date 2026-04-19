@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
@@ -143,12 +144,12 @@ export default function PixPaymentPage() {
               Carregando QR Code...
             </div>
           ) : (
-            // biome-ignore lint/performance/noImgElement: dynamic data URL from PIX provider, no need to optimize via next/image
-            <img
+            <Image
               src={data.payment.pixQrCode}
               alt="Pix QR Code"
               width={220}
               height={220}
+              unoptimized
               style={{ width: '220px', height: '220px', imageRendering: 'pixelated' }}
             />
           )}

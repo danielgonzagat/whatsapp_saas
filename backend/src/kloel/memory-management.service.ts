@@ -16,6 +16,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Counter, Gauge, register } from 'prom-client';
 import { AuditService } from '../audit/audit.service';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface MemoryCleanupResult {
@@ -185,16 +186,14 @@ export class MemoryManagementService {
 
     let totalRemoved = 0;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential memory cleanup per category
-    for (const [category, days] of Object.entries(this.EXPIRATION_DAYS)) {
-      if (category === 'default') continue;
+    await forEachSequential(Object.entries(this.EXPIRATION_DAYS), async ([category, days]) => {
+      if (category === 'default') return;
 
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
 
       try {
         // PULSE:OK — each category has a unique cutoff date; fixed small set of categories
-        // biome-ignore lint/performance/noAwaitInLoops: per-bucket memory deletion with workspace-scoped audit; sequential required
         const result = await this.prisma.kloelMemory.deleteMany({
           where: {
             category,
@@ -214,7 +213,7 @@ export class MemoryManagementService {
         // PULSE:OK — Per-category cleanup failure is non-critical; other categories still processed
         this.logger.warn(`Failed to cleanup ${category}: ${errorInstanceofError.message}`);
       }
-    }
+    });
 
     // Limpar categorias não listadas com expiração padrão
     const defaultCutoff = new Date();
@@ -255,10 +254,8 @@ export class MemoryManagementService {
         },
       });
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential memory group processing
-      for (const group of groups) {
+      await forEachSequential(groups, async (group) => {
         // PULSE:OK — each group has unique workspace+category filter; dedup requires per-group scan
-        // biome-ignore lint/performance/noAwaitInLoops: cursor pagination over memory records; next batch depends on prior cursor
         const memories = await this.prisma.kloelMemory.findMany({
           where: {
             workspaceId: group.workspaceId,
@@ -290,7 +287,7 @@ export class MemoryManagementService {
             `Removed ${toDelete.length} duplicate memories from ${group.workspaceId}/${group.category}`,
           );
         }
-      }
+      });
     } catch (error: unknown) {
       const errorInstanceofError =
         error instanceof Error
@@ -498,9 +495,8 @@ export class MemoryManagementService {
 
     let merged = 0;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential memory consolidation with AI calls
-    for (const [_prefix, mems] of groups) {
-      if (mems.length <= 1) continue;
+    await forEachSequential(groups, async ([_prefix, mems]) => {
+      if (mems.length <= 1) return;
 
       // Manter o mais recente, deletar os outros
       const sorted = mems.sort(
@@ -511,13 +507,12 @@ export class MemoryManagementService {
       const toDelete = sorted.slice(1).map((m: { id: string }) => m.id);
 
       if (toDelete.length > 0) {
-        // biome-ignore lint/performance/noAwaitInLoops: per-category cleanup respects retention policy ordering
         await this.prisma.kloelMemory.deleteMany({
           where: { id: { in: toDelete } },
         });
         merged += toDelete.length;
       }
-    }
+    });
 
     if (merged > 0) {
       await this.auditService

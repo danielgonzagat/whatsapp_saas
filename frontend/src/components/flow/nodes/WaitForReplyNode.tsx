@@ -11,6 +11,11 @@ export interface WaitForReplyNodeData {
   fallbackMessage: string;
 }
 
+const WAIT_FOR_REPLY_HANDLE_IDS = {
+  REPLIED: 'replied',
+  TIMEOUT: 'timeout',
+} as const;
+
 function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNodeData>) {
   const formatTimeout = () => {
     const units: Record<string, string> = {
@@ -49,18 +54,16 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
       )}
 
       <div className="flex justify-between mt-3">
-        {/* biome-ignore lint/correctness/useUniqueElementIds: reactflow Handle id is a semantic routing key; edges reference "replied"/"timeout" handles, so it MUST be a stable literal, not useId(). */}
         <Handle
           type="source"
           position={Position.Bottom}
-          id="replied"
+          id={WAIT_FOR_REPLY_HANDLE_IDS.REPLIED}
           className="!bg-green-500 !w-3 !h-3 !left-[25%]"
         />
-        {/* biome-ignore lint/correctness/useUniqueElementIds: reactflow Handle id is a semantic routing key; edges reference "replied"/"timeout" handles, so it MUST be a stable literal, not useId(). */}
         <Handle
           type="source"
           position={Position.Bottom}
-          id="timeout"
+          id={WAIT_FOR_REPLY_HANDLE_IDS.TIMEOUT}
           className="!bg-red-500 !w-3 !h-3 !left-[75%]"
         />
       </div>

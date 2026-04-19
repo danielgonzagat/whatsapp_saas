@@ -429,14 +429,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             justifyContent: 'center',
           }}
           onClick={() => setLinkModal(null)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              (e.currentTarget as HTMLElement).click();
-            }
-          }}
         >
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -446,12 +439,6 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
               padding: '24px 28px',
               maxWidth: 480,
               width: '100%',
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).click();
-              }
             }}
           >
             <h3
@@ -583,7 +570,6 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
 
       {/* Create modal */}
       {showNew && (
-        // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
         <div
           style={{
             position: 'fixed',
@@ -596,17 +582,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             justifyContent: 'center',
           }}
           onClick={() => setShowNew(false)}
-          role="button"
-          tabIndex={0}
           aria-label="Fechar modal"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              (e.currentTarget as HTMLElement).click();
-            }
-          }}
         >
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -616,12 +593,6 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
               padding: '24px 28px',
               maxWidth: 480,
               width: '100%',
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).click();
-              }
             }}
           >
             <h3

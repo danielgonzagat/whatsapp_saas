@@ -4,6 +4,8 @@ import { apiFetch, tokenStorage } from './core';
 
 const API_URL = API_BASE;
 
+import { readStreamSequential } from '@/lib/async-sequence';
+
 export const kloelApi = {
   // Send message and get streaming response.
   // Returns an object with an `abort()` method to cancel the stream.
@@ -68,11 +70,7 @@ export const kloelApi = {
         };
 
         try {
-          // biome-ignore lint/performance/noAwaitInLoops: SSE reader.read() must resolve before appending to buffer and splitting on newline — parallel reads would interleave chunks and corrupt multi-line data: frames
-          for (;;) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
+          await readStreamSequential(() => reader.read(), async ({ value }) => {
             resetTimeout();
 
             buffer += decoder.decode(value, { stream: true });
@@ -84,7 +82,7 @@ export const kloelApi = {
                 const data = line.slice(6);
                 if (data === '[DONE]') {
                   onDone();
-                  return;
+                  return true;
                 }
                 try {
                   const parsed = JSON.parse(data);
@@ -93,7 +91,7 @@ export const kloelApi = {
                   }
                   if (parsed.error) {
                     onError(parsed.error);
-                    return;
+                    return true;
                   }
                 } catch {
                   // Plain text chunk
@@ -101,7 +99,8 @@ export const kloelApi = {
                 }
               }
             }
-          }
+            return false;
+          });
 
           onDone();
         } finally {

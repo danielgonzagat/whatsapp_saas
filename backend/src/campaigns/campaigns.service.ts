@@ -3,6 +3,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { Queue, Worker } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { AuditService } from '../audit/audit.service';
+import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
@@ -180,15 +181,13 @@ export class CampaignsService {
 
     let sent = 0;
     let failed = 0;
+    const EmailServiceClass = (await import('../auth/email.service')).EmailService;
+    const emailService = new EmailServiceClass();
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential contact processing with DB writes
-    for (const contact of contacts) {
+    await forEachSequential(contacts, async (contact) => {
       try {
         // Try email first (always available if Resend configured)
         if (contact.email) {
-          // biome-ignore lint/performance/noAwaitInLoops: dynamic import inside per-contact loop; resolved once per send attempt
-          const EmailServiceClass = (await import('../auth/email.service')).EmailService;
-          const emailService = new EmailServiceClass();
           // unsubscribe: link included in email footer
           const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(contact.email)}&cid=${encodeURIComponent(campaignId)}`;
           const bodyHtml = (campaign.messageTemplate || '').replace(
@@ -202,7 +201,7 @@ export class CampaignsService {
             html: htmlWithUnsub,
           });
           sent++;
-          continue;
+          return;
         }
         // Fallback: log if no email and no WhatsApp
         this.logger.log(
@@ -213,7 +212,7 @@ export class CampaignsService {
         this.logger.error(`Campaign send failed for contact ${contact.id}: ${e}`);
         failed++;
       }
-    }
+    });
 
     await this.prisma.campaign.updateMany({
       where: { id: campaignId, workspaceId },
@@ -260,9 +259,7 @@ export class CampaignsService {
     if (!base) throw new NotFoundException('Campaign not found');
     const variantIds: string[] = [];
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential AI variant generation
-    for (let i = 0; i < Math.max(1, Math.min(variants, 10)); i++) {
-      // biome-ignore lint/performance/noAwaitInLoops: AI variant generation depends on previous mutation seed; sequential required
+    await forEachSequential(Array.from({ length: Math.max(1, Math.min(variants, 10)) }), async (_, i) => {
       const mutatedMessage = await this.mutateCopy(base.messageTemplate, i);
       // PULSE:OK — each variant depends on mutateCopy result; sequential creation required
       const variant = await this.prisma.campaign.create({
@@ -278,7 +275,7 @@ export class CampaignsService {
         },
       });
       variantIds.push(variant.id);
-    }
+    });
 
     return { created: variantIds.length, variantIds };
   }

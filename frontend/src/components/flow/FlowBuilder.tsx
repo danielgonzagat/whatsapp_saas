@@ -93,19 +93,20 @@ export default function FlowBuilder({
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Create default start node if no nodes exist
-  // biome-ignore lint/correctness/useExhaustiveDependencies: deliberately run once on mount to seed a start node when the builder opens empty
   useEffect(() => {
-    if (nodes.length === 0) {
-      setNodes([
-        {
-          id: 'start-1',
-          type: 'start',
-          position: { x: 250, y: 50 },
-          data: getDefaultData('start'),
-        },
-      ]);
-    }
-  }, []);
+    setNodes((currentNodes) =>
+      currentNodes.length === 0
+        ? [
+            {
+              id: 'start-1',
+              type: 'start',
+              position: { x: 250, y: 50 },
+              data: getDefaultData('start'),
+            },
+          ]
+        : currentNodes,
+    );
+  }, [setNodes]);
 
   // Save to history for undo/redo
   const saveToHistory = useCallback(() => {
