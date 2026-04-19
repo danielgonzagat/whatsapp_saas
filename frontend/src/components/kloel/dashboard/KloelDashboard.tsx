@@ -246,6 +246,242 @@ function getGreeting() {
   return 'Boa madrugada';
 }
 
+function computeAttachmentKind(file: File): KloelChatAttachment['kind'] {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('audio/')) return 'audio';
+  return 'document';
+}
+
+function computeDrainStep(bufferLength: number) {
+  if (bufferLength > 280) return 28;
+  if (bufferLength > 120) return 18;
+  if (bufferLength > 48) return 10;
+  return 5;
+}
+
+function DropOverlay() {
+  return (
+    <motion.div
+      key="kloel-chat-drop-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.16, ease: 'easeOut' }}
+      style={{
+        position: 'absolute',
+        inset: 16,
+        zIndex: 40,
+        pointerEvents: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 16,
+        border: `1px dashed color-mix(in srgb, ${EMBER} 55%, ${DIVIDER})`,
+        background: `color-mix(in srgb, ${EMBER} 8%, ${V})`,
+        boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${EMBER} 14%, transparent)`,
+        backdropFilter: 'blur(4px)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 8,
+          padding: '18px 22px',
+          borderRadius: 14,
+          background: `color-mix(in srgb, ${SURFACE} 88%, transparent)`,
+          border: `1px solid color-mix(in srgb, ${EMBER} 16%, ${DIVIDER})`,
+          color: TEXT,
+          textAlign: 'center',
+        }}
+      >
+        <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>
+          Solte arquivos aqui para anexar
+        </span>
+        <span style={{ fontSize: 12, lineHeight: 1.45, color: MUTED }}>
+          Imagens, documentos, PDFs, textos e áudios entram direto na ChatBar.
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+function DashboardEmptyGreeting({ greetingLine }: { greetingLine: string }) {
+  return (
+    <motion.div
+      key="kloel-empty-state"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -24 }}
+      transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        gap: 22,
+        marginBottom: 20,
+      }}
+    >
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 'clamp(14px, 2vw, 18px)',
+        }}
+      >
+        <Image
+          src="/kloel-mushroom-animated.svg"
+          alt=""
+          aria-hidden
+          draggable={false}
+          unoptimized
+          width={60}
+          height={60}
+          style={{
+            width: 'clamp(48px, 4.8vw, 60px)',
+            height: 'auto',
+            display: 'block',
+            flexShrink: 0,
+            userSelect: 'none',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <h1
+          suppressHydrationWarning
+          style={{
+            fontSize: 'clamp(30px, 5vw, 42px)',
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            margin: 0,
+            color: TEXT,
+            lineHeight: 1.02,
+          }}
+        >
+          {greetingLine}
+        </h1>
+      </div>
+    </motion.div>
+  );
+}
+
+function ChatDisclaimer() {
+  return (
+    <motion.div
+      key="kloel-chat-disclaimer"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
+      style={{
+        margin: '12px auto 0',
+        width: '100%',
+        fontSize: 11,
+        color: MUTED_2,
+        lineHeight: 1.35,
+        textAlign: 'center',
+        letterSpacing: '-0.01em',
+      }}
+    >
+      <span>Kloel é uma IA e pode errar. Confira informações importantes. </span>
+      <button
+        type="button"
+        onClick={openCookiePreferences}
+        style={{
+          appearance: 'none',
+          border: 'none',
+          background: 'transparent',
+          padding: 0,
+          margin: 0,
+          font: 'inherit',
+          color: 'inherit',
+          textDecoration: 'underline',
+          textUnderlineOffset: '2px',
+          cursor: 'pointer',
+        }}
+      >
+        Consulte as Preferências de cookies.
+      </button>
+    </motion.div>
+  );
+}
+
+function ConversationHeaderBar({ title }: { title: string }) {
+  return (
+    <div style={{ width: '100%', flexShrink: 0 }}>
+      <div
+        style={{
+          maxWidth: CHAT_MAX_WIDTH,
+          width: '100%',
+          margin: '0 auto',
+          padding: `10px ${CHAT_INLINE_PADDING} 0`,
+          boxSizing: 'border-box',
+          minHeight: 54,
+          display: 'flex',
+          alignItems: 'center',
+          borderBottom: '1px solid var(--app-border-subtle)',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: TEXT,
+            letterSpacing: '-0.01em',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {title}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DashboardGlobalStyles() {
+  return (
+    <style>{`
+        @keyframes kloel-stream-caret {
+          0%, 49% {
+            opacity: 1;
+          }
+
+          50%, 100% {
+            opacity: 0.18;
+          }
+        }
+
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        textarea::placeholder {
+          color: ${MUTED};
+        }
+
+        ::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: ${DIVIDER};
+          border-radius: 999px;
+        }
+      `}</style>
+  );
+}
+
 function AssistantThinkingState({ label }: { label: 'Kloel está pensando' }) {
   return (
     <div
@@ -1106,11 +1342,7 @@ export default function KloelDashboard() {
           name: file.name,
           size: file.size,
           mimeType: file.type || 'application/octet-stream',
-          kind: file.type.startsWith('image/')
-            ? 'image'
-            : file.type.startsWith('audio/')
-              ? 'audio'
-              : 'document',
+          kind: computeAttachmentKind(file),
           status: 'uploading',
           previewUrl,
           error: null,
@@ -1351,14 +1583,7 @@ export default function KloelDashboard() {
           }
 
           if (renderBuffer.length > 0) {
-            const step =
-              renderBuffer.length > 280
-                ? 28
-                : renderBuffer.length > 120
-                  ? 18
-                  : renderBuffer.length > 48
-                    ? 10
-                    : 5;
+            const step = computeDrainStep(renderBuffer.length);
             const nextSlice = renderBuffer.slice(0, step);
             renderBuffer = renderBuffer.slice(step);
             streamedReply += nextSlice;
@@ -1659,88 +1884,9 @@ export default function KloelDashboard() {
         overflow: 'hidden',
       }}
     >
-      <AnimatePresence initial={false}>
-        {isDragActive ? (
-          <motion.div
-            key="kloel-chat-drop-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            style={{
-              position: 'absolute',
-              inset: 16,
-              zIndex: 40,
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 16,
-              border: `1px dashed color-mix(in srgb, ${EMBER} 55%, ${DIVIDER})`,
-              background: `color-mix(in srgb, ${EMBER} 8%, ${V})`,
-              boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${EMBER} 14%, transparent)`,
-              backdropFilter: 'blur(4px)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 8,
-                padding: '18px 22px',
-                borderRadius: 14,
-                background: `color-mix(in srgb, ${SURFACE} 88%, transparent)`,
-                border: `1px solid color-mix(in srgb, ${EMBER} 16%, ${DIVIDER})`,
-                color: TEXT,
-                textAlign: 'center',
-              }}
-            >
-              <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>
-                Solte arquivos aqui para anexar
-              </span>
-              <span style={{ fontSize: 12, lineHeight: 1.45, color: MUTED }}>
-                Imagens, documentos, PDFs, textos e áudios entram direto na ChatBar.
-              </span>
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      <AnimatePresence initial={false}>{isDragActive ? <DropOverlay /> : null}</AnimatePresence>
 
-      <style>{`
-        @keyframes kloel-stream-caret {
-          0%, 49% {
-            opacity: 1;
-          }
-
-          50%, 100% {
-            opacity: 0.18;
-          }
-        }
-
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        textarea::placeholder {
-          color: ${MUTED};
-        }
-
-        ::-webkit-scrollbar {
-          width: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-          background: ${DIVIDER};
-          border-radius: 999px;
-        }
-      `}</style>
+      <DashboardGlobalStyles />
 
       <input
         ref={fileInputRef}
@@ -1766,35 +1912,7 @@ export default function KloelDashboard() {
       >
         {hasMessages ? (
           <>
-            <div style={{ width: '100%', flexShrink: 0 }}>
-              <div
-                style={{
-                  maxWidth: CHAT_MAX_WIDTH,
-                  width: '100%',
-                  margin: '0 auto',
-                  padding: `10px ${CHAT_INLINE_PADDING} 0`,
-                  boxSizing: 'border-box',
-                  minHeight: 54,
-                  display: 'flex',
-                  alignItems: 'center',
-                  borderBottom: '1px solid var(--app-border-subtle)',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: TEXT,
-                    letterSpacing: '-0.01em',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {conversationTitle}
-                </span>
-              </div>
-            </div>
+            <ConversationHeaderBar title={conversationTitle} />
 
             <div
               style={{
@@ -1867,64 +1985,7 @@ export default function KloelDashboard() {
             }}
           >
             <AnimatePresence initial={false}>
-              {!hasMessages ? (
-                <motion.div
-                  key="kloel-empty-state"
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -24 }}
-                  transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    gap: 22,
-                    marginBottom: 20,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 'clamp(14px, 2vw, 18px)',
-                    }}
-                  >
-                    <Image
-                      src="/kloel-mushroom-animated.svg"
-                      alt=""
-                      aria-hidden
-                      draggable={false}
-                      unoptimized
-                      width={60}
-                      height={60}
-                      style={{
-                        width: 'clamp(48px, 4.8vw, 60px)',
-                        height: 'auto',
-                        display: 'block',
-                        flexShrink: 0,
-                        userSelect: 'none',
-                        pointerEvents: 'none',
-                      }}
-                    />
-
-                    <h1
-                      suppressHydrationWarning
-                      style={{
-                        fontSize: 'clamp(30px, 5vw, 42px)',
-                        fontWeight: 700,
-                        letterSpacing: '-0.03em',
-                        margin: 0,
-                        color: TEXT,
-                        lineHeight: 1.02,
-                      }}
-                    >
-                      {greetingLine}
-                    </h1>
-                  </div>
-                </motion.div>
-              ) : null}
+              {!hasMessages ? <DashboardEmptyGreeting greetingLine={greetingLine} /> : null}
             </AnimatePresence>
 
             <motion.div layout transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
@@ -1953,44 +2014,7 @@ export default function KloelDashboard() {
             </motion.div>
 
             <AnimatePresence initial={false}>
-              {hasMessages ? (
-                <motion.div
-                  key="kloel-chat-disclaimer"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.18, ease: 'easeOut' }}
-                  style={{
-                    margin: '12px auto 0',
-                    width: '100%',
-                    fontSize: 11,
-                    color: MUTED_2,
-                    lineHeight: 1.35,
-                    textAlign: 'center',
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  <span>Kloel é uma IA e pode errar. Confira informações importantes. </span>
-                  <button
-                    type="button"
-                    onClick={openCookiePreferences}
-                    style={{
-                      appearance: 'none',
-                      border: 'none',
-                      background: 'transparent',
-                      padding: 0,
-                      margin: 0,
-                      font: 'inherit',
-                      color: 'inherit',
-                      textDecoration: 'underline',
-                      textUnderlineOffset: '2px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Consulte as Preferências de cookies.
-                  </button>
-                </motion.div>
-              ) : null}
+              {hasMessages ? <ChatDisclaimer /> : null}
             </AnimatePresence>
 
             {composerNotice ? (

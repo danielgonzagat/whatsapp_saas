@@ -311,6 +311,338 @@ const EMAIL_TEMPLATE_PRESETS = [
 const Fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}K` : n.toString());
 const FmtMoney = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
+interface FeedMessageLike {
+  text?: string;
+  content?: string;
+  from?: string;
+  contactName?: string;
+  channel?: string;
+  isAI?: boolean;
+  direction?: string;
+  time?: string;
+  createdAt?: string;
+}
+
+function formatFeedTime(value: FeedMessageLike): string {
+  if (value.time) return value.time;
+  if (!value.createdAt) return '';
+  return new Date(value.createdAt).toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function formatFeedMessage(message: FeedMessageLike): string {
+  const text = message.text || message.content || '';
+  const from = message.from || message.contactName || 'Lead';
+  const channelLabel = (message.channel || 'WHATSAPP').toLowerCase();
+  const isAI = message.isAI || message.direction === 'OUTBOUND';
+  const time = formatFeedTime(message);
+  return `${isAI ? '\uD83E\uDD16' : '\uD83D\uDCF1'} [${channelLabel}] ${from}: ${text} (${time})`;
+}
+
+function drawNeuralFrame(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  color: string,
+  frame: number,
+): void {
+  ctx.clearRect(0, 0, w, h);
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.15 + Math.sin(frame * 0.02 + i) * 0.1;
+    ctx.lineWidth = 1;
+    for (let x = 0; x < w; x += 2) {
+      const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
+      const y = h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+const ComingSoonOverlay = ({ title, description }: { title: string; description: string }) => (
+  <div
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: KLOEL_THEME.bgOverlay,
+      backdropFilter: 'blur(2px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 6,
+      zIndex: 10,
+    }}
+  >
+    <div style={{ textAlign: 'center' }}>
+      <div
+        style={{
+          fontFamily: SORA,
+          fontSize: 18,
+          fontWeight: 700,
+          color: 'var(--app-text-primary)',
+          marginBottom: 8,
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
+        {description}
+      </div>
+    </div>
+  </div>
+);
+
+interface ChannelStatRow {
+  label: string;
+  value: string;
+}
+
+function ChannelStatsList({ stats, color }: { stats: ChannelStatRow[]; color: string }) {
+  return (
+    <>
+      {stats.map((s) => (
+        <div
+          key={s.label}
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '12px 16px 12px 20px',
+            background: BG_CARD,
+            borderRadius: 6,
+            border: `1px solid ${BORDER}`,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 3,
+              background: color,
+            }}
+          />
+          <span
+            style={{
+              fontFamily: SORA,
+              fontSize: 11,
+              color: 'var(--app-text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.25em',
+              minWidth: 120,
+            }}
+          >
+            {s.label}
+          </span>
+          <span
+            style={{ fontFamily: MONO, fontSize: 16, color: 'var(--app-text-primary)', flex: 1 }}
+          >
+            {s.value}
+          </span>
+          <NP w={160} h={28} color={color} />
+        </div>
+      ))}
+    </>
+  );
+}
+
+function channelDataStats(channelData: ChannelRealData | null): ChannelStatRow[] {
+  return [
+    { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
+    { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
+    { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
+  ];
+}
+
+function ChannelInfoGridCard({ label, value }: ChannelStatRow) {
+  return (
+    <div
+      style={{
+        background: BG_CARD,
+        borderRadius: 6,
+        padding: '12px 14px',
+        border: `1px solid ${BORDER}`,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: SORA,
+          fontSize: 10,
+          color: 'var(--app-text-tertiary)',
+          marginBottom: 6,
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: MONO,
+          fontSize: 12,
+          color: 'var(--app-text-primary)',
+          wordBreak: 'break-word',
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function RegisteredDataList({
+  channelData,
+  color,
+}: {
+  channelData: ChannelRealData;
+  color: string;
+}) {
+  const rows: ChannelStatRow[] = [
+    { label: 'Mensagens', value: Fmt(channelData.messages) },
+    { label: 'Leads', value: Fmt(channelData.leads) },
+    { label: 'Vendas', value: channelData.sales.toString() },
+  ];
+
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 400,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        marginTop: 8,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: SORA,
+          fontSize: 10,
+          color: 'var(--app-text-tertiary)',
+          letterSpacing: '0.25em',
+          textTransform: 'uppercase',
+          textAlign: 'center',
+        }}
+      >
+        Dados registrados
+      </div>
+      {rows.map((s) => (
+        <div
+          key={s.label}
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '10px 16px 10px 20px',
+            background: BG_CARD,
+            borderRadius: 6,
+            border: `1px solid ${BORDER}`,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 3,
+              background: color,
+              opacity: 0.4,
+            }}
+          />
+          <span
+            style={{
+              fontFamily: SORA,
+              fontSize: 11,
+              color: 'var(--app-text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.25em',
+              minWidth: 80,
+            }}
+          >
+            {s.label}
+          </span>
+          <span
+            style={{
+              fontFamily: MONO,
+              fontSize: 14,
+              color: 'var(--app-text-primary)',
+              flex: 1,
+            }}
+          >
+            {s.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface RawProductLike {
+  name?: string;
+  title?: string;
+  price?: number;
+  amount?: number;
+  sold?: number;
+  quantitySold?: number;
+  sales?: number;
+  img?: string;
+  emoji?: string;
+  image?: string;
+}
+
+interface MappedProduct {
+  name: string;
+  price: number;
+  sold: number;
+  img: string;
+}
+
+function mapTopProducts(rawProducts: unknown): MappedProduct[] {
+  if (!rawProducts || !Array.isArray(rawProducts) || rawProducts.length === 0) return [];
+  return (rawProducts as RawProductLike[]).slice(0, 3).map((p) => ({
+    name: p.name || p.title || 'Produto',
+    price: p.price ?? p.amount ?? 0,
+    sold: p.sold ?? p.quantitySold ?? p.sales ?? 0,
+    img: p.img || p.emoji || p.image || '\uD83D\uDCE6',
+  }));
+}
+
+function toChannelDataMap(realChannels: unknown): Record<string, ChannelRealData> {
+  if (!realChannels || typeof realChannels !== 'object') return {};
+  const map: Record<string, ChannelRealData> = {};
+  for (const [key, val] of Object.entries(realChannels as Record<string, unknown>)) {
+    if (val && typeof val === 'object') map[key] = val as ChannelRealData;
+  }
+  return map;
+}
+
+function isBrainAvgResponseMeaningful(
+  avgResponseTime: string | number | null | undefined,
+): boolean {
+  if (typeof avgResponseTime === 'number') return avgResponseTime > 0;
+  if (typeof avgResponseTime === 'string') {
+    const trimmed = avgResponseTime.trim();
+    return trimmed !== '' && trimmed !== '--';
+  }
+  return false;
+}
+
 // ══════════════════════════════════════════
 // SUB-COMPONENTS
 // ══════════════════════════════════════════
@@ -335,22 +667,7 @@ function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
     obs.observe(c);
     const draw = () => {
       if (!visible) return;
-      ctx.clearRect(0, 0, w, h);
-      for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        ctx.strokeStyle = color;
-        ctx.globalAlpha = 0.15 + Math.sin(frame * 0.02 + i) * 0.1;
-        ctx.lineWidth = 1;
-        for (let x = 0; x < w; x += 2) {
-          const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
-          const y =
-            h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
+      drawNeuralFrame(ctx, w, h, color, frame);
       frame++;
       raf = requestAnimationFrame(draw);
     };
@@ -548,83 +865,7 @@ function ConnectFlow({
 
       {/* Show whatever real data IS available */}
       {channelData && (channelData.messages > 0 || channelData.leads > 0) && (
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 400,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-            marginTop: 8,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: SORA,
-              fontSize: 10,
-              color: 'var(--app-text-tertiary)',
-              letterSpacing: '0.25em',
-              textTransform: 'uppercase',
-              textAlign: 'center',
-            }}
-          >
-            Dados registrados
-          </div>
-          {[
-            { label: 'Mensagens', value: Fmt(channelData.messages) },
-            { label: 'Leads', value: Fmt(channelData.leads) },
-            { label: 'Vendas', value: channelData.sales.toString() },
-          ].map((s) => (
-            <div
-              key={s.label}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: '10px 16px 10px 20px',
-                background: BG_CARD,
-                borderRadius: 6,
-                border: `1px solid ${BORDER}`,
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 3,
-                  background: ch.color,
-                  opacity: 0.4,
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 11,
-                  color: 'var(--app-text-secondary)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.25em',
-                  minWidth: 80,
-                }}
-              >
-                {s.label}
-              </span>
-              <span
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 14,
-                  color: 'var(--app-text-primary)',
-                  flex: 1,
-                }}
-              >
-                {s.value}
-              </span>
-            </div>
-          ))}
-        </div>
+        <RegisteredDataList channelData={channelData} color={ch.color} />
       )}
     </div>
   );
@@ -663,6 +904,351 @@ function WhatsAppTab({
   );
 }
 
+// ── Email helpers + sub-components ──
+
+interface EmailSendResult {
+  sent: number;
+  failed: number;
+}
+
+interface EmailSendResponsePayload {
+  sent?: number;
+  failed?: number;
+  successCount?: number;
+  failCount?: number;
+}
+
+async function requestEmailSend(
+  subject: string,
+  body: string,
+  recipient: string,
+): Promise<EmailSendResult> {
+  const res = await apiFetch('/marketing/email/send', {
+    method: 'POST',
+    body: {
+      subject,
+      html: body,
+      recipients: [{ email: recipient }],
+      campaignName: subject,
+    },
+  });
+  const data = ((res.data ?? res) as EmailSendResponsePayload) || {};
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/marketing'));
+  return {
+    sent: data.sent ?? data.successCount ?? 1,
+    failed: data.failed ?? data.failCount ?? 0,
+  };
+}
+
+interface EmailConnectionValue {
+  connected?: boolean;
+  providerAvailable?: boolean;
+  provider?: string;
+  fromName?: string;
+  fromEmail?: string;
+}
+
+function EmailConnectionButtons({
+  connection,
+  connecting,
+  testSending,
+  color,
+  onConnect,
+  onDisconnect,
+  onSendTest,
+}: {
+  connection?: EmailConnectionValue;
+  connecting?: boolean;
+  testSending?: boolean;
+  color: string;
+  onConnect: () => void;
+  onDisconnect: () => void;
+  onSendTest: () => void;
+}) {
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {connection?.connected ? (
+        <button
+          type="button"
+          onClick={onDisconnect}
+          disabled={connecting}
+          style={{
+            fontFamily: SORA,
+            fontSize: 12,
+            padding: '10px 14px',
+            borderRadius: 6,
+            border: `1px solid ${BORDER}`,
+            background: BG_ELEVATED,
+            color: 'var(--app-text-primary)',
+            cursor: connecting ? 'wait' : 'pointer',
+            opacity: connecting ? 0.7 : 1,
+          }}
+        >
+          Desativar email
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onConnect}
+          disabled={connecting || !connection?.providerAvailable}
+          style={{
+            fontFamily: SORA,
+            fontSize: 12,
+            padding: '10px 14px',
+            borderRadius: 6,
+            border: 'none',
+            background: connection?.providerAvailable ? color : 'var(--app-text-placeholder)',
+            color: 'var(--app-text-on-accent)',
+            cursor: connecting ? 'wait' : 'pointer',
+            opacity: connecting ? 0.7 : 1,
+          }}
+        >
+          {connecting ? 'Ativando...' : 'Conectar Email'}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onSendTest}
+        disabled={testSending || !connection?.providerAvailable}
+        style={{
+          fontFamily: SORA,
+          fontSize: 12,
+          padding: '10px 14px',
+          borderRadius: 6,
+          border: `1px solid ${color}40`,
+          background: `${color}10`,
+          color,
+          cursor: testSending ? 'wait' : 'pointer',
+          opacity: !connection?.providerAvailable ? 0.45 : 1,
+        }}
+      >
+        {testSending ? 'Enviando teste...' : 'Enviar teste'}
+      </button>
+    </div>
+  );
+}
+
+function EmailConnectionPanel({
+  connection,
+  connecting,
+  testSending,
+  testResult,
+  color,
+  onConnect,
+  onDisconnect,
+  onSendTest,
+}: {
+  connection?: EmailConnectionValue;
+  connecting?: boolean;
+  testSending?: boolean;
+  testResult?: string | null;
+  color: string;
+  onConnect: () => void;
+  onDisconnect: () => void;
+  onSendTest: () => void;
+}) {
+  return (
+    <div
+      style={{
+        background: BG_CARD,
+        borderRadius: 6,
+        padding: 18,
+        border: `1px solid ${BORDER}`,
+        marginBottom: 16,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontFamily: SORA,
+              fontSize: 10,
+              color: 'var(--app-text-tertiary)',
+              marginBottom: 8,
+              letterSpacing: '0.25em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Conexao de email
+          </div>
+          <div
+            style={{
+              fontFamily: SORA,
+              fontSize: 15,
+              color: 'var(--app-text-primary)',
+              marginBottom: 4,
+            }}
+          >
+            {connection?.providerAvailable
+              ? 'Provider detectado e pronto para ativacao'
+              : 'Nenhum provider de email configurado no backend'}
+          </div>
+          <div
+            style={{
+              fontFamily: MONO,
+              fontSize: 12,
+              color: 'var(--app-text-secondary)',
+              lineHeight: 1.6,
+            }}
+          >
+            Provider: {connection?.provider || 'log'} &middot; Remetente:{' '}
+            {connection?.fromName || 'KLOEL'} &lt;{connection?.fromEmail || 'noreply@kloel.com'}
+            &gt;
+          </div>
+        </div>
+        <EmailConnectionButtons
+          connection={connection}
+          connecting={connecting}
+          testSending={testSending}
+          color={color}
+          onConnect={onConnect}
+          onDisconnect={onDisconnect}
+          onSendTest={onSendTest}
+        />
+      </div>
+      {testResult && (
+        <div
+          style={{
+            marginTop: 12,
+            fontFamily: MONO,
+            fontSize: 12,
+            color: 'var(--app-text-primary)',
+            padding: '10px 12px',
+            borderRadius: 6,
+            background: BG_ELEVATED,
+            border: `1px solid ${BORDER}`,
+          }}
+        >
+          {testResult}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmailStatsRow({ channelData }: { channelData: ChannelRealData | null }) {
+  return (
+    <div
+      style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 24 }}
+    >
+      {channelDataStats(channelData).map((s) => (
+        <div
+          key={s.label}
+          style={{
+            background: BG_CARD,
+            borderRadius: 6,
+            padding: 14,
+            border: `1px solid ${BORDER}`,
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: SORA,
+              fontSize: 10,
+              color: 'var(--app-text-tertiary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.2em',
+              marginBottom: 4,
+            }}
+          >
+            {s.label}
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 20, color: 'var(--app-text-primary)' }}>
+            {s.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmailTemplatesPanel({
+  onSelect,
+}: {
+  onSelect: (template: (typeof EMAIL_TEMPLATE_PRESETS)[number]) => void;
+}) {
+  return (
+    <div
+      style={{
+        background: BG_CARD,
+        borderRadius: 6,
+        padding: 20,
+        border: `1px solid ${BORDER}`,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: SORA,
+          fontSize: 10,
+          color: 'var(--app-text-tertiary)',
+          marginBottom: 16,
+          letterSpacing: '0.25em',
+          textTransform: 'uppercase',
+        }}
+      >
+        Templates de Mensagem
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {EMAIL_TEMPLATE_PRESETS.map((template) => (
+          <button
+            type="button"
+            key={template.id}
+            onClick={() => onSelect(template)}
+            style={{
+              textAlign: 'left',
+              background: BG_ELEVATED,
+              border: `1px solid ${BORDER}`,
+              borderRadius: 6,
+              padding: '12px 14px',
+              cursor: 'pointer',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: SORA,
+                fontSize: 12,
+                color: 'var(--app-text-primary)',
+                marginBottom: 4,
+              }}
+            >
+              {template.label}
+            </div>
+            <div
+              style={{
+                fontFamily: SORA,
+                fontSize: 11,
+                color: 'var(--app-text-secondary)',
+                marginBottom: 6,
+              }}
+            >
+              {template.subject}
+            </div>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 10,
+                color: 'var(--app-text-tertiary)',
+                lineHeight: 1.5,
+              }}
+            >
+              {template.html}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── EmailTab — campaign send form ──
 function EmailTab({
   channelData,
@@ -691,40 +1277,33 @@ function EmailTab({
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [emailSending, setEmailSending] = useState(false);
-  const [emailResult, setEmailResult] = useState<{ sent: number; failed: number } | null>(null);
+  const [emailResult, setEmailResult] = useState<EmailSendResult | null>(null);
   const templateFocused = mode === 'templates';
 
-  const handleSend = async () => {
+  const canSubmit =
+    !emailSending &&
+    connection?.connected === true &&
+    Boolean(defaultRecipientEmail) &&
+    emailSubject.trim() !== '' &&
+    emailBody.trim() !== '';
+
+  const handleSend = useCallback(async () => {
     if (!emailSubject.trim() || !emailBody.trim() || !defaultRecipientEmail) return;
     setEmailSending(true);
     setEmailResult(null);
     try {
-      const res = await apiFetch('/marketing/email/send', {
-        method: 'POST',
-        body: {
-          subject: emailSubject.trim(),
-          html: emailBody,
-          recipients: [{ email: defaultRecipientEmail }],
-          campaignName: emailSubject.trim(),
-        },
-      });
-      const data =
-        ((res.data ?? res) as {
-          sent?: number;
-          failed?: number;
-          successCount?: number;
-          failCount?: number;
-        }) || {};
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/marketing'));
-      setEmailResult({
-        sent: data.sent ?? data.successCount ?? 1,
-        failed: data.failed ?? data.failCount ?? 0,
-      });
+      const result = await requestEmailSend(emailSubject.trim(), emailBody, defaultRecipientEmail);
+      setEmailResult(result);
     } catch {
       setEmailResult({ sent: 0, failed: 1 });
     }
     setEmailSending(false);
-  };
+  }, [defaultRecipientEmail, emailBody, emailSubject]);
+
+  const handleSelectTemplate = useCallback((template: (typeof EMAIL_TEMPLATE_PRESETS)[number]) => {
+    setEmailSubject(template.subject);
+    setEmailBody(template.html);
+  }, []);
 
   return (
     <div>
@@ -753,179 +1332,19 @@ function EmailTab({
         <ConnBadge connected={connection?.connected === true} />
       </div>
 
-      <div
-        style={{
-          background: BG_CARD,
-          borderRadius: 6,
-          padding: 18,
-          border: `1px solid ${BORDER}`,
-          marginBottom: 16,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: 16,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontFamily: SORA,
-                fontSize: 10,
-                color: 'var(--app-text-tertiary)',
-                marginBottom: 8,
-                letterSpacing: '0.25em',
-                textTransform: 'uppercase',
-              }}
-            >
-              Conexao de email
-            </div>
-            <div
-              style={{
-                fontFamily: SORA,
-                fontSize: 15,
-                color: 'var(--app-text-primary)',
-                marginBottom: 4,
-              }}
-            >
-              {connection?.providerAvailable
-                ? 'Provider detectado e pronto para ativacao'
-                : 'Nenhum provider de email configurado no backend'}
-            </div>
-            <div
-              style={{
-                fontFamily: MONO,
-                fontSize: 12,
-                color: 'var(--app-text-secondary)',
-                lineHeight: 1.6,
-              }}
-            >
-              Provider: {connection?.provider || 'log'} &middot; Remetente:{' '}
-              {connection?.fromName || 'KLOEL'} &lt;{connection?.fromEmail || 'noreply@kloel.com'}
-              &gt;
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {connection?.connected ? (
-              <button
-                type="button"
-                onClick={onDisconnect}
-                disabled={connecting}
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 12,
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  border: `1px solid ${BORDER}`,
-                  background: BG_ELEVATED,
-                  color: 'var(--app-text-primary)',
-                  cursor: connecting ? 'wait' : 'pointer',
-                  opacity: connecting ? 0.7 : 1,
-                }}
-              >
-                Desativar email
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onConnect}
-                disabled={connecting || !connection?.providerAvailable}
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 12,
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  border: 'none',
-                  background: connection?.providerAvailable
-                    ? ch.color
-                    : 'var(--app-text-placeholder)',
-                  color: 'var(--app-text-on-accent)',
-                  cursor: connecting ? 'wait' : 'pointer',
-                  opacity: connecting ? 0.7 : 1,
-                }}
-              >
-                {connecting ? 'Ativando...' : 'Conectar Email'}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onSendTest}
-              disabled={testSending || !connection?.providerAvailable}
-              style={{
-                fontFamily: SORA,
-                fontSize: 12,
-                padding: '10px 14px',
-                borderRadius: 6,
-                border: `1px solid ${ch.color}40`,
-                background: `${ch.color}10`,
-                color: ch.color,
-                cursor: testSending ? 'wait' : 'pointer',
-                opacity: !connection?.providerAvailable ? 0.45 : 1,
-              }}
-            >
-              {testSending ? 'Enviando teste...' : 'Enviar teste'}
-            </button>
-          </div>
-        </div>
-        {testResult && (
-          <div
-            style={{
-              marginTop: 12,
-              fontFamily: MONO,
-              fontSize: 12,
-              color: 'var(--app-text-primary)',
-              padding: '10px 12px',
-              borderRadius: 6,
-              background: BG_ELEVATED,
-              border: `1px solid ${BORDER}`,
-            }}
-          >
-            {testResult}
-          </div>
-        )}
-      </div>
+      <EmailConnectionPanel
+        connection={connection}
+        connecting={connecting}
+        testSending={testSending}
+        testResult={testResult}
+        color={ch.color}
+        onConnect={onConnect}
+        onDisconnect={onDisconnect}
+        onSendTest={onSendTest}
+      />
 
       {/* Stats row */}
-      <div
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 24 }}
-      >
-        {[
-          { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
-          { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
-          { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
-        ].map((s) => (
-          <div
-            key={s.label}
-            style={{
-              background: BG_CARD,
-              borderRadius: 6,
-              padding: 14,
-              border: `1px solid ${BORDER}`,
-              textAlign: 'center',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: SORA,
-                fontSize: 10,
-                color: 'var(--app-text-tertiary)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.2em',
-                marginBottom: 4,
-              }}
-            >
-              {s.label}
-            </div>
-            <div style={{ fontFamily: MONO, fontSize: 20, color: 'var(--app-text-primary)' }}>
-              {s.value}
-            </div>
-          </div>
-        ))}
-      </div>
+      <EmailStatsRow channelData={channelData} />
 
       <div
         style={{
@@ -1034,36 +1453,16 @@ function EmailTab({
             <button
               type="button"
               onClick={handleSend}
-              disabled={
-                emailSending ||
-                !connection?.connected ||
-                !defaultRecipientEmail ||
-                !emailSubject.trim() ||
-                !emailBody.trim()
-              }
+              disabled={!canSubmit}
               style={{
                 fontFamily: SORA,
                 fontSize: 14,
                 padding: '12px 32px',
                 borderRadius: 6,
                 border: 'none',
-                background:
-                  emailSending ||
-                  !connection?.connected ||
-                  !defaultRecipientEmail ||
-                  !emailSubject.trim() ||
-                  !emailBody.trim()
-                    ? 'var(--app-text-placeholder)'
-                    : EMBER,
+                background: canSubmit ? EMBER : 'var(--app-text-placeholder)',
                 color: 'var(--app-text-on-accent)',
-                cursor:
-                  emailSending ||
-                  !connection?.connected ||
-                  !defaultRecipientEmail ||
-                  !emailSubject.trim() ||
-                  !emailBody.trim()
-                    ? 'not-allowed'
-                    : 'pointer',
+                cursor: canSubmit ? 'pointer' : 'not-allowed',
                 fontWeight: 600,
                 display: 'flex',
                 alignItems: 'center',
@@ -1093,78 +1492,7 @@ function EmailTab({
           </div>
         </div>
 
-        <div
-          style={{
-            background: BG_CARD,
-            borderRadius: 6,
-            padding: 20,
-            border: `1px solid ${BORDER}`,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: SORA,
-              fontSize: 10,
-              color: 'var(--app-text-tertiary)',
-              marginBottom: 16,
-              letterSpacing: '0.25em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Templates de Mensagem
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {EMAIL_TEMPLATE_PRESETS.map((template) => (
-              <button
-                type="button"
-                key={template.id}
-                onClick={() => {
-                  setEmailSubject(template.subject);
-                  setEmailBody(template.html);
-                }}
-                style={{
-                  textAlign: 'left',
-                  background: BG_ELEVATED,
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 6,
-                  padding: '12px 14px',
-                  cursor: 'pointer',
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 12,
-                    color: 'var(--app-text-primary)',
-                    marginBottom: 4,
-                  }}
-                >
-                  {template.label}
-                </div>
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 11,
-                    color: 'var(--app-text-secondary)',
-                    marginBottom: 6,
-                  }}
-                >
-                  {template.subject}
-                </div>
-                <div
-                  style={{
-                    fontFamily: MONO,
-                    fontSize: 10,
-                    color: 'var(--app-text-tertiary)',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {template.html}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+        <EmailTemplatesPanel onSelect={handleSelectTemplate} />
       </div>
     </div>
   );
@@ -1257,38 +1585,7 @@ function InstagramTab({
           { label: 'Conta Meta', value: connection?.pageName || 'Nao resolvida' },
           { label: 'Instagram ID', value: connection?.instagramAccountId || 'Pendente' },
         ].map((item) => (
-          <div
-            key={item.label}
-            style={{
-              background: BG_CARD,
-              borderRadius: 6,
-              padding: '12px 14px',
-              border: `1px solid ${BORDER}`,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: SORA,
-                fontSize: 10,
-                color: 'var(--app-text-tertiary)',
-                marginBottom: 6,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {item.label}
-            </div>
-            <div
-              style={{
-                fontFamily: MONO,
-                fontSize: 12,
-                color: 'var(--app-text-primary)',
-                wordBreak: 'break-word',
-              }}
-            >
-              {item.value}
-            </div>
-          </div>
+          <ChannelInfoGridCard key={item.label} label={item.label} value={item.value} />
         ))}
       </div>
 
@@ -1387,55 +1684,7 @@ function InstagramTab({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-        {[
-          { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
-          { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
-          { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
-        ].map((s) => (
-          <div
-            key={s.label}
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              padding: '12px 16px 12px 20px',
-              background: BG_CARD,
-              borderRadius: 6,
-              border: `1px solid ${BORDER}`,
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 3,
-                background: ch.color,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: SORA,
-                fontSize: 11,
-                color: 'var(--app-text-secondary)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.25em',
-                minWidth: 120,
-              }}
-            >
-              {s.label}
-            </span>
-            <span
-              style={{ fontFamily: MONO, fontSize: 16, color: 'var(--app-text-primary)', flex: 1 }}
-            >
-              {s.value}
-            </span>
-            <NP w={160} h={28} color={ch.color} />
-          </div>
-        ))}
+        <ChannelStatsList stats={channelDataStats(channelData)} color={ch.color} />
       </div>
     </div>
   );
@@ -1505,91 +1754,12 @@ function FacebookTab({
           { label: 'Page ID', value: connection?.pageId || 'Pendente' },
           { label: 'Canal', value: 'Messenger do Facebook' },
         ].map((item) => (
-          <div
-            key={item.label}
-            style={{
-              background: BG_CARD,
-              borderRadius: 6,
-              padding: '12px 14px',
-              border: `1px solid ${BORDER}`,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: SORA,
-                fontSize: 10,
-                color: 'var(--app-text-tertiary)',
-                marginBottom: 6,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {item.label}
-            </div>
-            <div
-              style={{
-                fontFamily: MONO,
-                fontSize: 12,
-                color: 'var(--app-text-primary)',
-                wordBreak: 'break-word',
-              }}
-            >
-              {item.value}
-            </div>
-          </div>
+          <ChannelInfoGridCard key={item.label} label={item.label} value={item.value} />
         ))}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-        {[
-          { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
-          { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
-          { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
-        ].map((s) => (
-          <div
-            key={s.label}
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              padding: '12px 16px 12px 20px',
-              background: BG_CARD,
-              borderRadius: 6,
-              border: `1px solid ${BORDER}`,
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 3,
-                background: ch.color,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: SORA,
-                fontSize: 11,
-                color: 'var(--app-text-secondary)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.25em',
-                minWidth: 120,
-              }}
-            >
-              {s.label}
-            </span>
-            <span
-              style={{ fontFamily: MONO, fontSize: 16, color: 'var(--app-text-primary)', flex: 1 }}
-            >
-              {s.value}
-            </span>
-            <NP w={160} h={28} color={ch.color} />
-          </div>
-        ))}
+        <ChannelStatsList stats={channelDataStats(channelData)} color={ch.color} />
       </div>
     </div>
   );
@@ -1662,83 +1832,7 @@ function MetaConnectPrompt({
       </button>
 
       {channelData && (channelData.messages > 0 || channelData.leads > 0) && (
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 400,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-            marginTop: 8,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: SORA,
-              fontSize: 10,
-              color: 'var(--app-text-tertiary)',
-              letterSpacing: '0.25em',
-              textTransform: 'uppercase',
-              textAlign: 'center',
-            }}
-          >
-            Dados registrados
-          </div>
-          {[
-            { label: 'Mensagens', value: Fmt(channelData.messages) },
-            { label: 'Leads', value: Fmt(channelData.leads) },
-            { label: 'Vendas', value: channelData.sales.toString() },
-          ].map((s) => (
-            <div
-              key={s.label}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: '10px 16px 10px 20px',
-                background: BG_CARD,
-                borderRadius: 6,
-                border: `1px solid ${BORDER}`,
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 3,
-                  background: ch.color,
-                  opacity: 0.4,
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 11,
-                  color: 'var(--app-text-secondary)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.25em',
-                  minWidth: 80,
-                }}
-              >
-                {s.label}
-              </span>
-              <span
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 14,
-                  color: 'var(--app-text-primary)',
-                  flex: 1,
-                }}
-              >
-                {s.value}
-              </span>
-            </div>
-          ))}
-        </div>
+        <RegisteredDataList channelData={channelData} color={ch.color} />
       )}
     </div>
   );
@@ -1948,6 +2042,118 @@ function RevenueBarChart({ channelDataMap }: { channelDataMap: Record<string, Ch
   );
 }
 
+function ChannelConnectBadge({
+  isLive,
+  hasIntegration,
+}: {
+  isLive: boolean;
+  hasIntegration: boolean;
+}) {
+  if (hasIntegration) {
+    return <ConnBadge connected={isLive} />;
+  }
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        fontSize: 10,
+        fontFamily: MONO,
+        color: '#F59E0B',
+        background: 'rgba(245,158,11,0.1)',
+        padding: '2px 8px',
+        borderRadius: 99,
+      }}
+    >
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />
+      Conectar
+    </span>
+  );
+}
+
+interface ChannelNerveRowProps {
+  channelKey: string;
+  cfg: (typeof CH_CONFIG)[string];
+  data: ChannelRealData | undefined;
+  isMobile: boolean;
+  onOpen: (id: string) => void;
+}
+
+function ChannelNerveRow({ channelKey, cfg, data, isMobile, onOpen }: ChannelNerveRowProps) {
+  const isLive = data?.status === 'live';
+  const intensity = data?.sales ?? 0;
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
+    <div
+      onClick={() => onOpen(channelKey)}
+      role="button"
+      tabIndex={0}
+      aria-label={`Abrir canal ${cfg.label ?? channelKey}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
+      style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        gap: 14,
+        padding: '14px 16px 14px 20px',
+        background: BG_CARD,
+        borderRadius: 6,
+        border: `1px solid ${BORDER}`,
+        cursor: 'pointer',
+        transition: 'all .2s',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 3,
+          background: cfg.color,
+        }}
+      />
+      <span style={{ color: cfg.color }}>{cfg.icon(18)}</span>
+      <span
+        style={{
+          fontFamily: SORA,
+          fontSize: 14,
+          color: 'var(--app-text-primary)',
+          minWidth: 90,
+        }}
+      >
+        {cfg.label}
+      </span>
+      <ChannelConnectBadge isLive={isLive} hasIntegration={cfg.hasIntegration} />
+      <div
+        style={{
+          flex: 1,
+          width: isMobile ? '100%' : undefined,
+          display: 'flex',
+          gap: isMobile ? 8 : 16,
+          justifyContent: isMobile ? 'flex-start' : 'flex-end',
+          flexWrap: 'wrap',
+          fontFamily: MONO,
+          fontSize: 12,
+        }}
+      >
+        <span style={{ color: 'var(--app-text-secondary)' }}>{Fmt(data?.messages ?? 0)} msgs</span>
+        <span style={{ color: 'var(--app-text-secondary)' }}>{Fmt(data?.leads ?? 0)} leads</span>
+        <span style={{ color: cfg.color }}>{intensity} vendas</span>
+      </div>
+      <NP w={160} h={28} color={cfg.color} />
+    </div>
+  );
+}
+
 // ── VisaoGeral ──
 function VisaoGeral({
   realStats,
@@ -2027,106 +2233,16 @@ function VisaoGeral({
 
       {/* Channel nerve fibers with NP per channel */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
-        {Object.entries(CH_CONFIG).map(([key, ch]) => {
-          const data = channelDataMap[ch.backendKey];
-          const isLive = data?.status === 'live';
-          const intensity = data?.sales ?? 0;
-          return (
-            // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-            <div
-              key={key}
-              onClick={() => switchTab(key)}
-              role="button"
-              tabIndex={0}
-              aria-label={`Abrir canal ${ch.label ?? key}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  (e.currentTarget as HTMLElement).click();
-                }
-              }}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: 14,
-                padding: '14px 16px 14px 20px',
-                background: BG_CARD,
-                borderRadius: 6,
-                border: `1px solid ${BORDER}`,
-                cursor: 'pointer',
-                transition: 'all .2s',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 3,
-                  background: ch.color,
-                }}
-              />
-              <span style={{ color: ch.color }}>{ch.icon(18)}</span>
-              <span
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 14,
-                  color: 'var(--app-text-primary)',
-                  minWidth: 90,
-                }}
-              >
-                {ch.label}
-              </span>
-              {ch.hasIntegration ? (
-                <ConnBadge connected={isLive} />
-              ) : (
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    fontSize: 10,
-                    fontFamily: MONO,
-                    color: '#F59E0B',
-                    background: 'rgba(245,158,11,0.1)',
-                    padding: '2px 8px',
-                    borderRadius: 99,
-                  }}
-                >
-                  <span
-                    style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }}
-                  />
-                  Conectar
-                </span>
-              )}
-              <div
-                style={{
-                  flex: 1,
-                  width: isMobile ? '100%' : undefined,
-                  display: 'flex',
-                  gap: isMobile ? 8 : 16,
-                  justifyContent: isMobile ? 'flex-start' : 'flex-end',
-                  flexWrap: 'wrap',
-                  fontFamily: MONO,
-                  fontSize: 12,
-                }}
-              >
-                <span style={{ color: 'var(--app-text-secondary)' }}>
-                  {Fmt(data?.messages ?? 0)} msgs
-                </span>
-                <span style={{ color: 'var(--app-text-secondary)' }}>
-                  {Fmt(data?.leads ?? 0)} leads
-                </span>
-                <span style={{ color: ch.color }}>{intensity} vendas</span>
-              </div>
-              <NP w={160} h={28} color={ch.color} />
-            </div>
-          );
-        })}
+        {Object.entries(CH_CONFIG).map(([key, ch]) => (
+          <ChannelNerveRow
+            key={key}
+            channelKey={key}
+            cfg={ch}
+            data={channelDataMap[ch.backendKey]}
+            isMobile={isMobile}
+            onOpen={switchTab}
+          />
+        ))}
       </div>
 
       {/* Revenue per channel bar chart */}
@@ -2276,33 +2392,20 @@ function VisaoGeral({
               </div>
             </div>
           </div>
-          {(() => {
-            const avgResponseTime =
-              typeof realBrain?.avgResponseTime === 'number' ||
-              typeof realBrain?.avgResponseTime === 'string'
-                ? realBrain.avgResponseTime
-                : null;
-            const hasValue =
-              (typeof avgResponseTime === 'number' && avgResponseTime > 0) ||
-              (typeof avgResponseTime === 'string' &&
-                avgResponseTime.trim() !== '' &&
-                avgResponseTime !== '--');
-
-            if (!hasValue) return null;
-
-            return (
-              <div
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 11,
-                  color: 'var(--app-text-secondary)',
-                  marginTop: 6,
-                }}
-              >
-                Tempo medio: {String(avgResponseTime)}
-              </div>
-            );
-          })()}
+          {isBrainAvgResponseMeaningful(
+            realBrain?.avgResponseTime as string | number | null | undefined,
+          ) ? (
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 11,
+                color: 'var(--app-text-secondary)',
+                marginTop: 6,
+              }}
+            >
+              Tempo medio: {String(realBrain?.avgResponseTime)}
+            </div>
+          ) : null}
           <NP w={200} h={24} color={EMBER} />
         </div>
 
@@ -2558,68 +2661,18 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const { products: rawProducts } = useProducts();
 
   // Map raw products to display format (top 3)
-  const mappedProducts = useMemo(() => {
-    if (!rawProducts || !Array.isArray(rawProducts) || rawProducts.length === 0) return [];
-    interface RawProduct {
-      name?: string;
-      title?: string;
-      price?: number;
-      amount?: number;
-      sold?: number;
-      quantitySold?: number;
-      sales?: number;
-      img?: string;
-      emoji?: string;
-      image?: string;
-    }
-    return (rawProducts as RawProduct[]).slice(0, 3).map((p) => ({
-      name: p.name || p.title || 'Produto',
-      price: p.price ?? p.amount ?? 0,
-      sold: p.sold ?? p.quantitySold ?? p.sales ?? 0,
-      img: p.img || p.emoji || p.image || '\uD83D\uDCE6',
-    }));
-  }, [rawProducts]);
+  const mappedProducts = useMemo(() => mapTopProducts(rawProducts), [rawProducts]);
 
   // Build channelDataMap from backend
-  const channelDataMap: Record<string, ChannelRealData> = useMemo(() => {
-    if (!realChannels || typeof realChannels !== 'object') return {};
-    const map: Record<string, ChannelRealData> = {};
-    for (const [key, val] of Object.entries(realChannels)) {
-      if (val && typeof val === 'object') map[key] = val as ChannelRealData;
-    }
-    return map;
-  }, [realChannels]);
+  const channelDataMap: Record<string, ChannelRealData> = useMemo(
+    () => toChannelDataMap(realChannels),
+    [realChannels],
+  );
 
   // Merge real feed messages
   useEffect(() => {
     if (realFeed?.length > 0) {
-      interface FeedMessage {
-        text?: string;
-        content?: string;
-        from?: string;
-        contactName?: string;
-        channel?: string;
-        isAI?: boolean;
-        direction?: string;
-        time?: string;
-        createdAt?: string;
-      }
-      const mapped = (realFeed as FeedMessage[]).map((m) => {
-        const text = m.text || m.content || '';
-        const from = m.from || m.contactName || 'Lead';
-        const ch = (m.channel || 'WHATSAPP').toLowerCase();
-        const isAI = m.isAI || m.direction === 'OUTBOUND';
-        const time =
-          m.time ||
-          (m.createdAt
-            ? new Date(m.createdAt).toLocaleTimeString('pt-BR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })
-            : '');
-        return `${isAI ? '\uD83E\uDD16' : '\uD83D\uDCF1'} [${ch}] ${from}: ${text} (${time})`;
-      });
+      const mapped = (realFeed as FeedMessageLike[]).map(formatFeedMessage);
       setFeed(mapped.slice(0, 30));
     }
   }, [realFeed]);
@@ -2790,39 +2843,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               emailTestSending={emailTestSending}
               emailTestResult={emailTestResult}
             />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: KLOEL_THEME.bgOverlay,
-                backdropFilter: 'blur(2px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 6,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--app-text-primary)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Em breve
-                </div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                  Instagram Marketing esta sendo finalizado.
-                </div>
-              </div>
-            </div>
+            <ComingSoonOverlay
+              title="Em breve"
+              description="Instagram Marketing esta sendo finalizado."
+            />
           </div>
         )}
         {tab === 'tiktok' && (
@@ -2832,39 +2856,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               channelData={getChannelData('tiktok')}
               liveFeed={feed.filter((m) => m.includes('[tiktok]'))}
             />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: KLOEL_THEME.bgOverlay,
-                backdropFilter: 'blur(2px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 6,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--app-text-primary)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Em breve
-                </div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                  TikTok Marketing esta sendo finalizado.
-                </div>
-              </div>
-            </div>
+            <ComingSoonOverlay
+              title="Em breve"
+              description="TikTok Marketing esta sendo finalizado."
+            />
           </div>
         )}
         {tab === 'facebook' && (
@@ -2883,39 +2878,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               emailTestSending={emailTestSending}
               emailTestResult={emailTestResult}
             />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: KLOEL_THEME.bgOverlay,
-                backdropFilter: 'blur(2px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 6,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--app-text-primary)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Em breve
-                </div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                  Facebook Messenger esta sendo finalizado.
-                </div>
-              </div>
-            </div>
+            <ComingSoonOverlay
+              title="Em breve"
+              description="Facebook Messenger esta sendo finalizado."
+            />
           </div>
         )}
         {tab === 'email' && (
@@ -2935,39 +2901,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               emailTestSending={emailTestSending}
               emailTestResult={emailTestResult}
             />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: KLOEL_THEME.bgOverlay,
-                backdropFilter: 'blur(2px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 6,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--app-text-primary)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Em breve
-                </div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                  Email Marketing esta sendo finalizado.
-                </div>
-              </div>
-            </div>
+            <ComingSoonOverlay
+              title="Em breve"
+              description="Email Marketing esta sendo finalizado."
+            />
           </div>
         )}
       </div>

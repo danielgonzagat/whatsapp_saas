@@ -239,56 +239,89 @@ function resolveWorkingHours(raw: unknown) {
   return `${start}-${end}`;
 }
 
+function resolveProductImageUrl(product: Record<string, unknown>): string | null {
+  if (typeof product.imageUrl === 'string') return product.imageUrl;
+  if (typeof product.image === 'string') return product.image;
+  return null;
+}
+
+function resolveProducerField(product: Record<string, unknown>): string | null {
+  const producer = product.producer;
+  if (typeof producer === 'string' && producer.trim()) {
+    return producer;
+  }
+  return null;
+}
+
+function normalizeSelectedProduct(raw: Record<string, unknown>): SelectableProduct {
+  return {
+    id: String(raw.id || raw.productId || ''),
+    name: toStringValue(raw.name, 'Produto'),
+    price: toNumber(raw.price),
+    type: raw.type === 'affiliate' ? 'affiliate' : 'own',
+    imageUrl: resolveProductImageUrl(raw),
+    affiliateComm: raw.affiliateComm == null ? null : toNumber(raw.affiliateComm, 0),
+    producer: resolveProducerField(raw),
+  };
+}
+
+function normalizeSelectedProducts(value: unknown): SelectableProduct[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+    .map(normalizeSelectedProduct)
+    .filter((product) => product.id);
+}
+
+function normalizeArsenalMediaType(value: unknown): MediaTypeValue | '' {
+  return (MEDIA_TYPES.some((option) => option.value === value) ? value : '') as MediaTypeValue | '';
+}
+
+function normalizeArsenalItem(raw: Record<string, unknown>): ArsenalItem {
+  return {
+    id: String(raw.id || crypto.randomUUID()),
+    fileName: toStringValue(raw.fileName, 'arquivo'),
+    url: toStringValue(raw.url),
+    type: normalizeArsenalMediaType(raw.type),
+    productId: toStringValue(raw.productId),
+    description: toStringValue(raw.description),
+    mimeType: typeof raw.mimeType === 'string' ? raw.mimeType : null,
+    size: raw.size == null ? null : toNumber(raw.size, 0),
+  };
+}
+
+function normalizeArsenal(value: unknown): ArsenalItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+    .map(normalizeArsenalItem);
+}
+
+function resolveFollowUp(config: Record<string, unknown>, fallbackValue: boolean): boolean {
+  if (typeof config.followUp === 'boolean') return config.followUp;
+  if (typeof config.followUpEnabled === 'boolean') return config.followUpEnabled;
+  return fallbackValue;
+}
+
+function normalizeConfig(
+  config: Record<string, unknown>,
+  fallback: WhatsAppSetupConfig,
+): WhatsAppSetupConfig {
+  return {
+    tone: isToneMode(config.tone) ? config.tone : fallback.tone,
+    maxDiscount: Math.min(50, Math.max(0, toNumber(config.maxDiscount, 10))),
+    followUp: resolveFollowUp(config, fallback.followUp),
+    followUpHours: Math.min(72, Math.max(1, toNumber(config.followUpHours, 24))),
+    workingHours: resolveWorkingHours(config.workingHours || config),
+    greeting: toStringValue(config.greeting || config.instructions),
+  };
+}
+
 function normalizeSetup(raw: unknown, workspaceId: string): WhatsAppSetupState {
   const fallback = buildDefaultSetup(workspaceId);
   const value = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  const selectedProducts = Array.isArray(value.selectedProducts)
-    ? value.selectedProducts
-        .filter((item) => item && typeof item === 'object')
-        .map((item) => {
-          const product = item as Record<string, unknown>;
-          return {
-            id: String(product.id || product.productId || ''),
-            name: toStringValue(product.name, 'Produto'),
-            price: toNumber(product.price),
-            type: product.type === 'affiliate' ? 'affiliate' : 'own',
-            imageUrl:
-              typeof product.imageUrl === 'string'
-                ? product.imageUrl
-                : typeof product.image === 'string'
-                  ? product.image
-                  : null,
-            affiliateComm:
-              product.affiliateComm == null ? null : toNumber(product.affiliateComm, 0),
-            producer:
-              typeof product.producer === 'string' && product.producer.trim()
-                ? product.producer
-                : null,
-          } satisfies SelectableProduct;
-        })
-        .filter((product) => product.id)
-    : [];
-
-  const arsenal = Array.isArray(value.arsenal)
-    ? value.arsenal
-        .filter((item) => item && typeof item === 'object')
-        .map((item) => {
-          const media = item as Record<string, unknown>;
-          return {
-            id: String(media.id || crypto.randomUUID()),
-            fileName: toStringValue(media.fileName, 'arquivo'),
-            url: toStringValue(media.url),
-            type: (MEDIA_TYPES.some((option) => option.value === media.type) ? media.type : '') as
-              | MediaTypeValue
-              | '',
-            productId: toStringValue(media.productId),
-            description: toStringValue(media.description),
-            mimeType: typeof media.mimeType === 'string' ? media.mimeType : null,
-            size: media.size == null ? null : toNumber(media.size, 0),
-          } satisfies ArsenalItem;
-        })
-    : [];
-
+  const selectedProducts = normalizeSelectedProducts(value.selectedProducts);
+  const arsenal = normalizeArsenal(value.arsenal);
   const config =
     value.config && typeof value.config === 'object'
       ? (value.config as Record<string, unknown>)
@@ -299,19 +332,7 @@ function normalizeSetup(raw: unknown, workspaceId: string): WhatsAppSetupState {
     sessionName: toStringValue(value.sessionName, workspaceId) || workspaceId,
     selectedProducts,
     arsenal,
-    config: {
-      tone: isToneMode(config.tone) ? config.tone : fallback.config.tone,
-      maxDiscount: Math.min(50, Math.max(0, toNumber(config.maxDiscount, 10))),
-      followUp:
-        typeof config.followUp === 'boolean'
-          ? config.followUp
-          : typeof config.followUpEnabled === 'boolean'
-            ? config.followUpEnabled
-            : fallback.config.followUp,
-      followUpHours: Math.min(72, Math.max(1, toNumber(config.followUpHours, 24))),
-      workingHours: resolveWorkingHours(config.workingHours || config),
-      greeting: toStringValue(config.greeting || config.instructions),
-    },
+    config: normalizeConfig(config, fallback.config),
     configuredAt: typeof value.configuredAt === 'string' ? value.configuredAt : null,
     activatedAt: typeof value.activatedAt === 'string' ? value.activatedAt : null,
     lastCompletedStep: Math.min(3, Math.max(0, toNumber(value.lastCompletedStep, 0))),
@@ -1036,6 +1057,281 @@ function FeedCard({ liveFeed }: { liveFeed: string[] }) {
   );
 }
 
+function ToneCard({
+  value,
+  label,
+  description,
+  selected,
+  onSelect,
+}: {
+  value: ToneMode;
+  label: string;
+  description: string;
+  selected: boolean;
+  onSelect: (value: ToneMode) => void;
+}) {
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(value)}
+      style={{
+        background: selected ? `${E}10` : C,
+        border: `1.5px solid ${selected ? E : B}`,
+        borderRadius: 6,
+        padding: 12,
+        cursor: 'pointer',
+        transition: 'all .2s',
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(value);
+        }
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: T,
+          marginBottom: 2,
+          fontFamily: F,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ fontSize: 10, color: D, lineHeight: 1.4, fontFamily: F }}>{description}</div>
+    </div>
+  );
+}
+
+function FollowUpSwitch({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
+  return (
+    <div
+      role="switch"
+      tabIndex={0}
+      aria-checked={enabled}
+      onClick={onToggle}
+      style={{
+        width: 44,
+        height: 24,
+        borderRadius: 12,
+        background: enabled ? E : B,
+        cursor: 'pointer',
+        position: 'relative',
+        transition: 'background .2s',
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+    >
+      <div
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 9,
+          background: '#fff',
+          position: 'absolute',
+          top: 3,
+          left: enabled ? 23 : 3,
+          transition: 'left .2s',
+        }}
+      />
+    </div>
+  );
+}
+
+function resolveEffectiveProvider(
+  liveProvider: string | undefined,
+  connectionProvider: string | undefined,
+  workspaceProvider: unknown,
+  sessionProvider: unknown,
+  phoneNumberId: unknown,
+): { providerToken: string; isWahaProvider: boolean; effectiveProvider: string } {
+  const providerToken = String(
+    liveProvider || connectionProvider || workspaceProvider || sessionProvider || '',
+  )
+    .trim()
+    .toLowerCase();
+  const isWahaProvider =
+    providerToken === 'whatsapp-api' ||
+    providerToken === 'waha' ||
+    providerToken === 'whatsapp-web-agent' ||
+    (!providerToken && !phoneNumberId);
+  const effectiveProvider = isWahaProvider ? 'whatsapp-api' : 'meta-cloud';
+  return { providerToken, isWahaProvider, effectiveProvider };
+}
+
+interface ConnectionSnapshot {
+  status?: unknown;
+  rawStatus?: unknown;
+  phoneNumber?: unknown;
+  pushName?: unknown;
+  phoneNumberId?: unknown;
+  provider?: unknown;
+}
+
+interface LiveStatusShape {
+  status?: string | null;
+  connected?: boolean;
+  phone?: string | null;
+  pushName?: string | null;
+  phoneNumberId?: string | null;
+  degradedReason?: string | null;
+  provider?: string | null;
+}
+
+function buildEffectiveConnection(params: {
+  sessionSnapshot: ConnectionSnapshot;
+  liveStatus?: LiveStatusShape;
+  connection?: MarketingWhatsAppConnection;
+  effectiveProvider: string;
+  isWahaProvider: boolean;
+}) {
+  const { sessionSnapshot, liveStatus, connection, effectiveProvider, isWahaProvider } = params;
+  const snapshotStatus = String(
+    sessionSnapshot.status || sessionSnapshot.rawStatus || connection?.status || 'disconnected',
+  ).toLowerCase();
+  const snapshotConnected = snapshotStatus === 'connected' || snapshotStatus === 'working';
+  const remoteConnected = isWahaProvider
+    ? snapshotConnected
+    : connection?.connected === true || snapshotConnected;
+  const connected = liveStatus?.connected === true || remoteConnected;
+  const statusBase = isWahaProvider ? snapshotStatus : connection?.status;
+  const status = String(
+    liveStatus?.status || statusBase || snapshotStatus || 'disconnected',
+  ).toLowerCase();
+
+  return {
+    provider: effectiveProvider,
+    connected,
+    status,
+    phoneNumber: String(
+      liveStatus?.phone || sessionSnapshot.phoneNumber || connection?.phoneNumber || '',
+    ),
+    pushName: String(
+      liveStatus?.pushName || sessionSnapshot.pushName || connection?.pushName || '',
+    ),
+    phoneNumberId: String(
+      liveStatus?.phoneNumberId || sessionSnapshot.phoneNumberId || connection?.phoneNumberId || '',
+    ),
+    degradedReason: String(liveStatus?.degradedReason || connection?.degradedReason || ''),
+  };
+}
+
+function resolveStatusLabel(status: string, connected: boolean): string {
+  if (connected) return 'Ativo';
+  if (status === 'connection_incomplete') return 'Configuração pendente';
+  return 'Desconectado';
+}
+
+function resolveProfileName(pushName: unknown, operator?: string | null): string {
+  if (typeof pushName === 'string' && pushName.trim()) return pushName;
+  if (typeof operator === 'string' && operator.trim()) return operator;
+  return 'Aguardando perfil';
+}
+
+function resolveConnectedPhone(phoneNumber: unknown, phoneNumberId: unknown): string {
+  if (typeof phoneNumber === 'string' && phoneNumber.trim()) return phoneNumber;
+  if (typeof phoneNumberId === 'string' && phoneNumberId.trim()) return phoneNumberId;
+  return 'Aguardando número';
+}
+
+function NonWahaProviderHint() {
+  return (
+    <div
+      style={{
+        maxWidth: 420,
+        margin: '0 auto',
+        border: `1px solid ${B}`,
+        borderRadius: 6,
+        padding: '18px 20px',
+        background: C,
+        color: S,
+        fontSize: 13,
+        lineHeight: 1.7,
+      }}
+    >
+      O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o runtime do
+      WhatsApp opera em <span style={{ color: E, fontWeight: 600 }}>WAHA</span>. Atualize o provider
+      do backend e recarregue esta tela para iniciar a conexao por QR.
+    </div>
+  );
+}
+
+function ConnectedCelebration() {
+  return (
+    <div style={{ animation: 'celebrate .5s ease both' }}>
+      <div
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: '50%',
+          background: `${G}15`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 16px',
+          fontSize: 28,
+        }}
+      >
+        ✓
+      </div>
+      <p style={{ fontSize: 15, fontWeight: 600, color: G, fontFamily: F }}>
+        WhatsApp conectado com sucesso!
+      </p>
+    </div>
+  );
+}
+
+function ActivatedScreen() {
+  return (
+    <div style={{ background: V, minHeight: '100%', color: T, fontFamily: F, borderRadius: 12 }}>
+      <style>{`
+          @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes loading { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+          .fade-in { animation: fadeUp .5s ease both; }
+        `}</style>
+      <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px' }}>
+        <div className="fade-in" style={{ textAlign: 'center', paddingTop: 40 }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🍄</div>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: G, marginBottom: 8, fontFamily: F }}>
+            IA Ativada!
+          </h2>
+          <p style={{ fontSize: 13, color: S, marginBottom: 24, fontFamily: F }}>
+            Redirecionando para o painel do WhatsApp...
+          </p>
+          <div
+            style={{
+              width: 200,
+              height: 3,
+              background: U,
+              borderRadius: 2,
+              margin: '0 auto',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                background: G,
+                borderRadius: 2,
+                animation: 'loading 1.5s ease forwards',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const selectInputStyle: React.CSSProperties = {
   width: '100%',
   background: U,
@@ -1141,21 +1437,13 @@ export default function WhatsAppExperience({
     typeof settingsData.providerSettings.whatsappApiSession === 'object'
       ? (settingsData.providerSettings.whatsappApiSession as Record<string, unknown>)
       : {};
-  const providerToken = String(
-    liveStatus?.provider ||
-      connection?.provider ||
-      settingsData?.providerSettings?.whatsappProvider ||
-      sessionSnapshot.provider ||
-      '',
-  )
-    .trim()
-    .toLowerCase();
-  const isWahaProvider =
-    providerToken === 'whatsapp-api' ||
-    providerToken === 'waha' ||
-    providerToken === 'whatsapp-web-agent' ||
-    (!providerToken && !sessionSnapshot.phoneNumberId);
-  const effectiveProvider = isWahaProvider ? 'whatsapp-api' : 'meta-cloud';
+  const { isWahaProvider, effectiveProvider } = resolveEffectiveProvider(
+    liveStatus?.provider,
+    connection?.provider,
+    settingsData?.providerSettings?.whatsappProvider,
+    sessionSnapshot.provider,
+    sessionSnapshot.phoneNumberId,
+  );
 
   useEffect(() => {
     setReconfiguring(mode === 'reconfigure');
@@ -1170,38 +1458,17 @@ export default function WhatsAppExperience({
     setDraft(savedSetup);
   }, [savedSetup, savedSetupKey]);
 
-  const effectiveConnection = useMemo(() => {
-    const snapshotStatus = String(
-      sessionSnapshot.status || sessionSnapshot.rawStatus || connection?.status || 'disconnected',
-    ).toLowerCase();
-    const snapshotConnected = snapshotStatus === 'connected' || snapshotStatus === 'working';
-
-    return {
-      provider: effectiveProvider,
-      connected:
-        liveStatus?.connected === true ||
-        (isWahaProvider ? snapshotConnected : connection?.connected === true || snapshotConnected),
-      status: String(
-        liveStatus?.status ||
-          (isWahaProvider ? snapshotStatus : connection?.status) ||
-          snapshotStatus ||
-          'disconnected',
-      ).toLowerCase(),
-      phoneNumber: String(
-        liveStatus?.phone || sessionSnapshot.phoneNumber || connection?.phoneNumber || '',
-      ),
-      pushName: String(
-        liveStatus?.pushName || sessionSnapshot.pushName || connection?.pushName || '',
-      ),
-      phoneNumberId: String(
-        liveStatus?.phoneNumberId ||
-          sessionSnapshot.phoneNumberId ||
-          connection?.phoneNumberId ||
-          '',
-      ),
-      degradedReason: String(liveStatus?.degradedReason || connection?.degradedReason || ''),
-    };
-  }, [connection, effectiveProvider, isWahaProvider, liveStatus, sessionSnapshot]);
+  const effectiveConnection = useMemo(
+    () =>
+      buildEffectiveConnection({
+        sessionSnapshot,
+        liveStatus,
+        connection,
+        effectiveProvider,
+        isWahaProvider,
+      }),
+    [connection, effectiveProvider, isWahaProvider, liveStatus, sessionSnapshot],
+  );
 
   useEffect(() => {
     if (effectiveConnection.connected) {
@@ -1535,6 +1802,52 @@ export default function WhatsAppExperience({
     }
   };
 
+  const updateConfig = <K extends keyof WhatsAppSetupConfig>(
+    key: K,
+    nextValue: WhatsAppSetupConfig[K],
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      config: { ...current.config, [key]: nextValue },
+      updatedAt: nowIso(),
+    }));
+  };
+
+  const toggleSelectAllProducts = () => {
+    setDraft((current) => ({
+      ...current,
+      selectedProducts:
+        current.selectedProducts.length === selectableProducts.length
+          ? []
+          : selectableProducts.map((product) => ({ ...product })),
+      updatedAt: nowIso(),
+    }));
+  };
+
+  const updateArsenalItem = (updated: ArsenalItem) => {
+    setDraft((current) => ({
+      ...current,
+      arsenal: current.arsenal.map((media) => (media.id === updated.id ? updated : media)),
+      updatedAt: nowIso(),
+    }));
+  };
+
+  const removeArsenalItem = (id: string) => {
+    setDraft((current) => ({
+      ...current,
+      arsenal: current.arsenal.filter((media) => media.id !== id),
+      updatedAt: nowIso(),
+    }));
+  };
+
+  const toggleFollowUp = () => {
+    setDraft((current) => ({
+      ...current,
+      config: { ...current.config, followUp: !current.config.followUp },
+      updatedAt: nowIso(),
+    }));
+  };
+
   const toggleProduct = (id: string) => {
     const product = productMap.get(id);
     if (!product) return;
@@ -1687,70 +2000,19 @@ export default function WhatsAppExperience({
     }
   };
 
-  const profileName =
-    typeof effectiveConnection.pushName === 'string' && effectiveConnection.pushName.trim()
-      ? effectiveConnection.pushName
-      : typeof operator === 'string' && operator.trim()
-        ? operator
-        : 'Aguardando perfil';
-  const connectedPhone =
-    typeof effectiveConnection.phoneNumber === 'string' && effectiveConnection.phoneNumber.trim()
-      ? effectiveConnection.phoneNumber
-      : typeof effectiveConnection.phoneNumberId === 'string' &&
-          effectiveConnection.phoneNumberId.trim()
-        ? effectiveConnection.phoneNumberId
-        : 'Aguardando número';
-  const statusLabel = effectiveConnection.connected
-    ? 'Ativo'
-    : effectiveConnection.status === 'connection_incomplete'
-      ? 'Configuração pendente'
-      : 'Desconectado';
+  const profileName = resolveProfileName(effectiveConnection.pushName, operator);
+  const connectedPhone = resolveConnectedPhone(
+    effectiveConnection.phoneNumber,
+    effectiveConnection.phoneNumberId,
+  );
+  const statusLabel = resolveStatusLabel(effectiveConnection.status, effectiveConnection.connected);
 
   if (!workspaceId) {
     return null;
   }
 
   if (activated) {
-    return (
-      <div style={{ background: V, minHeight: '100%', color: T, fontFamily: F, borderRadius: 12 }}>
-        <style>{`
-          @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-          @keyframes loading { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-          .fade-in { animation: fadeUp .5s ease both; }
-        `}</style>
-        <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px' }}>
-          <div className="fade-in" style={{ textAlign: 'center', paddingTop: 40 }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🍄</div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: G, marginBottom: 8, fontFamily: F }}>
-              IA Ativada!
-            </h2>
-            <p style={{ fontSize: 13, color: S, marginBottom: 24, fontFamily: F }}>
-              Redirecionando para o painel do WhatsApp...
-            </p>
-            <div
-              style={{
-                width: 200,
-                height: 3,
-                background: U,
-                borderRadius: 2,
-                margin: '0 auto',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  background: G,
-                  borderRadius: 2,
-                  animation: 'loading 1.5s ease forwards',
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <ActivatedScreen />;
   }
 
   if (showWizard) {
@@ -1797,56 +2059,18 @@ export default function WhatsAppExperience({
                 Escaneie o QR Code para a IA começar a vender pelo seu número
               </p>
 
-              {!effectiveConnection.connected ? (
-                isWahaProvider ? (
-                  <QRCodePane
-                    qrCode={qrCode}
-                    progress={scanProgress}
-                    connected={effectiveConnection.connected}
-                    loading={busyKey === 'connect'}
-                    onRefresh={() => void refreshQrCode()}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      maxWidth: 420,
-                      margin: '0 auto',
-                      border: `1px solid ${B}`,
-                      borderRadius: 6,
-                      padding: '18px 20px',
-                      background: C,
-                      color: S,
-                      fontSize: 13,
-                      lineHeight: 1.7,
-                    }}
-                  >
-                    O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o
-                    runtime do WhatsApp opera em{' '}
-                    <span style={{ color: E, fontWeight: 600 }}>WAHA</span>. Atualize o provider do
-                    backend e recarregue esta tela para iniciar a conexao por QR.
-                  </div>
-                )
+              {effectiveConnection.connected ? (
+                <ConnectedCelebration />
+              ) : isWahaProvider ? (
+                <QRCodePane
+                  qrCode={qrCode}
+                  progress={scanProgress}
+                  connected={effectiveConnection.connected}
+                  loading={busyKey === 'connect'}
+                  onRefresh={() => void refreshQrCode()}
+                />
               ) : (
-                <div style={{ animation: 'celebrate .5s ease both' }}>
-                  <div
-                    style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: '50%',
-                      background: `${G}15`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 16px',
-                      fontSize: 28,
-                    }}
-                  >
-                    ✓
-                  </div>
-                  <p style={{ fontSize: 15, fontWeight: 600, color: G, fontFamily: F }}>
-                    WhatsApp conectado com sucesso!
-                  </p>
-                </div>
+                <NonWahaProviderHint />
               )}
             </div>
           ) : null}
@@ -1875,16 +2099,7 @@ export default function WhatsAppExperience({
                 </span>
                 <button
                   type="button"
-                  onClick={() =>
-                    setDraft((current) => ({
-                      ...current,
-                      selectedProducts:
-                        current.selectedProducts.length === selectableProducts.length
-                          ? []
-                          : selectableProducts.map((product) => ({ ...product })),
-                      updatedAt: nowIso(),
-                    }))
-                  }
+                  onClick={toggleSelectAllProducts}
                   style={{
                     background: 'none',
                     border: `1px solid ${B}`,
@@ -1956,22 +2171,8 @@ export default function WhatsAppExperience({
                     key={item.id}
                     item={item}
                     products={selectedProductsList}
-                    onUpdate={(updated) =>
-                      setDraft((current) => ({
-                        ...current,
-                        arsenal: current.arsenal.map((media) =>
-                          media.id === updated.id ? updated : media,
-                        ),
-                        updatedAt: nowIso(),
-                      }))
-                    }
-                    onRemove={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        arsenal: current.arsenal.filter((media) => media.id !== item.id),
-                        updatedAt: nowIso(),
-                      }))
-                    }
+                    onUpdate={updateArsenalItem}
+                    onRemove={() => removeArsenalItem(item.id)}
                   />
                 ))}
               </div>
@@ -2072,52 +2273,14 @@ export default function WhatsAppExperience({
                     style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}
                   >
                     {TONE_OPTIONS.map(([value, label, description]) => (
-                      // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-                      <div
+                      <ToneCard
                         key={value}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() =>
-                          setDraft((current) => ({
-                            ...current,
-                            config: { ...current.config, tone: value },
-                            updatedAt: nowIso(),
-                          }))
-                        }
-                        style={{
-                          background: draft.config.tone === value ? `${E}10` : C,
-                          border: `1.5px solid ${draft.config.tone === value ? E : B}`,
-                          borderRadius: 6,
-                          padding: 12,
-                          cursor: 'pointer',
-                          transition: 'all .2s',
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setDraft((current) => ({
-                              ...current,
-                              config: { ...current.config, tone: value },
-                              updatedAt: nowIso(),
-                            }));
-                          }
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: T,
-                            marginBottom: 2,
-                            fontFamily: F,
-                          }}
-                        >
-                          {label}
-                        </div>
-                        <div style={{ fontSize: 10, color: D, lineHeight: 1.4, fontFamily: F }}>
-                          {description}
-                        </div>
-                      </div>
+                        value={value}
+                        label={label}
+                        description={description}
+                        selected={draft.config.tone === value}
+                        onSelect={(next) => updateConfig('tone', next)}
+                      />
                     ))}
                   </div>
                 </div>
@@ -2142,13 +2305,7 @@ export default function WhatsAppExperience({
                     min="0"
                     max="50"
                     value={draft.config.maxDiscount}
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        config: { ...current.config, maxDiscount: Number(event.target.value) },
-                        updatedAt: nowIso(),
-                      }))
-                    }
+                    onChange={(event) => updateConfig('maxDiscount', Number(event.target.value))}
                     style={{ width: '100%', accentColor: E }}
                     id={`${fid}-desconto`}
                   />
@@ -2185,50 +2342,7 @@ export default function WhatsAppExperience({
                       A IA retoma leads que não responderam
                     </div>
                   </div>
-                  <div
-                    role="switch"
-                    tabIndex={0}
-                    aria-checked={draft.config.followUp}
-                    onClick={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        config: { ...current.config, followUp: !current.config.followUp },
-                        updatedAt: nowIso(),
-                      }))
-                    }
-                    style={{
-                      width: 44,
-                      height: 24,
-                      borderRadius: 12,
-                      background: draft.config.followUp ? E : B,
-                      cursor: 'pointer',
-                      position: 'relative',
-                      transition: 'background .2s',
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setDraft((current) => ({
-                          ...current,
-                          config: { ...current.config, followUp: !current.config.followUp },
-                          updatedAt: nowIso(),
-                        }));
-                      }
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        background: '#fff',
-                        position: 'absolute',
-                        top: 3,
-                        left: draft.config.followUp ? 23 : 3,
-                        transition: 'left .2s',
-                      }}
-                    />
-                  </div>
+                  <FollowUpSwitch enabled={draft.config.followUp} onToggle={toggleFollowUp} />
                 </div>
 
                 {draft.config.followUp ? (
@@ -2253,11 +2367,7 @@ export default function WhatsAppExperience({
                       max="72"
                       value={draft.config.followUpHours}
                       onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          config: { ...current.config, followUpHours: Number(event.target.value) },
-                          updatedAt: nowIso(),
-                        }))
+                        updateConfig('followUpHours', Number(event.target.value))
                       }
                       style={{ width: '100%', accentColor: E }}
                       id={`${fid}-followup`}
@@ -2282,13 +2392,7 @@ export default function WhatsAppExperience({
                   <input
                     type="text"
                     value={draft.config.workingHours}
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        config: { ...current.config, workingHours: event.target.value },
-                        updatedAt: nowIso(),
-                      }))
-                    }
+                    onChange={(event) => updateConfig('workingHours', event.target.value)}
                     placeholder="08:00-22:00"
                     style={{
                       ...selectInputStyle,
@@ -2314,13 +2418,7 @@ export default function WhatsAppExperience({
                   </label>
                   <textarea
                     value={draft.config.greeting}
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        config: { ...current.config, greeting: event.target.value },
-                        updatedAt: nowIso(),
-                      }))
-                    }
+                    onChange={(event) => updateConfig('greeting', event.target.value)}
                     placeholder="Ex: Nunca ofereça desconto antes do cliente pedir. Sempre mencione o bônus. Chame pelo primeiro nome..."
                     style={{
                       ...selectInputStyle,
