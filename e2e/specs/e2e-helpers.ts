@@ -137,24 +137,37 @@ function deriveHostTargetUrl(origin: string, target: 'marketing' | 'auth' | 'app
   return url.origin;
 }
 
-export function getE2EBaseUrls(): E2EBaseUrls {
-  const marketingUrl =
+function resolveMarketingUrl(): string {
+  return (
     getEnv('E2E_MARKETING_URL') ||
     getEnv('E2E_FRONTEND_URL') ||
     getEnv('NEXT_PUBLIC_SITE_URL') ||
-    'http://localhost:3000';
-  const authUrl =
-    getEnv('E2E_AUTH_URL') ||
-    getEnv('NEXT_PUBLIC_AUTH_URL') ||
-    deriveHostTargetUrl(marketingUrl, 'auth');
-  const appUrl =
-    getEnv('E2E_APP_URL') ||
-    getEnv('NEXT_PUBLIC_APP_URL') ||
-    deriveHostTargetUrl(marketingUrl, 'app');
-  const payUrl =
-    getEnv('E2E_PAY_URL') ||
-    getEnv('NEXT_PUBLIC_CHECKOUT_DOMAIN') ||
-    deriveHostTargetUrl(marketingUrl, 'pay');
+    'http://localhost:3000'
+  );
+}
+
+function resolveTargetUrl(envKeys: readonly string[], fallback: string): string {
+  for (const key of envKeys) {
+    const value = getEnv(key);
+    if (value) return value;
+  }
+  return fallback;
+}
+
+export function getE2EBaseUrls(): E2EBaseUrls {
+  const marketingUrl = resolveMarketingUrl();
+  const authUrl = resolveTargetUrl(
+    ['E2E_AUTH_URL', 'NEXT_PUBLIC_AUTH_URL'],
+    deriveHostTargetUrl(marketingUrl, 'auth'),
+  );
+  const appUrl = resolveTargetUrl(
+    ['E2E_APP_URL', 'NEXT_PUBLIC_APP_URL'],
+    deriveHostTargetUrl(marketingUrl, 'app'),
+  );
+  const payUrl = resolveTargetUrl(
+    ['E2E_PAY_URL', 'NEXT_PUBLIC_CHECKOUT_DOMAIN'],
+    deriveHostTargetUrl(marketingUrl, 'pay'),
+  );
   const apiUrl =
     getFirstAbsoluteUrl(
       getEnv('E2E_API_URL'),
