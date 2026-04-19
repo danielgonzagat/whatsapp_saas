@@ -33,6 +33,7 @@ import { KloelMushroomVisual } from './KloelBrand';
 import { AuthModal } from './auth/auth-modal';
 import { useAuth } from './auth/auth-provider';
 import { AUTH_ERROR_MESSAGES, SEED_PRODUCT_KNOWLEDGE_PROMPT } from './chat-container.data';
+import { parseGuestStreamLine } from './chat-container.helpers';
 import { FooterMinimal } from './footer-minimal';
 import { HeaderMinimal } from './header-minimal';
 import { InputComposer } from './input-composer';
@@ -1272,35 +1273,22 @@ export function ChatContainer({
           buffer = lines.pop() || '';
 
           for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
-
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.error) {
-                fullContent = String(
-                  parsed.content ??
-                    parsed.chunk ??
-                    parsed.message ??
-                    'Desculpe, tive uma instabilidade agora. Tenta de novo em alguns segundos.',
-                );
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId ? { ...m, content: fullContent, isStreaming: false } : m,
-                  ),
-                );
-                throw new Error(fullContent);
-              }
-              const chunk = parsed.content ?? parsed.chunk;
-              if (chunk) {
-                fullContent += chunk;
-                setMessages((prev) =>
-                  prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)),
-                );
-              }
-            } catch {
-              // ignore
+            const update = parseGuestStreamLine(line);
+            if (!update) continue;
+            if (update.errorContent) {
+              fullContent = update.errorContent;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, content: fullContent, isStreaming: false } : m,
+                ),
+              );
+              throw new Error(fullContent);
+            }
+            if (update.delta) {
+              fullContent += update.delta;
+              setMessages((prev) =>
+                prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)),
+              );
             }
           }
           await readGuestStream();
