@@ -132,26 +132,36 @@ function envOrigin(target: KloelHostTarget): string | null {
   return value ? value.replace(PATTERN_RE, '') : null;
 }
 
-export function detectKloelHost(host?: string | null): KloelHostKind {
-  const { hostname } = parseHost(host);
-
-  if (!hostname) return 'unknown';
-
+function detectProductionHost(hostname: string): KloelHostKind | null {
   if (hostname === PROD_ROOT_DOMAIN || hostname === `www.${PROD_ROOT_DOMAIN}`) {
     return 'marketing';
   }
   if (hostname === `auth.${PROD_ROOT_DOMAIN}`) return 'auth';
   if (hostname === `app.${PROD_ROOT_DOMAIN}`) return 'app';
   if (hostname === `pay.${PROD_ROOT_DOMAIN}`) return 'pay';
+  return null;
+}
 
-  if (isLocalHostname(hostname)) {
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'kloel.localhost') {
-      return 'marketing';
-    }
-    if (hostname.startsWith('auth.')) return 'auth';
-    if (hostname.startsWith('app.')) return 'app';
-    if (hostname.startsWith('pay.')) return 'pay';
+function detectLocalHost(hostname: string): KloelHostKind | null {
+  if (!isLocalHostname(hostname)) return null;
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'kloel.localhost') {
+    return 'marketing';
   }
+  if (hostname.startsWith('auth.')) return 'auth';
+  if (hostname.startsWith('app.')) return 'app';
+  if (hostname.startsWith('pay.')) return 'pay';
+  return null;
+}
+
+export function detectKloelHost(host?: string | null): KloelHostKind {
+  const { hostname } = parseHost(host);
+  if (!hostname) return 'unknown';
+
+  const production = detectProductionHost(hostname);
+  if (production) return production;
+
+  const local = detectLocalHost(hostname);
+  if (local) return local;
 
   return 'unknown';
 }

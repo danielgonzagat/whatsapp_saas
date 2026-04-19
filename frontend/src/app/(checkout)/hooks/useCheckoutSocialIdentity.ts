@@ -432,6 +432,24 @@ function persistIdentity(value: CheckoutSocialIdentitySnapshot) {
   writeToStorage(IDENTITY_STORAGE_KEY, JSON.stringify(value));
 }
 
+function resolveIdentityProvider(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+): CheckoutSocialProvider {
+  return incoming.provider || current?.provider || 'google';
+}
+
+function resolveIdentityDisplayFields(
+  current: CheckoutSocialIdentitySnapshot | null,
+  incoming: PrefillResponse,
+): { name: string; email: string; avatarUrl: string | null } {
+  return {
+    name: incoming.name || current?.name || '',
+    email: incoming.email || current?.email || '',
+    avatarUrl: incoming.avatarUrl ?? current?.avatarUrl ?? null,
+  };
+}
+
 function mergeIdentityCore(
   current: CheckoutSocialIdentitySnapshot | null,
   incoming: PrefillResponse,
@@ -442,10 +460,8 @@ function mergeIdentityCore(
 > {
   return {
     leadId: incoming.leadId || current?.leadId,
-    provider: incoming.provider || current?.provider || 'google',
-    name: incoming.name || current?.name || '',
-    email: incoming.email || current?.email || '',
-    avatarUrl: incoming.avatarUrl ?? current?.avatarUrl ?? null,
+    provider: resolveIdentityProvider(current, incoming),
+    ...resolveIdentityDisplayFields(current, incoming),
     deviceFingerprint:
       incoming.deviceFingerprint || current?.deviceFingerprint || fallbackFingerprint,
   };

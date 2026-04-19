@@ -156,12 +156,23 @@ export function resolveRedisUrl(): string | null {
  * Useful for callers that want to log "Redis configured" without
  * triggering full URL resolution.
  */
+function firstDefinedEnv(...keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
+function hasRedisHostPasswordPair(): boolean {
+  const host = firstDefinedEnv('REDIS_HOST', 'REDISHOST', 'REDIS_HOSTNAME');
+  const password = firstDefinedEnv('REDIS_PASSWORD', 'REDISPASSWORD', 'REDIS_PASS');
+  return Boolean(host && password);
+}
+
 export function isRedisConfigured(): boolean {
   if (process.env.REDIS_URL) return true;
-  const host = process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
-  const password =
-    process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;
-  if (host && password) return true;
+  if (hasRedisHostPasswordPair()) return true;
   if (process.env.REDIS_FALLBACK_URL) return true;
   return false;
 }

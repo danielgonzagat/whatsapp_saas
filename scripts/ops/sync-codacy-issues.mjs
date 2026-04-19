@@ -153,18 +153,34 @@ function mapToSortedObject(map, { limit } = {}) {
   return Object.fromEntries(capped);
 }
 
+function truncatedMessage(value) {
+  return typeof value === 'string' ? value.slice(0, 280) : null;
+}
+
+function samplePatternMeta(patternInfo) {
+  return {
+    patternId: patternInfo?.id ?? null,
+    category: patternInfo?.category ?? null,
+    severityLevel: patternInfo?.severityLevel ?? null,
+  };
+}
+
+function sampleCommitMeta(commitInfo) {
+  return {
+    commitSha: commitInfo?.sha ?? null,
+    commitTimestamp: commitInfo?.timestamp ?? null,
+  };
+}
+
 function toHighPrioritySample(issue) {
   return {
     issueId: issue.issueId,
     filePath: issue.filePath,
     lineNumber: issue.lineNumber,
-    patternId: issue.patternInfo?.id ?? null,
-    category: issue.patternInfo?.category ?? null,
-    severityLevel: issue.patternInfo?.severityLevel ?? null,
+    ...samplePatternMeta(issue.patternInfo),
     tool: issue.toolInfo?.name ?? null,
-    message: typeof issue.message === 'string' ? issue.message.slice(0, 280) : null,
-    commitSha: issue.commitInfo?.sha ?? null,
-    commitTimestamp: issue.commitInfo?.timestamp ?? null,
+    message: truncatedMessage(issue.message),
+    ...sampleCommitMeta(issue.commitInfo),
   };
 }
 

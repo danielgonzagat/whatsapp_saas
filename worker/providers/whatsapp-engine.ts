@@ -87,44 +87,74 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function withWorkspaceActionLock<T>(
-  workspaceId: string,
-  operation: () => Promise<T>,
-): Promise<T> {
+type ActionLockConfig = {
+  readonly isTestEnv: boolean;
+  readonly ttlMs: number;
+  readonly backoffMin: number;
+  readonly backoffJitter: number;
+};
+
+function shouldBypassActionLock(): boolean {
   const testEnforce = process.env.WHATSAPP_ACTION_LOCK_TEST_ENFORCE === 'true';
   const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
-  if (isTestEnv && !testEnforce) {
-    return operation();
-  }
+  return isTestEnv && !testEnforce;
+}
 
-  const key = `whatsapp:action-lock:${workspaceId}`;
-  const token = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+function resolveActionLockConfig(): ActionLockConfig {
+  const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
   // Production minimum: 15s. Test mode: allow shorter values so the
   // lock-deadline test path runs quickly.
   const ttlMs = Math.max(
     isTestEnv ? 100 : 15_000,
     Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
   );
-  const deadline = Date.now() + ttlMs;
   // Keep production backoff at 250-500ms. Shorter in test mode only.
   const backoffMin = isTestEnv ? 50 : 250;
   const backoffJitter = isTestEnv ? 50 : 250;
+  return { isTestEnv, ttlMs, backoffMin, backoffJitter };
+}
+
+async function releaseLockIfOwned(key: string, token: string): Promise<void> {
+  const current = await redis.get(key).catch(() => null /* not found */);
+  if (current === token) {
+    await redis.del(key).catch(() => undefined /* fire-and-forget: lock cleanup */);
+  }
+}
+
+async function tryAcquireAndRun<T>(
+  key: string,
+  token: string,
+  ttlMs: number,
+  operation: () => Promise<T>,
+): Promise<{ ran: true; value: T } | { ran: false }> {
+  const acquired = await redis.set(key, token, 'PX', ttlMs, 'NX');
+  if (acquired !== 'OK') return { ran: false };
+  try {
+    const value = await operation();
+    return { ran: true, value };
+  } finally {
+    await releaseLockIfOwned(key, token);
+  }
+}
+
+async function withWorkspaceActionLock<T>(
+  workspaceId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  if (shouldBypassActionLock()) {
+    return operation();
+  }
+
+  const config = resolveActionLockConfig();
+  const key = `whatsapp:action-lock:${workspaceId}`;
+  const token = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  const deadline = Date.now() + config.ttlMs;
 
   // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for condition
   while (Date.now() < deadline) {
-    const acquired = await redis.set(key, token, 'PX', ttlMs, 'NX');
-    if (acquired === 'OK') {
-      try {
-        return await operation();
-      } finally {
-        const current = await redis.get(key).catch(() => null /* not found */);
-        if (current === token) {
-          await redis.del(key).catch(() => undefined /* fire-and-forget: lock cleanup */);
-        }
-      }
-    }
-
-    await sleep(backoffMin + Math.floor(Math.random() * backoffJitter));
+    const attempt = await tryAcquireAndRun(key, token, config.ttlMs, operation);
+    if (attempt.ran) return attempt.value;
+    await sleep(config.backoffMin + Math.floor(Math.random() * config.backoffJitter));
   }
 
   // Invariant I6: lock not acquired implies operation does NOT run.
@@ -133,7 +163,7 @@ async function withWorkspaceActionLock<T>(
   // deliveries under contention. The BullMQ job retry mechanism handles
   // transient lock contention via job-level retries.
   throw new Error(
-    `Failed to acquire workspace action lock for ${workspaceId} within ${ttlMs}ms deadline`,
+    `Failed to acquire workspace action lock for ${workspaceId} within ${config.ttlMs}ms deadline`,
   );
 }
 

@@ -208,13 +208,18 @@ function inferNeed(normalized: string, personalDetailShared: boolean): string | 
   return null;
 }
 
+const DEEPENING_TONE_QUESTIONS: Partial<Record<ActiveListeningSignals['emotionalTone'], string>> = {
+  frustrated: 'O que mais te trava nisso hoje?',
+  anxious: 'Qual parte te deixa mais inseguro agora?',
+};
+
 function buildDeepeningQuestion(
   emotionalTone: ActiveListeningSignals['emotionalTone'],
   inferredNeed: string | null,
   personalDetailShared: boolean,
 ): string | null {
-  if (emotionalTone === 'frustrated') return 'O que mais te trava nisso hoje?';
-  if (emotionalTone === 'anxious') return 'Qual parte te deixa mais inseguro agora?';
+  const toneMatch = DEEPENING_TONE_QUESTIONS[emotionalTone];
+  if (toneMatch) return toneMatch;
   if (inferredNeed === 'agilidade') return 'O que voce precisa resolver primeiro?';
   if (personalDetailShared) return 'Quando isso acontece, o que pesa mais no seu dia a dia?';
   return null;

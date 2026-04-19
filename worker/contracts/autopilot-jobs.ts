@@ -36,14 +36,15 @@ function asObject(value: unknown, label: string): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function coerceToRawString(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
+  return '';
+}
+
 function normalizeOptionalString(value: unknown): string | undefined {
   if (value === null || value === undefined) return undefined;
-  const normalized =
-    typeof value === 'string'
-      ? value.trim()
-      : typeof value === 'number' || typeof value === 'boolean'
-        ? String(value).trim()
-        : '';
+  const normalized = coerceToRawString(value);
   return normalized.length > 0 ? normalized : undefined;
 }
 

@@ -73,21 +73,26 @@ function normalizeWorkspaceMeResponse(data: unknown, authHeader: string) {
   };
 }
 
+function pickFirstNonEmpty(...values: Array<string | null | undefined>): string {
+  for (const value of values) {
+    if (value) return value;
+  }
+  return '';
+}
+
 function resolveAccessToken(request: NextRequest): string {
-  return (
-    request.headers.get('x-kloel-access-token') ||
-    request.cookies.get('kloel_access_token')?.value ||
-    request.cookies.get('kloel_token')?.value ||
-    ''
+  return pickFirstNonEmpty(
+    request.headers.get('x-kloel-access-token'),
+    request.cookies.get('kloel_access_token')?.value,
+    request.cookies.get('kloel_token')?.value,
   );
 }
 
 function resolveWorkspaceId(request: NextRequest): string {
-  return (
-    request.headers.get('x-workspace-id') ||
-    request.headers.get('x-kloel-workspace-id') ||
-    request.cookies.get('kloel_workspace_id')?.value ||
-    ''
+  return pickFirstNonEmpty(
+    request.headers.get('x-workspace-id'),
+    request.headers.get('x-kloel-workspace-id'),
+    request.cookies.get('kloel_workspace_id')?.value,
   );
 }
 

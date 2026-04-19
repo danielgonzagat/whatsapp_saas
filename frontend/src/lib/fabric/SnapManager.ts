@@ -34,28 +34,30 @@ export class SnapManager {
     }
   }
 
+  private _snapHorizontal(target: FabricObject, currentPosition: number, snapLineX: number): void {
+    if (Math.abs(currentPosition - snapLineX) < THRESHOLD) {
+      target.left = (target.left ?? 0) + (snapLineX - currentPosition);
+      this._addVerticalLine(snapLineX);
+    }
+  }
+
+  private _snapVertical(target: FabricObject, currentPosition: number, snapLineY: number): void {
+    if (Math.abs(currentPosition - snapLineY) < THRESHOLD) {
+      target.top = (target.top ?? 0) + (snapLineY - currentPosition);
+      this._addHorizontalLine(snapLineY);
+    }
+  }
+
   private _snapToCanvasEdges(
     target: FabricObject,
     bound: { left: number; top: number; width: number; height: number },
     cw: number,
     ch: number,
   ): void {
-    if (Math.abs(bound.left) < THRESHOLD) {
-      target.left = (target.left ?? 0) - bound.left;
-      this._addVerticalLine(0);
-    }
-    if (Math.abs(bound.top) < THRESHOLD) {
-      target.top = (target.top ?? 0) - bound.top;
-      this._addHorizontalLine(0);
-    }
-    if (Math.abs(bound.left + bound.width - cw) < THRESHOLD) {
-      target.left = (target.left ?? 0) + (cw - (bound.left + bound.width));
-      this._addVerticalLine(cw);
-    }
-    if (Math.abs(bound.top + bound.height - ch) < THRESHOLD) {
-      target.top = (target.top ?? 0) + (ch - (bound.top + bound.height));
-      this._addHorizontalLine(ch);
-    }
+    this._snapHorizontal(target, bound.left, 0);
+    this._snapVertical(target, bound.top, 0);
+    this._snapHorizontal(target, bound.left + bound.width, cw);
+    this._snapVertical(target, bound.top + bound.height, ch);
   }
 
   private _snapToOtherObjects(target: FabricObject, cx: number, cy: number): void {
