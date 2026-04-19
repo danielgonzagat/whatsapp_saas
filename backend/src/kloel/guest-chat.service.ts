@@ -7,22 +7,22 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 
-interface GuestConversation {
+interface VisitorConversation {
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
   createdAt: Date;
   lastMessageAt: Date;
 }
 
-// cache.invalidate — guest conversations stored in-memory Map; cleaned up via periodic timer
+// cache.invalidate — visitor conversations stored in-memory Map; cleaned up via periodic timer
 @Injectable()
-export class GuestChatService implements OnModuleDestroy {
-  private readonly logger = new Logger(GuestChatService.name);
+export class VisitorChatService implements OnModuleDestroy {
+  private readonly logger = new Logger(VisitorChatService.name);
   private readonly openai: OpenAI;
   private readonly unavailableMessage =
     'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
 
   // In-memory store para conversas de visitantes (em produção, usar Redis)
-  private conversations: Map<string, GuestConversation> = new Map();
+  private conversations: Map<string, VisitorConversation> = new Map();
 
   // Limpar conversas antigas a cada 1 hora
   private cleanupInterval?: NodeJS.Timeout;
@@ -37,7 +37,7 @@ export class GuestChatService implements OnModuleDestroy {
 
     if (!isTestEnv) {
       this.logger.log(
-        `GuestChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`,
+        `VisitorChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`,
       );
       if (!apiKey) {
         this.logger.error('OPENAI_API_KEY not found! Check your .env file.');
@@ -76,7 +76,7 @@ export class GuestChatService implements OnModuleDestroy {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   }
 
-  private buildGuestMessages(message: string, sessionId: string) {
+  private buildVisitorMessages(message: string, sessionId: string) {
     const conversation = this.getOrCreateConversation(sessionId);
     conversation.messages.push({ role: 'user', content: message });
     conversation.lastMessageAt = new Date();
@@ -92,13 +92,13 @@ export class GuestChatService implements OnModuleDestroy {
     };
   }
 
-  private trackGuestUsage(sessionId: string, tokens: number | undefined, model?: string) {
+  private trackVisitorUsage(sessionId: string, tokens: number | undefined, model?: string) {
     this.logger.debug(
-      `[guest-ai] session=${sessionId} model=${model || 'unknown'} tokens=${tokens ?? 0} tracked as transient guest usage without workspace budget context.`,
+      `[visitor-ai] session=${sessionId} model=${model || 'unknown'} tokens=${tokens ?? 0} tracked as transient visitor usage without workspace budget context.`,
     );
   }
 
-  private async generateGuestReply(
+  private async generateVisitorReply(
     contextMessages: {
       role: 'user' | 'assistant' | 'system';
       content: string;
@@ -124,12 +124,12 @@ export class GuestChatService implements OnModuleDestroy {
         },
         fallbackModel,
       );
-      this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, primaryModel);
+      this.trackVisitorUsage(sessionId, completion?.usage?.total_tokens, primaryModel);
 
       return completion.choices[0]?.message?.content?.trim() || this.unavailableMessage;
     } catch (error: unknown) {
       this.logger.warn(
-        `Guest writer fallback failed (${error instanceof Error ? error.message : 'unknown_error'}). Trying emergency model chain.`,
+        `Visitor writer fallback failed (${error instanceof Error ? error.message : 'unknown_error'}). Trying emergency model chain.`,
       );
     }
 
@@ -143,14 +143,14 @@ export class GuestChatService implements OnModuleDestroy {
           max_tokens: 500,
           temperature: 0.7,
         });
-        this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, model);
+        this.trackVisitorUsage(sessionId, completion?.usage?.total_tokens, model);
         const reply = completion.choices[0]?.message?.content?.trim();
         if (reply) {
           return reply;
         }
       } catch (error: unknown) {
         this.logger.warn(
-          `Guest emergency model ${model} failed (${error instanceof Error ? error.message : 'unknown_error'}).`,
+          `Visitor emergency model ${model} failed (${error instanceof Error ? error.message : 'unknown_error'}).`,
         );
       }
     }
@@ -197,9 +197,9 @@ export class GuestChatService implements OnModuleDestroy {
         return;
       }
 
-      const { conversation, contextMessages } = this.buildGuestMessages(message, sessionId);
+      const { conversation, contextMessages } = this.buildVisitorMessages(message, sessionId);
 
-      const fullResponse = await this.generateGuestReply(contextMessages, sessionId);
+      const fullResponse = await this.generateVisitorReply(contextMessages, sessionId);
 
       this.writeStreamChunk(res, {
         content: fullResponse,
@@ -215,13 +215,13 @@ export class GuestChatService implements OnModuleDestroy {
       res.end();
     } catch (error: unknown) {
       this.logger.error(
-        `Guest chat error: ${error instanceof Error ? error.message : 'unknown error'}`,
+        `Visitor chat error: ${error instanceof Error ? error.message : 'unknown error'}`,
         error instanceof Error ? error.stack : undefined,
       );
       this.writeStreamChunk(res, {
         content: this.unavailableMessage,
         chunk: this.unavailableMessage,
-        error: 'guest_chat_error',
+        error: 'visitor_chat_error',
         done: true,
       });
       res.write(`data: [DONE]\n\n`);
@@ -240,22 +240,22 @@ export class GuestChatService implements OnModuleDestroy {
         return this.unavailableMessage;
       }
 
-      const { conversation, contextMessages } = this.buildGuestMessages(message, sessionId);
+      const { conversation, contextMessages } = this.buildVisitorMessages(message, sessionId);
 
       this.logger.log(
-        `Guest chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`,
+        `Visitor chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`,
       );
 
-      const reply = await this.generateGuestReply(contextMessages, sessionId);
+      const reply = await this.generateVisitorReply(contextMessages, sessionId);
 
       conversation.messages.push({ role: 'assistant', content: reply });
 
-      this.logger.log(`Guest chat sync reply: ${reply.substring(0, 100)}...`);
+      this.logger.log(`Visitor chat sync reply: ${reply.substring(0, 100)}...`);
 
       return reply;
     } catch (error: unknown) {
       this.logger.error(
-        `Guest chat sync error: ${error instanceof Error ? error.message : 'unknown error'}`,
+        `Visitor chat sync error: ${error instanceof Error ? error.message : 'unknown error'}`,
         error instanceof Error ? error.stack : undefined,
       );
       return this.unavailableMessage;
@@ -265,7 +265,7 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 📋 Obter ou criar conversa
    */
-  private getOrCreateConversation(sessionId: string): GuestConversation {
+  private getOrCreateConversation(sessionId: string): VisitorConversation {
     if (!this.conversations.has(sessionId)) {
       this.conversations.set(sessionId, {
         messages: [],
@@ -292,7 +292,7 @@ export class GuestChatService implements OnModuleDestroy {
     }
 
     if (cleaned > 0) {
-      this.logger.log(`Cleaned up ${cleaned} old guest conversations`);
+      this.logger.log(`Cleaned up ${cleaned} old visitor conversations`);
     }
   }
 

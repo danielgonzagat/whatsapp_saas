@@ -54,6 +54,7 @@ import {
   processWithUnifiedAgent,
   shouldUseUnifiedAgent,
 } from '../providers/unified-agent-integrator';
+import { resolveWhatsAppProvider } from '../providers/whatsapp-provider-resolver';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../providers/unified-whatsapp-provider';
 import { WhatsAppEngine } from '../providers/whatsapp-engine';
 import { autopilotQueue, connection, flowQueue } from '../queue';
@@ -2582,7 +2583,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
       persistent: true,
       message:
         remoteUnreadChats.length > 0
-          ? `Ainda restam ${remoteUnreadChats.length} conversa(s) pendentes no WAHA. Vou continuar o backlog até zerar tudo.`
+          ? `Ainda restam ${remoteUnreadChats.length} conversa(s) pendentes no canal conectado. Vou continuar o backlog até zerar tudo.`
           : `Ainda restam ${localPending} conversa(s) pendentes localmente. Vou continuar o backlog até zerar tudo.`,
       meta: {
         localPending,
@@ -6259,7 +6260,9 @@ function buildWorkspaceConfig(
     ...(providerSettings?.whatsappApiSession || {}),
     ...(settings?.whatsappApiSession || {}),
   };
-  const whatsappProvider = 'meta-cloud';
+  const whatsappProvider = resolveWhatsAppProvider(
+    settings?.whatsappProvider || providerSettings?.whatsappProvider || record?.whatsappProvider,
+  );
 
   return {
     id: workspaceId,
@@ -7054,7 +7057,7 @@ async function runCatalogContacts(data: UnknownRecord) {
       workspaceId,
       phase: 'contact_catalog',
       persistent: true,
-      message: `Ainda existem ${remotePendingBeforeCatalog.length} conversa(s) pendentes no WAHA. Vou zerar o backlog antes de catalogar.`,
+      message: `Ainda existem ${remotePendingBeforeCatalog.length} conversa(s) pendentes no canal conectado. Vou zerar o backlog antes de catalogar.`,
       meta: {
         remotePending: remotePendingBeforeCatalog.length,
       },

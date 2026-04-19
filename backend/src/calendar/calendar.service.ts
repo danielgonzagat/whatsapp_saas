@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { decryptCalendarCredential } from './calendar-credentials.crypto';
 import {
   asProviderSettings,
   type ProviderCalendarSettings,
@@ -92,13 +93,13 @@ export class CalendarService {
               ? { clientId: config.credentials.clientId }
               : {}),
             ...(typeof config.credentials.clientSecret === 'string'
-              ? { clientSecret: config.credentials.clientSecret }
+              ? { clientSecret: decryptCalendarCredential(config.credentials.clientSecret) }
               : {}),
             ...(typeof config.credentials.refreshToken === 'string'
-              ? { refreshToken: config.credentials.refreshToken }
+              ? { refreshToken: decryptCalendarCredential(config.credentials.refreshToken) }
               : {}),
             ...(typeof config.credentials.accessToken === 'string'
-              ? { accessToken: config.credentials.accessToken }
+              ? { accessToken: decryptCalendarCredential(config.credentials.accessToken) }
               : {}),
           }
         : undefined;

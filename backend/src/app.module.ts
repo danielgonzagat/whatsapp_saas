@@ -56,6 +56,7 @@ import { AutopilotModule } from './autopilot/autopilot.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { CiaModule } from './cia/cia.module';
+import { ComplianceModule } from './compliance/compliance.module';
 import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 import { StorageModule } from './common/storage/storage.module';
@@ -207,6 +208,7 @@ const isProd = process.env.NODE_ENV === 'production';
     PipelineModule, // 🧭 Sales pipeline / CRM board
     GdprModule, // LGPD/GDPR data export and deletion
     CookieConsentModule, // Cookie consent management
+    ComplianceModule, // OAuth / privacy compliance callbacks and data subject flows
     FinancialAlertModule, // Financial alerting (global)
     PulseModule, // PULSE live organism collector
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)

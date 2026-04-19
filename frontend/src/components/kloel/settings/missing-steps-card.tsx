@@ -31,6 +31,11 @@ export function MissingStepsCard({
   hasOpeningMessage = false,
   hasWhatsApp = false,
 }: MissingStepsCardProps) {
+  const completedSurfaceStyle = {
+    background: 'var(--app-accent-light)',
+    borderColor: 'color-mix(in srgb, var(--app-accent) 28%, var(--app-border-primary))',
+  } as const;
+
   const steps = [
     { label: 'Cadastrar produtos', done: hasProducts, icon: Package },
     { label: 'Enviar arquivos', done: hasFiles, icon: FileText },
@@ -38,7 +43,7 @@ export function MissingStepsCard({
     { label: 'Definir tom de voz', done: hasVoiceTone, icon: MessageSquare },
     { label: 'Adicionar perguntas frequentes', done: hasFaq, icon: HelpCircle },
     { label: 'Configurar mensagem de abertura', done: hasOpeningMessage, icon: MessageSquare },
-    { label: 'Conectar WhatsApp', done: hasWhatsApp, icon: Smartphone },
+    { label: 'Conectar canais Meta', done: hasWhatsApp, icon: Smartphone },
   ];
 
   const completedCount = steps.filter((s) => s.done).length;
@@ -59,20 +64,29 @@ export function MissingStepsCard({
           return (
             <SettingsInset
               key={step.label}
-              className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
-                step.done ? 'border-[#10B981]/20 bg-[#10B981]/10' : ''
-              }`}
+              className="flex items-center gap-3 rounded-xl p-3 transition-colors"
+              style={step.done ? completedSurfaceStyle : undefined}
             >
               {step.done ? (
-                <CheckCircle2 className="h-5 w-5 text-[#10B981]" aria-hidden="true" />
+                <CheckCircle2
+                  className="h-5 w-5"
+                  style={{ color: 'var(--app-accent)' }}
+                  aria-hidden="true"
+                />
               ) : (
                 <Circle className="h-5 w-5 text-[var(--app-text-tertiary)]" aria-hidden="true" />
               )}
               <Icon
-                className={`h-4 w-4 ${step.done ? 'text-[#10B981]' : 'text-[var(--app-text-secondary)]'}`}
+                className="h-4 w-4"
+                style={{
+                  color: step.done ? 'var(--app-accent)' : 'var(--app-text-secondary)',
+                }}
               />
               <span
-                className={`text-sm ${step.done ? 'text-[var(--app-text-primary)]' : 'text-[var(--app-text-secondary)]'}`}
+                className="text-sm"
+                style={{
+                  color: step.done ? 'var(--app-text-primary)' : 'var(--app-text-secondary)',
+                }}
               >
                 {step.label}
               </span>

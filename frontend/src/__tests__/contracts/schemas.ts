@@ -77,7 +77,8 @@ export const WorkspaceSummarySchema = z.object({
 
 /**
  * Response to POST /auth/login, /auth/register, /auth/oauth/google,
- * /auth/oauth/apple, and the WhatsApp code-verify flow. The shape
+ * /auth/oauth/facebook, /auth/oauth/apple, and the WhatsApp code-verify
+ * flow. The shape
  * is shared because the frontend treats all auth responses the same.
  *
  * Field naming note: tokens use snake_case (`access_token`,
@@ -98,6 +99,7 @@ export const AuthTokenResponseSchema = z.object({
 export const AuthLoginResponseSchema = AuthTokenResponseSchema;
 export const AuthRegisterResponseSchema = AuthTokenResponseSchema;
 export const AuthGoogleResponseSchema = AuthTokenResponseSchema;
+export const AuthFacebookResponseSchema = AuthTokenResponseSchema;
 
 /**
  * Response to GET /auth/check-email — used by the registration form
@@ -114,6 +116,63 @@ export const AuthCheckEmailResponseSchema = z.object({
 export const AuthRefreshResponseSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string().optional(),
+});
+
+/**
+ * Response to GET /auth/sessions — current and remote refresh-token sessions
+ * available for account security controls in Settings > Sessões ativas.
+ */
+export const AuthSessionEntrySchema = z.object({
+  id: z.string(),
+  isCurrent: z.boolean(),
+  device: z.string(),
+  detail: z.string(),
+  deviceType: z.enum(['mobile', 'desktop', 'monitor']),
+  ipAddress: z.string().nullable().optional(),
+  createdAt: z.string(),
+  lastUsedAt: z.string(),
+  expiresAt: z.string(),
+});
+
+export const AuthSessionsResponseSchema = z.object({
+  sessions: z.array(AuthSessionEntrySchema),
+});
+
+/**
+ * Response to POST /auth/sessions/revoke and /auth/sessions/revoke-current.
+ */
+export const AuthSessionRevokeResponseSchema = z.object({
+  success: z.boolean(),
+  revokedSessionId: z.string().nullable(),
+});
+
+/**
+ * Response to POST /auth/sessions/revoke-others.
+ */
+export const AuthSessionRevokeOthersResponseSchema = z.object({
+  success: z.boolean(),
+  revokedCount: z.number(),
+});
+
+/**
+ * Response to GET /user/google-profile-extended — authenticated Google People
+ * profile normalized for checkout prefill.
+ */
+export const AuthGoogleExtendedProfileResponseSchema = z.object({
+  provider: z.literal('google'),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  birthday: z.string().nullable(),
+  address: z
+    .object({
+      street: z.string().nullable(),
+      city: z.string().nullable(),
+      state: z.string().nullable(),
+      postalCode: z.string().nullable(),
+      countryCode: z.string().nullable(),
+      formattedValue: z.string().nullable(),
+    })
+    .nullable(),
 });
 
 // ─── Billing ───────────────────────────────────────────────────────────────
@@ -165,7 +224,7 @@ export const WorkspaceMeResponseSchema = z.object({
  * Response to GET /whatsapp-api/session/status. The frontend's
  * inbox header, autopilot screen, and admin connect flow all read
  * from this. Many fields are optional because the active provider
- * (Meta Cloud vs WAHA) determines which subset is populated.
+ * (Meta Cloud vs legacy runtime) determines which subset is populated.
  */
 export const WhatsAppStatusResponseSchema = z.object({
   connected: z.boolean(),
@@ -175,6 +234,9 @@ export const WhatsAppStatusResponseSchema = z.object({
   authUrl: z.string().optional(),
   phoneNumberId: z.string().optional(),
   whatsappBusinessId: z.string().nullable().optional(),
+  qualityRating: z.string().nullable().optional(),
+  codeVerificationStatus: z.string().nullable().optional(),
+  nameStatus: z.string().nullable().optional(),
   qrCode: z.string().optional(),
   message: z.string().optional(),
   provider: z.string().optional(),
@@ -203,23 +265,30 @@ export const WhatsAppStatusResponseSchema = z.object({
 });
 
 /**
- * Response to POST /whatsapp-api/session/start — initiates a new
- * session and returns either a QR code (WAHA) or an OAuth URL
- * (Meta Cloud). This is the primary connect flow.
+ * Response to POST /whatsapp-api/session/start — initiates the
+ * public connect flow and returns either an official OAuth URL or
+ * a message-only state such as already connected.
  */
 export const WhatsAppStartSessionResponseSchema = z.object({
   success: z.boolean(),
-  qrCode: z.string().optional(),
   message: z.string().optional(),
   authUrl: z.string().optional(),
 });
 
 /**
  * Response to GET /whatsapp-api/session/qr.
+ * QR onboarding is deprecated. The frontend proxy now answers
+ * with a Meta-first legacy-disabled sentinel and HTTP 410 Gone.
  */
 export const WhatsAppQrResponseSchema = z.object({
+  statusCode: z.number().optional(),
   available: z.boolean(),
   qr: z.string().optional(),
+  connected: z.boolean().optional(),
+  status: z.string().optional(),
+  message: z.string().optional(),
+  provider: z.string().optional(),
+  feature: z.string().optional(),
 });
 
 // ─── Health ────────────────────────────────────────────────────────────────

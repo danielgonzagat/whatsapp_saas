@@ -167,6 +167,16 @@ describe('GoogleAuthService', () => {
       json: async () => ({
         emailAddresses: [{ value: 'googleuser@example.com', metadata: { primary: true } }],
         phoneNumbers: [{ canonicalForm: '+5562999990000', metadata: { primary: true } }],
+        birthdays: [
+          {
+            date: {
+              year: 1994,
+              month: 4,
+              day: 18,
+            },
+            metadata: { primary: true },
+          },
+        ],
         addresses: [
           {
             streetAddress: 'Rua das Flores, 100',
@@ -195,6 +205,7 @@ describe('GoogleAuthService', () => {
     expect(profile).toMatchObject({
       email: 'googleuser@example.com',
       phone: '+5562999990000',
+      birthday: '1994-04-18',
       address: {
         street: 'Rua das Flores, 100',
         city: 'Caldas Novas',

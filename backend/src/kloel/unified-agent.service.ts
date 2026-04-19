@@ -3361,6 +3361,7 @@ Mensagem: ${message}`,
     return (
       !normalized ||
       normalized === 'guest workspace' ||
+      normalized === 'workspace temporario' ||
       normalized === 'workspace' ||
       normalized === 'guest' ||
       normalized === 'cliente kloel'

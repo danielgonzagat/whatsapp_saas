@@ -154,6 +154,7 @@ function OnboardingChatContent() {
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = '';
+      let buffer = '';
 
       if (reader) {
         // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
@@ -161,8 +162,9 @@ function OnboardingChatContent() {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -197,7 +199,7 @@ function OnboardingChatContent() {
       if (statusData.completed) {
         addMessage(
           'assistant',
-          'Perfeito. Agora vamos conectar seu WhatsApp — vou abrir o QR Code na próxima tela.',
+          'Perfeito. Agora vamos conectar seu WhatsApp — vou abrir o fluxo oficial da Meta na próxima tela.',
         );
         setCompleted(true);
       }

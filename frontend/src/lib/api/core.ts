@@ -78,6 +78,9 @@ export interface WhatsAppConnectionStatus {
   authUrl?: string;
   phoneNumberId?: string;
   whatsappBusinessId?: string | null;
+  qualityRating?: string | null;
+  codeVerificationStatus?: string | null;
+  nameStatus?: string | null;
   qrCode?: string;
   message?: string;
   provider?: string;
@@ -122,8 +125,6 @@ export interface WhatsAppConnectResponse {
   status: string;
   message?: string;
   authUrl?: string;
-  qrCode?: string;
-  qrCodeImage?: string;
   error?: boolean;
 }
 

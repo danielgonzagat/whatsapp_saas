@@ -1,102 +1,86 @@
-import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-import { useCheckoutExperienceAutomation } from './useCheckoutExperienceAutomation';
+import { describe, expect, it } from 'vitest';
 
-vi.mock('@/lib/api/misc', () => ({
-  checkoutPublicApi: {
-    calculateShipping: vi.fn(),
-  },
-}));
+import type { CheckoutExperienceForm } from './checkout-experience-social-helpers';
+import { mergeSocialIdentityPrefill } from './useCheckoutExperienceAutomation';
 
-describe('useCheckoutExperienceAutomation', () => {
-  it('rehydrates phone, cpf, and address fields from the social identity snapshot', async () => {
-    const setForm = vi.fn();
+const EMPTY_FORM: CheckoutExperienceForm = {
+  name: '',
+  email: '',
+  cpf: '',
+  phone: '',
+  cep: '',
+  street: '',
+  number: '',
+  neighborhood: '',
+  complement: '',
+  city: '',
+  state: '',
+  destinatario: '',
+  cardNumber: '',
+  cardExp: '',
+  cardCvv: '',
+  cardName: '',
+  cardCpf: '',
+  installments: '1',
+};
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: true,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: {
-          provider: 'google',
-          name: 'Maria de Almeida Cruz',
-          email: 'maria@gmail.com',
-          phone: '62999990000',
-          cpf: '12345678900',
-          cep: '75690-000',
-          street: 'Rua das Flores',
-          number: '100',
-          neighborhood: 'Centro',
-          city: 'Caldas Novas',
-          state: 'GO',
-          complement: 'Apto 12',
-          deviceFingerprint: 'device-123',
-        },
-        setForm,
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'FIXED',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: true,
-        couponPopupEnabled: false,
-        couponPopupDelay: 1800,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
+describe('mergeSocialIdentityPrefill', () => {
+  it('keeps sensitive Google People API fields out of the form when extended prefill is disabled for the session', () => {
+    const result = mergeSocialIdentityPrefill(
+      EMPTY_FORM,
+      {
+        provider: 'google',
+        name: 'Maria Google',
+        email: 'maria@google.com',
+        deviceFingerprint: 'device-1',
+        phone: '11999999999',
+        cep: '01310-100',
+        street: 'Av Paulista',
+        number: '1000',
+        neighborhood: 'Bela Vista',
+        city: 'São Paulo',
+        state: 'SP',
+        complement: '10 andar',
+      },
+      false,
     );
 
-    await waitFor(() => {
-      expect(setForm).toHaveBeenCalled();
-    });
+    expect(result.name).toBe('Maria Google');
+    expect(result.email).toBe('maria@google.com');
+    expect(result.phone).toBe('');
+    expect(result.cep).toBe('');
+    expect(result.street).toBe('');
+    expect(result.city).toBe('');
+    expect(result.state).toBe('');
+  });
 
-    const updater = setForm.mock.calls[0]?.[0] as
-      | ((prev: Record<string, string>) => Record<string, string>)
-      | undefined;
-    expect(typeof updater).toBe('function');
+  it('hydrates phone and address when extended Google prefill remains enabled', () => {
+    const result = mergeSocialIdentityPrefill(
+      EMPTY_FORM,
+      {
+        provider: 'google',
+        name: 'Maria Google',
+        email: 'maria@google.com',
+        deviceFingerprint: 'device-1',
+        phone: '11999999999',
+        cep: '01310-100',
+        street: 'Av Paulista',
+        number: '1000',
+        neighborhood: 'Bela Vista',
+        city: 'São Paulo',
+        state: 'SP',
+        complement: '10 andar',
+      },
+      true,
+    );
 
-    const nextState = updater?.({
-      name: '',
-      email: '',
-      cpf: '',
-      phone: '',
-      cep: '',
-      street: '',
-      number: '',
-      neighborhood: '',
-      complement: '',
-      city: '',
-      state: '',
-      destinatario: '',
-      cardNumber: '',
-      cardExp: '',
-      cardCvv: '',
-      cardName: '',
-      cardCpf: '',
-      installments: '',
-    });
-
-    expect(nextState).toMatchObject({
-      name: 'Maria de Almeida Cruz',
-      email: 'maria@gmail.com',
-      phone: '62999990000',
-      cpf: '12345678900',
-      cep: '75690-000',
-      street: 'Rua das Flores',
-      number: '100',
-      neighborhood: 'Centro',
-      city: 'Caldas Novas',
-      state: 'GO',
-      complement: 'Apto 12',
-    });
+    expect(result.phone).toBe('11999999999');
+    expect(result.cep).toBe('01310-100');
+    expect(result.street).toBe('Av Paulista');
+    expect(result.number).toBe('1000');
+    expect(result.neighborhood).toBe('Bela Vista');
+    expect(result.city).toBe('São Paulo');
+    expect(result.state).toBe('SP');
+    expect(result.complement).toBe('10 andar');
   });
 });

@@ -10,6 +10,9 @@ export interface SessionStatus {
   message: string;
   phoneNumber?: string | null;
   pushName?: string | null;
+  qualityRating?: string | null;
+  codeVerificationStatus?: string | null;
+  nameStatus?: string | null;
   selfIds?: string[];
 }
 
@@ -126,6 +129,9 @@ export interface WahaSessionConfigDiagnostics {
   state: SessionStatus['state'];
   phoneNumber?: string | null;
   pushName?: string | null;
+  qualityRating?: string | null;
+  codeVerificationStatus?: string | null;
+  nameStatus?: string | null;
   webhookConfigured: boolean;
   inboundEventsConfigured: boolean;
   events: string[];
@@ -602,6 +608,9 @@ export class WhatsAppApiProvider {
       authUrl: details.authUrl,
       phoneNumberId: details.phoneNumberId,
       whatsappBusinessId: details.whatsappBusinessId,
+      qualityRating: details.qualityRating,
+      codeVerificationStatus: details.codeVerificationStatus,
+      nameStatus: details.nameStatus,
     };
   }
 

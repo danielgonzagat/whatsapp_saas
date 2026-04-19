@@ -62,6 +62,7 @@ function normalizeWorkspaceMeResponse(data: unknown, authHeader: string) {
         : email.split('@')[0] || 'User',
       workspaceId,
       role: readString(payload.role) || undefined,
+      sessionId: readString(payload.sessionId) || undefined,
     },
     workspaces: [
       {

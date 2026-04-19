@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
+import { hashAuthToken } from '../auth/auth-token-hash';
 
 describe('PartnershipsService', () => {
   let service: PartnershipsService;
@@ -71,12 +72,25 @@ describe('PartnershipsService', () => {
       prisma.agent.findMany.mockResolvedValue([
         { id: '1', name: 'Agent One', email: 'a@b.com', role: 'SUPPORT' },
       ]);
-      prisma.collaboratorInvite.findMany.mockResolvedValue([]);
+      prisma.collaboratorInvite.findMany.mockResolvedValue([
+        {
+          id: 'invite-1',
+          workspaceId: 'ws-1',
+          email: 'invite@test.com',
+          role: 'SUPPORT',
+          status: 'PENDING',
+          invitedBy: 'agent-1',
+          token: 'should-not-leak',
+          expiresAt: new Date('2026-05-01T00:00:00.000Z'),
+          createdAt: new Date('2026-04-18T00:00:00.000Z'),
+        },
+      ]);
 
       const result = await service.listCollaborators('ws-1');
 
       expect(result.agents).toHaveLength(1);
-      expect(result.invites).toHaveLength(0);
+      expect(result.invites).toHaveLength(1);
+      expect(result.invites[0]).not.toHaveProperty('token');
       expect(prisma.agent.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { workspaceId: 'ws-1' } }),
       );
@@ -117,16 +131,20 @@ describe('PartnershipsService', () => {
     it('creates invite with 7-day expiry when no conflicts', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
       prisma.collaboratorInvite.findFirst.mockResolvedValue(null);
-      prisma.collaboratorInvite.create.mockResolvedValue({
-        id: 'inv-1',
-        email: 'new@test.com',
-        role: 'SUPPORT',
-      });
+      prisma.collaboratorInvite.create.mockImplementation(
+        async ({ data }: { data: Record<string, unknown> }) => ({
+          id: 'inv-1',
+          ...data,
+        }),
+      );
 
       const result = await service.inviteCollaborator('ws-1', 'new@test.com', 'SUPPORT', 'admin-1');
 
       expect(result.email).toBe('new@test.com');
+      expect(result).not.toHaveProperty('token');
       const createCall = prisma.collaboratorInvite.create.mock.calls[0][0];
+      expect(createCall.data.token).toMatch(/^[a-f0-9]{64}$/);
+      expect(createCall.data.token).not.toBe(hashAuthToken('new@test.com'));
       const expiry = new Date(createCall.data.expiresAt);
       const now = Date.now();
       // Expiry should be roughly 7 days from now

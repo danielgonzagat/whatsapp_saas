@@ -166,10 +166,10 @@ describe('UnifiedAgentService', () => {
     expect(reply).not.toContain('😊');
   });
 
-  it('never exposes Guest Workspace as the company identity in the system prompt', () => {
+  it('never exposes temporary visitor workspace labels as the company identity in the system prompt', () => {
     const prompt = (service as any).buildSystemPrompt(
       {
-        name: 'Guest Workspace',
+        name: 'Workspace Temporario',
         providerSettings: {
           whatsappApiSession: {
             pushName: 'Branding Caps',
@@ -180,8 +180,9 @@ describe('UnifiedAgentService', () => {
     );
 
     expect(prompt).toContain('EMPRESA: Branding Caps');
-    expect(prompt).not.toContain('EMPRESA: Guest Workspace');
+    expect(prompt).not.toContain('EMPRESA: Workspace Temporario');
     expect(prompt).toContain('Nunca se apresente como "Guest Workspace"');
+    expect(prompt).toContain('Nunca se apresente como "Workspace Temporario"');
   });
 
   it('does not cut the reply in the middle of a sentence', () => {

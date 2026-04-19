@@ -511,7 +511,36 @@ describe('CiaRuntimeService', () => {
         type: 'status',
         workspaceId: 'ws-1',
         phase: 'sync',
-        message: expect.stringContaining('Vou seguir no modo live'),
+        message:
+          'Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: TIMEOUT. Vou seguir no modo live para responder novas mensagens enquanto continuo sincronizando.',
+      }),
+    );
+  });
+
+  it('keeps remote inline fallback status copy aligned with the Meta-first runtime', async () => {
+    await (service as any).runRemoteBacklogInlineFallback('ws-1', 'run-1', 'reply_all_recent_first', [
+      {
+        id: 'chat-remote-1',
+        unreadCount: 1,
+        timestamp: Date.now(),
+      },
+    ]);
+
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'status',
+        workspaceId: 'ws-1',
+        phase: 'backlog_remote_inline_fallback',
+        message:
+          'Banco local ainda não refletiu o backlog completo. Vou agir direto a partir do histórico remoto do WhatsApp em 1 conversa(s).',
+      }),
+    );
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'status',
+        workspaceId: 'ws-1',
+        phase: 'backlog_remote_inline_done',
+        message: 'Fallback remoto executado, mas nenhuma conversa gerou resposta enviada.',
       }),
     );
   });

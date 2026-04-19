@@ -6,6 +6,17 @@ const DEFAULT_INSTALLMENT_INTEREST_MONTHLY_PERCENT = 3.99;
 export class CheckoutPublicPayloadBuilder {
   constructor(private readonly prisma: PrismaService) {}
 
+  private sanitizePixelsForPublic(value: unknown) {
+    if (!Array.isArray(value)) return undefined;
+
+    return value
+      .filter((entry) => Boolean(entry) && typeof entry === 'object')
+      .map((entry) => {
+        const { accessToken: _accessToken, ...rest } = entry as Record<string, unknown>;
+        return rest;
+      });
+  }
+
   async build(
     plan: Record<string, unknown> & {
       product: { workspaceId: string; name?: string; [k: string]: unknown };
@@ -84,7 +95,12 @@ export class CheckoutPublicPayloadBuilder {
       checkoutTemplateId: checkoutLink?.checkoutId || null,
       checkoutTemplateName:
         (checkoutLink?.checkout as Record<string, unknown> | undefined)?.name || null,
-      checkoutConfig,
+      checkoutConfig: checkoutConfig
+        ? {
+            ...checkoutConfig,
+            pixels: this.sanitizePixelsForPublic((checkoutConfig as Record<string, unknown>).pixels),
+          }
+        : checkoutConfig,
       paymentProvider: {
         provider: 'stripe',
         connected: Boolean(sellerStripeAccount?.stripeAccountId),

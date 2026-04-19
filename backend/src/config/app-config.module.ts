@@ -156,14 +156,20 @@ function redisInProductionValidator(value: Record<string, unknown>): Record<stri
         // ============================================
         // FEATURES
         // ============================================
+        VISITOR_CHAT_ENABLED: Joi.string().valid('true', 'false').optional(),
         GUEST_CHAT_ENABLED: Joi.string().valid('true', 'false').optional(),
+        KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL: Joi.string().valid('true', 'false').optional(),
 
         // ============================================
         // META WEBHOOK (WhatsApp Business API)
         // ============================================
         META_VERIFY_TOKEN: Joi.string().optional(),
+        META_WEBHOOK_VERIFY_TOKEN: Joi.string().optional(),
         META_APP_ID: Joi.string().optional(),
         META_APP_SECRET: Joi.string().optional(),
+        META_SYSTEM_USER_TOKEN: Joi.string().optional(),
+        META_BUSINESS_ID: Joi.string().optional(),
+        META_EMBEDDED_SIGNUP_CONFIG_ID: Joi.string().optional(),
         META_REDIRECT_URI: Joi.string().optional(),
 
         // ============================================

@@ -336,11 +336,9 @@ const TABS = [
 function WarRoom({
   onGoToRules,
   onGoToTab,
-  metaAccessToken,
 }: {
   onGoToRules: () => void;
   onGoToTab: (id: string) => void;
-  metaAccessToken?: string;
 }) {
   const { data: rulesData } = useSWR<Record<string, unknown>[]>('/ad-rules', swrFetcher, {
     keepPreviousData: true,
@@ -354,9 +352,10 @@ function WarRoom({
   }));
 
   const handleCampaignToggle = async (campaign: Campaign) => {
-    if (!metaAccessToken) return;
+    const canToggleCampaign = campaign.platform === 'meta' && PLATFORMS.meta.connected;
+    if (!canToggleCampaign) return;
     const newStatus = campaign.status === 'active' ? 'PAUSED' : 'ACTIVE';
-    await metaAdsApi.updateCampaignStatus(campaign.id, newStatus, metaAccessToken);
+    await metaAdsApi.updateCampaignStatus(campaign.id, newStatus);
     // Update local state optimistically
     CAMPAIGNS = CAMPAIGNS.map((c) =>
       c.id === campaign.id
@@ -829,8 +828,11 @@ function WarRoom({
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: metaAccessToken ? '#6E6E73' : '#3A3A3F',
-                        cursor: metaAccessToken ? 'pointer' : 'not-allowed',
+                        color: c.platform === 'meta' && PLATFORMS.meta.connected ? '#6E6E73' : '#3A3A3F',
+                        cursor:
+                          c.platform === 'meta' && PLATFORMS.meta.connected
+                            ? 'pointer'
+                            : 'not-allowed',
                         padding: 2,
                         display: 'flex',
                       }}
@@ -1158,10 +1160,8 @@ function WarRoom({
 // ── PlatformTab ──
 function PlatformTab({
   platformKey,
-  metaAccessToken,
 }: {
   platformKey: string;
-  metaAccessToken?: string;
 }) {
   const p = PLATFORMS[platformKey as keyof typeof PLATFORMS];
   if (!p) return null;
@@ -1171,9 +1171,9 @@ function PlatformTab({
   const camps = CAMPAIGNS.filter((c) => c.platform === platformKey);
 
   const handleCampaignToggle = async (c: Campaign) => {
-    if (platformKey !== 'meta' || !metaAccessToken) return;
+    if (platformKey !== 'meta') return;
     const newStatus = c.status === 'active' ? 'PAUSED' : 'ACTIVE';
-    await metaAdsApi.updateCampaignStatus(c.id, newStatus, metaAccessToken);
+    await metaAdsApi.updateCampaignStatus(c.id, newStatus);
     CAMPAIGNS = CAMPAIGNS.map((x) =>
       x.id === c.id
         ? { ...x, status: newStatus.toLowerCase() === 'active' ? 'active' : 'paused' }
@@ -1451,8 +1451,11 @@ function PlatformTab({
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: platformKey === 'meta' && metaAccessToken ? '#6E6E73' : '#3A3A3F',
-                    cursor: platformKey === 'meta' && metaAccessToken ? 'pointer' : 'not-allowed',
+                    color: platformKey === 'meta' && PLATFORMS.meta.connected ? '#6E6E73' : '#3A3A3F',
+                    cursor:
+                      platformKey === 'meta' && PLATFORMS.meta.connected
+                        ? 'pointer'
+                        : 'not-allowed',
                     padding: 2,
                     display: 'flex',
                   }}
@@ -2784,13 +2787,6 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
     }
   }, [metaConnected, metaCampaigns]);
 
-  const metaAccessToken: string | undefined =
-    typeof metaStatus?.accessToken === 'string'
-      ? (metaStatus.accessToken as string)
-      : typeof metaStatus?.token === 'string'
-        ? (metaStatus.token as string)
-        : undefined;
-
   const goToRules = () => {
     setTab('rules');
     const nextRoute = routes.rules || '/anuncios/regras';
@@ -2860,9 +2856,9 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
       {/* Content */}
       <div style={{ padding: isMobile ? 16 : 24, maxWidth: 1240, margin: '0 auto' }}>
         {tab === 'visao' && (
-          <WarRoom onGoToRules={goToRules} onGoToTab={goToTab} metaAccessToken={metaAccessToken} />
+          <WarRoom onGoToRules={goToRules} onGoToTab={goToTab} />
         )}
-        {tab === 'meta' && <PlatformTab platformKey="meta" metaAccessToken={metaAccessToken} />}
+        {tab === 'meta' && <PlatformTab platformKey="meta" />}
         {tab === 'google' && <PlatformTab platformKey="google" />}
         {tab === 'tiktok' && <PlatformTab platformKey="tiktok" />}
         {tab === 'track' && <TrackingTab focus={requestedFocus} />}

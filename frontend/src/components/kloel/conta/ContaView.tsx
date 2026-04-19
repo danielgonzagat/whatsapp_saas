@@ -1,12 +1,23 @@
 'use client';
 
 import { PulseLoader } from '@/components/kloel/PulseLoader';
+import { resolveMetaConnectUrl } from '@/components/kloel/marketing/meta-connect';
 import { AccountSettingsSection } from '@/components/kloel/settings/account-settings-section';
 import { ActivitySection } from '@/components/kloel/settings/activity-section';
 import { AnalyticsSettingsSection } from '@/components/kloel/settings/analytics-settings-section';
 import { BillingSettingsSection } from '@/components/kloel/settings/billing-settings-section';
 import { BrainSettingsSection } from '@/components/kloel/settings/brain-settings-section';
 import { CrmSettingsSection } from '@/components/kloel/settings/crm-settings-section';
+import { signOutCurrentKloelSession } from '@/components/kloel/settings/security-session-actions';
+import { SecuritySessionsPanel } from '@/components/kloel/settings/security-sessions-panel';
+import {
+  detectSecuritySessionSurface,
+  type SecuritySessionSurface,
+} from '@/components/kloel/settings/security-session-surface';
+import {
+  buildAppsIntegrationCards,
+  type WhatsAppIntegrationSnapshot,
+} from '@/components/kloel/settings/apps-integrations';
 import { SystemAlertsCard } from '@/components/kloel/settings/system-alerts-card';
 import { BRAZILIAN_BANKS, POPULAR_BANK_CODES, formatBankCode } from '@/data/brazilian-banks';
 import {
@@ -29,7 +40,7 @@ import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { billingApi } from '@/lib/api';
-import { apiFetch, tokenStorage } from '@/lib/api/core';
+import { apiFetch } from '@/lib/api/core';
 import { inviteTeamMember, removeTeamMember, revokeTeamInvite } from '@/lib/api/team';
 import { swrFetcher } from '@/lib/fetcher';
 import { readFileAsDataUrl } from '@/lib/media-upload';
@@ -105,12 +116,66 @@ interface MetaAuthStatus {
   pageName?: string | null;
   instagramUsername?: string | null;
   adAccountId?: string | null;
+  phoneNumber?: string | null;
+  qualityRating?: string | null;
+  codeVerificationStatus?: string | null;
+  nameStatus?: string | null;
   tokenExpired?: boolean;
 }
 
+function formatMetaQualityRating(value?: string | null) {
+  switch (String(value || '').trim().toUpperCase()) {
+    case 'GREEN':
+      return 'Verde';
+    case 'YELLOW':
+      return 'Em observação';
+    case 'RED':
+      return 'Crítico';
+    default:
+      return 'Não informado';
+  }
+}
+
+function formatMetaVerificationStatus(value?: string | null) {
+  const normalized = String(value || '').trim().toUpperCase();
+  if (!normalized) return 'Não informado';
+
+  return (
+    {
+      VERIFIED: 'Verificado',
+      APPROVED: 'Aprovado',
+      PENDING: 'Pendente',
+      REVIEWING: 'Em revisão',
+      REJECTED: 'Rejeitado',
+      AVAILABLE_WITHOUT_REVIEW: 'Disponível sem revisão',
+      EXPIRED: 'Expirado',
+    }[normalized] || normalized
+  );
+}
+
 interface MetaAuthUrlResponse {
+  error?: string;
+  status?: number;
   url?: string;
-  data?: { url?: string };
+  data?: {
+    url?: string;
+    data?: { url?: string };
+  };
+}
+
+function readActionErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = error.message;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
+
+  return fallback;
 }
 
 // Team API shapes.
@@ -2461,8 +2526,17 @@ function SegurancaSection() {
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
+  const [sessionSurface, setSessionSurface] = useState<SecuritySessionSurface>({
+    device: 'Sessão atual neste dispositivo',
+    detail: 'Navegador atual',
+    deviceType: 'desktop',
+  });
 
   const setPw = (k: string, v: string) => setPwForm((prev) => ({ ...prev, [k]: v }));
+
+  useEffect(() => {
+    setSessionSurface(detectSecuritySessionSurface());
+  }, []);
 
   const handleChangePw = async () => {
     setPwError('');
@@ -2485,6 +2559,10 @@ function SegurancaSection() {
       setPwError(getErrorMessage(e) || 'Erro ao alterar senha. Verifique a senha atual.');
     }
     setSaving(false);
+  };
+
+  const handleSignOutCurrentSession = async () => {
+    await signOutCurrentKloelSession();
   };
 
   return (
@@ -2592,37 +2670,10 @@ function SegurancaSection() {
         subtitle="Gerencie os dispositivos conectados a sua conta"
       >
         <div style={{ padding: '16px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: 'var(--app-text-placeholder)',
-              }}
-            />
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'var(--app-text-primary)',
-                fontFamily: SORA,
-              }}
-            >
-              Visao unificada ainda nao disponivel
-            </span>
-          </div>
-          <p
-            style={{
-              fontSize: 12,
-              color: 'var(--app-text-secondary)',
-              fontFamily: SORA,
-              lineHeight: 1.5,
-            }}
-          >
-            Esta area sera usada para listar dispositivos e permitir revogar acessos sem sair do
-            painel principal.
-          </p>
+          <SecuritySessionsPanel
+            fallbackSurface={sessionSurface}
+            onSignOutCurrent={handleSignOutCurrentSession}
+          />
         </div>
       </SectionCard>
     </>
@@ -3083,7 +3134,7 @@ function AjudaSection() {
   const faqs = [
     {
       q: 'Como conecto meu WhatsApp?',
-      a: 'Acesse a secao "WhatsApp" no menu lateral e escaneie o QR Code com o aplicativo do WhatsApp no seu celular.',
+      a: 'Acesse a secao "WhatsApp" no menu lateral e conclua o fluxo oficial da Meta para vincular seu WhatsApp Business.',
     },
     {
       q: 'Quanto tempo leva a verificacao KYC?',
@@ -3337,6 +3388,7 @@ function MetaConnectSection() {
   const [status, setStatus] = useState<MetaAuthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch<MetaAuthStatus>('/meta/auth/status')
@@ -3349,24 +3401,25 @@ function MetaConnectSection() {
 
   const handleConnect = async () => {
     try {
+      setActionMessage('Gerando fluxo oficial da Meta...');
       const res = await apiFetch<MetaAuthUrlResponse>('/meta/auth/url');
-      const url = res.data?.url || res.data?.data?.url;
-      if (url) {
-        window.open(url, 'meta-auth', 'width=600,height=700');
-      }
-    } catch {
-      // silent
+      const url = resolveMetaConnectUrl(res);
+      window.open(url, 'meta-auth', 'width=600,height=700');
+    } catch (error: unknown) {
+      setActionMessage(readActionErrorMessage(error, 'Falha ao iniciar a conexao Meta.'));
     }
   };
 
   const handleDisconnect = async () => {
     setDisconnecting(true);
+    setActionMessage('Desconectando Meta...');
     try {
       await apiFetch('/meta/auth/disconnect', { method: 'POST' });
       setStatus({ connected: false });
+      setActionMessage('Meta desconectada.');
       globalMutate((key: string) => typeof key === 'string' && key.startsWith('/meta'));
-    } catch {
-      // silent
+    } catch (error: unknown) {
+      setActionMessage(readActionErrorMessage(error, 'Falha ao desconectar Meta.'));
     }
     setDisconnecting(false);
   };
@@ -3382,6 +3435,20 @@ function MetaConnectSection() {
   }
 
   if (status?.connected) {
+    const qualityLabel = formatMetaQualityRating(status.qualityRating);
+    const codeVerificationLabel = formatMetaVerificationStatus(status.codeVerificationStatus);
+    const nameStatusLabel = formatMetaVerificationStatus(status.nameStatus);
+    const showPhoneHealthWarning =
+      (status.qualityRating && String(status.qualityRating).trim().toUpperCase() !== 'GREEN') ||
+      (status.codeVerificationStatus &&
+        !['VERIFIED', 'APPROVED'].includes(
+          String(status.codeVerificationStatus).trim().toUpperCase(),
+        )) ||
+      (status.nameStatus &&
+        !['APPROVED', 'AVAILABLE_WITHOUT_REVIEW'].includes(
+          String(status.nameStatus).trim().toUpperCase(),
+        ));
+
     return (
       <SectionCard title="Meta Platform" subtitle="Instagram, Messenger, Meta Ads">
         <div
@@ -3413,9 +3480,91 @@ function MetaConnectSection() {
               {status.pageName ? `Pagina: ${status.pageName}` : ''}
               {status.instagramUsername ? ` | @${status.instagramUsername}` : ''}
               {status.adAccountId ? ` | Ads: ${status.adAccountId}` : ''}
+              {status.phoneNumber ? ` | WhatsApp: ${status.phoneNumber}` : ''}
             </span>
           </div>
         </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))',
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
+          {[
+            { label: 'Quality rating', value: qualityLabel },
+            { label: 'Código Meta', value: codeVerificationLabel },
+            { label: 'Status do nome', value: nameStatusLabel },
+          ].map((item) => (
+            <div
+              key={item.label}
+              style={{
+                border: '1px solid var(--app-border-primary)',
+                borderRadius: 6,
+                background: 'var(--app-bg-card)',
+                padding: '12px 14px',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 10,
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  color: 'var(--app-text-tertiary)',
+                  marginBottom: 6,
+                }}
+              >
+                {item.label}
+              </div>
+              <div
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 12,
+                  color: 'var(--app-text-primary)',
+                }}
+              >
+                {item.value}
+              </div>
+            </div>
+          ))}
+        </div>
+        {showPhoneHealthWarning ? (
+          <div
+            style={{
+              background: 'rgba(245,158,11,.04)',
+              border: '1px solid rgba(245,158,11,.15)',
+              borderRadius: 6,
+              padding: '10px 14px',
+              marginBottom: 16,
+              fontSize: 11,
+              color: '#F59E0B',
+              fontFamily: SORA,
+              lineHeight: 1.6,
+            }}
+          >
+            O número oficial da Meta precisa de atenção antes de escalar envios outbound. Revise o
+            quality rating e os status de verificação no Business Manager.
+          </div>
+        ) : null}
+        {actionMessage ? (
+          <div
+            style={{
+              borderRadius: 6,
+              border: '1px solid var(--app-border-primary)',
+              background: 'var(--app-bg-secondary)',
+              padding: '10px 12px',
+              marginBottom: 16,
+              fontSize: 12,
+              lineHeight: 1.6,
+              color: 'var(--app-text-secondary)',
+              fontFamily: SORA,
+            }}
+          >
+            {actionMessage}
+          </div>
+        ) : null}
         {status.tokenExpired && (
           <div
             style={{
@@ -3506,6 +3655,24 @@ function MetaConnectSection() {
           Conecte sua conta Meta para gerenciar Instagram DM, Messenger e Meta Ads diretamente na
           KLOEL.
         </div>
+        {actionMessage ? (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              borderRadius: 6,
+              border: '1px solid var(--app-border-primary)',
+              background: 'var(--app-bg-secondary)',
+              padding: '10px 12px',
+              fontSize: 12,
+              lineHeight: 1.6,
+              color: 'var(--app-text-secondary)',
+              fontFamily: SORA,
+            }}
+          >
+            {actionMessage}
+          </div>
+        ) : null}
         <button
           type="button"
           onClick={handleConnect}
@@ -3913,11 +4080,8 @@ function TeamSection() {
 // ═══ SECTION 10: SAIR ═══
 
 function SairSection() {
-  const router = useRouter();
-
-  const handleLogout = () => {
-    tokenStorage.clear();
-    router.push('/login');
+  const handleLogout = async () => {
+    await signOutCurrentKloelSession();
   };
 
   return (
@@ -3947,7 +4111,9 @@ function SairSection() {
         </p>
         <button
           type="button"
-          onClick={handleLogout}
+          onClick={() => {
+            void handleLogout();
+          }}
           style={{
             padding: '12px 32px',
             background: '#EF4444',
@@ -3992,6 +4158,11 @@ export default function ContaView() {
   const [trialDaysLeft, setTrialDaysLeft] = useState(0);
   const [creditsBalance, setCreditsBalance] = useState(0);
   const [hasCard, setHasCard] = useState(false);
+  const { data: metaIntegrationStatus } = useSWR<MetaAuthStatus>('/meta/auth/status', swrFetcher);
+  const { data: whatsappIntegrationStatusRaw } = useSWR<Record<string, unknown>>(
+    '/api/whatsapp-api/session/status',
+    swrFetcher,
+  );
 
   const completionData: KycCompletion = completion || { percentage: 0, sections: [] };
   const sectionStatus = (name: string) => {
@@ -4057,6 +4228,37 @@ export default function ContaView() {
     await billingApi.activateTrial();
     await loadBillingSummary();
   }, [loadBillingSummary]);
+
+  const whatsappIntegrationStatus: WhatsAppIntegrationSnapshot | null = whatsappIntegrationStatusRaw
+    ? {
+        connected: Boolean(whatsappIntegrationStatusRaw.connected),
+        authUrl:
+          typeof whatsappIntegrationStatusRaw.authUrl === 'string'
+            ? whatsappIntegrationStatusRaw.authUrl
+            : null,
+        status:
+          typeof whatsappIntegrationStatusRaw.status === 'string'
+            ? whatsappIntegrationStatusRaw.status
+            : null,
+        phone:
+          typeof whatsappIntegrationStatusRaw.phone === 'string'
+            ? whatsappIntegrationStatusRaw.phone
+            : typeof whatsappIntegrationStatusRaw.phoneNumber === 'string'
+              ? whatsappIntegrationStatusRaw.phoneNumber
+              : null,
+        pushName:
+          typeof whatsappIntegrationStatusRaw.pushName === 'string'
+            ? whatsappIntegrationStatusRaw.pushName
+            : null,
+      }
+    : null;
+
+  const appsIntegrationCards = buildAppsIntegrationCards({
+    whatsapp: whatsappIntegrationStatus,
+    meta: metaIntegrationStatus ?? null,
+    subscriptionStatus,
+    creditsBalance,
+  });
 
   const showSystemAlerts =
     section === 'account' ||
@@ -4409,38 +4611,9 @@ export default function ContaView() {
                   Apps e integracoes
                 </h2>
                 <div style={{ display: 'grid', gap: 12, marginBottom: 20 }}>
-                  {[
-                    {
-                      name: 'WhatsApp e Inbox',
-                      status: 'Operacional',
-                      connected: true,
-                      cta: 'Abrir inbox',
-                      action: () => router.push('/inbox'),
-                    },
-                    {
-                      name: 'Meta Platform',
-                      status: 'Gerenciar',
-                      connected: true,
-                      cta: 'Abrir anuncios',
-                      action: () => router.push('/anuncios'),
-                    },
-                    {
-                      name: 'Plano e cobranca Kloel',
-                      status: 'Operacional',
-                      connected: true,
-                      cta: 'Abrir billing',
-                      action: () => handleSelectSection('billing'),
-                    },
-                    {
-                      name: 'CRM e analytics',
-                      status: 'Ajustar',
-                      connected: true,
-                      cta: 'Abrir configuracoes',
-                      action: () => handleSelectSection('crm'),
-                    },
-                  ].map((app) => (
+                  {appsIntegrationCards.map((app) => (
                     <div
-                      key={app.name}
+                      key={app.key}
                       style={{
                         background: 'var(--app-bg-card)',
                         border: '1px solid var(--app-border-primary)',
@@ -4486,7 +4659,28 @@ export default function ContaView() {
                       </div>
                       <button
                         type="button"
-                        onClick={app.action}
+                        onClick={() => {
+                          switch (app.target) {
+                            case 'inbox':
+                              router.push('/inbox');
+                              return;
+                            case 'marketing-whatsapp':
+                              router.push('/marketing/whatsapp');
+                              return;
+                            case 'anuncios':
+                              router.push('/anuncios');
+                              return;
+                            case 'marketing-meta':
+                              router.push('/marketing/facebook');
+                              return;
+                            case 'billing':
+                              handleSelectSection('billing');
+                              return;
+                            case 'crm':
+                              handleSelectSection('crm');
+                              return;
+                          }
+                        }}
                         style={{
                           padding: '8px 14px',
                           background: 'transparent',

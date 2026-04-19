@@ -8,7 +8,6 @@ import {
   autostartCia,
   ciaApi,
   disconnectWhatsApp,
-  getWhatsAppQR,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
   logoutWhatsApp,
@@ -22,6 +21,55 @@ interface UseWhatsAppSessionOptions {
   enabled?: boolean;
   workspaceId?: string;
   onConnectionChange?: (connected: boolean) => void;
+}
+
+function normalizeWhatsAppProviderSurface(value?: string | null): string | undefined {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
+
+  if (!normalized) return undefined;
+  if (
+    normalized === 'legacy-runtime' ||
+    normalized === 'whatsapp-api' ||
+    normalized === 'waha' ||
+    normalized === 'whatsapp-web-agent'
+  ) {
+    return 'legacy-runtime';
+  }
+  return normalized;
+}
+
+function sanitizeWhatsAppStatus(status: WhatsAppConnectionStatus): WhatsAppConnectionStatus {
+  const provider = normalizeWhatsAppProviderSurface(status.provider);
+  const activeProvider = normalizeWhatsAppProviderSurface(status.activeProvider);
+  const legacyRuntime = provider === 'legacy-runtime' || activeProvider === 'legacy-runtime';
+  const normalizedStatus = status.connected
+    ? 'connected'
+    : isPendingQrStatus(status.status)
+      ? 'connecting'
+      : status.status;
+
+  if (!legacyRuntime) {
+    return {
+      ...status,
+      provider,
+      activeProvider: activeProvider || null,
+      status: normalizedStatus,
+    };
+  }
+
+  return {
+    ...status,
+    provider: 'legacy-runtime',
+    activeProvider: activeProvider ? 'legacy-runtime' : null,
+    status: normalizedStatus,
+    qrCode: undefined,
+    qrAvailable: false,
+    browserSessionStatus: undefined,
+    screencastStatus: undefined,
+    viewerAvailable: false,
+  };
 }
 
 function isPendingQrStatus(status?: string | null): boolean {
@@ -162,15 +210,17 @@ export function useWhatsAppSession({
     if (!current.workspaceId || !current.authToken) return;
 
     try {
-      const data = await getWhatsAppStatus(current.workspaceId);
+      const data = sanitizeWhatsAppStatus(await getWhatsAppStatus(current.workspaceId));
       setStatus(data);
-      setQrCode(data.qrCode || null);
+      setQrCode(null);
       setConnecting(isPendingQrStatus(data.status) && !data.connected);
       setStatusMessage(
         data.connected
           ? 'Sessão ativa e sincronizada.'
+          : data.authUrl
+            ? 'Conexão oficial da Meta pendente. Abra o fluxo para concluir o vínculo do canal.'
           : isPendingQrStatus(data.status)
-            ? 'Aguardando leitura do QR Code no aparelho.'
+            ? 'Conexão pendente. Abra o fluxo oficial da Meta.'
             : 'WhatsApp desconectado.',
       );
       setError(null);
@@ -181,30 +231,6 @@ export function useWhatsAppSession({
     }
   }, [enabled, refreshCredentials]);
 
-  const loadQR = useCallback(async () => {
-    if (!enabled) return;
-    const current = refreshCredentials();
-    if (!current.workspaceId || !current.authToken) return;
-
-    try {
-      const data = await getWhatsAppQR(current.workspaceId);
-      if (data.qrCode) {
-        setQrCode(data.qrCode);
-        setStatusMessage(data.message || 'Escaneie o QR Code para conectar.');
-      }
-
-      if (data.connected) {
-        setStatusMessage('Sessão conectada com sucesso.');
-        setConnecting(false);
-        await loadStatus();
-      }
-    } catch (err) {
-      console.error('Failed to load QR:', err);
-      setError('Falha ao atualizar o QR Code. Tente novamente.');
-      setConnecting(false);
-    }
-  }, [enabled, loadStatus, refreshCredentials]);
-
   const connect = useCallback(async () => {
     setLoading(true);
     setConnecting(true);
@@ -214,7 +240,7 @@ export function useWhatsAppSession({
 
     try {
       const current = await ensureSessionCredentials();
-      const currentStatus = await getWhatsAppStatus(current.workspaceId);
+      const currentStatus = sanitizeWhatsAppStatus(await getWhatsAppStatus(current.workspaceId));
       if (currentStatus.connected) {
         setStatus(currentStatus);
         setConnecting(false);
@@ -222,14 +248,19 @@ export function useWhatsAppSession({
         return;
       }
 
+      if (currentStatus.authUrl) {
+        setStatus(currentStatus);
+        setStatusMessage('Abrindo fluxo oficial da Meta...');
+        window.location.assign(currentStatus.authUrl);
+        return;
+      }
+
       if (isPendingQrStatus(currentStatus.status)) {
         setStatus(currentStatus);
-        setQrCode(currentStatus.qrCode || null);
-        setStatusMessage(currentStatus.message || 'Escaneie o QR Code para conectar.');
-        if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
-        connectTimerRef.current = setTimeout(() => {
-          void loadQR();
-        }, 500);
+        setStatusMessage(
+          currentStatus.message || 'O runtime legado foi descontinuado. Abra o fluxo oficial da Meta.',
+        );
+        setConnecting(false);
         return;
       }
 
@@ -250,23 +281,21 @@ export function useWhatsAppSession({
         return;
       }
 
-      if (response.status === 'qr_ready') {
-        setQrCode(response.qrCode || response.qrCodeImage || null);
-        setStatusMessage(response.message || 'Escaneie o QR Code para conectar.');
+      if (response.status === 'connect_required' && response.authUrl) {
+        setStatusMessage(response.message || 'Abrindo fluxo oficial da Meta...');
+        window.location.assign(response.authUrl);
         return;
       }
 
-      setTimeout(() => {
-        void loadQR();
-      }, 1500);
+      setStatusMessage('Conexão iniciada. Abra o fluxo oficial da Meta para concluir o vínculo.');
     } catch (err) {
       console.error('Failed to initiate connection:', err);
-      setError('Falha ao iniciar conexão. Tente novamente.');
+      setError('Falha ao iniciar a conexão oficial da Meta. Tente novamente.');
       setConnecting(false);
     } finally {
       setLoading(false);
     }
-  }, [ensureSessionCredentials, loadQR, loadStatus]);
+  }, [ensureSessionCredentials, loadStatus]);
 
   const disconnect = useCallback(async () => {
     setLoading(true);
@@ -297,7 +326,7 @@ export function useWhatsAppSession({
       setQrCode(null);
       setConnecting(false);
       setIsPaused(false);
-      setStatusMessage('Sessão resetada. Gere um novo QR Code para reconectar.');
+      setStatusMessage('Sessão resetada. Gere um novo fluxo oficial da Meta para reconectar.');
     } catch (err) {
       console.error('Failed to reset WhatsApp session:', err);
       setError('Falha ao resetar a sessão. Tente novamente.');
@@ -409,10 +438,10 @@ export function useWhatsAppSession({
   useEffect(() => {
     if (!enabled || !workspaceId || !authToken || !connecting || status?.connected) return;
     const interval = setInterval(() => {
-      void loadQR();
+      void loadStatus();
     }, 3000);
     return () => clearInterval(interval);
-  }, [authToken, connecting, enabled, loadQR, status?.connected, workspaceId]);
+  }, [authToken, connecting, enabled, loadStatus, status?.connected, workspaceId]);
 
   useEffect(() => {
     if (!status?.connected) {

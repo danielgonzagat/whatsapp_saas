@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { decryptDeviceToken, encryptDeviceToken, hashDeviceToken } from './device-token-crypto';
 
 const N_RE = /\\n/g;
 
@@ -54,22 +55,52 @@ export class NotificationsService {
   async registerDevice(agentId: string, token: string, platform: string) {
     this.logger.log(`Registering device for agent ${agentId}: ${platform}`);
 
-    return this.prisma.deviceToken.upsert({
-      where: { token },
-      update: { agentId, platform },
-      create: {
-        token,
-        platform,
-        agentId,
+    const normalizedToken = String(token || '').trim();
+    const tokenHash = hashDeviceToken(normalizedToken);
+    const tokenCiphertext = encryptDeviceToken(normalizedToken);
+
+    const existing = await this.prisma.deviceToken.findFirst({
+      where: {
+        OR: [{ token: tokenHash }, { token: normalizedToken }],
       },
+      select: { id: true },
     });
+
+    const device = existing
+      ? await this.prisma.deviceToken.update({
+          where: { id: existing.id },
+          data: {
+            token: tokenHash,
+            tokenCiphertext,
+            agentId,
+            platform,
+          },
+        })
+      : await this.prisma.deviceToken.create({
+          data: {
+            token: tokenHash,
+            tokenCiphertext,
+            platform,
+            agentId,
+          },
+        });
+
+    return { deviceId: device.id };
   }
 
   async unregisterDevice(token: string) {
-    this.logger.log(`Unregistering device token: ${token.substring(0, 20)}...`);
+    this.logger.log('Unregistering push device');
+
+    const normalizedToken = String(token || '').trim();
+    const tokenHash = hashDeviceToken(normalizedToken);
 
     const device = await this.prisma.deviceToken
-      .findUnique({ where: { token }, select: { id: true, agentId: true } })
+      .findFirst({
+        where: {
+          OR: [{ token: tokenHash }, { token: normalizedToken }],
+        },
+        select: { id: true, agentId: true },
+      })
       .catch(() => null);
     if (device) {
       await this.auditService
@@ -84,12 +115,13 @@ export class NotificationsService {
         .catch(() => {});
     }
 
-    return this.prisma.deviceToken
-      .delete({
-        where: { token },
+    return this.prisma.deviceToken.deleteMany({
+        where: {
+          OR: [{ token: tokenHash }, { token: normalizedToken }],
+        },
       })
       .catch((err) => {
-        this.logger.warn(`Failed to unregister device token: ${err?.message}`);
+        this.logger.warn(`Failed to unregister push device: ${err?.message}`);
         return null;
       });
   }
@@ -103,7 +135,7 @@ export class NotificationsService {
   ) {
     const devices = await this.prisma.deviceToken.findMany({
       where: { agentId },
-      select: { id: true, token: true },
+      select: { id: true, token: true, tokenCiphertext: true },
       take: 50,
     });
 
@@ -124,7 +156,21 @@ export class NotificationsService {
     }
 
     try {
-      const tokens = devices.map((d) => d.token);
+      const resolvedDevices = devices
+        .map((device) => ({
+          id: device.id,
+          token: device.tokenCiphertext
+            ? decryptDeviceToken(device.tokenCiphertext)
+            : String(device.token || '').trim(),
+        }))
+        .filter((device) => device.token);
+
+      const tokens = resolvedDevices.map((d) => d.token);
+
+      if (tokens.length === 0) {
+        this.logger.warn(`Nenhum device com token de runtime válido para agent ${agentId}`);
+        return { sent: 0, failed: devices.length };
+      }
 
       const message: admin.messaging.MulticastMessage = {
         tokens,
@@ -161,18 +207,21 @@ export class NotificationsService {
 
       // Remover tokens inválidos
       if (response.failureCount > 0) {
-        const tokensToRemove: string[] = [];
+        const deviceIdsToRemove: string[] = [];
         response.responses.forEach((resp, idx) => {
           if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
-            tokensToRemove.push(tokens[idx]);
+            const deviceId = resolvedDevices[idx]?.id;
+            if (deviceId) {
+              deviceIdsToRemove.push(deviceId);
+            }
           }
         });
 
-        if (tokensToRemove.length > 0) {
+        if (deviceIdsToRemove.length > 0) {
           await this.prisma.deviceToken.deleteMany({
-            where: { token: { in: tokensToRemove } },
+            where: { id: { in: deviceIdsToRemove } },
           });
-          this.logger.log(`🗑️ ${tokensToRemove.length} tokens inválidos removidos`);
+          this.logger.log(`🗑️ ${deviceIdsToRemove.length} tokens inválidos removidos`);
         }
       }
 

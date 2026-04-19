@@ -23,7 +23,9 @@ vi.mock('./useCheckoutSocialIdentity', () => ({
     loadingProvider: null,
     socialError: '',
     googleAvailable: false,
+    facebookAvailable: false,
     googleButtonRef: { current: null },
+    startFacebookSignIn: vi.fn(),
   })),
 }));
 

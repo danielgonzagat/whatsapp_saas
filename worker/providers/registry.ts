@@ -1,12 +1,24 @@
 import { prisma } from '../db';
 import { autoProvider } from './auto-provider';
 import { emailProvider } from './email-provider';
-import { type WhatsAppProvider, getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
+import {
+  type WhatsAppProvider,
+  getWhatsAppProviderFromEnv,
+  resolveWhatsAppProvider,
+} from './whatsapp-provider-resolver';
 
 const D_RE = /\D/g;
 
 function getDefaultWhatsAppProvider(): WhatsAppProvider {
   return getWhatsAppProviderFromEnv();
+}
+
+function resolveWorkspaceProvider(workspace: { providerSettings?: unknown } | null | undefined) {
+  const providerSettings =
+    workspace?.providerSettings && typeof workspace.providerSettings === 'object'
+      ? (workspace.providerSettings as Record<string, unknown>)
+      : {};
+  return resolveWhatsAppProvider(providerSettings.whatsappProvider);
 }
 
 export class ProviderRegistry {
@@ -67,7 +79,7 @@ export class ProviderRegistry {
 
     const workspaceConfig = {
       id: contact.workspace.id,
-      whatsappProvider: getDefaultWhatsAppProvider(),
+      whatsappProvider: resolveWorkspaceProvider(contact.workspace),
       jitterMin: contact.workspace.jitterMin,
       jitterMax: contact.workspace.jitterMax,
     };

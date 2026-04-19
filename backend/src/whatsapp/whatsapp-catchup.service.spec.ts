@@ -312,9 +312,38 @@ describe('WhatsAppCatchupService', () => {
       expect.objectContaining({
         workspaceId: 'ws-1',
         phase: 'sync_error',
+        message:
+          'Não consegui sincronizar suas conversas porque o histórico remoto completo não está habilitado nesta conexão. Corrija a configuração da sessão antes de tentar reconectar.',
         meta: expect.objectContaining({
           recoveryBlockedReason: 'noweb_store_misconfigured',
         }),
+      }),
+    );
+  });
+
+  it('keeps unread sweep status copy free of WAHA wording after catchup finishes without imported chats', async () => {
+    const service = buildService();
+
+    await (service as any).scheduleUnreadSweep('ws-1', {
+      reason: 'session_connected',
+      processedChats: 0,
+      touchedChats: 0,
+    });
+
+    expect(autopilotQueue.add).toHaveBeenCalledWith(
+      'sweep-unread-conversations',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        mode: 'reply_all_recent_first',
+      }),
+      expect.any(Object),
+    );
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        phase: 'sync_queue_unread',
+        message:
+          'Sincronização concluída. Vou conferir imediatamente se ainda restam conversas não lidas para responder.',
       }),
     );
   });
@@ -471,6 +500,8 @@ describe('WhatsAppCatchupService', () => {
       expect.objectContaining({
         workspaceId: 'ws-1',
         phase: 'sync_error',
+        message:
+          'Não consegui sincronizar porque a integração oficial do WhatsApp não está mais disponível. Reconecte seus canais Meta para continuar.',
         meta: expect.objectContaining({
           sessionMissing: true,
         }),
@@ -480,9 +511,8 @@ describe('WhatsAppCatchupService', () => {
 
   it('does not schedule catchup for guest workspaces', async () => {
     prisma.workspace.findUnique.mockResolvedValue({
-      name: 'Guest Workspace',
+      name: 'Workspace Temporario',
       providerSettings: {
-        guestMode: true,
         whatsappLifecycle: {
           catchupEnabled: false,
         },
@@ -493,7 +523,7 @@ describe('WhatsAppCatchupService', () => {
 
     await expect(service.triggerCatchup('guest-ws', 'manual')).resolves.toEqual({
       scheduled: false,
-      reason: 'guest_workspace_disabled',
+      reason: 'visitor_workspace_disabled',
     });
 
     expect(redis.set).not.toHaveBeenCalled();

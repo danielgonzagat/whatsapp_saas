@@ -1333,12 +1333,12 @@ export class WhatsappService {
     }
 
     //-----------------------------------------------------------
-    // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (Meta Cloud)
+    // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (integração oficial)
     //-----------------------------------------------------------
 
     if (opts?.forceDirect) {
       this.logger.log(
-        `[SERVICE] Entrega direta forçada via Meta Cloud (workspace=${workspaceId}, to=${to})`,
+        `[SERVICE] Entrega direta forçada via integração oficial do WhatsApp (workspace=${workspaceId}, to=${to})`,
       );
       const result = await this.sendDirectlyViaProvider(workspaceId, to, message, opts);
       if (result.ok) {
@@ -1350,7 +1350,7 @@ export class WhatsappService {
     const workerAvailable = await this.workerRuntime.isAvailable();
     if (!workerAvailable) {
       this.logger.warn(
-        `[SERVICE] Worker indisponível; enviando diretamente via Meta Cloud (workspace=${workspaceId}, to=${to})`,
+        `[SERVICE] Worker indisponível; enviando diretamente via integração oficial do WhatsApp (workspace=${workspaceId}, to=${to})`,
       );
       const result = await this.sendDirectlyViaProvider(workspaceId, to, message, opts);
       if (result.ok) {
@@ -1390,7 +1390,7 @@ export class WhatsappService {
     return {
       error: true,
       message:
-        'Templates legados não são suportados no modo Meta Cloud. Use mensagens diretas ou fluxos do autopilot.',
+        'Templates legados não são suportados na integração oficial do WhatsApp. Use mensagens diretas ou fluxos do autopilot.',
       data: [],
       total: 0,
     };

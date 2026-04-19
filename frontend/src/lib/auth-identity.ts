@@ -6,6 +6,7 @@ export type KloelTokenPayload = {
   workspaceId?: string;
   role?: string;
   name?: string;
+  sessionId?: string;
   guest?: boolean;
   anonymous?: boolean;
   authMode?: string;
@@ -47,6 +48,7 @@ export function isAnonymousKloelPayload(payload?: KloelTokenPayload | null): boo
     .toLowerCase();
 
   return (
+    email.endsWith('@visitor.kloel.local') ||
     email.endsWith('@guest.kloel.local') ||
     payload.guest === true ||
     payload.anonymous === true ||

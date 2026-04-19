@@ -4,7 +4,9 @@ import { authApi } from '@/lib/api';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useRef, useState, useId } from 'react';
+import { buildAppleAuthorizationUrl } from './apple-auth';
 import { useAuth } from './auth-provider';
+import { useFacebookSignIn } from './use-facebook-sign-in';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
@@ -150,6 +152,53 @@ function AppleIcon() {
       <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
     </svg>
   );
+}
+
+function FacebookIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#E0DDD8"
+        d="M13.5 21v-8.02h2.69l.4-3.13H13.5V7.86c0-.91.25-1.53 1.56-1.53H16.7V3.52c-.28-.04-1.23-.12-2.34-.12-2.31 0-3.89 1.41-3.89 4v2.45H7.86v3.13h2.61V21h3.03z"
+      />
+    </svg>
+  );
+}
+
+function readAppleAuthErrorMessage(code: string | null) {
+  switch ((code || '').trim().toLowerCase()) {
+    case 'apple_user_cancelled':
+      return 'Login com Apple cancelado.';
+    case 'apple_invalid_response':
+      return 'A Apple não retornou uma credencial válida.';
+    case 'apple_not_configured':
+      return 'Login com Apple não configurado no frontend.';
+    case 'apple_oauth_failed':
+      return 'Falha ao autenticar com Apple.';
+    default:
+      return '';
+  }
+}
+
+function readAuthNoticeMessage(code: string | null, provider: string | null) {
+  if ((code || '').trim().toLowerCase() !== 'oauth_link_confirmation_required') {
+    return '';
+  }
+
+  const providerLabel = (() => {
+    switch ((provider || '').trim().toLowerCase()) {
+      case 'google':
+        return 'Google';
+      case 'facebook':
+        return 'Facebook';
+      case 'apple':
+        return 'Apple';
+      default:
+        return 'o provedor social';
+    }
+  })();
+
+  return `Já existe uma conta KLOEL com este email. Enviamos um link para confirmar a vinculação com ${providerLabel}.`;
 }
 
 function EyeIcon() {
@@ -487,7 +536,14 @@ function TheMachine() {
    ──────────────────────────────────────────────────────────── */
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const fid = useId();
-  const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
+  const {
+    signIn,
+    signUp,
+    requestMagicLink,
+    signInWithGoogle,
+    signInWithFacebook,
+    isAuthenticated,
+  } = useAuth();
   const redirectingRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -497,7 +553,9 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const shouldBypassExistingSessionRedirect = useCallback(() => {
     if (typeof window === 'undefined') return false;
@@ -529,6 +587,24 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     }
   }, [isAuthenticated, redirectToApp, shouldBypassExistingSessionRedirect]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const search = new URLSearchParams(window.location.search);
+    const authError = search.get('error');
+    const authNotice = readAuthNoticeMessage(search.get('notice'), search.get('provider'));
+    const appleMessage = readAppleAuthErrorMessage(authError);
+    if (authNotice) {
+      setInfoMessage(authNotice);
+      setMagicLinkSent(true);
+      setError('');
+      setIsLoading(false);
+      return;
+    }
+    if (!appleMessage) return;
+    setError(appleMessage);
+    setIsLoading(false);
+  }, []);
+
   /* switch mode (client-side only) */
   const switchMode = (m: Mode) => {
     setMode(m);
@@ -537,7 +613,9 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     setPassword('');
     setShowPassword(false);
     setError('');
+    setInfoMessage('');
     setForgotSent(false);
+    setMagicLinkSent(false);
   };
 
   /* ── handlers ── */
@@ -568,6 +646,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
 
     if (!result.success) {
       setError(result.error || 'Erro inesperado. Tente novamente.');
+      setInfoMessage('');
       setIsLoading(false);
       return;
     }
@@ -583,10 +662,18 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const handleGoogleCredential = useCallback(
     async (credential: string) => {
       setError('');
+      setInfoMessage('');
       setIsLoading(true);
       const result = await signInWithGoogle(credential);
       if (!result.success) {
-        setError(result.error || 'Falha ao autenticar com Google.');
+        if (result.error?.includes('confirmar a vinculação')) {
+          setError('');
+          setInfoMessage(result.error);
+          setMagicLinkSent(true);
+        } else {
+          setInfoMessage('');
+          setError(result.error || 'Falha ao autenticar com Google.');
+        }
         setIsLoading(false);
         return;
       }
@@ -595,8 +682,47 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     [redirectToApp, signInWithGoogle],
   );
 
+  const handleFacebookAccessToken = useCallback(
+    async (accessToken: string) => {
+      setError('');
+      setInfoMessage('');
+      setIsLoading(true);
+      const result = await signInWithFacebook(accessToken);
+      if (!result.success) {
+        if (result.error?.includes('confirmar a vinculação')) {
+          setError('');
+          setInfoMessage(result.error);
+          setMagicLinkSent(true);
+        } else {
+          setInfoMessage('');
+          setError(result.error || 'Falha ao autenticar com Facebook.');
+        }
+        setIsLoading(false);
+        return result;
+      }
+      redirectToApp();
+      return result;
+    },
+    [redirectToApp, signInWithFacebook],
+  );
+
   const googleButtonRef = useRef<HTMLDivElement>(null);
   useGoogleSignIn(handleGoogleCredential, googleButtonRef);
+  const { available: facebookAvailable, signInWithFacebook: beginFacebookSignIn } =
+    useFacebookSignIn({
+      disabled: isLoading,
+      onAccessToken: handleFacebookAccessToken,
+      onError: (message) => {
+        if (message.includes('confirmar a vinculação')) {
+          setError('');
+          setInfoMessage(message);
+          setMagicLinkSent(true);
+          return;
+        }
+        setInfoMessage('');
+        setError(message);
+      },
+    });
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
@@ -615,13 +741,48 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     }
   };
 
+  const handleMagicLink = async () => {
+    if (!email.trim()) {
+      setError('Preencha o e-mail.');
+      return;
+    }
+
+    setError('');
+    setInfoMessage('');
+    setForgotSent(false);
+    setIsLoading(true);
+
+    try {
+      const result = await requestMagicLink(email.trim());
+      if (!result.success) {
+        setError(result.error || 'Erro ao enviar link mágico. Tente novamente.');
+        return;
+      }
+
+      setMagicLinkSent(true);
+      setInfoMessage(result.message || 'Link mágico enviado. Verifique sua caixa de entrada.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleApple = async () => {
     setIsLoading(true);
     try {
-      // Apple Sign-In via REST (for web, uses Apple JS SDK redirect flow)
-      // The identityToken is obtained from Apple's authorization response
-      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.app')}&redirect_uri=${encodeURIComponent(`${window.location.origin}/api/auth/apple/callback`)}&response_type=code id_token&scope=name email&response_mode=form_post`;
-      window.location.href = appleAuthUrl;
+      const clientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID?.trim() || '';
+      if (!clientId) {
+        setError('Login com Apple não configurado no frontend.');
+        setIsLoading(false);
+        return;
+      }
+
+      const nextPath = resolveNextPath('/');
+      const appleAuthUrl = buildAppleAuthorizationUrl({
+        clientId,
+        origin: window.location.origin,
+        nextPath,
+      });
+      window.location.assign(appleAuthUrl.toString());
     } catch (e) {
       console.error('Apple Sign-In error:', e);
       setIsLoading(false);
@@ -756,7 +917,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                 gap: 12,
                 marginBottom: 28,
               }}
@@ -798,6 +959,39 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   }}
                 />
               </div>
+
+              <button
+                type="button"
+                onClick={() => void beginFacebookSignIn()}
+                disabled={isLoading || !facebookAvailable}
+                aria-label="Facebook"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  height: 44,
+                  background: '#111113',
+                  border: '1px solid #222226',
+                  borderRadius: 6,
+                  color: '#E0DDD8',
+                  fontSize: 13,
+                  fontFamily: sora,
+                  cursor: isLoading || !facebookAvailable ? 'not-allowed' : 'pointer',
+                  opacity: isLoading || !facebookAvailable ? 0.45 : 1,
+                  transition: 'border-color 150ms ease, opacity 150ms ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (isLoading || !facebookAvailable) return;
+                  e.currentTarget.style.borderColor = '#333338';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#222226';
+                }}
+              >
+                <FacebookIcon />
+                Facebook
+              </button>
 
               <button
                 type="button"
@@ -976,26 +1170,79 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                     E-mail de recuperacao enviado. Verifique sua caixa de entrada.
                   </p>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    disabled={isLoading}
+                  <div
                     style={{
-                      fontFamily: sora,
-                      fontSize: 12,
-                      color: '#E85D30',
-                      background: 'none',
-                      border: 'none',
-                      cursor: isLoading ? 'default' : 'pointer',
-                      textAlign: 'left',
-                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 16,
                       marginTop: 12,
-                      transition: 'opacity 150ms ease',
                     }}
                   >
-                    Esqueci minha senha
-                  </button>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={isLoading}
+                      style={{
+                        fontFamily: sora,
+                        fontSize: 12,
+                        color: '#E85D30',
+                        background: 'none',
+                        border: 'none',
+                        cursor: isLoading ? 'default' : 'pointer',
+                        textAlign: 'left',
+                        padding: 0,
+                        transition: 'opacity 150ms ease',
+                      }}
+                    >
+                      Esqueci minha senha
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleMagicLink}
+                      disabled={isLoading}
+                      style={{
+                        fontFamily: sora,
+                        fontSize: 12,
+                        color: '#E0DDD8',
+                        background: 'none',
+                        border: 'none',
+                        cursor: isLoading ? 'default' : 'pointer',
+                        textAlign: 'right',
+                        padding: 0,
+                        transition: 'opacity 150ms ease',
+                      }}
+                    >
+                      Receber link mágico
+                    </button>
+                  </div>
                 ))}
+
+              {mode === 'login' && magicLinkSent ? (
+                <p
+                  style={{
+                    fontFamily: sora,
+                    fontSize: 12,
+                    color: '#6E6E73',
+                    marginTop: 12,
+                  }}
+                >
+                  {infoMessage || 'Link mágico enviado. Verifique sua caixa de entrada.'}
+                </p>
+              ) : null}
+
+              {!magicLinkSent && infoMessage ? (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: '#6E6E73',
+                    marginTop: 12,
+                    fontFamily: sora,
+                  }}
+                >
+                  {infoMessage}
+                </p>
+              ) : null}
 
               {/* error */}
               {error && (

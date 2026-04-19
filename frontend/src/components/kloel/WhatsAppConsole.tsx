@@ -400,12 +400,11 @@ function WhatsAppConsoleInner({
     error,
     isPaused,
     loading,
-    qrCode,
-    reset,
     status,
     statusMessage,
     connect,
     disconnect,
+    loadStatus,
   } = useWhatsAppSession({
     enabled: true,
     onConnectionChange,
@@ -555,7 +554,7 @@ function WhatsAppConsoleInner({
               className={cn('h-6 w-6', connected && !isPaused ? 'animate-pulse' : undefined)}
             />
             <span className="text-xs font-medium text-slate-600">
-              {connected ? (isPaused ? 'Pausado' : 'Ao vivo') : 'QR Code'}
+              {connected ? (isPaused ? 'Pausado' : 'Ao vivo') : 'Desconectado'}
             </span>
           </div>
         </button>
@@ -580,8 +579,8 @@ function WhatsAppConsoleInner({
                 {connected
                   ? `${status?.pushName || 'Sessão conectada'}${status?.phone ? ` · ${status.phone}` : ''}`
                   : connecting
-                    ? 'Aguardando leitura do QR Code'
-                    : 'Sessão desconectada'}
+                    ? 'Abrindo fluxo oficial da Meta'
+                    : 'Integração Meta desconectada'}
               </div>
             </div>
           </div>
@@ -616,47 +615,44 @@ function WhatsAppConsoleInner({
                     <Smartphone className="h-5 w-5 text-emerald-600" aria-hidden="true" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-slate-900">Escaneie seu QR Code</div>
+                    <div className="text-sm font-semibold text-slate-900">
+                      Conectar canais Meta
+                    </div>
                     <div className="text-xs text-slate-500">
-                      Toda a conexão do WhatsApp acontece neste painel.
+                      WhatsApp, Instagram e Messenger usam o fluxo oficial da Meta.
                     </div>
                   </div>
                 </div>
 
                 <div className="rounded-3xl bg-slate-50 px-4 py-4">
-                  {qrCode ? (
-                    // biome-ignore lint/performance/noImgElement: dynamic data URL QR code from WAHA session, ephemeral and not worth next/image optimization
-                    <img
-                      src={qrCode}
-                      alt="QR Code do WhatsApp"
-                      width={224}
-                      height={224}
-                      className="mx-auto h-56 w-56 rounded-md bg-white p-3 shadow-sm"
-                    />
-                  ) : (
-                    <div className="flex h-56 flex-col items-center justify-center rounded-md border border-dashed border-[#333338] bg-[#19191C] text-center">
-                      <div className="mb-3">
-                        <KloelMushroomVisual
-                          size={44}
-                          traceColor="#FFFFFF"
-                          animated={connecting}
-                          spores={connecting ? 'animated' : 'none'}
-                        />
-                      </div>
-                      <div className="text-sm font-medium text-slate-700">
-                        {connecting ? 'Gerando QR Code...' : 'Nenhum QR Code disponível'}
-                      </div>
-                      <div className="mt-1 max-w-[180px] text-xs leading-relaxed text-slate-500">
-                        Inicie a sessão para escanear pelo celular.
-                      </div>
+                  <div className="flex h-56 flex-col items-center justify-center rounded-md border border-dashed border-[#333338] bg-[#19191C] px-5 text-center">
+                    <div className="mb-3">
+                      <KloelMushroomVisual
+                        size={44}
+                        traceColor="#FFFFFF"
+                        animated={connecting}
+                        spores={connecting ? 'animated' : 'none'}
+                      />
                     </div>
-                  )}
+                    <div className="text-sm font-medium text-slate-100">
+                      {connecting ? 'Abrindo Meta...' : 'Fluxo oficial da Meta'}
+                    </div>
+                    <div className="mt-2 max-w-[220px] text-xs leading-relaxed text-slate-400">
+                      O runtime legado foi descontinuado. Use o onboarding oficial da Meta para
+                      vincular o WhatsApp Business e os demais canais.
+                    </div>
+                    {status?.authUrl ? (
+                      <div className="mt-3 text-[11px] uppercase tracking-[0.14em] text-emerald-400">
+                        Link oficial pronto
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="mt-4 space-y-2 text-sm text-slate-500">
-                  <div>1. Abra o WhatsApp no celular.</div>
-                  <div>2. Vá em aparelhos conectados.</div>
-                  <div>3. Escaneie o QR Code deste painel.</div>
+                  <div>1. Abra o fluxo oficial da Meta.</div>
+                  <div>2. Escolha o Business, a página e o número do WhatsApp Business.</div>
+                  <div>3. Volte ao Kloel e atualize o status da integração.</div>
                 </div>
 
                 {statusMessage ? (
@@ -678,11 +674,11 @@ function WhatsAppConsoleInner({
                     disabled={loading}
                     className="flex-1 rounded-md bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {connecting ? 'Aguardando leitura' : 'Conectar WhatsApp'}
+                    {connecting ? 'Abrindo Meta...' : 'Conectar canais Meta'}
                   </button>
                   <button
                     type="button"
-                    onClick={reset}
+                    onClick={() => void loadStatus()}
                     disabled={loading}
                     className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >

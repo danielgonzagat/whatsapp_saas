@@ -1,17 +1,6 @@
 'use client';
 
-import {
-  clearGuestWorkspaceClaimCandidate,
-  getGuestWorkspaceClaimCandidate,
-  rememberGuestWorkspaceClaimCandidate,
-} from '@/lib/anonymous-session';
-import {
-  authApi,
-  billingApi,
-  resolveWorkspaceFromAuthPayload,
-  tokenStorage,
-  whatsappApi,
-} from '@/lib/api';
+import { authApi, billingApi, resolveWorkspaceFromAuthPayload, tokenStorage } from '@/lib/api';
 import {
   decodeKloelJwtPayload,
   isAnonymousKloelPayload,
@@ -64,7 +53,9 @@ interface AuthContextType extends AuthState {
     password: string,
   ) => Promise<{ success: boolean; error?: string }>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  requestMagicLink: (email: string) => Promise<{ success: boolean; error?: string; message?: string }>;
   signInWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithFacebook: (accessToken: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   completeOnboarding: () => void;
   dismissOnboardingForSession: () => void;
@@ -130,25 +121,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'signup' | 'login'>('signup');
 
-  const claimGuestWhatsAppSession = useCallback(async (targetWorkspaceId?: string | null) => {
-    const normalizedTargetWorkspaceId = String(targetWorkspaceId || '').trim();
-    if (!normalizedTargetWorkspaceId) return;
-
-    const sourceWorkspaceId = getGuestWorkspaceClaimCandidate();
-    if (!sourceWorkspaceId || sourceWorkspaceId === normalizedTargetWorkspaceId) {
-      return;
-    }
-
-    try {
-      const result = await whatsappApi.claimSession(sourceWorkspaceId);
-      if (!result.error && result.data?.success !== false) {
-        clearGuestWorkspaceClaimCandidate();
-      }
-    } catch (error) {
-      console.error('Failed to claim guest WhatsApp session for authenticated workspace:', error);
-    }
-  }, []);
-
   const checkAuthStatus = useCallback(async () => {
     const token = tokenStorage.getToken();
 
@@ -207,7 +179,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (workspace?.id) {
         tokenStorage.setWorkspaceId(workspace.id);
-        await claimGuestWhatsAppSession(workspace.id);
       }
 
       // Check onboarding status
@@ -257,7 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: true,
       }));
     }
-  }, [claimGuestWhatsAppSession]);
+  }, []);
 
   useEffect(() => {
     checkAuthStatus();
@@ -295,7 +266,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (workspace?.id) {
         tokenStorage.setWorkspaceId(workspace.id);
-        await claimGuestWhatsAppSession(workspace.id);
       }
 
       tokenStorage.ensureAuthCookie();
@@ -342,20 +312,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { success: true as const };
     },
-    [claimGuestWhatsAppSession],
+    [],
   );
 
-  const rememberWorkspaceClaimCandidateForAuthUpgrade = useCallback(() => {
-    if (authState.isAuthenticated) return;
-
-    const existingWorkspaceId = tokenStorage.getWorkspaceId();
-    if (!existingWorkspaceId) return;
-
-    rememberGuestWorkspaceClaimCandidate(existingWorkspaceId);
-  }, [authState.isAuthenticated]);
-
   const signUp = async (email: string, name: string, password: string) => {
-    rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signUp(email, name, password);
 
     if (res.error) {
@@ -389,7 +349,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signIn(email, password);
 
     if (res.error) {
@@ -417,8 +376,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: false, error: 'Login failed' };
   };
 
+  const requestMagicLink = async (email: string) => {
+    const res = await authApi.requestMagicLink(email);
+
+    if (res.error) {
+      if (res.status === 429) {
+        return {
+          success: false,
+          error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+        };
+      }
+      if (res.status === 503) {
+        return {
+          success: false,
+          error: 'Serviço indisponível no momento. Tente novamente em instantes.',
+        };
+      }
+      return { success: false, error: res.error };
+    }
+
+    return {
+      success: true,
+      message: res.data?.message || 'Se o email existir, você receberá um link de acesso.',
+    };
+  };
+
   const signInWithGoogle = async (credential: string) => {
-    rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signInWithGoogle(credential);
 
     if (res.error) {
@@ -446,6 +429,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return { success: false, error: 'Falha ao autenticar com Google.' };
+  };
+
+  const signInWithFacebook = async (accessToken: string) => {
+    const res = await authApi.signInWithFacebook(accessToken);
+
+    if (res.error) {
+      if (res.status === 429) {
+        return {
+          success: false,
+          error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+        };
+      }
+      if (res.status === 503) {
+        return {
+          success: false,
+          error:
+            res.error ||
+            'Login com Facebook indisponível no momento. Tente novamente em instantes.',
+        };
+      }
+      return { success: false, error: res.error };
+    }
+
+    if (res.data?.user) {
+      return hydrateFromAuthResponse(res.data, {
+        fallbackEmail: res.data.user.email,
+        fallbackName: res.data.user.name ?? undefined,
+      });
+    }
+
+    return { success: false, error: 'Falha ao autenticar com Facebook.' };
   };
 
   const signOut = async () => {
@@ -499,7 +513,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userEmail: authState.user?.email || null,
         signUp,
         signIn,
+        requestMagicLink,
         signInWithGoogle,
+        signInWithFacebook,
         signOut,
         completeOnboarding,
         dismissOnboardingForSession,

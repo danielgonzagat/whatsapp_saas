@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { apiFetch } from '@/lib/api/core';
 import { getWhatsAppStatus, type WhatsAppConnectionStatus } from '@/lib/api/whatsapp';
+import { resolveMetaConnectUrl } from '@/components/kloel/marketing/meta-connect';
 import { useCallback, useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
@@ -31,6 +32,51 @@ type MetaStatusResponse = {
   whatsappPhoneNumberId?: string | null;
   whatsappBusinessId?: string | null;
 };
+
+function formatMetaQualityRating(value?: string | null) {
+  switch (String(value || '').trim().toUpperCase()) {
+    case 'GREEN':
+      return 'Verde';
+    case 'YELLOW':
+      return 'Em observação';
+    case 'RED':
+      return 'Crítico';
+    default:
+      return 'Não informado';
+  }
+}
+
+function formatMetaVerificationStatus(value?: string | null) {
+  const normalized = String(value || '').trim().toUpperCase();
+  if (!normalized) return 'Não informado';
+  return (
+    {
+      VERIFIED: 'Verificado',
+      APPROVED: 'Aprovado',
+      PENDING: 'Pendente',
+      REVIEWING: 'Em revisão',
+      REJECTED: 'Rejeitado',
+      AVAILABLE_WITHOUT_REVIEW: 'Disponível sem revisão',
+      EXPIRED: 'Expirado',
+    }[normalized] || normalized
+  );
+}
+
+function formatWhatsAppProviderLabel(value?: string | null) {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
+
+  if (!normalized || normalized === 'meta-cloud') {
+    return 'API oficial da Meta';
+  }
+
+  if (normalized === 'legacy-runtime' || normalized === 'whatsapp-api' || normalized === 'waha') {
+    return 'Runtime legado';
+  }
+
+  return normalized;
+}
 
 function readErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) {
@@ -115,10 +161,7 @@ export default function WhatsAppPage() {
       const res = await apiFetch<{ url?: string }>(
         '/meta/auth/url?channel=whatsapp&returnTo=/whatsapp',
       );
-      const url = String(res.data?.url || '').trim();
-      if (!url) {
-        throw new Error('Nao foi possivel gerar a URL de conexao da Meta.');
-      }
+      const url = resolveMetaConnectUrl(res as { data?: { url?: string }; error?: string; url?: string });
       window.location.href = url;
     } catch (error: unknown) {
       setActionMessage(readErrorMessage(error, 'Falha ao iniciar a conexao Meta.'));
@@ -142,6 +185,23 @@ export default function WhatsAppPage() {
 
   const whatsappConnected =
     Boolean(metaStatus?.channels?.whatsapp?.connected) && Boolean(whatsAppStatus?.connected);
+  const qualityRating = formatMetaQualityRating(whatsAppStatus?.qualityRating);
+  const codeVerificationStatus = formatMetaVerificationStatus(
+    whatsAppStatus?.codeVerificationStatus,
+  );
+  const nameStatus = formatMetaVerificationStatus(whatsAppStatus?.nameStatus);
+  const qualityWarning =
+    whatsAppStatus?.qualityRating &&
+    String(whatsAppStatus.qualityRating).trim().toUpperCase() !== 'GREEN';
+  const verificationWarning =
+    (whatsAppStatus?.codeVerificationStatus &&
+      !['VERIFIED', 'APPROVED'].includes(
+        String(whatsAppStatus.codeVerificationStatus).trim().toUpperCase(),
+      )) ||
+    (whatsAppStatus?.nameStatus &&
+      !['APPROVED', 'AVAILABLE_WITHOUT_REVIEW'].includes(
+        String(whatsAppStatus.nameStatus).trim().toUpperCase(),
+      ));
 
   return (
     <div className="min-h-screen bg-[#0A0A0C] px-6 py-8 text-[#EAEAF0]">
@@ -150,10 +210,10 @@ export default function WhatsAppPage() {
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#7E7E85]">
-                Meta Cloud Runtime
+                Runtime oficial do WhatsApp
               </p>
               <h1 className="text-3xl font-semibold tracking-[-0.03em] text-white">
-                WhatsApp oficial, sem QR, sem browser e sem WAHA
+                WhatsApp oficial na infraestrutura da Meta
               </h1>
               <p className="mt-3 text-sm leading-6 text-[#A9A9B0]">
                 Esta area valida o canal oficial da Meta que o Kloel usa para WhatsApp, Instagram,
@@ -217,6 +277,9 @@ export default function WhatsAppPage() {
                   'nao informado',
               )}`,
               `Numero: ${String(whatsAppStatus?.phone || 'nao resolvido')}`,
+              `Qualidade: ${qualityRating}`,
+              `Código: ${codeVerificationStatus}`,
+              `Nome Meta: ${nameStatus}`,
             ]}
           />
           <ChannelCard
@@ -272,7 +335,9 @@ export default function WhatsAppPage() {
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
                   Provider ativo
                 </div>
-                <div className="mt-2">{String(whatsAppStatus?.provider || 'meta-cloud')}</div>
+                <div className="mt-2">
+                  {formatWhatsAppProviderLabel(whatsAppStatus?.provider || 'meta-cloud')}
+                </div>
               </div>
               <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
@@ -292,9 +357,34 @@ export default function WhatsAppPage() {
                   )}
                 </div>
               </div>
+              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
+                  Quality rating
+                </div>
+                <div className="mt-2">{qualityRating}</div>
+              </div>
+              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
+                  Verificação do código
+                </div>
+                <div className="mt-2">{codeVerificationStatus}</div>
+              </div>
+              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
+                  Status do nome
+                </div>
+                <div className="mt-2">{nameStatus}</div>
+              </div>
             </div>
           )}
         </div>
+
+        {qualityWarning || verificationWarning ? (
+          <div className="mt-6 rounded-[24px] border border-[#5A3A20] bg-[#1A1310] px-5 py-4 text-sm text-[#F2D2BF]">
+            O número oficial da Meta precisa de atenção. Revise o quality rating, a verificação do
+            código e o status do nome antes de ampliar volume outbound.
+          </div>
+        ) : null}
       </div>
     </div>
   );

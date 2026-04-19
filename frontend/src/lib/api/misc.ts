@@ -73,7 +73,7 @@ export async function getFinanceWebhookRecent(workspaceId: string, data?: { limi
 // ============= KYC CHANGE PASSWORD (explicit apiFetch for PULSE detection) =============
 
 export async function kycChangePassword(current: string, newPw: string) {
-  return apiFetch('/api/kyc/security/change-password', {
+  return apiFetch('/api/auth/change-password', {
     method: 'POST',
     body: { currentPassword: current, newPassword: newPw },
   });
@@ -1224,7 +1224,7 @@ export const kycApi = {
 
   // Security
   changePassword: (currentPassword: string, newPassword: string) =>
-    kycMutation('/kyc/security/change-password', {
+    kycMutation('/auth/change-password', {
       method: 'POST',
       body: { currentPassword, newPassword },
     }),

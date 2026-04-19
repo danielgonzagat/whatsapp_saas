@@ -14,7 +14,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getWhatsAppProviderFromEnv } from '../providers/whatsapp-provider-resolver';
+import {
+  getWhatsAppProviderFromEnv,
+  normalizeWhatsAppProvider,
+  resolveWhatsAppProvider,
+} from '../providers/whatsapp-provider-resolver';
 
 describe('getWhatsAppProviderFromEnv — ADR 0001 §D7', () => {
   let originalEnv: string | undefined;
@@ -64,5 +68,37 @@ describe('getWhatsAppProviderFromEnv — ADR 0001 §D7', () => {
   it('returns meta-cloud for unknown values', () => {
     process.env.WHATSAPP_PROVIDER_DEFAULT = 'unknown-provider';
     expect(getWhatsAppProviderFromEnv()).toBe('meta-cloud');
+  });
+});
+
+describe('resolveWhatsAppProvider — workspace precedence', () => {
+  let originalEnv: string | undefined;
+
+  beforeEach(() => {
+    originalEnv = process.env.WHATSAPP_PROVIDER_DEFAULT;
+  });
+
+  afterEach(() => {
+    if (originalEnv === undefined) {
+      delete process.env.WHATSAPP_PROVIDER_DEFAULT;
+    } else {
+      process.env.WHATSAPP_PROVIDER_DEFAULT = originalEnv;
+    }
+  });
+
+  it('normalizes provider aliases the same way as the backend', () => {
+    expect(normalizeWhatsAppProvider('meta')).toBe('meta-cloud');
+    expect(normalizeWhatsAppProvider('whatsapp-web-agent')).toBe('whatsapp-api');
+    expect(normalizeWhatsAppProvider('  WAHA  ')).toBe('whatsapp-api');
+  });
+
+  it('prefers the explicit workspace provider over the env default', () => {
+    process.env.WHATSAPP_PROVIDER_DEFAULT = 'meta-cloud';
+    expect(resolveWhatsAppProvider('whatsapp-api')).toBe('whatsapp-api');
+  });
+
+  it('falls back to the env default when the workspace value is invalid', () => {
+    process.env.WHATSAPP_PROVIDER_DEFAULT = 'whatsapp-api';
+    expect(resolveWhatsAppProvider('invalid-provider')).toBe('whatsapp-api');
   });
 });

@@ -8,6 +8,7 @@ import {
   Query,
   Req,
   Res,
+  ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
@@ -17,6 +18,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
+import { decryptMetaConnectionToken, encryptMetaConnectionToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 
 /**
@@ -34,7 +36,6 @@ export class MetaAuthController {
 
   private readonly appId = process.env.META_APP_ID || '';
   private readonly appSecret = process.env.META_APP_SECRET || '';
-  private readonly configId = process.env.META_CONFIG_ID || '';
   private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
   constructor(
@@ -115,11 +116,19 @@ export class MetaAuthController {
     @Query('returnTo') returnTo?: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
+    const url = this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+      channel,
+      returnTo: this.sanitizeReturnTo(returnTo, channel),
+    });
+
+    if (!url) {
+      throw new ServiceUnavailableException(
+        'Meta Embedded Signup não configurado no servidor.',
+      );
+    }
+
     return {
-      url: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
-        channel,
-        returnTo: this.sanitizeReturnTo(returnTo, channel),
-      }),
+      url,
     };
   }
 
@@ -251,11 +260,11 @@ export class MetaAuthController {
         where: { workspaceId },
         create: {
           workspaceId,
-          accessToken,
+          accessToken: encryptMetaConnectionToken(accessToken),
           tokenExpiresAt,
           pageId,
           pageName,
-          pageAccessToken,
+          pageAccessToken: encryptMetaConnectionToken(pageAccessToken),
           instagramAccountId,
           instagramUsername,
           whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
@@ -264,11 +273,11 @@ export class MetaAuthController {
           status: 'connected',
         },
         update: {
-          accessToken,
+          accessToken: encryptMetaConnectionToken(accessToken),
           tokenExpiresAt,
           pageId,
           pageName,
-          pageAccessToken,
+          pageAccessToken: encryptMetaConnectionToken(pageAccessToken),
           instagramAccountId,
           instagramUsername,
           whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
@@ -316,7 +325,10 @@ export class MetaAuthController {
 
     // Revoke permission on Meta's side (best-effort)
     try {
-      await this.metaSdk.graphApiDelete('me/permissions', connection.accessToken);
+      await this.metaSdk.graphApiDelete(
+        'me/permissions',
+        decryptMetaConnectionToken(connection.accessToken),
+      );
     } catch {
       this.logger.warn(
         `Failed to revoke Meta permissions for workspace ${workspaceId} (non-blocking)`,
@@ -362,6 +374,9 @@ export class MetaAuthController {
       return { connected: false };
     }
 
+    const whatsappHealth = connection.whatsappPhoneNumberId
+      ? await this.metaWhatsApp.getPhoneNumberDetails(workspaceId).catch(() => null)
+      : null;
     const tokenExpired =
       connection.tokenExpiresAt && new Date(connection.tokenExpiresAt) < new Date();
 
@@ -374,7 +389,14 @@ export class MetaAuthController {
           provider: 'meta-cloud',
           phoneNumberId: connection.whatsappPhoneNumberId,
           whatsappBusinessId: connection.whatsappBusinessId,
-          status: connection.whatsappPhoneNumberId ? 'connected' : 'connection_incomplete',
+          phoneNumber: whatsappHealth?.phoneNumber || null,
+          pushName: whatsappHealth?.pushName || null,
+          qualityRating: whatsappHealth?.qualityRating || null,
+          codeVerificationStatus: whatsappHealth?.codeVerificationStatus || null,
+          nameStatus: whatsappHealth?.nameStatus || null,
+          status:
+            whatsappHealth?.status ||
+            (connection.whatsappPhoneNumberId ? 'connected' : 'connection_incomplete'),
         },
         instagram: {
           connected: Boolean(connection.instagramAccountId),
@@ -393,6 +415,10 @@ export class MetaAuthController {
           status: connection.adAccountId ? 'connected' : 'disconnected',
         },
       },
+      phoneNumber: whatsappHealth?.phoneNumber || null,
+      qualityRating: whatsappHealth?.qualityRating || null,
+      codeVerificationStatus: whatsappHealth?.codeVerificationStatus || null,
+      nameStatus: whatsappHealth?.nameStatus || null,
       ...connection,
     };
   }

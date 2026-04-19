@@ -13,7 +13,7 @@ const AUTH_PATH_PREFIXES = [
   '/onboarding-chat',
   '/auth/apple/callback',
 ];
-const MARKETING_PATH_PREFIXES = ['/', '/terms', '/privacy', '/cookies'];
+const MARKETING_PATH_PREFIXES = ['/', '/terms', '/privacy', '/data-deletion', '/cookies'];
 const APP_PATH_PREFIXES = [
   '/dashboard',
   '/account',
@@ -231,7 +231,11 @@ export function isAuthPath(pathname: string): boolean {
 
 export function isMarketingPath(pathname: string): boolean {
   return MARKETING_PATH_PREFIXES.some((prefix) =>
-    prefix === '/' ? pathname === '/' : pathname === prefix || pathname.startsWith(`${prefix}?`),
+    prefix === '/'
+      ? pathname === '/'
+      : pathname === prefix ||
+        pathname.startsWith(`${prefix}/`) ||
+        pathname.startsWith(`${prefix}?`),
   );
 }
 

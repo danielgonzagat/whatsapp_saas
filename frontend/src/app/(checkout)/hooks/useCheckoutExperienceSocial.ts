@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import {
   EMPTY_CHECKOUT_EXPERIENCE_FORM,
@@ -12,10 +12,14 @@ import {
 } from './checkout-experience-social-helpers';
 import { finalizeCheckoutOrder } from './checkout-order-submit';
 import { useCheckoutExperienceAutomation } from './useCheckoutExperienceAutomation';
-import { useCheckoutSocialIdentity } from './useCheckoutSocialIdentity';
+import {
+  useCheckoutSocialIdentity,
+  type CheckoutSocialIdentitySnapshot,
+} from './useCheckoutSocialIdentity';
 import { validateCoupon } from './useCheckout';
 
 const D_RE = /\D/g;
+const GOOGLE_PREFILL_SESSION_KEY = 'kloel.checkout.google-prefill-dismissed.v1';
 
 export function useCheckoutExperienceSocial({
   product,
@@ -53,10 +57,24 @@ export function useCheckoutExperienceSocial({
     'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null
   >(null);
   const [form, setForm] = useState<CheckoutExperienceForm>(EMPTY_CHECKOUT_EXPERIENCE_FORM);
+  const [googleExtendedPrefillDismissed, setGoogleExtendedPrefillDismissed] = useState(
+    () => readGooglePrefillDismissed(),
+  );
   const redirectTimer = useRef<number | null>(null);
+  const googlePeoplePrefillEnabled =
+    process.env.NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL?.trim().toLowerCase() ===
+      'true' ||
+    process.env.NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED?.trim().toLowerCase() === 'true';
 
   const { fmt } = helpers;
   const social = useCheckoutSocialIdentity({ slug, checkoutCode, enabled: Boolean(slug) });
+  const googleExtendedPrefillAvailable = Boolean(
+    googlePeoplePrefillEnabled &&
+      social.socialIdentity?.provider === 'google' &&
+      hasGoogleExtendedPrefillData(social.socialIdentity),
+  );
+  const googleExtendedPrefillActive =
+    googleExtendedPrefillAvailable && !googleExtendedPrefillDismissed;
 
   const derivedState = useMemo(
     () =>
@@ -128,6 +146,7 @@ export function useCheckoutExperienceSocial({
     supportsBoleto,
     redirectTimer,
     socialIdentity: social.socialIdentity,
+    allowGoogleExtendedPrefill: googleExtendedPrefillActive,
     setForm,
     couponApplied,
     setCouponApplied,
@@ -146,6 +165,36 @@ export function useCheckoutExperienceSocial({
     setCouponCode,
     setShowCouponPopup,
   });
+
+  const dismissGooglePrefill = useCallback(() => {
+    setGoogleExtendedPrefillDismissed(true);
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.setItem(GOOGLE_PREFILL_SESSION_KEY, '1');
+      } catch {
+        // Ignore public-checkout storage failures.
+      }
+    }
+
+    const snapshot = social.socialIdentity;
+    if (!snapshot || snapshot.provider !== 'google') return;
+
+    setForm((prev) => ({
+      ...prev,
+      phone: snapshot.phone && prev.phone === snapshot.phone ? '' : prev.phone,
+      cep: snapshot.cep && prev.cep === snapshot.cep ? '' : prev.cep,
+      street: snapshot.street && prev.street === snapshot.street ? '' : prev.street,
+      number: snapshot.number && prev.number === snapshot.number ? '' : prev.number,
+      neighborhood:
+        snapshot.neighborhood && prev.neighborhood === snapshot.neighborhood
+          ? ''
+          : prev.neighborhood,
+      city: snapshot.city && prev.city === snapshot.city ? '' : prev.city,
+      state: snapshot.state && prev.state === snapshot.state ? '' : prev.state,
+      complement:
+        snapshot.complement && prev.complement === snapshot.complement ? '' : prev.complement,
+    }));
+  }, [social.socialIdentity]);
 
   const updateField = useCallback(
     (field: keyof CheckoutExperienceForm) =>
@@ -474,6 +523,37 @@ export function useCheckoutExperienceSocial({
     socialLoadingProvider: social.loadingProvider,
     socialError: social.socialError,
     googleAvailable: social.googleAvailable,
+    facebookAvailable: social.facebookAvailable,
+    appleAvailable: social.appleAvailable,
     googleButtonRef: social.googleButtonRef,
+    startFacebookSignIn: social.startFacebookSignIn,
+    startAppleSignIn: social.startAppleSignIn,
+    googleExtendedPrefillActive,
+    dismissGooglePrefill,
   };
+}
+
+function hasGoogleExtendedPrefillData(identity: CheckoutSocialIdentitySnapshot | null) {
+  if (!identity) return false;
+
+  return Boolean(
+    identity.phone ||
+      identity.cep ||
+      identity.street ||
+      identity.number ||
+      identity.neighborhood ||
+      identity.city ||
+      identity.state ||
+      identity.complement,
+  );
+}
+
+function readGooglePrefillDismissed() {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    return window.sessionStorage.getItem(GOOGLE_PREFILL_SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
 }

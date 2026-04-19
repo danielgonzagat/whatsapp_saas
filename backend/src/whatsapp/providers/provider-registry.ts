@@ -34,6 +34,9 @@ export interface SessionStatus {
   authUrl?: string;
   phoneNumberId?: string;
   whatsappBusinessId?: string | null;
+  qualityRating?: string | null;
+  codeVerificationStatus?: string | null;
+  nameStatus?: string | null;
   degradedReason?: string | null;
 }
 
@@ -83,6 +86,9 @@ export class WhatsAppProviderRegistry {
       authUrl: this.readString(snapshot.authUrl) ?? null,
       phoneNumberId: this.readString(snapshot.phoneNumberId) ?? null,
       whatsappBusinessId: this.readString(snapshot.whatsappBusinessId) ?? null,
+      qualityRating: this.readString(snapshot.qualityRating) ?? null,
+      codeVerificationStatus: this.readString(snapshot.codeVerificationStatus) ?? null,
+      nameStatus: this.readString(snapshot.nameStatus) ?? null,
       sessionName: this.readString(snapshot.sessionName) ?? null,
       disconnectReason: this.readString(snapshot.disconnectReason) ?? null,
       provider: this.readString(snapshot.provider),
@@ -266,6 +272,10 @@ export class WhatsAppProviderRegistry {
       authUrl: details.authUrl || snapshot.authUrl || undefined,
       phoneNumberId: details.phoneNumberId || snapshot.phoneNumberId || undefined,
       whatsappBusinessId: details.whatsappBusinessId || snapshot.whatsappBusinessId || undefined,
+      qualityRating: details.qualityRating || snapshot.qualityRating || undefined,
+      codeVerificationStatus:
+        details.codeVerificationStatus || snapshot.codeVerificationStatus || undefined,
+      nameStatus: details.nameStatus || snapshot.nameStatus || undefined,
       degradedReason: fallbackToSnapshot ? null : details.error || null,
     };
 
@@ -278,6 +288,9 @@ export class WhatsAppProviderRegistry {
       authUrl: status.authUrl || null,
       phoneNumberId: status.phoneNumberId || null,
       whatsappBusinessId: status.whatsappBusinessId || null,
+      qualityRating: status.qualityRating || null,
+      codeVerificationStatus: status.codeVerificationStatus || null,
+      nameStatus: status.nameStatus || null,
     });
     return status;
   }

@@ -1077,7 +1077,7 @@ export default function KloelLanding() {
               {
                 n: '01',
                 h: 'Conecte',
-                d: 'Cadastre produto. Conecte WhatsApp via QR Code. Configure preço e regras.',
+                d: 'Cadastre produto. Conecte os canais Meta pelo fluxo oficial. Configure preço e regras.',
                 t: 'A IA aprende com o produto. Quanto mais detalhes, melhor vende.',
               },
               {

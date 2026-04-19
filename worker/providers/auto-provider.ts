@@ -1,6 +1,6 @@
 import { providerStatus } from './health-monitor';
 import { type WorkspaceOrId, unifiedWhatsAppProvider } from './unified-whatsapp-provider';
-import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
+import { resolveWhatsAppProvider } from './whatsapp-provider-resolver';
 
 type MediaType = 'image' | 'video' | 'audio' | 'document';
 
@@ -12,7 +12,7 @@ export const autoProvider = {
   name: 'auto',
 
   async sendText(workspace: WorkspaceOrId, to: string, message: string) {
-    const providerName = getWhatsAppProviderFromEnv();
+    const providerName = resolveWhatsAppProvider(workspace?.whatsappProvider);
     try {
       const result = await unifiedWhatsAppProvider.sendText(
         {
@@ -43,7 +43,7 @@ export const autoProvider = {
     url: string,
     caption?: string,
   ) {
-    const providerName = getWhatsAppProviderFromEnv();
+    const providerName = resolveWhatsAppProvider(workspace?.whatsappProvider);
     try {
       const result = await unifiedWhatsAppProvider.sendMedia(
         {

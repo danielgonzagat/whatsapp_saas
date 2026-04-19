@@ -28,14 +28,13 @@ export class InstagramController {
   private async resolveInstagramConnection(
     workspaceId: string,
     igAccountId?: string,
-    accessToken?: string,
   ) {
     const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
     const finalIgAccountId = normalizeMetaGraphSegment(
       igAccountId || resolved.instagramAccountId || '',
       'Instagram account id',
     );
-    const finalAccessToken = String(accessToken || resolved.accessToken || '').trim();
+    const finalAccessToken = String(resolved.accessToken || '').trim();
 
     if (!finalAccessToken) {
       throw new BadRequestException('meta_instagram_connection_required');
@@ -51,10 +50,9 @@ export class InstagramController {
   async getProfile(
     @Req() req: AuthenticatedRequest,
     @Query('igAccountId') igAccountId: string,
-    @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
+    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId);
     return this.instagramService.getProfile(connection.igAccountId, connection.accessToken);
   }
 
@@ -63,10 +61,9 @@ export class InstagramController {
     @Req() req: AuthenticatedRequest,
     @Query('igAccountId') igAccountId: string,
     @Query('limit') limit: string,
-    @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
+    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId);
     const clampedLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
     return this.instagramService.getMedia(
       connection.igAccountId,
@@ -81,10 +78,9 @@ export class InstagramController {
     @Query('igAccountId') igAccountId: string,
     @Query('metrics') metrics: string,
     @Query('period') period: string,
-    @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
+    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId);
     const metricsList = metrics ? metrics.split(',') : ['impressions', 'reach', 'follower_count'];
     return this.instagramService.getAccountInsights(
       connection.igAccountId,
@@ -102,15 +98,10 @@ export class InstagramController {
       igAccountId: string;
       imageUrl: string;
       caption: string;
-      accessToken: string;
     },
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
-      workspaceId,
-      body.igAccountId,
-      body.accessToken,
-    );
+    const connection = await this.resolveInstagramConnection(workspaceId, body.igAccountId);
     return this.instagramService.publishPhoto(
       connection.igAccountId,
       body.imageUrl,
@@ -123,10 +114,9 @@ export class InstagramController {
   async getComments(
     @Req() req: AuthenticatedRequest,
     @Param('id') mediaId: string,
-    @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId, undefined, accessToken);
+    const connection = await this.resolveInstagramConnection(workspaceId);
     return this.instagramService.getComments(
       normalizeMetaGraphSegment(mediaId, 'Instagram media id'),
       connection.accessToken,
@@ -137,14 +127,10 @@ export class InstagramController {
   async replyToComment(
     @Req() req: AuthenticatedRequest,
     @Param('id') commentId: string,
-    @Body() body: { text: string; accessToken: string },
+    @Body() body: { text: string },
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
-      workspaceId,
-      undefined,
-      body.accessToken,
-    );
+    const connection = await this.resolveInstagramConnection(workspaceId);
     return this.instagramService.replyToComment(
       normalizeMetaGraphSegment(commentId, 'Instagram comment id'),
       body.text,
@@ -161,15 +147,10 @@ export class InstagramController {
       igAccountId: string;
       recipientId: string;
       text: string;
-      accessToken: string;
     },
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
-      workspaceId,
-      body.igAccountId,
-      body.accessToken,
-    );
+    const connection = await this.resolveInstagramConnection(workspaceId, body.igAccountId);
     return this.instagramService.sendMessage(
       connection.igAccountId,
       normalizeMetaGraphSegment(body.recipientId, 'Instagram recipient id'),

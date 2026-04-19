@@ -39,6 +39,10 @@ const envSchema = z.object({
     .string()
     .optional()
     .describe('Google OAuth Client Secret (optional for GIS ID token flow)'),
+  KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe('Feature-flag for Google People API checkout prefills'),
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: z
     .string()
     .optional()
@@ -62,6 +66,20 @@ const envSchema = z.object({
   // ========================
   META_APP_SECRET: z.string().optional().describe('Meta App Secret for webhook signature'),
   META_VERIFY_TOKEN: z.string().optional().describe('Meta webhook verification token'),
+  META_WEBHOOK_VERIFY_TOKEN: z
+    .string()
+    .optional()
+    .describe('Explicit Meta webhook verification token alias'),
+  META_APP_ID: z.string().optional().describe('Meta App ID for Facebook Login / SDK'),
+  META_SYSTEM_USER_TOKEN: z
+    .string()
+    .optional()
+    .describe('Meta System User token for Graph / WhatsApp Cloud automation'),
+  META_BUSINESS_ID: z.string().optional().describe('Meta Business Manager ID'),
+  META_EMBEDDED_SIGNUP_CONFIG_ID: z
+    .string()
+    .optional()
+    .describe('Meta Embedded Signup configuration ID'),
   META_ACCESS_TOKEN: z.string().optional().describe('Meta Graph API access token'),
   META_PHONE_NUMBER_ID: z.string().optional().describe('Meta WhatsApp phone number ID'),
   META_WABA_ID: z.string().optional().describe('WhatsApp Business Account ID'),
@@ -145,6 +163,14 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .describe('Enforce 24h window for outbound messages'),
+  VISITOR_CHAT_ENABLED: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe('Canonical flag for public visitor chat availability'),
+  GUEST_CHAT_ENABLED: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe('Legacy alias for VISITOR_CHAT_ENABLED during migration'),
   WAHA_ALLOW_SESSION_WITHOUT_WEBHOOK: z
     .enum(['true', 'false'])
     .default('false')

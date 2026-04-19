@@ -260,7 +260,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       .trim()
       .toLowerCase();
 
-    if (normalizedName === 'guest workspace') {
+    if (normalizedName === 'guest workspace' || normalizedName === 'workspace temporario') {
       return true;
     }
 
@@ -361,7 +361,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         const removed = await this.whatsappApi.deleteSession(session.name);
         if (removed) {
           deleted += 1;
-          this.logger.warn(`🧹 Deleted stale FAILED WAHA session ${session.name}`);
+          this.logger.warn(`🧹 Deleted stale FAILED legacy runtime session ${session.name}`);
         }
       } catch (error: unknown) {
         const errorInstanceofError =
@@ -369,7 +369,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
             ? error
             : new Error(typeof error === 'string' ? error : 'unknown error');
         this.logger.warn(
-          `Failed to delete stale FAILED WAHA session ${session.name}: ${errorInstanceofError.message}`,
+          `Failed to delete stale FAILED legacy runtime session ${session.name}: ${errorInstanceofError.message}`,
         );
       }
     }
@@ -442,19 +442,19 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
             ? error
             : new Error(typeof error === 'string' ? error : 'unknown error');
         this.logger.warn(
-          `Failed to adopt live WAHA session for ${workspaceId}: ${errorInstanceofError.message}`,
+          `Failed to adopt live legacy runtime session for ${workspaceId}: ${errorInstanceofError.message}`,
         );
       }
     }
 
     if (workspaceIdsToRefresh.size > 0) {
       this.logger.log(
-        `🔁 Adopted ${workspaceIdsToRefresh.size} live WAHA session(s) into backend runtime (already associated: ${syncedLiveSessions})`,
+        `🔁 Adopted ${workspaceIdsToRefresh.size} live legacy runtime session(s) into backend runtime (already associated: ${syncedLiveSessions})`,
       );
     }
     if (orphanLiveSessions > 0) {
       this.logger.warn(
-        `⚠️ Ignored ${orphanLiveSessions} orphan live WAHA session(s) without workspace binding.`,
+        `⚠️ Ignored ${orphanLiveSessions} orphan legacy runtime session(s) without workspace binding.`,
       );
     }
 
@@ -538,7 +538,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
-    this.logger.log('🧭 Meta Cloud mode active: legacy WAHA/browser paths disabled');
+    this.logger.log(
+      '🧭 Runtime WhatsApp em modo Meta-first: onboarding legado por navegador permanece desativado',
+    );
 
     const runOnStartup =
       process.env.NODE_ENV !== 'test' && process.env.WAHA_WATCHDOG_RUN_ON_STARTUP !== 'false';
@@ -571,7 +573,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     if (!this.isRunning) return;
     if (!this.isWahaOperationallyEnabled()) {
       if (!this.hasLoggedMetaCloudSkip) {
-        this.logger.debug('Watchdog sweep skipped: Meta Cloud mode');
+        this.logger.debug('Watchdog sweep skipped: Meta-first runtime mode');
         this.hasLoggedMetaCloudSkip = true;
       }
       return;
@@ -806,7 +808,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
         this.reconnectCounter.inc({ workspaceId, result: 'unconfirmed' });
         this.logger.warn(
-          `⚠️ Reconnect start succeeded but WAHA is still ${normalizedStatus}: ${workspaceName || workspaceId}`,
+          `⚠️ Reconnect start succeeded but the legacy runtime is still ${normalizedStatus}: ${workspaceName || workspaceId}`,
         );
         health.connected = false;
         return false;

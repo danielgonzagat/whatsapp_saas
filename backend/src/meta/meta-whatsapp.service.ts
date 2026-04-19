@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
+import { decryptMetaConnectionToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
 const D_RE = /\D/g;
@@ -15,6 +16,7 @@ type ResolvedMetaConnection = {
   accessToken: string;
   phoneNumberId: string;
   whatsappBusinessId: string | null;
+  adAccountId: string | null;
   pageId: string | null;
   pageName: string | null;
   pageAccessToken: string | null;
@@ -48,6 +50,12 @@ export class MetaWhatsAppService {
     return typeof value === 'string' && value.trim() ? value : undefined;
   }
 
+  private readEmbeddedSignupConfigId(): string {
+    return String(
+      process.env.META_EMBEDDED_SIGNUP_CONFIG_ID || process.env.META_CONFIG_ID || '',
+    ).trim();
+  }
+
   private readRecord(value: unknown): Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
       ? (value as Record<string, unknown>)
@@ -59,7 +67,7 @@ export class MetaWhatsAppService {
     options?: { channel?: string | null; returnTo?: string | null },
   ): string {
     const appId = String(process.env.META_APP_ID || '').trim();
-    const configId = String(process.env.META_CONFIG_ID || '').trim();
+    const configId = this.readEmbeddedSignupConfigId();
     const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
 
     if (!appId) {
@@ -113,6 +121,7 @@ export class MetaWhatsAppService {
       select: {
         accessToken: true,
         tokenExpiresAt: true,
+        adAccountId: true,
         pageId: true,
         pageName: true,
         pageAccessToken: true,
@@ -124,7 +133,7 @@ export class MetaWhatsAppService {
     });
 
     const accessToken = String(
-      connection?.accessToken || process.env.META_ACCESS_TOKEN || '',
+      decryptMetaConnectionToken(connection?.accessToken) || process.env.META_ACCESS_TOKEN || '',
     ).trim();
     const phoneNumberId = String(
       connection?.whatsappPhoneNumberId || process.env.META_PHONE_NUMBER_ID || '',
@@ -141,9 +150,10 @@ export class MetaWhatsAppService {
       accessToken,
       phoneNumberId,
       whatsappBusinessId: whatsappBusinessId || null,
+      adAccountId: connection?.adAccountId || null,
       pageId: connection?.pageId || null,
       pageName: connection?.pageName || null,
-      pageAccessToken: connection?.pageAccessToken || null,
+      pageAccessToken: decryptMetaConnectionToken(connection?.pageAccessToken) || null,
       instagramAccountId: connection?.instagramAccountId || null,
       instagramUsername: connection?.instagramUsername || null,
       tokenExpired,
@@ -217,6 +227,9 @@ export class MetaWhatsAppService {
     whatsappBusinessId?: string | null;
     phoneNumber?: string | null;
     pushName?: string | null;
+    qualityRating?: string | null;
+    codeVerificationStatus?: string | null;
+    nameStatus?: string | null;
     selfIds?: string[];
     tokenExpired?: boolean;
     metaConnected?: boolean;
@@ -243,6 +256,9 @@ export class MetaWhatsAppService {
         instagramAccountId: resolved.instagramAccountId,
         instagramUsername: resolved.instagramUsername,
         degradedReason: 'meta_auth_required',
+        qualityRating: null,
+        codeVerificationStatus: null,
+        nameStatus: null,
       };
     }
 
@@ -259,6 +275,9 @@ export class MetaWhatsAppService {
         instagramAccountId: resolved.instagramAccountId,
         instagramUsername: resolved.instagramUsername,
         degradedReason: 'meta_whatsapp_phone_number_id_missing',
+        qualityRating: null,
+        codeVerificationStatus: null,
+        nameStatus: null,
       };
     }
 
@@ -279,6 +298,10 @@ export class MetaWhatsAppService {
       const displayPhoneNumber = this.readStrictText(phoneInfo?.display_phone_number) ?? null;
       const verifiedName =
         this.readStrictText(phoneInfo?.verified_name) || resolved.pageName || null;
+      const qualityRating = this.readStrictText(phoneInfo?.quality_rating) ?? null;
+      const codeVerificationStatus =
+        this.readStrictText(phoneInfo?.code_verification_status) ?? null;
+      const nameStatus = this.readStrictText(phoneInfo?.name_status) ?? null;
       const phoneDigits = this.normalizePhone(displayPhoneNumber || '');
 
       return {
@@ -289,6 +312,9 @@ export class MetaWhatsAppService {
         whatsappBusinessId: resolved.whatsappBusinessId,
         phoneNumber: displayPhoneNumber,
         pushName: verifiedName,
+        qualityRating,
+        codeVerificationStatus,
+        nameStatus,
         selfIds: phoneDigits ? [`${phoneDigits}@c.us`, `${phoneDigits}@s.whatsapp.net`] : [],
         tokenExpired: resolved.tokenExpired,
         metaConnected: true,
@@ -309,6 +335,9 @@ export class MetaWhatsAppService {
         authUrl,
         phoneNumberId: resolved.phoneNumberId,
         whatsappBusinessId: resolved.whatsappBusinessId,
+        qualityRating: null,
+        codeVerificationStatus: null,
+        nameStatus: null,
         tokenExpired: resolved.tokenExpired,
         metaConnected: true,
         pageId: resolved.pageId,

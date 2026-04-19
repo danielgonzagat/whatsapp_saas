@@ -307,7 +307,8 @@ interface Pixel {
   id: string;
   type: string;
   pixelId: string;
-  accessToken?: string;
+  hasAccessToken?: boolean;
+  accessTokenPreview?: string | null;
 }
 
 function PixelsSection({ configId, planId }: { configId: string | null; planId: string }) {
@@ -431,7 +432,11 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                 aria-label="Access Token"
                 value={editForm.accessToken || ''}
                 onChange={(e) => setEditForm((f) => ({ ...f, accessToken: e.target.value }))}
-                placeholder="Access Token (opcional)"
+                placeholder={
+                  px.hasAccessToken
+                    ? 'Novo Access Token (deixe em branco para manter o atual)'
+                    : 'Access Token (opcional)'
+                }
                 style={inputStyle}
               />
               <div style={{ display: 'flex', gap: 8 }}>
@@ -496,9 +501,9 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                 >
                   {px.pixelId}
                 </span>
-                {px.accessToken && (
+                {px.hasAccessToken && (
                   <span style={{ fontSize: 10, color: SECONDARY, marginLeft: 8 }}>
-                    Token: ****{px.accessToken.slice(-4)}
+                    Token: {px.accessTokenPreview || '****'}
                   </span>
                 )}
               </div>
@@ -509,7 +514,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                   setEditForm({
                     type: px.type,
                     pixelId: px.pixelId,
-                    accessToken: px.accessToken || '',
+                    accessToken: '',
                   });
                 }}
                 style={{

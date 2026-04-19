@@ -120,6 +120,30 @@ describe('WhatsAppEngine', () => {
     );
   });
 
+  it('preserves an explicit workspace provider instead of overwriting it with the env default', async () => {
+    process.env.WHATSAPP_PROVIDER_DEFAULT = 'meta-cloud';
+    mockProviderSendText.mockResolvedValue({ success: true, id: 'provider-3' });
+
+    await WhatsAppEngine.sendText(
+      { id: 'ws-1', whatsappProvider: 'whatsapp-api' },
+      '5511999999999',
+      'Oi',
+    );
+
+    expect(mockProviderSendText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'ws-1',
+        whatsappProvider: 'whatsapp-api',
+      }),
+      '5511999999999',
+      'Oi',
+      {
+        chatId: undefined,
+        quotedMessageId: undefined,
+      },
+    );
+  });
+
   describe('withWorkspaceActionLock — invariant I6 (lock semantics)', () => {
     beforeEach(() => {
       // Force the lock path to execute even in test mode

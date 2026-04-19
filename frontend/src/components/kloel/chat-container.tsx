@@ -704,18 +704,29 @@ export function ChatContainer({
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showActivationSuccess, setShowActivationSuccess] = useState(false);
 
-  const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
+  const [visitorSessionId, setVisitorSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    const storageKey = 'kloel_guest_session';
+    const storageKey = 'kloel_visitor_session';
+    const legacyGuestStorageKey = 'kloel_guest_session';
     const stored = localStorage.getItem(storageKey);
     if (stored) {
-      setGuestSessionId(stored);
+      localStorage.removeItem(legacyGuestStorageKey);
+      setVisitorSessionId(stored);
       return;
     }
-    const newSession = `guest_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+
+    const legacyStored = localStorage.getItem(legacyGuestStorageKey);
+    if (legacyStored) {
+      localStorage.setItem(storageKey, legacyStored);
+      localStorage.removeItem(legacyGuestStorageKey);
+      setVisitorSessionId(legacyStored);
+      return;
+    }
+
+    const newSession = `visitor_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
     localStorage.setItem(storageKey, newSession);
-    setGuestSessionId(newSession);
+    setVisitorSessionId(newSession);
   }, []);
 
   useEffect(() => {
@@ -1206,14 +1217,14 @@ export function ChatContainer({
 
     if (!canUseAuthedChat) {
       try {
-        const response = await fetch(apiUrl('/chat/guest'), {
+        const response = await fetch(apiUrl('/chat/visitor'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
-            'X-Session-Id': guestSessionId || '',
+            'X-Session-Id': visitorSessionId || '',
           },
-          body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
+          body: JSON.stringify({ message: content.trim(), sessionId: visitorSessionId }),
         });
 
         if (!response.ok) {
@@ -1283,16 +1294,16 @@ export function ChatContainer({
         setIsTyping(false);
         return;
       } catch (error) {
-        console.error('Guest chat error:', error);
+        console.error('Visitor chat error:', error);
 
         try {
-          const syncResponse = await fetch(apiUrl('/chat/guest/sync'), {
+          const syncResponse = await fetch(apiUrl('/chat/visitor/sync'), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-Session-Id': guestSessionId || '',
+              'X-Session-Id': visitorSessionId || '',
             },
-            body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
+            body: JSON.stringify({ message: content.trim(), sessionId: visitorSessionId }),
           });
 
           if (syncResponse.ok) {

@@ -53,6 +53,18 @@ export class MarketingController {
     };
   }
 
+  private buildMetaAuthUrl(
+    workspaceId: string,
+    channel: 'whatsapp' | 'instagram' | 'facebook',
+    returnTo: string,
+  ) {
+    const url = this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+      channel,
+      returnTo,
+    });
+    return url || null;
+  }
+
   private async sendSingleEmail(recipientEmail: string, subject: string, html: string) {
     const providerConfig = this.getEmailProviderSnapshot();
     if (!providerConfig.available) {
@@ -181,9 +193,11 @@ export class MarketingController {
               : liveStatus || snapshotStatus || 'disconnected'
         : whatsappConnected
           ? 'connected'
-          : liveStatus === 'connection_incomplete'
+        : liveStatus === 'connection_incomplete'
             ? 'connection_incomplete'
             : liveStatus || snapshotStatus || 'disconnected';
+    const whatsappSurfaceProvider =
+      providerType === 'whatsapp-api' ? 'legacy-runtime' : providerType;
 
     return {
       meta: {
@@ -199,17 +213,14 @@ export class MarketingController {
       },
       channels: {
         whatsapp: {
-          provider: providerType,
+          provider: whatsappSurfaceProvider,
           connected: whatsappConnected,
           status: whatsappStatusValue,
           authUrl:
             providerType === 'meta-cloud'
               ? safeWhatsApp.authUrl ||
                 snapshot.authUrl ||
-                this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
-                  channel: 'whatsapp',
-                  returnTo: '/marketing/whatsapp',
-                })
+                this.buildMetaAuthUrl(workspaceId, 'whatsapp', '/marketing/whatsapp')
               : null,
           phoneNumberId:
             providerType === 'meta-cloud'
@@ -233,10 +244,7 @@ export class MarketingController {
         instagram: {
           connected: Boolean(metaConnection?.instagramAccountId),
           status: metaConnection?.instagramAccountId ? 'connected' : 'disconnected',
-          authUrl: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
-            channel: 'instagram',
-            returnTo: '/marketing/instagram',
-          }),
+          authUrl: this.buildMetaAuthUrl(workspaceId, 'instagram', '/marketing/instagram'),
           instagramAccountId: metaConnection?.instagramAccountId || null,
           username: metaConnection?.instagramUsername || null,
           pageName: metaConnection?.pageName || null,
@@ -244,10 +252,7 @@ export class MarketingController {
         facebook: {
           connected: Boolean(metaConnection?.pageId),
           status: metaConnection?.pageId ? 'connected' : 'disconnected',
-          authUrl: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
-            channel: 'facebook',
-            returnTo: '/marketing/facebook',
-          }),
+          authUrl: this.buildMetaAuthUrl(workspaceId, 'facebook', '/marketing/facebook'),
           pageId: metaConnection?.pageId || null,
           pageName: metaConnection?.pageName || null,
         },

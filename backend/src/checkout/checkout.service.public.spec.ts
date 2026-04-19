@@ -88,6 +88,7 @@ describe('CheckoutService public resolution', () => {
         id: 'plan_1',
         referenceCode: 'MPX9Q2Z7',
       }),
+      undefined,
     );
     expect((service as any).publicPayloadBuilder.build).toHaveBeenNthCalledWith(
       2,
@@ -95,6 +96,7 @@ describe('CheckoutService public resolution', () => {
         id: 'plan_1',
         referenceCode: 'MPX9Q2Z7',
       }),
+      undefined,
     );
     expect(bySlug.paymentProvider).toEqual(
       expect.objectContaining({
@@ -120,6 +122,54 @@ describe('CheckoutService public resolution', () => {
           lookupType: 'code',
         }),
       ]),
+    );
+  });
+
+  it('never forwards pixel access tokens to the public checkout builder input', async () => {
+    const planRecord = {
+      id: 'plan_1',
+      slug: 'coreamy-oferta',
+      referenceCode: 'MPX9Q2Z7',
+      kind: 'PLAN',
+      isActive: true,
+      productId: 'prod_1',
+      product: {
+        workspaceId: 'ws_1',
+      },
+      checkoutConfig: {
+        pixels: [
+          {
+            id: 'pixel_1',
+            type: 'FACEBOOK',
+            pixelId: '1234567890',
+            accessToken: 'secret-pixel-token',
+            trackPageView: true,
+            trackInitiateCheckout: true,
+            trackAddPaymentInfo: true,
+            trackPurchase: true,
+            isActive: true,
+          },
+        ],
+      },
+      orderBumps: [],
+      upsells: [],
+    };
+
+    prisma.checkoutProductPlan.findUnique.mockResolvedValue(planRecord);
+
+    await service.getCheckoutBySlug('coreamy-oferta');
+
+    expect((service as any).publicPayloadBuilder.build).toHaveBeenCalledWith(
+      expect.objectContaining({
+        checkoutConfig: expect.objectContaining({
+          pixels: [
+            expect.not.objectContaining({
+              accessToken: expect.anything(),
+            }),
+          ],
+        }),
+      }),
+      undefined,
     );
   });
 });

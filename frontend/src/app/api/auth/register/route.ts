@@ -3,7 +3,7 @@ import { revalidateTag } from 'next/cache';
 // Client callers invoke mutate('auth') after receiving this response
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendUrl } from '../../_lib/backend-url';
-import { setSharedAuthCookies } from '../_lib/shared-auth-cookies';
+import { hasSharedAuthToken, setSharedAuthCookies } from '../_lib/shared-auth-cookies';
 
 const W_RE = /[^\w]+/g;
 
@@ -20,11 +20,8 @@ export async function POST(request: NextRequest) {
 
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
-      console.error('[Register] BACKEND_URL e NEXT_PUBLIC_API_URL não configurados');
-      return NextResponse.json(
-        { message: 'Servidor não configurado corretamente. Contate o suporte.' },
-        { status: 500 },
-      );
+      console.error('[Register] BACKEND_URL not configured');
+      return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
     }
 
     // Validações básicas
@@ -77,7 +74,7 @@ export async function POST(request: NextRequest) {
     revalidateTag('auth', 'max');
     const res = NextResponse.json(user, { status: 201 });
 
-    if (user.access_token) {
+    if (hasSharedAuthToken(user)) {
       setSharedAuthCookies(request, res, user);
     }
 

@@ -44,7 +44,13 @@ type IdentityColumnProps = SharedProps & {
   socialLoadingProvider: CheckoutSocialProvider | null;
   socialError: string;
   googleAvailable: boolean;
+  facebookAvailable: boolean;
+  appleAvailable: boolean;
   googleButtonRef: RefObject<HTMLDivElement | null>;
+  startFacebookSignIn: () => void | Promise<void>;
+  startAppleSignIn: () => void | Promise<void>;
+  googleExtendedPrefillActive: boolean;
+  dismissGooglePrefill: () => void;
   shippingInCents: number;
   fmtBrl: (value: number) => string;
 };
@@ -64,7 +70,13 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
     socialLoadingProvider,
     socialError,
     googleAvailable,
+    facebookAvailable,
+    appleAvailable,
     googleButtonRef,
+    startFacebookSignIn,
+    startAppleSignIn,
+    googleExtendedPrefillActive,
+    dismissGooglePrefill,
     shippingInCents,
     fmtBrl,
   } = props;
@@ -110,7 +122,7 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
           </div>
           {socialIdentity ? (
             <div style={{ marginTop: 8, fontSize: 11, color: theme.mutedText, fontWeight: 600 }}>
-              Via {socialIdentity.provider === 'google' ? 'Google' : socialIdentity.provider}
+              Via {formatSocialProviderLabel(socialIdentity.provider)}
             </div>
           ) : null}
         </div>
@@ -120,40 +132,54 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
           <CheckoutSocialIdentitySection
             theme={theme}
             googleAvailable={googleAvailable}
+            facebookAvailable={facebookAvailable}
+            appleAvailable={appleAvailable}
             googleButtonRef={googleButtonRef}
+            onFacebookClick={startFacebookSignIn}
+            onAppleClick={startAppleSignIn}
             socialIdentity={socialIdentity}
             loadingProvider={socialLoadingProvider}
             error={socialError}
           />
+          {googleExtendedPrefillActive ? (
+            <GooglePrefillBadge theme={theme} onDismiss={dismissGooglePrefill} />
+          ) : null}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Field
               theme={theme}
               label="Nome completo"
               id={`${fid}-name`}
+              name="name"
               value={form.name}
               onChange={updateField('name')}
               placeholder="ex.: Maria de Almeida Cruz"
               labelStyle={labelStyle}
+              autoComplete="name"
             />
             <Field
               theme={theme}
               label="E-mail"
               id={`${fid}-email`}
+              name="email"
               value={form.email}
               onChange={updateField('email')}
               placeholder="ex.: maria@gmail.com"
               type="email"
               labelStyle={labelStyle}
+              autoComplete="email"
             />
             <Field
               theme={theme}
               label="CPF"
               id={`${fid}-cpf`}
+              name="cpf"
               value={form.cpf}
               onChange={updateField('cpf')}
               placeholder="000.000.000-00"
               labelStyle={labelStyle}
               wrapperStyle={{ width: 'fit-content', minWidth: 220 }}
+              inputMode="numeric"
+              maxLength={14}
             />
             <div>
               <label htmlFor={`${fid}-phone`} style={labelStyle}>
@@ -181,9 +207,13 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
                   <ValidationInput
                     theme={theme.input}
                     id={`${fid}-phone`}
+                    name="phone"
                     value={form.phone}
                     onChange={updateField('phone')}
                     placeholder="(00) 00000-0000"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    maxLength={15}
                   />
                 </div>
               </div>
@@ -229,87 +259,108 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
             <p style={{ fontSize: 13, color: theme.mutedText, marginBottom: 16 }}>
               Cadastre o endereço para envio
             </p>
+            {googleExtendedPrefillActive ? (
+              <GooglePrefillBadge theme={theme} onDismiss={dismissGooglePrefill} />
+            ) : null}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Field
                 theme={theme}
                 label="CEP"
                 id={`${fid}-cep`}
+                name="postalCode"
                 value={form.cep}
                 onChange={updateField('cep')}
                 placeholder="00000-000"
                 labelStyle={labelStyle}
                 wrapperStyle={{ minWidth: 180 }}
+                autoComplete="postal-code"
+                inputMode="numeric"
+                maxLength={9}
               />
               <Field
                 theme={theme}
                 label="Endereço"
                 id={`${fid}-street`}
+                name="addressLine1"
                 value={form.street}
                 onChange={updateField('street')}
                 placeholder="Rua, avenida..."
                 labelStyle={labelStyle}
+                autoComplete="address-line1"
               />
               <div style={{ display: 'flex', gap: 12 }}>
                 <Field
                   theme={theme}
                   label="Número"
                   id={`${fid}-number`}
+                  name="addressNumber"
                   value={form.number}
                   onChange={updateField('number')}
                   placeholder="Nº"
                   labelStyle={labelStyle}
                   wrapperStyle={{ flex: '0 0 35%' }}
+                  autoComplete="address-line2"
                 />
                 <Field
                   theme={theme}
                   label="Bairro"
                   id={`${fid}-neighborhood`}
+                  name="addressNeighborhood"
                   value={form.neighborhood}
                   onChange={updateField('neighborhood')}
                   placeholder="Bairro"
                   labelStyle={labelStyle}
                   wrapperStyle={{ flex: 1 }}
+                  autoComplete="address-level3"
                 />
               </div>
               <Field
                 theme={theme}
                 label="Complemento (opcional)"
                 id={`${fid}-complement`}
+                name="addressComplement"
                 value={form.complement}
                 onChange={updateField('complement')}
                 placeholder="Apto, bloco..."
                 labelStyle={labelStyle}
+                autoComplete="address-line2"
               />
               <div style={{ display: 'flex', gap: 12 }}>
                 <Field
                   theme={theme}
                   label="Cidade"
                   id={`${fid}-city`}
+                  name="city"
                   value={form.city}
                   onChange={updateField('city')}
                   placeholder="Cidade"
                   labelStyle={labelStyle}
                   wrapperStyle={{ flex: 1 }}
+                  autoComplete="address-level2"
                 />
                 <Field
                   theme={theme}
-                  label="UF"
+                  label="Estado"
                   id={`${fid}-state`}
+                  name="state"
                   value={form.state}
                   onChange={updateField('state')}
                   placeholder="UF"
                   labelStyle={labelStyle}
                   wrapperStyle={{ flex: '0 0 28%' }}
+                  autoComplete="address-level1"
                 />
               </div>
               <Field
                 theme={theme}
                 label="Destinatário"
                 id={`${fid}-destinatario`}
+                name="shippingRecipient"
                 value={form.destinatario}
                 onChange={updateField('destinatario')}
                 placeholder="Nome do destinatário"
                 labelStyle={labelStyle}
+                autoComplete="shipping name"
               />
             </div>
             {submitError && step === 2 ? (
@@ -334,15 +385,89 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
   );
 }
 
+function formatSocialProviderLabel(provider: CheckoutSocialProvider) {
+  switch (provider) {
+    case 'google':
+      return 'Google';
+    case 'facebook':
+      return 'Facebook';
+    case 'apple':
+      return 'Apple';
+    default:
+      return provider;
+  }
+}
+
+function GooglePrefillBadge({
+  theme,
+  onDismiss,
+}: {
+  theme: CheckoutVisualTheme;
+  onDismiss: () => void;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+        marginBottom: 16,
+        padding: '12px 14px',
+        borderRadius: theme.input.radius,
+        border: `1px solid ${theme.mode === 'NOIR' ? 'rgba(232,93,48,0.28)' : 'rgba(232,93,48,0.18)'}`,
+        background: theme.mode === 'NOIR' ? 'rgba(232,93,48,0.08)' : 'rgba(232,93,48,0.06)',
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 999,
+          background: theme.accent,
+          marginTop: 6,
+          flexShrink: 0,
+        }}
+      />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: theme.text }}>Preenchido via Google</div>
+        <div style={{ fontSize: 12, lineHeight: 1.5, color: theme.mutedText, marginTop: 2 }}>
+          Telefone e endereço foram trazidos do consentimento estendido desta sessão.
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Ocultar prefill do Google"
+        style={{
+          border: 'none',
+          background: 'transparent',
+          color: theme.mutedText,
+          fontSize: 18,
+          lineHeight: 1,
+          padding: 0,
+          cursor: 'pointer',
+        }}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 function Field({
   theme,
   label,
   id,
+  name,
   value,
   onChange,
   placeholder,
   labelStyle,
   wrapperStyle,
+  autoComplete,
+  inputMode,
+  maxLength,
   type,
   disabled,
   style,
@@ -350,11 +475,15 @@ function Field({
   theme: CheckoutVisualTheme;
   label: string;
   id: string;
+  name?: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
   labelStyle: React.CSSProperties;
   wrapperStyle?: React.CSSProperties;
+  autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  maxLength?: number;
   type?: string;
   disabled?: boolean;
   style?: React.CSSProperties;
@@ -367,11 +496,15 @@ function Field({
       <ValidationInput
         theme={theme.input}
         id={id}
+        name={name}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         type={type}
         disabled={disabled}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
         style={style}
       />
     </div>

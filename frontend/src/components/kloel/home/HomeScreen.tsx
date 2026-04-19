@@ -39,6 +39,8 @@ const DEV_FALLBACK_MESSAGE =
   'Desculpe, nao consegui processar sua mensagem. Tente novamente em alguns instantes.';
 
 const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
+const VISITOR_SESSION_KEY = 'kloel:home-chat:visitor-session';
+const LEGACY_GUEST_SESSION_KEY = 'kloel:home-chat:guest-session';
 
 // ════════════════════════════════════════════
 // ICONS
@@ -195,6 +197,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [visitorSessionId, setVisitorSessionId] = useState<string | null>(null);
   const [thinkingText, setThinkingText] = useState('Analisando...');
   const [chatTitle, setChatTitle] = useState('Nova conversa');
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
@@ -257,12 +260,41 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     return `msg_${Date.now()}_${crypto.randomUUID().slice(0, 9)}`;
   }, []);
 
+  const generateVisitorSessionId = useCallback(() => {
+    return `visitor_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  }, []);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(VISITOR_SESSION_KEY);
+      if (stored) {
+        localStorage.removeItem(LEGACY_GUEST_SESSION_KEY);
+        setVisitorSessionId(stored);
+        return;
+      }
+
+      const legacyStored = localStorage.getItem(LEGACY_GUEST_SESSION_KEY);
+      if (legacyStored) {
+        localStorage.setItem(VISITOR_SESSION_KEY, legacyStored);
+        localStorage.removeItem(LEGACY_GUEST_SESSION_KEY);
+        setVisitorSessionId(legacyStored);
+        return;
+      }
+
+      const nextSessionId = generateVisitorSessionId();
+      localStorage.setItem(VISITOR_SESSION_KEY, nextSessionId);
+      setVisitorSessionId(nextSessionId);
+    } catch {
+      setVisitorSessionId(generateVisitorSessionId());
+    }
+  }, [generateVisitorSessionId]);
+
   // ─── Send message to API ───
   const sendToApi = useCallback(
     async (messageText: string) => {
       const token = tokenStorage.getToken();
       const workspaceId = tokenStorage.getWorkspaceId();
-      const isGuest = !token || !workspaceId;
+      const isVisitorMode = !token || !workspaceId;
 
       const assistantId = generateId();
       typingMessageIdRef.current = assistantId;
@@ -292,14 +324,15 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         let nextConversationId = activeConversationId;
         let nextTitle = chatTitle;
 
-        if (isGuest) {
-          const response = await fetch(apiUrl('/chat/guest'), {
+        if (isVisitorMode) {
+          const response = await fetch(apiUrl('/chat/visitor'), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Accept: 'text/event-stream',
+              'X-Session-Id': visitorSessionId || '',
             },
-            body: JSON.stringify({ message: messageText }),
+            body: JSON.stringify({ message: messageText, sessionId: visitorSessionId }),
             signal: ac.signal,
           });
 
@@ -312,14 +345,16 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           if (!reader) throw new Error('No reader');
 
           const decoder = new TextDecoder();
+          let buffer = '';
 
           // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
               if (!line.startsWith('data: ')) continue;
@@ -329,6 +364,14 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
               try {
                 const parsed = JSON.parse(data);
+                if (parsed.sessionId) {
+                  const nextSessionId = String(parsed.sessionId);
+                  setVisitorSessionId(nextSessionId);
+                  try {
+                    localStorage.setItem(VISITOR_SESSION_KEY, nextSessionId);
+                    localStorage.removeItem(LEGACY_GUEST_SESSION_KEY);
+                  } catch {}
+                }
                 if (parsed.error) {
                   fullContent =
                     parsed.content ??
@@ -374,7 +417,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           startTyping(fullContent);
         }, thinkDuration);
 
-        if (!isGuest && nextConversationId) {
+        if (!isVisitorMode && nextConversationId) {
           setActiveConversationId(nextConversationId);
           setActiveConversation(nextConversationId);
           setChatTitle(nextTitle || 'Nova conversa');
@@ -431,6 +474,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       setActiveConversation,
       startTyping,
       upsertConversation,
+      visitorSessionId,
     ],
   );
 
@@ -498,7 +542,16 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     setActiveConversation(null);
     setIsWaitingForResponse(false);
     typingMessageIdRef.current = null;
-  }, [cancelTyping, setActiveConversation]);
+
+    if (!tokenStorage.getToken() || !tokenStorage.getWorkspaceId()) {
+      const nextSessionId = generateVisitorSessionId();
+      setVisitorSessionId(nextSessionId);
+      try {
+        localStorage.setItem(VISITOR_SESSION_KEY, nextSessionId);
+        localStorage.removeItem(LEGACY_GUEST_SESSION_KEY);
+      } catch {}
+    }
+  }, [cancelTyping, generateVisitorSessionId, setActiveConversation]);
 
   // ─── Stop response ───
   const handleStopResponse = useCallback(() => {

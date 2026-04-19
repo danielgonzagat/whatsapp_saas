@@ -275,7 +275,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      degradedSyncMessage = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${errInstanceofError?.message || 'falha ao consultar a sessão WAHA'}.`;
+      degradedSyncMessage = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${errInstanceofError?.message || 'falha ao consultar a integração oficial do WhatsApp'}.`;
       await this.agentEvents.publish({
         type: 'status',
         workspaceId,
@@ -1682,7 +1682,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       runId,
       phase: 'backlog_remote_inline_fallback',
       persistent: true,
-      message: `Banco local ainda não refletiu o backlog completo. Vou agir direto a partir do WAHA em ${chats.length} conversa(s).`,
+      message: `Banco local ainda não refletiu o backlog completo. Vou agir direto a partir do histórico remoto do WhatsApp em ${chats.length} conversa(s).`,
       meta: {
         total: chats.length,
         mode,
@@ -1836,7 +1836,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     const message =
       processed > 0
-        ? `Fallback remoto concluído. Respondi ${processed} conversa(s) direto do WAHA enquanto o banco local ainda sincronizava.`
+        ? `Fallback remoto concluído. Respondi ${processed} conversa(s) direto do histórico remoto do WhatsApp enquanto o banco local ainda sincronizava.`
         : 'Fallback remoto executado, mas nenhuma conversa gerou resposta enviada.';
 
     await this.agentEvents.publish({

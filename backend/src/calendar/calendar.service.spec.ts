@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { encryptString } from '../lib/crypto';
 import { CalendarService } from './calendar.service';
 
 describe('CalendarService', () => {
@@ -55,5 +56,35 @@ describe('CalendarService', () => {
         refreshToken: 'refresh-token',
       },
     });
+  });
+
+  it('decrypts encrypted calendar credentials when reading workspace config', async () => {
+    const key =
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    process.env.ENCRYPTION_KEY = key;
+    prisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        calendar: {
+          provider: 'google',
+          credentials: {
+            clientId: 'client-id',
+            clientSecret: encryptString('client-secret', key),
+            refreshToken: encryptString('refresh-token', key),
+            accessToken: encryptString('access-token', key),
+          },
+        },
+      },
+    });
+
+    await expect(service.getCalendarConfig('ws-1')).resolves.toEqual({
+      provider: 'google',
+      credentials: {
+        clientId: 'client-id',
+        clientSecret: 'client-secret',
+        refreshToken: 'refresh-token',
+        accessToken: 'access-token',
+      },
+    });
+    delete process.env.ENCRYPTION_KEY;
   });
 });

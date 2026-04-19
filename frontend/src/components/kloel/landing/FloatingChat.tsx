@@ -24,7 +24,8 @@ interface Message {
   sourceUserId?: string | null;
 }
 
-const GUEST_SESSION_KEY = 'kloel:floating-chat:guest-session';
+const VISITOR_SESSION_KEY = 'kloel:floating-chat:visitor-session';
+const LEGACY_GUEST_SESSION_KEY = 'kloel:floating-chat:guest-session';
 const LANDING_CHAT_EVENT = 'kloel:landing-chat-open';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
@@ -52,7 +53,7 @@ export function FloatingChat({
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
+  const [visitorSessionId, setVisitorSessionId] = useState<string | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -73,8 +74,24 @@ export function FloatingChat({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      const sid = localStorage.getItem(GUEST_SESSION_KEY);
-      if (sid) setGuestSessionId(sid);
+      const sid = localStorage.getItem(VISITOR_SESSION_KEY);
+      if (sid) {
+        localStorage.removeItem(LEGACY_GUEST_SESSION_KEY);
+        setVisitorSessionId(sid);
+        return;
+      }
+
+      const legacySessionId = localStorage.getItem(LEGACY_GUEST_SESSION_KEY);
+      if (legacySessionId) {
+        localStorage.setItem(VISITOR_SESSION_KEY, legacySessionId);
+        localStorage.removeItem(LEGACY_GUEST_SESSION_KEY);
+        setVisitorSessionId(legacySessionId);
+        return;
+      }
+
+      const generatedSessionId = `visitor_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+      localStorage.setItem(VISITOR_SESSION_KEY, generatedSessionId);
+      setVisitorSessionId(generatedSessionId);
     } catch {}
   }, []);
 
@@ -97,18 +114,18 @@ export function FloatingChat({
     return () => window.removeEventListener(LANDING_CHAT_EVENT, handler);
   }, [toggle]);
 
-  const streamGuestMessage = useCallback(
+  const streamVisitorMessage = useCallback(
     async (text: string, signal: AbortSignal, assistantMessageId: string) => {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
       };
-      if (guestSessionId) headers['X-Session-Id'] = guestSessionId;
+      if (visitorSessionId) headers['X-Session-Id'] = visitorSessionId;
 
-      const res = await fetch(apiUrl('/chat/guest'), {
+      const res = await fetch(apiUrl('/chat/visitor'), {
         method: 'POST',
         headers,
-        body: JSON.stringify({ message: text, sessionId: guestSessionId }),
+        body: JSON.stringify({ message: text, sessionId: visitorSessionId }),
         signal,
       });
 
@@ -133,9 +150,10 @@ export function FloatingChat({
           try {
             const parsed = JSON.parse(line.slice(6));
             if (parsed.sessionId) {
-              setGuestSessionId(parsed.sessionId);
+              setVisitorSessionId(parsed.sessionId);
               try {
-                localStorage.setItem(GUEST_SESSION_KEY, parsed.sessionId);
+                localStorage.setItem(VISITOR_SESSION_KEY, parsed.sessionId);
+                localStorage.removeItem(LEGACY_GUEST_SESSION_KEY);
               } catch {}
             }
             const chunk = parsed.content || parsed.chunk || parsed.delta || '';
@@ -154,7 +172,7 @@ export function FloatingChat({
       }
       return full;
     },
-    [guestSessionId],
+    [visitorSessionId],
   );
 
   const streamAuthMessage = useCallback(
@@ -281,7 +299,7 @@ export function FloatingChat({
         if (isAuthenticated) {
           await streamAuthMessage(text, controller.signal, assistantId);
         } else {
-          await streamGuestMessage(text, controller.signal, assistantId);
+          await streamVisitorMessage(text, controller.signal, assistantId);
         }
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -305,7 +323,7 @@ export function FloatingChat({
         );
       }
     },
-    [isStreaming, isAuthenticated, streamAuthMessage, streamGuestMessage],
+    [isStreaming, isAuthenticated, streamAuthMessage, streamVisitorMessage],
   );
 
   useEffect(() => {

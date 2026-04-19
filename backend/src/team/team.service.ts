@@ -4,6 +4,7 @@ import { hash as bcryptHash } from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
+import { hashAuthToken } from '../auth/auth-token-hash';
 import { BCRYPT_ROUNDS } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -15,6 +16,11 @@ export class TeamService {
     private emailService: EmailService,
     private auditService: AuditService,
   ) {}
+
+  private serializeInvitation<T extends Record<string, unknown>>(invite: T): Omit<T, 'token'> {
+    const { token: _token, ...safeInvite } = invite as T & { token?: unknown };
+    return safeInvite;
+  }
 
   async listMembers(workspaceId: string) {
     const [agents, invitations] = await Promise.all([
@@ -73,7 +79,7 @@ export class TeamService {
         workspaceId,
         email,
         role,
-        token,
+        token: hashAuthToken(token),
         expiresAt,
       },
     });
@@ -97,13 +103,18 @@ export class TeamService {
       `${this.configService.get('FRONTEND_URL', 'http://localhost:3000')}/invite/accept?token=${token}`,
     );
 
-    return invite;
+    return this.serializeInvitation(invite);
   }
 
   async acceptInvite(token: string, name: string, password: string) {
-    const invite = await this.prisma.invitation.findUnique({
-      where: { token },
+    let invite = await this.prisma.invitation.findUnique({
+      where: { token: hashAuthToken(token) },
     });
+    if (!invite) {
+      invite = await this.prisma.invitation.findUnique({
+        where: { token },
+      });
+    }
     if (!invite || invite.expiresAt < new Date()) {
       throw new BadRequestException('Invalid or expired invitation');
     }

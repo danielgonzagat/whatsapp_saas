@@ -17,6 +17,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type React from 'react';
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSWR, { mutate } from 'swr';
+import { getChannelAvailability } from './channel-availability';
+import { resolveMetaConnectUrl } from './meta-connect';
 import WhatsAppExperience from './WhatsAppExperience';
 
 // ── Fonts ──
@@ -1484,6 +1486,7 @@ function FacebookTab({
   connecting?: boolean;
 }) {
   const ch = CH_CONFIG.facebook;
+  const messengerConnected = Boolean(connection?.connected);
 
   return (
     <div>
@@ -1500,7 +1503,7 @@ function FacebookTab({
           <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
             Messenger
           </span>
-          <ConnBadge connected={true} />
+          <ConnBadge connected={messengerConnected} />
         </div>
         <button
           type="button"
@@ -1518,7 +1521,11 @@ function FacebookTab({
             opacity: connecting ? 0.7 : 1,
           }}
         >
-          {connecting ? 'Abrindo Meta...' : 'Reconectar Facebook'}
+          {connecting
+            ? 'Abrindo Meta...'
+            : messengerConnected
+              ? 'Reconectar Facebook'
+              : 'Conectar Messenger'}
         </button>
       </div>
 
@@ -1533,7 +1540,7 @@ function FacebookTab({
         {[
           { label: 'Pagina vinculada', value: connection?.pageName || 'Nao resolvida' },
           { label: 'Page ID', value: connection?.pageId || 'Pendente' },
-          { label: 'Canal', value: 'Messenger do Facebook' },
+          { label: 'Canal', value: messengerConnected ? 'Messenger do Facebook' : 'Aguardando conexão' },
         ].map((item) => (
           <div
             key={item.label}
@@ -1569,6 +1576,25 @@ function FacebookTab({
           </div>
         ))}
       </div>
+
+      {!messengerConnected ? (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '12px 14px',
+            borderRadius: 6,
+            border: `1px solid ${BORDER}`,
+            background: BG_CARD,
+            fontFamily: SORA,
+            fontSize: 12,
+            color: 'var(--app-text-secondary)',
+            lineHeight: 1.7,
+          }}
+        >
+          Conecte a Page no fluxo oficial da Meta para liberar inbox, envio e métricas reais do
+          Messenger dentro da Kloel.
+        </div>
+      ) : null}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
         {[
@@ -2495,8 +2521,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
         const res = await apiFetch<{ url?: string }>(
           `/meta/auth/url?channel=${encodeURIComponent(channelKey)}&returnTo=${encodeURIComponent(returnTo)}`,
         );
-        const url = String(res?.data?.url || '').trim();
-        if (!url) throw new Error('Nao foi possivel iniciar a conexao oficial da Meta.');
+        const url = resolveMetaConnectUrl(res);
         window.location.href = url;
       } catch (error: unknown) {
         setConnectingKey(null);
@@ -2660,11 +2685,12 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const TABS = [
     { id: 'conversas', label: 'Conversas', icon: IC.zap },
     { id: 'whatsapp', label: 'WhatsApp', icon: IC.wa },
-    { id: 'instagram', label: 'Instagram', icon: IC.ig, soon: true },
-    { id: 'tiktok', label: 'TikTok', icon: IC.tt, soon: true },
-    { id: 'facebook', label: 'Facebook', icon: IC.fb, soon: true },
-    { id: 'email', label: 'Email', icon: IC.em, soon: true },
+    { id: 'instagram', label: 'Instagram', icon: IC.ig },
+    { id: 'tiktok', label: 'TikTok', icon: IC.tt },
+    { id: 'facebook', label: 'Facebook', icon: IC.fb },
+    { id: 'email', label: 'Email', icon: IC.em },
   ];
+  const tiktokAvailability = getChannelAvailability('tiktok');
 
   const switchTab = useCallback(
     (id: string) => {
@@ -2708,43 +2734,48 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
           marginInline: 'auto',
         }}
       >
-        {TABS.map((t) => (
-          <button
-            type="button"
-            key={t.id}
-            onClick={() => switchTab(t.id)}
-            style={{
-              fontFamily: SORA,
-              fontSize: isMobile ? 11 : 12,
-              padding: isMobile ? '8px 12px' : '8px 14px',
-              borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'transparent',
-              color: tab === t.id ? EMBER : KLOEL_THEME.textSecondary,
-              transition: 'all .2s',
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
-            {t.label}
-            {t.soon && (
-              <span
-                style={{
-                  fontSize: 8,
-                  color: 'var(--app-text-tertiary)',
-                  fontFamily: MONO,
-                  marginLeft: 2,
-                }}
-              >
-                soon
-              </span>
-            )}
-          </button>
-        ))}
+        {TABS.map((t) => {
+          const availability = getChannelAvailability(t.id);
+          return (
+            <button
+              type="button"
+              key={t.id}
+              onClick={() => switchTab(t.id)}
+              style={{
+                fontFamily: SORA,
+                fontSize: isMobile ? 11 : 12,
+                padding: isMobile ? '8px 12px' : '8px 14px',
+                borderRadius: 6,
+                border: 'none',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'transparent',
+                color: tab === t.id ? EMBER : KLOEL_THEME.textSecondary,
+                transition: 'all .2s',
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
+              {t.label}
+              {availability.blocked ? (
+                <span
+                  style={{
+                    fontSize: 8,
+                    color: 'var(--app-text-tertiary)',
+                    fontFamily: MONO,
+                    marginLeft: 2,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.16em',
+                  }}
+                >
+                  em breve
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ maxWidth: 1240, margin: '0 auto' }}>
@@ -2796,57 +2827,22 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
           />
         )}
         {tab === 'instagram' && (
-          <div style={{ position: 'relative' }}>
-            <ChannelTab
-              channelKey="instagram"
-              channelData={getChannelData('instagram')}
-              liveFeed={feed.filter((m) => m.includes('[instagram]'))}
-              metaConnected={metaConnected}
-              igProfile={igProfile}
-              igInsights={igInsights}
-              connectionStatus={connectionStatus}
-              onConnectMeta={handleConnectMeta}
-              onConnectEmail={handleConnectEmail}
-              onDisconnectEmail={handleDisconnectEmail}
-              onSendEmailTest={handleSendEmailTest}
-              connectingKey={connectingKey}
-              emailTestSending={emailTestSending}
-              emailTestResult={emailTestResult}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: KLOEL_THEME.bgOverlay,
-                backdropFilter: 'blur(2px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 6,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--app-text-primary)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Em breve
-                </div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                  Instagram Marketing esta sendo finalizado.
-                </div>
-              </div>
-            </div>
-          </div>
+          <ChannelTab
+            channelKey="instagram"
+            channelData={getChannelData('instagram')}
+            liveFeed={feed.filter((m) => m.includes('[instagram]'))}
+            metaConnected={metaConnected}
+            igProfile={igProfile}
+            igInsights={igInsights}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
         )}
         {tab === 'tiktok' && (
           <div style={{ position: 'relative' }}>
@@ -2855,143 +2851,77 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               channelData={getChannelData('tiktok')}
               liveFeed={feed.filter((m) => m.includes('[tiktok]'))}
             />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: KLOEL_THEME.bgOverlay,
-                backdropFilter: 'blur(2px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 6,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--app-text-primary)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Em breve
-                </div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                  TikTok Marketing esta sendo finalizado.
+            {tiktokAvailability.blocked ? (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: KLOEL_THEME.bgOverlay,
+                  backdropFilter: 'blur(2px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 6,
+                  zIndex: 10,
+                }}
+              >
+                <div style={{ textAlign: 'center' }}>
+                  <div
+                    style={{
+                      fontFamily: SORA,
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: 'var(--app-text-primary)',
+                      marginBottom: 8,
+                    }}
+                  >
+                    {tiktokAvailability.title}
+                  </div>
+                  <div
+                    style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}
+                  >
+                    {tiktokAvailability.description}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : null}
           </div>
         )}
         {tab === 'facebook' && (
-          <div style={{ position: 'relative' }}>
-            <ChannelTab
-              channelKey="facebook"
-              channelData={getChannelData('facebook')}
-              liveFeed={feed.filter((m) => m.includes('[facebook]'))}
-              metaConnected={metaConnected}
-              connectionStatus={connectionStatus}
-              onConnectMeta={handleConnectMeta}
-              onConnectEmail={handleConnectEmail}
-              onDisconnectEmail={handleDisconnectEmail}
-              onSendEmailTest={handleSendEmailTest}
-              connectingKey={connectingKey}
-              emailTestSending={emailTestSending}
-              emailTestResult={emailTestResult}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: KLOEL_THEME.bgOverlay,
-                backdropFilter: 'blur(2px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 6,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--app-text-primary)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Em breve
-                </div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                  Facebook Messenger esta sendo finalizado.
-                </div>
-              </div>
-            </div>
-          </div>
+          <ChannelTab
+            channelKey="facebook"
+            channelData={getChannelData('facebook')}
+            liveFeed={feed.filter((m) => m.includes('[facebook]') || m.includes('[messenger]'))}
+            metaConnected={metaConnected}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
         )}
         {tab === 'email' && (
-          <div style={{ position: 'relative' }}>
-            <ChannelTab
-              channelKey="email"
-              channelData={getChannelData('email')}
-              liveFeed={feed.filter((m) => m.includes('[email]'))}
-              mode={requestedMode}
-              operator={userEmail || null}
-              connectionStatus={connectionStatus}
-              onConnectMeta={handleConnectMeta}
-              onConnectEmail={handleConnectEmail}
-              onDisconnectEmail={handleDisconnectEmail}
-              onSendEmailTest={handleSendEmailTest}
-              connectingKey={connectingKey}
-              emailTestSending={emailTestSending}
-              emailTestResult={emailTestResult}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: KLOEL_THEME.bgOverlay,
-                backdropFilter: 'blur(2px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 6,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    fontFamily: SORA,
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--app-text-primary)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Em breve
-                </div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                  Email Marketing esta sendo finalizado.
-                </div>
-              </div>
-            </div>
-          </div>
+          <ChannelTab
+            channelKey="email"
+            channelData={getChannelData('email')}
+            liveFeed={feed.filter((m) => m.includes('[email]'))}
+            mode={requestedMode}
+            operator={userEmail || null}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
         )}
       </div>
     </div>

@@ -64,9 +64,9 @@ const DEFAULT_CHIPS: ActionChip[] = [
   },
   {
     id: 'whatsapp',
-    label: 'Conectar WhatsApp',
+    label: 'Conectar canais Meta',
     icon: Smartphone,
-    prompt: 'Quero conectar meu WhatsApp',
+    prompt: 'Quero conectar meus canais Meta',
   },
   { id: 'campaign', label: 'Criar campanha', icon: Zap, prompt: 'Crie uma campanha de vendas' },
   { id: 'autopilot', label: 'Ativar Autopilot', icon: Bot, prompt: 'Ative o autopilot para mim' },

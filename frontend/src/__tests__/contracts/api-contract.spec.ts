@@ -23,8 +23,13 @@ import {
   AuthLoginResponseSchema,
   AuthRegisterResponseSchema,
   AuthGoogleResponseSchema,
+  AuthFacebookResponseSchema,
   AuthCheckEmailResponseSchema,
   AuthRefreshResponseSchema,
+  AuthGoogleExtendedProfileResponseSchema,
+  AuthSessionRevokeOthersResponseSchema,
+  AuthSessionRevokeResponseSchema,
+  AuthSessionsResponseSchema,
   BillingSubscriptionResponseSchema,
   BillingCheckoutResponseSchema,
   WorkspaceMeResponseSchema,
@@ -63,6 +68,10 @@ describe('Frontend API contract schemas — frontend freeze (P1-2)', () => {
 
     it('AuthGoogleResponseSchema accepts the same shape', () => {
       expect(AuthGoogleResponseSchema.safeParse(authTokenFixture).success).toBe(true);
+    });
+
+    it('AuthFacebookResponseSchema accepts the same shape', () => {
+      expect(AuthFacebookResponseSchema.safeParse(authTokenFixture).success).toBe(true);
     });
 
     it('AuthLoginResponseSchema accepts a payload without isNewUser', () => {
@@ -120,6 +129,91 @@ describe('Frontend API contract schemas — frontend freeze (P1-2)', () => {
           refresh_token: 'new-refresh',
         }).success,
       ).toBe(true);
+    });
+
+    it('AuthSessionsResponseSchema accepts the canonical active-session payload', () => {
+      const fixture = {
+        sessions: [
+          {
+            id: 'session-current',
+            isCurrent: true,
+            device: 'Chrome em macOS',
+            detail: 'Sessão atual neste dispositivo • America/Sao_Paulo',
+            deviceType: 'desktop',
+            ipAddress: '203.0.113.10',
+            createdAt: '2026-04-18T09:00:00.000Z',
+            lastUsedAt: '2026-04-18T11:30:00.000Z',
+            expiresAt: '2026-05-18T11:30:00.000Z',
+          },
+          {
+            id: 'session-iphone',
+            isCurrent: false,
+            device: 'Safari em iOS',
+            detail: 'Último acesso em 18/04 às 08:15 • 198.51.100.22',
+            deviceType: 'mobile',
+            ipAddress: '198.51.100.22',
+            createdAt: '2026-04-17T08:00:00.000Z',
+            lastUsedAt: '2026-04-18T08:15:00.000Z',
+            expiresAt: '2026-05-17T08:15:00.000Z',
+          },
+        ],
+      };
+      expect(AuthSessionsResponseSchema.safeParse(fixture).success).toBe(true);
+    });
+
+    it('AuthSessionRevokeResponseSchema accepts a single-session revoke result', () => {
+      expect(
+        AuthSessionRevokeResponseSchema.safeParse({
+          success: true,
+          revokedSessionId: 'session-iphone',
+        }).success,
+      ).toBe(true);
+      expect(
+        AuthSessionRevokeResponseSchema.safeParse({
+          success: true,
+          revokedSessionId: null,
+        }).success,
+      ).toBe(true);
+    });
+
+    it('AuthSessionRevokeOthersResponseSchema accepts a bulk revoke result', () => {
+      expect(
+        AuthSessionRevokeOthersResponseSchema.safeParse({
+          success: true,
+          revokedCount: 2,
+        }).success,
+      ).toBe(true);
+    });
+
+    it('AuthGoogleExtendedProfileResponseSchema accepts the canonical People profile payload', () => {
+      expect(
+        AuthGoogleExtendedProfileResponseSchema.safeParse({
+          provider: 'google',
+          email: 'daniel@kloel.com',
+          phone: '+5562999990000',
+          birthday: '1994-04-18',
+          address: {
+            street: 'Rua 1',
+            city: 'Caldas Novas',
+            state: 'GO',
+            postalCode: '75694-720',
+            countryCode: 'BR',
+            formattedValue: 'Rua 1, Caldas Novas - GO',
+          },
+        }).success,
+      ).toBe(true);
+    });
+
+    it('AuthGoogleExtendedProfileResponseSchema rejects a payload with an invalid provider', () => {
+      expect(
+        AuthGoogleExtendedProfileResponseSchema.safeParse({
+          provider: 'facebook',
+          email: 'daniel@kloel.com',
+          phone: null,
+          birthday: null,
+          address: null,
+        }).success,
+      ).toBe(false);
     });
   });
 
@@ -216,6 +310,9 @@ describe('Frontend API contract schemas — frontend freeze (P1-2)', () => {
         provider: 'meta-cloud',
         phoneNumberId: '1234567890',
         whatsappBusinessId: '9876543210',
+        qualityRating: 'GREEN',
+        codeVerificationStatus: 'VERIFIED',
+        nameStatus: 'APPROVED',
         workerAvailable: true,
         workerHealthy: true,
         workerError: null,
@@ -227,11 +324,24 @@ describe('Frontend API contract schemas — frontend freeze (P1-2)', () => {
       expect(WhatsAppStatusResponseSchema.safeParse(fixture).success).toBe(true);
     });
 
-    it('WhatsAppStartSessionResponseSchema accepts a QR-code session start', () => {
+    it('WhatsAppStatusResponseSchema accepts the sanitized legacy-runtime payload', () => {
+      const fixture = {
+        connected: false,
+        status: 'connecting',
+        provider: 'legacy-runtime',
+        activeProvider: 'legacy-runtime',
+        qrAvailable: false,
+        viewerAvailable: false,
+        message: 'Abra o fluxo oficial da Meta.',
+      };
+      expect(WhatsAppStatusResponseSchema.safeParse(fixture).success).toBe(true);
+    });
+
+    it('WhatsAppStartSessionResponseSchema accepts a message-only start response', () => {
       expect(
         WhatsAppStartSessionResponseSchema.safeParse({
           success: true,
-          qrCode: 'data:image/png;base64,iVBORw0KGgo...',
+          message: 'already_connected',
         }).success,
       ).toBe(true);
     });
@@ -247,6 +357,18 @@ describe('Frontend API contract schemas — frontend freeze (P1-2)', () => {
 
     it('WhatsAppQrResponseSchema accepts available=false without qr', () => {
       expect(WhatsAppQrResponseSchema.safeParse({ available: false }).success).toBe(true);
+    });
+
+    it('WhatsAppQrResponseSchema accepts the Meta-first legacy-disabled sentinel', () => {
+      expect(
+        WhatsAppQrResponseSchema.safeParse({
+          statusCode: 410,
+          available: false,
+          provider: 'meta-cloud',
+          feature: 'qr_code',
+          message: 'Descontinuado. Use a integração Meta.',
+        }).success,
+      ).toBe(true);
     });
   });
 

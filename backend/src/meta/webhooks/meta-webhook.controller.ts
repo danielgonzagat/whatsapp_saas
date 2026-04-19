@@ -119,7 +119,10 @@ export class MetaWebhookController {
     @Query('hub.challenge') challenge: string,
     @Res() res: Response,
   ) {
-    const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'kloel_meta_verify_2026';
+    const VERIFY_TOKEN =
+      process.env.META_WEBHOOK_VERIFY_TOKEN ||
+      process.env.META_VERIFY_TOKEN ||
+      'kloel_meta_verify_2026';
     if (mode === 'subscribe' && safeCompareStrings(token, VERIFY_TOKEN)) {
       const sanitizedChallenge = sanitizeWebhookChallenge(challenge);
       if (!sanitizedChallenge) {
@@ -141,7 +144,12 @@ export class MetaWebhookController {
   ) {
     // Validate signature
     const appSecret = process.env.META_APP_SECRET;
-    if (appSecret && signature) {
+    if (appSecret) {
+      if (!signature?.trim()) {
+        this.logger.warn('Missing Meta webhook signature');
+        throw new ForbiddenException('Invalid Meta webhook signature');
+      }
+
       const expected = `sha256=${createHmac('sha256', appSecret)
         .update(
           Buffer.isBuffer(req?.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(body || {})),
@@ -149,7 +157,7 @@ export class MetaWebhookController {
         .digest('hex')}`;
       if (!safeCompareStrings(signature, expected)) {
         this.logger.warn('Invalid Meta webhook signature');
-        return 'ok';
+        throw new ForbiddenException('Invalid Meta webhook signature');
       }
     }
 

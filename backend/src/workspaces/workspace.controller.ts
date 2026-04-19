@@ -29,11 +29,70 @@ interface AccountUpdateBody {
 export class WorkspaceController {
   constructor(private readonly service: WorkspaceService) {}
 
+  private static readonly RESPONSE_SECRET_KEYS = new Set([
+    'accessToken',
+    'access_token',
+    'refreshToken',
+    'refresh_token',
+    'token',
+    'idToken',
+    'id_token',
+    'apiKey',
+    'api_key',
+    'secret',
+    'clientSecret',
+    'client_secret',
+    'privateKey',
+    'private_key',
+    'pageAccessToken',
+    'page_access_token',
+    'systemUserToken',
+    'system_user_token',
+    'appSecret',
+    'app_secret',
+    'verifyToken',
+    'verify_token',
+    'authorization',
+    'cookie',
+    'signedRequest',
+    'signed_request',
+    'password',
+  ]);
+
+  private sanitizeProviderSettings(value: unknown, key?: string, depth = 0): unknown {
+    if (depth > 8 || value === null || value === undefined) {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => this.sanitizeProviderSettings(item, undefined, depth + 1));
+    }
+    if (typeof value !== 'object') {
+      return value;
+    }
+
+    if (key === 'credentials') {
+      const entries = Object.entries(value as Record<string, unknown>).filter(
+        ([, nested]) => nested !== null && nested !== undefined && nested !== '',
+      );
+      return { configured: entries.length > 0 };
+    }
+
+    const out: Record<string, unknown> = {};
+    for (const [entryKey, raw] of Object.entries(value as Record<string, unknown>)) {
+      if (WorkspaceController.RESPONSE_SECRET_KEYS.has(entryKey)) {
+        continue;
+      }
+      out[entryKey] = this.sanitizeProviderSettings(raw, entryKey, depth + 1);
+    }
+    return out;
+  }
+
   private normalizeProviderSettings(rawSettings: unknown, workspaceId: string): ProviderSettings {
     const settings: ProviderSettings = { ...asProviderSettings(rawSettings) };
     const session: ProviderSessionSnapshot =
       settings.whatsappApiSession || settings.whatsappWebSession || {};
     const providerType = resolveWhatsAppProvider(settings.whatsappProvider || session.provider);
+    const providerSurface = providerType === 'whatsapp-api' ? 'legacy-runtime' : providerType;
     const rawStatus = String(session.rawStatus || session.status || settings.connectionStatus || '')
       .trim()
       .toUpperCase();
@@ -53,28 +112,35 @@ export class WorkspaceController {
           : phoneNumberId
             ? 'connection_incomplete'
             : 'disconnected';
-    const disconnectReason =
+    const rawDisconnectReason =
       typeof session.disconnectReason === 'string' && session.disconnectReason.trim()
-        ? session.disconnectReason
+        ? session.disconnectReason.trim()
+        : null;
+    const normalizedDisconnectReason =
+      rawDisconnectReason === 'waha_qr_pending'
+        ? 'legacy_runtime_qr_pending'
+        : rawDisconnectReason === 'waha_session_failed'
+          ? 'legacy_runtime_failed'
+          : rawDisconnectReason === 'waha_session_disconnected'
+            ? 'legacy_runtime_disconnected'
+            : rawDisconnectReason;
+    const disconnectReason =
+      normalizedDisconnectReason
+        ? normalizedDisconnectReason
         : providerType === 'meta-cloud'
           ? phoneNumberId
             ? 'meta_whatsapp_phone_number_id_missing'
             : 'meta_auth_required'
           : normalizedStatus === 'connecting'
-            ? 'waha_qr_pending'
+            ? 'legacy_runtime_qr_pending'
             : normalizedStatus === 'failed'
-              ? 'waha_session_failed'
-              : 'waha_session_disconnected';
+              ? 'legacy_runtime_failed'
+              : 'legacy_runtime_disconnected';
 
-    settings.whatsappProvider = providerType;
+    settings.whatsappProvider = providerSurface;
     settings.connectionStatus = normalizedStatus;
     settings.whatsappApiSession = {
-      qrCode:
-        providerType === 'whatsapp-api' &&
-        typeof session.qrCode === 'string' &&
-        session.qrCode.trim()
-          ? session.qrCode
-          : null,
+      qrCode: null,
       status: normalizedStatus,
       authUrl:
         providerType === 'meta-cloud' &&
@@ -83,7 +149,7 @@ export class WorkspaceController {
           ? session.authUrl
           : null,
       selfIds: Array.isArray(session.selfIds) ? session.selfIds : [],
-      provider: providerType,
+      provider: providerSurface,
       pushName: session.pushName || null,
       rawStatus:
         rawStatus ||
@@ -103,45 +169,52 @@ export class WorkspaceController {
       whatsappBusinessId: providerType === 'meta-cloud' ? session.whatsappBusinessId || null : null,
     };
     delete settings.whatsappWebSession;
-    return settings;
+    return this.sanitizeProviderSettings(settings) as ProviderSettings;
+  }
+
+  private serializeWorkspace(workspace: Record<string, unknown> & { id: string }) {
+    return {
+      ...workspace,
+      providerSettings: this.normalizeProviderSettings(workspace.providerSettings, workspace.id),
+    };
   }
 
   @Get('me')
-  getMe(@Req() req: AuthenticatedRequest) {
+  async getMe(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
-    return this.service.getWorkspace(workspaceId);
+    return this.serializeWorkspace(await this.service.getWorkspace(workspaceId));
   }
 
   // Obter workspace
   @Get(':id')
-  get(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+  async get(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.getWorkspace(workspaceId);
+    return this.serializeWorkspace(await this.service.getWorkspace(workspaceId));
   }
 
   // Definir provedor
   @Post(':id/provider')
   @Roles('ADMIN')
-  setProvider(
+  async setProvider(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body('provider') provider: string,
   ) {
     const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.setProvider(workspaceId, provider);
+    return this.serializeWorkspace(await this.service.setProvider(workspaceId, provider));
   }
 
   // Anti-ban / Jitter
   @Post(':id/jitter')
   @Roles('ADMIN')
-  setJitter(
+  async setJitter(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body('min') min: number,
     @Body('max') max: number,
   ) {
     const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.setJitter(workspaceId, min, max);
+    return this.serializeWorkspace(await this.service.setJitter(workspaceId, min, max));
   }
 
   // Canais disponíveis (omnichannel beta)
@@ -154,13 +227,13 @@ export class WorkspaceController {
   // Canal Email: toggle (requires ADMIN)
   @Post(':id/channels')
   @Roles('ADMIN')
-  toggleChannels(
+  async toggleChannels(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: { email?: boolean },
   ) {
     const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.setChannels(workspaceId, body?.email);
+    return this.serializeWorkspace(await this.service.setChannels(workspaceId, body?.email));
   }
 
   // Retorna settings do workspace (providerSettings + jitter)
@@ -186,23 +259,27 @@ export class WorkspaceController {
   // Atualiza providerSettings com merge simples (ex: autopilot config)
   @Post(':id/settings')
   @Roles('ADMIN')
-  setSettings(
+  async setSettings(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: SetSettingsDto,
   ) {
     const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.patchSettings(workspaceId, (body || {}) as Record<string, unknown>);
+    return this.serializeWorkspace(
+      await this.service.patchSettings(workspaceId, (body || {}) as Record<string, unknown>),
+    );
   }
 
   // Atualiza informações gerais da conta (nome, phone, timezone, webhook, notificações)
   @Post(':id/account')
-  setAccount(
+  async setAccount(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: AccountUpdateBody,
   ) {
     const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.updateAccountSettings(workspaceId, body || {});
+    return this.serializeWorkspace(
+      await this.service.updateAccountSettings(workspaceId, body || {}),
+    );
   }
 }

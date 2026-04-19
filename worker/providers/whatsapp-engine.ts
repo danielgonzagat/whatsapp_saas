@@ -5,7 +5,7 @@ import { redis } from '../redis-client';
 import { AntiBan } from './anti-ban';
 import { HealthMonitor } from './health-monitor';
 import { PlanLimitsProvider } from './plan-limits';
-import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
+import { resolveWhatsAppProvider } from './whatsapp-provider-resolver';
 
 type WorkspaceLike = {
   id: string;
@@ -33,7 +33,7 @@ function normalizeWorkspace<T extends WorkspaceLike>(
 ): T & { whatsappProvider: string } {
   return {
     ...workspace,
-    whatsappProvider: getWhatsAppProviderFromEnv(),
+    whatsappProvider: resolveWhatsAppProvider(workspace?.whatsappProvider),
   };
 }
 

@@ -52,8 +52,11 @@ export function KloelChatBubble({
   const [loading, setLoading] = useState(false);
   const [discountOffered, setDiscountOffered] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [visitorSessionId, setVisitorSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const storageKey = `kloel:checkout-chat:${planId || productId || productName || 'default'}`;
+  const visitorSessionStorageKey = `${storageKey}:visitor-session`;
+  const legacyGuestSessionStorageKey = `${storageKey}:guest-session`;
   const dashboardHref = buildDashboardHref({
     conversationId,
     source: 'checkout',
@@ -85,6 +88,31 @@ export function KloelChatBubble({
       // ignore
     }
   }, [storageKey]);
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(visitorSessionStorageKey);
+      if (stored) {
+        sessionStorage.removeItem(legacyGuestSessionStorageKey);
+        setVisitorSessionId(stored);
+        return;
+      }
+
+      const legacyStored = sessionStorage.getItem(legacyGuestSessionStorageKey);
+      if (legacyStored) {
+        sessionStorage.setItem(visitorSessionStorageKey, legacyStored);
+        sessionStorage.removeItem(legacyGuestSessionStorageKey);
+        setVisitorSessionId(legacyStored);
+        return;
+      }
+
+      const nextSessionId = `visitor_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+      sessionStorage.setItem(visitorSessionStorageKey, nextSessionId);
+      setVisitorSessionId(nextSessionId);
+    } catch {
+      setVisitorSessionId(`visitor_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`);
+    }
+  }, [legacyGuestSessionStorageKey, visitorSessionStorageKey]);
 
   useEffect(() => {
     if (!open || !conversationId || messages.length > 0 || !tokenStorage.getToken()) return;
@@ -167,17 +195,32 @@ export function KloelChatBubble({
           data?.title ||
           'Desculpe, tive uma instabilidade. Tente novamente.';
       } else {
-        const res = await fetch(apiUrl('/chat/guest'), {
+        const res = await fetch(apiUrl('/chat/visitor/sync'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-Id': visitorSessionId || '',
+          },
           body: JSON.stringify({
             message: userMsg,
+            sessionId: visitorSessionId,
             context: checkoutContext || undefined,
           }),
         });
         const data = await res.json();
         mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
+        if (data?.sessionId) {
+          const nextSessionId = String(data.sessionId);
+          setVisitorSessionId(nextSessionId);
+          try {
+            sessionStorage.setItem(visitorSessionStorageKey, nextSessionId);
+            sessionStorage.removeItem(legacyGuestSessionStorageKey);
+          } catch {
+            // ignore
+          }
+        }
         reply =
+          data?.reply ||
           data?.response ||
           data?.message ||
           data?.content ||

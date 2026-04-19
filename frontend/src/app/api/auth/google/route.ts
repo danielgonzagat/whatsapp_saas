@@ -3,7 +3,7 @@ import { revalidateTag } from 'next/cache';
 // Client callers invoke mutate('auth') after receiving this response
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendUrl } from '../../_lib/backend-url';
-import { setSharedAuthCookies } from '../_lib/shared-auth-cookies';
+import { hasSharedAuthToken, setSharedAuthCookies } from '../_lib/shared-auth-cookies';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     revalidateTag('auth', 'max');
     const res = NextResponse.json(data, { status: response.status });
 
-    if (response.ok && data.access_token) {
+    if (response.ok && hasSharedAuthToken(data)) {
       setSharedAuthCookies(request, res, data);
     }
 

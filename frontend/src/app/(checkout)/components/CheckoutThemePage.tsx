@@ -234,7 +234,13 @@ export function CheckoutThemePage({
           socialLoadingProvider={checkout.socialLoadingProvider}
           socialError={checkout.socialError}
           googleAvailable={checkout.googleAvailable}
+          facebookAvailable={checkout.facebookAvailable}
+          appleAvailable={checkout.appleAvailable}
           googleButtonRef={checkout.googleButtonRef}
+          startFacebookSignIn={checkout.startFacebookSignIn}
+          startAppleSignIn={checkout.startAppleSignIn}
+          googleExtendedPrefillActive={checkout.googleExtendedPrefillActive}
+          dismissGooglePrefill={checkout.dismissGooglePrefill}
           shippingInCents={checkout.shippingInCents}
           fmtBrl={fmt.brl}
         />

@@ -4,6 +4,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { isVisitorChatEnabled } from './visitor-chat-enabled';
 
 interface SystemMetrics {
   cpu: { usage: number; cores: number };
@@ -75,13 +76,15 @@ export class DiagnosticsController {
 
     // Métricas KLOEL
     const kloel = await this.getKloelMetrics();
+    const visitorChatEnabled = isVisitorChatEnabled();
 
     // Deploy info — permite confirmar que a versão certa está rodando
     const deploy = {
       gitSha: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || 'unknown',
       buildTimestamp: process.env.BUILD_TIMESTAMP || 'unknown',
       nodeEnv: process.env.NODE_ENV || 'development',
-      guestChatEnabled: (process.env.GUEST_CHAT_ENABLED ?? 'true').toLowerCase() !== 'false',
+      visitorChatEnabled,
+      guestChatEnabled: visitorChatEnabled,
       openAiConfigured: !!process.env.OPENAI_API_KEY,
       wahaApiUrl: process.env.WAHA_API_URL || process.env.WAHA_BASE_URL ? '(set)' : '(missing)',
       corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS ? '(set)' : '(defaults only)',

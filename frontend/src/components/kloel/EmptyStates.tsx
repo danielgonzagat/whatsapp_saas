@@ -92,8 +92,8 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     icon: MessageSquare,
     title: 'Nenhuma conversa ainda',
     description: 'Conecte seu WhatsApp para começar a receber mensagens automaticamente.',
-    actionLabel: 'Conectar WhatsApp',
-    actionPrompt: 'Quero conectar meu WhatsApp agora',
+    actionLabel: 'Conectar canais Meta',
+    actionPrompt: 'Quero conectar meus canais Meta agora',
   },
 
   conversationsNoResults: {
@@ -188,8 +188,8 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     icon: BarChart3,
     title: 'Dados insuficientes',
     description: 'Comece a usar o sistema para ver métricas e insights aqui.',
-    actionLabel: 'Conectar WhatsApp',
-    actionPrompt: 'Quero conectar meu WhatsApp para começar a coletar dados',
+    actionLabel: 'Conectar canais Meta',
+    actionPrompt: 'Quero conectar meus canais Meta para começar a coletar dados',
   },
 
   analyticsNoData: {
@@ -261,18 +261,18 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
   // Connection
   noConnection: {
     icon: Phone,
-    title: 'WhatsApp não conectado',
-    description: 'Conecte seu número para começar a usar todas as funcionalidades.',
-    actionLabel: 'Conectar agora',
-    actionPrompt: 'Quero conectar meu WhatsApp',
+    title: 'Canais Meta não conectados',
+    description: 'Conecte seus canais oficiais da Meta para começar a usar todas as funcionalidades.',
+    actionLabel: 'Conectar canais Meta',
+    actionPrompt: 'Quero conectar meus canais Meta',
   },
 
   connectionLost: {
     icon: Phone,
     title: 'Conexão perdida',
-    description: 'A conexão com o WhatsApp foi perdida. Reconecte para continuar.',
-    actionLabel: 'Reconectar',
-    actionPrompt: 'Reconectar meu WhatsApp',
+    description: 'A conexão com os canais Meta foi perdida. Reconecte para continuar.',
+    actionLabel: 'Reconectar canais Meta',
+    actionPrompt: 'Reconectar meus canais Meta',
   },
 
   // Anúncios (Em Breve)

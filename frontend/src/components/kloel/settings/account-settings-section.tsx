@@ -12,18 +12,37 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { authApi, workspaceApi } from '@/lib/api';
-import { Camera, Eye, EyeOff, Laptop, Monitor, Smartphone } from 'lucide-react';
+import { buildMarketingUrl } from '@/lib/subdomains';
+import { Camera, Eye, EyeOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { SettingsCard, SettingsSwitchRow, kloelSettingsClass } from './contract';
+import { SettingsCard, SettingsNotice, SettingsSwitchRow, kloelSettingsClass } from './contract';
+import { signOutCurrentKloelSession } from './security-session-actions';
+import { detectSecuritySessionSurface, type SecuritySessionSurface } from './security-session-surface';
+import { SecuritySessionsPanel } from './security-sessions-panel';
 
 const A_Z_RE = /[A-Z]/;
 const RX_0_9_RE = /[0-9]/;
 const A_ZA_Z0_9_RE = /[^A-Za-z0-9]/;
 
+function normalizeAccountWhatsAppProvider(provider: unknown): 'meta-cloud' | 'email' {
+  const normalized = String(provider || '')
+    .trim()
+    .toLowerCase();
+
+  if (normalized === 'email') {
+    return 'email';
+  }
+
+  return 'meta-cloud';
+}
+
 export function AccountSettingsSection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -49,30 +68,20 @@ export function AccountSettingsSection() {
   const [savingChannels, setSavingChannels] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const sessions = [
-    {
-      device: 'Chrome em MacBook Pro',
-      location: 'São Paulo, Brasil',
-      time: 'Agora (sessão atual)',
-      icon: Laptop,
-      current: true,
-    },
-    {
-      device: 'Safari em iPhone 15',
-      location: 'São Paulo, Brasil',
-      time: 'Há 2 dias',
-      icon: Smartphone,
-      current: false,
-    },
-    {
-      device: 'Firefox em Windows',
-      location: 'Rio de Janeiro, Brasil',
-      time: 'Há 5 dias',
-      icon: Monitor,
-      current: false,
-    },
-  ];
+  const [privacyFeedback, setPrivacyFeedback] = useState<string | null>(null);
+  const [privacyError, setPrivacyError] = useState<string | null>(null);
+  const [exportingData, setExportingData] = useState(false);
+  const [showDeletionConfirm, setShowDeletionConfirm] = useState(false);
+  const [deletionPhrase, setDeletionPhrase] = useState('');
+  const [deletionAcknowledged, setDeletionAcknowledged] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [sendingResetLink, setSendingResetLink] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [sessionSurface, setSessionSurface] = useState<SecuritySessionSurface>({
+    device: 'Sessão atual neste dispositivo',
+    detail: 'Navegador atual',
+    deviceType: 'desktop',
+  });
 
   const checkPasswordStrength = (password: string) => {
     if (
@@ -129,7 +138,7 @@ export function AccountSettingsSection() {
         });
 
         setChannels({
-          provider: (settings.whatsappProvider as string) || 'meta-cloud',
+          provider: normalizeAccountWhatsAppProvider(settings.whatsappProvider),
           jitterMin: (workspace.jitterMin as number) || 5,
           jitterMax: (workspace.jitterMax as number) || 15,
           emailEnabled: !!channelData.email,
@@ -151,12 +160,93 @@ export function AccountSettingsSection() {
     };
   }, []);
 
+  useEffect(() => {
+    setSessionSurface(detectSecuritySessionSurface());
+  }, []);
+
   const feedbackTone = useMemo(() => {
     if (error) return 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]';
     if (feedback)
       return 'border-[var(--app-border-primary)] bg-[var(--app-bg-card)] text-[var(--app-text-primary)]';
     return '';
   }, [error, feedback]);
+
+  const deletionReady = deletionAcknowledged && deletionPhrase.trim().toUpperCase() === 'EXCLUIR';
+  const passwordConfirmationMatches = newPassword.length > 0 && newPassword === confirmNewPassword;
+  const avatarInitials = useMemo(() => {
+    const source = profile.name || profile.email || 'Kloel';
+    const parts = source
+      .split(/\s+/)
+      .map((chunk) => chunk.trim())
+      .filter(Boolean);
+
+    if (parts.length === 0) return 'KL';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+  }, [profile.email, profile.name]);
+
+  const handleSignOutCurrentSession = async () => {
+    await signOutCurrentKloelSession();
+  };
+
+  const handleSendResetLink = async () => {
+    if (!profile.email) {
+      setError('Nenhum e-mail de login carregado para enviar a redefinição.');
+      return;
+    }
+
+    setSendingResetLink(true);
+    setFeedback(null);
+    setError(null);
+
+    try {
+      const response = await authApi.forgotPassword(profile.email);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setFeedback(`Enviamos um link de redefinição para ${profile.email}.`);
+    } catch (err: any) {
+      setError(err?.message || 'Falha ao enviar o link de redefinição.');
+    } finally {
+      setSendingResetLink(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      setError('Preencha senha atual, nova senha e confirmação.');
+      setFeedback(null);
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setError('A confirmação da nova senha não corresponde.');
+      setFeedback(null);
+      return;
+    }
+
+    setChangingPassword(true);
+    setFeedback(null);
+    setError(null);
+
+    try {
+      const response = await authApi.changePassword(currentPassword, newPassword);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setPasswordStrength('weak');
+      setFeedback('Senha atualizada com sucesso. Outras sessões precisarão entrar novamente.');
+    } catch (err: any) {
+      setError(err?.message || 'Falha ao atualizar a senha.');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   const handleSaveAccount = async () => {
     setSavingAccount(true);
@@ -218,6 +308,69 @@ export function AccountSettingsSection() {
     }
   };
 
+  const handleExportData = async () => {
+    setExportingData(true);
+    setPrivacyFeedback(null);
+    setPrivacyError(null);
+
+    try {
+      const response = await authApi.exportMyData();
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || 'Não foi possível gerar a exportação dos seus dados.');
+      }
+
+      const payload = JSON.stringify(response.data, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `kloel-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      setPrivacyFeedback('Exportação gerada com sucesso.');
+    } catch (err: any) {
+      setPrivacyError(err?.message || 'Falha ao exportar os dados da sua conta.');
+    } finally {
+      setExportingData(false);
+    }
+  };
+
+  const handleRequestDeletion = async () => {
+    if (!deletionReady) {
+      return;
+    }
+
+    setDeletingAccount(true);
+    setPrivacyFeedback(null);
+    setPrivacyError(null);
+
+    try {
+      const response = await authApi.requestDataDeletion();
+      const confirmationCode =
+        response.data?.confirmationCode ||
+        (response.data as { confirmation_code?: string } | undefined)?.confirmation_code;
+
+      if (response.error || !confirmationCode) {
+        throw new Error(response.error || 'Não foi possível iniciar a exclusão da conta.');
+      }
+
+      setPrivacyFeedback('Solicitação de exclusão confirmada. Redirecionando para o status...');
+      await authApi.signOut();
+
+      if (typeof window !== 'undefined') {
+        window.location.assign(
+          buildMarketingUrl(`/data-deletion/status/${confirmationCode}`, window.location.host),
+        );
+      }
+    } catch (err: any) {
+      setPrivacyError(err?.message || 'Falha ao solicitar a exclusão da conta.');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -239,10 +392,10 @@ export function AccountSettingsSection() {
 
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-4">
-          <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--app-bg-secondary)] text-xl font-semibold text-[var(--app-text-secondary)]">
-              JD
-            </div>
+            <div className="relative">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--app-bg-secondary)] text-xl font-semibold text-[var(--app-text-secondary)]">
+                {avatarInitials}
+              </div>
             <button
               type="button"
               className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--app-bg-card)] bg-[var(--app-bg-primary)] text-[var(--app-text-primary)] transition-colors hover:bg-[var(--app-bg-hover)]"
@@ -335,6 +488,9 @@ export function AccountSettingsSection() {
               <Input
                 type={showCurrentPassword ? 'text' : 'password'}
                 placeholder="Senha atual"
+                aria-label="Senha atual"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
                 className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
@@ -353,7 +509,12 @@ export function AccountSettingsSection() {
               <Input
                 type={showNewPassword ? 'text' : 'password'}
                 placeholder="Nova senha"
-                onChange={(e) => checkPasswordStrength(e.target.value)}
+                aria-label="Nova senha"
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  checkPasswordStrength(e.target.value);
+                }}
                 className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
@@ -371,8 +532,20 @@ export function AccountSettingsSection() {
             <Input
               type="password"
               placeholder="Confirmar nova senha"
+              aria-label="Confirmar nova senha"
+              value={confirmNewPassword}
+              onChange={(e) => setConfirmNewPassword(e.target.value)}
               className={kloelSettingsClass.input}
             />
+            {confirmNewPassword ? (
+              <p
+                className={`text-xs ${passwordConfirmationMatches ? 'text-emerald-400' : 'text-rose-400'}`}
+              >
+                {passwordConfirmationMatches
+                  ? 'Confirmação de senha ok.'
+                  : 'A confirmação precisa ser igual à nova senha.'}
+              </p>
+            ) : null}
 
             {/* Password Strength */}
             <div className="space-y-1">
@@ -396,13 +569,39 @@ export function AccountSettingsSection() {
                     : 'Forte'}
               </p>
             </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={() => {
+                  void handleChangePassword();
+                }}
+                disabled={
+                  changingPassword ||
+                  !currentPassword ||
+                  !newPassword ||
+                  !confirmNewPassword ||
+                  !passwordConfirmationMatches
+                }
+                className={`px-4 text-sm disabled:opacity-50 ${kloelSettingsClass.primaryButton}`}
+              >
+                {changingPassword ? 'Atualizando senha...' : 'Atualizar senha'}
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Reset Password */}
         <div className="mb-6">
-          <Button variant="outline" className={`text-sm ${kloelSettingsClass.outlineButton}`}>
-            Enviar link de redefinição para meu e-mail
+          <Button
+            variant="outline"
+            onClick={() => {
+              void handleSendResetLink();
+            }}
+            disabled={loadingAccount || sendingResetLink || !profile.email}
+            className={`text-sm ${kloelSettingsClass.outlineButton}`}
+          >
+            {sendingResetLink
+              ? 'Enviando link de redefinição...'
+              : 'Enviar link de redefinição para meu e-mail'}
           </Button>
         </div>
 
@@ -411,42 +610,12 @@ export function AccountSettingsSection() {
           <h5 className="mb-3 text-sm font-medium text-[var(--app-text-primary)]">
             Sessões ativas
           </h5>
-          <div className="space-y-2">
-            {sessions.map((session) => {
-              const Icon = session.icon;
-              return (
-                <div
-                  key={session.device}
-                  className={`flex items-center justify-between rounded-md p-3 ${session.current ? 'bg-[var(--app-accent-light)]' : 'bg-[var(--app-bg-secondary)]'}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      className={`h-5 w-5 ${session.current ? 'text-[var(--app-accent)]' : 'text-[var(--app-text-secondary)]'}`}
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-[var(--app-text-primary)]">
-                        {session.device}
-                      </p>
-                      <p className="text-xs text-[var(--app-text-secondary)]">
-                        {session.location} · {session.time}
-                      </p>
-                    </div>
-                  </div>
-                  {session.current && (
-                    <span className="rounded-full bg-[var(--app-accent-light)] px-2 py-0.5 text-xs font-medium text-[var(--app-accent)]">
-                      Atual
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+          <div className="mt-3">
+            <SecuritySessionsPanel
+              fallbackSurface={sessionSurface}
+              onSignOutCurrent={handleSignOutCurrentSession}
+            />
           </div>
-          <Button
-            variant="outline"
-            className={`mt-3 w-full text-sm ${kloelSettingsClass.dangerButton}`}
-          >
-            Encerrar outras sessões
-          </Button>
         </div>
       </SettingsCard>
 
@@ -560,7 +729,7 @@ export function AccountSettingsSection() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className={kloelSettingsClass.selectContent}>
-                <SelectItem value="meta-cloud">Meta Cloud API</SelectItem>
+                <SelectItem value="meta-cloud">API oficial da Meta</SelectItem>
                 <SelectItem value="email">Email</SelectItem>
               </SelectContent>
             </Select>
@@ -613,6 +782,126 @@ export function AccountSettingsSection() {
           >
             {savingChannels ? 'Salvando...' : 'Salvar canais e jitter'}
           </Button>
+        </div>
+      </SettingsCard>
+
+      <SettingsCard>
+        <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>Privacidade e exclusão</h4>
+        <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>
+          Exporte seus dados estruturados ou solicite a exclusão definitiva da sua conta Kloel.
+        </p>
+
+        <div className="space-y-4">
+          <SettingsNotice tone="warning">
+            <p className="text-sm font-medium">Antes de excluir sua conta</p>
+            <p className="mt-1 text-sm">
+              Seu acesso será revogado imediatamente. Dados sujeitos a obrigação legal, como notas
+              fiscais e logs mínimos de segurança, podem ser retidos pelo prazo exigido por lei.
+            </p>
+          </SettingsNotice>
+
+          {privacyFeedback ? (
+            <SettingsNotice tone="success">
+              <p className="text-sm">{privacyFeedback}</p>
+            </SettingsNotice>
+          ) : null}
+
+          {privacyError ? (
+            <SettingsNotice tone="danger">
+              <p className="text-sm">{privacyError}</p>
+            </SettingsNotice>
+          ) : null}
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className={`sm:w-auto ${kloelSettingsClass.outlineButton}`}
+              disabled={exportingData}
+              onClick={handleExportData}
+            >
+              {exportingData ? 'Exportando...' : 'Exportar meus dados'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className={`sm:w-auto ${kloelSettingsClass.dangerButton}`}
+              disabled={deletingAccount}
+              onClick={() => {
+                setShowDeletionConfirm((current) => !current);
+                setPrivacyFeedback(null);
+                setPrivacyError(null);
+              }}
+            >
+              {showDeletionConfirm ? 'Cancelar exclusão' : 'Excluir minha conta'}
+            </Button>
+          </div>
+
+          {showDeletionConfirm ? (
+            <div className="rounded-md border border-[#E05252]/25 bg-[#E05252]/8 p-4">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-[var(--app-text-primary)]">
+                    Confirmação obrigatória
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
+                    Digite <span className="font-semibold text-[var(--app-text-primary)]">EXCLUIR</span>{' '}
+                    e confirme que entende a revogação imediata do acesso.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className={kloelSettingsClass.label} htmlFor="delete-account-phrase">
+                    Digite EXCLUIR para continuar
+                  </Label>
+                  <Input
+                    id="delete-account-phrase"
+                    value={deletionPhrase}
+                    onChange={(e) => setDeletionPhrase(e.target.value)}
+                    placeholder="EXCLUIR"
+                    className={kloelSettingsClass.input}
+                    disabled={deletingAccount}
+                  />
+                </div>
+
+                <label className="flex items-start gap-3 text-sm text-[var(--app-text-secondary)]">
+                  <input
+                    type="checkbox"
+                    checked={deletionAcknowledged}
+                    onChange={(e) => setDeletionAcknowledged(e.target.checked)}
+                    disabled={deletingAccount}
+                    aria-label="Entendo que meu acesso será revogado imediatamente."
+                    className="mt-1 h-4 w-4 rounded border border-[var(--app-border-primary)] bg-[var(--app-bg-primary)] accent-[var(--app-accent)]"
+                  />
+                  <span>Entendo que meu acesso será revogado imediatamente.</span>
+                </label>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={kloelSettingsClass.outlineButton}
+                    disabled={deletingAccount}
+                    onClick={() => {
+                      setShowDeletionConfirm(false);
+                      setDeletionPhrase('');
+                      setDeletionAcknowledged(false);
+                    }}
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    type="button"
+                    className={kloelSettingsClass.dangerButton}
+                    disabled={!deletionReady || deletingAccount}
+                    onClick={handleRequestDeletion}
+                  >
+                    {deletingAccount ? 'Excluindo...' : 'Confirmar exclusão permanente'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </SettingsCard>
     </div>

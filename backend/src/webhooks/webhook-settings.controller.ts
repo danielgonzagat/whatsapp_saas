@@ -13,6 +13,10 @@ import {
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  decryptWebhookSubscriptionSecret,
+  encryptWebhookSubscriptionSecret,
+} from './webhook-subscription.crypto';
 
 /**
  * CRUD for outbound webhookEvent subscription URLs.
@@ -27,11 +31,35 @@ export class WebhookSettingsController {
     private auditService: AuditService,
   ) {}
 
+  private serializeSubscription(
+    subscription: Record<string, unknown>,
+    options?: { exposeSecret?: boolean },
+  ) {
+    const { secret: _secret, ...rest } = subscription;
+    const secret = decryptWebhookSubscriptionSecret(String(subscription.secret || '').trim());
+    const suffix = secret.slice(-4);
+
+    return {
+      ...rest,
+      ...(options?.exposeSecret ? { secret } : {}),
+      ...(secret
+        ? {
+            hasSecret: true,
+            secretPreview: suffix ? `****${suffix}` : '****',
+          }
+        : {
+            hasSecret: false,
+            secretPreview: null,
+          }),
+    };
+  }
+
   @Get()
   async list(@Request() req) {
-    return this.prisma.webhookSubscription.findMany({
+    const subscriptions = await this.prisma.webhookSubscription.findMany({
       where: { workspaceId: req.user.workspaceId },
     });
+    return subscriptions.map((subscription) => this.serializeSubscription(subscription));
   }
 
   @Post()
@@ -46,16 +74,17 @@ export class WebhookSettingsController {
           where: { workspaceId: req.user.workspaceId, url: body.url },
         })
       : null;
-    if (existingRecord) return existingRecord;
+    if (existingRecord) return this.serializeSubscription(existingRecord);
 
-    return this.prisma.webhookSubscription.create({
+    const created = await this.prisma.webhookSubscription.create({
       data: {
         workspaceId: req.user.workspaceId,
         url: body.url,
         events: body.events,
-        secret: randomUUID(),
+        secret: encryptWebhookSubscriptionSecret(randomUUID()),
       },
     });
+    return this.serializeSubscription(created, { exposeSecret: true });
   }
 
   @Delete(':id')

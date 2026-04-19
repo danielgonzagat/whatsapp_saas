@@ -388,20 +388,28 @@ export function buildFooterPrimaryLine(brandName: string, merchant?: PublicCheck
 
 export function ValidationInput({
   id,
+  name,
   value,
   onChange,
   placeholder,
   type = 'text',
   disabled = false,
+  autoComplete,
+  inputMode,
+  maxLength,
   style = {},
   theme,
 }: {
   id?: string;
+  name?: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
   type?: string;
   disabled?: boolean;
+  autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  maxLength?: number;
   style?: React.CSSProperties;
   theme: CheckoutThemeInputTokens;
 }) {
@@ -409,11 +417,15 @@ export function ValidationInput({
     <div style={{ position: 'relative' }}>
       <input
         id={id}
+        name={name}
         type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
         style={{
           width: '100%',
           padding: '13px 38px 13px 16px',

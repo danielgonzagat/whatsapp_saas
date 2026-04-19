@@ -2,15 +2,21 @@ import { revalidateTag } from 'next/cache';
 // PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';
-import { setSharedAuthCookies } from '../../_lib/shared-auth-cookies';
+import { hasSharedAuthToken, setSharedAuthCookies } from '../../_lib/shared-auth-cookies';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const candidates = getBackendCandidateUrls();
+    if (!candidates.length) {
+      console.error('[Auth Proxy] whatsapp verify: BACKEND_URL not configured');
+      return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
+    }
+
     let lastError: unknown;
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-    for (const baseUrl of getBackendCandidateUrls()) {
+    for (const baseUrl of candidates) {
       const response = await fetch(`${baseUrl}/auth/whatsapp/verify`, {
         method: 'POST',
         headers: {
@@ -35,7 +41,7 @@ export async function POST(request: NextRequest) {
       revalidateTag('auth', 'max');
       const res = NextResponse.json(data, { status: response.status });
 
-      if (response.ok && data.access_token) {
+      if (response.ok && hasSharedAuthToken(data)) {
         setSharedAuthCookies(request, res, data);
       }
 

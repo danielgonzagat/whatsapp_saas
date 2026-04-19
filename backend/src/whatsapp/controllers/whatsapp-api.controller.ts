@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  GoneException,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
@@ -13,6 +24,7 @@ import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
+import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 
 type BacklogMode = Exclude<Parameters<CiaRuntimeService['startBacklogRun']>[1], undefined>;
 
@@ -37,16 +49,94 @@ export class WhatsAppApiController {
     private readonly accountAgent: AccountAgentService,
     private readonly workspaces: WorkspaceService,
     private readonly watchdog: WhatsAppWatchdogService,
+    private readonly metaWhatsApp: MetaWhatsAppService,
   ) {}
 
-  private buildMetaUnsupportedResponse(feature: string, extra?: Record<string, unknown>) {
-    return {
+  private normalizeProviderSurface(value: unknown): string | undefined {
+    const normalized = String(value || '')
+      .trim()
+      .toLowerCase();
+
+    if (!normalized) return undefined;
+    if (
+      normalized === 'whatsapp-api' ||
+      normalized === 'waha' ||
+      normalized === 'legacy-runtime' ||
+      normalized === 'whatsapp-web-agent'
+    ) {
+      return 'legacy-runtime';
+    }
+    return normalized;
+  }
+
+  private sanitizeSessionStatus(
+    providerType: string,
+    status: Record<string, unknown> | null | undefined,
+  ): Record<string, unknown> {
+    const provider = this.normalizeProviderSurface(providerType);
+    const activeProvider = this.normalizeProviderSurface(status?.activeProvider);
+    const effectiveProvider = provider || activeProvider;
+    const legacyRuntime = effectiveProvider === 'legacy-runtime';
+    const rawStatus = String(status?.status || '')
+      .trim()
+      .toUpperCase();
+    const normalizedStatus =
+      status?.connected === true
+        ? 'CONNECTED'
+        : rawStatus === 'SCAN_QR_CODE' || rawStatus === 'STARTING' || rawStatus === 'OPENING'
+          ? 'connecting'
+          : status?.status;
+
+    const sanitized: Record<string, unknown> = {
+      ...(status || {}),
+      status: normalizedStatus,
+      provider,
+    };
+
+    if (activeProvider) {
+      sanitized.activeProvider = activeProvider;
+    } else {
+      delete sanitized.activeProvider;
+    }
+
+    if (legacyRuntime) {
+      delete sanitized.qrCode;
+      sanitized.qrAvailable = false;
+      sanitized.viewerAvailable = false;
+      delete sanitized.browserSessionStatus;
+      delete sanitized.screencastStatus;
+    } else {
+      if (typeof status?.qrAvailable === 'boolean') {
+        sanitized.qrAvailable = status.qrAvailable;
+      }
+      if (typeof status?.viewerAvailable === 'boolean') {
+        sanitized.viewerAvailable = status.viewerAvailable;
+      }
+      if (status?.qrCode !== undefined) {
+        sanitized.qrCode = status.qrCode;
+      }
+      if (status?.browserSessionStatus !== undefined) {
+        sanitized.browserSessionStatus = status.browserSessionStatus;
+      }
+      if (status?.screencastStatus !== undefined) {
+        sanitized.screencastStatus = status.screencastStatus;
+      }
+    }
+
+    return sanitized;
+  }
+
+  private throwMetaUnsupported(feature: string, extra?: Record<string, unknown>): never {
+    throw new GoneException({
+      statusCode: 410,
       success: false,
       provider: 'meta-cloud',
+      feature,
       notSupported: true,
-      message: `${feature}_not_supported_for_meta_cloud`,
+      reason: `${feature}_not_supported_for_meta_cloud`,
+      message: 'Descontinuado. Use a integração Meta.',
       ...(extra || {}),
-    };
+    });
   }
 
   private async getSessionDiagnostics(workspaceId: string) {
@@ -88,10 +178,42 @@ export class WhatsAppApiController {
   @Post('session/start')
   async startSession(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
-    const result = await this.providerRegistry.startSession(workspaceId);
+    const [providerType, result] = await Promise.all([
+      this.providerRegistry.getProviderType(workspaceId),
+      this.providerRegistry.startSession(workspaceId),
+    ]);
 
     if (result.success && result.message === 'already_connected') {
       await this.catchupService.triggerCatchup(workspaceId, 'session_start_already_connected');
+    }
+
+    if (result.success && result.message !== 'already_connected') {
+      const authUrl =
+        result.authUrl ||
+        this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+          channel: 'whatsapp',
+          returnTo: '/whatsapp',
+        });
+
+      if (providerType === 'whatsapp-api') {
+        return authUrl
+          ? {
+              success: true,
+              message: 'legacy_runtime_disabled',
+              authUrl,
+            }
+          : {
+              success: false,
+              message: 'meta_embedded_signup_not_configured',
+            };
+      }
+
+      if (authUrl && !result.authUrl) {
+        return {
+          ...result,
+          authUrl,
+        };
+      }
     }
 
     return result;
@@ -108,11 +230,9 @@ export class WhatsAppApiController {
       this.providerRegistry.getProviderType(workspaceId),
       this.providerRegistry.getSessionStatus(workspaceId),
     ]);
+    const statusPayload = status ? ({ ...status } as Record<string, unknown>) : undefined;
 
-    return {
-      ...status,
-      provider: providerType,
-    };
+    return this.sanitizeSessionStatus(providerType, statusPayload);
   }
 
   @Get('session/diagnostics')
@@ -181,7 +301,7 @@ export class WhatsAppApiController {
     void req;
     void body;
     const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
-    return this.buildMetaUnsupportedResponse('legacy_session_link', {
+    this.throwMetaUnsupported('legacy_session_link', {
       authUrl: status?.authUrl || null,
     });
   }
@@ -199,7 +319,7 @@ export class WhatsAppApiController {
     void req;
     void body;
     const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
-    return this.buildMetaUnsupportedResponse('legacy_session_claim', {
+    this.throwMetaUnsupported('legacy_session_claim', {
       authUrl: status?.authUrl || null,
     });
   }
@@ -382,71 +502,27 @@ export class WhatsAppApiController {
 
   /**
    * GET /whatsapp-api/session/qr
-   * Retorna QR Code como base64 para autenticação
+   * QR onboarding foi descontinuado. Mantemos a rota apenas para
+   * responder com 410 Gone e evitar regressão ao runtime legado.
    */
   @Get('session/qr')
   async getQrCode(@Req() req: AuthenticatedRequest) {
-    const sessionStatus = await this.providerRegistry.getSessionStatus(req.workspaceId);
+    void req;
 
-    if (sessionStatus?.connected) {
-      return {
-        available: false,
-        connected: true,
-        status: 'connected',
-        message: 'Sessão já conectada.',
-      };
-    }
-
-    const fallbackQr = sessionStatus?.qrCode || null;
-
-    if (fallbackQr) {
-      return {
-        available: true,
-        status: sessionStatus?.status || 'pending',
-        qr: fallbackQr,
-        message: 'QR Code recuperado do snapshot da sessão.',
-      };
-    }
-
-    const result = await this.providerRegistry.getQrCode(req.workspaceId);
-
-    if (result.qr) {
-      return {
-        available: true,
-        qr: result.qr, // base64 data URL
-      };
-    }
-
-    return {
+    throw new GoneException({
+      statusCode: 410,
       available: false,
       connected: false,
-      message: result.message || 'QR Code não disponível. Verifique se a sessão foi iniciada.',
-    };
+      provider: 'meta-cloud',
+      feature: 'qr_code',
+      message: 'Descontinuado. Use a integração Meta.',
+    });
   }
 
   @Get('session/view')
   async getSessionView(@Req() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId;
-    const providerType = await this.providerRegistry.getProviderType(workspaceId);
-    const status = await this.providerRegistry.getSessionStatus(workspaceId);
-    return {
-      success: true,
-      provider: providerType,
-      workerAvailable: false,
-      degraded: false,
-      snapshot: {
-        workspaceId,
-        state: status.connected ? 'CONNECTED' : status.status || 'DISCONNECTED',
-        connected: status.connected,
-        screenshotDataUrl: null,
-        viewerAvailable: false,
-        takeoverActive: false,
-        agentPaused: false,
-        viewport: null,
-      },
-      image: null,
-      message: 'meta_cloud_uses_official_api_no_qr_viewer',
-    };
+    void req;
+    this.throwMetaUnsupported('session_view');
   }
 
   @Post('session/action')
@@ -456,48 +532,45 @@ export class WhatsAppApiController {
   ) {
     void req;
     void body;
-    return this.buildMetaUnsupportedResponse('session_action');
+    this.throwMetaUnsupported('session_action');
   }
 
   @Post('session/takeover')
   takeover(@Req() req: AuthenticatedRequest) {
     void req;
-    return this.buildMetaUnsupportedResponse('session_takeover');
+    this.throwMetaUnsupported('session_takeover');
   }
 
   @Post('session/resume-agent')
   resumeAgent(@Req() req: AuthenticatedRequest) {
     void req;
-    return this.buildMetaUnsupportedResponse('resume_agent');
+    this.throwMetaUnsupported('resume_agent');
   }
 
   @Post('session/pause-agent')
   pauseAgent(@Req() req: AuthenticatedRequest, @Body() body: { paused?: boolean }) {
     void req;
     void body;
-    return this.buildMetaUnsupportedResponse('pause_agent');
+    this.throwMetaUnsupported('pause_agent');
   }
 
   @Post('session/reconcile')
   reconcileSession(@Req() req: AuthenticatedRequest, @Body() body: { objective?: string }) {
     void req;
     void body;
-    return this.buildMetaUnsupportedResponse('session_reconcile');
+    this.throwMetaUnsupported('session_reconcile');
   }
 
   @Get('session/proofs')
   getSessionProofs(@Req() req: AuthenticatedRequest) {
     void req;
-    return {
-      ...this.buildMetaUnsupportedResponse('session_proofs'),
-      proofs: [],
-    };
+    this.throwMetaUnsupported('session_proofs', { proofs: [] });
   }
 
   @Post('session/stream-token')
   getSessionStreamToken(@Req() req: AuthenticatedRequest) {
     void req;
-    return this.buildMetaUnsupportedResponse('session_stream_token');
+    this.throwMetaUnsupported('session_stream_token');
   }
 
   @Get('session/stream-health')
@@ -519,7 +592,7 @@ export class WhatsAppApiController {
   ) {
     void req;
     void body;
-    return this.buildMetaUnsupportedResponse('session_action_turn');
+    this.throwMetaUnsupported('session_action_turn');
   }
 
   /**

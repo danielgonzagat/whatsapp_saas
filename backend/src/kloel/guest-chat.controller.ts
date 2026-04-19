@@ -14,15 +14,16 @@ import {
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { Public } from '../auth/public.decorator';
-import { GuestChatService } from './guest-chat.service';
+import { VisitorChatService } from './guest-chat.service';
+import { isVisitorChatEnabled } from './visitor-chat-enabled';
 
-interface GuestChatDto {
+interface VisitorChatDto {
   message: string;
   sessionId?: string; // Para manter contexto entre mensagens
 }
 
 /**
- * 🌐 GUEST CHAT - Chat público sem autenticação
+ * 🌐 VISITOR CHAT - Chat público sem autenticação
  *
  * Este controller permite que visitantes conversem com o Kloel
  * antes de criar uma conta. A IA atua como vendedor, convertendo
@@ -38,10 +39,10 @@ interface GuestChatDto {
  */
 @Controller('chat')
 @UseGuards(ThrottlerGuard)
-export class GuestChatController {
-  private readonly logger = new Logger(GuestChatController.name);
+export class VisitorChatController {
+  private readonly logger = new Logger(VisitorChatController.name);
 
-  constructor(private readonly guestChatService: GuestChatService) {}
+  constructor(private readonly visitorChatService: VisitorChatService) {}
 
   /**
    * 💬 Chat público para visitantes
@@ -49,20 +50,20 @@ export class GuestChatController {
    * Rate limit: 10 req/min para evitar abuso da API OpenAI
    */
   @Public()
-  @Post('guest')
+  @Post(['guest', 'visitor'])
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async guestChat(
-    @Body() dto: GuestChatDto,
+  async visitorChat(
+    @Body() dto: VisitorChatDto,
     @Req() req: Request,
     @Res() res: Response,
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
-    this.assertGuestChatEnabledOrThrow();
+    this.assertVisitorChatEnabledOrThrow();
     const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
 
-    this.logger.log(`Guest chat: session=${sessionId}, origin=${req.headers.origin}`);
+    this.logger.log(`Visitor chat: session=${sessionId}, origin=${req.headers.origin}`);
 
-    return this.guestChatService.chat(dto.message, sessionId, req, res);
+    return this.visitorChatService.chat(dto.message, sessionId, req, res);
   }
 
   /**
@@ -70,18 +71,18 @@ export class GuestChatController {
    * Rate limit: 10 req/min para evitar abuso da API OpenAI
    */
   @Public()
-  @Post('guest/sync')
+  @Post(['guest/sync', 'visitor/sync'])
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async guestChatSync(
-    @Body() dto: GuestChatDto,
+  async visitorChatSync(
+    @Body() dto: VisitorChatDto,
     @Req() req: Request,
     @Res() res: Response,
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
-    this.assertGuestChatEnabledOrThrow();
+    this.assertVisitorChatEnabledOrThrow();
     const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
 
-    this.logger.log(`Guest chat sync: session=${sessionId}, origin=${req.headers.origin}`);
+    this.logger.log(`Visitor chat sync: session=${sessionId}, origin=${req.headers.origin}`);
 
     // CORS manual — obrigatório porque usamos @Res()
     const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
@@ -103,7 +104,7 @@ export class GuestChatController {
     );
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
-    const reply = await this.guestChatService.chatSync(dto.message, sessionId);
+    const reply = await this.visitorChatService.chatSync(dto.message, sessionId);
     res.json({ reply, sessionId });
   }
 
@@ -111,10 +112,10 @@ export class GuestChatController {
    * 🆔 Gerar nova sessão para visitante
    */
   @Public()
-  @Get('guest/session')
+  @Get(['guest/session', 'visitor/session'])
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   getSession(): { sessionId: string } {
-    this.assertGuestChatEnabledOrThrow();
+    this.assertVisitorChatEnabledOrThrow();
     return { sessionId: this.generateSessionId() };
   }
 
@@ -122,24 +123,23 @@ export class GuestChatController {
    * 🔥 Health check público
    */
   @Public()
-  @Get('guest/health')
+  @Get(['guest/health', 'visitor/health'])
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   health(): { status: string; mode: string } {
-    this.assertGuestChatEnabledOrThrow();
+    this.assertVisitorChatEnabledOrThrow();
     return {
       status: 'online',
-      mode: 'guest',
+      mode: 'visitor',
     };
   }
 
-  private assertGuestChatEnabledOrThrow() {
-    const raw = (process.env.GUEST_CHAT_ENABLED ?? 'true').toLowerCase();
-    if (raw === 'false') {
-      throw new ForbiddenException('guest_chat_disabled');
+  private assertVisitorChatEnabledOrThrow() {
+    if (!isVisitorChatEnabled()) {
+      throw new ForbiddenException('visitor_chat_disabled');
     }
   }
 
   private generateSessionId(): string {
-    return `guest_${randomUUID()}`;
+    return `visitor_${randomUUID()}`;
   }
 }

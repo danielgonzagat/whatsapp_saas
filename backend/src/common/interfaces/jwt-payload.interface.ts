@@ -9,6 +9,7 @@ export interface JwtPayload {
   workspaceId: string;
   role: string;
   name?: string;
+  sessionId?: string;
   /** Issued-at (auto-added by jsonwebtoken) */
   iat?: number;
   /** Expiration (auto-added by jsonwebtoken) */

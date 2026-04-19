@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { webhookQueue } from '../queue/queue';
+import { decryptWebhookSubscriptionSecret } from './webhook-subscription.crypto';
 
 /**
  * Outbound webhook dispatcher — delivers webhookEvent payloads to subscriber URLs.
@@ -38,7 +39,7 @@ export class WebhookDispatcherService {
         'send-webhook',
         {
           url: sub.url,
-          secret: sub.secret,
+          secret: decryptWebhookSubscriptionSecret(sub.secret),
           event,
           payload,
           eventDate,

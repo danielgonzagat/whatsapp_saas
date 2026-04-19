@@ -97,7 +97,7 @@ export function AgentDesktopViewer({
         setError(null);
         onConnectionChange?.(nextStatus.connected);
       } catch (nextError: any) {
-        setError(nextError?.message || 'Falha ao carregar o status da Meta Cloud.');
+        setError(nextError?.message || 'Falha ao carregar o status oficial do WhatsApp.');
       } finally {
         setWorking(false);
       }
@@ -159,7 +159,7 @@ export function AgentDesktopViewer({
     <div className="relative w-full overflow-hidden rounded-[28px] border border-white/10 bg-[#0B0F14] shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
       <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-[#7E8794]">Meta Cloud</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-[#7E8794]">WhatsApp oficial</p>
           <h2 className="mt-1 text-lg font-semibold text-[#F7F7F5]">Painel oficial de conexao</h2>
         </div>
 
@@ -186,8 +186,8 @@ export function AgentDesktopViewer({
           </div>
 
           <p className="mt-4 text-sm leading-6 text-[#C9CDD4]">
-            O runtime de QR e browser foi removido. Esta area agora opera apenas com a API oficial
-            da Meta para WhatsApp, Instagram e outros canais Meta.
+            O runtime legado de navegador foi removido. Esta area agora opera apenas com a API
+            oficial da Meta para WhatsApp, Instagram e outros canais Meta.
           </p>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">

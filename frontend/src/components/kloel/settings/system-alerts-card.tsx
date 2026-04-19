@@ -1,8 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { swrFetcher } from '@/lib/fetcher';
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, X, XCircle } from 'lucide-react';
 import { useState } from 'react';
+import useSWR from 'swr';
 import {
   SettingsCard,
   SettingsHeader,
@@ -10,25 +12,49 @@ import {
   SettingsModal,
   SettingsNotice,
 } from './contract';
-
-interface Alert {
-  id: string;
-  type: 'success' | 'warning' | 'error' | 'info';
-  message: string;
-  detail?: string;
-}
+import {
+  deriveSystemAlerts,
+  summarizeSystemHealth,
+  type SystemAlert,
+  type SystemHealthSnapshot,
+} from './system-alerts';
 
 interface SystemAlertsCardProps {
-  alerts?: Alert[];
+  alerts?: SystemAlert[];
 }
 
 export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) {
   const [showResolveModal, setShowResolveModal] = useState(false);
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [selectedAlert, setSelectedAlert] = useState<SystemAlert | null>(null);
+  const shouldLoadRuntimeHealth = !propAlerts;
+  const { data, error, isLoading } = useSWR<SystemHealthSnapshot>(
+    shouldLoadRuntimeHealth ? '/health/system' : null,
+    swrFetcher,
+    {
+      refreshInterval: 30000,
+      revalidateOnFocus: false,
+    },
+  );
 
-  const alerts = propAlerts || [];
+  const derivedAlerts =
+    propAlerts ||
+    (error
+      ? [
+          {
+            id: 'system-health-fetch-error',
+            type: 'error' as const,
+            message: 'Não foi possível carregar a saúde do sistema.',
+            detail:
+              error instanceof Error
+                ? error.message
+                : 'A leitura consolidada do backend falhou nesta sessão.',
+          },
+        ]
+      : deriveSystemAlerts(data));
+  const healthSummary = propAlerts ? [] : summarizeSystemHealth(data);
+  const alerts = derivedAlerts;
 
-  const getAlertStyles = (type: Alert['type']) => {
+  const getAlertStyles = (type: SystemAlert['type']) => {
     switch (type) {
       case 'success':
         return {
@@ -58,22 +84,61 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
           icon: Info,
           iconColor: 'text-[#93C5FD]',
         };
-    }
+      }
   };
 
-  const handleShowResolve = (alert: Alert) => {
+  const handleShowResolve = (alert: SystemAlert) => {
     setSelectedAlert(alert);
     setShowResolveModal(true);
   };
+
+  const lastUpdated =
+    typeof data?.details?.timestamp === 'string' && data.details.timestamp
+      ? new Date(data.details.timestamp).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : null;
 
   return (
     <>
       <SettingsCard className="p-6">
         <SettingsHeader
           title="Problemas e Alertas"
-          description="Status geral do sistema Kloel"
+          description={
+            lastUpdated
+              ? `Status geral do sistema Kloel • atualizado ${lastUpdated}`
+              : 'Status geral do sistema Kloel'
+          }
           className="mb-4"
         />
+
+        {shouldLoadRuntimeHealth && isLoading && alerts.length === 0 ? (
+          <SettingsInset className="mb-4 p-4 text-sm text-[#6E6E73]">
+            Carregando saúde consolidada do backend, worker e integrações críticas.
+          </SettingsInset>
+        ) : null}
+
+        {healthSummary.length > 0 ? (
+          <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-3">
+            {healthSummary.map((pill) => {
+              const styles = getAlertStyles(pill.tone);
+              return (
+                <div
+                  key={pill.id}
+                  className={`rounded-md border border-white/5 ${styles.bg} px-3 py-2`}
+                >
+                  <div className={`text-[11px] font-medium uppercase tracking-[0.12em] ${styles.text}`}>
+                    {pill.label}
+                  </div>
+                  <div className="mt-1 text-sm font-medium text-[#E0DDD8]">{pill.value}</div>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
 
         <div className="space-y-2">
           {alerts.length === 0 ? (

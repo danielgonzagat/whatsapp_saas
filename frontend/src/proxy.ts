@@ -93,6 +93,7 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
   const targetPath = currentPath(request);
   const { pathname, searchParams } = request.nextUrl;
   const forceAuth = searchParams.get(FORCE_AUTH_QUERY_KEY) === '1';
+  const marketingDocumentPath = pathname !== '/' && isMarketingPath(pathname);
 
   if (forceAuth) {
     if (pathname === '/') {
@@ -105,12 +106,7 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
       return redirect(loginUrl.toString());
     }
 
-    if (
-      isAuthPath(pathname) ||
-      pathname === '/terms' ||
-      pathname === '/privacy' ||
-      pathname === '/cookies'
-    ) {
+    if (isAuthPath(pathname) || marketingDocumentPath) {
       return NextResponse.next();
     }
   }
@@ -129,12 +125,7 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
     return redirect(buildAuthUrl('/login?forceAuth=1', host));
   }
 
-  if (
-    isAuthPath(pathname) ||
-    pathname === '/terms' ||
-    pathname === '/privacy' ||
-    pathname === '/cookies'
-  ) {
+  if (isAuthPath(pathname) || marketingDocumentPath) {
     return NextResponse.next();
   }
 
@@ -148,6 +139,7 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
 function handleAppHost(request: NextRequest, host: string, isAuthenticated: boolean) {
   const targetPath = currentPath(request);
   const { pathname } = request.nextUrl;
+  const marketingDocumentPath = pathname !== '/' && isMarketingPath(pathname);
 
   if (pathname === '/') {
     if (!isAuthenticated) {
@@ -175,7 +167,7 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
     return NextResponse.next();
   }
 
-  if (pathname === '/terms' || pathname === '/privacy' || pathname === '/cookies') {
+  if (marketingDocumentPath) {
     return redirect(buildMarketingUrl(targetPath, host));
   }
 
@@ -184,14 +176,9 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
 
 function handleUnknownHost(request: NextRequest, isAuthenticated: boolean) {
   const { pathname } = request.nextUrl;
+  const marketingDocumentPath = pathname !== '/' && isMarketingPath(pathname);
 
-  if (
-    pathname === '/' ||
-    isAuthPath(pathname) ||
-    pathname === '/terms' ||
-    pathname === '/privacy' ||
-    pathname === '/cookies'
-  ) {
+  if (pathname === '/' || isAuthPath(pathname) || marketingDocumentPath) {
     return NextResponse.next();
   }
 

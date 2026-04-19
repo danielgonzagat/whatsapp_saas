@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { hashApiKey, maskApiKeyForDisplay } from './api-key-hash';
 
 @Injectable()
 export class ApiKeysService {
@@ -12,11 +13,12 @@ export class ApiKeysService {
   ) {}
 
   async list(workspaceId: string) {
-    return this.prisma.apiKey.findMany({
+    const keys = await this.prisma.apiKey.findMany({
       where: { workspaceId },
       select: {
         id: true,
         name: true,
+        key: true,
         createdAt: true,
         lastUsedAt: true,
         workspaceId: true,
@@ -24,17 +26,28 @@ export class ApiKeysService {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+
+    return keys.map(({ key, ...rest }) => ({
+      ...rest,
+      maskedKey: maskApiKeyForDisplay(key),
+    }));
   }
 
   async create(workspaceId: string, name: string) {
-    const key = `sk_live_${randomBytes(24).toString('hex')}`;
-    return this.prisma.apiKey.create({
+    const rawKey = `sk_live_${randomBytes(24).toString('hex')}`;
+    const created = await this.prisma.apiKey.create({
       data: {
         workspaceId,
         name,
-        key,
+        key: hashApiKey(rawKey),
       },
     });
+
+    return {
+      ...created,
+      key: rawKey,
+      maskedKey: maskApiKeyForDisplay(rawKey),
+    };
   }
 
   async delete(workspaceId: string, id: string) {
@@ -47,23 +60,41 @@ export class ApiKeysService {
       action: 'DELETE_RECORD',
       resource: 'ApiKey',
       resourceId: id,
-      details: { deletedBy: 'user', name: key.name },
+        details: { deletedBy: 'user', name: key.name },
     });
-    return this.prisma.apiKey.delete({ where: { id } });
+    await this.prisma.apiKey.delete({ where: { id } });
+    return { ok: true };
   }
 
   async validateKey(key: string) {
-    const apiKey = await this.prisma.apiKey.findUnique({
-      where: { key },
+    const normalizedKey = String(key || '').trim();
+    if (!normalizedKey) {
+      return null;
+    }
+
+    let apiKey = await this.prisma.apiKey.findUnique({
+      where: { key: hashApiKey(normalizedKey) },
       include: { workspace: true },
     });
+    let legacyPlaintextMatch = false;
+
+    if (!apiKey) {
+      apiKey = await this.prisma.apiKey.findUnique({
+        where: { key: normalizedKey },
+        include: { workspace: true },
+      });
+      legacyPlaintextMatch = Boolean(apiKey);
+    }
 
     if (apiKey) {
       // Async update last used (fire and forget)
       this.prisma.apiKey
         .update({
           where: { id: apiKey.id },
-          data: { lastUsedAt: new Date() },
+          data: {
+            lastUsedAt: new Date(),
+            ...(legacyPlaintextMatch ? { key: hashApiKey(normalizedKey) } : {}),
+          },
         })
         .catch((err) => this.logger.warn('Failed to update apiKey lastUsedAt', err.message));
     }

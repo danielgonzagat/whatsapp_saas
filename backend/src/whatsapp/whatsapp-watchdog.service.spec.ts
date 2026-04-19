@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 
 describe('WhatsAppWatchdogService', () => {
@@ -293,9 +294,8 @@ describe('WhatsAppWatchdogService', () => {
     prisma.workspace.findMany.mockResolvedValue([
       {
         id: 'guest-ws',
-        name: 'Guest Workspace',
+        name: 'Workspace Temporario',
         providerSettings: {
-          guestMode: true,
           whatsappProvider: 'whatsapp-api',
           whatsappApiSession: { status: 'qr_pending' },
         },
@@ -386,5 +386,29 @@ describe('WhatsAppWatchdogService', () => {
     expect(prisma.workspace.findMany).not.toHaveBeenCalled();
     expect(whatsappApi.deleteSession).not.toHaveBeenCalled();
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+  });
+
+  it('logs a Meta-first startup banner instead of legacy WAHA copy', () => {
+    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    const localService = new WhatsAppWatchdogService(
+      prisma,
+      providerRegistry,
+      whatsappApi,
+      catchupService,
+      ciaRuntime,
+      redis,
+    );
+
+    localService.onModuleInit();
+
+    expect(logSpy).toHaveBeenCalledWith(
+      '🧭 Runtime WhatsApp em modo Meta-first: onboarding legado por navegador permanece desativado',
+    );
+    expect(logSpy).not.toHaveBeenCalledWith(
+      '🧭 Meta Cloud mode active: legacy WAHA/browser paths disabled',
+    );
+
+    localService.onModuleDestroy();
+    logSpy.mockRestore();
   });
 });

@@ -3,12 +3,18 @@ import { revalidateTag } from 'next/cache';
 // Client callers invoke mutate('auth') after receiving this response
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendUrl } from '../../_lib/backend-url';
-import { setSharedAuthCookies } from '../_lib/shared-auth-cookies';
+import { hasSharedAuthToken, setSharedAuthCookies } from '../_lib/shared-auth-cookies';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const response = await fetch(`${getBackendUrl()}/auth/login`, {
+    const backendUrl = getBackendUrl();
+    if (!backendUrl) {
+      console.error('[Auth Proxy] login: BACKEND_URL not configured');
+      return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
+    }
+
+    const response = await fetch(`${backendUrl}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -22,7 +28,7 @@ export async function POST(request: NextRequest) {
     revalidateTag('auth', 'max');
     const res = NextResponse.json(data, { status: response.status });
 
-    if (response.ok && data.access_token) {
+    if (response.ok && hasSharedAuthToken(data)) {
       setSharedAuthCookies(request, res, data);
     }
 

@@ -15,6 +15,7 @@ type UseCheckoutExperienceAutomationOptions = {
   supportsBoleto: boolean;
   redirectTimer: MutableRefObject<number | null>;
   socialIdentity: CheckoutSocialIdentitySnapshot | null;
+  allowGoogleExtendedPrefill: boolean;
   setForm: Dispatch<SetStateAction<CheckoutExperienceForm>>;
   couponApplied: boolean;
   setCouponApplied: (value: boolean) => void;
@@ -42,6 +43,7 @@ export function useCheckoutExperienceAutomation({
   supportsBoleto,
   redirectTimer,
   socialIdentity,
+  allowGoogleExtendedPrefill,
   setForm,
   couponApplied,
   setCouponApplied,
@@ -80,21 +82,8 @@ export function useCheckoutExperienceAutomation({
 
   useEffect(() => {
     if (!socialIdentity) return;
-    setForm((prev) => ({
-      ...prev,
-      name: socialIdentity.name || prev.name,
-      email: socialIdentity.email || prev.email,
-      phone: socialIdentity.phone || prev.phone,
-      cpf: socialIdentity.cpf || prev.cpf,
-      cep: socialIdentity.cep || prev.cep,
-      street: socialIdentity.street || prev.street,
-      number: socialIdentity.number || prev.number,
-      neighborhood: socialIdentity.neighborhood || prev.neighborhood,
-      city: socialIdentity.city || prev.city,
-      state: socialIdentity.state || prev.state,
-      complement: socialIdentity.complement || prev.complement,
-    }));
-  }, [setForm, socialIdentity]);
+    setForm((prev) => mergeSocialIdentityPrefill(prev, socialIdentity, allowGoogleExtendedPrefill));
+  }, [allowGoogleExtendedPrefill, setForm, socialIdentity]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: qty change is the intentional trigger to drop any applied coupon; the effect reads couponApplied latest value
   useEffect(() => {
@@ -161,4 +150,36 @@ export function useCheckoutExperienceAutomation({
     setShowCouponPopup,
     couponPopupEnabled,
   ]);
+}
+
+export function mergeSocialIdentityPrefill(
+  previous: CheckoutExperienceForm,
+  socialIdentity: CheckoutSocialIdentitySnapshot | null,
+  allowGoogleExtendedPrefill: boolean,
+): CheckoutExperienceForm {
+  if (!socialIdentity) {
+    return previous;
+  }
+
+  const allowSensitiveGoogleFields =
+    socialIdentity.provider !== 'google' || allowGoogleExtendedPrefill;
+
+  return {
+    ...previous,
+    name: socialIdentity.name || previous.name,
+    email: socialIdentity.email || previous.email,
+    phone: allowSensitiveGoogleFields ? socialIdentity.phone || previous.phone : previous.phone,
+    cpf: socialIdentity.cpf || previous.cpf,
+    cep: allowSensitiveGoogleFields ? socialIdentity.cep || previous.cep : previous.cep,
+    street: allowSensitiveGoogleFields ? socialIdentity.street || previous.street : previous.street,
+    number: allowSensitiveGoogleFields ? socialIdentity.number || previous.number : previous.number,
+    neighborhood: allowSensitiveGoogleFields
+      ? socialIdentity.neighborhood || previous.neighborhood
+      : previous.neighborhood,
+    city: allowSensitiveGoogleFields ? socialIdentity.city || previous.city : previous.city,
+    state: allowSensitiveGoogleFields ? socialIdentity.state || previous.state : previous.state,
+    complement: allowSensitiveGoogleFields
+      ? socialIdentity.complement || previous.complement
+      : previous.complement,
+  };
 }

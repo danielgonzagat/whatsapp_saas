@@ -1,5 +1,5 @@
 import { whatsappApiProvider } from './whatsapp-api-provider';
-import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
+import { resolveWhatsAppProvider } from './whatsapp-provider-resolver';
 
 /** Minimal workspace shape accepted by the unified provider. */
 export interface WorkspaceOrId {
@@ -63,17 +63,16 @@ interface ExtendedProvider {
 }
 
 function normalizeWorkspace(workspaceOrId: string | WorkspaceOrId) {
-  const provider = getWhatsAppProviderFromEnv();
   if (typeof workspaceOrId === 'string') {
     return {
       id: workspaceOrId.trim(),
-      whatsappProvider: provider,
+      whatsappProvider: resolveWhatsAppProvider(undefined),
     };
   }
 
   return {
     ...workspaceOrId,
-    whatsappProvider: provider,
+    whatsappProvider: resolveWhatsAppProvider(workspaceOrId?.whatsappProvider),
   };
 }
 

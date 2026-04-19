@@ -1,4 +1,6 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
+import { hashAuthToken } from '../auth/auth-token-hash';
 import { AuditService } from '../audit/audit.service';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
@@ -13,6 +15,11 @@ export class PartnershipsService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
   ) {}
+
+  private serializeInvite<T extends Record<string, unknown>>(invite: T): Omit<T, 'token'> {
+    const { token: _token, ...safeInvite } = invite as T & { token?: unknown };
+    return safeInvite;
+  }
 
   private async isPublicCodeTaken(code: string) {
     const [plan, checkoutLink, affiliateLink] = await Promise.all([
@@ -63,14 +70,13 @@ export class PartnershipsService {
         role: true,
         status: true,
         invitedBy: true,
-        token: true,
         expiresAt: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
-    return { agents, invites };
+    return { agents, invites: invites.map((invite) => this.serializeInvite(invite)) };
   }
 
   async getCollaboratorStats(workspaceId: string) {
@@ -95,17 +101,19 @@ export class PartnershipsService {
     });
     if (existingInvite) throw new ConflictException('Convite já enviado para este email');
 
+    const rawToken = uuidv4();
     const invite = await this.prisma.collaboratorInvite.create({
       data: {
         workspaceId,
         email,
         role,
         invitedBy,
+        token: hashAuthToken(rawToken),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
     this.logger.log(`Invite sent to ${email} for workspace ${workspaceId}`);
-    return invite;
+    return this.serializeInvite(invite);
   }
 
   async revokeInvite(id: string, workspaceId: string) {

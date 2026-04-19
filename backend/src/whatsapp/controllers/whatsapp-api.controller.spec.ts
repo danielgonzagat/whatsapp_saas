@@ -11,6 +11,7 @@ describe('WhatsAppApiController', () => {
   let accountAgent: any;
   let workspaces: any;
   let watchdog: any;
+  let metaWhatsApp: any;
   let controller: WhatsAppApiController;
 
   beforeEach(() => {
@@ -118,6 +119,9 @@ describe('WhatsAppApiController', () => {
     watchdog = {
       checkWorkspaceSession: jest.fn().mockResolvedValue(undefined),
     };
+    metaWhatsApp = {
+      buildEmbeddedSignupUrl: jest.fn().mockReturnValue('https://meta.example.com/embedded-signup'),
+    };
 
     controller = new WhatsAppApiController(
       providerRegistry,
@@ -129,6 +133,7 @@ describe('WhatsAppApiController', () => {
       accountAgent,
       workspaces,
       watchdog,
+      metaWhatsApp,
     );
   });
 
@@ -147,19 +152,51 @@ describe('WhatsAppApiController', () => {
     });
   });
 
-  it('returns QR code from the active provider registry instead of the meta provider', async () => {
-    providerRegistry.getQrCode.mockResolvedValue({
-      success: true,
-      qr: 'data:image/png;base64,qr-live',
+  it('normalizes legacy runtime status payloads before returning them to the browser', async () => {
+    providerRegistry.getProviderType.mockResolvedValue('whatsapp-api');
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: false,
+      status: 'SCAN_QR_CODE',
+      qrCode: 'data:image/png;base64,legacy',
+      qrAvailable: true,
+      viewerAvailable: true,
+      browserSessionStatus: 'OPENING',
+      screencastStatus: 'READY',
+      activeProvider: 'whatsapp-api',
+      message: 'Abra o fluxo oficial da Meta.',
     });
 
     await expect(
-      controller.getQrCode({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+      controller.getStatus({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
     ).resolves.toEqual({
-      available: true,
-      qr: 'data:image/png;base64,qr-live',
+      connected: false,
+      status: 'connecting',
+      provider: 'legacy-runtime',
+      qrCode: undefined,
+      qrAvailable: false,
+      viewerAvailable: false,
+      browserSessionStatus: undefined,
+      screencastStatus: undefined,
+      activeProvider: 'legacy-runtime',
+      message: 'Abra o fluxo oficial da Meta.',
     });
-    expect(providerRegistry.getQrCode).toHaveBeenCalledWith('ws-1');
+  });
+
+  it('returns 410 Gone for the deprecated QR route', async () => {
+    await expect(
+      controller.getQrCode({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+    ).rejects.toMatchObject({
+      response: {
+        statusCode: 410,
+        available: false,
+        connected: false,
+        provider: 'meta-cloud',
+        feature: 'qr_code',
+        message: 'Descontinuado. Use a integração Meta.',
+      },
+      status: 410,
+    });
+    expect(providerRegistry.getQrCode).not.toHaveBeenCalled();
   });
 
   it('still triggers catchup when startSession reports already connected', async () => {
@@ -178,6 +215,44 @@ describe('WhatsAppApiController', () => {
       'ws-1',
       'session_start_already_connected',
     );
+  });
+
+  it('returns the official Meta auth URL when a legacy runtime workspace asks to start a session', async () => {
+    providerRegistry.getProviderType.mockResolvedValue('whatsapp-api');
+    providerRegistry.startSession.mockResolvedValue({
+      success: true,
+      message: 'session_started',
+      qrCode: 'data:image/png;base64,legacy',
+    });
+
+    await expect(
+      controller.startSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+    ).resolves.toEqual({
+      success: true,
+      message: 'legacy_runtime_disabled',
+      authUrl: 'https://meta.example.com/embedded-signup',
+    });
+
+    expect(metaWhatsApp.buildEmbeddedSignupUrl).toHaveBeenCalledWith('ws-1', {
+      channel: 'whatsapp',
+      returnTo: '/whatsapp',
+    });
+  });
+
+  it('fails explicitly when a legacy runtime workspace requests session start without Embedded Signup configured', async () => {
+    providerRegistry.getProviderType.mockResolvedValue('whatsapp-api');
+    providerRegistry.startSession.mockResolvedValue({
+      success: true,
+      message: 'session_started',
+    });
+    metaWhatsApp.buildEmbeddedSignupUrl.mockReturnValue('');
+
+    await expect(
+      controller.startSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+    ).resolves.toEqual({
+      success: false,
+      message: 'meta_embedded_signup_not_configured',
+    });
   });
 
   it('forces a watchdog check and returns diagnostics', async () => {
@@ -237,7 +312,7 @@ describe('WhatsAppApiController', () => {
     expect(ciaRuntime.startBacklogRun).toHaveBeenCalledWith('ws-1', 'reply_all_recent_first', 12);
   });
 
-  it('returns a not-supported response for legacy session linking', async () => {
+  it('returns 410 Gone for legacy session linking', async () => {
     providerRegistry.getSessionStatus.mockResolvedValue({
       connected: false,
       status: 'CONNECTION_INCOMPLETE',
@@ -248,13 +323,85 @@ describe('WhatsAppApiController', () => {
       controller.linkSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest, {
         sessionName: 'legacy',
       }),
-    ).resolves.toEqual({
-      success: false,
-      provider: 'meta-cloud',
-      notSupported: true,
-      message: 'legacy_session_link_not_supported_for_meta_cloud',
+    ).rejects.toMatchObject({
+      response: {
+        statusCode: 410,
+        success: false,
+        provider: 'meta-cloud',
+        feature: 'legacy_session_link',
+        notSupported: true,
+        reason: 'legacy_session_link_not_supported_for_meta_cloud',
+        message: 'Descontinuado. Use a integração Meta.',
+        authUrl: 'https://meta.test/signup',
+      },
+      status: 410,
+    });
+  });
+
+  it('returns 410 Gone for legacy session claim', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: false,
+      status: 'CONNECTION_INCOMPLETE',
       authUrl: 'https://meta.test/signup',
     });
+
+    await expect(
+      controller.claimSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest, {
+        sourceWorkspaceId: 'guest-ws',
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        statusCode: 410,
+        success: false,
+        provider: 'meta-cloud',
+        feature: 'legacy_session_claim',
+        notSupported: true,
+        reason: 'legacy_session_claim_not_supported_for_meta_cloud',
+        message: 'Descontinuado. Use a integração Meta.',
+        authUrl: 'https://meta.test/signup',
+      },
+      status: 410,
+    });
+  });
+
+  it('returns 410 Gone for the deprecated session viewer route', async () => {
+    await expect(
+      controller.getSessionView({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+    ).rejects.toMatchObject({
+      response: {
+        statusCode: 410,
+        success: false,
+        provider: 'meta-cloud',
+        feature: 'session_view',
+        notSupported: true,
+        reason: 'session_view_not_supported_for_meta_cloud',
+        message: 'Descontinuado. Use a integração Meta.',
+      },
+      status: 410,
+    });
+  });
+
+  it('returns 410 Gone for legacy session actions', async () => {
+    try {
+      controller.performSessionAction(
+        { workspaceId: 'ws-1' } as unknown as AuthenticatedRequest,
+        { action: { kind: 'click' } },
+      );
+      throw new Error('expected performSessionAction to throw');
+    } catch (error) {
+      expect(error).toMatchObject({
+        response: {
+          statusCode: 410,
+          success: false,
+          provider: 'meta-cloud',
+          feature: 'session_action',
+          notSupported: true,
+          reason: 'session_action_not_supported_for_meta_cloud',
+          message: 'Descontinuado. Use a integração Meta.',
+        },
+        status: 410,
+      });
+    }
   });
 
   it('delegates contacts, chats, backlog and sync actions to WhatsappService', async () => {

@@ -6,6 +6,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CheckoutSocialLeadStatus, CheckoutSocialProvider, Prisma } from '@prisma/client';
+import { extractAppleIdentityProfile } from '../auth/apple-identity';
+import { FacebookAuthService } from '../auth/facebook-auth.service';
 import { GoogleAuthService } from '../auth/google-auth.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { crmQueue } from '../queue/queue';
@@ -39,6 +41,7 @@ type CheckoutSocialLeadPrefill = {
   avatarUrl: string | null;
   deviceFingerprint: string | null;
   phone: string | null;
+  birthday: string | null;
   cpf: string | null;
   cep: string | null;
   street: string | null;
@@ -56,19 +59,13 @@ export class CheckoutSocialLeadService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly googleAuthService: GoogleAuthService,
+    private readonly facebookAuthService: FacebookAuthService,
   ) {}
 
   async captureLead(dto: CaptureSocialLeadDto) {
     const plan = await this.resolvePlanBySlug(dto.slug);
     const provider = this.parseProvider(dto.provider);
-
-    if (provider !== CheckoutSocialProvider.GOOGLE) {
-      throw new ServiceUnavailableException(
-        'Google está disponível agora. Facebook e Apple entram nas próximas iterações.',
-      );
-    }
-
-    const verified = await this.googleAuthService.verifyCredential(dto.credential || '');
+    const verified = await this.verifyProviderIdentity(provider, dto);
     const lead = await this.prisma.checkoutSocialLead.create({
       data: {
         workspaceId: plan.workspaceId,
@@ -114,7 +111,7 @@ export class CheckoutSocialLeadService {
 
     return {
       leadId: lead.id,
-      provider: dto.provider,
+      provider: this.serializeProvider(provider),
       name: lead.name,
       email: lead.email,
       avatarUrl: lead.avatarUrl,
@@ -174,6 +171,7 @@ export class CheckoutSocialLeadService {
       avatarUrl: lead.avatarUrl,
       deviceFingerprint: lead.deviceFingerprint,
       phone: lead.phone,
+      birthday: this.extractBirthdayFromEnrichment(lead.enrichmentData),
       cpf: lead.cpf,
       cep: address.cep,
       street: address.street,
@@ -261,6 +259,7 @@ export class CheckoutSocialLeadService {
       avatarUrl: updatedLead.avatarUrl,
       deviceFingerprint: updatedLead.deviceFingerprint,
       phone: updatedLead.phone,
+      birthday: this.extractBirthdayFromEnrichment(updatedLead.enrichmentData),
       cpf: updatedLead.cpf,
       cep: address.cep,
       street: address.street,
@@ -421,6 +420,21 @@ export class CheckoutSocialLeadService {
     if (provider === 'google') return CheckoutSocialProvider.GOOGLE;
     if (provider === 'facebook') return CheckoutSocialProvider.FACEBOOK;
     return CheckoutSocialProvider.APPLE;
+  }
+
+  private async verifyProviderIdentity(
+    provider: CheckoutSocialProvider,
+    dto: CaptureSocialLeadDto,
+  ) {
+    if (provider === CheckoutSocialProvider.GOOGLE) {
+      return await this.googleAuthService.verifyCredential(dto.credential || '');
+    }
+
+    if (provider === CheckoutSocialProvider.FACEBOOK) {
+      return await this.facebookAuthService.verifyAccessToken(dto.accessToken || '');
+    }
+
+    return extractAppleIdentityProfile(dto.identityToken || '', dto.user);
   }
 
   private serializeProvider(provider: CheckoutSocialProvider): CaptureSocialLeadDto['provider'] {
@@ -612,6 +626,7 @@ export class CheckoutSocialLeadService {
         ...providerProfile,
         email: profile.email,
         phone: profile.phone,
+        birthday: this.normalizeOptional(profile.birthday) || providerProfile.birthday || null,
       },
       address: {
         ...address,
@@ -626,6 +641,12 @@ export class CheckoutSocialLeadService {
           this.normalizeOptional(profile.address?.formattedValue) || address.formattedValue || null,
       },
     };
+  }
+
+  private extractBirthdayFromEnrichment(value: Prisma.JsonValue | null) {
+    const root = this.readJsonObject(value);
+    const providerProfile = this.readJsonObject(root?.googleProfile);
+    return this.readFirstString(providerProfile, ['birthday', 'birthDate', 'dateOfBirth']);
   }
 
   private readJsonObject(value: Prisma.JsonValue | null | undefined) {

@@ -516,6 +516,16 @@ describe('WhatsappService', () => {
     ]);
   });
 
+  it('returns a product-facing templates message without Meta Cloud jargon', () => {
+    expect(service.listTemplates('ws-1')).toEqual({
+      error: true,
+      message:
+        'Templates legados não são suportados na integração oficial do WhatsApp. Use mensagens diretas ou fluxos do autopilot.',
+      data: [],
+      total: 0,
+    });
+  });
+
   it('lists cataloged contacts with probability metadata and conversation context', async () => {
     const report = await service.listCatalogContacts('ws-1', {
       days: 30,

@@ -24,6 +24,7 @@ export interface GoogleVerifiedProfile {
 export interface GooglePeopleProfile {
   email: string | null;
   phone: string | null;
+  birthday: string | null;
   address: {
     street: string | null;
     city: string | null;
@@ -39,7 +40,7 @@ export interface GooglePeopleProfile {
 export class GoogleAuthService {
   private readonly logger = new Logger(GoogleAuthService.name);
   private static readonly PEOPLE_API_URL =
-    'https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses,phoneNumbers,addresses';
+    'https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses,phoneNumbers,addresses,birthdays';
 
   constructor(private readonly config: ConfigService) {}
 
@@ -146,6 +147,14 @@ export class GoogleAuthService {
         canonicalForm?: string;
         metadata?: { primary?: boolean };
       }>;
+      birthdays?: Array<{
+        date?: {
+          year?: number;
+          month?: number;
+          day?: number;
+        };
+        metadata?: { primary?: boolean };
+      }>;
       addresses?: Array<{
         streetAddress?: string;
         city?: string;
@@ -159,11 +168,13 @@ export class GoogleAuthService {
 
     const email = pickPrimary(raw.emailAddresses)?.value?.trim().toLowerCase() || null;
     const phoneEntry = pickPrimary(raw.phoneNumbers);
+    const birthdayEntry = pickPrimary(raw.birthdays);
     const addressEntry = pickPrimary(raw.addresses);
 
     return {
       email,
       phone: phoneEntry?.canonicalForm?.trim() || phoneEntry?.value?.trim() || null,
+      birthday: normalizeGoogleBirthday(birthdayEntry?.date),
       address: addressEntry
         ? {
             street: addressEntry.streetAddress?.trim() || null,
@@ -219,4 +230,30 @@ function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T
   }
 
   return entries.find((entry) => entry?.metadata?.primary) || entries[0];
+}
+
+function normalizeGoogleBirthday(
+  date:
+    | {
+        year?: number;
+        month?: number;
+        day?: number;
+      }
+    | undefined,
+) {
+  const month = Number(date?.month);
+  const day = Number(date?.day);
+  if (!Number.isFinite(month) || !Number.isFinite(day) || month <= 0 || day <= 0) {
+    return null;
+  }
+
+  const year = Number(date?.year);
+  const monthPart = String(month).padStart(2, '0');
+  const dayPart = String(day).padStart(2, '0');
+
+  if (Number.isFinite(year) && year > 0) {
+    return `${String(year).padStart(4, '0')}-${monthPart}-${dayPart}`;
+  }
+
+  return `--${monthPart}-${dayPart}`;
 }

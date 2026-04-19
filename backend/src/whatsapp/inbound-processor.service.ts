@@ -487,7 +487,7 @@ export class InboundProcessorService {
       if (autonomousEnabled || liveAutonomyFallback) {
         if (liveAutonomyFallback) {
           this.logger.warn(
-            `🤖 [AUTOPILOT] Live autonomy fallback enabled for ${phone} because the WAHA session is connected but autonomy mode is not persisted yet`,
+            `🤖 [AUTOPILOT] Live autonomy fallback enabled for ${phone} because the WhatsApp connection is active but autonomy mode is not persisted yet`,
           );
         }
 

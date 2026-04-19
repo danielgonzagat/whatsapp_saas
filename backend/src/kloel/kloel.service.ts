@@ -579,7 +579,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'connect_whatsapp',
-      description: 'Inicia o processo de conexão do WhatsApp via QR Code',
+      description: 'Inicia a conexão oficial do WhatsApp via Meta Embedded Signup',
       parameters: { type: 'object', properties: {} },
     },
   },
@@ -3730,7 +3730,7 @@ export class KloelService {
   }
 
   /**
-   * 📱 Conectar WhatsApp (Gera QR Code)
+   * 📱 Conectar WhatsApp (Fluxo oficial da Meta)
    */
   private async toolConnectWhatsapp(workspaceId: string): Promise<ToolResult> {
     try {

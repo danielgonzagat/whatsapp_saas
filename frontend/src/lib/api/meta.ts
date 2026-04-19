@@ -57,9 +57,9 @@ export const metaAdsApi = {
   /**
    * GET /meta/ads/campaigns — list campaigns for an ad account
    */
-  getCampaigns: (adAccountId: string, accessToken: string) =>
+  getCampaigns: (adAccountId: string) =>
     apiFetch<{ data: MetaCampaign[] }>(`/meta/ads/campaigns`, {
-      params: { adAccountId, accessToken },
+      params: { adAccountId },
     }),
 
   /**
@@ -68,13 +68,12 @@ export const metaAdsApi = {
   updateCampaignStatus: async (
     campaignId: string,
     status: 'ACTIVE' | 'PAUSED',
-    accessToken: string,
   ) => {
     const res = await apiFetch<{ success: boolean }>(
       `/meta/ads/campaigns/${encodeURIComponent(campaignId)}/status`,
       {
         method: 'PATCH',
-        body: { status, accessToken },
+        body: { status },
       },
     );
     invalidateMeta();
@@ -86,13 +85,11 @@ export const metaAdsApi = {
    */
   getAccountInsights: (
     adAccountId: string,
-    accessToken: string,
     opts?: { since?: string; until?: string; level?: string },
   ) =>
     apiFetch<MetaInsight>(`/meta/ads/insights/account`, {
       params: {
         adAccountId,
-        accessToken,
         since: opts?.since,
         until: opts?.until,
         level: opts?.level,
@@ -102,26 +99,24 @@ export const metaAdsApi = {
   /**
    * GET /meta/ads/insights/daily — per-campaign daily insights
    */
-  getDailyInsights: (campaignId: string, accessToken: string, since?: string, until?: string) =>
+  getDailyInsights: (campaignId: string, since?: string, until?: string) =>
     apiFetch<MetaInsight>(`/meta/ads/insights/daily`, {
-      params: { campaignId, accessToken, since, until },
+      params: { campaignId, since, until },
     }),
 
   /**
    * GET /meta/ads/leads — list lead forms for a page
    */
-  getLeadForms: (pageId: string, accessToken: string) =>
+  getLeadForms: (pageId: string) =>
     apiFetch<{ data: MetaLeadForm[] }>(`/meta/ads/leads`, {
-      params: { pageId, accessToken },
+      params: { pageId },
     }),
 
   /**
    * GET /meta/ads/leads/:formId — get leads from a specific form
    */
-  getFormLeads: (formId: string, accessToken: string) =>
-    apiFetch<{ data: MetaLead[] }>(`/meta/ads/leads/${encodeURIComponent(formId)}`, {
-      params: { accessToken },
-    }),
+  getFormLeads: (formId: string) =>
+    apiFetch<{ data: MetaLead[] }>(`/meta/ads/leads/${encodeURIComponent(formId)}`),
 };
 
 // ============================================
@@ -151,9 +146,9 @@ export const instagramApi = {
   /**
    * GET /meta/instagram/media — list media posts
    */
-  getMedia: (igAccountId: string, accessToken: string, limit = 25) =>
+  getMedia: (igAccountId: string, limit = 25) =>
     apiFetch<{ data: InstagramMedia[] }>(`/meta/instagram/media`, {
-      params: { igAccountId, accessToken, limit: String(limit) },
+      params: { igAccountId, limit: String(limit) },
     }),
 
   /**
@@ -163,11 +158,10 @@ export const instagramApi = {
     igAccountId: string,
     imageUrl: string,
     caption: string,
-    accessToken: string,
   ) => {
     const res = await apiFetch<{ id: string; success?: boolean }>(`/meta/instagram/publish/photo`, {
       method: 'POST',
-      body: { igAccountId, imageUrl, caption, accessToken },
+      body: { igAccountId, imageUrl, caption },
     });
     invalidateMeta();
     return res;
@@ -176,21 +170,20 @@ export const instagramApi = {
   /**
    * GET /meta/instagram/media/:id/comments — fetch comments on a post
    */
-  getComments: (mediaId: string, accessToken: string) =>
+  getComments: (mediaId: string) =>
     apiFetch<{ data: InstagramComment[] }>(
       `/meta/instagram/media/${encodeURIComponent(mediaId)}/comments`,
-      { params: { accessToken } },
     ),
 
   /**
    * POST /meta/instagram/comments/:id/reply — reply to a comment
    */
-  replyToComment: async (commentId: string, text: string, accessToken: string) => {
+  replyToComment: async (commentId: string, text: string) => {
     const res = await apiFetch<{ id: string }>(
       `/meta/instagram/comments/${encodeURIComponent(commentId)}/reply`,
       {
         method: 'POST',
-        body: { text, accessToken },
+        body: { text },
       },
     );
     invalidateMeta();
@@ -204,11 +197,10 @@ export const instagramApi = {
     igAccountId: string,
     recipientId: string,
     text: string,
-    accessToken: string,
   ) => {
     const res = await apiFetch<{ message_id?: string }>(`/meta/instagram/messages/send`, {
       method: 'POST',
-      body: { igAccountId, recipientId, text, accessToken },
+      body: { igAccountId, recipientId, text },
     });
     invalidateMeta();
     return res;
@@ -236,7 +228,6 @@ export const messengerApi = {
     text?: string;
     mediaType?: string;
     mediaUrl?: string;
-    pageAccessToken: string;
   }) => {
     const res = await apiFetch<{ message_id?: string }>(`/meta/messenger/send`, {
       method: 'POST',
@@ -249,8 +240,8 @@ export const messengerApi = {
   /**
    * GET /meta/messenger/conversations — list page conversations
    */
-  getConversations: (pageId: string, pageAccessToken: string) =>
+  getConversations: (pageId: string) =>
     apiFetch<{ data: MessengerConversation[] }>(`/meta/messenger/conversations`, {
-      params: { pageId, pageAccessToken },
+      params: { pageId },
     }),
 };

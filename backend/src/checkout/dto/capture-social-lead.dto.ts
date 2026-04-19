@@ -1,6 +1,39 @@
-import { IsIn, IsOptional, IsString, IsUrl, MaxLength, ValidateIf } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  ValidateIf,
+  ValidateNested,
+} from 'class-validator';
 
 const SOCIAL_PROVIDERS = ['google', 'facebook', 'apple'] as const;
+
+class CaptureAppleUserNameDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  lastName?: string;
+}
+
+class CaptureAppleUserDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CaptureAppleUserNameDto)
+  name?: CaptureAppleUserNameDto;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  email?: string;
+}
 
 export class CaptureSocialLeadDto {
   @IsString()
@@ -14,6 +47,21 @@ export class CaptureSocialLeadDto {
   @IsString()
   @MaxLength(4096)
   credential?: string;
+
+  @ValidateIf((value: CaptureSocialLeadDto) => value.provider === 'facebook')
+  @IsString()
+  @MaxLength(4096)
+  accessToken?: string;
+
+  @ValidateIf((value: CaptureSocialLeadDto) => value.provider === 'apple')
+  @IsString()
+  @MaxLength(4096)
+  identityToken?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CaptureAppleUserDto)
+  user?: CaptureAppleUserDto;
 
   @IsOptional()
   @IsString()

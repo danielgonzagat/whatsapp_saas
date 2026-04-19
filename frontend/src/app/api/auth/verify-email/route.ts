@@ -6,7 +6,13 @@ import { getBackendUrl } from '../../_lib/backend-url';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const response = await fetch(`${getBackendUrl()}/auth/verify-email`, {
+    const backendUrl = getBackendUrl();
+    if (!backendUrl) {
+      console.error('[Auth Proxy] verify-email: BACKEND_URL not configured');
+      return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
+    }
+
+    const response = await fetch(`${backendUrl}/auth/verify-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

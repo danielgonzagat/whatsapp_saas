@@ -203,7 +203,7 @@ export {
 } from './conversations';
 
 // Auth API
-export { authApi } from './auth';
+export { authApi, type AuthSessionEntry, type AuthSessionsPayload } from './auth';
 
 // Cookie consent API
 export { cookieConsentApi } from './cookie-consent';

@@ -226,10 +226,15 @@ model Agent {
 
   // Password Reset
   passwordResetTokens PasswordResetToken[]
+  magicLinkTokens     MagicLinkToken[]
   
   assignedConversations Conversation[]
   messages              Message[]
   refreshTokens         RefreshToken[]
+  socialAccounts        SocialAccount[]
+  oauthLinkIntents      OAuthLinkIntent[]
+  dataDeletionRequests  DataDeletionRequest[]
+  complianceState       AgentComplianceState?
   deviceTokens          DeviceToken[]
   flowVersionsCreated   FlowVersion[] @relation("AgentFlowVersions")
   auditLogs             AuditLog[]
@@ -884,6 +889,10 @@ model RefreshToken {
   token      String   @unique
   revoked    Boolean  @default(false)
   expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime @default(now())
+  userAgent  String?
+  ipAddress  String?
 
   agentId    String
   agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
@@ -892,9 +901,52 @@ model RefreshToken {
   updatedAt  DateTime @updatedAt
 }
 
+model DataDeletionRequest {
+  id               String    @id @default(cuid())
+  provider         String
+  providerUserId   String?
+  agentId          String?
+  agent            Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  status           String    @default("pending")
+  confirmationCode String    @unique
+  requestedAt      DateTime  @default(now())
+  completedAt      DateTime?
+  rawPayload       Json?
+
+  @@index([confirmationCode])
+  @@index([providerUserId, provider])
+  @@index([agentId, provider])
+}
+
+model RiscEvent {
+  id          String   @id @default(cuid())
+  subject     String
+  eventType   String
+  rawJwt      String   @db.Text
+  processed   Boolean  @default(false)
+  processedAt DateTime?
+  receivedAt  DateTime @default(now())
+
+  @@index([subject, eventType])
+}
+
+model AgentComplianceState {
+  id         String    @id @default(cuid())
+  agentId    String    @unique
+  agent      Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  disabledAt DateTime?
+  purgedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([disabledAt])
+  @@index([purgedAt])
+}
+
 model DeviceToken {
   id         String   @id @default(uuid())
   token      String   @unique
+  tokenCiphertext String?
   platform   String   // IOS, ANDROID, WEB
   
   agentId    String
@@ -914,6 +966,59 @@ model PasswordResetToken {
   agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   createdAt  DateTime @default(now())
+}
+
+model MagicLinkToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+
+  agentId    String
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@index([agentId, used])
+}
+
+model SocialAccount {
+  id             String   @id @default(cuid())
+  provider       String
+  providerUserId String
+  email          String?
+  avatarUrl      String?
+  lastUsedAt     DateTime @default(now())
+
+  agentId        String
+  agent          Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([provider, providerUserId])
+  @@index([agentId, provider])
+}
+
+model OAuthLinkIntent {
+  id             String    @id @default(cuid())
+  token          String    @unique
+  provider       String
+  providerUserId String
+  email          String
+  displayName    String?
+  avatarUrl      String?
+  emailVerified  Boolean   @default(false)
+  expiresAt      DateTime
+  consumedAt     DateTime?
+
+  agentId        String
+  agent          Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([agentId, provider, consumedAt])
 }
 
 model Invitation {

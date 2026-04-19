@@ -9,9 +9,8 @@
  * Cloud, breaking provider consistency.
  *
  * After P2-4 every worker code path that needs the provider name
- * calls getWhatsAppProviderFromEnv(), which reads the SAME env var
- * the backend uses (backend/src/whatsapp/providers/provider-registry.ts:46)
- * and applies the same precedence rules.
+ * resolves it through this module, reusing the SAME normalization
+ * and precedence rules that the backend applies.
  *
  * **Known gap**: this helper unifies *routing* (the resolved provider
  * name) but not *transport*. The worker currently has no WahaProvider
@@ -24,6 +23,40 @@
 
 export type WhatsAppProvider = 'meta-cloud' | 'whatsapp-api';
 
+function normalizeProviderToken(value: unknown): string {
+  return (
+    typeof value === 'string'
+      ? value
+      : typeof value === 'number' || typeof value === 'boolean'
+        ? String(value)
+        : ''
+  )
+    .trim()
+    .toLowerCase();
+}
+
+export function normalizeWhatsAppProvider(value: unknown): WhatsAppProvider | null {
+  const normalized = normalizeProviderToken(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (
+    normalized === 'whatsapp-api' ||
+    normalized === 'waha' ||
+    normalized === 'whatsapp-web-agent'
+  ) {
+    return 'whatsapp-api';
+  }
+
+  if (normalized === 'meta-cloud' || normalized === 'meta') {
+    return 'meta-cloud';
+  }
+
+  return null;
+}
+
 /**
  * Read WHATSAPP_PROVIDER_DEFAULT from the environment and return the
  * normalized provider name. Defaults to 'meta-cloud'.
@@ -32,11 +65,14 @@ export type WhatsAppProvider = 'meta-cloud' | 'whatsapp-api';
  * backend/src/whatsapp/providers/provider-registry.ts:46-51.
  */
 export function getWhatsAppProviderFromEnv(): WhatsAppProvider {
-  const envDefault = String(process.env.WHATSAPP_PROVIDER_DEFAULT || '')
-    .trim()
-    .toLowerCase();
-  if (envDefault === 'whatsapp-api' || envDefault === 'waha') {
-    return 'whatsapp-api';
-  }
-  return 'meta-cloud';
+  return normalizeWhatsAppProvider(process.env.WHATSAPP_PROVIDER_DEFAULT) || 'meta-cloud';
+}
+
+/**
+ * Resolve the effective worker provider with the same precedence the backend
+ * uses for workspace-specific overrides: explicit workspace token first,
+ * environment default second.
+ */
+export function resolveWhatsAppProvider(value: unknown): WhatsAppProvider {
+  return normalizeWhatsAppProvider(value) || getWhatsAppProviderFromEnv();
 }

@@ -81,6 +81,8 @@ export function CheckoutPaymentSection(props: Props) {
     padding: '24px 20px',
     animation: 'fadeIn 0.3s',
   } satisfies React.CSSProperties;
+  const stripeFlowReady = Boolean(payMethod === 'card' && stripeClientSecret && stripeReturnUrl);
+  const manualCardEntryActive = payMethod === 'card' && !stripeFlowReady;
 
   if (step < 3) {
     return (
@@ -118,7 +120,17 @@ export function CheckoutPaymentSection(props: Props) {
                 onError={onStripeError}
               />
             ) : (
-              renderCardForm(theme, labelStyle, form, updateField, installmentOptions, fid)
+              renderCardForm(
+                theme,
+                labelStyle,
+                form,
+                updateField,
+                installmentOptions,
+                fid,
+                finalizeOrder,
+                isSubmitting,
+                config?.btnFinalizeText || 'Finalizar compra',
+              )
             )}
           </PaymentOption>
         ) : null}
@@ -155,7 +167,7 @@ export function CheckoutPaymentSection(props: Props) {
         {submitError && step === 3 ? (
           <div style={{ marginTop: 14, fontSize: 13, color: theme.errorText }}>{submitError}</div>
         ) : null}
-        {!(payMethod === 'card' && stripeClientSecret && stripeReturnUrl) ? (
+        {!manualCardEntryActive && !stripeFlowReady ? (
           <button
             type="button"
             onClick={() => void finalizeOrder()}
@@ -275,57 +287,83 @@ function renderCardForm(
   ) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void,
   installmentOptions: Array<{ value: number; label: string }>,
   fid: string,
+  finalizeOrder: () => void | Promise<void>,
+  isSubmitting: boolean,
+  finalizeLabel: string,
 ) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void finalizeOrder();
+      }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+    >
       <Field
         theme={theme}
         label="Número do cartão"
         id={`${fid}-card-number`}
+        name="cardnumber"
         value={form.cardNumber}
         onChange={updateField('cardNumber')}
         placeholder="1234 1234 1234 1234"
         labelStyle={labelStyle}
+        autoComplete="cc-number"
+        inputMode="numeric"
+        maxLength={19}
       />
       <div style={{ display: 'flex', gap: 12 }}>
         <Field
           theme={theme}
           label="Validade"
           id={`${fid}-card-exp`}
+          name="cardexp"
           value={form.cardExp}
           onChange={updateField('cardExp')}
           placeholder="MM/AA"
           labelStyle={labelStyle}
           wrapperStyle={{ flex: 1 }}
+          autoComplete="cc-exp"
+          inputMode="numeric"
+          maxLength={5}
         />
         <Field
           theme={theme}
           label="CVV"
           id={`${fid}-card-cvv`}
+          name="cardcsc"
           value={form.cardCvv}
           onChange={updateField('cardCvv')}
           placeholder="123"
           labelStyle={labelStyle}
           wrapperStyle={{ flex: '0 0 36%' }}
+          autoComplete="cc-csc"
+          inputMode="numeric"
+          maxLength={4}
         />
       </div>
       <Field
         theme={theme}
         label="Nome do titular"
         id={`${fid}-card-name`}
+        name="cardname"
         value={form.cardName}
         onChange={updateField('cardName')}
         placeholder="Nome completo"
         labelStyle={labelStyle}
+        autoComplete="cc-name"
       />
       <Field
         theme={theme}
         label="CPF do titular"
         id={`${fid}-card-cpf`}
+        name="cardCpf"
         value={form.cardCpf}
         onChange={updateField('cardCpf')}
         placeholder="000.000.000-00"
         labelStyle={labelStyle}
+        inputMode="numeric"
+        maxLength={14}
       />
       <div>
         <label htmlFor={`${fid}-installments`} style={labelStyle}>
@@ -333,6 +371,7 @@ function renderCardForm(
         </label>
         <select
           id={`${fid}-installments`}
+          name="installments"
           value={form.installments}
           onChange={updateField('installments')}
           style={{
@@ -354,7 +393,25 @@ function renderCardForm(
           ))}
         </select>
       </div>
-    </div>
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        style={{
+          width: '100%',
+          marginTop: 6,
+          padding: 16,
+          background: theme.accent,
+          border: 'none',
+          borderRadius: theme.input.radius,
+          color: theme.buttonText,
+          fontSize: 18,
+          fontWeight: 700,
+          cursor: isSubmitting ? 'wait' : 'pointer',
+        }}
+      >
+        {isSubmitting ? 'Processando...' : finalizeLabel}
+      </button>
+    </form>
   );
 }
 
@@ -447,20 +504,28 @@ function Field({
   theme,
   label,
   id,
+  name,
   value,
   onChange,
   placeholder,
   labelStyle,
   wrapperStyle,
+  autoComplete,
+  inputMode,
+  maxLength,
 }: {
   theme: CheckoutVisualTheme;
   label: string;
   id: string;
+  name?: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
   labelStyle: React.CSSProperties;
   wrapperStyle?: React.CSSProperties;
+  autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  maxLength?: number;
 }) {
   return (
     <div style={wrapperStyle}>
@@ -470,9 +535,13 @@ function Field({
       <ValidationInput
         theme={theme.input}
         id={id}
+        name={name}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
       />
     </div>
   );

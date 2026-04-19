@@ -5,6 +5,26 @@ import { apiFetch, buildQuery } from './core';
 const invalidateWhatsAppApi = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
 
+function buildLegacyDisabledResponse(feature: string, extra?: Record<string, unknown>) {
+  const payload = {
+    statusCode: 410,
+    success: false,
+    provider: 'meta-cloud',
+    feature,
+    notSupported: true,
+    reason: `${feature}_not_supported_for_meta_cloud`,
+    message: 'Descontinuado. Use a integração Meta.',
+    ...(extra || {}),
+  } as const;
+
+  return {
+    ...payload,
+    data: payload,
+    error: payload.message,
+    status: 410,
+  };
+}
+
 export const whatsappApi = {
   startSession: async () => {
     const res = await apiFetch(`/api/whatsapp-api/session/start`, { method: 'POST' });
@@ -55,22 +75,11 @@ export const whatsappApi = {
   },
 
   getQrCode: () => {
-    return apiFetch<{ available: boolean; qr?: string }>(`/api/whatsapp-api/session/qr`);
+    return Promise.resolve(buildLegacyDisabledResponse('qr_code', { available: false }));
   },
 
-  claimSession: async (sourceWorkspaceId: string) => {
-    const res = await apiFetch<{
-      success: boolean;
-      message?: string;
-      sessionName?: string;
-      status?: Record<string, unknown>;
-      bootstrap?: Record<string, unknown>;
-    }>(`/api/whatsapp-api/session/claim`, {
-      method: 'POST',
-      body: { sourceWorkspaceId },
-    });
-    invalidateWhatsAppApi();
-    return res;
+  claimSession: async (_sourceWorkspaceId: string) => {
+    return Promise.resolve(buildLegacyDisabledResponse('legacy_session_claim'));
   },
 
   disconnect: async () => {
@@ -86,32 +95,19 @@ export const whatsappApi = {
   },
 
   getViewer: () => {
-    return apiFetch<unknown>(`/api/whatsapp-api/session/view`);
+    return Promise.resolve(buildLegacyDisabledResponse('viewer'));
   },
 
   takeover: async () => {
-    const res = await apiFetch<unknown>(`/api/whatsapp-api/session/takeover`, {
-      method: 'POST',
-    });
-    invalidateWhatsAppApi();
-    return res;
+    return Promise.resolve(buildLegacyDisabledResponse('viewer_takeover'));
   },
 
   resumeAgent: async () => {
-    const res = await apiFetch<unknown>(`/api/whatsapp-api/session/resume-agent`, {
-      method: 'POST',
-    });
-    invalidateWhatsAppApi();
-    return res;
+    return Promise.resolve(buildLegacyDisabledResponse('viewer_resume_agent'));
   },
 
-  performViewerAction: async (action: Record<string, unknown>) => {
-    const res = await apiFetch<unknown>(`/api/whatsapp-api/session/action`, {
-      method: 'POST',
-      body: { action },
-    });
-    invalidateWhatsAppApi();
-    return res;
+  performViewerAction: async (_action: Record<string, unknown>) => {
+    return Promise.resolve(buildLegacyDisabledResponse('viewer_action'));
   },
 
   getContacts: () => {

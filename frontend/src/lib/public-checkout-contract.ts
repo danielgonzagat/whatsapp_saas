@@ -4,7 +4,6 @@ export interface PixelConfig {
   id: string;
   type: 'FACEBOOK' | 'GOOGLE_ADS' | 'GOOGLE_ANALYTICS' | 'TIKTOK' | 'KWAI' | 'TABOOLA' | 'CUSTOM';
   pixelId: string;
-  accessToken?: string;
   trackPageView: boolean;
   trackInitiateCheckout: boolean;
   trackAddPaymentInfo: boolean;

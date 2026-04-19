@@ -6,10 +6,16 @@ import { getBackendCandidateUrls } from '../../_lib/backend-url';
 
 export async function POST(request: NextRequest) {
   try {
+    const candidates = getBackendCandidateUrls();
+    if (!candidates.length) {
+      console.error('[Auth Proxy] anonymous: BACKEND_URL not configured');
+      return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
+    }
+
     let lastError: unknown;
 
     // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-    for (const baseUrl of getBackendCandidateUrls()) {
+    for (const baseUrl of candidates) {
       const response = await fetch(`${baseUrl}/auth/anonymous`, {
         method: 'POST',
         headers: {

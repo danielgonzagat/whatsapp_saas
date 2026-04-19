@@ -4,7 +4,6 @@ import { useProducts } from '@/hooks/useProducts';
 import { affiliateApi } from '@/lib/api/misc';
 import {
   type WhatsAppConnectionStatus,
-  getWhatsAppQrImageOnly,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
 } from '@/lib/api/whatsapp';
@@ -30,8 +29,7 @@ const F = "'Sora', system-ui, sans-serif";
 const M = "'JetBrains Mono', monospace";
 
 const STEPS = ['Conectar', 'Produtos', 'Arsenal', 'Configurar'] as const;
-const WAHA_QR_POLL_INTERVAL_MS = 1200;
-const WAHA_QR_TRANSITION_DELAY_MS = 150;
+const CONNECTION_STEP_TRANSITION_DELAY_MS = 150;
 
 const MEDIA_TYPES = [
   { value: 'photo', label: 'Foto do produto', icon: '📸' },
@@ -129,7 +127,42 @@ interface MarketingWhatsAppConnection {
   whatsappBusinessId?: string | null;
   phoneNumber?: string | null;
   pushName?: string | null;
+  qualityRating?: string | null;
+  codeVerificationStatus?: string | null;
+  nameStatus?: string | null;
   degradedReason?: string | null;
+}
+
+function formatMetaQualityRating(value?: string | null) {
+  switch (String(value || '').trim().toUpperCase()) {
+    case 'GREEN':
+      return 'Verde';
+    case 'YELLOW':
+      return 'Em observação';
+    case 'RED':
+      return 'Crítico';
+    default:
+      return 'Não informado';
+  }
+}
+
+function formatMetaVerificationStatus(value?: string | null) {
+  const normalized = String(value || '').trim().toUpperCase();
+  if (!normalized) {
+    return 'Não informado';
+  }
+
+  return (
+    {
+      VERIFIED: 'Verificado',
+      APPROVED: 'Aprovado',
+      PENDING: 'Pendente',
+      REVIEWING: 'Em revisão',
+      REJECTED: 'Rejeitado',
+      AVAILABLE_WITHOUT_REVIEW: 'Disponível sem revisão',
+      EXPIRED: 'Expirado',
+    }[normalized] || normalized
+  );
 }
 
 interface ChannelRealData {
@@ -151,6 +184,23 @@ interface WhatsAppExperienceProps {
 
 const SESSION_EXPIRED_MESSAGE =
   'Sua sessão expirou. Recarregue a página e faça login novamente para continuar acompanhando o WhatsApp.';
+
+export function resolveWhatsAppConnectionMode(provider: unknown): 'legacy-runtime' | 'meta-cloud' {
+  const token = String(provider || '')
+    .trim()
+    .toLowerCase();
+
+  if (
+    token === 'legacy-runtime' ||
+    token === 'whatsapp-api' ||
+    token === 'waha' ||
+    token === 'whatsapp-web-agent'
+  ) {
+    return 'legacy-runtime';
+  }
+
+  return 'meta-cloud';
+}
 
 function getErrorMessage(error: unknown, fallback = 'Erro desconhecido') {
   if (
@@ -467,7 +517,7 @@ function Steps({ current, steps }: { current: number; steps: readonly string[] }
   );
 }
 
-export function QRCodePane({
+export function LegacyRuntimeSnapshotPane({
   qrCode,
   progress,
   connected,
@@ -497,13 +547,24 @@ export function QRCodePane({
   const showGeneratingOverlay = !qrCode && (loading || progress > 0) && !connected;
   const showConnectedOverlay = connected;
   const showOverlay = showGeneratingOverlay || showConnectedOverlay;
+  const statusLabel = showConnectedOverlay
+    ? 'Snapshot sincronizado'
+    : showGeneratingOverlay
+      ? 'Runtime legado descontinuado'
+      : null;
+  const statusDetail = showConnectedOverlay
+    ? 'A conexão principal agora é feita pela Meta.'
+    : showGeneratingOverlay
+      ? 'Use a integração Meta para conectar novos canais.'
+      : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
       <div
         style={{
           position: 'relative',
-          background: '#fff',
+          background: qrCode ? '#fff' : C,
+          border: `1px solid ${B}`,
           borderRadius: 8,
           padding: 12,
           width: 220,
@@ -516,7 +577,7 @@ export function QRCodePane({
         {qrCode ? (
           <Image
             src={qrCode}
-            alt="QR Code do WhatsApp"
+            alt="Snapshot legado do WhatsApp"
             width={196}
             height={196}
             style={{ objectFit: 'contain' }}
@@ -553,19 +614,20 @@ export function QRCodePane({
             }}
           >
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>{progress >= 100 ? '✓' : '📱'}</div>
               <div
                 style={{
                   fontFamily: M,
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: 700,
-                  color: showConnectedOverlay ? G : E,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: T,
                 }}
               >
-                {showConnectedOverlay ? '100%' : `${Math.min(100, Math.round(progress))}%`}
+                {statusLabel}
               </div>
-              <div style={{ fontSize: 11, color: S, marginTop: 4 }}>
-                {showConnectedOverlay ? 'Conectado!' : 'Gerando QR Code...'}
+              <div style={{ fontSize: 11, color: S, marginTop: 6, maxWidth: 140, lineHeight: 1.5 }}>
+                {statusDetail}
               </div>
             </div>
           </div>
@@ -583,29 +645,29 @@ export function QRCodePane({
               lineHeight: 1.6,
             }}
           >
-            Abra o <span style={{ color: '#25D366', fontWeight: 600 }}>WhatsApp</span> no celular →
-            Menu (⋮) → Dispositivos conectados → Conectar dispositivo → Escaneie o QR Code
+            O runtime legado do navegador foi descontinuado. Use a integração Meta para conectar
+            novos canais e deixe este snapshot apenas como diagnóstico do ambiente antigo.
           </p>
           {qrCode ? (
             <p
               style={{
                 marginTop: -10,
                 fontSize: 12,
-                color: G,
+                color: T,
                 fontWeight: 600,
                 textAlign: 'center',
               }}
             >
-              QR Code pronto para leitura.
+              Snapshot legado detectado.
             </p>
           ) : null}
           <button
             type="button"
             onClick={onRefresh}
             style={{
-              background: '#25D366',
-              color: '#fff',
-              border: 'none',
+              background: U,
+              color: T,
+              border: `1px solid ${B}`,
               borderRadius: 6,
               padding: '12px 32px',
               fontSize: 14,
@@ -614,11 +676,11 @@ export function QRCodePane({
               fontFamily: F,
             }}
           >
-            {loading ? 'Atualizando...' : qrCode ? 'Gerar novo QR Code' : 'Atualizar QR Code'}
+            {loading ? 'Atualizando...' : 'Atualizar snapshot legado'}
           </button>
         </>
       ) : progress < 100 ? (
-        <p style={{ fontSize: 12, color: S }}>Aguardando confirmação do dispositivo...</p>
+        <p style={{ fontSize: 12, color: S }}>Aguardando sincronização do snapshot legado...</p>
       ) : null}
     </div>
   );
@@ -1084,10 +1146,7 @@ export default function WhatsAppExperience({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hydratedRef = useRef(false);
   const hydratedSetupKeyRef = useRef<string | null>(null);
-  const autoStartRef = useRef(false);
   const advancedRef = useRef(false);
-  const pollCountRef = useRef(0);
-  const qrRequestInFlightRef = useRef(false);
 
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<WhatsAppSetupState>(() => buildDefaultSetup(workspaceId));
@@ -1095,8 +1154,6 @@ export default function WhatsAppExperience({
   const [activated, setActivated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [qrCode, setQrCode] = useState('');
-  const [scanProgress, setScanProgress] = useState(0);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [sessionExpired, setSessionExpired] = useState(false);
 
@@ -1149,12 +1206,9 @@ export default function WhatsAppExperience({
   )
     .trim()
     .toLowerCase();
-  const isWahaProvider =
-    providerToken === 'whatsapp-api' ||
-    providerToken === 'waha' ||
-    providerToken === 'whatsapp-web-agent' ||
-    (!providerToken && !sessionSnapshot.phoneNumberId);
-  const effectiveProvider = isWahaProvider ? 'whatsapp-api' : 'meta-cloud';
+  const connectionMode = resolveWhatsAppConnectionMode(providerToken);
+  const isWahaProvider = connectionMode === 'legacy-runtime';
+  const effectiveProvider = isWahaProvider ? 'legacy-runtime' : 'meta-cloud';
 
   useEffect(() => {
     setReconfiguring(mode === 'reconfigure');
@@ -1198,64 +1252,31 @@ export default function WhatsAppExperience({
           connection?.phoneNumberId ||
           '',
       ),
+      authUrl: String(liveStatus?.authUrl || connection?.authUrl || sessionSnapshot.authUrl || ''),
+      qualityRating: String(
+        liveStatus?.qualityRating ||
+          sessionSnapshot.qualityRating ||
+          connection?.qualityRating ||
+          '',
+      ),
+      codeVerificationStatus: String(
+        liveStatus?.codeVerificationStatus ||
+          sessionSnapshot.codeVerificationStatus ||
+          connection?.codeVerificationStatus ||
+          '',
+      ),
+      nameStatus: String(
+        liveStatus?.nameStatus || sessionSnapshot.nameStatus || connection?.nameStatus || '',
+      ),
       degradedReason: String(liveStatus?.degradedReason || connection?.degradedReason || ''),
     };
   }, [connection, effectiveProvider, isWahaProvider, liveStatus, sessionSnapshot]);
 
   useEffect(() => {
     if (effectiveConnection.connected) {
-      qrRequestInFlightRef.current = false;
-      setQrCode('');
       setSessionExpired(false);
     }
   }, [effectiveConnection.connected]);
-
-  const requestQrCodeRef = useRef<
-    (opts?: {
-      silent?: boolean;
-    }) => Promise<{
-      qrCode: string | null;
-      connected: boolean;
-      status?: string;
-      message?: string;
-    } | null>
-  >(async () => null);
-  const requestQrCode = async ({
-    silent = false,
-  }: {
-    silent?: boolean;
-  } = {}) => {
-    if (qrRequestInFlightRef.current) {
-      return null;
-    }
-
-    qrRequestInFlightRef.current = true;
-
-    try {
-      const qr = await getWhatsAppQrImageOnly(workspaceId);
-
-      if (qr.qrCode) {
-        setQrCode(qr.qrCode);
-        setScanProgress((current) => Math.max(current, 28));
-      } else if (qr.connected) {
-        setQrCode('');
-      }
-
-      return qr;
-    } catch (err: unknown) {
-      if (getErrorStatus(err) === 401) {
-        setSessionExpired(true);
-        setError(SESSION_EXPIRED_MESSAGE);
-      } else if (!silent) {
-        setError(getErrorMessage(err, 'Não foi possível carregar o QR Code.'));
-      }
-
-      return null;
-    } finally {
-      qrRequestInFlightRef.current = false;
-    }
-  };
-  requestQrCodeRef.current = requestQrCode;
 
   const selectableProducts = useMemo(() => {
     const own = ownedProducts
@@ -1333,125 +1354,16 @@ export default function WhatsAppExperience({
   ]);
 
   useEffect(() => {
-    if (
-      !showWizard ||
-      step !== 0 ||
-      effectiveConnection.connected ||
-      autoStartRef.current ||
-      !isWahaProvider ||
-      sessionExpired
-    ) {
-      return;
-    }
-
-    autoStartRef.current = true;
-    void (async () => {
-      setBusyKey('connect');
-      setError(null);
-      setSessionExpired(false);
-      setScanProgress((current) => Math.max(current, 12));
-
-      try {
-        await initiateWhatsAppConnection(workspaceId);
-        void requestQrCodeRef.current({ silent: true });
-        try {
-          await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
-        } catch (err) {
-          if (getErrorStatus(err) === 401) {
-            setSessionExpired(true);
-            setError(SESSION_EXPIRED_MESSAGE);
-            return;
-          }
-          throw err;
-        }
-      } catch (err: unknown) {
-        if (getErrorStatus(err) === 401) {
-          setSessionExpired(true);
-          setError(SESSION_EXPIRED_MESSAGE);
-          return;
-        }
-        setError(getErrorMessage(err, 'Não foi possível iniciar a sessão do WhatsApp.'));
-      } finally {
-        setBusyKey(null);
-      }
-    })();
-  }, [
-    effectiveConnection.connected,
-    isWahaProvider,
-    mutateLiveStatus,
-    onConnectionRefresh,
-    sessionExpired,
-    showWizard,
-    step,
-    workspaceId,
-  ]);
-
-  useEffect(() => {
-    if (
-      !showWizard ||
-      step !== 0 ||
-      effectiveConnection.connected ||
-      !isWahaProvider ||
-      sessionExpired
-    ) {
-      autoStartRef.current = false;
-      pollCountRef.current = 0;
-      qrRequestInFlightRef.current = false;
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      pollCountRef.current += 1;
-      setScanProgress((current) => Math.min(92, Math.max(18, current + Math.random() * 5)));
-
-      void (async () => {
-        try {
-          await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
-        } catch (err) {
-          if (getErrorStatus(err) === 401) {
-            setSessionExpired(true);
-            setError(SESSION_EXPIRED_MESSAGE);
-            window.clearInterval(intervalId);
-          }
-        }
-      })();
-
-      if (!qrRequestInFlightRef.current) {
-        void (async () => {
-          const qr = await requestQrCodeRef.current({ silent: true });
-          if (!qr?.qrCode && !qr?.connected && pollCountRef.current % 6 === 0) {
-            autoStartRef.current = false;
-          }
-        })();
-      }
-    }, WAHA_QR_POLL_INTERVAL_MS);
-
-    return () => {
-      qrRequestInFlightRef.current = false;
-      window.clearInterval(intervalId);
-    };
-  }, [
-    effectiveConnection.connected,
-    isWahaProvider,
-    mutateLiveStatus,
-    onConnectionRefresh,
-    sessionExpired,
-    showWizard,
-    step,
-  ]);
-
-  useEffect(() => {
     if (!showWizard || step !== 0 || !effectiveConnection.connected || advancedRef.current) {
       return;
     }
 
     advancedRef.current = true;
-    setScanProgress(100);
     const timeoutId = window.setTimeout(() => {
       setStep(
         draft.selectedProducts.length ? Math.min(3, Math.max(1, draft.lastCompletedStep + 1)) : 1,
       );
-    }, WAHA_QR_TRANSITION_DELAY_MS);
+    }, CONNECTION_STEP_TRANSITION_DELAY_MS);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -1501,36 +1413,27 @@ export default function WhatsAppExperience({
     ]);
   };
 
-  const refreshQrCode = async () => {
+  const beginMetaConnection = async () => {
     setBusyKey('connect');
     setError(null);
     setSessionExpired(false);
-    setScanProgress((current) => Math.max(current, 12));
 
     try {
-      await initiateWhatsAppConnection(workspaceId);
-      const qrPromise = requestQrCode();
-
-      try {
-        await Promise.all([
-          qrPromise,
-          Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]),
-        ]);
-      } catch (err) {
-        if (getErrorStatus(err) === 401) {
-          setSessionExpired(true);
-          setError(SESSION_EXPIRED_MESSAGE);
-          return;
-        }
-        throw err;
-      }
-    } catch (err: unknown) {
-      if (getErrorStatus(err) === 401) {
-        setSessionExpired(true);
-        setError(SESSION_EXPIRED_MESSAGE);
+      const existingAuthUrl = effectiveConnection.authUrl?.trim();
+      if (existingAuthUrl) {
+        window.location.assign(existingAuthUrl);
         return;
       }
-      setError(getErrorMessage(err, 'Não foi possível atualizar o QR Code.'));
+
+      const connectResponse = await initiateWhatsAppConnection(workspaceId);
+      const nextAuthUrl = String(connectResponse.authUrl || '').trim();
+      if (!nextAuthUrl) {
+        throw new Error('Não foi possível gerar o fluxo oficial da Meta.');
+      }
+
+      window.location.assign(nextAuthUrl);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Não foi possível iniciar a conexão oficial da Meta.'));
     } finally {
       setBusyKey(null);
     }
@@ -1706,6 +1609,22 @@ export default function WhatsAppExperience({
     : effectiveConnection.status === 'connection_incomplete'
       ? 'Configuração pendente'
       : 'Desconectado';
+  const qualityLabel = formatMetaQualityRating(effectiveConnection.qualityRating);
+  const codeVerificationLabel = formatMetaVerificationStatus(
+    effectiveConnection.codeVerificationStatus,
+  );
+  const nameStatusLabel = formatMetaVerificationStatus(effectiveConnection.nameStatus);
+  const showMetaHealthWarning =
+    (effectiveConnection.qualityRating &&
+      effectiveConnection.qualityRating.trim().toUpperCase() !== 'GREEN') ||
+    (effectiveConnection.codeVerificationStatus &&
+      !['VERIFIED', 'APPROVED'].includes(
+        effectiveConnection.codeVerificationStatus.trim().toUpperCase(),
+      )) ||
+    (effectiveConnection.nameStatus &&
+      !['APPROVED', 'AVAILABLE_WITHOUT_REVIEW'].includes(
+        effectiveConnection.nameStatus.trim().toUpperCase(),
+      ));
 
   if (!workspaceId) {
     return null;
@@ -1792,41 +1711,82 @@ export default function WhatsAppExperience({
           {step === 0 ? (
             <div className="fade-in" style={{ textAlign: 'center' }}>
               <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, fontFamily: F }}>
-                Conectar WhatsApp
+                Conectar canais Meta
               </h2>
               <p style={{ fontSize: 13, color: S, marginBottom: 32, fontFamily: F }}>
-                Escaneie o QR Code para a IA começar a vender pelo seu número
+                Abra o fluxo oficial da Meta para a IA começar a vender pelos seus canais oficiais
               </p>
 
               {!effectiveConnection.connected ? (
-                isWahaProvider ? (
-                  <QRCodePane
-                    qrCode={qrCode}
-                    progress={scanProgress}
-                    connected={effectiveConnection.connected}
-                    loading={busyKey === 'connect'}
-                    onRefresh={() => void refreshQrCode()}
-                  />
-                ) : (
-                  <div
+                <div
+                  style={{
+                    maxWidth: 440,
+                    margin: '0 auto',
+                    border: `1px solid ${B}`,
+                    borderRadius: 6,
+                    padding: '20px 22px',
+                    background: C,
+                    color: S,
+                    display: 'grid',
+                    gap: 16,
+                  }}
+                >
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontFamily: M,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        color: D,
+                      }}
+                    >
+                      Onboarding oficial da Meta
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7 }}>
+                      {isWahaProvider
+                        ? 'Este workspace ainda aponta para o runtime legado. Reconecte pelo fluxo oficial da Meta para operar WhatsApp, Instagram e Messenger na infraestrutura oficial.'
+                        : 'Conecte os canais oficiais da Meta para liberar WhatsApp, Instagram e Messenger no Kloel pela infraestrutura oficial.'}
+                    </p>
+                    <p style={{ margin: 0, fontSize: 12, lineHeight: 1.7, color: D }}>
+                      O popup oficial da Meta vai abrir para autenticação, seleção do Business e vínculo do número do WhatsApp Business.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void beginMetaConnection()}
                     style={{
-                      maxWidth: 420,
-                      margin: '0 auto',
-                      border: `1px solid ${B}`,
+                      background: E,
+                      color: V,
+                      border: 'none',
                       borderRadius: 6,
-                      padding: '18px 20px',
-                      background: C,
-                      color: S,
-                      fontSize: 13,
-                      lineHeight: 1.7,
+                      padding: '12px 16px',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: F,
                     }}
                   >
-                    O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o
-                    runtime do WhatsApp opera em{' '}
-                    <span style={{ color: E, fontWeight: 600 }}>WAHA</span>. Atualize o provider do
-                    backend e recarregue esta tela para iniciar a conexao por QR.
+                    {busyKey === 'connect' ? 'Abrindo Meta...' : 'Conectar canais Meta'}
+                  </button>
+
+                  <div
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 6,
+                      border: `1px solid ${B}`,
+                      background: U,
+                      fontSize: 12,
+                      lineHeight: 1.7,
+                      color: D,
+                    }}
+                  >
+                    Endpoints legados de snapshot e viewer agora respondem{' '}
+                    <strong style={{ color: T }}>410 Gone</strong> para evitar regressão ao caminho
+                    antigo de navegador.
                   </div>
-                )
+                </div>
               ) : (
                 <div style={{ animation: 'celebrate .5s ease both' }}>
                   <div
@@ -2445,6 +2405,32 @@ export default function WhatsAppExperience({
         <InfoCard label="Perfil conectado" value={profileName} />
         <InfoCard label="Telefone conectado" value={connectedPhone} />
       </div>
+
+      <div
+        className="wa-operational-grid"
+        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}
+      >
+        <InfoCard label="Quality rating" value={qualityLabel} />
+        <InfoCard label="Código Meta" value={codeVerificationLabel} />
+        <InfoCard label="Status do nome" value={nameStatusLabel} />
+      </div>
+
+      {showMetaHealthWarning ? (
+        <div
+          style={{
+            border: `1px solid color-mix(in srgb, ${E} 30%, transparent)`,
+            background: 'rgba(232,93,48,0.08)',
+            color: T,
+            padding: '12px 14px',
+            borderRadius: 6,
+            fontSize: 12,
+            lineHeight: 1.7,
+          }}
+        >
+          A saúde do número Meta pede atenção. Antes de escalar campanhas ou reengajamentos,
+          confirme o quality rating, o status do código e a aprovação do nome no Business Manager.
+        </div>
+      ) : null}
 
       <div
         className="wa-operational-grid"

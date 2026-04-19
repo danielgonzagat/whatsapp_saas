@@ -48,10 +48,8 @@ export async function GET(request: NextRequest) {
 
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
-      return NextResponse.json(
-        { message: 'Servidor não configurado corretamente. Contate o suporte.' },
-        { status: 500 },
-      );
+      console.error('[Auth Proxy] check-email GET: BACKEND_URL not configured');
+      return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
     }
 
     const response = await fetch(
@@ -86,10 +84,8 @@ export async function POST(request: NextRequest) {
 
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
-      return NextResponse.json(
-        { message: 'Servidor não configurado corretamente. Contate o suporte.' },
-        { status: 500 },
-      );
+      console.error('[Auth Proxy] check-email POST: BACKEND_URL not configured');
+      return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
     }
 
     // Verificar se o email existe no backend

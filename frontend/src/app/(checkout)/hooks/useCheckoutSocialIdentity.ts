@@ -1,13 +1,19 @@
 'use client';
 
 import { API_BASE } from '@/lib/http';
+import { hasAuthenticatedKloelToken } from '@/lib/auth-identity';
+import { encodeAppleCheckoutState } from '@/lib/apple-auth-state';
+import { authApi } from '@/lib/api/auth';
+import { tokenStorage } from '@/lib/api/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFacebookSignIn } from '@/components/kloel/auth/use-facebook-sign-in';
 
 const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services';
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 const GOOGLE_PEOPLE_SCOPES = [
   'https://www.googleapis.com/auth/user.phonenumbers.read',
   'https://www.googleapis.com/auth/user.addresses.read',
+  'https://www.googleapis.com/auth/user.birthday.read',
 ].join(' ');
 const DEVICE_STORAGE_KEY = 'kloel.checkout.device-id.v1';
 const IDENTITY_STORAGE_KEY = 'kloel.checkout.identity.v1';
@@ -22,6 +28,7 @@ export interface CheckoutSocialIdentitySnapshot {
   avatarUrl?: string | null;
   deviceFingerprint: string;
   phone?: string | null;
+  birthday?: string | null;
   cpf?: string | null;
   cep?: string | null;
   street?: string | null;
@@ -49,6 +56,7 @@ type PrefillResponse = {
   avatarUrl?: string | null;
   deviceFingerprint?: string | null;
   phone?: string | null;
+  birthday?: string | null;
   cpf?: string | null;
   cep?: string | null;
   street?: string | null;
@@ -57,6 +65,21 @@ type PrefillResponse = {
   city?: string | null;
   state?: string | null;
   complement?: string | null;
+};
+
+type AuthenticatedGoogleExtendedProfile = {
+  provider: 'google';
+  email: string | null;
+  phone: string | null;
+  birthday: string | null;
+  address: {
+    street: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+    countryCode: string | null;
+    formattedValue: string | null;
+  } | null;
 };
 
 type UseCheckoutSocialIdentityOptions = {
@@ -93,7 +116,10 @@ export function useCheckoutSocialIdentity({
   const initializedRef = useRef(false);
   const prefillRequestKeyRef = useRef('');
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() || '';
+  const appleClientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID?.trim() || '';
   const googlePeopleScopesEnabled =
+    process.env.NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL?.trim().toLowerCase() ===
+      'true' ||
     process.env.NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED?.trim().toLowerCase() === 'true';
 
   const [sdkReady, setSdkReady] = useState(false);
@@ -107,6 +133,21 @@ export function useCheckoutSocialIdentity({
     const nextFingerprint = ensureDeviceFingerprint();
     setDeviceFingerprint(nextFingerprint);
     setSnapshot(readStoredIdentity());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const url = new URL(window.location.href);
+    const socialAuthError = url.searchParams.get('socialAuthError')?.trim();
+    if (!socialAuthError) {
+      return;
+    }
+
+    setError(readAppleCheckoutErrorMessage(socialAuthError));
+    url.searchParams.delete('socialAuthError');
+    url.searchParams.delete('socialAuthProvider');
+    window.history.replaceState({}, '', url.toString());
   }, []);
 
   useEffect(() => {
@@ -208,6 +249,23 @@ export function useCheckoutSocialIdentity({
       }
 
       try {
+        const authenticatedProfile = await loadAuthenticatedGoogleExtendedProfile(accessToken);
+        if (authenticatedProfile) {
+          const authenticatedPrefill = prefillFromAuthenticatedGoogleProfile(
+            baseSnapshot,
+            authenticatedProfile,
+          );
+          const nextSnapshot = mergeSnapshot(
+            baseSnapshot,
+            authenticatedPrefill,
+            deviceFingerprint || baseSnapshot.deviceFingerprint,
+          );
+          persistIdentity(nextSnapshot);
+          setSnapshot(nextSnapshot);
+          await patchCapturedLead(baseSnapshot.leadId, authenticatedPrefill);
+          return;
+        }
+
         const response = await fetch(
           `${API_BASE}/checkout/public/social-capture/${baseSnapshot.leadId}/google-profile`,
           {
@@ -286,6 +344,114 @@ export function useCheckoutSocialIdentity({
 
   callbackRef.current = handleGoogleCredential;
 
+  const handleFacebookAccessToken = useCallback(
+    async (accessToken: string) => {
+      if (!slug) {
+        const message = 'Checkout sem slug para capturar o lead social.';
+        setError(message);
+        return { success: false, error: message };
+      }
+
+      setLoadingProvider('facebook');
+      setError('');
+
+      try {
+        const response = await fetch(`${API_BASE}/checkout/public/social-capture`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug,
+            provider: 'facebook',
+            accessToken,
+            checkoutCode,
+            deviceFingerprint: deviceFingerprint || ensureDeviceFingerprint(),
+            sourceUrl: window.location.href,
+            refererUrl: document.referrer || undefined,
+            ...readAttribution(window.location.href),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            await readResponseMessage(response, 'Falha ao capturar a identidade com Facebook.'),
+          );
+        }
+
+        const data = (await response.json()) as CaptureResponse;
+        const nextSnapshot = mergeSnapshot(snapshot, data, deviceFingerprint);
+        persistIdentity(nextSnapshot);
+        setSnapshot(nextSnapshot);
+        return { success: true };
+      } catch (captureError: unknown) {
+        const message =
+          captureError instanceof Error ? captureError.message : 'Falha ao capturar a identidade.';
+        setError(message);
+        return { success: false, error: message };
+      } finally {
+        setLoadingProvider(null);
+      }
+    },
+    [checkoutCode, deviceFingerprint, slug, snapshot],
+  );
+
+  const facebookAuth = useFacebookSignIn({
+    disabled: !enabled,
+    onAccessToken: handleFacebookAccessToken,
+    onError: (message) => setError(message),
+  });
+
+  const startFacebookSignIn = useCallback(async () => {
+    await facebookAuth.signInWithFacebook();
+  }, [facebookAuth]);
+
+  const startAppleSignIn = useCallback(async () => {
+    if (!slug) {
+      setError('Checkout sem slug para capturar o lead social.');
+      return;
+    }
+
+    if (!appleClientId) {
+      setError('Login com Apple não configurado no checkout.');
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      setError('Login com Apple indisponível neste ambiente.');
+      return;
+    }
+
+    setLoadingProvider('apple');
+    setError('');
+
+    try {
+      const state = encodeAppleCheckoutState({
+        flow: 'checkout',
+        slug,
+        checkoutCode: checkoutCode?.trim() || undefined,
+        deviceFingerprint: deviceFingerprint || ensureDeviceFingerprint(),
+        returnPath: `${window.location.pathname}${window.location.search}`,
+        sourceUrl: window.location.href,
+        refererUrl: document.referrer || undefined,
+      });
+      const appleAuthUrl = new URL('https://appleid.apple.com/auth/authorize');
+      appleAuthUrl.searchParams.set('client_id', appleClientId);
+      appleAuthUrl.searchParams.set(
+        'redirect_uri',
+        `${window.location.origin}/api/auth/callback/apple`,
+      );
+      appleAuthUrl.searchParams.set('response_type', 'code id_token');
+      appleAuthUrl.searchParams.set('scope', 'name email');
+      appleAuthUrl.searchParams.set('response_mode', 'form_post');
+      appleAuthUrl.searchParams.set('state', state);
+      window.location.assign(appleAuthUrl.toString());
+    } catch (captureError: unknown) {
+      setLoadingProvider(null);
+      setError(
+        captureError instanceof Error ? captureError.message : 'Falha ao iniciar o login com Apple.',
+      );
+    }
+  }, [appleClientId, checkoutCode, deviceFingerprint, slug]);
+
   useEffect(() => {
     if (!enabled || !clientId || !sdkReady || !googleButtonRef.current || initializedRef.current) {
       return;
@@ -362,8 +528,27 @@ export function useCheckoutSocialIdentity({
     socialIdentity: snapshot,
     socialError: error,
     googleAvailable: enabled && Boolean(clientId),
+    facebookAvailable: enabled && facebookAuth.available,
+    appleAvailable: enabled && Boolean(appleClientId),
+    startFacebookSignIn,
+    startAppleSignIn,
     updateLeadProgress,
   };
+}
+
+function readAppleCheckoutErrorMessage(code: string) {
+  switch (code.trim().toLowerCase()) {
+    case 'apple_user_cancelled':
+      return 'Login com Apple cancelado.';
+    case 'apple_invalid_response':
+      return 'A Apple não retornou uma credencial válida.';
+    case 'apple_oauth_failed':
+      return 'Falha ao capturar a identidade com Apple.';
+    case 'apple_not_configured':
+      return 'Login com Apple não configurado no checkout.';
+    default:
+      return 'Falha ao capturar a identidade com Apple.';
+  }
 }
 
 async function requestGoogleAccessToken(tokenClient: GoogleTokenClient, hint?: string) {
@@ -432,6 +617,68 @@ function persistIdentity(value: CheckoutSocialIdentitySnapshot) {
   writeToStorage(IDENTITY_STORAGE_KEY, JSON.stringify(value));
 }
 
+async function loadAuthenticatedGoogleExtendedProfile(accessToken: string) {
+  const token = tokenStorage.getToken();
+  if (!token || !hasAuthenticatedKloelToken(token)) {
+    return null;
+  }
+
+  const response = await authApi.getGoogleExtendedProfile(accessToken);
+  if (response.error) {
+    return null;
+  }
+
+  const candidate = response.data;
+  if (!candidate || candidate.provider !== 'google') {
+    return null;
+  }
+
+  return candidate as AuthenticatedGoogleExtendedProfile;
+}
+
+async function patchCapturedLead(leadId: string, payload: PrefillResponse) {
+  try {
+    await fetch(`${API_BASE}/checkout/public/social-capture/${leadId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: payload.phone,
+        cep: payload.cep,
+        street: payload.street,
+        neighborhood: payload.neighborhood,
+        city: payload.city,
+        state: payload.state,
+        complement: payload.complement,
+      }),
+    });
+  } catch {
+    // Persistência do lead continua best-effort.
+  }
+}
+
+function prefillFromAuthenticatedGoogleProfile(
+  baseSnapshot: CheckoutSocialIdentitySnapshot,
+  profile: AuthenticatedGoogleExtendedProfile,
+): PrefillResponse {
+  return {
+    leadId: baseSnapshot.leadId || '',
+    provider: 'google',
+    name: baseSnapshot.name,
+    email: profile.email || baseSnapshot.email,
+    avatarUrl: baseSnapshot.avatarUrl,
+    deviceFingerprint: baseSnapshot.deviceFingerprint,
+    phone: profile.phone,
+    birthday: profile.birthday,
+    cep: profile.address?.postalCode || null,
+    street: profile.address?.street || null,
+    city: profile.address?.city || null,
+    state: profile.address?.state || null,
+    number: null,
+    neighborhood: null,
+    complement: null,
+  };
+}
+
 function mergeSnapshot(
   current: CheckoutSocialIdentitySnapshot | null,
   incoming: PrefillResponse,
@@ -446,6 +693,7 @@ function mergeSnapshot(
     deviceFingerprint:
       incoming.deviceFingerprint || current?.deviceFingerprint || fallbackFingerprint,
     phone: incoming.phone ?? current?.phone ?? null,
+    birthday: incoming.birthday ?? current?.birthday ?? null,
     cpf: incoming.cpf ?? current?.cpf ?? null,
     cep: incoming.cep ?? current?.cep ?? null,
     street: incoming.street ?? current?.street ?? null,

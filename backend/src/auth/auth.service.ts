@@ -3,6 +3,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -20,13 +21,62 @@ import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
+import { extractAppleIdentityProfile } from './apple-identity';
 import { EmailService } from './email.service';
-import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
+import { FacebookAuthService } from './facebook-auth.service';
+import { GoogleAuthService } from './google-auth.service';
+import { hashAuthToken } from './auth-token-hash';
 import { getJwtExpiresIn } from './jwt-config';
+import {
+  buildSessionSummary,
+  normalizeSessionContext,
+  type AuthSessionContext,
+} from './session-metadata';
 
 const PATTERN_RE = /-/g;
-const W_RE = /[\W_]+/g;
 const D_RE = /\D/g;
+
+type TrustedOAuthProfile = {
+  provider: 'google' | 'facebook' | 'apple';
+  providerId: string;
+  email: string;
+  name?: string | null;
+  image?: string | null;
+  emailVerified?: boolean | null;
+};
+
+type AuthAgentRecord = {
+  id: string;
+  email: string;
+  workspaceId: string;
+  name?: string | null;
+  role?: string | null;
+  provider?: string | null;
+  providerId?: string | null;
+  avatarUrl?: string | null;
+  emailVerified?: boolean | null;
+  password?: string | null;
+};
+
+type AuthWorkspaceMeta = {
+  id: string;
+  name: string;
+} | null;
+
+type GoogleExtendedProfile = {
+  provider: 'google';
+  email: string | null;
+  phone: string | null;
+  birthday: string | null;
+  address: {
+    street: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+    countryCode: string | null;
+    formattedValue: string | null;
+  } | null;
+};
 
 @Injectable()
 export class AuthService {
@@ -38,6 +88,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
     private readonly googleAuthService: GoogleAuthService,
+    private readonly facebookAuthService: FacebookAuthService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
   ) {}
@@ -135,6 +186,58 @@ export class AuthService {
     }
   }
 
+  private async readCachedGoogleExtendedProfile(
+    cacheKey: string,
+  ): Promise<GoogleExtendedProfile | null> {
+    if (!this.redis) {
+      return null;
+    }
+
+    try {
+      const raw = await this.redis.get(cacheKey);
+      if (!raw) {
+        return null;
+      }
+
+      const parsed = JSON.parse(raw) as Partial<GoogleExtendedProfile> | null;
+      if (!parsed || parsed.provider !== 'google') {
+        return null;
+      }
+
+      return {
+        provider: 'google',
+        email: typeof parsed.email === 'string' ? parsed.email : null,
+        phone: typeof parsed.phone === 'string' ? parsed.phone : null,
+        birthday: typeof parsed.birthday === 'string' ? parsed.birthday : null,
+        address:
+          parsed.address && typeof parsed.address === 'object'
+            ? {
+                street:
+                  typeof parsed.address.street === 'string' ? parsed.address.street : null,
+                city: typeof parsed.address.city === 'string' ? parsed.address.city : null,
+                state: typeof parsed.address.state === 'string' ? parsed.address.state : null,
+                postalCode:
+                  typeof parsed.address.postalCode === 'string'
+                    ? parsed.address.postalCode
+                    : null,
+                countryCode:
+                  typeof parsed.address.countryCode === 'string'
+                    ? parsed.address.countryCode
+                    : null,
+                formattedValue:
+                  typeof parsed.address.formattedValue === 'string'
+                    ? parsed.address.formattedValue
+                    : null,
+              }
+            : null,
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'unknown_error';
+      this.logger.warn(`google_extended_profile_cache_read_failed: ${message}`);
+      return null;
+    }
+  }
+
   private async issueTokens(
     agent: {
       id: string;
@@ -144,101 +247,42 @@ export class AuthService {
       role?: string | null;
     },
     extra?: { isNewUser?: boolean },
+    sessionContext?: AuthSessionContext,
   ) {
     try {
-      // Hardening multi-tenant: não emitir tokens com workspace inválido.
-      if (!agent?.workspaceId) {
-        const errorId = randomUUID();
-        this.logger.error(
-          `agent_invalid_workspaceId: ${JSON.stringify({
-            errorId,
-            agentId: agent?.id,
-            email: agent?.email,
-          })}`,
-        );
-        throw new ServiceUnavailableException(
-          'Serviço indisponível. Workspace inválido para este usuário.',
-        );
-      }
-
-      let workspaceMeta: {
-        id: string;
-        name: string;
-      } | null = null;
-
-      try {
-        const ws = await this.prisma.workspace.findUnique({
-          where: { id: agent.workspaceId },
-          select: { id: true, name: true },
-        });
-
-        if (!ws) {
-          // Invariant: tenant integrity must not be silently "repaired".
-          //
-          // The old code created a brand-new workspace on the fly when the
-          // agent's workspaceId pointed to a missing row, then reassigned
-          // the agent to it. That masks data corruption, creates orphaned
-          // workspaces, and could be exploited to create unlimited
-          // workspaces by deliberately breaking references. Fail fast with
-          // a unique error id so operators can investigate.
-          const errorId = randomUUID();
-          this.logger.error(
-            `workspace_not_found_on_login: ${JSON.stringify({
-              errorId,
-              agentId: agent.id,
-              workspaceId: agent.workspaceId,
-              email: agent?.email,
-            })}`,
-          );
-          throw new ServiceUnavailableException(
-            `Conta com inconsistência detectada (ref: ${errorId}). Contate o suporte para reativar seu acesso.`,
-          );
-        }
-        workspaceMeta = ws;
-      } catch (error: unknown) {
-        this.throwFriendlyDbInitError(error);
-      }
-
+      const workspaceMeta = await this.resolveWorkspaceMeta(agent);
+      const sessionId = randomUUID();
+      const refreshToken = randomUUID() + randomUUID();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30d
+      const normalizedSessionContext = normalizeSessionContext(sessionContext);
       const access_token = await this.signToken(
         agent.id,
         agent.email,
         agent.workspaceId,
         agent.role,
         agent.name,
+        sessionId,
       );
 
-      // revoga anteriores e cria novo refresh
-      await this.prisma.refreshToken.updateMany({
-        where: { agentId: agent.id, revoked: false },
-        data: { revoked: true },
-      });
-
-      const refreshToken = randomUUID() + randomUUID();
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30d
       await this.prisma.refreshToken.create({
-        data: { token: refreshToken, agentId: agent.id, expiresAt },
+        data: {
+          id: sessionId,
+          token: hashAuthToken(refreshToken),
+          agentId: agent.id,
+          expiresAt,
+          lastUsedAt: new Date(),
+          userAgent: normalizedSessionContext.userAgent,
+          ipAddress: normalizedSessionContext.ipAddress,
+        },
       });
 
-      return {
-        access_token,
-        refresh_token: refreshToken,
-        user: {
-          id: agent.id,
-          name: agent.name,
-          email: agent.email,
-          workspaceId: agent.workspaceId,
-          role: agent.role,
-        },
-        workspace: workspaceMeta,
-        workspaces: workspaceMeta ? [workspaceMeta] : [],
-        isNewUser: extra?.isNewUser === true,
-      };
+      return this.buildAuthPayload(agent, workspaceMeta, access_token, refreshToken, extra);
     } catch (error) {
       this.throwFriendlyDbInitError(error);
     }
   }
 
-  async issueTokensForAgentId(agentId: string) {
+  async issueTokensForAgentId(agentId: string, sessionContext?: AuthSessionContext) {
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },
       select: {
@@ -254,7 +298,227 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado para emissão de sessão.');
     }
 
-    return this.issueTokens(agent);
+    return this.issueTokens(agent, undefined, sessionContext);
+  }
+
+  private async resolveWorkspaceMeta(agent: {
+    id: string;
+    email: string;
+    workspaceId: string;
+  }): Promise<AuthWorkspaceMeta> {
+    if (!agent?.workspaceId) {
+      const errorId = randomUUID();
+      this.logger.error(
+        `agent_invalid_workspaceId: ${JSON.stringify({
+          errorId,
+          agentId: agent?.id,
+          email: agent?.email,
+        })}`,
+      );
+      throw new ServiceUnavailableException(
+        'Serviço indisponível. Workspace inválido para este usuário.',
+      );
+    }
+
+    try {
+      const ws = await this.prisma.workspace.findUnique({
+        where: { id: agent.workspaceId },
+        select: { id: true, name: true },
+      });
+
+      if (!ws) {
+        const errorId = randomUUID();
+        this.logger.error(
+          `workspace_not_found_on_login: ${JSON.stringify({
+            errorId,
+            agentId: agent.id,
+            workspaceId: agent.workspaceId,
+            email: agent?.email,
+          })}`,
+        );
+        throw new ServiceUnavailableException(
+          `Conta com inconsistência detectada (ref: ${errorId}). Contate o suporte para reativar seu acesso.`,
+        );
+      }
+
+      return ws;
+    } catch (error: unknown) {
+      this.throwFriendlyDbInitError(error);
+    }
+  }
+
+  private buildAuthPayload(
+    agent: {
+      id: string;
+      email: string;
+      workspaceId: string;
+      name?: string | null;
+      role?: string | null;
+    },
+    workspaceMeta: AuthWorkspaceMeta,
+    accessToken: string,
+    refreshToken: string,
+    extra?: { isNewUser?: boolean },
+  ) {
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: {
+        id: agent.id,
+        name: agent.name,
+        email: agent.email,
+        workspaceId: agent.workspaceId,
+        role: agent.role,
+      },
+      workspace: workspaceMeta,
+      workspaces: workspaceMeta ? [workspaceMeta] : [],
+      isNewUser: extra?.isNewUser === true,
+    };
+  }
+
+  private getFrontendOrigin() {
+    return (
+      this.config.get<string>('FRONTEND_URL') ||
+      process.env.FRONTEND_URL ||
+      'http://localhost:3000'
+    );
+  }
+
+  private buildMagicLinkUrl(token: string, extras?: Record<string, string>) {
+    const url = new URL('/magic-link', this.getFrontendOrigin());
+    url.searchParams.set('token', token);
+
+    for (const [key, value] of Object.entries(extras || {})) {
+      if (value) {
+        url.searchParams.set(key, value);
+      }
+    }
+
+    return url.toString();
+  }
+
+  private getOAuthProviderLabel(provider: string) {
+    switch (provider) {
+      case 'google':
+        return 'Google';
+      case 'facebook':
+        return 'Facebook';
+      case 'apple':
+        return 'Apple';
+      default:
+        return provider;
+    }
+  }
+
+  private async persistSocialAccount(agentId: string, profile: TrustedOAuthProfile) {
+    const provider = profile.provider.trim().toLowerCase();
+    const providerUserId = profile.providerId.trim();
+    const email = profile.email.trim().toLowerCase();
+    const avatarUrl = typeof profile.image === 'string' && profile.image.trim() ? profile.image : null;
+    const lastUsedAt = new Date();
+
+    const existing = await this.prisma.socialAccount.findUnique({
+      where: {
+        provider_providerUserId: {
+          provider,
+          providerUserId,
+        },
+      },
+    });
+
+    if (existing && existing.agentId !== agentId) {
+      throw new ConflictException({
+        error: 'oauth_identity_already_linked',
+        message: 'Esta identidade social já está vinculada a outra conta.',
+      });
+    }
+
+    if (existing) {
+      await this.prisma.socialAccount.update({
+        where: { id: existing.id },
+        data: {
+          email,
+          avatarUrl,
+          lastUsedAt,
+        },
+      });
+      return;
+    }
+
+    await this.prisma.socialAccount.create({
+      data: {
+        provider,
+        providerUserId,
+        agentId,
+        email,
+        avatarUrl,
+        lastUsedAt,
+      },
+    });
+  }
+
+  private async scheduleOAuthLinkConfirmation(agent: AuthAgentRecord, profile: TrustedOAuthProfile) {
+    const providerLabel = this.getOAuthProviderLabel(profile.provider);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    const magicToken = randomUUID();
+    const linkToken = randomUUID();
+
+    await this.prisma.magicLinkToken.updateMany({
+      where: { agentId: agent.id, used: false },
+      data: { used: true },
+    });
+
+    await this.prisma.oAuthLinkIntent.updateMany({
+      where: {
+        agentId: agent.id,
+        provider: profile.provider,
+        consumedAt: null,
+      },
+      data: {
+        consumedAt: new Date(),
+      },
+    });
+
+    await this.prisma.magicLinkToken.create({
+      data: {
+        token: hashAuthToken(magicToken),
+        agentId: agent.id,
+        expiresAt,
+      },
+    });
+
+    await this.prisma.oAuthLinkIntent.create({
+      data: {
+        token: hashAuthToken(linkToken),
+        provider: profile.provider,
+        providerUserId: profile.providerId.trim(),
+        email: profile.email.trim().toLowerCase(),
+        displayName: profile.name?.trim() || null,
+        avatarUrl: typeof profile.image === 'string' && profile.image.trim() ? profile.image : null,
+        emailVerified: !!profile.emailVerified,
+        expiresAt,
+        agentId: agent.id,
+      },
+    });
+
+    const magicLinkUrl = this.buildMagicLinkUrl(magicToken, { link: linkToken });
+    const sent = await this.emailService.sendAccountLinkConfirmationEmail(
+      agent.email,
+      magicLinkUrl,
+      providerLabel,
+      agent.name?.trim() || undefined,
+    );
+
+    if (!sent) {
+      throw new ServiceUnavailableException(
+        'Não foi possível enviar o email de confirmação para vincular sua conta.',
+      );
+    }
+
+    throw new ConflictException({
+      error: 'oauth_link_confirmation_required',
+      message: `Já existe uma conta KLOEL com este email. Enviamos um link para confirmar a vinculação com ${providerLabel}.`,
+    });
   }
 
   async checkEmail(email: string): Promise<{ exists: boolean }> {
@@ -268,18 +532,18 @@ export class AuthService {
     }
   }
 
-  async createAnonymous(ip?: string) {
+  async createAnonymous(ip?: string, userAgent?: string) {
     await this.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
 
     const uid = randomUUID().replace(PATTERN_RE, '').slice(0, 12);
-    const email = `guest_${uid}@guest.kloel.local`;
-    const name = 'Guest';
+    const email = `visitor_${uid}@visitor.kloel.local`;
+    const name = 'Visitante';
 
     let workspace: Workspace;
     try {
       workspace = await this.prisma.workspace.create({
         data: {
-          name: 'Guest Workspace',
+          name: 'Workspace Temporario',
           providerSettings: {
             guestMode: true,
             authMode: 'anonymous',
@@ -311,7 +575,7 @@ export class AuthService {
       this.throwFriendlyDbInitError(error);
     }
 
-    return this.issueTokens(agent);
+    return this.issueTokens(agent, undefined, { ipAddress: ip, userAgent });
   }
 
   async register(data: {
@@ -320,13 +584,14 @@ export class AuthService {
     password: string;
     workspaceName?: string;
     ip?: string;
+    userAgent?: string;
   }) {
-    const { name, email, password, workspaceName, ip } = data;
+    const { name, email, password, workspaceName, ip, userAgent } = data;
     await this.checkRateLimit(`register:${ip || 'ip-unknown'}`);
 
     const deriveName = (addr: string) => {
       const local = addr.split('@')[0] || 'User';
-      const cleaned = local.replace(W_RE, ' ').trim();
+      const cleaned = local.replace(/[\W_]+/g, ' ').trim();
       const candidate = cleaned || 'User';
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };
@@ -381,11 +646,11 @@ export class AuthService {
       this.throwFriendlyDbInitError(error);
     }
 
-    return this.issueTokens(agent);
+    return this.issueTokens(agent, undefined, { ipAddress: ip, userAgent });
   }
 
-  async login(data: { email: string; password: string; ip?: string }) {
-    const { email, password, ip } = data;
+  async login(data: { email: string; password: string; ip?: string; userAgent?: string }) {
+    const { email, password, ip, userAgent } = data;
     // Proteção global por IP (força bruta)
     await this.checkRateLimit(`login:${ip || 'ip-unknown'}`);
     // Proteção adicional por IP+email (reduz enumeração)
@@ -409,6 +674,14 @@ export class AuthService {
         throw new UnauthorizedException('Esta conta usa Google. Entre com o Google.');
       }
 
+      if (agent.provider === 'facebook') {
+        throw new UnauthorizedException('Esta conta usa Facebook. Entre com o Facebook.');
+      }
+
+      if (agent.provider === 'apple') {
+        throw new UnauthorizedException('Esta conta usa Apple. Entre com a Apple.');
+      }
+
       throw new UnauthorizedException('Esta conta não possui senha cadastrada.');
     }
 
@@ -417,7 +690,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    return this.issueTokens(agent);
+    return this.issueTokens(agent, undefined, { ipAddress: ip, userAgent });
   }
 
   private async signToken(
@@ -426,6 +699,7 @@ export class AuthService {
     workspaceId: string,
     role: string,
     name?: string,
+    sessionId?: string,
   ) {
     const payload: Record<string, unknown> = {
       sub: agentId,
@@ -436,18 +710,27 @@ export class AuthService {
     if (name) {
       payload.name = name;
     }
+    if (sessionId) {
+      payload.sessionId = sessionId;
+    }
     return this.jwt.signAsync(payload, {
       expiresIn: getJwtExpiresIn(),
     });
   }
 
-  async refresh(refreshToken: string) {
+  async refresh(refreshToken: string, sessionContext?: AuthSessionContext) {
     let stored: Prisma.RefreshTokenGetPayload<{ include: { agent: true } }> | null;
     try {
       stored = await this.prisma.refreshToken.findUnique({
-        where: { token: refreshToken },
+        where: { token: hashAuthToken(refreshToken) },
         include: { agent: true },
       });
+      if (!stored) {
+        stored = await this.prisma.refreshToken.findUnique({
+          where: { token: refreshToken },
+          include: { agent: true },
+        });
+      }
     } catch (error) {
       this.throwFriendlyDbInitError(error);
     }
@@ -458,22 +741,255 @@ export class AuthService {
       if (stored?.revoked && stored.agent) {
         await this.prisma.refreshToken.updateMany({
           where: { agentId: stored.agent.id, revoked: false },
-          data: { revoked: true },
+          data: { revoked: true, revokedAt: new Date() },
         });
         this.logger.warn(`Revoked refresh token replay detected for agent ${stored.agent.id}`);
       }
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
 
-    // Rotation: explicitly revoke the consumed token before issuing new pair.
-    // issueTokens() also does a blanket revoke, but this makes the consumed
-    // token invalid immediately, closing any race-condition window.
+    const workspaceMeta = await this.resolveWorkspaceMeta(stored.agent);
+    const normalizedSessionContext = normalizeSessionContext(sessionContext);
+    const nextRefreshToken = randomUUID() + randomUUID();
+    const nextExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const accessToken = await this.signToken(
+      stored.agent.id,
+      stored.agent.email,
+      stored.agent.workspaceId,
+      stored.agent.role,
+      stored.agent.name,
+      stored.id,
+    );
+
     await this.prisma.refreshToken.update({
       where: { id: stored.id },
-      data: { revoked: true },
+      data: {
+        token: hashAuthToken(nextRefreshToken),
+        expiresAt: nextExpiresAt,
+        revoked: false,
+        revokedAt: null,
+        lastUsedAt: new Date(),
+        userAgent: normalizedSessionContext.userAgent || stored.userAgent,
+        ipAddress: normalizedSessionContext.ipAddress || stored.ipAddress,
+      },
     });
 
-    return this.issueTokens(stored.agent);
+    return this.buildAuthPayload(
+      stored.agent,
+      workspaceMeta,
+      accessToken,
+      nextRefreshToken,
+    );
+  }
+
+  async listSessions(agentId: string, currentSessionId?: string) {
+    const sessions = await this.prisma.refreshToken.findMany({
+      where: {
+        agentId,
+        revoked: false,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      orderBy: [{ lastUsedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    return {
+      sessions: sessions.map((session) => buildSessionSummary(session, currentSessionId)),
+    };
+  }
+
+  async revokeSession(agentId: string, sessionId: string) {
+    const session = await this.prisma.refreshToken.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true,
+        agentId: true,
+        revoked: true,
+      },
+    });
+
+    if (!session || session.agentId !== agentId || session.revoked) {
+      return { success: true, revokedSessionId: null };
+    }
+
+    await this.prisma.refreshToken.update({
+      where: { id: sessionId },
+      data: {
+        revoked: true,
+        revokedAt: new Date(),
+      },
+    });
+
+    return { success: true, revokedSessionId: sessionId };
+  }
+
+  async revokeCurrentSession(agentId: string, currentSessionId?: string) {
+    if (!currentSessionId) {
+      return { success: true, revokedSessionId: null };
+    }
+
+    return this.revokeSession(agentId, currentSessionId);
+  }
+
+  async revokeOtherSessions(agentId: string, currentSessionId?: string) {
+    const where: Prisma.RefreshTokenWhereInput = {
+      agentId,
+      revoked: false,
+      expiresAt: {
+        gt: new Date(),
+      },
+      ...(currentSessionId
+        ? {
+            id: {
+              not: currentSessionId,
+            },
+          }
+        : {}),
+    };
+
+    const result = await this.prisma.refreshToken.updateMany({
+      where,
+      data: {
+        revoked: true,
+        revokedAt: new Date(),
+      },
+    });
+
+    return { success: true, revokedCount: result.count };
+  }
+
+  async changePassword(agentId: string, currentPassword: string, newPassword: string) {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        provider: true,
+      },
+    });
+
+    if (!agent) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+
+    if (!agent.password) {
+      throw new BadRequestException(
+        'Esta conta não possui senha local ativa. Use o link de redefinição para criar uma senha.',
+      );
+    }
+
+    const valid = await bcryptCompare(currentPassword, agent.password);
+    if (!valid) {
+      throw new UnauthorizedException('Senha atual inválida');
+    }
+
+    if (currentPassword === newPassword) {
+      throw new BadRequestException('A nova senha deve ser diferente da senha atual.');
+    }
+
+    const hashedPassword = await bcryptHash(newPassword, BCRYPT_ROUNDS);
+
+    await this.prisma.$transaction([
+      this.prisma.agent.update({
+        where: { id: agent.id },
+        data: { password: hashedPassword },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { agentId: agent.id, revoked: false },
+        data: { revoked: true, revokedAt: new Date() },
+      }),
+    ]);
+
+    return { success: true };
+  }
+
+  async getGoogleExtendedProfile(
+    agentId: string,
+    accessToken: string,
+  ): Promise<GoogleExtendedProfile> {
+    if (String(this.config.get<string>('KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL') || '').trim() !== 'true') {
+      throw new ForbiddenException('Prefill sensível do Google está desabilitado no momento.');
+    }
+
+    const token = accessToken?.trim();
+    if (!token) {
+      throw new UnauthorizedException('Access token Google ausente.');
+    }
+
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: {
+        id: true,
+        email: true,
+        provider: true,
+        providerId: true,
+        socialAccounts: {
+          where: { provider: 'google' },
+          select: {
+            provider: true,
+            providerUserId: true,
+            email: true,
+          },
+          take: 5,
+        },
+      },
+    });
+
+    if (!agent) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+
+    const hasGoogleIdentity =
+      agent.provider === 'google' ||
+      (Array.isArray(agent.socialAccounts) && agent.socialAccounts.length > 0);
+    if (!hasGoogleIdentity) {
+      throw new BadRequestException('Conta autenticada não possui Google vinculado.');
+    }
+
+    const cacheKey = `auth:google-extended-profile:${agentId}`;
+    const cachedProfile = await this.readCachedGoogleExtendedProfile(cacheKey);
+    if (cachedProfile) {
+      return cachedProfile;
+    }
+
+    const peopleProfile = await this.googleAuthService.fetchPeopleProfile(token);
+    const normalizedPeopleEmail =
+      typeof peopleProfile.email === 'string' ? peopleProfile.email.trim().toLowerCase() : '';
+    const allowedEmails = [
+      agent.provider === 'google' ? agent.email : null,
+      ...agent.socialAccounts.map((account) => account.email || null),
+    ]
+      .map((email) => (typeof email === 'string' ? email.trim().toLowerCase() : ''))
+      .filter(Boolean);
+
+    if (
+      normalizedPeopleEmail &&
+      allowedEmails.length > 0 &&
+      !allowedEmails.includes(normalizedPeopleEmail)
+    ) {
+      throw new UnauthorizedException('Conta Google divergente da sessão autenticada.');
+    }
+
+    const profile: GoogleExtendedProfile = {
+      provider: 'google',
+      email: peopleProfile.email,
+      phone: peopleProfile.phone,
+      birthday: peopleProfile.birthday,
+      address: peopleProfile.address,
+    };
+
+    if (this.redis) {
+      try {
+        await this.redis.setex(cacheKey, 24 * 60 * 60, JSON.stringify(profile));
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'unknown_error';
+        this.logger.warn(`google_extended_profile_cache_write_failed: ${message}`);
+      }
+    }
+
+    return profile;
   }
 
   /**
@@ -487,11 +1003,13 @@ export class AuthService {
     image?: string;
     credential?: string;
     ip?: string;
+    userAgent?: string;
   }) {
     if (data?.provider === 'google' && data?.credential) {
       return this.loginWithGoogleCredential({
         credential: data.credential,
         ip: data.ip,
+        userAgent: data.userAgent,
       });
     }
 
@@ -501,65 +1019,49 @@ export class AuthService {
     });
   }
 
-  async loginWithGoogleCredential(data: { credential: string; ip?: string }) {
+  async loginWithGoogleCredential(data: { credential: string; ip?: string; userAgent?: string }) {
     await this.checkRateLimit(`oauth:google:${data.ip || 'ip-unknown'}`);
     const profile = await this.googleAuthService.verifyCredential(data.credential);
-    return this.completeTrustedOAuthLogin(profile);
+    return this.completeTrustedOAuthLogin(profile, data);
+  }
+
+  async loginWithFacebookAccessToken(data: {
+    accessToken: string;
+    ip?: string;
+    userAgent?: string;
+  }) {
+    await this.checkRateLimit(`oauth:facebook:${data.ip || 'ip-unknown'}`);
+    const profile = await this.facebookAuthService.verifyAccessToken(data.accessToken);
+    return this.completeTrustedOAuthLogin(profile, data);
   }
 
   async loginWithAppleCredential(data: {
     identityToken: string;
     user?: { name?: { firstName?: string; lastName?: string }; email?: string };
     ip?: string;
+    userAgent?: string;
   }) {
     await this.checkRateLimit(`oauth:apple:${data.ip || 'ip-unknown'}`);
+    const profile = extractAppleIdentityProfile(data.identityToken, data.user);
 
-    // Decode Apple identity token (JWT) to extract user info
-    // Apple's identityToken is a signed JWT with sub (unique user id) and email
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.decode(data.identityToken);
-    const decodedPayload =
-      decoded && typeof decoded === 'object'
-        ? (decoded as { sub?: string; email?: string; email_verified?: boolean })
-        : {};
-    if (!decodedPayload.sub) {
-      throw new BadRequestException({
-        error: 'invalid_apple_token',
-        message: 'Apple identity token invalido ou expirado.',
-      });
-    }
-
-    // Apple only sends user info on FIRST sign-in, so we use decoded JWT + optional user data
-    const email =
-      decodedPayload.email || data.user?.email || `${decodedPayload.sub}@privaterelay.appleid.com`;
-    const name = data.user?.name
-      ? `${data.user.name.firstName || ''} ${data.user.name.lastName || ''}`.trim()
-      : email.split('@')[0];
-
-    const profile = {
-      provider: 'apple' as const,
-      providerId: decodedPayload.sub,
-      email,
-      name: name || 'Apple User',
-      image: null as string | null,
-      emailVerified: !!decodedPayload.email_verified,
-    };
-
-    return this.completeTrustedOAuthLogin(profile);
+    return this.completeTrustedOAuthLogin(profile, data);
   }
 
-  private async completeTrustedOAuthLogin(profile: GoogleVerifiedProfile) {
+  private async completeTrustedOAuthLogin(
+    profile: TrustedOAuthProfile,
+    sessionContext?: AuthSessionContext,
+  ) {
     const { provider, providerId, email, name, image, emailVerified } = profile;
 
     const deriveName = (addr: string) => {
       const local = addr.split('@')[0] || 'User';
-      const cleaned = local.replace(W_RE, ' ').trim();
+      const cleaned = local.replace(/[\W_]+/g, ' ').trim();
       const candidate = cleaned || 'User';
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };
 
     const normalizedProvider = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
-    if (!['google', 'apple'].includes(normalizedProvider)) {
+    if (!['google', 'apple', 'facebook'].includes(normalizedProvider)) {
       throw new BadRequestException({
         error: 'invalid_provider',
         message: 'Provedor OAuth inválido ou não suportado.',
@@ -585,25 +1087,43 @@ export class AuthService {
     const finalName = (typeof name === 'string' && name.trim()) || deriveName(normalizedEmail);
 
     try {
-      let agent: {
-        id: string;
-        email: string;
-        workspaceId: string;
-        name?: string | null;
-        role?: string | null;
-        provider?: string | null;
-        providerId?: string | null;
-        avatarUrl?: string | null;
-        emailVerified?: boolean | null;
-      } | null = null;
+      let agent: AuthAgentRecord | null = null;
+      let matchedBySocialAccount = false;
+      let matchedLegacyProvider = false;
+
       try {
-        agent = await this.prisma.agent.findFirst({
+        const linkedSocialAccount = await this.prisma.socialAccount.findUnique({
           where: {
-            provider: normalizedProvider,
-            providerId: normalizedProviderId,
+            provider_providerUserId: {
+              provider: normalizedProvider,
+              providerUserId: normalizedProviderId,
+            },
           },
-          orderBy: { createdAt: 'asc' },
+          include: {
+            agent: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                password: true,
+                role: true,
+                provider: true,
+                providerId: true,
+                avatarUrl: true,
+                emailVerified: true,
+                workspaceId: true,
+                createdAt: true,
+                isOnline: true,
+                phone: true,
+              },
+            },
+          },
         });
+
+        if (linkedSocialAccount?.agent) {
+          agent = linkedSocialAccount.agent;
+          matchedBySocialAccount = true;
+        }
 
         if (!agent) {
           const candidates = await this.prisma.agent.findMany({
@@ -648,6 +1168,12 @@ export class AuthService {
               );
             }
           }
+
+          if (agent) {
+            matchedLegacyProvider =
+              agent.provider === normalizedProvider &&
+              (!agent.providerId || agent.providerId === normalizedProviderId);
+          }
         }
       } catch (error: unknown) {
         this.throwFriendlyDbInitError(error);
@@ -691,22 +1217,22 @@ export class AuthService {
           this.throwFriendlyDbInitError(error);
         }
 
-        // Se já existe e está vinculado a outro provedor, não força link automático.
-        if (agent.provider && agent.provider !== normalizedProvider && agent.providerId) {
-          throw new ConflictException('Conta já cadastrada e vinculada a outro provedor');
+        if (!matchedBySocialAccount && !matchedLegacyProvider) {
+          await this.scheduleOAuthLinkConfirmation(agent, {
+            provider: normalizedProvider as TrustedOAuthProfile['provider'],
+            providerId: normalizedProviderId,
+            email: normalizedEmail,
+            name: finalName,
+            image: image || null,
+            emailVerified: !!emailVerified,
+          });
         }
 
-        // Se existe provider diferente mesmo sem providerId (legado), também bloqueia.
-        if (agent.provider && agent.provider !== normalizedProvider) {
-          throw new ConflictException('Conta já cadastrada e vinculada a outro provedor');
-        }
-
-        // Vincula/atualiza providerId quando necessário.
         const nextAgentData: Record<string, unknown> = {};
-        if (agent.provider !== normalizedProvider) {
+        if (!agent.provider) {
           nextAgentData.provider = normalizedProvider;
         }
-        if (agent.providerId !== normalizedProviderId) {
+        if ((!agent.provider || agent.provider === normalizedProvider) && agent.providerId !== normalizedProviderId) {
           nextAgentData.providerId = normalizedProviderId;
         }
         if (image && agent.avatarUrl !== image) {
@@ -732,10 +1258,19 @@ export class AuthService {
             this.throwFriendlyDbInitError(error);
           }
         }
-        return this.issueTokens(agent, { isNewUser: false });
+
+        await this.persistSocialAccount(agent.id, {
+          provider: normalizedProvider as TrustedOAuthProfile['provider'],
+          providerId: normalizedProviderId,
+          email: normalizedEmail,
+          name: finalName,
+          image: image || null,
+          emailVerified: !!emailVerified,
+        });
+
+        return this.issueTokens(agent, { isNewUser: false }, sessionContext);
       }
 
-      // Criar novo workspace + agent para OAuth (transação)
       let newAgent: Agent;
       try {
         const wsName = `${finalName}'s Workspace`;
@@ -759,6 +1294,17 @@ export class AuthService {
             },
           });
 
+          await tx.socialAccount.create({
+            data: {
+              provider: normalizedProvider,
+              providerUserId: normalizedProviderId,
+              agentId: agent.id,
+              email: normalizedEmail,
+              avatarUrl: image,
+              lastUsedAt: new Date(),
+            },
+          });
+
           return agent;
         });
         newAgent = created;
@@ -769,7 +1315,7 @@ export class AuthService {
         this.throwFriendlyDbInitError(error);
       }
 
-      return this.issueTokens(newAgent, { isNewUser: true });
+      return this.issueTokens(newAgent, { isNewUser: true }, sessionContext);
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         try {
@@ -925,7 +1471,7 @@ export class AuthService {
   /**
    * Verifica código WhatsApp e faz login
    */
-  async verifyWhatsAppCode(phone: string, code: string, ip?: string) {
+  async verifyWhatsAppCode(phone: string, code: string, ip?: string, userAgent?: string) {
     await this.checkRateLimit(`whatsapp-verify:${ip || 'ip-unknown'}`, 5, 60 * 1000);
 
     let storedCode: string | null = null;
@@ -968,7 +1514,7 @@ export class AuthService {
       });
     }
 
-    return this.issueTokens(agent);
+    return this.issueTokens(agent, undefined, { ipAddress: ip, userAgent });
   }
 
   // =========================================
@@ -1006,7 +1552,7 @@ export class AuthService {
     // Cria novo token
     await this.prisma.passwordResetToken.create({
       data: {
-        token,
+        token: hashAuthToken(token),
         agentId: agent.id,
         expiresAt,
       },
@@ -1025,15 +1571,161 @@ export class AuthService {
   }
 
   /**
+   * Envia magic link de login
+   */
+  async requestMagicLink(email: string, ip?: string) {
+    await this.checkRateLimit(`magic-link-request:${ip || 'ip-unknown'}`, 5, 60 * 1000);
+
+    const agent = await this.prisma.agent.findFirst({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+      },
+    });
+
+    if (!agent) {
+      return {
+        success: true,
+        message: 'Se o email existir, você receberá um link de acesso.',
+      };
+    }
+
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+    await this.prisma.magicLinkToken.updateMany({
+      where: { agentId: agent.id, used: false },
+      data: { used: true },
+    });
+
+    await this.prisma.magicLinkToken.create({
+      data: {
+        token: hashAuthToken(token),
+        agentId: agent.id,
+        expiresAt,
+      },
+    });
+
+    const magicLinkUrl = this.buildMagicLinkUrl(token);
+    await this.emailService.sendMagicLinkEmail(agent.email, magicLinkUrl);
+
+    return {
+      success: true,
+      message: 'Se o email existir, você receberá um link de acesso.',
+      ...(process.env.NODE_ENV !== 'production' && { token, magicLinkUrl }),
+    };
+  }
+
+  /**
+   * Consome magic link e cria uma sessão autenticada
+   */
+  async consumeMagicLink(token: string, ip?: string, linkToken?: string, userAgent?: string) {
+    await this.checkRateLimit(`magic-link-consume:${ip || 'ip-unknown'}`, 10, 60 * 1000);
+
+    const stored =
+      (await this.prisma.magicLinkToken.findUnique({
+        where: { token: hashAuthToken(token) },
+        include: {
+          agent: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              workspaceId: true,
+              emailVerified: true,
+            },
+          },
+        },
+      })) ||
+      (await this.prisma.magicLinkToken.findUnique({
+        where: { token },
+        include: {
+          agent: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              workspaceId: true,
+              emailVerified: true,
+            },
+          },
+        },
+      }));
+
+    if (!stored || stored.used || stored.expiresAt < new Date() || !stored.agent) {
+      throw new UnauthorizedException('Token de acesso inválido ou expirado.');
+    }
+
+    await this.prisma.magicLinkToken.update({
+      where: { id: stored.id },
+      data: { used: true },
+    });
+
+    if (linkToken) {
+      const linkIntent =
+        (await this.prisma.oAuthLinkIntent.findUnique({
+          where: { token: hashAuthToken(linkToken) },
+        })) ||
+        (await this.prisma.oAuthLinkIntent.findUnique({
+          where: { token: linkToken },
+        }));
+
+      if (
+        !linkIntent ||
+        linkIntent.agentId !== stored.agent.id ||
+        linkIntent.consumedAt ||
+        linkIntent.expiresAt < new Date()
+      ) {
+        throw new UnauthorizedException('Solicitação de vinculação inválida ou expirada.');
+      }
+
+      await this.persistSocialAccount(stored.agent.id, {
+        provider: linkIntent.provider as TrustedOAuthProfile['provider'],
+        providerId: linkIntent.providerUserId,
+        email: linkIntent.email,
+        name: linkIntent.displayName || stored.agent.name || stored.agent.email,
+        image: linkIntent.avatarUrl,
+        emailVerified: linkIntent.emailVerified,
+      });
+
+      await this.prisma.oAuthLinkIntent.update({
+        where: { id: linkIntent.id },
+        data: { consumedAt: new Date() },
+      });
+    }
+
+    if (!stored.agent.emailVerified) {
+      await this.prisma.agent.update({
+        where: { id: stored.agent.id },
+        data: {
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpiry: null,
+        },
+      });
+    }
+
+    return this.issueTokens(stored.agent, undefined, { ipAddress: ip, userAgent });
+  }
+
+  /**
    * Redefine a senha usando o token
    */
   async resetPassword(token: string, newPassword: string, ip?: string) {
     await this.checkRateLimit(`reset-password:${ip || 'ip-unknown'}`, 5, 60 * 1000);
 
-    const resetToken = await this.prisma.passwordResetToken.findUnique({
-      where: { token },
-      include: { agent: true },
-    });
+    const resetToken =
+      (await this.prisma.passwordResetToken.findUnique({
+        where: { token: hashAuthToken(token) },
+        include: { agent: true },
+      })) ||
+      (await this.prisma.passwordResetToken.findUnique({
+        where: { token },
+        include: { agent: true },
+      }));
 
     if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
       throw new UnauthorizedException('Token inválido ou expirado');
@@ -1059,7 +1751,7 @@ export class AuthService {
       // Revoga todos os refresh tokens (força re-login)
       this.prisma.refreshToken.updateMany({
         where: { agentId: resetToken.agentId },
-        data: { revoked: true },
+        data: { revoked: true, revokedAt: new Date() },
       }),
     ]);
 
@@ -1100,7 +1792,7 @@ export class AuthService {
     await this.prisma.agent.update({
       where: { id: agentId },
       data: {
-        emailVerificationToken: token,
+        emailVerificationToken: hashAuthToken(token),
         emailVerificationExpiry: expiry,
       },
     });
@@ -1125,7 +1817,9 @@ export class AuthService {
 
     try {
       const agent = await this.prisma.agent.findFirst({
-        where: { emailVerificationToken: token },
+        where: {
+          OR: [{ emailVerificationToken: hashAuthToken(token) }, { emailVerificationToken: token }],
+        },
       });
 
       if (!agent) {

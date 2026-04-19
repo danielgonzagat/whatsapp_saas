@@ -24,6 +24,10 @@ import {
 import { CheckoutOrderSupport } from './checkout-order-support';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
+import {
+  encryptCheckoutPixelToken,
+  maskCheckoutPixelToken,
+} from './checkout-pixel-crypto';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
 import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
 
@@ -68,6 +72,82 @@ export class CheckoutService {
         ...payload,
       }),
     );
+  }
+
+  private serializeOperatorPixel(pixel: Record<string, unknown> | null | undefined) {
+    if (!pixel) return pixel;
+
+    const { accessToken, ...rest } = pixel;
+    const accessTokenPreview = maskCheckoutPixelToken(
+      typeof accessToken === 'string' ? accessToken : null,
+    );
+
+    return {
+      ...rest,
+      hasAccessToken: Boolean(accessTokenPreview),
+      accessTokenPreview,
+    };
+  }
+
+  private serializeOperatorPixels<T extends Record<string, unknown>>(pixels?: T[] | null) {
+    if (!Array.isArray(pixels)) return pixels;
+    return pixels.map((pixel) => this.serializeOperatorPixel(pixel) as T);
+  }
+
+  private sanitizeCheckoutConfigForPublic<T extends Record<string, unknown> | null | undefined>(
+    config: T,
+  ): T {
+    if (!config) return config;
+
+    const pixels = Array.isArray(config.pixels)
+      ? config.pixels
+          .filter((pixel) => Boolean(pixel) && typeof pixel === 'object')
+          .map((pixel) => {
+            const { accessToken: _accessToken, ...rest } = pixel as Record<string, unknown>;
+            return rest;
+          })
+      : config.pixels;
+
+    return {
+      ...config,
+      pixels,
+    };
+  }
+
+  private sanitizePlanForPublic<T extends Record<string, unknown>>(plan: T): T {
+    return {
+      ...plan,
+      checkoutConfig: this.sanitizeCheckoutConfigForPublic(
+        plan.checkoutConfig as Record<string, unknown> | null | undefined,
+      ),
+    };
+  }
+
+  private buildPublicCheckoutPayload(
+    plan: Record<string, unknown> & {
+      product: { workspaceId: string; name?: string; [key: string]: unknown };
+      checkoutConfig?: Record<string, unknown> | null;
+      slug?: string;
+      referenceCode?: string;
+    },
+    options?: {
+      affiliateLink?: Record<string, unknown> | null;
+      checkoutLink?: Record<string, unknown> | null;
+      checkoutConfigOverride?: Record<string, unknown> | null;
+    },
+  ) {
+    return this.publicPayloadBuilder.build(this.sanitizePlanForPublic(plan), options
+      ? {
+          ...options,
+          checkoutConfigOverride: this.sanitizeCheckoutConfigForPublic(
+            options.checkoutConfigOverride,
+          ),
+        }
+      : undefined);
+  }
+
+  private normalizePixelTokenForStorage(value?: string | null) {
+    return encryptCheckoutPixelToken(value);
   }
 
   private buildDefaultCheckoutConfigInput(
@@ -220,7 +300,7 @@ export class CheckoutService {
               checkoutConfigId: createdConfig.id,
               type: pixel.type,
               pixelId: pixel.pixelId,
-              accessToken: pixel.accessToken,
+              accessToken: this.normalizePixelTokenForStorage(pixel.accessToken),
               trackPageView: pixel.trackPageView,
               trackInitiateCheckout: pixel.trackInitiateCheckout,
               trackAddPaymentInfo: pixel.trackAddPaymentInfo,
@@ -568,7 +648,7 @@ export class CheckoutService {
             checkoutConfigId: createdConfig.id,
             type: pixel.type,
             pixelId: pixel.pixelId,
-            accessToken: pixel.accessToken,
+            accessToken: this.normalizePixelTokenForStorage(pixel.accessToken),
             trackPageView: pixel.trackPageView,
             trackInitiateCheckout: pixel.trackInitiateCheckout,
             trackAddPaymentInfo: pixel.trackAddPaymentInfo,
@@ -661,7 +741,10 @@ export class CheckoutService {
       where: { planId },
       data: normalizedData,
       include: { pixels: true },
-    });
+    }).then((config) => ({
+      ...config,
+      pixels: this.serializeOperatorPixels(config.pixels),
+    }));
   }
 
   async getConfig(planId: string) {
@@ -700,6 +783,7 @@ export class CheckoutService {
 
     return {
       ...config,
+      pixels: this.serializeOperatorPixels(config.pixels),
       plan: normalizedPlan,
       referenceCode: primaryLinkedCheckout?.referenceCode || normalizedPlan?.referenceCode || null,
       slug: primaryLinkedCheckout?.slug || normalizedPlan?.slug || null,
@@ -771,7 +855,7 @@ export class CheckoutService {
         checkoutId: checkoutLink.checkoutId,
         planId: checkoutLink.planId,
       });
-      return this.publicPayloadBuilder.build(checkoutLink.plan, {
+      return this.buildPublicCheckoutPayload(checkoutLink.plan, {
         checkoutLink,
         checkoutConfigOverride:
           checkoutLink.checkout.checkoutConfig || checkoutLink.plan.checkoutConfig,
@@ -829,7 +913,7 @@ export class CheckoutService {
           checkoutId: migratedCheckoutLink.checkoutId,
           planId: migratedCheckoutLink.planId,
         });
-        return this.publicPayloadBuilder.build(migratedCheckoutLink.plan, {
+        return this.buildPublicCheckoutPayload(migratedCheckoutLink.plan, {
           checkoutLink: migratedCheckoutLink,
           checkoutConfigOverride:
             migratedCheckoutLink.checkout.checkoutConfig ||
@@ -847,7 +931,7 @@ export class CheckoutService {
         resolution: 'plan',
         planId: plan.id,
       });
-      return this.publicPayloadBuilder.build(plan);
+      return this.buildPublicCheckoutPayload(plan);
     }
 
     return this.getCheckoutByCode(slug, {
@@ -922,7 +1006,7 @@ export class CheckoutService {
         checkoutId: checkoutLink.checkoutId,
         planId: checkoutLink.planId,
       });
-      return this.publicPayloadBuilder.build(checkoutLink.plan, {
+      return this.buildPublicCheckoutPayload(checkoutLink.plan, {
         checkoutLink,
         checkoutConfigOverride:
           checkoutLink.checkout.checkoutConfig || checkoutLink.plan.checkoutConfig,
@@ -999,7 +1083,7 @@ export class CheckoutService {
           checkoutId: migratedCheckoutLink.checkoutId,
           planId: migratedCheckoutLink.planId,
         });
-        return this.publicPayloadBuilder.build(migratedCheckoutLink.plan, {
+        return this.buildPublicCheckoutPayload(migratedCheckoutLink.plan, {
           checkoutLink: migratedCheckoutLink,
           checkoutConfigOverride:
             migratedCheckoutLink.checkout.checkoutConfig ||
@@ -1017,7 +1101,7 @@ export class CheckoutService {
         resolution: 'plan',
         planId: plan.id,
       });
-      return this.publicPayloadBuilder.build(plan);
+      return this.buildPublicCheckoutPayload(plan);
     }
 
     const affiliateLink = await this.prisma.affiliateLink.findFirst({
@@ -1111,7 +1195,7 @@ export class CheckoutService {
       planId: affiliatePlan.id,
     });
 
-    return this.publicPayloadBuilder.build(affiliatePlan, {
+    return this.buildPublicCheckoutPayload(affiliatePlan, {
       affiliateLink,
       checkoutLink: affiliateCheckoutLink,
       checkoutConfigOverride:
@@ -1398,13 +1482,45 @@ export class CheckoutService {
       );
     }
 
-    return this.prisma.checkoutPixel.create({
-      data: { checkoutConfigId, ...data },
+    const created = await this.prisma.checkoutPixel.create({
+      data: {
+        checkoutConfigId,
+        ...data,
+        accessToken: this.normalizePixelTokenForStorage(data.accessToken),
+      },
     });
+
+    return this.serializeOperatorPixel(created);
   }
 
   async updatePixel(id: string, data: Prisma.CheckoutPixelUpdateInput) {
-    return this.prisma.checkoutPixel.update({ where: { id }, data });
+    const normalizedData = { ...data } as Record<string, unknown>;
+    const rawAccessToken = normalizedData.accessToken;
+    delete normalizedData.accessToken;
+
+    if (typeof rawAccessToken === 'string') {
+      const trimmedToken = rawAccessToken.trim();
+      if (trimmedToken) {
+        normalizedData.accessToken = this.normalizePixelTokenForStorage(trimmedToken);
+      }
+    } else if (
+      rawAccessToken &&
+      typeof rawAccessToken === 'object' &&
+      'set' in rawAccessToken &&
+      typeof (rawAccessToken as { set?: unknown }).set === 'string'
+    ) {
+      const trimmedToken = String((rawAccessToken as { set?: string }).set || '').trim();
+      if (trimmedToken) {
+        normalizedData.accessToken = this.normalizePixelTokenForStorage(trimmedToken);
+      }
+    }
+
+    const updated = await this.prisma.checkoutPixel.update({
+      where: { id },
+      data: normalizedData as Prisma.CheckoutPixelUpdateInput,
+    });
+
+    return this.serializeOperatorPixel(updated);
   }
 
   async deletePixel(id: string, workspaceId?: string) {

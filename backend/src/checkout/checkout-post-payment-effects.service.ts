@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { escapeHtml } from '../common/utils/html-escape.util';
+import { decryptCheckoutPixelToken } from './checkout-pixel-crypto';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import { FacebookCAPIService } from './facebook-capi.service';
 
@@ -84,10 +85,11 @@ export class CheckoutPostPaymentEffectsService {
 
       // biome-ignore lint/performance/noAwaitInLoops: sequential Facebook CAPI event sending
       for (const pixel of fbPixels) {
-        if (!pixel.pixelId || !pixel.accessToken) continue;
+        const accessToken = decryptCheckoutPixelToken(pixel.accessToken);
+        if (!pixel.pixelId || !accessToken) continue;
         await this.facebookCAPI.sendEvent({
           pixelId: pixel.pixelId,
-          accessToken: pixel.accessToken,
+          accessToken,
           eventName: 'Purchase',
           email: order.customerEmail || undefined,
           phone: order.customerPhone || undefined,

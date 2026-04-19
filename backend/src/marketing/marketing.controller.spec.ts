@@ -43,13 +43,13 @@ describe('MarketingController', () => {
     controller = new MarketingController(prisma, metaWhatsApp, whatsappProviders);
   });
 
-  it('returns WAHA-driven WhatsApp status without leaking Meta authUrl into the QR flow', async () => {
+  it('returns legacy-runtime WhatsApp status without leaking Meta authUrl into the legacy flow', async () => {
     const result = await controller.getConnectStatus({
       user: { workspaceId: 'ws-1' },
     } as any);
 
     expect(result.channels.whatsapp).toEqual({
-      provider: 'whatsapp-api',
+      provider: 'legacy-runtime',
       connected: false,
       status: 'connecting',
       authUrl: null,
@@ -59,5 +59,16 @@ describe('MarketingController', () => {
       pushName: null,
       degradedReason: null,
     });
+  });
+
+  it('normalizes empty Meta auth URLs to null for disconnected social channels', async () => {
+    metaWhatsApp.buildEmbeddedSignupUrl.mockReturnValue('');
+
+    const result = await controller.getConnectStatus({
+      user: { workspaceId: 'ws-1' },
+    } as any);
+
+    expect(result.channels.instagram.authUrl).toBeNull();
+    expect(result.channels.facebook.authUrl).toBeNull();
   });
 });

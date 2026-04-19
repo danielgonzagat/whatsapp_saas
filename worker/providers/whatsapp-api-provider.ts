@@ -1,5 +1,5 @@
 import { providerStatus } from './health-monitor';
-import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
+import { resolveWhatsAppProvider } from './whatsapp-provider-resolver';
 
 const PATTERN_RE = /\/+$/;
 
@@ -89,18 +89,17 @@ function getInternalHeaders(extra?: Record<string, string>) {
 }
 
 function normalizeWorkspace(workspaceOrId: string | WorkspaceOrId) {
-  const provider = getWhatsAppProviderFromEnv();
   if (typeof workspaceOrId === 'string') {
     return {
       id: workspaceOrId.trim(),
-      whatsappProvider: provider,
+      whatsappProvider: resolveWhatsAppProvider(undefined),
     };
   }
 
   return {
     ...workspaceOrId,
     id: String(workspaceOrId?.id || workspaceOrId?.workspaceId || '').trim(),
-    whatsappProvider: provider,
+    whatsappProvider: resolveWhatsAppProvider(workspaceOrId?.whatsappProvider),
   };
 }
 

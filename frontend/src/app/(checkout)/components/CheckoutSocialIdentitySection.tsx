@@ -11,7 +11,11 @@ import type {
 type Props = {
   theme: CheckoutVisualTheme;
   googleAvailable: boolean;
+  facebookAvailable: boolean;
+  appleAvailable: boolean;
   googleButtonRef: RefObject<HTMLDivElement | null>;
+  onFacebookClick: () => void | Promise<void>;
+  onAppleClick: () => void | Promise<void>;
   socialIdentity: CheckoutSocialIdentitySnapshot | null;
   loadingProvider: CheckoutSocialProvider | null;
   error?: string;
@@ -20,7 +24,11 @@ type Props = {
 export function CheckoutSocialIdentitySection({
   theme,
   googleAvailable,
+  facebookAvailable,
+  appleAvailable,
   googleButtonRef,
+  onFacebookClick,
+  onAppleClick,
   socialIdentity: _socialIdentity,
   loadingProvider,
   error,
@@ -42,14 +50,18 @@ export function CheckoutSocialIdentitySection({
             buttonRef={googleButtonRef}
             loading={loadingProvider === 'google'}
           />
-          <StaticSocialButton
+          <ActionSocialButton
             icon={<FacebookIcon />}
-            label="Facebook em breve"
+            label="Continuar com Facebook"
+            available={facebookAvailable}
+            onClick={onFacebookClick}
             loading={loadingProvider === 'facebook'}
           />
-          <StaticSocialButton
+          <ActionSocialButton
             icon={<AppleIcon color={theme.socialApple} />}
-            label="Apple em breve"
+            label="Continuar com Apple"
+            available={appleAvailable}
+            onClick={onAppleClick}
             loading={loadingProvider === 'apple'}
           />
         </div>
@@ -132,19 +144,23 @@ function GoogleIconButton({
   );
 }
 
-function StaticSocialButton({
+function ActionSocialButton({
   icon,
   label,
+  available,
   loading,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
+  available: boolean;
   loading: boolean;
+  onClick: () => void | Promise<void>;
 }) {
   const [hovered, setHovered] = useState(false);
   const state = useMemo(
     () => ({
-      opacity: hovered ? 0.55 : 0.35,
+      opacity: hovered ? 1 : 0.72,
       transform: hovered ? 'scale(1.06)' : 'scale(1)',
     }),
     [hovered],
@@ -153,11 +169,13 @@ function StaticSocialButton({
   return (
     <button
       type="button"
-      disabled
-      aria-disabled="true"
+      onClick={() => void onClick()}
+      disabled={!available || loading}
+      aria-disabled={!available || loading}
+      aria-label={available ? label : `${label} indisponível`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      title={label}
+      title={available ? label : `${label} indisponível`}
       style={{
         width: 48,
         height: 48,
@@ -166,17 +184,17 @@ function StaticSocialButton({
         justifyContent: 'center',
         background: 'transparent',
         border: 'none',
-        cursor: 'not-allowed',
+        cursor: available && !loading ? 'pointer' : 'not-allowed',
         padding: 0,
       }}
     >
       {loading ? (
-        <Spinner color="rgba(58, 58, 63, 0.52)" trackColor="rgba(58, 58, 63, 0.12)" />
+        <Spinner color="rgb(24, 119, 242)" trackColor="rgba(58, 58, 63, 0.12)" />
       ) : (
         <div
           style={{
-            opacity: state.opacity,
-            transform: state.transform,
+            opacity: available ? state.opacity : 0.35,
+            transform: available ? state.transform : 'scale(1)',
             transition: 'transform 0.2s ease, opacity 0.2s ease',
           }}
         >

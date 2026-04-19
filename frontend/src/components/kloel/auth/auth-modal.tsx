@@ -4,11 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizeNextPath } from '@/lib/subdomains';
 import { ArrowLeft, Check, Eye, EyeOff, X } from 'lucide-react';
 import { useCallback, useEffect, useState, useId } from 'react';
 import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
+import { buildAppleAuthorizationUrl } from './apple-auth';
 import { useAuth } from './auth-provider';
 import { GoogleSignInButton } from './google-sign-in-button';
+import { useFacebookSignIn } from './use-facebook-sign-in';
 
 const S_______S________S_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const A_Z_RE = /[A-Z]/;
@@ -24,6 +27,14 @@ interface AuthModalProps {
   initialEmail?: string;
 }
 
+function AppleAuthIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    </svg>
+  );
+}
+
 export function AuthModal({
   isOpen,
   onClose,
@@ -31,7 +42,7 @@ export function AuthModal({
   initialEmail,
 }: AuthModalProps) {
   const fid = useId();
-  const { signUp, signIn, signInWithGoogle } = useAuth();
+  const { signUp, signIn, requestMagicLink, signInWithGoogle, signInWithFacebook } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [step, setStep] = useState<AuthStep>('email');
@@ -46,7 +57,9 @@ export function AuthModal({
 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [infoMessage, setInfoMessage] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   // Reset form when modal opens/closes or mode changes from props
   useEffect(() => {
@@ -59,8 +72,10 @@ export function AuthModal({
       setConfirmPassword('');
       setAcceptedTerms(false);
       setErrors({});
+      setInfoMessage('');
       setIsLoading(false);
       setForgotSent(false);
+      setMagicLinkSent(false);
     }
   }, [isOpen, initialMode, initialEmail]);
 
@@ -108,6 +123,7 @@ export function AuthModal({
     const result = await signUp(email, name, password);
 
     if (!result.success) {
+      setInfoMessage('');
       setErrors({ general: result.error || 'Erro ao criar conta. Tente novamente.' });
       setIsLoading(false);
       return;
@@ -129,6 +145,7 @@ export function AuthModal({
     const result = await signIn(email, password);
 
     if (!result.success) {
+      setInfoMessage('');
       setErrors({ password: result.error || 'Email ou senha incorretos' });
       setIsLoading(false);
       return;
@@ -141,12 +158,18 @@ export function AuthModal({
   const handleGoogleSignIn = useCallback(
     async (credential: string) => {
       setErrors({});
+      setInfoMessage('');
       setIsLoading(true);
 
       const result = await signInWithGoogle(credential);
 
       if (!result.success) {
-        setErrors({ general: result.error || 'Falha ao autenticar com Google.' });
+        if (result.error?.includes('confirmar a vinculação')) {
+          setMagicLinkSent(true);
+          setInfoMessage(result.error);
+        } else {
+          setErrors({ general: result.error || 'Falha ao autenticar com Google.' });
+        }
         setIsLoading(false);
         return result;
       }
@@ -159,8 +182,89 @@ export function AuthModal({
   );
 
   const handleGoogleError = useCallback((message: string) => {
+    setInfoMessage('');
     setErrors({ general: message });
   }, []);
+
+  const handleAppleSignIn = useCallback(() => {
+    setErrors({});
+    setInfoMessage('');
+    setMagicLinkSent(false);
+    setIsLoading(true);
+
+    try {
+      const clientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID?.trim() || '';
+      if (!clientId) {
+        setErrors({ general: 'Login com Apple não configurado no frontend.' });
+        setIsLoading(false);
+        return;
+      }
+
+      if (typeof window === 'undefined') {
+        setErrors({ general: 'Login com Apple indisponível neste ambiente.' });
+        setIsLoading(false);
+        return;
+      }
+
+      const nextHint = new URLSearchParams(window.location.search).get('next');
+      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const nextPath = sanitizeNextPath(nextHint || currentPath, '/');
+      const url = buildAppleAuthorizationUrl({
+        clientId,
+        origin: window.location.origin,
+        nextPath,
+      });
+      window.location.assign(url.toString());
+    } catch {
+      setErrors({ general: 'Falha ao autenticar com Apple.' });
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleFacebookAccessToken = useCallback(
+    async (accessToken: string) => {
+      setErrors({});
+      setInfoMessage('');
+      setIsLoading(true);
+
+      const result = await signInWithFacebook(accessToken);
+
+      if (!result.success) {
+        if (result.error?.includes('confirmar a vinculação')) {
+          setMagicLinkSent(true);
+          setInfoMessage(result.error);
+        } else {
+          setErrors({ general: result.error || 'Falha ao autenticar com Facebook.' });
+        }
+        setIsLoading(false);
+        return result;
+      }
+
+      setIsLoading(false);
+      onClose();
+      return result;
+    },
+    [onClose, signInWithFacebook],
+  );
+
+  const {
+    available: facebookAvailable,
+    signInWithFacebook: beginFacebookSignIn,
+    isSubmitting: isFacebookSubmitting,
+  } = useFacebookSignIn({
+    disabled: isLoading,
+    onAccessToken: handleFacebookAccessToken,
+    onError: (message) => {
+      if (message.includes('confirmar a vinculação')) {
+        setErrors({});
+        setMagicLinkSent(true);
+        setInfoMessage(message);
+        return;
+      }
+      setInfoMessage('');
+      setErrors({ general: message });
+    },
+  });
 
   const handleBack = () => {
     setStep('email');
@@ -169,6 +273,7 @@ export function AuthModal({
     setName('');
     setAcceptedTerms(false);
     setErrors({});
+    setInfoMessage('');
   };
 
   const handleForgotPassword = async () => {
@@ -177,6 +282,8 @@ export function AuthModal({
       return;
     }
     setErrors({});
+    setInfoMessage('');
+    setMagicLinkSent(false);
     setIsLoading(true);
     try {
       const res = await fetch('/api/auth/forgot-password', {
@@ -189,9 +296,35 @@ export function AuthModal({
         setErrors({ password: data.message || 'Erro ao enviar e-mail de recuperacao.' });
       } else {
         setForgotSent(true);
+        setInfoMessage('');
       }
     } catch {
       setErrors({ password: 'Erro ao enviar e-mail de recuperacao. Tente novamente.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRequestMagicLink = async () => {
+    if (!email.trim()) {
+      setErrors({ email: 'Preencha o e-mail primeiro.' });
+      return;
+    }
+
+    setErrors({});
+    setInfoMessage('');
+    setForgotSent(false);
+    setIsLoading(true);
+
+    try {
+      const result = await requestMagicLink(email.trim());
+      if (!result.success) {
+        setErrors({ email: result.error || 'Erro ao enviar link mágico.' });
+        return;
+      }
+
+      setMagicLinkSent(true);
+      setInfoMessage(result.message || 'Link mágico enviado. Verifique sua caixa de entrada.');
     } finally {
       setIsLoading(false);
     }
@@ -205,7 +338,9 @@ export function AuthModal({
     setName('');
     setAcceptedTerms(false);
     setErrors({});
+    setInfoMessage('');
     setForgotSent(false);
+    setMagicLinkSent(false);
   };
 
   const passwordStrength = getPasswordStrength(password);
@@ -271,6 +406,33 @@ export function AuthModal({
                   onError={handleGoogleError}
                 />
 
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isLoading}
+                  onClick={handleAppleSignIn}
+                  className="h-11 w-full rounded-xl border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+                >
+                  <AppleAuthIcon />
+                  Continuar com Apple
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isLoading || isFacebookSubmitting || !facebookAvailable}
+                  onClick={() => void beginFacebookSignIn()}
+                  className="h-11 w-full rounded-xl border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M13.5 21v-8.02h2.69l.4-3.13H13.5V7.86c0-.91.25-1.53 1.56-1.53H16.7V3.52c-.28-.04-1.23-.12-2.34-.12-2.31 0-3.89 1.41-3.89 4v2.45H7.86v3.13h2.61V21h3.03z"
+                    />
+                  </svg>
+                  Continuar com Facebook
+                </Button>
+
                 <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-gray-200" />
                   <span className="text-xs uppercase tracking-[0.18em] text-gray-400">ou</span>
@@ -293,14 +455,37 @@ export function AuthModal({
                   {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
                 </div>
 
-                <Button
-                  type="submit"
-                  onClick={handleEmailContinue}
-                  disabled={!email}
-                  className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
-                >
-                  Continuar
-                </Button>
+                <div className="space-y-3">
+                  <Button
+                    type="submit"
+                    onClick={handleEmailContinue}
+                    disabled={!email}
+                    className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
+                  >
+                    Continuar
+                  </Button>
+
+                  {mode === 'login' ? (
+                    <button
+                      type="button"
+                      onClick={handleRequestMagicLink}
+                      disabled={isLoading || !email}
+                      className="w-full text-center text-sm text-gray-500 transition-colors hover:text-gray-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Receber link mágico
+                    </button>
+                  ) : null}
+
+                  {mode === 'login' && magicLinkSent ? (
+                    <p className="text-center text-sm text-gray-500">
+                      {infoMessage || 'Link mágico enviado. Verifique sua caixa de entrada.'}
+                    </p>
+                  ) : null}
+
+                  {!magicLinkSent && infoMessage ? (
+                    <p className="text-center text-sm text-gray-500">{infoMessage}</p>
+                  ) : null}
+                </div>
               </div>
 
               {/* Switch Mode Link */}
@@ -512,20 +697,37 @@ export function AuthModal({
                     {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
                   </div>
 
-                  {forgotSent ? (
-                    <p className="text-sm text-gray-500">
-                      E-mail de recuperacao enviado. Verifique sua caixa de entrada.
-                    </p>
-                  ) : (
+                  <div className="space-y-2">
+                    {forgotSent ? (
+                      <p className="text-sm text-gray-500">
+                        E-mail de recuperacao enviado. Verifique sua caixa de entrada.
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={isLoading}
+                        className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+                      >
+                        Esqueci minha senha
+                      </button>
+                    )}
+
                     <button
                       type="button"
-                      onClick={handleForgotPassword}
+                      onClick={handleRequestMagicLink}
                       disabled={isLoading}
-                      className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+                      className="text-sm text-gray-500 hover:text-gray-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Esqueci minha senha
+                      Receber link mágico
                     </button>
-                  )}
+
+                    {magicLinkSent ? (
+                      <p className="text-sm text-gray-500">
+                        Link mágico enviado. Verifique sua caixa de entrada.
+                      </p>
+                    ) : null}
+                  </div>
 
                   <Button
                     type="submit"

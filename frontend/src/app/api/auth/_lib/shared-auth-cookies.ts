@@ -86,6 +86,12 @@ export function setSharedAuthCookies(
   return response;
 }
 
+export function hasSharedAuthToken(payload: unknown): boolean {
+  const payloadRecord = readRecord(payload);
+  const accessToken = readString(payloadRecord?.access_token ?? payloadRecord?.accessToken);
+  return Boolean(accessToken);
+}
+
 export function clearSharedAuthCookies(request: NextRequest, response: NextResponse) {
   const options = cookieOptions(request);
 

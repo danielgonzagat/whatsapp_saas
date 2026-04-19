@@ -32,6 +32,15 @@ function createWhatsAppApiError(message: string, status = 0): WhatsAppApiError {
   return error;
 }
 
+function buildLegacyQrDisabledResponse() {
+  return {
+    qrCode: null,
+    connected: false,
+    status: 'legacy_disabled',
+    message: 'Runtime legado descontinuado. Use a integração Meta.',
+  } as const;
+}
+
 function isConnectedWhatsAppStatus(data: Record<string, unknown> | undefined): boolean {
   const rawStatus = String(data?.status || '').toUpperCase();
   return (
@@ -40,6 +49,41 @@ function isConnectedWhatsAppStatus(data: Record<string, unknown> | undefined): b
     rawStatus === 'WORKING' ||
     rawStatus === 'CONNECTED'
   );
+}
+
+function normalizeWhatsAppProviderSurface(value: unknown): string | undefined {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
+
+  if (!normalized) return undefined;
+  if (
+    normalized === 'whatsapp-api' ||
+    normalized === 'waha' ||
+    normalized === 'legacy-runtime' ||
+    normalized === 'whatsapp-web-agent'
+  ) {
+    return 'legacy-runtime';
+  }
+  return normalized;
+}
+
+function isLegacyRuntimeProvider(value: unknown): boolean {
+  return normalizeWhatsAppProviderSurface(value) === 'legacy-runtime';
+}
+
+function normalizeSessionStartMessage(message: unknown): string | undefined {
+  const normalized = String(message || '').trim();
+  if (!normalized) return undefined;
+
+  switch (normalized) {
+    case 'legacy_runtime_disabled':
+      return 'O runtime legado foi descontinuado. Abra o fluxo oficial da Meta.';
+    case 'meta_embedded_signup_not_configured':
+      return 'Meta Embedded Signup não configurado no servidor.';
+    default:
+      return normalized;
+  }
 }
 
 function normalizeWsBase(value: string | undefined): string {
@@ -80,7 +124,7 @@ export function buildWhatsAppScreencastWsUrl(workspaceId: string, token?: string
 
   const safeToken = String(token || '').trim();
   return `${base}/stream/${encodeURIComponent(workspaceId)}?token=${encodeURIComponent(
-    safeToken || 'guest',
+    safeToken || 'visitor',
   )}`;
 }
 
@@ -94,6 +138,9 @@ interface WhatsAppStatusRaw {
   authUrl?: string;
   phoneNumberId?: string;
   whatsappBusinessId?: string | null;
+  qualityRating?: string | null;
+  codeVerificationStatus?: string | null;
+  nameStatus?: string | null;
   qr?: string;
   qrCode?: string;
   qrCodeImage?: string;
@@ -126,8 +173,13 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
   const data = res.data as WhatsAppStatusRaw | undefined;
   const connected = isConnectedWhatsAppStatus(data as Record<string, unknown>);
   const rawStatus = String(data?.status || '');
+  const provider = normalizeWhatsAppProviderSurface(data?.provider || data?.providerType);
+  const activeProvider = normalizeWhatsAppProviderSurface(data?.activeProvider);
+  const legacyRuntime = isLegacyRuntimeProvider(provider || activeProvider);
   const normalizedStatus = connected
     ? 'connected'
+    : rawStatus === 'SCAN_QR_CODE' || rawStatus === 'STARTING' || rawStatus === 'OPENING'
+      ? 'connecting'
     : rawStatus === 'CONNECTION_INCOMPLETE'
       ? 'connection_incomplete'
       : rawStatus
@@ -142,27 +194,31 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
     authUrl: data?.authUrl || undefined,
     phoneNumberId: data?.phoneNumberId || undefined,
     whatsappBusinessId: data?.whatsappBusinessId || null,
-    qrCode: data?.qr || data?.qrCode || data?.qrCodeImage || undefined,
+    qualityRating: data?.qualityRating || null,
+    codeVerificationStatus: data?.codeVerificationStatus || null,
+    nameStatus: data?.nameStatus || null,
+    qrCode: legacyRuntime ? undefined : data?.qr || data?.qrCode || data?.qrCodeImage || undefined,
     message: data?.message,
-    provider: data?.provider || data?.providerType,
+    provider,
     degradedReason: data?.degradedReason || null,
     workerAvailable: typeof data?.workerAvailable === 'boolean' ? data.workerAvailable : true,
     workerHealthy: typeof data?.workerHealthy === 'boolean' ? data.workerHealthy : undefined,
     workerError: data?.workerError || null,
     degraded: Boolean(data?.degraded),
-    qrAvailable:
-      typeof data?.qrAvailable === 'boolean'
+    qrAvailable: legacyRuntime
+      ? false
+      : typeof data?.qrAvailable === 'boolean'
         ? data.qrAvailable
         : Boolean(data?.qr || data?.qrCode || data?.qrCodeImage),
-    browserSessionStatus: data?.browserSessionStatus || undefined,
-    screencastStatus: data?.screencastStatus || undefined,
-    viewerAvailable: Boolean(data?.viewerAvailable),
+    browserSessionStatus: legacyRuntime ? undefined : data?.browserSessionStatus || undefined,
+    screencastStatus: legacyRuntime ? undefined : data?.screencastStatus || undefined,
+    viewerAvailable: legacyRuntime ? false : Boolean(data?.viewerAvailable),
     takeoverActive: Boolean(data?.takeoverActive),
     agentPaused: Boolean(data?.agentPaused),
     lastObservationAt: data?.lastObservationAt || null,
     lastActionAt: data?.lastActionAt || null,
     observationSummary: data?.observationSummary || null,
-    activeProvider: data?.activeProvider || null,
+    activeProvider: activeProvider || null,
     proofCount: Number(data?.proofCount || 0) || 0,
     viewport: data?.viewport,
   };
@@ -181,9 +237,6 @@ export async function initiateWhatsAppConnection(
     success?: boolean;
     message?: string;
     authUrl?: string;
-    qr?: string;
-    qrCode?: string;
-    qrCodeImage?: string;
   }
   const data = res.data as SessionStartData | undefined;
   return {
@@ -195,10 +248,8 @@ export async function initiateWhatsAppConnection(
           : data?.authUrl
             ? 'connect_required'
             : 'pending',
-    message: data?.message,
+    message: normalizeSessionStartMessage(data?.message),
     authUrl: data?.authUrl,
-    qrCode: data?.qr || data?.qrCode,
-    qrCodeImage: data?.qrCodeImage || data?.qr || data?.qrCode,
     error: data?.success === false,
   };
 }
@@ -206,60 +257,13 @@ export async function initiateWhatsAppConnection(
 export async function getWhatsAppQR(
   _workspaceId: string,
 ): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
-  const [qrResponse, statusResponse] = await Promise.all([
-    getWhatsAppQrImageOnly(_workspaceId),
-    apiFetch<Record<string, unknown>>(`/api/whatsapp-api/session/status`),
-  ]);
-
-  if (statusResponse.error) {
-    throw createWhatsAppApiError(statusResponse.error, statusResponse.status);
-  }
-
-  interface StatusData {
-    status?: string;
-    message?: string;
-    connected?: boolean;
-  }
-  const statusData = (statusResponse.data || {}) as StatusData;
-  const connected = isConnectedWhatsAppStatus(statusData as Record<string, unknown>);
-
-  return {
-    qrCode: qrResponse.qrCode,
-    connected,
-    status: connected
-      ? 'connected'
-      : String(statusData.status || qrResponse.status || 'pending').toLowerCase(),
-    message: qrResponse.message || statusData.message || undefined,
-  };
+  return buildLegacyQrDisabledResponse();
 }
 
 export async function getWhatsAppQrImageOnly(
   _workspaceId: string,
 ): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
-  const qrResponse = await apiFetch<Record<string, unknown>>(`/api/whatsapp-api/session/qr`);
-
-  if (qrResponse.error) {
-    throw createWhatsAppApiError(qrResponse.error, qrResponse.status);
-  }
-
-  interface QrData {
-    status?: string;
-    connected?: boolean;
-    qr?: string;
-    qrCode?: string;
-    message?: string;
-  }
-  const qrData = (qrResponse.data || {}) as QrData;
-  const rawStatus = String(qrData.status || '').toLowerCase();
-  const connected =
-    qrData.connected === true || rawStatus === 'connected' || rawStatus === 'working';
-
-  return {
-    qrCode: qrData.qr || qrData.qrCode || null,
-    connected,
-    status: rawStatus || undefined,
-    message: qrData.message || undefined,
-  };
+  return buildLegacyQrDisabledResponse();
 }
 
 export async function disconnectWhatsApp(_workspaceId: string): Promise<unknown> {
@@ -283,7 +287,7 @@ export async function logoutWhatsApp(_workspaceId: string): Promise<unknown> {
 export async function getWhatsAppViewer(_workspaceId: string): Promise<unknown> {
   return {
     success: true,
-    provider: 'whatsapp-api',
+    provider: 'meta-cloud',
     snapshot: {
       connected: false,
       viewerAvailable: false,
@@ -366,7 +370,7 @@ export async function runWhatsAppActionTurn(
     objective,
     dryRun,
     mode,
-    message: 'Action turn nao existe no runtime Meta Cloud.',
+    message: 'Action turn nao existe no runtime oficial do WhatsApp.',
   };
 }
 
@@ -407,15 +411,16 @@ export async function repairWhatsAppSessionConfig(_workspaceId: string): Promise
 
 export async function linkWhatsAppSession(
   _workspaceId: string,
-  sessionName: string,
+  _sessionName: string,
 ): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/link`, {
-    method: 'POST',
-    body: { sessionName },
-  });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
-  invalidateWhatsApp();
-  return res.data;
+  return {
+    success: false,
+    provider: 'meta-cloud',
+    feature: 'legacy_session_link',
+    notSupported: true,
+    reason: 'legacy_session_link_not_supported_for_meta_cloud',
+    message: 'Descontinuado. Use a integração Meta.',
+  };
 }
 
 export async function recreateWhatsAppSessionIfInvalid(_workspaceId: string): Promise<unknown> {

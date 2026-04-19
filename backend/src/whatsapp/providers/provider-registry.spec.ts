@@ -101,6 +101,9 @@ describe('WhatsAppProviderRegistry', () => {
       authUrl: 'https://meta.test/signup',
       phoneNumberId: 'pnid-1',
       whatsappBusinessId: 'waba-1',
+      qualityRating: 'GREEN',
+      codeVerificationStatus: 'VERIFIED',
+      nameStatus: 'APPROVED',
       error: null,
     });
 
@@ -115,6 +118,9 @@ describe('WhatsAppProviderRegistry', () => {
       authUrl: 'https://meta.test/signup',
       phoneNumberId: 'pnid-1',
       whatsappBusinessId: 'waba-1',
+      qualityRating: 'GREEN',
+      codeVerificationStatus: 'VERIFIED',
+      nameStatus: 'APPROVED',
       degradedReason: null,
     });
     expect(prisma.workspace.update).toHaveBeenCalledWith(
@@ -129,6 +135,9 @@ describe('WhatsAppProviderRegistry', () => {
               pushName: 'Loja Teste',
               authUrl: 'https://meta.test/signup',
               sessionName: 'ws-1',
+              qualityRating: 'GREEN',
+              codeVerificationStatus: 'VERIFIED',
+              nameStatus: 'APPROVED',
             }),
           }),
         }),
@@ -147,6 +156,9 @@ describe('WhatsAppProviderRegistry', () => {
           authUrl: { broken: true },
           phoneNumberId: { broken: true },
           whatsappBusinessId: { broken: true },
+          qualityRating: { broken: true },
+          codeVerificationStatus: { broken: true },
+          nameStatus: { broken: true },
         },
       },
     });
@@ -157,6 +169,9 @@ describe('WhatsAppProviderRegistry', () => {
       authUrl: null,
       phoneNumberId: null,
       whatsappBusinessId: null,
+      qualityRating: null,
+      codeVerificationStatus: null,
+      nameStatus: null,
       error: null,
     });
 
@@ -171,6 +186,9 @@ describe('WhatsAppProviderRegistry', () => {
       authUrl: undefined,
       phoneNumberId: undefined,
       whatsappBusinessId: undefined,
+      qualityRating: undefined,
+      codeVerificationStatus: undefined,
+      nameStatus: undefined,
       degradedReason: null,
     });
   });

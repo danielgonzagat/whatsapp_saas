@@ -1,8 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Workspace } from '@prisma/client';
+import { normalizeCalendarCredentialsForStorage } from '../calendar/calendar-credentials.crypto';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import {
+  asProviderSettings,
+  type ProviderCalendarSettings,
+} from '../whatsapp/provider-settings.types';
 import {
   normalizeWhatsAppProvider,
   resolveDefaultWhatsAppProvider,
@@ -48,6 +52,7 @@ export class WorkspaceService {
     const securePatch = { ...(patch || {}) } as Record<string, unknown> & {
       autonomy?: { mode?: string } & Record<string, unknown>;
       autopilot?: { enabled?: boolean } & Record<string, unknown>;
+      calendar?: ProviderCalendarSettings;
     };
     const mergedAutonomy = {
       ...(current.autonomy || {}),
@@ -67,6 +72,29 @@ export class WorkspaceService {
         : autonomyModePatch
           ? ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyModePatch)
           : current?.autopilot?.enabled;
+    const currentCalendar =
+      current.calendar && typeof current.calendar === 'object' && !Array.isArray(current.calendar)
+        ? current.calendar
+        : undefined;
+    const calendarPatch =
+      securePatch.calendar &&
+      typeof securePatch.calendar === 'object' &&
+      !Array.isArray(securePatch.calendar)
+        ? securePatch.calendar
+        : undefined;
+    const mergedCalendar =
+      currentCalendar || calendarPatch
+        ? {
+            ...(currentCalendar || {}),
+            ...(calendarPatch || {}),
+            ...((currentCalendar?.credentials || calendarPatch?.credentials) && {
+              credentials: normalizeCalendarCredentialsForStorage({
+                ...((currentCalendar?.credentials as Record<string, unknown>) || {}),
+                ...((calendarPatch?.credentials as Record<string, unknown>) || {}),
+              }),
+            }),
+          }
+        : undefined;
 
     const merged = {
       ...current,
@@ -78,6 +106,7 @@ export class WorkspaceService {
           ? { enabled: synchronizedAutopilotEnabled }
           : {}),
       },
+      ...(mergedCalendar ? { calendar: mergedCalendar } : {}),
       ...(securePatch.autonomy || current?.autonomy ? { autonomy: mergedAutonomy } : {}),
     };
     return this.prisma.workspace.update({

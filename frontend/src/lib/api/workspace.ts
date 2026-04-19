@@ -41,7 +41,8 @@ export async function saveWorkspaceSettings(
 export interface ApiKey {
   id: string;
   name: string;
-  key: string;
+  key?: string;
+  maskedKey?: string | null;
   createdAt: string;
   lastUsedAt?: string;
 }

@@ -191,7 +191,7 @@ export class WhatsAppCatchupService {
       .trim()
       .toLowerCase();
 
-    if (normalizedName === 'guest workspace') {
+    if (normalizedName === 'guest workspace' || normalizedName === 'workspace temporario') {
       return true;
     }
 
@@ -211,7 +211,7 @@ export class WhatsAppCatchupService {
     const lifecycle = (settings?.whatsappLifecycle || {}) as Record<string, unknown>;
 
     if (this.isGuestWorkspace(workspaceName, settings)) {
-      return 'guest_workspace_disabled';
+      return 'visitor_workspace_disabled';
     }
 
     if (
@@ -596,9 +596,9 @@ export class WhatsAppCatchupService {
         phase: 'sync_error',
         persistent: true,
         message: sessionMissing
-          ? 'Não consegui sincronizar porque a sessão do WhatsApp não existe mais no WAHA. Reconecte pelo QR code.'
+          ? 'Não consegui sincronizar porque a integração oficial do WhatsApp não está mais disponível. Reconecte seus canais Meta para continuar.'
           : recoveryBlockedReason
-            ? 'Não consegui sincronizar suas conversas porque o WAHA está sem NOWEB store habilitado. Corrija a configuração da sessão antes de tentar reconectar.'
+            ? 'Não consegui sincronizar suas conversas porque o histórico remoto completo não está habilitado nesta conexão. Corrija a configuração da sessão antes de tentar reconectar.'
             : `Não consegui sincronizar suas conversas. Motivo: ${errorMessage}.`,
         meta: {
           importedMessages,
@@ -1081,7 +1081,7 @@ export class WhatsAppCatchupService {
       message:
         input.processedChats > 0
           ? 'Sincronização concluída. Vou começar imediatamente a zerar as conversas não lidas.'
-          : 'Sincronização concluída. Vou conferir imediatamente se ainda restam conversas não lidas no WAHA.',
+          : 'Sincronização concluída. Vou conferir imediatamente se ainda restam conversas não lidas para responder.',
       meta: {
         reason: input.reason,
         processedChats: input.processedChats,

@@ -1,8 +1,8 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
-import { GuestChatController } from './guest-chat.controller';
-import { GuestChatService } from './guest-chat.service';
+import { VisitorChatController } from './guest-chat.controller';
+import { VisitorChatService } from './guest-chat.service';
 import { KloelController } from './kloel.controller';
 import { KloelService } from './kloel.service';
 import { OnboardingController } from './onboarding.controller';
@@ -74,7 +74,7 @@ import { WebinarController } from './webinar.controller';
   ],
   controllers: [
     KloelController,
-    GuestChatController,
+    VisitorChatController,
     WhatsAppBrainController,
     PaymentController,
     OnboardingController,
@@ -106,7 +106,7 @@ import { WebinarController } from './webinar.controller';
   ],
   providers: [
     KloelService,
-    GuestChatService,
+    VisitorChatService,
     WhatsAppBrainService,
     PaymentService,
     OnboardingService,
@@ -129,7 +129,7 @@ import { WebinarController } from './webinar.controller';
   ],
   exports: [
     KloelService,
-    GuestChatService,
+    VisitorChatService,
     WhatsAppBrainService,
     PaymentService,
     OnboardingService,
