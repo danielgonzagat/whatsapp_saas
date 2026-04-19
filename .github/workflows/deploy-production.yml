@@ -15,7 +15,7 @@ on:
         default: main
 
 concurrency:
-  group: deploy-production
+  group: deploy-production-${{ inputs.git_ref || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -44,12 +44,12 @@ jobs:
       DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.git_ref || 'main' }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'

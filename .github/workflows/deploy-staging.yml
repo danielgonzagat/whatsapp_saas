@@ -19,7 +19,7 @@ on:
         default: main
 
 concurrency:
-  group: deploy-staging
+  group: deploy-staging-${{ inputs.git_ref || github.event.workflow_run.head_branch || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -57,12 +57,12 @@ jobs:
             echo "git_ref=${{ github.event.inputs.git_ref || 'main' }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ steps.ref.outputs.git_ref }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
