@@ -71,6 +71,7 @@ import {
   normalizeZipCodeInput,
   parsePercentValue,
 } from './ProductNerveCenter.helpers';
+import { applyProductSync } from './ProductNerveCenter.effects';
 
 /* ═══════════════════════════════════════════════════
    V — KLOEL Terminator palette (Nerve Center)
@@ -363,25 +364,26 @@ export default function ProductNerveCenter({
 
   /* ── Sync form from product data ── */
   useEffect(() => {
-    if (p?.name) {
-      setEditName(p.name || '');
-      setEditDesc(p.description || '');
-      setEditCategory(p.category || '');
-      setEditTags(Array.isArray(p.tags) ? p.tags.join(', ') : p.tags || '');
-      setEditWarranty(Math.max(7, Number(p.warrantyDays || 7)));
-      setEditSalesUrl(p.salesPageUrl || '');
-      setEditThankUrl(p.thankyouUrl || '');
-      setEditThankPix(p.thankyouPixUrl || '');
-      setEditThankBoleto(p.thankyouBoletoUrl || '');
-      setEditReclame(p.reclameAquiUrl || '');
-      setEditSupportEmail(p.supportEmail || '');
-      setEditActive(p.active !== false);
-      setEditFormat(p.format || 'DIGITAL');
-      if (!userChangedImage.current && !hasLocalPreview) {
-        const persistedImageUrl = p.imageUrl || '';
-        setEditImageUrl((current) => persistedImageUrl || current || '');
-        setImageCleared(false);
-      }
+    if (!p?.name) return;
+    applyProductSync(p, {
+      setEditName,
+      setEditDesc,
+      setEditCategory,
+      setEditTags,
+      setEditWarranty,
+      setEditSalesUrl,
+      setEditThankUrl,
+      setEditThankPix,
+      setEditThankBoleto,
+      setEditReclame,
+      setEditSupportEmail,
+      setEditActive,
+      setEditFormat,
+    });
+    if (!userChangedImage.current && !hasLocalPreview) {
+      const persistedImageUrl = p.imageUrl || '';
+      setEditImageUrl((current) => persistedImageUrl || current || '');
+      setImageCleared(false);
     }
   }, [
     p?.id,
