@@ -74,10 +74,17 @@ psql "$STAGING_DB_URL" < kloel-prod-YYYY-MM-DD.sql
 
 ```bash
 # Check table count
-psql "$STAGING_DB_URL" -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';"
+psql "$STAGING_DB_URL" -c \
+  "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';"
 
 # Check critical tables have data
-psql "$STAGING_DB_URL" -c "SELECT 'Workspace' as t, count(*) FROM \"Workspace\" UNION ALL SELECT 'Agent', count(*) FROM \"Agent\" UNION ALL SELECT 'Product', count(*) FROM \"Product\" UNION ALL SELECT 'Payment', count(*) FROM \"Payment\";"
+psql "$STAGING_DB_URL" -c "$(cat <<'SQL'
+SELECT 'Workspace' as t, count(*) FROM "Workspace"
+UNION ALL SELECT 'Agent', count(*) FROM "Agent"
+UNION ALL SELECT 'Product', count(*) FROM "Product"
+UNION ALL SELECT 'Payment', count(*) FROM "Payment";
+SQL
+)"
 
 # Run Prisma validation
 cd backend && DATABASE_URL="$STAGING_DB_URL" npx prisma validate
@@ -153,10 +160,12 @@ S3 versioning is enabled. Deleted or overwritten files can be recovered:
 
 ```bash
 # List deleted objects
-aws s3api list-object-versions --bucket kloel-assets --prefix uploads/ --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}'
+aws s3api list-object-versions --bucket kloel-assets --prefix uploads/ \
+  --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}'
 
 # Restore a specific file
-aws s3api delete-object --bucket kloel-assets --key uploads/FILE_KEY --version-id DELETE_MARKER_VERSION_ID
+aws s3api delete-object --bucket kloel-assets --key uploads/FILE_KEY \
+  --version-id DELETE_MARKER_VERSION_ID
 ```
 
 ### Step 2: Full Bucket Restore (if needed)

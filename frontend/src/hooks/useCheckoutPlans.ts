@@ -119,33 +119,53 @@ interface PlanCreateBody {
 }
 
 /* ── Ensure a checkout-compatible product exists for the dashboard Product ── */
+function extractCheckoutProductList(
+  raw: CheckoutProductItem[] | CheckoutProductListResponse | undefined,
+): CheckoutProductItem[] {
+  if (Array.isArray(raw)) return raw;
+  const envelope = raw as CheckoutProductListResponse | undefined;
+  return envelope?.products || envelope?.data || [];
+}
+
+function matchesProduct(candidate: CheckoutProductItem, product: DashboardProduct): boolean {
+  return candidate.slug === product.slug || candidate.name === product.name;
+}
+
+function buildCheckoutProductBody(product: DashboardProduct) {
+  return {
+    name: product.name,
+    slug: product.slug || product.id,
+    description: product.description,
+    images: product.images || [],
+    category: product.category,
+    price: product.price || 0,
+  };
+}
+
+async function findExistingCheckoutProductId(
+  product: DashboardProduct,
+): Promise<string | null | undefined> {
+  const res = await apiFetch<CheckoutProductItem[] | CheckoutProductListResponse>(
+    '/checkout/products',
+  );
+  const list = extractCheckoutProductList(res.data);
+  const found = list.find((candidate) => matchesProduct(candidate, product));
+  return found ? found.id : undefined;
+}
+
+async function createCheckoutProductId(product: DashboardProduct): Promise<string | null> {
+  const created = await apiFetch<CheckoutProductItem>('/checkout/products', {
+    method: 'POST',
+    body: buildCheckoutProductBody(product),
+  });
+  return created?.data?.id || null;
+}
+
 async function ensureCheckoutProduct(product: DashboardProduct): Promise<string | null> {
   try {
-    const res = await apiFetch<CheckoutProductItem[] | CheckoutProductListResponse>(
-      '/checkout/products',
-    );
-    const raw = res.data;
-    const list: CheckoutProductItem[] = Array.isArray(raw)
-      ? raw
-      : (raw as CheckoutProductListResponse)?.products ||
-        (raw as CheckoutProductListResponse)?.data ||
-        [];
-    const found = list.find((p) => p.slug === product.slug || p.name === product.name);
-    if (found) return found.id;
-
-    // Create checkout product from dashboard product
-    const created = await apiFetch<CheckoutProductItem>('/checkout/products', {
-      method: 'POST',
-      body: {
-        name: product.name,
-        slug: product.slug || product.id,
-        description: product.description,
-        images: product.images || [],
-        category: product.category,
-        price: product.price || 0,
-      },
-    });
-    return created?.data?.id || null;
+    const existingId = await findExistingCheckoutProductId(product);
+    if (existingId !== undefined) return existingId;
+    return await createCheckoutProductId(product);
   } catch {
     return null;
   }

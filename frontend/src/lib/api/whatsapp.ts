@@ -56,14 +56,15 @@ async function whatsappMutatingRequest<T = unknown>(
   return data;
 }
 
+const CONNECTED_WHATSAPP_STATUS_LABELS = new Set(['CONNECTED', 'WORKING']);
+
+function readWhatsAppStatusLabel(data: Record<string, unknown> | undefined): string {
+  return String(data?.status || '').toUpperCase();
+}
+
 function isConnectedWhatsAppStatus(data: Record<string, unknown> | undefined): boolean {
-  const rawStatus = String(data?.status || '').toUpperCase();
-  return (
-    data?.connected === true ||
-    rawStatus === 'CONNECTED' ||
-    rawStatus === 'WORKING' ||
-    rawStatus === 'CONNECTED'
-  );
+  if (data?.connected === true) return true;
+  return CONNECTED_WHATSAPP_STATUS_LABELS.has(readWhatsAppStatusLabel(data));
 }
 
 function normalizeWsBase(value: string | undefined): string {

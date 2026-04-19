@@ -81,7 +81,8 @@
 
 ### Scenario 1: Database Loss
 
-**Symptoms:** Application returns 500 errors, Prisma connection timeouts, "relation does not exist" errors.
+**Symptoms:** Application returns 500 errors, Prisma connection timeouts, "relation does not exist"
+errors.
 
 **Steps:**
 
@@ -124,7 +125,8 @@
 
 ### Scenario 2: Redis Loss
 
-**Symptoms:** Slow responses, BullMQ jobs not processing, rate limiting not working, stale cache data.
+**Symptoms:** Slow responses, BullMQ jobs not processing, rate limiting not working, stale cache
+data.
 
 **Steps:**
 
@@ -220,7 +222,8 @@
 3. **Check SSL certificate**
 
    ```bash
-   openssl s_client -connect kloel.com:443 -servername kloel.com 2>/dev/null | openssl x509 -noout -dates
+   openssl s_client -connect kloel.com:443 -servername kloel.com 2>/dev/null \
+     | openssl x509 -noout -dates
    ```
 
 4. **If Vercel DNS issue:**

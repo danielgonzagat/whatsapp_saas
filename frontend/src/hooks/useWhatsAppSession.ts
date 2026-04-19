@@ -24,18 +24,22 @@ interface UseWhatsAppSessionOptions {
   onConnectionChange?: (connected: boolean) => void;
 }
 
-function isPendingQrStatus(status?: string | null): boolean {
-  const normalized = String(status || '')
+const PENDING_QR_STATUSES = new Set([
+  'qr_pending',
+  'scan_qr_code',
+  'starting',
+  'opening',
+  'connecting',
+]);
+
+function normalizeStatusKey(status?: string | null): string {
+  return String(status || '')
     .trim()
     .toLowerCase();
+}
 
-  return (
-    normalized === 'qr_pending' ||
-    normalized === 'scan_qr_code' ||
-    normalized === 'starting' ||
-    normalized === 'opening' ||
-    normalized === 'connecting'
-  );
+function isPendingQrStatus(status?: string | null): boolean {
+  return PENDING_QR_STATUSES.has(normalizeStatusKey(status));
 }
 
 function resolveStatusMessage(data: { connected: boolean; status?: string | null }): string {

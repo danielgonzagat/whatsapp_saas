@@ -49,18 +49,38 @@ function readMeta(obj: Record<string, unknown>): Record<string, unknown> | undef
   return obj.meta as Record<string, unknown> | undefined;
 }
 
+function firstDefinedNumber(
+  candidates: Array<number | undefined | null | unknown>,
+  fallback: number,
+): number {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) return candidate;
+  }
+  return fallback;
+}
+
+function firstDefinedBoolean(
+  candidates: Array<boolean | undefined | null | unknown>,
+): boolean | undefined {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'boolean') return candidate;
+  }
+  return undefined;
+}
+
 function extractTotal(obj: Record<string, unknown>, fallback: number): number {
-  return (
-    (obj.count as number) ?? (obj.total as number) ?? (readMeta(obj)?.total as number) ?? fallback
-  );
+  const meta = readMeta(obj);
+  return firstDefinedNumber([obj.count, obj.total, meta?.total], fallback);
 }
 
 function extractPage(obj: Record<string, unknown>): number {
-  return (obj.page as number) ?? (readMeta(obj)?.page as number) ?? 1;
+  const meta = readMeta(obj);
+  return firstDefinedNumber([obj.page, meta?.page], 1);
 }
 
 function extractHasMore(obj: Record<string, unknown>): boolean | undefined {
-  return (obj.hasMore as boolean) ?? (readMeta(obj)?.hasMore as boolean) ?? undefined;
+  const meta = readMeta(obj);
+  return firstDefinedBoolean([obj.hasMore, meta?.hasMore]);
 }
 
 /**

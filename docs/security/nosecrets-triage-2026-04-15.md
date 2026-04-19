@@ -119,7 +119,8 @@ high-entropy by Biome's heuristic. Locations: `worker/bootstrap.ts:38`, `worker/
 - `frontend/src/proxy.ts:256:5` — Next.js middleware matcher regex (`/((?!_next/static|...).*)/`).
 - `backend/src/checkout/checkout-code.util.ts:3:23` — public-checkout-code alphabet
   `'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'`.
-- `frontend/src/components/kloel/landing/KloelLanding.tsx:17:12` — glitch-effect alphabet constant.
+- `frontend/src/components/kloel/landing/KloelLanding.tsx:17:12` — glitch-effect alphabet
+  constant.
 - `frontend/src/components/kloel/landing/FloatingChat.tsx:403:24` — CSS
   `animation: 'floatingChatFadeIn 150ms ease'`.
 
@@ -136,7 +137,8 @@ high-entropy by Biome's heuristic. Locations: `worker/bootstrap.ts:38`, `worker/
   `'inscricaoEstadual'`, `'inscricaoMunicipal'`.
 - `frontend/src/components/products/CheckoutConfigPage.tsx:778`, `:847`, `:930`, `:938` — checkout
   welcome-message form copy and onChange handler keys.
-- `backend/src/common/payment-state-machine.ts:3:27` — Logger context name `'PaymentStateMachine'`.
+- `backend/src/common/payment-state-machine.ts:3:27` — Logger context name
+  `'PaymentStateMachine'`.
 
 ## Not scanned
 

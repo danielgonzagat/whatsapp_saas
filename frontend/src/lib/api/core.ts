@@ -191,13 +191,31 @@ function emitStorageChange() {
   window.dispatchEvent(new Event(STORAGE_EVENT));
 }
 
+function tokenAuthenticatedScore(token: string): number {
+  return hasAuthenticatedKloelToken(token) ? 1000 : 0;
+}
+
+function tokenAnonymousPenalty(token: string): number {
+  return isAnonymousKloelToken(token) ? -1000 : 0;
+}
+
+function tokenNameScore(payload: Record<string, unknown> | null | undefined): number {
+  return String(payload?.name || '').trim() ? 100 : 0;
+}
+
+function tokenExpScore(payload: Record<string, unknown> | null | undefined): number {
+  const exp = payload?.exp;
+  return typeof exp === 'number' ? exp : 0;
+}
+
 function scoreTokenCandidate(token: string): number {
   const payload = decodeKloelJwtPayload(token);
-  const authenticatedScore = hasAuthenticatedKloelToken(token) ? 1000 : 0;
-  const anonymousPenalty = isAnonymousKloelToken(token) ? -1000 : 0;
-  const nameScore = String(payload?.name || '').trim() ? 100 : 0;
-  const expScore = typeof payload?.exp === 'number' ? payload.exp : 0;
-  return authenticatedScore + anonymousPenalty + nameScore + expScore;
+  return (
+    tokenAuthenticatedScore(token) +
+    tokenAnonymousPenalty(token) +
+    tokenNameScore(payload) +
+    tokenExpScore(payload)
+  );
 }
 
 function pickBestTokenCandidate(candidates: string[]): string | null {
@@ -679,36 +697,48 @@ function buildApiHeaders(
   return headers;
 }
 
-function appendQueryParams(baseUrl: string, params?: Record<string, string | undefined>): string {
-  if (!params) return baseUrl;
+function buildSearchParams(params: Record<string, string | undefined>): URLSearchParams {
   const searchParams = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined) searchParams.set(key, value);
   }
-  const qs = searchParams.toString();
+  return searchParams;
+}
+
+function joinQueryString(baseUrl: string, qs: string): string {
   if (!qs) return baseUrl;
-  return baseUrl + (baseUrl.includes('?') ? '&' : '?') + qs;
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}${qs}`;
+}
+
+function appendQueryParams(baseUrl: string, params?: Record<string, string | undefined>): string {
+  if (!params) return baseUrl;
+  return joinQueryString(baseUrl, buildSearchParams(params).toString());
+}
+
+function isRawBinaryBody(body: unknown): boolean {
+  return body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer;
+}
+
+function shouldSerializeAsJson(body: unknown): body is object {
+  return Boolean(body) && typeof body === 'object' && !isRawBinaryBody(body);
 }
 
 function serializeApiBody(body: unknown): BodyInit | null | undefined {
-  if (
-    body &&
-    typeof body === 'object' &&
-    !(body instanceof FormData) &&
-    !(body instanceof Blob) &&
-    !(body instanceof ArrayBuffer)
-  ) {
-    return JSON.stringify(body);
-  }
+  if (shouldSerializeAsJson(body)) return JSON.stringify(body);
   return body as BodyInit | null | undefined;
+}
+
+function normalizeErrorMessage(rawMessage: unknown): string | undefined {
+  if (Array.isArray(rawMessage)) return rawMessage.join(', ');
+  return rawMessage as string | undefined;
 }
 
 function buildErrorResponse<T>(
   data: { message?: unknown; error?: string },
   status: number,
 ): ApiResponse<T> {
-  const rawMsg = data.message;
-  const message = Array.isArray(rawMsg) ? rawMsg.join(', ') : (rawMsg as string | undefined);
+  const message = normalizeErrorMessage(data.message);
   return { error: message || data.error || `HTTP ${status}`, status };
 }
 

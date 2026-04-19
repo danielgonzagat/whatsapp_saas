@@ -59,7 +59,9 @@ rule is structurally incompatible.
 - `ESLint8_es-x_no-destructuring` — 38. Flags `const { x } = obj`.
 - `ESLint8_es-x_no-async-functions` — 37. Flags `async function`.
 
-Plus the long tail (`no-generators`, `no-classes`, `no-let`, `no-spread-elements`, etc.) — **disable the entire `es-x` rule group** rather than one at a time if the Codacy UI supports bulk-disable by plugin.
+Plus the long tail (`no-generators`, `no-classes`, `no-let`, `no-spread-elements`, etc.) —
+**disable the entire `es-x` rule group** rather than one at a time if the Codacy UI supports
+bulk-disable by plugin.
 
 **Subtotal**: ~945 issues in top 50, estimated ~1,100 total including tail.
 

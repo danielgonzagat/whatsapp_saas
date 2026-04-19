@@ -7,7 +7,8 @@
 
 ## Contexto
 
-O KLOEL precisava de uma base única para suportar checkout, Pix, webhooks, ledger, wallet e a futura camada de split multi-stakeholder sem fragmentação operacional.
+O KLOEL precisava de uma base única para suportar checkout, Pix, webhooks, ledger, wallet e a
+futura camada de split multi-stakeholder sem fragmentação operacional.
 
 A arquitetura anterior de pagamentos estava espalhada em múltiplas superfícies e impedia:
 

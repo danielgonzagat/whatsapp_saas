@@ -39,7 +39,8 @@ provedores legados do runtime ativo e deixando o repositório pronto para evolu�
 
 - Stripe é o único provider de pagamento ativo.
 - Toda evolução de pagamento deve partir do `Payment Kernel` e não de integrações paralelas.
-- Saldo exibido ao usuário continua sendo governado pelo ledger Kloel, não por saldo bruto do rail.
+- Saldo exibido ao usuário continua sendo governado pelo ledger Kloel, não por saldo bruto do
+  rail.
 - Qualquer mudança estrutural de pagamentos deve manter este plano e o ADR sincronizados.
 
 ## Próximos passos permitidos
