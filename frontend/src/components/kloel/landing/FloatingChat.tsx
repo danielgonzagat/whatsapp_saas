@@ -7,6 +7,11 @@ import { tokenStorage } from '@/lib/api/core';
 import { apiUrl } from '@/lib/http';
 import { parseKloelStreamPayload } from '@/lib/kloel-stream-events';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  buildPreparedMessages,
+  markAssistantEnded,
+  markAssistantError,
+} from './FloatingChat.helpers';
 
 interface FloatingChatProps {
   isOpen?: boolean;
@@ -367,42 +372,14 @@ export function FloatingChat({
       const controller = new AbortController();
       abortRef.current = controller;
 
-      setMessages((prev) => {
-        const next = [...prev];
-
-        if (appendUserMessage) {
-          next.push({
-            id: sourceUserId,
-            role: 'user',
-            content: text,
-          });
-        }
-
-        if (options?.replaceAssistantId) {
-          return next.map((message) =>
-            message.id === options.replaceAssistantId
-              ? {
-                  ...message,
-                  role: 'assistant',
-                  content: '',
-                  isStreaming: true,
-                  feedback: null,
-                  sourceUserId,
-                }
-              : message,
-          );
-        }
-
-        next.push({
-          id: assistantId,
-          role: 'assistant',
-          content: '',
-          isStreaming: true,
-          feedback: null,
-          sourceUserId,
-        });
-        return next;
-      });
+      const preparedPayload = {
+        text,
+        assistantId,
+        sourceUserId,
+        replaceAssistantId: options?.replaceAssistantId ?? null,
+        appendUserMessage,
+      };
+      setMessages((prev) => buildPreparedMessages(prev, preparedPayload));
       setInput('');
       setIsStreaming(true);
 
@@ -414,24 +391,12 @@ export function FloatingChat({
         }
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setMessages((prev) => {
-          return prev.map((message) =>
-            message.id === assistantId && message.role === 'assistant'
-              ? {
-                  ...message,
-                  content: message.content || 'Algo deu errado. Tenta de novo.',
-                  isStreaming: false,
-                }
-              : message,
-          );
-        });
+        setMessages((prev) =>
+          markAssistantError(prev, assistantId, 'Algo deu errado. Tenta de novo.'),
+        );
       } finally {
         setIsStreaming(false);
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === assistantId ? { ...message, isStreaming: false } : message,
-          ),
-        );
+        setMessages((prev) => markAssistantEnded(prev, assistantId));
       }
     },
     [isStreaming, isAuthenticated, streamAuthMessage, streamGuestMessage],
