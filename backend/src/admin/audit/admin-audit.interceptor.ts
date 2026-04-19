@@ -9,8 +9,8 @@ import type { Request } from 'express';
 import { type Observable, tap } from 'rxjs';
 import { NO_AUDIT_KEY } from '../auth/decorators/no-audit.decorator';
 import type { AuthenticatedAdmin } from '../auth/admin-token.types';
-import { sanitizeForAudit } from '../common/admin-sanitize';
 import { AdminAuditService } from './admin-audit.service';
+import { buildAdminAuditEntry } from './admin-audit-entry.builder';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -35,7 +35,7 @@ export class AdminAuditInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const entry = this.buildAuditEntry(context, req);
+    const entry = buildAdminAuditEntry(context, req);
 
     return next.handle().pipe(
       tap({
@@ -56,32 +56,4 @@ export class AdminAuditInterceptor implements NestInterceptor {
     ]);
     return !noAudit;
   }
-
-  private buildAuditEntry(
-    context: ExecutionContext,
-    req: Request & { admin?: AuthenticatedAdmin },
-  ) {
-    const path = req.path ?? req.url ?? '';
-    const action = `${context.getClass().name}.${context.getHandler().name}`;
-
-    return {
-      adminUserId: req.admin?.id ?? null,
-      action,
-      details: {
-        method: req.method,
-        path,
-        query: sanitizeForAudit(req.query ?? {}),
-        body: sanitizeForAudit(req.body ?? {}),
-        params: sanitizeForAudit(req.params ?? {}),
-      },
-      ip: resolveClientIp(req),
-      userAgent: req.headers['user-agent'] ?? null,
-    };
-  }
-}
-
-function resolveClientIp(req: Request): string | null {
-  const forwarded = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim();
-  if (forwarded) return forwarded;
-  return req.ip || req.socket?.remoteAddress || null;
 }

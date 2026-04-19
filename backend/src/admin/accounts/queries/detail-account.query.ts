@@ -202,6 +202,57 @@ function loadGmvAndCounts(prisma: PrismaService, workspaceId: string) {
   ]);
 }
 
+type WorkspaceWithAdminContext = NonNullable<Awaited<ReturnType<typeof loadWorkspaceForAdmin>>>;
+type AccountGmvCounts = Awaited<ReturnType<typeof loadGmvAndCounts>>;
+
+function resolveOwnerAgent(
+  workspace: WorkspaceWithAdminContext,
+): WorkspaceWithAdminContext['agents'][number] | null {
+  return workspace.agents.find((agent) => agent.role === 'ADMIN') ?? workspace.agents[0] ?? null;
+}
+
+function projectWorkspaceIdentity(workspace: WorkspaceWithAdminContext) {
+  return {
+    workspaceId: workspace.id,
+    name: workspace.name,
+    createdAt: workspace.createdAt.toISOString(),
+    updatedAt: workspace.updatedAt.toISOString(),
+  };
+}
+
+function projectOwnerSummary(workspace: WorkspaceWithAdminContext) {
+  const owner = resolveOwnerAgent(workspace);
+  return {
+    ownerAgentId: owner?.id ?? null,
+    ownerEmail: owner?.email ?? null,
+  };
+}
+
+function projectAccountGmv(counts: AccountGmvCounts) {
+  const [gmv30d, gmvAll, productCount] = counts;
+  return {
+    productCount,
+    gmvLast30dInCents: Number(gmv30d._sum.totalInCents ?? 0),
+    gmvAllTimeInCents: Number(gmvAll._sum.totalInCents ?? 0),
+  };
+}
+
+function buildAdminAccountDetail(
+  workspace: WorkspaceWithAdminContext,
+  counts: AccountGmvCounts,
+): AdminAccountDetail {
+  const [, , , recentOrders] = counts;
+  return {
+    ...projectWorkspaceIdentity(workspace),
+    ...projectOwnerSummary(workspace),
+    lifecycle: buildLifecycle(extractAccountAdminState(workspace)),
+    agents: mapAgents(workspace.agents),
+    kycDocuments: mapKycDocuments(workspace.kycDocuments),
+    ...projectAccountGmv(counts),
+    recentOrders: mapRecentOrders(recentOrders),
+  };
+}
+
 export async function getAdminAccountDetail(
   prisma: PrismaService,
   workspaceId: string,
@@ -209,25 +260,6 @@ export async function getAdminAccountDetail(
   const workspace = await loadWorkspaceForAdmin(prisma, workspaceId);
   if (!workspace) return null;
 
-  const owner =
-    workspace.agents.find((agent) => agent.role === 'ADMIN') ?? workspace.agents[0] ?? null;
-  const lifecycle = buildLifecycle(extractAccountAdminState(workspace));
-
-  const [gmv30d, gmvAll, productCount, recentOrders] = await loadGmvAndCounts(prisma, workspaceId);
-
-  return {
-    workspaceId: workspace.id,
-    name: workspace.name,
-    createdAt: workspace.createdAt.toISOString(),
-    updatedAt: workspace.updatedAt.toISOString(),
-    ownerAgentId: owner?.id ?? null,
-    ownerEmail: owner?.email ?? null,
-    lifecycle,
-    agents: mapAgents(workspace.agents),
-    kycDocuments: mapKycDocuments(workspace.kycDocuments),
-    productCount,
-    gmvLast30dInCents: Number(gmv30d._sum.totalInCents ?? 0),
-    gmvAllTimeInCents: Number(gmvAll._sum.totalInCents ?? 0),
-    recentOrders: mapRecentOrders(recentOrders),
-  };
+  const counts = await loadGmvAndCounts(prisma, workspaceId);
+  return buildAdminAccountDetail(workspace, counts);
 }

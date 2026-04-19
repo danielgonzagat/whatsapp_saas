@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { computeGrowthRate, computeHealthScore } from './admin-clients.metrics';
+import { type AdminClientMetricMaps, buildAdminClientRow } from './admin-client-row.builder';
 
 export interface AdminClientRow {
   workspaceId: string;
@@ -156,39 +156,14 @@ export class AdminClientsService {
     );
     const productMap = new Map(productRows.map((row) => [row.workspaceId, row._count._all]));
 
-    const items = workspaces.map((workspace) => {
-      const owner = workspace.agents[0] ?? null;
-      const currentGmv = currentGmvMap.get(workspace.id) ?? 0;
-      const previousGmv = previousGmvMap.get(workspace.id) ?? 0;
-      const kycStatus = owner?.kycStatus ?? 'unknown';
-      const lastSaleAt = lastSaleMap.get(workspace.id) ?? null;
-      const productCount = productMap.get(workspace.id) ?? 0;
+    const maps: AdminClientMetricMaps = {
+      currentGmvMap,
+      previousGmvMap,
+      lastSaleMap,
+      productMap,
+    };
 
-      return {
-        workspaceId: workspace.id,
-        name: workspace.name,
-        ownerEmail: owner?.email ?? null,
-        ownerName: owner?.name ?? null,
-        createdAt: workspace.createdAt.toISOString(),
-        kycStatus,
-        gmvLast30dInCents: currentGmv,
-        previousGmvLast30dInCents: previousGmv,
-        growthRate: computeGrowthRate(currentGmv, previousGmv),
-        lastSaleAt,
-        productCount,
-        plan: workspace.subscription?.plan ?? null,
-        subscriptionStatus: workspace.subscription?.status ?? null,
-        customDomain: workspace.customDomain ?? null,
-        healthScore: computeHealthScore({
-          gmvLast30dInCents: currentGmv,
-          previousGmvLast30dInCents: previousGmv,
-          lastSaleAt,
-          kycStatus,
-          customDomain: workspace.customDomain ?? null,
-          productCount,
-        }),
-      };
-    });
+    const items = workspaces.map((workspace) => buildAdminClientRow(workspace, maps));
 
     return { items, total };
   }

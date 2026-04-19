@@ -1,76 +1,52 @@
 /**
- * Pure helpers for detecting IPv4/IPv6 addresses that belong to
- * private, loopback, or cloud-metadata ranges.
- *
- * Extracted from url-validator.ts so that each function is measured
- * independently by complexity scanners (Codacy / lizard bundle neighbours
- * in TypeScript when left in the same file).
+ * Facade that asserts the given hostname is NOT a localhost / private /
+ * metadata / internal-IPv6 endpoint. The IPv4 classifier and its literal
+ * parser live in sibling modules so Codacy / Lizard measures every helper
+ * independently (TypeScript grammar bundles sibling functions otherwise).
  */
 import { BadRequestException } from '@nestjs/common';
+import { isBlockedIpv4Range, parseIpv4Literal } from './url-ipv4-blocklist';
 
-const IPV4_LITERAL_RE = /^\d{1,3}(?:\.\d{1,3}){3}$/;
+export { isBlockedIpv4Range, parseIpv4Literal };
 
-export function parseIpv4Literal(hostname: string): number[] | null {
-  if (!IPV4_LITERAL_RE.test(hostname)) {
-    return null;
-  }
+const LOCALHOST_LITERALS = new Set<string>(['localhost', '127.0.0.1', '0.0.0.0', '[::1]']);
 
-  const octets = hostname.split('.').map((part) => Number(part));
-  if (octets.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) {
-    return null;
-  }
+const CLOUD_METADATA_LITERALS = new Set<string>(['169.254.169.254', 'metadata.google.internal']);
 
-  return octets;
+const INTERNAL_IPV6_PREFIXES = ['[::', '[fe80', '[fc', '[fd'] as const;
+
+function isLocalhostLiteral(hostname: string): boolean {
+  return LOCALHOST_LITERALS.has(hostname);
 }
 
-export function isBlockedIpv4Range([first, second]: number[]): boolean {
-  if (first === 0 || first === 10 || first === 127) {
-    return true;
-  }
+function isCloudMetadataLiteral(hostname: string): boolean {
+  return CLOUD_METADATA_LITERALS.has(hostname);
+}
 
-  if (first === 100 && second >= 64 && second <= 127) {
-    return true;
-  }
+function isInternalIpv6Literal(hostname: string): boolean {
+  return INTERNAL_IPV6_PREFIXES.some((prefix) => hostname.startsWith(prefix));
+}
 
-  if (first === 169 && second === 254) {
-    return true;
+function checkIpv4PrivateRange(hostname: string): void {
+  const ipv4 = parseIpv4Literal(hostname);
+  if (ipv4 && isBlockedIpv4Range(ipv4)) {
+    throw new BadRequestException('Access to private network blocked');
   }
-
-  if (first === 172 && second >= 16 && second <= 31) {
-    return true;
-  }
-
-  if (first === 192 && (second === 0 || second === 168)) {
-    return true;
-  }
-
-  if (first === 198 && (second === 18 || second === 19)) {
-    return true;
-  }
-
-  return first >= 224;
 }
 
 export function assertNotInternalAddress(hostname: string): void {
   const h = hostname.toLowerCase();
-  const ipv4 = parseIpv4Literal(h);
 
-  // Block localhost variants
-  if (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0' || h === '[::1]') {
+  if (isLocalhostLiteral(h)) {
     throw new BadRequestException('Access to localhost blocked');
   }
-
-  // Block cloud metadata endpoints
-  if (h === '169.254.169.254' || h === 'metadata.google.internal') {
+  if (isCloudMetadataLiteral(h)) {
     throw new BadRequestException('Access to cloud metadata blocked');
   }
 
-  if (ipv4 && isBlockedIpv4Range(ipv4)) {
-    throw new BadRequestException('Access to private network blocked');
-  }
+  checkIpv4PrivateRange(h);
 
-  // Block IPv6 loopback and link-local
-  if (h.startsWith('[::') || h.startsWith('[fe80') || h.startsWith('[fc') || h.startsWith('[fd')) {
+  if (isInternalIpv6Literal(h)) {
     throw new BadRequestException('Access to internal IPv6 blocked');
   }
 }
