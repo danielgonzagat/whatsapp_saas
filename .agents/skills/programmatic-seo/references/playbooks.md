@@ -113,7 +113,7 @@ SEO.
 
 **URL structure**: `/compare/[x]-vs-[y]/` or `/[x]-vs-[y]/`
 
-_See also: competitor-alternatives skill for detailed frameworks_
+### See also: competitor-alternatives skill for detailed frameworks
 
 ---
 

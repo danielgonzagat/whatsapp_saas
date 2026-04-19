@@ -114,7 +114,7 @@ guidance.
 
 ### Model 1: PLG SaaS (ACV $500-$5K)
 
-**Weight: 30% fit / 70% engagement (heavily favor product usage)**
+#### Weight: 30% fit / 70% engagement (heavily favor product usage)
 
 **Fit criteria:**
 

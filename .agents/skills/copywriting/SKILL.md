@@ -139,7 +139,7 @@ undermine clarity.
 
 ### Above the Fold
 
-**Headline**
+#### Headline
 
 - Your single most important message
 - Communicate core value proposition
@@ -158,13 +158,13 @@ undermine clarity.
 **For natural transition phrases**: See
 [references/natural-transitions.md](references/natural-transitions.md)
 
-**Subheadline**
+#### Subheadline
 
 - Expands on headline
 - Adds specificity
 - 1-2 sentences max
 
-**Primary CTA**
+##### Primary CTA
 
 - Action-oriented button text
 - Communicate what they get: "Start Free Trial" > "Sign Up"

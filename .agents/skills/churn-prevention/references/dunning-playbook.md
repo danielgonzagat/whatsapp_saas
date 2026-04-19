@@ -275,7 +275,7 @@ will be paused automatically.
 - Creates urgency without data loss fear
 - Clear message: "Update payment to resume full access"
 
-**Option C: Immediate lockout (not recommended)**
+##### Option C: Immediate lockout (not recommended)
 
 - Aggressive, damages relationship
 - Lower recovery rate

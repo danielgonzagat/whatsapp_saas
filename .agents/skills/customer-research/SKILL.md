@@ -65,20 +65,20 @@ Most engagements combine both. Establish which mode applies before proceeding.
   often conflict)
 - Identify: the 20% of responses that contain the most useful signal
 
-**Customer support conversations**
+##### Customer support conversations
 
 - Mine for: recurring complaints, confusion points, feature requests, and "I
   wish it could…" language
 - Categorize tickets before analyzing — don't treat all tickets as equal signal
 - Separate bugs from confusion from missing features from expectation mismatches
 
-**Win/loss interviews and churned customer notes**
+##### Win/loss interviews and churned customer notes
 
 - Wins: what tipped the decision? What almost made them choose a competitor?
 - Losses and churn: was it price, features, fit, timing, or something else?
 - Segment by reason — don't average across different churn causes
 
-**NPS responses**
+##### NPS responses
 
 - Passives and detractors are higher signal than promoters for improvement work
 - Pair scores with verbatims — a 9 with a specific complaint beats a 10 with no

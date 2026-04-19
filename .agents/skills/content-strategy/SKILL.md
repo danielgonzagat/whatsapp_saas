@@ -126,13 +126,13 @@ High-intent keywords + product adoption.
 
 ### Shareable Content Types
 
-**Thought Leadership**
+#### Thought Leadership
 
 - Articulate concepts everyone feels but hasn't named
 - Challenge conventional wisdom with evidence
 - Share vulnerable, honest experiences
 
-**Data-Driven Content**
+##### Data-Driven Content
 
 - Product data analysis (anonymized insights)
 - Public data analysis (uncover patterns)

@@ -300,4 +300,4 @@ Antes de cada deploy:
 
 ---
 
-_Última atualização: Janeiro 2025_
+### Última atualização: Janeiro 2025

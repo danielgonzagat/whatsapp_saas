@@ -400,4 +400,4 @@ jest.spyOn(service, 'sendEmail').mockResolvedValue(true);
 
 ---
 
-_Última atualização: Janeiro 2025_
+### Última atualização: Janeiro 2025
