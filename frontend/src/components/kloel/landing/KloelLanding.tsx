@@ -6,6 +6,7 @@ import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
 import { useState, useEffect, useRef, useId } from 'react';
 import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
+import { delayForTypewriter } from './KloelLanding.helpers';
 import ThanosSection from './ThanosSection';
 
 const PATTERN_RE = /[.,!?]/;
@@ -705,41 +706,13 @@ function FinalManifestLoop() {
 
     let alive = true;
 
-    const delayFor = (
-      character: string,
-      mode: 'type' | 'delete',
-      index: number,
-      phrase: string,
-    ) => {
-      const prev = phrase[index - 1] ?? '';
-      const next = phrase[index + 1] ?? '';
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: PATTERN_RE is a module-scope literal /[.,!?]/ char-class regex; `character` is a single character from a hardcoded phrase prop used for typewriter animation. No user input, no nested quantifiers.
-      const isPauseMark = PATTERN_RE.test(character);
-
-      if (mode === 'delete') {
-        if (index === phrase.length - 1) return 190 + Math.random() * 90;
-        if (isPauseMark) return 150 + Math.random() * 70;
-        if (character === ' ') return 105 + Math.random() * 55;
-        if (next === ' ') return 88 + Math.random() * 42;
-        return 68 + Math.random() * 54;
-      }
-
-      if (index === 0) return 150 + Math.random() * 90;
-      if (isPauseMark) return 240 + Math.random() * 150;
-      if (character === ' ') return 118 + Math.random() * 78;
-      if (prev === ' ') return 102 + Math.random() * 74;
-      if (next === ' ') return 88 + Math.random() * 54;
-      return 72 + Math.random() * 72;
-    };
-
     const typePhrase = async (phrase: string, nextTone: 'light' | 'ember') => {
       setTone(nextTone);
       for (let i = 1; i <= phrase.length; i++) {
         if (!alive) return;
         setText(phrase.slice(0, i));
         // biome-ignore lint/performance/noAwaitInLoops: sequential typing animation — each character renders after the previous frame's delay
-        await wait(delayFor(phrase[i - 1], 'type', i - 1, phrase));
+        await wait(delayForTypewriter(phrase[i - 1], 'type', i - 1, phrase));
         if (phrase === SECOND && i === SECOND_PREFIX.length) {
           await wait(320);
         }
@@ -752,7 +725,7 @@ function FinalManifestLoop() {
         if (!alive) return;
         setText(phrase.slice(0, i));
         // biome-ignore lint/performance/noAwaitInLoops: sequential delete animation — characters disappear one-by-one in order
-        await wait(delayFor(phrase[i], 'delete', i, phrase));
+        await wait(delayForTypewriter(phrase[i], 'delete', i, phrase));
       }
     };
 

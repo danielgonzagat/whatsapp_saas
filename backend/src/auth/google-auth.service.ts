@@ -12,6 +12,12 @@ const W_RE = /[\W_]+/g;
 const AUDIENCE_ISSUER_TOKEN_US_RE =
   /audience|issuer|token used too late|wrong number of segments|invalid token|No pem found|Token used too early|Wrong recipient/i;
 
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message || 'unknown_error';
+  if (typeof error === 'string') return error;
+  return 'unknown_error';
+}
+
 function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T[]) {
   if (!Array.isArray(entries) || entries.length === 0) {
     return null;
@@ -57,48 +63,46 @@ export class GoogleAuthService {
       throw new UnauthorizedException('Credencial Google ausente.');
     }
 
-    const allowedClientIds = this.getAllowedClientIds();
-    if (!allowedClientIds.length) {
-      this.logger.error(
-        'google_auth_not_configured: GOOGLE_CLIENT_ID/NEXT_PUBLIC_GOOGLE_CLIENT_ID ausente',
-      );
-      throw new ServiceUnavailableException('Login com Google não configurado no servidor.');
-    }
-
-    const client = new OAuth2Client();
-    let ticket: LoginTicket;
-
-    try {
-      ticket = await client.verifyIdToken({
-        idToken,
-        audience: allowedClientIds,
-      });
-    } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      const message = errorInstanceofError?.message || 'unknown_error';
-      this.logger.warn(
-        `google_token_rejected: ${JSON.stringify({
-          message,
-        })}`,
-      );
-
-      if (typeof message === 'string' && AUDIENCE_ISSUER_TOKEN_US_RE.test(message)) {
-        throw new UnauthorizedException('Credencial Google inválida.');
-      }
-
-      throw new ServiceUnavailableException(`Falha ao validar credencial Google: ${message}`);
-    }
-
+    const allowedClientIds = this.requireAllowedClientIds();
+    const ticket = await this.verifyIdTokenSafely(idToken, allowedClientIds);
     const payload = ticket.getPayload();
     if (!payload) {
       throw new UnauthorizedException('Credencial Google inválida.');
     }
 
     this.assertPayload(payload);
+    return this.buildVerifiedProfile(payload);
+  }
 
+  private requireAllowedClientIds(): string[] {
+    const allowed = this.getAllowedClientIds();
+    if (!allowed.length) {
+      this.logger.error(
+        'google_auth_not_configured: GOOGLE_CLIENT_ID/NEXT_PUBLIC_GOOGLE_CLIENT_ID ausente',
+      );
+      throw new ServiceUnavailableException('Login com Google não configurado no servidor.');
+    }
+    return allowed;
+  }
+
+  private async verifyIdTokenSafely(
+    idToken: string,
+    allowedClientIds: string[],
+  ): Promise<LoginTicket> {
+    const client = new OAuth2Client();
+    try {
+      return await client.verifyIdToken({ idToken, audience: allowedClientIds });
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error);
+      this.logger.warn(`google_token_rejected: ${JSON.stringify({ message })}`);
+      if (AUDIENCE_ISSUER_TOKEN_US_RE.test(message)) {
+        throw new UnauthorizedException('Credencial Google inválida.');
+      }
+      throw new ServiceUnavailableException(`Falha ao validar credencial Google: ${message}`);
+    }
+  }
+
+  private buildVerifiedProfile(payload: TokenPayload): GoogleVerifiedProfile {
     const providerId = payload.sub?.trim();
     const email = payload.email?.trim().toLowerCase();
     const emailVerified = payload.email_verified === true;

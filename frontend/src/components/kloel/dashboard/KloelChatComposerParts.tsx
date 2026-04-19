@@ -20,7 +20,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
-import { type RefObject, useEffect, useState } from 'react';
+import type { RefObject } from 'react';
+import { useCompactComposerViewport } from './KloelChatComposerParts.helpers';
 
 const SURFACE = KLOEL_THEME.bgCard;
 const SURFACE_ALT = KLOEL_THEME.bgSecondary;
@@ -267,23 +268,7 @@ export function ComposerPopover({
   onClose,
 }: ComposerPopoverProps) {
   const openBelow = placement === 'below';
-  const [isCompactViewport, setIsCompactViewport] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
-
-    const mediaQuery = window.matchMedia('(max-width: 780px)');
-    const syncViewport = () => setIsCompactViewport(mediaQuery.matches);
-
-    syncViewport();
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', syncViewport);
-      return () => mediaQuery.removeEventListener('change', syncViewport);
-    }
-
-    mediaQuery.addListener(syncViewport);
-    return () => mediaQuery.removeListener(syncViewport);
-  }, []);
+  const isCompactViewport = useCompactComposerViewport();
 
   return (
     <AnimatePresence>

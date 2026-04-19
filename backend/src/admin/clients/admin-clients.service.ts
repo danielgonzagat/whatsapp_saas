@@ -37,8 +37,12 @@ const MAX_TAKE = 100;
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
+function growthRateWhenNoPreviousBaseline(current: number): number | null {
+  return current > 0 ? null : 0;
+}
+
 function computeGrowthRate(current: number, previous: number): number | null {
-  if (previous <= 0) return current > 0 ? null : 0;
+  if (previous <= 0) return growthRateWhenNoPreviousBaseline(current);
   return (current - previous) / previous;
 }
 

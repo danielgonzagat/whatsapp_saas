@@ -9,6 +9,7 @@ import { apiUrl } from '@/lib/http';
 import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
+import { parseKloelChatStreamLine, typingSimulationDelay } from './HomeScreen.helpers';
 
 const PATTERN_RE = /(\*\*[^*]+\*\*)/g;
 
@@ -135,23 +136,7 @@ function useTypingSimulation() {
       index++;
       setDisplayedText(fullText.slice(0, index));
 
-      let delay: number;
-
-      if (Math.random() < 0.08) {
-        delay = 2;
-      } else if (char === '.' || char === '!' || char === '?') {
-        delay = 150 + Math.random() * 100;
-      } else if (char === ',') {
-        delay = 80 + Math.random() * 40;
-      } else if (char === '\n') {
-        delay = 120 + Math.random() * 80;
-      } else if (char === ' ') {
-        delay = 10 + Math.random() * 15;
-      } else {
-        delay = 15 + Math.random() * 25;
-      }
-
-      timeoutRef.current = setTimeout(typeNext, delay);
+      timeoutRef.current = setTimeout(typeNext, typingSimulationDelay(char));
     }
 
     typeNext();
@@ -326,32 +311,17 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             const lines = chunk.split('\n');
 
             for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
-
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.error) {
-                  fullContent =
-                    parsed.content ??
-                    parsed.message ??
-                    'Desculpe, tive uma instabilidade. Tente novamente.';
-                  break;
-                }
-                if (parsed.type === 'tool_call' || parsed.tool_call) {
-                  const toolName = parsed.tool_call?.name ?? parsed.name ?? parsed.tool ?? '';
-                  if (toolName) {
-                    setThinkingText(`Usando ${toolName}...`);
-                  }
-                }
-                const delta = parsed.content ?? parsed.chunk;
-                if (delta) {
-                  fullContent += String(delta);
-                }
-              } catch {
-                fullContent += data;
+              const update = parseKloelChatStreamLine(line);
+              if (!update) continue;
+              if (update.errorContent !== undefined) {
+                fullContent = update.errorContent;
+                break;
+              }
+              if (update.thinkingText) {
+                setThinkingText(update.thinkingText);
+              }
+              if (update.contentDelta) {
+                fullContent += update.contentDelta;
               }
             }
           }

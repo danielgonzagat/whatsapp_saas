@@ -30,56 +30,58 @@ export class AdminAuditInterceptor implements NestInterceptor {
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const http = context.switchToHttp();
-    const req = http.getRequest<Request & { admin?: AuthenticatedAdmin }>();
-
-    if (!req || SAFE_METHODS.has(req.method)) {
+    const req = context.switchToHttp().getRequest<Request & { admin?: AuthenticatedAdmin }>();
+    if (!this.shouldAudit(context, req)) {
       return next.handle();
     }
 
-    // Only instrument admin routes.
-    const path = req.path ?? req.url ?? '';
-    if (!path.startsWith('/admin/')) {
-      return next.handle();
-    }
-
-    const noAudit = this.reflector.getAllAndOverride<boolean>(NO_AUDIT_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (noAudit) return next.handle();
-
-    const controllerName = context.getClass().name;
-    const handlerName = context.getHandler().name;
-    const action = `${controllerName}.${handlerName}`;
-
-    const details = {
-      method: req.method,
-      path,
-      query: sanitizeForAudit(req.query ?? {}),
-      body: sanitizeForAudit(req.body ?? {}),
-      params: sanitizeForAudit(req.params ?? {}),
-    };
-
-    const ip =
-      (req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() ?? '') ||
-      req.ip ||
-      req.socket?.remoteAddress ||
-      null;
-    const userAgent = req.headers['user-agent'] ?? null;
+    const entry = this.buildAuditEntry(context, req);
 
     return next.handle().pipe(
       tap({
         next: () => {
-          void this.audit.append({
-            adminUserId: req.admin?.id ?? null,
-            action,
-            details,
-            ip,
-            userAgent,
-          });
+          void this.audit.append(entry);
         },
       }),
     );
   }
+
+  private shouldAudit(context: ExecutionContext, req: Request | undefined): boolean {
+    if (!req || SAFE_METHODS.has(req.method)) return false;
+    const path = req.path ?? req.url ?? '';
+    if (!path.startsWith('/admin/')) return false;
+    const noAudit = this.reflector.getAllAndOverride<boolean>(NO_AUDIT_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    return !noAudit;
+  }
+
+  private buildAuditEntry(
+    context: ExecutionContext,
+    req: Request & { admin?: AuthenticatedAdmin },
+  ) {
+    const path = req.path ?? req.url ?? '';
+    const action = `${context.getClass().name}.${context.getHandler().name}`;
+
+    return {
+      adminUserId: req.admin?.id ?? null,
+      action,
+      details: {
+        method: req.method,
+        path,
+        query: sanitizeForAudit(req.query ?? {}),
+        body: sanitizeForAudit(req.body ?? {}),
+        params: sanitizeForAudit(req.params ?? {}),
+      },
+      ip: resolveClientIp(req),
+      userAgent: req.headers['user-agent'] ?? null,
+    };
+  }
+}
+
+function resolveClientIp(req: Request): string | null {
+  const forwarded = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim();
+  if (forwarded) return forwarded;
+  return req.ip || req.socket?.remoteAddress || null;
 }

@@ -22,36 +22,13 @@ import {
   unwrapApiPayload,
   JsonRecord,
 } from './product-nerve-center.shared';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
-function sanitizeHtml(html: string): string {
-  if (!DOMPurify) return html;
-  return (DOMPurify as { sanitize: (html: string, opts: JsonRecord) => string }).sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
-    ALLOWED_ATTR: ['href', 'target'],
-  });
-}
-
-function clampNumber(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function parseLocalePercent(value: string, fallback: number) {
-  const parsed = Number(String(value ?? '').replace(',', '.'));
-  return Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
-}
-
-function formatPercentInput(value: unknown, fallback: number) {
-  const parsed = Number(value);
-  const safe = Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
-  return String(safe).replace('.', ',');
-}
-
-function clampIntegerValue(value: unknown, fallback: number, min: number, max: number) {
-  const parsed = Math.round(Number(value));
-  return Number.isFinite(parsed) ? clampNumber(parsed, min, max) : fallback;
-}
+import {
+  clampIntegerValue,
+  clampNumber,
+  formatPercentInput,
+  parseLocalePercent,
+  sanitizeHtml,
+} from './ProductNerveCenterComissaoTab.helpers';
 
 /* ── Data shapes for affiliate / coproduction records ── */
 interface AffiliateRequestRecord {

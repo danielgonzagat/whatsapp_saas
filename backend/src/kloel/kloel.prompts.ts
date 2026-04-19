@@ -151,11 +151,16 @@ No Kloel, webhook impacta:
 Isso conecta direto com integrações e automação. Posso te mostrar como isso entra no fluxo do seu workspace.
 </few_shot_examples>`;
 
+function trimmedOrDefault(value: unknown, fallback: string): string {
+  const normalized = typeof value === 'string' ? value.trim() : '';
+  return normalized || fallback;
+}
+
 export function buildKloelResponseEnginePrompt(input: KloelResponseEnginePromptInput): string {
-  const currentDate = String(input.currentDate || '').trim() || 'Data não informada';
-  const userName = String(input.userName || '').trim() || 'Usuário';
-  const workspaceName = String(input.workspaceName || '').trim() || 'Workspace';
-  const expertiseLevel = String(input.expertiseLevel || '').trim() || 'INTERMEDIÁRIO';
+  const currentDate = trimmedOrDefault(input.currentDate, 'Data não informada');
+  const userName = trimmedOrDefault(input.userName, 'Usuário');
+  const workspaceName = trimmedOrDefault(input.workspaceName, 'Workspace');
+  const expertiseLevel = trimmedOrDefault(input.expertiseLevel, 'INTERMEDIÁRIO');
 
   return `
 <identity>

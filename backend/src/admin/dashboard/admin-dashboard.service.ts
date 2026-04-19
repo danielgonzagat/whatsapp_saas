@@ -96,9 +96,13 @@ interface Snapshot {
   responseTimeMinutes: number | null;
 }
 
+function deltaPctFromZeroBaseline(curr: number): number | null {
+  return curr === 0 ? 0 : null;
+}
+
 function deltaPct(curr: number, prev: number | null): number | null {
   if (prev === null) return null;
-  if (prev === 0) return curr === 0 ? 0 : null;
+  if (prev === 0) return deltaPctFromZeroBaseline(curr);
   return ((curr - prev) / prev) * 100;
 }
 
