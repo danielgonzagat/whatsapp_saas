@@ -380,6 +380,27 @@ const NOISE_PATTERNS = [
     id: 'ESLint8_@lwc_lwc_no-async-operation',
     reason: 'WRONG_RULE — Salesforce Lightning Web Components plugin. Not applicable.',
   },
+  {
+    id: 'ESLint8_@lwc_lwc_no-rest-parameter',
+    reason: 'WRONG_RULE — Salesforce LWC rule, not applicable.',
+  },
+  // ── Even more ES5-era polyfill rules ──
+  {
+    id: 'ESLint8_es-x_no-rest-parameters',
+    reason: 'WRONG_RULE — ES5 rule forbidding `function f(...args)`. Standard ES2015+ rest params.',
+  },
+  {
+    id: 'ESLint8_es-x_no-string-prototype-trim',
+    reason: 'WRONG_RULE — ES5 rule forbidding `str.trim()`. `.trim()` is ES5 (year 2009).',
+  },
+  {
+    id: 'ESLint8_es-x_no-date-now',
+    reason: 'WRONG_RULE — ES5 rule forbidding `Date.now()`. `Date.now()` is ES5 (year 2009).',
+  },
+  {
+    id: 'ESLint8_es-x_no-object-entries',
+    reason: 'WRONG_RULE — ES5 rule forbidding `Object.entries`. Standard ES2017.',
+  },
 ];
 
 // -------------------- Env --------------------
