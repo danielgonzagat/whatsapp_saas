@@ -5,6 +5,7 @@ import { colors, typography } from '@/lib/design-tokens';
 import { Bot, ChevronDown, ChevronUp, Plus, Sparkles } from 'lucide-react';
 import React, { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
+import { applyPlanShippingPayload } from './PlanShippingTab.helpers';
 
 const PACKAGE_TYPES = [
   'Envelope',
@@ -206,23 +207,22 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
     apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`).then(
       (res) => {
         if (res.error || !res.data) return;
-        const d = res.data as Record<string, unknown>;
-        const dims = d.dimensions as Record<string, unknown> | undefined;
-        if (d.packageType != null) setPackageType(d.packageType as string);
-        if (dims?.width != null) setWidth(String(dims.width));
-        if (dims?.height != null) setHeight(String(dims.height));
-        if (dims?.length != null) setLength(String(dims.length));
-        if (d.weight != null) setWeight(String(d.weight));
-        if (d.whoShips != null) setWhoShips(d.whoShips as string);
-        if (d.shipFrom != null) setShipFrom(d.shipFrom as string);
-        if (d.dispatchTime != null) setDispatchTime(String(d.dispatchTime));
-        if (d.carriers != null) setSelectedCarriers(d.carriers as string[]);
-        if (d.freightType != null) setFreightType(d.freightType as string);
-        if (d.fixedFreight != null) setFixedFreight(String(d.fixedFreight));
-        if (d.tracking != null) setHasTracking(d.tracking as string);
-        if (d.regionPrazos != null)
-          setRegionPrazos(d.regionPrazos as Record<string, { prazo: string; obs: string }>);
-        if (d.faqAnswers != null) setFaqAnswers(d.faqAnswers as Record<number, string>);
+        applyPlanShippingPayload(res.data as Record<string, unknown>, {
+          setPackageType,
+          setWidth,
+          setHeight,
+          setLength,
+          setWeight,
+          setWhoShips,
+          setShipFrom,
+          setDispatchTime,
+          setSelectedCarriers,
+          setFreightType,
+          setFixedFreight,
+          setHasTracking,
+          setRegionPrazos,
+          setFaqAnswers,
+        });
       },
     );
   }, [productId, planId]);
