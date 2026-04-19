@@ -11,14 +11,18 @@ Esta auditoria cruza:
 - drawer de configurações em
   [`frontend/src/components/kloel/settings/settings-drawer.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/settings-drawer.tsx)
 - seções de configuração em
-  [`frontend/src/components/kloel/settings/account-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/account-settings-section.tsx),
-  [`frontend/src/components/kloel/settings/billing-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/billing-settings-section.tsx),
-  [`frontend/src/components/kloel/settings/brain-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/brain-settings-section.tsx),
+  [`frontend/src/components/kloel/settings/account-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/account-settings-section.tsx)
+  ,
+  [`frontend/src/components/kloel/settings/billing-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/billing-settings-section.tsx)
+  ,
+  [`frontend/src/components/kloel/settings/brain-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/brain-settings-section.tsx)
+  ,
   [`frontend/src/components/kloel/settings/crm-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/crm-settings-section.tsx)
   e
   [`frontend/src/components/kloel/settings/analytics-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/analytics-settings-section.tsx)
 - página de conexão do WhatsApp em
-  [`frontend/src/app/(main)/whatsapp/page.tsx`](/workspaces/whatsapp_saas/frontend/src/app/(main)/whatsapp/page.tsx)
+  [`frontend/src/app/(main)/whatsapp/page.tsx`](/workspaces/whatsapp_saas/frontend/src/app/(main)
+  /whatsapp/page.tsx)
 - stream operacional do backend em
   [`backend/src/whatsapp/controllers/whatsapp-api.controller.ts`](/workspaces/whatsapp_saas/backend/src/whatsapp/controllers/whatsapp-api.controller.ts)
 - registries e runtime de conta em
@@ -31,9 +35,11 @@ Esta auditoria cruza:
 ### Painel direito
 
 - O `AgentConsole` mockado foi substituído, no shell principal, por um `WhatsAppConsole` em
-  [`frontend/src/components/kloel/WhatsAppConsole.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/WhatsAppConsole.tsx).
+  [`frontend/src/components/kloel/WhatsAppConsole.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/WhatsAppConsole.tsx)
+  .
 - O handle colapsado agora usa um ícone dedicado de WhatsApp em
-  [`frontend/src/components/icons/WhatsAppIcon.tsx`](/workspaces/whatsapp_saas/frontend/src/components/icons/WhatsAppIcon.tsx).
+  [`frontend/src/components/icons/WhatsAppIcon.tsx`](/workspaces/whatsapp_saas/frontend/src/components/icons/WhatsAppIcon.tsx)
+  .
 - Quando desconectado, o painel exibe QR Code, instruções, status, botão de conectar e reset.
 - Quando conectado, o painel exibe:
   - cabeçalho com status
@@ -47,7 +53,8 @@ Esta auditoria cruza:
 ### Reuso do fluxo de conexão
 
 - A lógica de sessão foi extraída para
-  [`frontend/src/hooks/useWhatsAppSession.ts`](/workspaces/whatsapp_saas/frontend/src/hooks/useWhatsAppSession.ts).
+  [`frontend/src/hooks/useWhatsAppSession.ts`](/workspaces/whatsapp_saas/frontend/src/hooks/useWhatsAppSession.ts)
+  .
 - O hook concentra:
   - status
   - QR
@@ -109,7 +116,7 @@ Esta auditoria cruza:
 Estado atual:
 
 - [`account-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/account-settings-section.tsx)
-  já carrega `workspace/me`, canais, provider e jitter.
+  já carrega `workspace/me` , canais, provider e jitter.
 - Os dados de conta são persistidos via endpoints reais de workspace/account.
 - O maior gap remanescente nesta área deixou de ser persistência básica e passou a ser cobertura de
   webhooks, domínio, API keys e time/permissões.
@@ -124,7 +131,7 @@ Conclusão:
 Estado atual:
 
 - [`brain-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/brain-settings-section.tsx)
-  já grava `providerSettings.kloelProfile`.
+  já grava `providerSettings.kloelProfile` .
 - Persona, tom, regras, FAQ, opening message e emergency mode já persistem no backend.
 - O drawer já lê/grava knowledge base por texto e URL.
 - Produto, plano e link deixaram de ser puramente visuais.
@@ -168,8 +175,8 @@ Conclusão:
 Estado atual antes do patch:
 
 - A página dedicada
-  [`frontend/src/app/(main)/whatsapp/page.tsx`](/workspaces/whatsapp_saas/frontend/src/app/(main)/whatsapp/page.tsx)
-  já possuía QR/status/reset/desconexão.
+  [`frontend/src/app/(main)/whatsapp/page.tsx`](/workspaces/whatsapp_saas/frontend/src/app/(main)
+  /whatsapp/page.tsx) já possuía QR/status/reset/desconexão.
 - O painel lateral direito não reaproveitava isso; usava
   [`AgentConsole.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/AgentConsole.tsx),
   que era um monitor mockado.
@@ -179,7 +186,7 @@ Estado atual depois do patch:
 - O painel lateral direito agora já conversa com a sessão WhatsApp real.
 - O feed do agente e da prova ao vivo já passa por
   [`backend/src/whatsapp/controllers/whatsapp-api.controller.ts`](/workspaces/whatsapp_saas/backend/src/whatsapp/controllers/whatsapp-api.controller.ts)
-  em `GET /whatsapp-api/live`.
+  em `GET /whatsapp-api/live` .
 - As conversas/mensagens são sincronizadas via `whatsappApi.getChats()` e
   `whatsappApi.getChatMessages()`.
 

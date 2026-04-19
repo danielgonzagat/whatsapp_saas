@@ -69,7 +69,9 @@ We'll know this is true when [metrics].
 
 **Weak**: "Changing the button color might increase clicks."
 
-**Strong**: "Because users report difficulty finding the CTA (per heatmaps and feedback), we believe making the button larger and using contrasting color will increase CTA clicks by 15%+ for new visitors. We'll measure click-through rate from page view to signup start."
+**Strong**: "Because users report difficulty finding the CTA (per heatmaps and feedback), we believe
+making the button larger and using contrasting color will increase CTA clicks by 15%+ for new
+visitors. We'll measure click-through rate from page view to signup start."
 
 ---
 
@@ -100,7 +102,8 @@ We'll know this is true when [metrics].
 - [Evan Miller's](https://www.evanmiller.org/ab-testing/sample-size.html)
 - [Optimizely's](https://www.optimizely.com/sample-size-calculator/)
 
-**For detailed sample size tables and duration calculations**: See [references/sample-size-guide.md](references/sample-size-guide.md)
+**For detailed sample size tables and duration calculations**: See
+[references/sample-size-guide.md](references/sample-size-guide.md)
 
 ---
 
@@ -207,7 +210,8 @@ We'll know this is true when [metrics].
 
 ### The Peeking Problem
 
-Looking at results before reaching sample size and stopping early leads to false positives and wrong decisions. Pre-commit to sample size and trust the process.
+Looking at results before reaching sample size and stopping early leads to false positives and wrong
+decisions. Pre-commit to sample size and trust the process.
 
 ---
 
@@ -254,7 +258,8 @@ Document every test with:
 
 ## Growth Experimentation Program
 
-Individual tests are valuable. A continuous experimentation program is a compounding asset. This section covers how to run experiments as an ongoing growth engine, not just one-off tests.
+Individual tests are valuable. A continuous experimentation program is a compounding asset. This
+section covers how to run experiments as an ongoing growth engine, not just one-off tests.
 
 ### The Experiment Loop
 
@@ -332,14 +337,17 @@ specific to your product and audience.
 
 ### Experiment Cadence
 
-**Weekly (30 min)**: Review running experiments for technical issues and guardrail metrics. Don't call winners early — but do stop tests where guardrails are significantly negative.
+**Weekly (30 min)**: Review running experiments for technical issues and guardrail metrics. Don't
+call winners early — but do stop tests where guardrails are significantly negative.
 
 **Bi-weekly**: Conclude completed experiments. Analyze results, update the
 playbook, launch next experiment from backlog.
 
-**Monthly (1 hour)**: Review experiment velocity, win rate, cumulative lift. Replenish hypothesis backlog. Re-prioritize with ICE.
+**Monthly (1 hour)**: Review experiment velocity, win rate, cumulative lift. Replenish hypothesis
+backlog. Re-prioritize with ICE.
 
-**Quarterly**: Audit the playbook. Which patterns have been applied broadly? Which winning patterns haven't been scaled yet? What areas of the funnel are under-tested?
+**Quarterly**: Audit the playbook. Which patterns have been applied broadly? Which winning patterns
+haven't been scaled yet? What areas of the funnel are under-tested?
 
 ---
 

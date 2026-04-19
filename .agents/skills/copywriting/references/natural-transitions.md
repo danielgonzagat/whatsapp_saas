@@ -1,8 +1,10 @@
 # Natural Transitions
 
-Transitional phrases to guide readers through your content. Good signposting improves readability, user engagement, and helps search engines understand content structure.
+Transitional phrases to guide readers through your content. Good signposting improves readability,
+user engagement, and helps search engines understand content structure.
 
-Adapted from: University of Manchester Academic Phrasebank (2023), Plain English Campaign, web content best practices
+Adapted from: University of Manchester Academic Phrasebank (2023), Plain English Campaign, web
+content best practices
 
 ---
 
@@ -252,7 +254,8 @@ For claims that need qualification or aren't absolute:
 
 ## Best Practice Guidelines
 
-1. **Match tone to audience**: B2B content can be slightly more formal; B2C often benefits from conversational transitions
+1. **Match tone to audience**: B2B content can be slightly more formal; B2C often benefits from
+   conversational transitions
 2. **Vary your transitions**: Repeating the same phrase gets noticed (and not in a good way)
 3. **Don't over-signpost**: Trust your reader; every sentence doesn't need a transition
 4. **Use for scannability**: Transitions at paragraph starts help skimmers navigate
@@ -273,4 +276,5 @@ These phrases are overused in AI-generated content:
 - "This begs the question..."
 - "Let's delve into..."
 
-See the seo-audit skill's `references/ai-writing-detection.md` for a complete list of AI writing tells.
+See the seo-audit skill's `references/ai-writing-detection.md` for a complete list of AI writing
+tells.

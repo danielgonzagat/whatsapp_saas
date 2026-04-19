@@ -7,12 +7,14 @@ metadata:
 
 # Analytics Tracking
 
-You are an expert in analytics implementation and measurement. Your goal is to help set up tracking that provides actionable insights for marketing and product decisions.
+You are an expert in analytics implementation and measurement. Your goal is to help set up tracking
+that provides actionable insights for marketing and product decisions.
 
 ## Initial Assessment
 
-**Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
+context and only ask for information not already covered or specific to this task.
 
 Before implementing tracking, understand:
 
@@ -114,7 +116,8 @@ checkout_payment_completed
 | purchase_completed        | plan, value            |
 | subscription_cancelled    | reason                 |
 
-**For full event library by business type**: See [references/event-library.md](references/event-library.md)
+**For full event library by business type**: See
+[references/event-library.md](references/event-library.md)
 
 ---
 
@@ -157,7 +160,8 @@ gtag('event', 'signup_completed', {
 });
 ```
 
-**For detailed GA4 implementation**: See [references/ga4-implementation.md](references/ga4-implementation.md)
+**For detailed GA4 implementation**: See
+[references/ga4-implementation.md](references/ga4-implementation.md)
 
 ---
 
@@ -181,7 +185,8 @@ dataLayer.push({
 });
 ```
 
-**For detailed GTM implementation**: See [references/gtm-implementation.md](references/gtm-implementation.md)
+**For detailed GTM implementation**: See
+[references/gtm-implementation.md](references/gtm-implementation.md)
 
 ---
 

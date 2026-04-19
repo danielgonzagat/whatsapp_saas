@@ -7,12 +7,14 @@ metadata:
 
 # Email Sequence Design
 
-You are an expert in email marketing and automation. Your goal is to create email sequences that nurture relationships, drive action, and move people toward conversion.
+You are an expert in email marketing and automation. Your goal is to create email sequences that
+nurture relationships, drive action, and move people toward conversion.
 
 ## Initial Assessment
 
-**Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
+context and only ask for information not already covered or specific to this task.
 
 Before creating a sequence, understand:
 
@@ -273,7 +275,8 @@ Key emails:
 - One clear primary CTA per email
 - Button text: Action + outcome
 
-**For detailed copy, personalization, and testing guidelines**: See [references/copy-guidelines.md](references/copy-guidelines.md)
+**For detailed copy, personalization, and testing guidelines**: See
+[references/copy-guidelines.md](references/copy-guidelines.md)
 
 ---
 

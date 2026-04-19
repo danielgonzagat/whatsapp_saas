@@ -10,7 +10,8 @@ Every great deck follows a narrative structure: **Situation → Complication →
 - **Complication** (Slides 2-3): Why the status quo is no longer sustainable. Create urgency.
 - **Resolution** (Slides 4-11): Your approach, proof, and path forward.
 
-The goal is not to present features. The goal is to make the buyer feel understood, then show them a better way.
+The goal is not to present features. The goal is to make the buyer feel understood, then show them a
+better way.
 
 ---
 
@@ -30,7 +31,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Generic industry trends that don't connect to pain
 - More than one core problem
 
-**Copy prompt:** "What is the one problem that, if you could describe it perfectly, would make your buyer say 'that's exactly my situation'?"
+**Copy prompt:** "What is the one problem that, if you could describe it perfectly, would make your
+buyer say 'that's exactly my situation'?"
 
 ---
 
@@ -140,7 +142,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Generic outcomes without specifics
 - Customers from irrelevant industries
 
-**Copy prompt:** "Tell the story of one customer who went from struggling to succeeding with your product."
+**Copy prompt:** "Tell the story of one customer who went from struggling to succeeding with your
+product."
 
 ---
 
@@ -274,24 +277,30 @@ The goal is not to present features. The goal is to make the buyer feel understo
 
 ### The Feature Dump
 
-Every slide is a feature with a screenshot. No story, no "so what," no connection to the buyer's world. Reps click through it; prospects tune out.
+Every slide is a feature with a screenshot. No story, no "so what," no connection to the buyer's
+world. Reps click through it; prospects tune out.
 
 ### The Wall of Text
 
-Slides with 200+ words. Nobody reads them during a presentation. If the slide requires reading, it belongs in a leave-behind.
+Slides with 200+ words. Nobody reads them during a presentation. If the slide requires reading, it
+belongs in a leave-behind.
 
 ### The Missing Story Arc
 
-Slides exist in isolation — no narrative flow from problem to solution to proof. The deck feels like a brochure, not a conversation.
+Slides exist in isolation — no narrative flow from problem to solution to proof. The deck feels like
+a brochure, not a conversation.
 
 ### The Generic Screenshot
 
-Product screenshots without callouts, annotations, or context. The prospect can't tell what they're looking at or why it matters.
+Product screenshots without callouts, annotations, or context. The prospect can't tell what they're
+looking at or why it matters.
 
 ### The Premature Demo
 
-Jumping to product features before establishing the problem. The buyer has no frame of reference for why your features matter.
+Jumping to product features before establishing the problem. The buyer has no frame of reference for
+why your features matter.
 
 ### The Kitchen Sink
 
-Trying to address every persona, every use case, every feature in one deck. The result is a 40-slide monster that nobody wants to sit through.
+Trying to address every persona, every use case, every feature in one deck. The result is a 40-slide
+monster that nobody wants to sit through.

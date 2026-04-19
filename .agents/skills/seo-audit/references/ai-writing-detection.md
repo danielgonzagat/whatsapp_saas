@@ -1,8 +1,10 @@
 # AI Writing Detection
 
-Words, phrases, and punctuation patterns commonly associated with AI-generated text. Avoid these to ensure writing sounds natural and human.
+Words, phrases, and punctuation patterns commonly associated with AI-generated text. Avoid these to
+ensure writing sounds natural and human.
 
-Sources: Grammarly (2025), Microsoft 365 Life Hacks (2025), GPTHuman (2025), Walter Writes (2025), Textero (2025), Plagiarism Today (2025), Rolling Stone (2025), MDPI Blog (2025)
+Sources: Grammarly (2025), Microsoft 365 Life Hacks (2025), GPTHuman (2025), Walter Writes (2025),
+Textero (2025), Plagiarism Today (2025), Rolling Stone (2025), MDPI Blog (2025)
 
 ---
 
@@ -12,7 +14,8 @@ Sources: Grammarly (2025), Microsoft 365 Life Hacks (2025), GPTHuman (2025), Wal
 - Overused Verbs
 - Overused Adjectives
 - Overused Transitions and Connectors
-- Phrases That Signal AI Writing (Opening Phrases, Transitional Phrases, Concluding Phrases, Structural Patterns)
+- Phrases That Signal AI Writing (Opening Phrases, Transitional Phrases, Concluding Phrases,
+  Structural Patterns)
 - Filler Words and Empty Intensifiers
 - Academic-Specific AI Tells
 - How to Self-Check
@@ -21,11 +24,13 @@ Sources: Grammarly (2025), Microsoft 365 Life Hacks (2025), GPTHuman (2025), Wal
 
 **The em dash (—) has become one of the most reliable markers of AI-generated content.**
 
-Em dashes are longer than hyphens (-) and are used for emphasis, interruptions, or parenthetical information. While they have legitimate uses in writing, AI models drastically overuse them.
+Em dashes are longer than hyphens (-) and are used for emphasis, interruptions, or parenthetical
+information. While they have legitimate uses in writing, AI models drastically overuse them.
 
 ### Why Em Dashes Signal AI Writing
 
-- AI models were trained on edited books, academic papers, and style guides where em dashes appear frequently
+- AI models were trained on edited books, academic papers, and style guides where em dashes appear
+  frequently
 - AI uses em dashes as a shortcut for sentence variety instead of commas, colons, or parentheses
 - Most human writers rarely use em dashes because they don't exist as a standard keyboard key
 - The overuse is so consistent that it has become the unofficial signature of ChatGPT writing

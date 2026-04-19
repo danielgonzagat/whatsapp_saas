@@ -1,15 +1,20 @@
 # Email Types Reference
 
-A comprehensive guide to lifecycle and campaign emails. Use this as an audit checklist and implementation reference.
+A comprehensive guide to lifecycle and campaign emails. Use this as an audit checklist and
+implementation reference.
 
 ## Contents
 
-- Onboarding Emails (new users series, new customers series, key onboarding step reminder, new user invite)
-- Retention Emails (upgrade to paid, upgrade to higher plan, ask for review, offer support proactively, product usage report, NPS survey, referral program)
-- Billing Emails (switch to annual, failed payment recovery, cancellation survey, upcoming renewal reminder)
+- Onboarding Emails (new users series, new customers series, key onboarding step reminder, new user
+  invite)
+- Retention Emails (upgrade to paid, upgrade to higher plan, ask for review, offer support
+  proactively, product usage report, NPS survey, referral program)
+- Billing Emails (switch to annual, failed payment recovery, cancellation survey, upcoming renewal
+  reminder)
 - Usage Emails (daily/weekly/monthly summary, key event or milestone notifications)
 - Win-Back Emails (expired trials, cancelled customers)
-- Campaign Emails (monthly roundup/newsletter, seasonal promotions, product updates, industry news roundup, pricing update)
+- Campaign Emails (monthly roundup/newsletter, seasonal promotions, product updates, industry news
+  roundup, pricing update)
 - Email Audit Checklist (onboarding, retention, billing, usage, win-back, campaigns)
 
 ## Onboarding Emails
@@ -44,7 +49,8 @@ A comprehensive guide to lifecycle and campaign emails. Use this as an audit che
 - Email 4: Success story from similar customer (day 7)
 - Email 5: Check-in + introduce support resources (day 14)
 
-**Key point**: Different from new user series—they've committed. Focus on reinforcement and expansion, not conversion.
+**Key point**: Different from new user series—they've committed. Focus on reinforcement and
+expansion, not conversion.
 
 ---
 
@@ -314,7 +320,8 @@ A comprehensive guide to lifecycle and campaign emails. Use this as an audit che
 - Would anything change your mind
 - Can we help with transition
 
-**Winback opportunity**: Based on reason, offer targeted save (discount, pause, downgrade, training).
+**Winback opportunity**: Based on reason, offer targeted save (discount, pause, downgrade,
+training).
 
 ---
 

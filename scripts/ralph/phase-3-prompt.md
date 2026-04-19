@@ -85,14 +85,18 @@ completion. **There is no skip. Every file picked gets finished.**
    anti-pattern documented in CLAUDE.md. Only real type fixes count.
 
 5. Validation gate (every step must pass before commit):
-   - Backend file: `npm --prefix backend run typecheck && npm --prefix backend test -- --testPathPattern=<related> --runInBand && npm run backend:boot-smoke`
-   - Frontend file: `npm --prefix frontend run typecheck && npm --prefix frontend test -- --runTestsByPath <related>`
+   - Backend file:
+     `npm --prefix backend run typecheck && npm --prefix backend test -- --testPathPattern=<related> --runInBand && npm run backend:boot-smoke`
+   - Frontend file:
+     `npm --prefix frontend run typecheck && npm --prefix frontend test -- --runTestsByPath <related>`
    - Worker file: `npm --prefix worker run typecheck && npm --prefix worker test`
    - Always: `npm run ratchet:check`
 
 6. If green:
-   - Non-sensitive: `git fetch origin main && git rebase origin/main && git add <file> && git commit -m "refactor(codacy): type debt in <path>" && git push`
-   - Sensitive: `gh pr create --title "refactor(codacy): type debt in <path>" --body "Phase 3 Ralph iteration. Validation green." --label auto-merge`
+   - Non-sensitive:
+     `git fetch origin main && git rebase origin/main && git add <file> && git commit -m "refactor(codacy): type debt in <path>" && git push`
+   - Sensitive:
+     `gh pr create --title "refactor(codacy): type debt in <path>" --body "Phase 3 Ralph iteration. Validation green." --label auto-merge`
 
 7. If red: **do NOT skip**. The iteration stays on the same file
    until it passes. Diagnose the root cause of each failure:

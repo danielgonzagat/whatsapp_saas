@@ -7,18 +7,21 @@ metadata:
 
 # Schema Markup
 
-You are an expert in structured data and schema markup. Your goal is to implement schema.org markup that helps search engines understand content and enables rich results in search.
+You are an expert in structured data and schema markup. Your goal is to implement schema.org markup
+that helps search engines understand content and enables rich results in search.
 
 ## Initial Assessment
 
-**Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
+context and only ask for information not already covered or specific to this task.
 
 Before implementing schema, understand:
 
 1. **Page Type** - What kind of page? What's the primary content? What rich results are possible?
 
-2. **Current State** - Any existing schema? Errors in implementation? Which rich results already appearing?
+2. **Current State** - Any existing schema? Errors in implementation? Which rich results already
+   appearing?
 
 3. **Goals** - Which rich results are you targeting? What's the business value?
 
@@ -67,7 +70,8 @@ Before implementing schema, understand:
 | LocalBusiness       | Local business pages      | name, address                          |
 | Event               | Events, webinars          | name, startDate, location              |
 
-**For complete JSON-LD examples**: See [references/schema-examples.md](references/schema-examples.md)
+**For complete JSON-LD examples**: See
+[references/schema-examples.md](references/schema-examples.md)
 
 ---
 

@@ -7,12 +7,14 @@ metadata:
 
 # Programmatic SEO
 
-You are an expert in programmatic SEO—building SEO-optimized pages at scale using templates and data. Your goal is to create pages that rank, provide value, and avoid thin content penalties.
+You are an expert in programmatic SEO—building SEO-optimized pages at scale using templates and
+data. Your goal is to create pages that rank, provide value, and avoid thin content penalties.
 
 ## Initial Assessment
 
-**Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
+context and only ask for information not already covered or specific to this task.
 
 Before designing a programmatic SEO strategy, understand:
 
@@ -53,7 +55,8 @@ Hierarchy of data defensibility:
 
 ### 3. Clean URL Structure
 
-**Use subfolders, not subdomains** — subfolders consolidate domain authority while subdomains split it:
+**Use subfolders, not subdomains** — subfolders consolidate domain authority while subdomains split
+it:
 
 - Good: `yoursite.com/templates/resume/`
 - Bad: `templates.yoursite.com/resume/`

@@ -2,8 +2,10 @@
 
 ## Contents
 
-- Van Westendorp Price Sensitivity Meter (The Four Questions, How to Analyze, Survey Tips, Sample Output)
-- MaxDiff Analysis (How It Works, Example Survey Question, Analyzing Results, Using MaxDiff for Packaging)
+- Van Westendorp Price Sensitivity Meter (The Four Questions, How to Analyze, Survey Tips, Sample
+  Output)
+- MaxDiff Analysis (How It Works, Example Survey Question, Analyzing Results, Using MaxDiff for
+  Packaging)
 - Willingness to Pay Surveys
 - Usage-Value Correlation Analysis
 
@@ -15,10 +17,14 @@ The Van Westendorp survey identifies the acceptable price range for your product
 
 Ask each respondent:
 
-1. "At what price would you consider [product] to be so expensive that you would not consider buying it?" (Too expensive)
-2. "At what price would you consider [product] to be priced so low that you would question its quality?" (Too cheap)
-3. "At what price would you consider [product] to be starting to get expensive, but you still might consider it?" (Expensive/high side)
-4. "At what price would you consider [product] to be a bargain—a great buy for the money?" (Cheap/good value)
+1. "At what price would you consider [product] to be so expensive that you would not consider buying
+   it?" (Too expensive)
+2. "At what price would you consider [product] to be priced so low that you would question its
+   quality?" (Too cheap)
+3. "At what price would you consider [product] to be starting to get expensive, but you still might
+   consider it?" (Expensive/high side)
+4. "At what price would you consider [product] to be a bargain—a great buy for the money?"
+   (Cheap/good value)
 
 ### How to Analyze
 

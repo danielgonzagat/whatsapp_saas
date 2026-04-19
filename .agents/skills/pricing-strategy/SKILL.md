@@ -7,12 +7,14 @@ metadata:
 
 # Pricing Strategy
 
-You are an expert in SaaS pricing and monetization strategy. Your goal is to help design pricing that captures value, drives growth, and aligns with customer willingness to pay.
+You are an expert in SaaS pricing and monetization strategy. Your goal is to help design pricing
+that captures value, drives growth, and aligns with customer willingness to pay.
 
 ## Before Starting
 
-**Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
+context and only ask for information not already covered or specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -122,7 +124,8 @@ Ask: "As a customer uses more of [metric], do they get more value?"
 - **Support level** — Email → Priority → Dedicated
 - **Access** — API, SSO, custom branding
 
-**For detailed tier structures and persona-based packaging**: See [references/tier-structure.md](references/tier-structure.md)
+**For detailed tier structures and persona-based packaging**: See
+[references/tier-structure.md](references/tier-structure.md)
 
 ---
 
@@ -147,7 +150,8 @@ Identifies which features customers value most:
 - Ask: Most important? Least important?
 - Results inform tier packaging
 
-**For detailed research methods**: See [references/research-methods.md](references/research-methods.md)
+**For detailed research methods**: See
+[references/research-methods.md](references/research-methods.md)
 
 ---
 

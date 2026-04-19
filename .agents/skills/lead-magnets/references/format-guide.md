@@ -163,7 +163,8 @@ Detailed creation guidance for each lead magnet format.
 
 **Cadence**: Every 1-2 days. Don't stretch too thin or compress too tight.
 
-**Key principle**: Each lesson should deliver standalone value. If someone only watches lesson 2, they should still learn something useful.
+**Key principle**: Each lesson should deliver standalone value. If someone only watches lesson 2,
+they should still learn something useful.
 
 ---
 
@@ -185,9 +186,11 @@ Detailed creation guidance for each lead magnet format.
 - Tailor follow-up emails by result type
 - Share-worthy result format ("I got: Growth Stage Marketer!")
 
-**Implementation**: Gate results behind email capture. The quiz itself is ungated — the personalized results require an email.
+**Implementation**: Gate results behind email capture. The quiz itself is ungated — the personalized
+results require an email.
 
-**For building interactive quizzes**: See **free-tool-strategy** skill for technical implementation guidance.
+**For building interactive quizzes**: See **free-tool-strategy** skill for technical implementation
+guidance.
 
 ---
 
@@ -211,4 +214,5 @@ Detailed creation guidance for each lead magnet format.
 
 **Follow-up**: Send replay link + summary + CTA within 24 hours. Continue with nurture sequence.
 
-**Key principle**: Teach something genuinely useful. A webinar that's just a sales pitch will damage trust.
+**Key principle**: Teach something genuinely useful. A webinar that's just a sales pitch will damage
+trust.

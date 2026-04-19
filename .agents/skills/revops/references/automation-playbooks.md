@@ -1,6 +1,7 @@
 # Automation Playbooks
 
-Platform-specific workflow recipes for HubSpot, Salesforce, scheduling tools, and cross-tool automation.
+Platform-specific workflow recipes for HubSpot, Salesforce, scheduling tools, and cross-tool
+automation.
 
 ## HubSpot Workflow Recipes
 
@@ -22,9 +23,8 @@ Platform-specific workflow recipes for HubSpot, Salesforce, scheduling tools, an
 
 ### 2. MQL SLA Escalation
 
-**Name:** MQL SLA Breach Alert
-**Trigger:** Contact property "Lifecycle Stage" equals "MQL" AND "Days since last contacted" is greater than 0.5 (12 hours)
-**Actions:**
+**Name:** MQL SLA Breach Alert **Trigger:** Contact property "Lifecycle Stage" equals "MQL" AND
+"Days since last contacted" is greater than 0.5 (12 hours) **Actions:**
 
 1. Send internal email to contact owner: "SLA warning: [Contact Name] has not been contacted"
 2. If still no activity after 24 hours → send alert to sales manager
@@ -90,12 +90,13 @@ Platform-specific workflow recipes for HubSpot, Salesforce, scheduling tools, an
 **Trigger:** Deal property "Days in current stage" is greater than [2x average for that stage]
 **Actions:**
 
-1. Send internal email to deal owner: "Deal stale alert: [Deal Name] has been in [Stage] for [X] days"
+1. Send internal email to deal owner: "Deal stale alert: [Deal Name] has been in [Stage] for [X]
+   days"
 2. Create task: "Update or close [Deal Name]" — due in 3 business days
 3. If no update after 7 days → alert sales manager
-4. Add to "Stale Deals" dashboard list
-   **Outcome:** Pipeline stays clean and forecast stays accurate
-   **Notes:** Customize thresholds per stage (Discovery: 14 days, Proposal: 10 days, Negotiation: 21 days)
+4. Add to "Stale Deals" dashboard list **Outcome:** Pipeline stays clean and forecast stays accurate
+   **Notes:** Customize thresholds per stage (Discovery: 14 days, Proposal: 10 days, Negotiation: 21
+   days)
 
 ---
 
@@ -121,7 +122,8 @@ Platform-specific workflow recipes for HubSpot, Salesforce, scheduling tools, an
 **Trigger:** Scheduled — daily at 8:00 AM local time
 **Actions:**
 
-1. Filter contacts: lifecycle stage is "SQL" or "Opportunity" AND had website activity in last 24 hours
+1. Filter contacts: lifecycle stage is "SQL" or "Opportunity" AND had website activity in last 24
+   hours
 2. Send digest email to each contact owner with their leads' activity
 3. Include: pages visited, content downloaded, emails opened/clicked
    **Outcome:** Sales reps start each day knowing which leads are active

@@ -7,12 +7,14 @@ metadata:
 
 # Page Conversion Rate Optimization (CRO)
 
-You are a conversion rate optimization expert. Your goal is to analyze marketing pages and provide actionable recommendations to improve conversion rates.
+You are a conversion rate optimization expert. Your goal is to analyze marketing pages and provide
+actionable recommendations to improve conversion rates.
 
 ## Initial Assessment
 
-**Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+**Check for product marketing context first:** If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that
+context and only ask for information not already covered or specific to this task.
 
 Before providing recommendations, identify:
 
@@ -179,7 +181,8 @@ When recommending experiments, consider tests for:
 - Form optimization
 - Navigation and UX
 
-**For comprehensive experiment ideas by page type**: See [references/experiments.md](references/experiments.md)
+**For comprehensive experiment ideas by page type**: See
+[references/experiments.md](references/experiments.md)
 
 ---
 

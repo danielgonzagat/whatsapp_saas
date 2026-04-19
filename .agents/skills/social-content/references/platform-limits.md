@@ -1,6 +1,7 @@
 # Platform Limits Reference
 
-Quick reference for hashtag limits, character counts, and visible text thresholds on each major social platform.
+Quick reference for hashtag limits, character counts, and visible text thresholds on each major
+social platform.
 
 ---
 
@@ -69,7 +70,8 @@ Quick reference for hashtag limits, character counts, and visible text threshold
 | Max description chars      | 5,000                                                     |
 | Visible before "Show more" | ~100 chars                                                |
 
-> The first 3 hashtags in the description automatically appear above the title as clickable links. For Shorts, use 1 – 5 hashtags.
+> The first 3 hashtags in the description automatically appear above the title as clickable links.
+> For Shorts, use 1 – 5 hashtags.
 
 ---
 
@@ -83,7 +85,8 @@ Quick reference for hashtag limits, character counts, and visible text threshold
 | Max description chars | 500                 |
 | Visible before "More" | ~50 chars (desktop) |
 
-> Pinterest has deprioritized hashtags. Focus on keywords as natural sentences within the description for better SEO instead of relying on hashtags.
+> Pinterest has deprioritized hashtags. Focus on keywords as natural sentences within the
+> description for better SEO instead of relying on hashtags.
 
 ---
 
@@ -97,7 +100,8 @@ Quick reference for hashtag limits, character counts, and visible text threshold
 | Max with text attachment  | 10,500 (500 + 10,000 expandable) |
 | Visible without expanding | First ~1 – 2 lines               |
 
-> Threads limits topic tags to one per post. The platform is not hashtag-driven — the algorithm prioritizes content from followed accounts mixed with recommendations.
+> Threads limits topic tags to one per post. The platform is not hashtag-driven — the algorithm
+> prioritizes content from followed accounts mixed with recommendations.
 
 ---
 

@@ -1,13 +1,15 @@
 # Follow-Up Sequences
 
-55% of replies come from follow-ups, not the initial email. Yet 48% of salespeople never follow up even once.
+55% of replies come from follow-ups, not the initial email. Yet 48% of salespeople never follow up
+even once.
 
 ## How Many: 3–5 Total Emails
 
 - Highest single-email reply rate: **8.4%** (Belkins).
 - 4–7 email campaigns achieve **27% reply rates** vs 9% for 1–3 emails (Woodpecker, 20M emails).
 - By 4th follow-up, response rates drop **55%** and spam complaints **triple**.
-- Resolution: longer sequences catch different timing windows. Cap at 4 follow-ups (5 total emails). Each must add genuinely new value.
+- Resolution: longer sequences catch different timing windows. Cap at 4 follow-ups (5 total emails).
+  Each must add genuinely new value.
 
 ## Optimal Cadence
 
@@ -37,11 +39,13 @@ Each follow-up must stand alone while building toward the goal. Never just "bump
 | Follow-up 3 | New insight, industry trend, or relevant resource          | Demonstrate expertise      |
 | Follow-up 4 | Breakup — acknowledge silence, leave door open             | Trigger loss aversion      |
 
-Add only **one new value proposition per email** (SalesBread). This naturally forces different angles.
+Add only **one new value proposition per email** (SalesBread). This naturally forces different
+angles.
 
 ## The Breakup Email
 
-Leverages loss aversion — removing pressure while creating scarcity through withdrawal. Close.com reports **10–15% response rates** from breakup emails with cold prospects.
+Leverages loss aversion — removing pressure while creating scarcity through withdrawal. Close.com
+reports **10–15% response rates** from breakup emails with cold prospects.
 
 **Structure:**
 
@@ -52,7 +56,9 @@ Leverages loss aversion — removing pressure while creating scarcity through wi
 
 **Example:**
 
-> I haven't heard back, so I'll assume now isn't the right time. Before I close the loop: [1-sentence insight or resource]. If that changes things, feel free to reply. Otherwise, no hard feelings — good luck with [their goal].
+> I haven't heard back, so I'll assume now isn't the right time. Before I close the loop:
+> [1-sentence insight or resource] . If that changes things, feel free to reply. Otherwise, no hard
+> feelings — good luck with [their goal] .
 
 **1-2-3 Format** (reduces friction to near zero):
 
@@ -76,6 +82,7 @@ Leverages loss aversion — removing pressure while creating scarcity through wi
 
 **Executives/founders:** Ultra-low-effort, curiosity-driven. "Curious?" or "Worth 2 min?"
 
-**Mid-level managers:** More specific value. "Want me to walk through how [Company] saved 15 hours/week?"
+**Mid-level managers:** More specific value. "Want me to walk through how [Company] saved 15
+hours/week?"
 
 Higher in the org chart = less friction you can ask for.

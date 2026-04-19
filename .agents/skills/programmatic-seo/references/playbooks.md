@@ -1,6 +1,7 @@
 # The 12 Programmatic SEO Playbooks
 
-Beyond mixing and matching data point permutations, these are the proven playbooks for programmatic SEO.
+Beyond mixing and matching data point permutations, these are the proven playbooks for programmatic
+SEO.
 
 ## Contents
 
@@ -118,8 +119,8 @@ _See also: competitor-alternatives skill for detailed frameworks_
 
 ## 5. Examples
 
-**Pattern**: "[type] examples" or "[category] inspiration"
-**Example searches**: "saas landing page examples", "email subject line examples", "portfolio website examples"
+**Pattern**: "[type] examples" or "[category] inspiration" **Example searches**: "saas landing page
+examples", "email subject line examples", "portfolio website examples"
 
 **What it is**: Galleries or collections of real-world examples for inspiration.
 
@@ -142,8 +143,8 @@ _See also: competitor-alternatives skill for detailed frameworks_
 
 ## 6. Locations
 
-**Pattern**: "[service/thing] in [location]"
-**Example searches**: "coworking spaces in san diego", "dentists in austin", "best restaurants in brooklyn"
+**Pattern**: "[service/thing] in [location] " **Example searches**: "coworking spaces in san diego",
+"dentists in austin", "best restaurants in brooklyn"
 
 **What it is**: Location-specific pages for services, businesses, or information.
 
@@ -166,8 +167,8 @@ _See also: competitor-alternatives skill for detailed frameworks_
 
 ## 7. Personas
 
-**Pattern**: "[product] for [audience]" or "[solution] for [role/industry]"
-**Example searches**: "payroll software for agencies", "crm for real estate", "project management for freelancers"
+**Pattern**: "[product] for [audience] " or "[solution] for [role/industry] " **Example searches**:
+"payroll software for agencies", "crm for real estate", "project management for freelancers"
 
 **What it is**: Tailored landing pages addressing specific audience segments.
 

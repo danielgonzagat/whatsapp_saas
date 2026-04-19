@@ -36,13 +36,17 @@ check completion.
    d. Residual formatting issues that Phase 2 missed (run
    `npx @biomejs/biome check --write` scoped to the single file).
 4. Validate (every check must pass):
-   - Backend file: `npm --prefix backend run typecheck && npm --prefix backend test -- --testPathPattern=<related>`
-   - Frontend file: `npm --prefix frontend run typecheck && npm --prefix frontend test -- --runTestsByPath <related>`
+   - Backend file:
+     `npm --prefix backend run typecheck && npm --prefix backend test -- --testPathPattern=<related>`
+   - Frontend file:
+     `npm --prefix frontend run typecheck && npm --prefix frontend test -- --runTestsByPath <related>`
    - Worker file: `npm --prefix worker run typecheck && npm --prefix worker test`
    - Always: `npm run ratchet:check`
 5. If green:
-   - Non-sensitive: `git fetch && git rebase origin/main && git add <file> && git commit -m "refactor(codacy): long-tail in <path>" && git push`
-   - Sensitive: `gh pr create --label auto-merge --title "refactor(codacy): long-tail in <path>" --body "Phase 5 Ralph iteration. Validation green."`
+   - Non-sensitive:
+     `git fetch && git rebase origin/main && git add <file> && git commit -m "refactor(codacy): long-tail in <path>" && git push`
+   - Sensitive:
+     `gh pr create --label auto-merge --title "refactor(codacy): long-tail in <path>" --body "Phase 5 Ralph iteration. Validation green."`
 6. If red: `git restore <file>`, append to
    `/tmp/ralph-phase5-skipped.log`, continue.
 7. Every 10 iterations:

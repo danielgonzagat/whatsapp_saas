@@ -121,7 +121,8 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 
 > [Impressive stat or testimonial] → [What you do] → [CTA]
 
-**For detailed templates and headline formulas**: See [references/ad-copy-templates.md](references/ad-copy-templates.md)
+**For detailed templates and headline formulas**: See
+[references/ad-copy-templates.md](references/ad-copy-templates.md)
 
 ---
 
@@ -139,9 +140,11 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 
 - **Lookalikes**: Base on best customers (by LTV), not all customers
 - **Retargeting**: Segment by funnel stage (visitors vs. cart abandoners)
-- **Exclusions**: Exclude existing customers and recent converters — showing ads to people who already bought wastes spend
+- **Exclusions**: Exclude existing customers and recent converters — showing ads to people who
+  already bought wastes spend
 
-**For detailed targeting strategies by platform**: See [references/audience-targeting.md](references/audience-targeting.md)
+**For detailed targeting strategies by platform**: See
+[references/audience-targeting.md](references/audience-targeting.md)
 
 ---
 
@@ -272,7 +275,8 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 
 Before launching campaigns, ensure proper tracking and account setup.
 
-**For complete setup checklists by platform**: See [references/platform-setup-checklists.md](references/platform-setup-checklists.md)
+**For complete setup checklists by platform**: See
+[references/platform-setup-checklists.md](references/platform-setup-checklists.md)
 
 ### Universal Pre-Launch Checklist
 
@@ -339,7 +343,8 @@ advertising platforms:
 - **TikTok Ads** — younger demographics, video. MCP: no. Guide:
   [tiktok-ads.md](../../tools/integrations/tiktok-ads.md).
 
-For tracking, see also: [ga4.md](../../tools/integrations/ga4.md), [segment.md](../../tools/integrations/segment.md)
+For tracking, see also: [ga4.md](../../tools/integrations/ga4.md) ,
+[segment.md](../../tools/integrations/segment.md)
 
 ---
 

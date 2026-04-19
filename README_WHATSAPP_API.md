@@ -2,7 +2,8 @@
 
 ## Visão Geral
 
-Este projeto utiliza o [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/) como **provider oficial** para envio de mensagens WhatsApp.
+Este projeto utiliza o [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/) como **provider
+oficial** para envio de mensagens WhatsApp.
 
 ### Vantagens
 
@@ -54,11 +55,13 @@ WORKER_METRICS_TOKEN=your-worker-metrics-token
 BACKEND_URL=https://seu-backend.up.railway.app
 ```
 
-Importante: o runtime atual falha cedo se `WAHA_API_URL` não estiver definido. Não existe mais fallback implícito para uma instância WAHA hardcoded.
+Importante: o runtime atual falha cedo se `WAHA_API_URL` não estiver definido. Não existe mais
+fallback implícito para uma instância WAHA hardcoded.
 
 ### 2. WAHA como Serviço Externo
 
-O WAHA roda como serviço externo (ex.: Railway). Não há mais container local no `docker-compose.yml`.
+O WAHA roda como serviço externo (ex.: Railway). Não há mais container local no `docker-compose.yml`
+.
 
 ```bash
 docker-compose up -d
