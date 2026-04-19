@@ -71,49 +71,55 @@ function SkeletonBlock({
   );
 }
 
+function optionalString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function normalizeLesson(raw: unknown, moduleIndex: number, lessonIndex: number): Lesson {
+  const lesson = readRecord(raw);
+  const fallbackId = `lesson-${moduleIndex}-${lessonIndex}`;
+  return {
+    id: readString(lesson?.id) || readString(lesson?._id) || fallbackId,
+    name: readString(lesson?.name, `Aula ${lessonIndex + 1}`),
+    description: optionalString(lesson?.description),
+    videoUrl: optionalString(lesson?.videoUrl),
+    position: Number(lesson?.position ?? lessonIndex) || lessonIndex,
+  };
+}
+
+function normalizeModule(raw: unknown, moduleIndex: number): Module {
+  const moduleRecord = readRecord(raw);
+  const rawLessons = Array.isArray(moduleRecord?.lessons) ? moduleRecord.lessons : [];
+  const fallbackId = `module-${moduleIndex}`;
+  return {
+    id: readString(moduleRecord?.id) || readString(moduleRecord?._id) || fallbackId,
+    name: readString(moduleRecord?.name, `Modulo ${moduleIndex + 1}`),
+    description: optionalString(moduleRecord?.description),
+    position: Number(moduleRecord?.position ?? moduleIndex) || moduleIndex,
+    lessons: rawLessons.map((lessonValue, lessonIndex) =>
+      normalizeLesson(lessonValue, moduleIndex, lessonIndex),
+    ),
+  };
+}
+
+function pickRawModules(raw: Record<string, unknown>): unknown[] {
+  if (Array.isArray(raw.modules)) return raw.modules;
+  if (Array.isArray(raw.modulesList)) return raw.modulesList;
+  return [];
+}
+
 function normalizeMemberAreaPayload(payload: unknown): MemberArea | null {
   const payloadRecord = readRecord(payload);
   const raw = readRecord(payloadRecord?.area) ?? payloadRecord;
   if (!raw) return null;
 
-  const rawModules = Array.isArray(raw.modules)
-    ? raw.modules
-    : Array.isArray(raw.modulesList)
-      ? raw.modulesList
-      : [];
-
   return {
     id: readString(raw.id),
     name: readString(raw.name, 'Area de membros'),
-    description: typeof raw.description === 'string' ? raw.description : undefined,
-    logoUrl: typeof raw.logoUrl === 'string' ? raw.logoUrl : undefined,
-    primaryColor: typeof raw.primaryColor === 'string' ? raw.primaryColor : undefined,
-    modules: rawModules.map((moduleValue, moduleIndex) => {
-      const moduleRecord = readRecord(moduleValue);
-      const rawLessons = Array.isArray(moduleRecord?.lessons) ? moduleRecord.lessons : [];
-
-      return {
-        id:
-          readString(moduleRecord?.id) || readString(moduleRecord?._id) || `module-${moduleIndex}`,
-        name: readString(moduleRecord?.name, `Modulo ${moduleIndex + 1}`),
-        description:
-          typeof moduleRecord?.description === 'string' ? moduleRecord.description : undefined,
-        position: Number(moduleRecord?.position ?? moduleIndex) || moduleIndex,
-        lessons: rawLessons.map((lessonValue, lessonIndex) => {
-          const lesson = readRecord(lessonValue);
-          return {
-            id:
-              readString(lesson?.id) ||
-              readString(lesson?._id) ||
-              `lesson-${moduleIndex}-${lessonIndex}`,
-            name: readString(lesson?.name, `Aula ${lessonIndex + 1}`),
-            description: typeof lesson?.description === 'string' ? lesson.description : undefined,
-            videoUrl: typeof lesson?.videoUrl === 'string' ? lesson.videoUrl : undefined,
-            position: Number(lesson?.position ?? lessonIndex) || lessonIndex,
-          };
-        }),
-      };
-    }),
+    description: optionalString(raw.description),
+    logoUrl: optionalString(raw.logoUrl),
+    primaryColor: optionalString(raw.primaryColor),
+    modules: pickRawModules(raw).map(normalizeModule),
   };
 }
 
