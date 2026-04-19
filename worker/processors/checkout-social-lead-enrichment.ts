@@ -178,6 +178,7 @@ function readStringField(value: unknown, keys: string[]) {
 
   for (const key of keys) {
     if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+    // nosemgrep: javascript.lang.correctness.no-stringify-keys.no-stringify-keys -- plain dynamic property read; key is a validated string literal from caller-provided keys array, not JSON.stringify output
     const candidate = value[key];
     if (typeof candidate === 'string' && candidate.trim()) {
       return candidate.trim();

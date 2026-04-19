@@ -111,9 +111,11 @@ async function handleGenerateAudio(job: Job) {
       },
     });
 
+    // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring -- server-side log; jobId is internal UUID, publicUrl is server-generated CDN URL
     console.log(`✅ Voice Job ${jobId} completed. URL: ${publicUrl}`);
     return { success: true, outputUrl: publicUrl };
   } catch (err) {
+    // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring -- server-side log; jobId is internal UUID, err is not user-controlled as a format string
     console.error(`❌ Voice Job ${jobId} failed:`, err);
     await prisma.voiceJob.update({
       where: { id: jobId },

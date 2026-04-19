@@ -2848,6 +2848,7 @@ function PerfilPublicoSection({
           >
             {avatarPreviewUrl || profile?.avatarUrl ? (
               // biome-ignore lint/correctness/useImageSize: avatar URL is dynamic (user-uploaded) and rendered within a max-sized container via CSS
+              // biome-ignore lint/performance/noImgElement: dynamic user avatar (uploaded/blob URL); next/image remote loader not configured for arbitrary hosts
               <img
                 src={avatarPreviewUrl || profile?.avatarUrl || undefined}
                 alt=""

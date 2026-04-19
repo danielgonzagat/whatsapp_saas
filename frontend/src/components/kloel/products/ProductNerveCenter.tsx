@@ -2924,6 +2924,7 @@ export default function ProductNerveCenter({
                             }}
                           >
                             {image ? (
+                              // biome-ignore lint/performance/noImgElement: dynamic product image from user-entered URL; next/image remote loader not configured for arbitrary hosts
                               <img
                                 src={image}
                                 alt=""
