@@ -21,6 +21,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import type Redis from 'ioredis';
 import { Counter, Gauge, register } from 'prom-client';
+import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -354,14 +355,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     }
 
     let deleted = 0;
-    // biome-ignore lint/performance/noAwaitInLoops: sequential session health checks
-    for (const session of sessions) {
+    await forEachSequential(sessions, async (session) => {
       if (String(session.state || '').toUpperCase() !== 'FAILED') {
-        continue;
+        return;
       }
 
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: per-session deleteSession must be sequential to avoid provider race
         const removed = await this.whatsappApi.deleteSession(session.name);
         if (removed) {
           deleted += 1;
@@ -376,7 +375,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           `Failed to delete stale FAILED WAHA session ${session.name}: ${errorInstanceofError.message}`,
         );
       }
-    }
+    });
 
     return deleted;
   }
@@ -436,10 +435,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       workspaceIdsToRefresh.add(workspaceId);
     }
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential workspace refresh cycle
-    for (const workspaceId of workspaceIdsToRefresh) {
+    await forEachSequential(workspaceIdsToRefresh, async (workspaceId) => {
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: per-workspace session status probe; sequential to respect provider rate limit
         await this.providerRegistry.getSessionStatus(workspaceId);
       } catch (error: unknown) {
         const errorInstanceofError =
@@ -450,7 +447,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           `Failed to adopt live WAHA session for ${workspaceId}: ${errorInstanceofError.message}`,
         );
       }
-    }
+    });
 
     if (workspaceIdsToRefresh.size > 0) {
       this.logger.log(
@@ -617,11 +614,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         `🐕 Checking ${workspaces.length} workspaces (total with providerSettings: ${allWorkspaces.length})`,
       );
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential workspace health monitoring
-      for (const workspace of workspaces) {
-        // biome-ignore lint/performance/noAwaitInLoops: per-workspace session check preserves watchdog alerting ordering
+      await forEachSequential(workspaces, async (workspace) => {
         await this.checkWorkspaceSession(workspace.id, workspace.name);
-      }
+      });
     } catch (error: unknown) {
       const errorInstanceofError =
         error instanceof Error

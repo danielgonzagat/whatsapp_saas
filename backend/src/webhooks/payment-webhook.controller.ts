@@ -19,14 +19,12 @@ import {
   type WebhookEvent,
 } from '@prisma/client';
 import type { Redis } from 'ioredis';
-// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import Stripe = require('stripe');
 import { AdminAuditService } from '../admin/audit/admin-audit.service';
-import { PlatformWalletService } from '../platform-wallet/platform-wallet.service';
 import { PlatformPayoutService } from '../platform-wallet/platform-payout.service';
+import { PlatformWalletService } from '../platform-wallet/platform-wallet.service';
 import { Public } from '../auth/public.decorator';
 import { AutopilotService } from '../autopilot/autopilot.service';
+import { StripeRuntime } from '../billing/stripe-runtime';
 import type {
   StripeCheckoutSession,
   StripeEvent,
@@ -290,7 +288,7 @@ export class PaymentWebhookController {
           reason: 'Stripe not configured',
         };
       }
-      const stripe = new Stripe(stripeKey);
+      const stripe = new StripeRuntime(stripeKey);
       const verified: StripeEvent = stripe.webhooks.constructEvent(
         req.rawBody,
         stripeSignature,

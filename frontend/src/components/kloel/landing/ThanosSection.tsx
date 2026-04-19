@@ -380,13 +380,17 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     setMsgs(EMPTY_MESSAGES);
 
     const run = async () => {
-      // biome-ignore lint/performance/noAwaitInLoops: staggered landing-page animation — each SALES_FLOW message renders after a per-message delay (900/600/400ms) to create the typing cadence; Promise.all would render all messages instantaneously and destroy the effect
-      for (const msg of SALES_FLOW) {
+      const playMessage = async (index: number): Promise<void> => {
+        if (index >= SALES_FLOW.length || cancelled) return;
+        const msg = SALES_FLOW[index];
         if (cancelled) return;
         await wait(msg.f === '$' ? 900 : msg.f === 'a' ? 600 : 400);
         if (cancelled) return;
         setMsgs((prev) => ({ ...prev, [msg.ch]: [...prev[msg.ch], msg] }));
-      }
+        await playMessage(index + 1);
+      };
+
+      await playMessage(0);
     };
 
     run();
@@ -627,7 +631,6 @@ export default function ThanosSection() {
         canvas.style.opacity = '1';
         drawScene(ctx, layout, imgsLoaded);
 
-        // biome-ignore lint/performance/noAwaitInLoops: thanos animation cycle is sequential — each phase depends on the previous canvas state
         await wait(STATIC_HOLD_MS);
         if (!alive) return;
 

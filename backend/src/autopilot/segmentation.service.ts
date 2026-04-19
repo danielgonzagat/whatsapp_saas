@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 
 const DEAL_STATUS_VALUES = new Set<string>(Object.values(DealStatus));
@@ -428,13 +429,11 @@ export class SegmentationService {
 
     const results = { hot: 0, warm: 0, cold: 0, ghost: 0, processed: 0 };
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential contact processing with DB writes
-    for (const contact of contacts) {
-      // biome-ignore lint/performance/noAwaitInLoops: per-contact engagement score depends on prior contact state; sequential required
+    await forEachSequential(contacts, async (contact) => {
       const { level } = await this.calculateEngagementScore(contact.id);
       results[level]++;
       results.processed++;
-    }
+    });
 
     this.logger.log(
       `[AutoSegment] Workspace ${workspaceId}: Hot=${results.hot}, Warm=${results.warm}, Cold=${results.cold}, Ghost=${results.ghost}`,

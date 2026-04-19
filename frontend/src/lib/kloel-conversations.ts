@@ -2,6 +2,7 @@
 
 import { apiFetch } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
+import { readStreamSequential } from '@/lib/async-sequence';
 import { type KloelChatRequestMetadata } from '@/lib/kloel-chat';
 import { mutate } from 'swr';
 import { tokenStorage } from './api/core';
@@ -223,11 +224,7 @@ export function streamAuthenticatedKloelMessage(
       };
 
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: kloel conversations SSE stream — each reader.read() must reset the idle-timeout and parse buffered newlines before the next read; parallel reads would starve the idle-timeout reset and abort the stream mid-flight
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
+        await readStreamSequential(() => reader.read(), async ({ value }) => {
           resetIdleTimeout();
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
@@ -238,15 +235,16 @@ export function streamAuthenticatedKloelMessage(
               const shouldStop = consumeLine(line);
               if (shouldStop) {
                 finishIdleTimeout();
-                return;
+                return true;
               }
             } catch (error: unknown) {
               finishIdleTimeout();
               options.onError?.(toErrorMessage(error, 'stream_parse_failed'));
-              return;
+              return true;
             }
           }
-        }
+          return false;
+        });
 
         buffer += decoder.decode();
         if (buffer.trim().length > 0) {

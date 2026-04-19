@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import {
@@ -32,6 +33,7 @@ export function useCheckoutExperienceSocial({
   defaults,
   helpers,
 }: UseCheckoutExperienceSocialOptions) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [couponCode, setCouponCode] = useState('');
@@ -322,7 +324,7 @@ export function useCheckoutExperienceSocial({
       if (safeSuccessUrl.origin !== window.location.origin) {
         throw new Error('Redirecionamento bloqueado: destino externo detectado.');
       }
-      const safeHref = safeSuccessUrl.href;
+      const safePath = `${safeSuccessUrl.pathname}${safeSuccessUrl.search}${safeSuccessUrl.hash}`;
 
       setPixelEvent('Purchase');
 
@@ -330,15 +332,13 @@ export function useCheckoutExperienceSocial({
         setSuccessOrderNumber(result.orderNumber);
         setStripeClientSecret(result.clientSecret);
         setStripePaymentIntentId(result.paymentIntentId);
-        setStripeReturnUrl(safeHref);
+        setStripeReturnUrl(safeSuccessUrl.href);
         return;
       }
 
-      // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
-      // Safe: safeSuccessUrl.origin was validated to match window.location.origin above (same-origin enforced).
-      window.location.href = safeHref;
+      router.push(safePath);
     },
-    [],
+    [router],
   );
 
   const runFinalizeOrderPrecheck = useCallback(

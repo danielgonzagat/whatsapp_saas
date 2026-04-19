@@ -4,6 +4,7 @@ import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
 import { LeadScorer } from '../providers/lead-scorer';
 import { connection } from '../queue';
+import { forEachSequential } from '../utils/async-sequence';
 import { processFactExtraction } from './fact-extractor';
 
 const S_RE = /\s+/g;
@@ -50,10 +51,9 @@ async function processIngestSource(job: Job): Promise<void> {
   const openai = new OpenAI({ apiKey });
   const chunks = splitText(content, 1000, 200).slice(0, maxChunks || 400);
 
-  // biome-ignore lint/performance/noAwaitInLoops: OpenAI embeddings API enforces a per-key tokens-per-minute quota; parallel insertion of 400 chunks at once triggers 429 rate-limit errors and partial indexing
-  for (const chunk of chunks) {
+  await forEachSequential(chunks, async (chunk) => {
     await insertChunkVector(openai, chunk, sourceId);
-  }
+  });
 
   await prisma.knowledgeSource.update({
     where: { id: sourceId },

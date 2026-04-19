@@ -168,20 +168,12 @@ export default function VerTodasPage() {
         {CATEGORY_CARDS.map((cat) => {
           const isActive = category === cat.key;
           return (
-            // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-            <div
+            <button
+              type="button"
               key={cat.key}
               onClick={() => setCategory(isActive ? 'all' : cat.key)}
-              role="button"
-              tabIndex={0}
               aria-pressed={isActive}
               aria-label={`Filtrar por categoria ${cat.title ?? cat.key}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  (e.currentTarget as HTMLElement).click();
-                }
-              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -218,7 +210,7 @@ export default function VerTodasPage() {
                   {cat.count} operacionais{cat.roadmapCount ? ` • ${cat.roadmapCount} roadmap` : ''}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

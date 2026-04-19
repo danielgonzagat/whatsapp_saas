@@ -2,6 +2,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { connection, queueOptions, queueRegistry } from '../queue/queue';
 // Health service only reads queue state — no jobs added, no jobId/deduplication needed.
@@ -26,9 +27,7 @@ export class HealthService {
     let totalDlqWaiting = 0;
     let totalDlqFailed = 0;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential queue health check with DLQ creation
-    for (const queue of Object.values(queueRegistry)) {
-      // biome-ignore lint/performance/noAwaitInLoops: per-queue job counts aggregated sequentially; bounded set of queues
+    await forEachSequential(Object.values(queueRegistry), async (queue) => {
       const mainCounts = await queue.getJobCounts('waiting', 'active', 'delayed', 'failed');
       const dlq = new Queue(`${queue.name}-dlq`, {
         ...queueOptions,
@@ -40,7 +39,7 @@ export class HealthService {
       totalFailed += mainCounts.failed || 0;
       totalDlqWaiting += dlqCounts.waiting || 0;
       totalDlqFailed += dlqCounts.failed || 0;
-    }
+    });
 
     const alert =
       totalWaiting > threshold || totalFailed > 0 || totalDlqWaiting > 0 || totalDlqFailed > 0;

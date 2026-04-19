@@ -150,21 +150,24 @@ async function withWorkspaceActionLock<T>(
   const token = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
   const deadline = Date.now() + config.ttlMs;
 
-  // biome-ignore lint/performance/noAwaitInLoops: distributed-lock acquisition wait — each tryAcquireAndRun atomically SETs the Redis key for workspace isolation; parallel attempts would race for the same lock and violate invariant I6 (single-writer WhatsApp send per workspace)
-  while (Date.now() < deadline) {
+  const attemptAcquire = async (): Promise<T> => {
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `Failed to acquire workspace action lock for ${workspaceId} within ${config.ttlMs}ms deadline`,
+      );
+    }
     const attempt = await tryAcquireAndRun(key, token, config.ttlMs, operation);
     if (attempt.ran) return attempt.value;
     await sleep(config.backoffMin + Math.floor(Math.random() * config.backoffJitter));
-  }
+    return attemptAcquire();
+  };
 
   // Invariant I6: lock not acquired implies operation does NOT run.
   // Previously this fell through to `return operation()`, silently
   // executing unprotected sends and allowing duplicate WhatsApp
   // deliveries under contention. The BullMQ job retry mechanism handles
   // transient lock contention via job-level retries.
-  throw new Error(
-    `Failed to acquire workspace action lock for ${workspaceId} within ${config.ttlMs}ms deadline`,
-  );
+  return attemptAcquire();
 }
 
 /**

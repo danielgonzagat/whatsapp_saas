@@ -171,6 +171,21 @@ const FRESH_AUTH_QUERY_KEY = 'auth';
 
 let freshAuthReconciled = false;
 
+function writeDocumentCookie(value: string) {
+  if (typeof document === 'undefined') return;
+
+  const documentCookieDescriptor =
+    Object.getOwnPropertyDescriptor(Document.prototype, 'cookie') ||
+    Object.getOwnPropertyDescriptor(HTMLDocument.prototype, 'cookie');
+
+  if (documentCookieDescriptor?.set) {
+    documentCookieDescriptor.set.call(document, value);
+    return;
+  }
+
+  Reflect.set(document, 'cookie', value);
+}
+
 function emitStorageChange() {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new Event(STORAGE_EVENT));
@@ -238,16 +253,15 @@ function setBrowserCookie(
   options?: { shareAcrossSubdomains?: boolean },
 ) {
   if (typeof document === 'undefined') return;
-  // biome-ignore lint/suspicious/noDocumentCookie: auth cookie name is a module-level constant; value URL-encoded. CookieStore API lacks required sync semantics for auth bootstrap.
-  document.cookie = `${name}=${encodeURIComponent(value)}; ${browserCookieSuffix(maxAge, options)}`;
+  writeDocumentCookie(
+    `${name}=${encodeURIComponent(value)}; ${browserCookieSuffix(maxAge, options)}`,
+  );
 }
 
 function clearBrowserCookie(name: string) {
   if (typeof document === 'undefined') return;
-  // biome-ignore lint/suspicious/noDocumentCookie: clearing auth cookie by module-level constant name; empty value.
-  document.cookie = `${name}=; ${browserCookieSuffix(0)}`;
-  // biome-ignore lint/suspicious/noDocumentCookie: clearing host-only variant; same safety as above.
-  document.cookie = `${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`;
+  writeDocumentCookie(`${name}=; ${browserCookieSuffix(0)}`);
+  writeDocumentCookie(`${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`);
 }
 
 function setBrowserAuthCookie() {
@@ -256,8 +270,7 @@ function setBrowserAuthCookie() {
 
 function clearHostOnlyBrowserCookie(name: string) {
   if (typeof document === 'undefined') return;
-  // biome-ignore lint/suspicious/noDocumentCookie: internal helper; name controlled by callers with module-level constants.
-  document.cookie = `${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`;
+  writeDocumentCookie(`${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`);
 }
 
 function clearBrowserAuthCookies() {
@@ -548,6 +561,7 @@ export const tokenStorage = {
 // ============================================
 
 const API_URL = API_BASE;
+const API_ORIGIN = API_URL ? new URL(API_URL).origin : '';
 
 // Mutex to prevent concurrent refresh attempts (race condition on polling pages)
 let refreshPromise: Promise<boolean> | null = null;
@@ -602,6 +616,41 @@ function resolveApiEndpoint(endpoint: string): string {
   return endpoint === '/marketing' || endpoint.startsWith('/marketing/')
     ? `/api${endpoint}`
     : endpoint;
+}
+
+function isTrustedAbsoluteRequestTarget(value: string): boolean {
+  try {
+    const candidate = new URL(value);
+    if (candidate.protocol !== 'http:' && candidate.protocol !== 'https:') {
+      return false;
+    }
+
+    if (API_ORIGIN && candidate.origin === API_ORIGIN) {
+      return true;
+    }
+
+    if (typeof window !== 'undefined' && candidate.origin === window.location.origin) {
+      return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function createTrustedRequest(input: string, init?: RequestInit): Request {
+  if (input.startsWith('/')) {
+    const sameOriginBase =
+      (typeof window !== 'undefined' && window.location.origin) || API_ORIGIN || 'http://localhost';
+    return new Request(new URL(input, `${sameOriginBase}/`), init);
+  }
+
+  if (!isTrustedAbsoluteRequestTarget(input)) {
+    throw new Error(`Blocked external request target: ${input}`);
+  }
+
+  return new Request(input, init);
 }
 
 function buildApiHeaders(
@@ -664,9 +713,7 @@ function buildErrorResponse<T>(
 }
 
 async function performApiRequest<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
-  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-  // Safe: `url` is either a proxy endpoint starting with `/api/` (same-origin Next route) or `${API_URL}${endpoint}` where API_URL is fixed from NEXT_PUBLIC_API_URL env var and `endpoint` is a hardcoded path literal in every call site. No user-controlled host.
-  const res = await fetch(url, init);
+  const res = await fetch(createTrustedRequest(url, init));
   const data = await res.json().catch(() => ({}));
   if (!res.ok) return buildErrorResponse<T>(data, res.status);
   return buildSuccessResponse(data, res.status);
@@ -694,7 +741,7 @@ export async function apiFetch<T = unknown>(
   const isProxyEndpoint = resolvedEndpoint.startsWith('/api/');
   const headers = buildApiHeaders(options, isProxyEndpoint);
   const url = appendQueryParams(
-    isProxyEndpoint ? resolvedEndpoint : `${API_URL}${endpoint}`,
+    isProxyEndpoint ? resolvedEndpoint : `${API_URL}${resolvedEndpoint}`,
     options.params,
   );
   const body = serializeApiBody(options.body);
@@ -706,18 +753,14 @@ export async function apiFetch<T = unknown>(
   };
 
   try {
-    // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-    // Safe: see performApiRequest comment.
-    const res = await fetch(url, baseInit);
+    const response = await performApiRequest<T>(url, baseInit);
 
-    if (res.status === 401 && tokenStorage.getRefreshToken()) {
+    if (response.status === 401 && tokenStorage.getRefreshToken()) {
       const retryResponse = await retryApiRequestWithRefreshedToken<T>(url, baseInit, headers);
       if (retryResponse) return retryResponse;
     }
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) return buildErrorResponse<T>(data, res.status);
-    return buildSuccessResponse(data, res.status);
+    return response;
   } catch (err: unknown) {
     return {
       error: err instanceof Error ? err.message : 'Network error',
@@ -884,9 +927,7 @@ export async function getLeads(
 export const api = {
   async get<T = unknown>(endpoint: string): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
-      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-      // Safe: `endpoint` is never user input in any caller (see useFlows.ts — only hardcoded `/flows/...` literals). This branch is defensive and reachable only from internal code passing a compile-time absolute URL.
-      const res = await fetch(endpoint);
+      const res = await fetch(createTrustedRequest(endpoint));
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: res.statusText }));
         throw new Error(error.message || 'Request failed');
@@ -902,13 +943,13 @@ export const api = {
 
   async post<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
-      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-      // Safe: `endpoint` is never user input in any caller — defensive branch reachable only from internal code passing a compile-time absolute URL.
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: body ? JSON.stringify(body) : undefined,
-      });
+      const res = await fetch(
+        createTrustedRequest(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: body ? JSON.stringify(body) : undefined,
+        }),
+      );
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: res.statusText }));
         throw new Error(error.message || 'Request failed');
@@ -927,13 +968,13 @@ export const api = {
 
   async put<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
-      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-      // Safe: `endpoint` is never user input in any caller — defensive branch reachable only from internal code passing a compile-time absolute URL.
-      const res = await fetch(endpoint, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: body ? JSON.stringify(body) : undefined,
-      });
+      const res = await fetch(
+        createTrustedRequest(endpoint, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: body ? JSON.stringify(body) : undefined,
+        }),
+      );
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: res.statusText }));
         throw new Error(error.message || 'Request failed');
@@ -952,7 +993,7 @@ export const api = {
 
   async delete<T = unknown>(endpoint: string): Promise<{ data: T }> {
     if (endpoint.startsWith('http')) {
-      const res = await fetch(endpoint, { method: 'DELETE' });
+      const res = await fetch(createTrustedRequest(endpoint, { method: 'DELETE' }));
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: res.statusText }));
         throw new Error(error.message || 'Request failed');

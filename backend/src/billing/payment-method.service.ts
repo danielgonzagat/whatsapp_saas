@@ -1,10 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import Stripe = require('stripe');
 import { PrismaService } from '../prisma/prisma.service';
+import { StripeRuntime } from './stripe-runtime';
 import type { StripeClient, StripeCustomer } from './stripe-types';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
@@ -27,7 +25,7 @@ export class PaymentMethodService {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (secretKey) {
       // Evita travar em versões específicas tipadas pelo SDK.
-      this.stripe = new Stripe(secretKey);
+      this.stripe = new StripeRuntime(secretKey);
     }
   }
 

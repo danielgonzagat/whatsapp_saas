@@ -338,12 +338,11 @@ function ProductCard({
         };
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: contains block-level children (nested flex layouts with badge), so native <button> would produce invalid HTML; div+role retained
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={onToggle}
       style={{
+        all: 'unset',
         background: selected ? `${E}10` : C,
         border: `1.5px solid ${selected ? E : B}`,
         borderRadius: 6,
@@ -354,15 +353,11 @@ function ProductCard({
         alignItems: 'center',
         gap: 12,
         userSelect: 'none',
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onToggle();
-        }
+        boxSizing: 'border-box',
+        width: '100%',
       }}
     >
-      <div
+      <span
         style={{
           fontSize: 24,
           width: 40,
@@ -386,12 +381,12 @@ function ProductCard({
         ) : (
           getProductIcon(product)
         )}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: T, marginBottom: 2 }}>
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: T, marginBottom: 2 }}>
           {product.name}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: M, fontSize: 12, color: E, fontWeight: 700 }}>
             {formatMoney(product.price)}
           </span>
@@ -408,9 +403,9 @@ function ProductCard({
           >
             {badge.label}
           </span>
-        </div>
-      </div>
-      <div
+        </span>
+      </span>
+      <span
         style={{
           width: 22,
           height: 22,
@@ -436,8 +431,8 @@ function ProductCard({
             <polyline points="20 6 9 17 4 12" />
           </svg>
         ) : null}
-      </div>
-    </div>
+      </span>
+    </button>
   );
 }
 
@@ -741,28 +736,25 @@ function ToneCard({
   onSelect: (value: ToneMode) => void;
 }) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={() => onSelect(value)}
       style={{
+        all: 'unset',
         background: selected ? `${E}10` : C,
         border: `1.5px solid ${selected ? E : B}`,
         borderRadius: 6,
         padding: 12,
         cursor: 'pointer',
         transition: 'all .2s',
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect(value);
-        }
+        display: 'block',
+        boxSizing: 'border-box',
+        width: '100%',
       }}
     >
-      <div
+      <span
         style={{
+          display: 'block',
           fontSize: 12,
           fontWeight: 600,
           color: T,
@@ -771,9 +763,11 @@ function ToneCard({
         }}
       >
         {label}
-      </div>
-      <div style={{ fontSize: 10, color: D, lineHeight: 1.4, fontFamily: F }}>{description}</div>
-    </div>
+      </span>
+      <span style={{ display: 'block', fontSize: 10, color: D, lineHeight: 1.4, fontFamily: F }}>
+        {description}
+      </span>
+    </button>
   );
 }
 

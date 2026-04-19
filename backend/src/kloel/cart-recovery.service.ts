@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
@@ -42,13 +43,13 @@ export class CartRecoveryService {
       if (toRecover.length === 0) return;
       this.logger.log(`Found ${toRecover.length} abandoned carts to recover`);
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential cart recovery with message sending
-      for (const order of toRecover) {
-        try {
-          if (!order.customerEmail) continue;
+      const { EmailService } = await import('../auth/email.service');
 
-          // biome-ignore lint/performance/noAwaitInLoops: dynamic import of EmailService per recovery target; resolved once per run
-          const emailService = new (await import('../auth/email.service')).EmailService();
+      await forEachSequential(toRecover, async (order) => {
+        try {
+          if (!order.customerEmail) return;
+
+          const emailService = new EmailService();
           const productName = order.plan?.product?.name || 'Seu pedido';
 
           await emailService.sendEmail({
@@ -91,7 +92,7 @@ export class CartRecoveryService {
           // PULSE:OK — Cart recovery is best-effort background job; other orders still processed
           this.logger.error(`Cart recovery failed for ${order.id}: ${e}`);
         }
-      }
+      });
     } catch (e) {
       // PULSE:OK — cart recovery is non-critical background cron; errors logged and retried next cycle
       this.logger.error(`checkAbandonedCarts cron failed: ${e}`);

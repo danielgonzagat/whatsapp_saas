@@ -17,7 +17,6 @@ interface InputComposerProps {
 export function InputComposer({ value, onChange, onSend }: InputComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: value change is the intentional trigger to resize the textarea to fit its content
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;

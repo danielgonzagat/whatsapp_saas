@@ -1449,6 +1449,12 @@ function AreaMembros({
   const [editLessonData, setEditLessonData] = useState({ name: '', description: '', videoUrl: '' });
   const [saving, setSaving] = useState(false);
   const [generatingAreaId, setGeneratingAreaId] = useState<string | null>(null);
+  const focusPrimaryInput = useCallback((element: HTMLInputElement | null) => {
+    if (!element) return;
+    requestAnimationFrame(() => {
+      element.focus();
+    });
+  }, []);
 
   // ── Student Enrollment State ──
   const [studentAreaId, setStudentAreaId] = useState<string | null>(null);
@@ -2487,8 +2493,7 @@ function AreaMembros({
                         value={editAreaData.name}
                         onChange={(e) => setEditAreaData((p) => ({ ...p, name: e.target.value }))}
                         style={{ ...inputStyle, flex: 1 }}
-                        // biome-ignore lint/a11y/noAutofocus: intentional for primary input
-                        autoFocus
+                        ref={focusPrimaryInput}
                       />
                       <select
                         value={editAreaData.type}
@@ -3136,8 +3141,7 @@ function AreaMembros({
                                   value={editModuleData.name}
                                   onChange={(e) => setEditModuleData({ name: e.target.value })}
                                   style={{ ...inputStyle, flex: 1, fontSize: 11 }}
-                                  // biome-ignore lint/a11y/noAutofocus: intentional for primary input
-                                  autoFocus
+                                  ref={focusPrimaryInput}
                                 />
                                 <button
                                   type="button"
@@ -3229,8 +3233,7 @@ function AreaMembros({
                                       }
                                       placeholder="Nome da aula"
                                       style={{ ...inputStyle, fontSize: 11 }}
-                                      // biome-ignore lint/a11y/noAutofocus: intentional for primary input
-                                      autoFocus
+                                      ref={focusPrimaryInput}
                                     />
                                     <input
                                       aria-label="Descricao da aula"
@@ -3410,8 +3413,7 @@ function AreaMembros({
                                   }
                                   placeholder="Nome da aula"
                                   style={{ ...inputStyle, fontSize: 11 }}
-                                  // biome-ignore lint/a11y/noAutofocus: intentional for primary input
-                                  autoFocus
+                                  ref={focusPrimaryInput}
                                 />
                                 <input
                                   aria-label="Descricao da aula"
@@ -3539,8 +3541,7 @@ function AreaMembros({
                           onChange={(e) => setNewModule({ name: e.target.value })}
                           placeholder="Nome do modulo"
                           style={{ ...inputStyle, flex: 1, fontSize: 11 }}
-                          // biome-ignore lint/a11y/noAutofocus: intentional for primary input
-                          autoFocus
+                          ref={focusPrimaryInput}
                         />
                         <button
                           type="button"

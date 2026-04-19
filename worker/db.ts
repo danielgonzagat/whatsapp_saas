@@ -28,11 +28,10 @@ async function shutdownPrisma(signal: string) {
       error instanceof Error
         ? error
         : new Error(typeof error === 'string' ? error : 'unknown error');
-    // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring -- server-side log; signal is literal ('SIGTERM'|'SIGINT'), error message is console arg not format string
-    console.warn(
-      `[PRISMA] disconnect failed during ${signal}:`,
-      errorInstanceofError?.message || error,
-    );
+    console.warn('[PRISMA] disconnect failed', {
+      signal,
+      error: errorInstanceofError?.message || error,
+    });
   }
 }
 

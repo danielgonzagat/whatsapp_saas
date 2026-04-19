@@ -1,10 +1,17 @@
 # Stripe-Only Cutover Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
+> checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** cortar o caminho ativo de pagamentos do checkout público para Stripe-only em modo de teste, removendo Mercado Pago/Asaas do fluxo real de criação de pedido, cobrança e webhook.
+**Goal:** cortar o caminho ativo de pagamentos do checkout público para Stripe-only em modo de
+teste, removendo Mercado Pago/Asaas do fluxo real de criação de pedido, cobrança e webhook.
 
-**Architecture:** o checkout público passa a criar ordens Kloel normalmente, mas o pagamento deixa de passar por tokenização Mercado Pago e passa a usar Stripe Connect + PaymentIntents. Para Pix e boleto, o backend gera o intent e persiste os dados de instrução/status no pedido; para cartão, o backend cria o intent e o frontend confirma via Stripe Payment Element. O ledger/split stack novo permanece como o kernel de pagamento e o checkout legado vira casca em volta dele.
+**Architecture:** o checkout público passa a criar ordens Kloel normalmente, mas o pagamento deixa
+de passar por tokenização Mercado Pago e passa a usar Stripe Connect + PaymentIntents. Para Pix e
+boleto, o backend gera o intent e persiste os dados de instrução/status no pedido; para cartão, o
+backend cria o intent e o frontend confirma via Stripe Payment Element. O ledger/split stack novo
+permanece como o kernel de pagamento e o checkout legado vira casca em volta dele.
 
 **Tech Stack:** NestJS, Prisma, Stripe SDK/Stripe.js, React/Next.js checkout público, Jest.
 
@@ -13,8 +20,10 @@
 ## Scope Notes
 
 - Este plano cobre o **caminho ativo** do checkout público e os contratos que o alimentam.
-- Não cobre a remoção imediata de toda referência histórica a Asaas/Mercado Pago em áreas administrativas, docs históricas ou módulos não usados no checkout público.
-- O objetivo deste corte é: **checkout público funcionando com Stripe-only em teste**, com Pix validável e Mercado Pago fora do fluxo ativo.
+- Não cobre a remoção imediata de toda referência histórica a Asaas/Mercado Pago em áreas
+  administrativas, docs históricas ou módulos não usados no checkout público.
+- O objetivo deste corte é: **checkout público funcionando com Stripe-only em teste**, com Pix
+  validável e Mercado Pago fora do fluxo ativo.
 
 ## Files To Touch
 
@@ -61,7 +70,8 @@
   - checkout enabled/disabled
   - publishable key source
   - installment interest percent
-- [ ] Add/update tests proving slug/code public payload resolution still returns equivalent payloads under the new Stripe provider shape.
+- [ ] Add/update tests proving slug/code public payload resolution still returns equivalent payloads
+  under the new Stripe provider shape.
 
 ### Task 2: Rewire backend checkout payment processing to Stripe
 
@@ -77,9 +87,12 @@
 - Test: `backend/src/payments/stripe/stripe-charge.service.spec.ts`
 
 - [ ] Remove Mercado Pago token requirements from the active order flow.
-- [ ] Create or resolve the seller connected account for the workspace before creating a Stripe payment.
-- [ ] Switch StripeChargeService to the platform-charge / transfer-fanout model used by the Stripe-only stack.
-- [ ] Make `CheckoutPaymentService.processPayment` persist `CheckoutPayment.gateway = 'stripe'` and store:
+- [ ] Create or resolve the seller connected account for the workspace before creating a Stripe
+  payment.
+- [ ] Switch StripeChargeService to the platform-charge / transfer-fanout model used by the
+  Stripe-only stack.
+- [ ] Make `CheckoutPaymentService.processPayment` persist `CheckoutPayment.gateway = 'stripe'` and
+  store:
   - payment intent id
   - client secret when needed for card confirmation
   - Pix QR / copy-paste / expiry when available
@@ -100,7 +113,8 @@
 - Modify: `backend/src/webhooks/payment-webhook.controller.ts`
 - Test: `backend/src/payments/stripe/stripe-webhook.processor.spec.ts`
 
-- [ ] Teach the Stripe webhook path to handle sale-side `payment_intent.succeeded` events from the checkout flow.
+- [ ] Teach the Stripe webhook path to handle sale-side `payment_intent.succeeded` events from the
+  checkout flow.
 - [ ] Dispatch transfer fan-out from platform balance using the split metadata.
 - [ ] Credit the ledger for seller/affiliate/etc.
 - [ ] Update the linked `CheckoutPayment` and `CheckoutOrder` rows to approved/paid.
@@ -120,8 +134,10 @@
 
 - [ ] Remove Mercado Pago SDK preload and device-session logic from the active checkout shell.
 - [ ] Stop sending Mercado Pago token fields in public order creation.
-- [ ] For card payments, render the existing `StripePaymentElement` with the backend-provided client secret.
-- [ ] For Pix and boleto, keep the current method-specific continuity pages but feed them from Stripe payment data.
+- [ ] For card payments, render the existing `StripePaymentElement` with the backend-provided client
+  secret.
+- [ ] For Pix and boleto, keep the current method-specific continuity pages but feed them from
+  Stripe payment data.
 - [ ] Preserve the existing visual shell and step flow.
 
 ### Task 5: Validate the Stripe-only checkout path
@@ -136,13 +152,16 @@
 
 - [ ] Run targeted backend tests for checkout + stripe stack.
 - [ ] Run targeted frontend tests for checkout hooks/components where they exist.
-- [ ] Run grep validation proving the active public checkout path no longer imports Mercado Pago helpers.
-- [ ] Capture remaining legacy references outside the active path as follow-up cleanup, not as blockers for the cutover.
+- [ ] Run grep validation proving the active public checkout path no longer imports Mercado Pago
+  helpers.
+- [ ] Capture remaining legacy references outside the active path as follow-up cleanup, not as
+  blockers for the cutover.
 
 ## Done Criteria
 
 - Public checkout payload exposes `provider: 'stripe'`.
-- `POST /checkout/public/order` no longer depends on Mercado Pago tokenization or MP session headers.
+- `POST /checkout/public/order` no longer depends on Mercado Pago tokenization or MP session
+  headers.
 - Stripe PaymentIntent is the only active payment creation path for the public checkout.
 - Pix test flow produces retrievable QR / copy-paste instructions from Stripe-backed data.
 - Card flow uses Stripe Payment Element.

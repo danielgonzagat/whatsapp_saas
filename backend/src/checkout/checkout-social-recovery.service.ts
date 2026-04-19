@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CheckoutSocialLeadStatus } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
+import { forEachSequential } from '../common/async-sequence';
 import { FollowUpService } from '../followup/followup.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
@@ -48,12 +49,10 @@ export class CheckoutSocialRecoveryService {
       orderBy: { createdAt: 'asc' },
     });
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing with external calls
-    for (const lead of leads) {
+    await forEachSequential(leads, async (lead) => {
       const age = now - lead.createdAt.getTime();
 
       if (!lead.abandonedAt && age >= THIRTY_MINUTES_MS) {
-        // biome-ignore lint/performance/noAwaitInLoops: per-lead social recovery update must be sequential for Prisma write ordering
         await this.prisma.checkoutSocialLead.update({
           where: { id: lead.id },
           data: {
@@ -70,7 +69,7 @@ export class CheckoutSocialRecoveryService {
       if (age >= ONE_HOUR_MS && !lead.recoveryEmailSentAt && lead.email) {
         await this.dispatchEmailRecovery(lead.id, lead.email, lead.name, lead.checkoutSlug);
       }
-    }
+    });
   }
 
   private async dispatchWhatsAppRecovery(leadId: string) {

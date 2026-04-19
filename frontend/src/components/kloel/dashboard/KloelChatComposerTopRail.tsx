@@ -8,6 +8,7 @@ import {
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { type KloelChatAttachment, type KloelLinkedProduct } from '@/lib/kloel-chat';
 import { FileText, ImagePlus, Link2, Music4 } from 'lucide-react';
+import Image from 'next/image';
 
 const F = "'Sora', sans-serif";
 const SURFACE = KLOEL_THEME.bgCard;
@@ -119,12 +120,12 @@ export function ComposerTopRail({
               }}
             >
               {visualSource ? (
-                // biome-ignore lint/performance/noImgElement: user-uploaded attachment preview from blob URL, sized by parent layout
-                <img
+                <Image
                   src={visualSource}
                   alt={attachment.name}
                   width={56}
                   height={56}
+                  unoptimized
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
@@ -252,12 +253,12 @@ export function ComposerTopRail({
           }}
         >
           {linkedProduct.imageUrl ? (
-            // biome-ignore lint/performance/noImgElement: dynamic user/product image URL (remote); next/image remote loader adds latency + not configured for arbitrary hosts
-            <img
+            <Image
               src={linkedProduct.imageUrl}
               alt=""
               width={36}
               height={36}
+              unoptimized
               style={{
                 width: 36,
                 height: 36,

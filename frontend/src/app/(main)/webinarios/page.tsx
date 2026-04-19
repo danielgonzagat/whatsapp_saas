@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useId } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
 
 interface Webinar {
@@ -136,7 +136,7 @@ export default function WebinariosPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const fetchWebinars = async () => {
+  const fetchWebinars = useCallback(async () => {
     if (!workspaceId) return;
     setError(null);
     setLoading(true);
@@ -149,12 +149,11 @@ export default function WebinariosPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [workspaceId]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refetch webinars only when auth/workspace readiness flips; fetchWebinars is recreated every render with stable behavior
   useEffect(() => {
-    if (isAuthenticated && workspaceId) fetchWebinars();
-  }, [isAuthenticated, workspaceId]);
+    if (isAuthenticated && workspaceId) void fetchWebinars();
+  }, [fetchWebinars, isAuthenticated, workspaceId]);
 
   const handleCreate = async () => {
     if (!formTitle.trim() || !formUrl.trim() || !formDate) return;
@@ -1122,7 +1121,13 @@ export default function WebinariosPage() {
             }
           }}
         >
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
+          <button
+            type="button"
+            aria-label="Fechar confirmacao"
+            onClick={() => setConfirmDeleteId(null)}
+            className="absolute inset-0"
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+          />
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -1133,6 +1138,8 @@ export default function WebinariosPage() {
               width: 360,
               maxWidth: '90vw',
               textAlign: 'center',
+              position: 'relative',
+              zIndex: 1,
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {

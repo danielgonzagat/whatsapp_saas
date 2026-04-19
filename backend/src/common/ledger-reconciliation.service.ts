@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
 import { Cron } from '@nestjs/schedule';
+import type { Prisma } from '@prisma/client';
+import { forEachSequential } from './async-sequence';
 import { FinancialAlertService } from './financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -139,8 +140,7 @@ export class LedgerReconciliationService {
       },
     })) as OrderWithPayment[];
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential order reconciliation for data integrity
-    for (const order of orders) {
+    await forEachSequential(orders, async (order) => {
       if (!order.payment) {
         drifts.push({
           orderId: order.id,
@@ -148,7 +148,7 @@ export class LedgerReconciliationService {
           kind: 'order_without_payment',
           details: { orderStatus: order.status },
         });
-        continue;
+        return;
       }
 
       // Payment must be in a "confirmed" state matching the order.
@@ -167,17 +167,16 @@ export class LedgerReconciliationService {
             paymentStatus: order.payment.status,
           },
         });
-        continue;
+        return;
       }
 
       // A matching WebhookEvent must exist and be marked processed.
       const externalId = order.payment.externalId;
       if (!externalId) {
         // No external reference to match against — skip without flagging.
-        continue;
+        return;
       }
 
-      // biome-ignore lint/performance/noAwaitInLoops: per-order webhook lookup for drift detection; each order is independent audit path
       const webhookEvent = await this.prisma.webhookEvent.findFirst({
         where: {
           provider: order.payment.gateway,
@@ -193,7 +192,7 @@ export class LedgerReconciliationService {
           kind: 'webhook_event_missing',
           details: { gateway: order.payment.gateway, externalId },
         });
-        continue;
+        return;
       }
 
       if (webhookEvent.status !== 'processed') {
@@ -207,7 +206,7 @@ export class LedgerReconciliationService {
           },
         });
       }
-    }
+    });
 
     const result: ReconciliationResult = {
       scannedOrders: orders.length,
@@ -318,13 +317,11 @@ export class LedgerReconciliationService {
       blockedBalanceInCents: bigint;
     }>;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential wallet reconciliation for data integrity
-    for (const wallet of wallets) {
+    await forEachSequential(wallets, async (wallet) => {
       // Aggregate the ledger by (bucket, direction). Using groupBy on a
       // BigInt column requires the raw form because Prisma's groupBy
       // type system does not always cooperate with `_sum` on BigInt
       // — we cast to `any` and trust the runtime shape.
-      // biome-ignore lint/performance/noAwaitInLoops: per-wallet ledger aggregate; groupBy scoped to a single walletId
       const aggregates = (await prismaExt.kloelWalletLedger.groupBy({
         by: ['bucket', 'direction'],
         where: { walletId: wallet.id },
@@ -373,7 +370,7 @@ export class LedgerReconciliationService {
           });
         }
       }
-    }
+    });
 
     const result: WalletReconciliationResult = {
       scannedWallets: wallets.length,

@@ -18,6 +18,10 @@ function createTestJwt(payload: Record<string, unknown>) {
   return `header.${encoded}.signature`;
 }
 
+function getFetchRequest(fetchSpy: { mock: { calls: unknown[][] } }) {
+  return fetchSpy.mock.calls[0]?.[0] as Request;
+}
+
 describe('tokenStorage', () => {
   beforeEach(() => {
     tokenStorage.clear();
@@ -135,9 +139,8 @@ describe('apiFetch', () => {
     await apiFetch('/test-endpoint');
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const callArgs = fetchSpy.mock.calls[0];
-    const headers = callArgs[1]?.headers as Record<string, string>;
-    expect(headers['Authorization']).toBe('Bearer test-token-123');
+    const request = getFetchRequest(fetchSpy);
+    expect(request.headers.get('Authorization')).toBe('Bearer test-token-123');
   });
 
   it('adds x-workspace-id header when workspace is set', async () => {
@@ -153,8 +156,8 @@ describe('apiFetch', () => {
 
     await apiFetch('/test');
 
-    const headers = fetchSpy.mock.calls[0][1]?.headers as Record<string, string>;
-    expect(headers['x-workspace-id']).toBe('ws-456');
+    const request = getFetchRequest(fetchSpy);
+    expect(request.headers.get('x-workspace-id')).toBe('ws-456');
   });
 
   it('returns error on non-ok response', async () => {
@@ -193,8 +196,8 @@ describe('apiFetch', () => {
       body: { name: 'test', value: 42 },
     });
 
-    const callBody = fetchSpy.mock.calls[0][1]?.body;
-    expect(callBody).toBe(JSON.stringify({ name: 'test', value: 42 }));
+    const request = getFetchRequest(fetchSpy);
+    await expect(request.text()).resolves.toBe(JSON.stringify({ name: 'test', value: 42 }));
   });
 
   it('routes marketing endpoints through the same-origin proxy', async () => {
@@ -211,18 +214,13 @@ describe('apiFetch', () => {
     await apiFetch('/marketing/connect/status');
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      '/api/marketing/connect/status',
-      expect.objectContaining({
-        credentials: 'include',
-        headers: expect.objectContaining({
-          Authorization: 'Bearer tok',
-          'x-kloel-access-token': 'tok',
-          'x-workspace-id': 'ws-789',
-          'x-kloel-workspace-id': 'ws-789',
-        }),
-      }),
-    );
+    const request = getFetchRequest(fetchSpy);
+    expect(request.url).toBe(new URL('/api/marketing/connect/status', window.location.origin).href);
+    expect(request.credentials).toBe('include');
+    expect(request.headers.get('Authorization')).toBe('Bearer tok');
+    expect(request.headers.get('x-kloel-access-token')).toBe('tok');
+    expect(request.headers.get('x-workspace-id')).toBe('ws-789');
+    expect(request.headers.get('x-kloel-workspace-id')).toBe('ws-789');
   });
 });
 

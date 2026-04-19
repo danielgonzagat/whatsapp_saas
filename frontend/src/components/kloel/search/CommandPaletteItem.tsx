@@ -1,8 +1,7 @@
 'use client';
 
-import DOMPurify from 'dompurify';
 import { ArrowRight } from 'lucide-react';
-import { forwardRef } from 'react';
+import { type ReactNode, forwardRef } from 'react';
 import { ConversationsIcon } from '../sidebar/ConversationsIcon';
 import {
   type ConversationSearchResult,
@@ -33,17 +32,41 @@ function buildPreviewMarkup(item: ConversationSearchResult, hasQuery: boolean, q
     : highlightPlainText(rawPreview, query);
 }
 
+function decodeHtmlEntities(value: string): string {
+  if (typeof document === 'undefined') {
+    return value;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = value;
+  return textarea.value;
+}
+
+function renderMarkedMarkup(markup: string): ReactNode[] {
+  const parts = markup.split(/(<mark>.*?<\/mark>)/g).filter(Boolean);
+  const seen = new Map<string, number>();
+
+  return parts.map((part) => {
+    const isMarked = part.startsWith('<mark>') && part.endsWith('</mark>');
+    const keyBase = `${isMarked ? 'mark' : 'text'}-${part}`;
+    const occurrence = (seen.get(keyBase) || 0) + 1;
+    seen.set(keyBase, occurrence);
+
+    if (isMarked) {
+      return <mark key={`${keyBase}-${occurrence}`}>{decodeHtmlEntities(part.slice(6, -7))}</mark>;
+    }
+
+    return <span key={`${keyBase}-${occurrence}`}>{decodeHtmlEntities(part)}</span>;
+  });
+}
+
 export const CommandPaletteItem = forwardRef<HTMLButtonElement, CommandPaletteItemProps>(
   function CommandPaletteItem(
     { item, isSelected, hasQuery, query, groupLabel, onHover, onSelect },
     ref,
   ) {
-    // Both markup sources are sanitized with DOMPurify before being set as innerHTML.
-    // highlightPlainText and sanitizeMarkedHtml both produce known-safe markup.
     const titleMarkup = buildTitleMarkup(item, hasQuery, query);
     const previewMarkup = buildPreviewMarkup(item, hasQuery, query);
-    const sanitizedTitle = DOMPurify.sanitize(titleMarkup);
-    const sanitizedPreview = DOMPurify.sanitize(previewMarkup);
 
     return (
       <button
@@ -59,16 +82,8 @@ export const CommandPaletteItem = forwardRef<HTMLButtonElement, CommandPaletteIt
         </div>
 
         <div style={{ minWidth: 0 }}>
-          <p
-            className="kloel-search-result-title"
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via DOMPurify above
-            dangerouslySetInnerHTML={{ __html: sanitizedTitle }}
-          />
-          <p
-            className="kloel-search-result-preview"
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via DOMPurify above
-            dangerouslySetInnerHTML={{ __html: sanitizedPreview }}
-          />
+          <p className="kloel-search-result-title">{renderMarkedMarkup(titleMarkup)}</p>
+          <p className="kloel-search-result-preview">{renderMarkedMarkup(previewMarkup)}</p>
           {hasQuery && item.tags && item.tags.length > 0 && (
             <div className="kloel-search-tags">
               {item.tags.map((tag) => (

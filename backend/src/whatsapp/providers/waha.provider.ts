@@ -2,6 +2,7 @@
 // in WhatsAppService.sendMessage() through PlanLimitsService.trackMessageSend().
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { findFirstSequential, forEachSequential } from '../../common/async-sequence';
 import {
   extractAsciiDigits,
   isPlaceholderContactName as isPlaceholderContactNameValue,
@@ -885,20 +886,23 @@ export class WahaProvider {
     const path = `/api/sessions/${encodeURIComponent(sessionId)}`;
     const payloadVariants = [{ config }, config];
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential WAHA API attempts with different payloads
-    for (const payload of payloadVariants) {
+    const updated = await findFirstSequential(payloadVariants, async (payload) => {
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: per-webhook WAHA PUT must be sequential to honor session state transitions
         await this.request('PUT', path, payload);
-        return;
+        return true;
       } catch (err: unknown) {
         const errInstanceofError =
           err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         const message = String(errInstanceofError?.message || '');
         if (message.includes('404') || message.toLowerCase().includes('not found')) {
-          return;
+          return true;
         }
+        return false;
       }
+    });
+
+    if (updated) {
+      return;
     }
 
     this.logger.warn(
@@ -1151,9 +1155,8 @@ export class WahaProvider {
     );
     const collected: WahaLidMapping[] = [];
     const seen = new Set<string>();
-
-    // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
-    for (let page = 0; page < maxPages; page += 1) {
+    const fetchPage = async (page: number): Promise<void> => {
+      if (page >= maxPages) return;
       const offset = page * pageSize;
       const payload = await this.tryRequest<Record<string, unknown> | unknown[]>(
         'GET',
@@ -1161,12 +1164,12 @@ export class WahaProvider {
       );
 
       if (!payload) {
-        break;
+        return;
       }
 
       const rows = this.extractLidMappingsPayload(payload);
       if (!rows.length) {
-        break;
+        return;
       }
 
       let added = 0;
@@ -1180,9 +1183,12 @@ export class WahaProvider {
       }
 
       if (rows.length < pageSize || added === 0) {
-        break;
+        return;
       }
-    }
+      await fetchPage(page + 1);
+    };
+
+    await fetchPage(0);
 
     return collected;
   }
@@ -1573,16 +1579,10 @@ export class WahaProvider {
       () => this.tryRequest('POST', '/api/contacts', genericPayload),
     ];
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential session resolution attempts
-    for (const attempt of attempts) {
-      // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff for WAHA request
-      const result = await attempt();
-      if (result) {
-        return true;
-      }
-    }
-
-    return false;
+    const delivered = await findFirstSequential(attempts, async (attempt) =>
+      (await attempt()) ? true : undefined,
+    );
+    return delivered === true;
   }
 
   private extractChatsPayload(payload: unknown): unknown[] {
@@ -1647,11 +1647,9 @@ export class WahaProvider {
     const maxPages = 10;
     const collected: unknown[] = [];
     const seen = new Set<string>();
-
-    // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
-    for (let page = 0; page < maxPages; page += 1) {
+    const fetchPage = async (page: number): Promise<unknown[] | null> => {
+      if (page >= maxPages) return collected;
       const offset = page * pageSize;
-      // biome-ignore lint/performance/noAwaitInLoops: per-endpoint fallback probe; sequential until first success
       const payload = await this.tryRequest<Record<string, unknown> | unknown[]>(
         'GET',
         pathBuilder(offset, pageSize),
@@ -1665,7 +1663,7 @@ export class WahaProvider {
 
       const rows = this.extractChatsPayload(payload);
       if (!rows.length) {
-        break;
+        return collected;
       }
 
       let added = 0;
@@ -1682,11 +1680,12 @@ export class WahaProvider {
       }
 
       if (rows.length < pageSize || added === 0) {
-        break;
+        return collected;
       }
-    }
+      return fetchPage(page + 1);
+    };
 
-    return collected;
+    return fetchPage(0);
   }
 
   async getChats(sessionId: string): Promise<unknown[]> {
@@ -1761,42 +1760,36 @@ export class WahaProvider {
 
   async sendSeen(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    // biome-ignore lint/performance/noAwaitInLoops: sequential chatId candidate resolution
-    for (const candidate of this.buildChatIdCandidates(chatId)) {
-      // biome-ignore lint/performance/noAwaitInLoops: per-candidate sendSeen attempt; sequential until first success
+    await findFirstSequential(this.buildChatIdCandidates(chatId), async (candidate) => {
       const delivered = await this.tryRequest('POST', '/api/sendSeen', {
         session: resolvedSessionId,
         chatId: candidate,
       });
 
-      if (delivered) {
-        return;
-      }
-    }
+      return delivered ? true : false;
+    });
   }
 
   async readChatMessages(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const candidates = this.buildChatIdCandidates(chatId);
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution with early return
-    for (const candidate of candidates) {
-      // biome-ignore lint/performance/noAwaitInLoops: session-scoped WAHA request fallback; sequential until first success
+    const sessionScoped = await findFirstSequential(candidates, async (candidate) => {
       const sessionScoped = await this.tryRequest(
         'POST',
         `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(candidate)}/messages/read`,
       );
 
-      if (sessionScoped) {
-        return;
-      }
+      return sessionScoped ? true : false;
+    });
+
+    if (sessionScoped) {
+      return;
     }
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution with early return
-    for (const candidate of candidates) {
-      // biome-ignore lint/performance/noAwaitInLoops: per-candidate sendSeen dispatch respects WAHA session rate limit
+    await forEachSequential(candidates, async (candidate) => {
       await this.sendSeen(resolvedSessionId, candidate).catch(() => undefined);
-    }
+    });
   }
 
   async setPresence(

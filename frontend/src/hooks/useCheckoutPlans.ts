@@ -2,7 +2,7 @@
 
 import { apiFetch } from '@/lib/api';
 import { swrFetcher } from '@/lib/fetcher';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 
 /* ── Shared types ── */
@@ -154,15 +154,29 @@ async function ensureCheckoutProduct(product: DashboardProduct): Promise<string 
 /* ── Plans for a product ── */
 export function useCheckoutPlans(product: DashboardProductInput | null | undefined) {
   const [checkoutProductId, setCheckoutProductId] = useState<string | null>(null);
+  const checkoutSeedProduct = useMemo<DashboardProduct | null>(() => {
+    if (!product?.id || !product?.name) {
+      return null;
+    }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-sync checkout product only when identifying fields change; product object identity churns on every render
+    return {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      description: product.description,
+      images: product.images,
+      category: product.category,
+      price: product.price,
+    };
+  }, [product]);
+
   useEffect(() => {
-    if (product?.id && product?.name) {
-      ensureCheckoutProduct(product as DashboardProduct)
+    if (checkoutSeedProduct) {
+      ensureCheckoutProduct(checkoutSeedProduct)
         .then(setCheckoutProductId)
         .catch(() => {});
     }
-  }, [product?.id, product?.name]);
+  }, [checkoutSeedProduct]);
 
   const { data, isLoading, mutate } = useSWR<CheckoutProductDetail>(
     checkoutProductId ? `/checkout/products/${checkoutProductId}` : null,

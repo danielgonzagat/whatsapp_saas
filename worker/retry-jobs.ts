@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq';
 import { connection } from './queue';
+import { forEachSequential } from './utils/async-sequence';
 
 async function retryFailedJobs() {
   const queue = new Queue('flow-jobs', { connection });
@@ -7,11 +8,10 @@ async function retryFailedJobs() {
   const failed = await queue.getFailed();
   console.log(`Found ${failed.length} failed jobs.`);
 
-  // biome-ignore lint/performance/noAwaitInLoops: BullMQ failed-job rehydration — each job.retry() acquires a Redis lock on the BullMQ queue and moves the job back to active; parallel retries would stampede the connection and trigger RedisError: MAXCLIENTS reached
-  for (const job of failed) {
+  await forEachSequential(failed, async (job) => {
     console.log(`Retrying job ${job.id}...`);
     await job.retry();
-  }
+  });
 
   console.log('Done.');
   process.exit(0);

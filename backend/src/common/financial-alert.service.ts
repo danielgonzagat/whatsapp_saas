@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 
 /**
  * Centralised alerting for financial operations.
@@ -23,17 +24,11 @@ export class FinancialAlertService {
       `FINANCIAL_ALERT: Payment failed — workspace=${context.workspaceId} order=${context.orderId} amount=${context.amount} gateway=${context.gateway}: ${error.message}`,
       error.stack,
     );
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const Sentry = require('@sentry/node');
-      Sentry.captureException(error, {
-        tags: { type: 'financial_alert', gateway: context.gateway },
-        extra: context,
-        level: 'fatal',
-      });
-    } catch {
-      // Sentry not available — structured log above is the fallback
-    }
+    Sentry.captureException(error, {
+      tags: { type: 'financial_alert', gateway: context.gateway },
+      extra: context,
+      level: 'fatal',
+    });
   }
 
   withdrawalFailed(error: Error, context: { workspaceId?: string; amount?: number }) {
@@ -41,17 +36,11 @@ export class FinancialAlertService {
       `FINANCIAL_ALERT: Withdrawal failed — workspace=${context.workspaceId} amount=${context.amount}: ${error.message}`,
       error.stack,
     );
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const Sentry = require('@sentry/node');
-      Sentry.captureException(error, {
-        tags: { type: 'financial_alert', operation: 'withdrawal' },
-        extra: context,
-        level: 'fatal',
-      });
-    } catch {
-      // Sentry not available
-    }
+    Sentry.captureException(error, {
+      tags: { type: 'financial_alert', operation: 'withdrawal' },
+      extra: context,
+      level: 'fatal',
+    });
   }
 
   webhookProcessingFailed(
@@ -66,31 +55,19 @@ export class FinancialAlertService {
       `FINANCIAL_ALERT: Webhook processing failed — provider=${context.provider} externalId=${context.externalId} event=${context.eventType}: ${error.message}`,
       error.stack,
     );
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const Sentry = require('@sentry/node');
-      Sentry.captureException(error, {
-        tags: { type: 'financial_alert', provider: context.provider },
-        extra: context,
-        level: 'error',
-      });
-    } catch {
-      // Sentry not available
-    }
+    Sentry.captureException(error, {
+      tags: { type: 'financial_alert', provider: context.provider },
+      extra: context,
+      level: 'error',
+    });
   }
 
   reconciliationAlert(message: string, context: { workspaceId?: string; details?: unknown }) {
     this.logger.warn(`FINANCIAL_ALERT: ${message}`, JSON.stringify(context));
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const Sentry = require('@sentry/node');
-      Sentry.captureMessage(`Financial reconciliation: ${message}`, {
-        tags: { type: 'financial_alert', operation: 'reconciliation' },
-        extra: context,
-        level: 'warning',
-      });
-    } catch {
-      // Sentry not available
-    }
+    Sentry.captureMessage(`Financial reconciliation: ${message}`, {
+      tags: { type: 'financial_alert', operation: 'reconciliation' },
+      extra: context,
+      level: 'warning',
+    });
   }
 }

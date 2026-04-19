@@ -1,6 +1,14 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
+const routerPush = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: routerPush,
+  }),
+}));
+
 vi.mock('./checkout-order-submit', () => ({
   finalizeCheckoutOrder: vi.fn(),
 }));
@@ -124,6 +132,7 @@ describe('useCheckoutExperienceSocial', () => {
 
   beforeEach(() => {
     mockedFinalizeCheckoutOrder.mockReset();
+    routerPush.mockReset();
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: {
@@ -182,6 +191,7 @@ describe('useCheckoutExperienceSocial', () => {
       await result.current.finalizeOrder();
     });
 
-    expect(window.location.href).toBe('http://localhost:3000/order/order_456/pix');
+    expect(routerPush).toHaveBeenCalledWith('/order/order_456/pix');
+    expect(window.location.href).toBe('http://localhost:3000/checkout');
   });
 });

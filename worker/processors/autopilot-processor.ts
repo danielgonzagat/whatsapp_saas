@@ -58,6 +58,7 @@ import { unifiedWhatsAppProvider as whatsappApiProvider } from '../providers/uni
 import { WhatsAppEngine } from '../providers/whatsapp-engine';
 import { autopilotQueue, connection, flowQueue } from '../queue';
 import { redis, redisPub } from '../redis-client';
+import { findFirstSequential, forEachSequential } from '../utils/async-sequence';
 import { buildSignedLocalStorageUrl } from '../utils/signed-storage-url';
 import { planCiaActions, summarizeDecisionCognition } from './cia/brain';
 import { buildCiaWorkspaceState, buildCiaWorkspaceStateFromSeed } from './cia/build-state';
@@ -1055,8 +1056,7 @@ async function buildPendingMessageBatch(params: {
     remoteChatCandidates.find((candidate) => candidate.includes('@')) || `${resolvedPhone}@c.us`;
 
   if (!effectiveMessages.length && resolvedPhone) {
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-    for (const remoteChatId of remoteChatCandidates) {
+    await findFirstSequential(remoteChatCandidates, async (remoteChatId) => {
       const remoteMessages = await whatsappApiProvider
         .getChatMessages(workspaceId, remoteChatId, {
           limit: Math.max(PENDING_MESSAGE_LIMIT * 4, 20),
@@ -1066,7 +1066,7 @@ async function buildPendingMessageBatch(params: {
         .catch(() => []);
 
       if (!Array.isArray(remoteMessages) || remoteMessages.length === 0) {
-        continue;
+        return undefined;
       }
 
       const normalizedRemoteMessages = (remoteMessages as UnknownRecord[])
@@ -1113,7 +1113,7 @@ async function buildPendingMessageBatch(params: {
       const latestRemoteMessage =
         normalizedRemoteMessages[normalizedRemoteMessages.length - 1] || null;
       if (latestRemoteMessage?.direction === 'OUTBOUND') {
-        continue;
+        return undefined;
       }
 
       const remoteInboundAfterLastOutbound = normalizedRemoteMessages.filter(
@@ -1145,9 +1145,10 @@ async function buildPendingMessageBatch(params: {
       if (remotePendingMessages.length > 0) {
         effectiveMessages = remotePendingMessages;
         resolvedRemoteChatId = remoteChatId;
-        break;
+        return true;
       }
-    }
+      return undefined;
+    });
   }
 
   if (!effectiveMessages.length) {
@@ -1339,8 +1340,7 @@ export async function runSweepUnreadConversations(data: unknown) {
     },
   });
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential per-conversation processing with reply locks
-  for (const [index, conversation] of conversations.entries()) {
+  await forEachSequential(Array.from(conversations.entries()), async ([index, conversation]) => {
     const displayName = conversation.contact?.name || conversation.contact?.phone || 'contato';
 
     await publishAgentEvent({
@@ -1382,7 +1382,7 @@ export async function runSweepUnreadConversations(data: unknown) {
         removeOnComplete: true,
       },
     );
-  }
+  });
 
   return {
     queued: conversations.length,
@@ -1953,8 +1953,7 @@ async function ensureTrustedContactProfile(input: {
   );
 
   if (!trustedName) {
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-    for (const candidate of chatCandidates) {
+    await findFirstSequential(chatCandidates, async (candidate) => {
       const remoteMessages = await whatsappApiProvider
         .getChatMessages(input.workspaceId, candidate, {
           limit: 5,
@@ -1964,7 +1963,7 @@ async function ensureTrustedContactProfile(input: {
         .catch(() => []);
 
       if (!Array.isArray(remoteMessages) || remoteMessages.length === 0) {
-        continue;
+        return undefined;
       }
 
       for (const remoteMessage of remoteMessages) {
@@ -1983,9 +1982,10 @@ async function ensureTrustedContactProfile(input: {
       }
 
       if (trustedName) {
-        break;
+        return true;
       }
-    }
+      return undefined;
+    });
   }
 
   if (!trustedName) {
@@ -2274,8 +2274,7 @@ async function getRemoteUnreadChatSnapshot(
       .sort((left, right) => right.activityTimestamp - left.activityTimestamp)
       .slice(0, CIA_REMOTE_PENDING_PROBE_LIMIT);
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-    for (const candidate of probeCandidates) {
+    await forEachSequential(probeCandidates, async (candidate) => {
       const probeChatId = candidate.canonicalChatId || candidate.chatId;
       const messages = await whatsappApiProvider
         .getChatMessages(workspaceId, probeChatId, {
@@ -2293,7 +2292,7 @@ async function getRemoteUnreadChatSnapshot(
         .sort((left, right) => right.timestamp - left.timestamp)[0];
 
       if (!latestMessage || latestMessage.fromMe) {
-        continue;
+        return;
       }
 
       pending.set(candidate.phone, {
@@ -2301,7 +2300,7 @@ async function getRemoteUnreadChatSnapshot(
         unreadCount: Math.max(1, candidate.unreadCount || 0),
         lastMessageFromMe: false,
       });
-    }
+    });
   }
 
   return Array.from(pending.values())
@@ -2327,8 +2326,7 @@ async function seedRemoteUnreadConversationShells(input: {
   }>;
 }) {
   let seeded = 0;
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-  for (const item of input.chats) {
+  await forEachSequential(input.chats, async (item) => {
     if (
       !item.phone ||
       isWorkspaceSelfTarget({
@@ -2337,7 +2335,7 @@ async function seedRemoteUnreadConversationShells(input: {
         selfIdentity: input.selfIdentity,
       })
     ) {
-      continue;
+      return;
     }
 
     const existing = await prisma.contact
@@ -2393,7 +2391,7 @@ async function seedRemoteUnreadConversationShells(input: {
     });
 
     seeded += 1;
-  }
+  });
 
   return seeded;
 }
@@ -3854,13 +3852,12 @@ export async function runScanContact(data: UnknownRecord) {
         ),
       );
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-      for (const candidate of readCandidates) {
+      await forEachSequential(readCandidates, async (candidate) => {
         await whatsappApiProvider.readChatMessages(workspaceId, candidate).catch((err) => {
           log.warn('read_chat_messages_failed', { error: err?.message, candidate });
           return undefined;
         });
-      }
+      });
 
       if (finalContactId && finalPhone) {
         await Promise.resolve(
@@ -4584,8 +4581,7 @@ async function dispatchAutonomousReplyPlan(input: {
     });
   }
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-  for (const [index, reply] of replyPlan.entries()) {
+  await forEachSequential(Array.from(replyPlan.entries()), async ([index, reply]) => {
     const effectiveQuotedMessageId = reply.quotedMessageId || input.quotedMessageId;
     await dispatchAutonomousTextMessage({
       workspaceId: input.workspaceId,
@@ -4595,7 +4591,7 @@ async function dispatchAutonomousReplyPlan(input: {
       idempotencyKey: `${input.idempotencyKey}:${index + 1}`,
       quotedMessageId: effectiveQuotedMessageId,
     });
-  }
+  });
 
   return replyPlan.map((reply) => ({
     quotedMessageId: reply.quotedMessageId || input.quotedMessageId,
@@ -7118,8 +7114,7 @@ async function runCatalogContacts(data: UnknownRecord) {
   let cataloged = 0;
   let scoredQueued = 0;
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-  for (const item of eligibleChats) {
+  await forEachSequential(eligibleChats, async (item) => {
     const chat = item.chat;
     const chatId = item.chatId;
     const canonicalChatId = item.canonicalChatId || chatId;
@@ -7132,7 +7127,7 @@ async function runCatalogContacts(data: UnknownRecord) {
         selfIdentity,
       })
     ) {
-      continue;
+      return;
     }
 
     const existingContact = await prisma.contact.findUnique({
@@ -7299,7 +7294,7 @@ async function runCatalogContacts(data: UnknownRecord) {
         });
       }
     }
-  }
+  });
 
   await setWorkspaceSilentLiveMode({
     workspaceId,
@@ -7673,11 +7668,10 @@ async function refreshOpportunityUniverse(workspaceId: string) {
   );
   const rankings: Array<Record<string, unknown>> = [];
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution
-  for (const candidate of seedState.candidates) {
+  await forEachSequential(seedState.candidates, async (candidate) => {
     const conversation = conversationMap.get(candidate.conversationId);
     if (!conversation?.contact?.id) {
-      continue;
+      return;
     }
 
     const joinedText = (conversation.messages || [])
@@ -7820,7 +7814,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
       nextBestAction: classification.nextBestAction,
       conversationId: candidate.conversationId,
     });
-  }
+  });
 
   const orderedRankings = rankings.sort((left, right) => Number(right.score) - Number(left.score));
   await prisma.kloelMemory.upsert({
@@ -8078,15 +8072,14 @@ async function runCiaCycleAll() {
     take: 500,
   });
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential workspace processing
-  for (const workspace of workspaces) {
+  await forEachSequential(workspaces, async (workspace) => {
     const settings = (workspace.providerSettings ?? {}) as UnknownRecord;
     if (settings?.billingSuspended === true) {
-      continue;
+      return;
     }
-    if (!isCiaAutonomyMode(settings)) continue;
+    if (!isCiaAutonomyMode(settings)) return;
     await runCiaCycleWorkspace(workspace.id, settings);
-  }
+  });
 }
 
 async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: UnknownRecord) {
@@ -8390,8 +8383,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
     },
   });
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential action execution
-  for (const [index, action] of batch.actions.entries()) {
+  await forEachSequential(Array.from(batch.actions.entries()), async ([index, action]) => {
     await autopilotQueue.add(
       'cia-action',
       {
@@ -8416,7 +8408,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
         removeOnComplete: true,
       },
     );
-  }
+  });
 
   return {
     queued: batch.actions.length,
@@ -8802,12 +8794,11 @@ async function runCiaSelfImproveAll() {
     take: 500,
   });
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential workspace processing
-  for (const workspace of workspaces) {
+  await forEachSequential(workspaces, async (workspace) => {
     const settings = (workspace.providerSettings ?? {}) as UnknownRecord;
-    if (!isAutonomousEnabled(settings)) continue;
+    if (!isAutonomousEnabled(settings)) return;
     await runCiaSelfImproveWorkspace(workspace.id);
-  }
+  });
 }
 
 async function runCiaSelfImproveWorkspace(workspaceId: string) {
@@ -8841,8 +8832,7 @@ async function runCiaGlobalLearningAll() {
   );
   const signals: NonNullable<ReturnType<typeof anonymizeDecisionLog>>[] = [];
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-  for (const workspace of enabledWorkspaces) {
+  await forEachSequential(enabledWorkspaces, async (workspace) => {
     const domain = inferWorkspaceDomain(
       (workspace.providerSettings || {}) as Record<string, unknown>,
     );
@@ -8864,18 +8854,17 @@ async function runCiaGlobalLearningAll() {
       });
       if (signal) signals.push(signal);
     }
-  }
+  });
 
   const patterns = computeGlobalPatterns(signals);
   await persistGlobalPatterns(redis, patterns);
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-  for (const workspace of enabledWorkspaces) {
+  await forEachSequential(enabledWorkspaces, async (workspace) => {
     const domain = inferWorkspaceDomain(
       (workspace.providerSettings || {}) as Record<string, unknown>,
     );
     const topPattern = patterns.find((pattern) => pattern.domain === domain);
-    if (!topPattern) continue;
+    if (!topPattern) return;
 
     const strategy = buildGlobalStrategy({
       patterns,
@@ -8897,7 +8886,7 @@ async function runCiaGlobalLearningAll() {
         patternsAvailable: patterns.length,
       },
     });
-  }
+  });
 
   return {
     workspacesAnalyzed: enabledWorkspaces.length,
@@ -8911,27 +8900,26 @@ async function runCycleAll() {
     select: { id: true, providerSettings: true },
     take: 500,
   });
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-  for (const ws of workspaces) {
+  await forEachSequential(workspaces, async (ws) => {
     const settings = (ws.providerSettings ?? {}) as UnknownRecord;
     if (settings?.billingSuspended === true) {
       log.info('autopilot_cycle_skip_billing', { workspaceId: ws.id });
       await notifyBillingSuspended(ws.id);
-      continue;
+      return;
     }
     if (isCiaAutonomyMode(settings)) {
       log.info('autopilot_cycle_skip_cia_primary', { workspaceId: ws.id });
-      continue;
+      return;
     }
-    if (!isAutonomousEnabled(settings)) continue;
+    if (!isAutonomousEnabled(settings)) return;
     if (!isExplicitProactiveOutreachAllowed(settings)) {
       log.info('autopilot_cycle_skip_proactive_disabled', {
         workspaceId: ws.id,
       });
-      continue;
+      return;
     }
     await runCycleWorkspace(ws.id, settings);
-  }
+  });
 }
 
 async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRecord) {
@@ -9118,8 +9106,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRe
   }
 
   let executed = 0;
-  // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-  for (const { conv, lastInbound, lastMessage, demandState } of enriched) {
+  await forEachSequential(enriched, async ({ conv, lastInbound, lastMessage, demandState }) => {
     if (conv.contact?.id) {
       await persistDemandState(prisma, {
         workspaceId,
@@ -9140,7 +9127,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRe
         reason: demandState.strategy === 'DROP' ? 'attention_budget_drop' : 'attention_budget_wait',
         meta: { demandState },
       });
-      continue;
+      return;
     }
 
     const text = (lastInbound?.content || lastMessage?.content || '').toLowerCase();
@@ -9185,7 +9172,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRe
       action,
     });
     if (humanGate.blocked) {
-      continue;
+      return;
     }
 
     await executeAction(action, {
@@ -9208,7 +9195,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRe
       },
     });
     executed += 1;
-  }
+  });
   log.info('autopilot_cycle_completed', { workspaceId, processed: limited.length });
   return {
     queued: executed,

@@ -1,12 +1,20 @@
 # Codex Global Memory Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
+> checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Install a user-global persistent memory system for Codex that captures history automatically, injects a conservative startup brief in new sessions, and supports manual retrieval across the full Codex history.
+**Goal:** Install a user-global persistent memory system for Codex that captures history
+automatically, injects a conservative startup brief in new sessions, and supports manual retrieval
+across the full Codex history.
 
-**Architecture:** Build a local Node-based memory service under `~/.codex/memories/codex-mem/` using native `node:sqlite` and an HTTP API. Install global Codex skills in `~/.agents/skills/` so new sessions can bootstrap the service and pull a short memory brief without touching repository-local governance surfaces.
+**Architecture:** Build a local Node-based memory service under `~/.codex/memories/codex-mem/` using
+native `node:sqlite` and an HTTP API. Install global Codex skills in `~/.agents/skills/` so new
+sessions can bootstrap the service and pull a short memory brief without touching repository-local
+governance surfaces.
 
-**Tech Stack:** Node.js 25, native `node:sqlite`, native `node:test`, local HTTP server, global Codex skills under `~/.agents/skills/`.
+**Tech Stack:** Node.js 25, native `node:sqlite`, native `node:test`, local HTTP server, global
+Codex skills under `~/.agents/skills/`.
 
 ---
 
@@ -169,7 +177,8 @@ test('normalizeHistoryLine turns durable preference text into a fact record', ()
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/redact.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/normalize.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/redact.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/normalize.test.mjs`
 Expected: FAIL because the modules do not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -182,7 +191,8 @@ Code must:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/redact.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/normalize.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/redact.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/normalize.test.mjs`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -212,7 +222,8 @@ Tests must prove:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
 Expected: FAIL because ingestion modules do not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -226,7 +237,8 @@ Code must:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -255,7 +267,8 @@ Tests must prove:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/search.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/brief.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/search.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/brief.test.mjs`
 Expected: FAIL because ranking modules do not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -268,7 +281,8 @@ Code must:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `node --test /Users/danielpenin/.codex/memories/codex-mem/test/search.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/brief.test.mjs`
+Run:
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/search.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/brief.test.mjs`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -340,7 +354,8 @@ Verification goal:
 
 - [ ] **Step 2: Run verification to confirm absence**
 
-Run: `find /Users/danielpenin/.agents/skills -maxdepth 2 -type f | rg 'codex-memory-(bootstrap|search|admin)'`
+Run:
+`find /Users/danielpenin/.agents/skills -maxdepth 2 -type f | rg 'codex-memory-(bootstrap|search|admin)'`
 Expected: no matches before creation.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -354,7 +369,8 @@ Each skill must:
 
 - [ ] **Step 4: Run verification to confirm install**
 
-Run: `find /Users/danielpenin/.agents/skills -maxdepth 2 -type f | rg 'codex-memory-(bootstrap|search|admin)'`
+Run:
+`find /Users/danielpenin/.agents/skills -maxdepth 2 -type f | rg 'codex-memory-(bootstrap|search|admin)'`
 Expected: all three skills present.
 
 - [ ] **Step 5: Commit**
@@ -387,8 +403,10 @@ Expected: at least one relevant result from prior Codex history.
 
 - [ ] **Step 4: Run startup brief smoke test**
 
-Run: `curl -sS 'http://127.0.0.1:37777/memory/brief?cwd=/Users/danielpenin/whatsapp_saas&q=continuar%20trabalho%20anterior'`
-Expected: a short JSON payload with compact sections or an explicit low-confidence no-brief response.
+Run:
+`curl -sS 'http://127.0.0.1:37777/memory/brief?cwd=/Users/danielpenin/whatsapp_saas&q=continuar%20trabalho%20anterior'`
+Expected: a short JSON payload with compact sections or an explicit low-confidence no-brief
+response.
 
 - [ ] **Step 5: Commit**
 

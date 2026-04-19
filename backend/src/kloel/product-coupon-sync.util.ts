@@ -1,4 +1,5 @@
 import { DiscountType } from '@prisma/client';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 
 function buildPendingPlanToken(productId: string) {
@@ -148,9 +149,7 @@ export async function syncAllWorkspaceCheckoutCouponsForProduct(
     },
   });
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential coupon sync with external payment provider
-  for (const coupon of coupons) {
-    // biome-ignore lint/performance/noAwaitInLoops: per-coupon workspace sync must be sequential to avoid duplicate upserts
+  await forEachSequential(coupons, async (coupon) => {
     await syncWorkspaceCheckoutCouponForProduct(prisma, workspaceId, productId, coupon.code);
-  }
+  });
 }

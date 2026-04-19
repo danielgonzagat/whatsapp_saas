@@ -41,6 +41,17 @@ interface FollowupsResponse {
   followups: Followup[];
 }
 
+function getStatusLabel(status: string) {
+  switch (status) {
+    case 'executed':
+      return 'Executado';
+    case 'cancelled':
+      return 'Cancelado';
+    default:
+      return 'Pendente';
+  }
+}
+
 export default function FollowupsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -121,17 +132,6 @@ export default function FollowupsPage() {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'executed':
-        return 'Executado';
-      case 'cancelled':
-        return 'Cancelado';
-      default:
-        return 'Pendente';
-    }
-  };
-
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
     try {
@@ -160,7 +160,6 @@ export default function FollowupsPage() {
     return phone;
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: getStatusLabel is a pure local helper over a static switch; including it would needlessly invalidate the memo
   const filteredFollowups = useMemo(() => {
     const query = search.trim().toLowerCase();
     return followups.filter((followup) => {

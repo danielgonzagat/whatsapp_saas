@@ -1,14 +1,23 @@
 // Custom node types for KLOEL FlowBuilder
-// biome-ignore lint/performance/noBarrelFile: React Flow nodeTypes registry requires grouped re-exports; Next.js/Turbopack tree-shakes named re-exports
-export { MessageNode } from './MessageNode';
-export { ConditionNode } from './ConditionNode';
-export { ActionNode } from './ActionNode';
-export { InputNode } from './InputNode';
-export { DelayNode } from './DelayNode';
-export { AINode } from './AINode';
-export { StartNode } from './StartNode';
-export { EndNode } from './EndNode';
-export { WaitForReplyNode } from './WaitForReplyNode';
+import { ActionNode as ActionNodeComponent } from './ActionNode';
+import { AINode as AINodeComponent } from './AINode';
+import { ConditionNode as ConditionNodeComponent } from './ConditionNode';
+import { DelayNode as DelayNodeComponent } from './DelayNode';
+import { EndNode as EndNodeComponent } from './EndNode';
+import { InputNode as InputNodeComponent } from './InputNode';
+import { MessageNode as MessageNodeComponent } from './MessageNode';
+import { StartNode as StartNodeComponent } from './StartNode';
+import { WaitForReplyNode as WaitForReplyNodeComponent } from './WaitForReplyNode';
+
+export const MessageNode = MessageNodeComponent;
+export const ConditionNode = ConditionNodeComponent;
+export const ActionNode = ActionNodeComponent;
+export const InputNode = InputNodeComponent;
+export const DelayNode = DelayNodeComponent;
+export const AINode = AINodeComponent;
+export const StartNode = StartNodeComponent;
+export const EndNode = EndNodeComponent;
+export const WaitForReplyNode = WaitForReplyNodeComponent;
 
 // Node type registry for ReactFlow
 export const nodeTypes = {

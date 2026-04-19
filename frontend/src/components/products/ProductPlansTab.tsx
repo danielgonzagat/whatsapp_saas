@@ -262,38 +262,27 @@ export function ProductPlansTab({ productId }: { productId: string }) {
 
       {/* Modal Links de Checkout */}
       {linkModalPlan && (
-        // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          role="button"
-          tabIndex={0}
-          aria-label="Fechar modal"
           style={{
             backgroundColor: 'var(--cookie-overlay, rgba(0,0,0,0.6))',
             backdropFilter: 'blur(4px)',
           }}
-          onClick={() => setLinkModalPlan(null)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              (e.currentTarget as HTMLElement).click();
-            }
-          }}
         >
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
+          <button
+            type="button"
+            aria-label="Fechar modal"
+            onClick={() => setLinkModalPlan(null)}
+            className="absolute inset-0"
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+          />
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-md p-6"
+            className="relative z-10 w-full max-w-lg rounded-md p-6"
             style={{
               backgroundColor: colors.background.void,
               border: `1px solid ${colors.border.space}`,
               boxShadow: 'var(--cookie-shadow, 0 20px 60px rgba(0,0,0,0.5))',
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).click();
-              }
             }}
           >
             <div className="mb-4 flex items-center justify-between">

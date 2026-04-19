@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { RefObject } from 'react';
 import { useCompactComposerViewport } from './KloelChatComposerParts.helpers';
 
@@ -124,12 +125,12 @@ function ProductMenuContent({
           }}
         >
           {product.imageUrl ? (
-            // biome-ignore lint/performance/noImgElement: dynamic product image from merchant-configured URL, no need to optimize via next/image
-            <img
+            <Image
               src={product.imageUrl}
               alt=""
               width={30}
               height={30}
+              unoptimized
               style={{
                 width: 30,
                 height: 30,
@@ -305,9 +306,8 @@ export function ComposerPopover({
               }}
             />
 
-            {/* biome-ignore lint/a11y/useSemanticElements: wrapper groups action button and its hover-triggered submenu; role="group" is the correct ARIA mapping */}
-            <div
-              role="group"
+            <section
+              aria-label="Vincular produto"
               style={{ position: 'relative' }}
               onMouseEnter={() => onProductMenuOpenChange(true)}
               onMouseLeave={() => onProductMenuOpenChange(false)}
@@ -368,7 +368,7 @@ export function ComposerPopover({
                   </motion.div>
                 ) : null}
               </AnimatePresence>
-            </div>
+            </section>
 
             <div
               style={{

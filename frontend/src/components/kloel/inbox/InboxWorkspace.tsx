@@ -260,7 +260,6 @@ export function InboxWorkspace({
     }
   }, [requestedDraft, replyText]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: messages.length change is the intentional trigger to auto-scroll; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
@@ -268,7 +267,6 @@ export function InboxWorkspace({
   const selectedIdRef = useRef(selectedConversationId);
   selectedIdRef.current = selectedConversationId;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshConversations is the SWR mutator (stable); selectedIdRef is read imperatively. Resubscribing on those identities would churn the socket.
   useEffect(() => {
     if (!isConnected || !workspaceId) return;
 
@@ -292,7 +290,7 @@ export function InboxWorkspace({
       unsubNewMsg();
       unsubConvUpdate();
     };
-  }, [isConnected, workspaceId, subscribe]);
+  }, [isConnected, refreshConversations, subscribe, workspaceId]);
 
   if (!isLoading && !isAuthenticated) {
     return (

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
+import { forEachSequential } from '../../common/async-sequence';
 import { FinancialAlertService } from '../../common/financial-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -49,9 +50,8 @@ export class ConnectLedgerMaturationService {
     let matured = 0;
     let failed = 0;
 
-    for (const entry of dueEntries) {
+    await forEachSequential(dueEntries, async (entry) => {
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: maturation must preserve deterministic append-only ledger order
         await this.ledgerService.moveFromPendingToAvailable(entry.id);
         matured += 1;
       } catch (error) {
@@ -78,7 +78,7 @@ export class ConnectLedgerMaturationService {
           })
           .catch(() => undefined);
       }
-    }
+    });
 
     if (dueEntries.length > 0) {
       this.logger.log(

@@ -13,6 +13,7 @@ import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
+import { forEachSequential } from '../common/async-sequence';
 import { QueueHealthService } from '../metrics/queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { connection, queueOptions, queueRegistry } from '../queue/queue';
@@ -56,15 +57,13 @@ export class OpsController {
     const jobs = await dlq.getJobs(['waiting', 'failed'], 0, clampedLimit - 1);
 
     let retried = 0;
-    // biome-ignore lint/performance/noAwaitInLoops: sequential job processing
-    for (const job of jobs) {
+    await forEachSequential(jobs, async (job) => {
       // Preserve original opts and add jobId for deduplication on retry
       const retryOpts = { ...job.opts, jobId: `dlq-retry:${job.id || Date.now()}` };
-      // biome-ignore lint/performance/noAwaitInLoops: per-job requeue must preserve original ordering for ops replay
       await main.add(job.name || 'default', job.data, retryOpts);
       await job.remove();
       retried++;
-    }
+    });
 
     return { queue: name, retried };
   }

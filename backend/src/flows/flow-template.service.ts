@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 
 type CreateFlowTemplateInput = {
@@ -209,17 +210,15 @@ export class FlowTemplateService {
     const existingByName = new Map(existingTemplates.map((t) => [t.name, t]));
 
     const created: unknown[] = [];
-    // biome-ignore lint/performance/noAwaitInLoops: sequential template creation with unique constraints
-    for (const tpl of templates) {
+    await forEachSequential(templates, async (tpl) => {
       const existing = existingByName.get(tpl.name);
       if (existing) {
         created.push(existing);
-        continue;
+        return;
       }
-      // biome-ignore lint/performance/noAwaitInLoops: sequential template insertion to preserve install order and dependencies
       const inserted = await this.create(tpl);
       created.push(inserted);
-    }
+    });
     return { seeded: created.length, templates: created };
   }
 }

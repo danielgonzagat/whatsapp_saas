@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -717,8 +718,7 @@ export class MarketingController {
     let sent = 0;
     let failed = 0;
 
-    // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
-    for (const recipient of body.recipients) {
+    await forEachSequential(body.recipients, async (recipient) => {
       // unsubscribe: link included in email footer
       const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(recipient.email)}`;
       const personalizedBody = body.html.replace(NAME_RE, recipient.name || 'Cliente');
@@ -726,7 +726,6 @@ export class MarketingController {
       try {
         if (provider === 'resend') {
           // Not SSRF: hardcoded Resend API endpoint
-          // biome-ignore lint/performance/noAwaitInLoops: retry loop for Resend email API with sequential attempts
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
@@ -770,7 +769,7 @@ export class MarketingController {
       } catch {
         failed++;
       }
-    }
+    });
 
     return { sent, failed, total: body.recipients.length, provider };
   }

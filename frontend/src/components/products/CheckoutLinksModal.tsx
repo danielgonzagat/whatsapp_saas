@@ -112,11 +112,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
   if (!isOpen) return null;
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
-      role="button"
-      tabIndex={0}
-      aria-label="Fechar modal de links de checkout"
       style={{
         position: 'fixed',
         top: 0,
@@ -134,12 +130,6 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
-        }
       }}
     >
       <div

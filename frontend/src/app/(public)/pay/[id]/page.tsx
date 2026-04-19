@@ -6,6 +6,7 @@ import {
   KloelMushroomVisual,
 } from '@/components/kloel/KloelBrand';
 import { apiUrl } from '@/lib/http';
+import Image from 'next/image';
 import {
   AlertCircle,
   Building2,
@@ -215,12 +216,12 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                     {payment.pixQrCodeUrl && (
                       <div className="bg-white border border-gray-200 rounded-xl p-4 flex justify-center">
                         {}
-                        {/* biome-ignore lint/performance/noImgElement: dynamic QR code URL from payment provider, no need to optimize via next/image */}
-                        <img
+                        <Image
                           src={payment.pixQrCodeUrl}
                           alt="QR Code PIX"
                           width={224}
                           height={224}
+                          unoptimized
                           className="w-56 h-56 object-contain"
                         />
                       </div>

@@ -1,3 +1,4 @@
+import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../_lib/backend-url';
 
@@ -46,10 +47,9 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
     return NextResponse.json({ message: 'Servidor backend nao configurado.' }, { status: 502 });
   }
 
-  // biome-ignore lint/performance/noAwaitInLoops: KYC backend failover — advance to next candidate only if previous returned 404/405 or threw; parallel fan-out would submit sensitive KYC documents to multiple upstreams and create duplicate records
-  for (const baseUrl of candidates) {
+  const response = await findFirstSequential(candidates, async (baseUrl) => {
     const url = `${baseUrl}${kycPath}`;
-    const response = await fetch(url, {
+    const attempt = await fetch(url, {
       method: request.method,
       headers,
       body,
@@ -59,23 +59,27 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
       return null;
     });
 
-    if (!response) continue;
-    if (response.status === 404 || response.status === 405) {
-      lastError = new Error(`upstream ${response.status} at ${url}`);
-      continue;
+    if (!attempt) return null;
+    if (attempt.status === 404 || attempt.status === 405) {
+      lastError = new Error(`upstream ${attempt.status} at ${url}`);
+      return null;
     }
 
-    const responseContentType = response.headers.get('content-type') || '';
+    const responseContentType = attempt.headers.get('content-type') || '';
     if (responseContentType.includes('application/json')) {
-      const data = await response.json().catch(() => ({}));
-      return NextResponse.json(data, { status: response.status });
+      const data = await attempt.json().catch(() => ({}));
+      return NextResponse.json(data, { status: attempt.status });
     }
 
-    const blob = await response.blob();
+    const blob = await attempt.blob();
     return new NextResponse(blob, {
-      status: response.status,
+      status: attempt.status,
       headers: { 'Content-Type': responseContentType },
     });
+  });
+
+  if (response) {
+    return response;
   }
 
   console.error('[KYC Proxy] all backends failed:', lastError);

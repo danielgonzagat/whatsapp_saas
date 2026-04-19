@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { forEachSequential } from '../common/async-sequence';
 import { StorageService } from '../common/storage/storage.service';
 import { InboxService } from './inbox.service';
 import { SmartRoutingService } from './smart-routing.service';
@@ -139,15 +140,14 @@ export class OmnichannelService {
   ): Promise<ProcessedAttachment[]> {
     const processed: ProcessedAttachment[] = [];
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential attachment processing
-    for (const attachment of attachments) {
+    await forEachSequential(attachments, async (attachment) => {
       try {
         const result = await this.processSingleAttachment(workspaceId, attachment);
         if (result) processed.push(result);
       } catch (error: unknown) {
         this.logAttachmentError(error);
       }
-    }
+    });
 
     return processed;
   }

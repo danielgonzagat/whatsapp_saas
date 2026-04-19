@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Job, Worker } from 'bullmq';
+import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
 import { flowQueue } from '../queue/queue';
 
@@ -65,16 +66,14 @@ export function startMassSendWorker() {
 
       let cumulativeDelay = 0;
 
-      // biome-ignore lint/performance/noAwaitInLoops: WhatsApp mass-send requires sequential delivery for rate limits
-      for (const number of numbers) {
+      await forEachSequential(numbers, async (number) => {
         const sanitized = (number || '').replace(D_RE, '');
-        if (!sanitized) continue;
+        if (!sanitized) return;
         try {
           cumulativeDelay = nextDispatchDelay(cumulativeDelay);
 
           // Deduplicate via jobId: same campaign + number = same job
           const jobId = `mass-send:${job.id}:${sanitized}`;
-          // biome-ignore lint/performance/noAwaitInLoops: BullMQ flow queue.add must preserve per-target delivery order
           await flowQueue.add(
             'send-message',
             {
@@ -96,7 +95,7 @@ export function startMassSendWorker() {
           const errorMessage = err instanceof Error ? err.message : 'unknown_error';
           logger.error(`Erro ao enfileirar ${number}: ${errorMessage}`);
         }
-      }
+      });
 
       logger.log(
         `Campanha finalizada (jobs enfileirados com atraso acumulado de ${cumulativeDelay}ms).`,

@@ -53,10 +53,8 @@ export class TranscriptionService {
     const maxRetries = 3;
     const baseDelay = 1000;
 
-    // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const run = async (attempt: number): Promise<string | null> => {
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff; attempts must be sequential
         const fileBuffer = await readFile(filePath);
         const fileName = basename(filePath);
         const form = new FormData();
@@ -125,11 +123,13 @@ export class TranscriptionService {
         if (attempt < maxRetries) {
           const delay = baseDelay * 2 ** (attempt - 1);
           await new Promise((r) => setTimeout(r, delay));
+          return run(attempt + 1);
         }
+        return null;
       }
-    }
+    };
 
-    return null;
+    return run(1);
   }
 
   /**

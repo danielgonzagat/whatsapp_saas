@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import type { Prisma } from '@prisma/client';
+import { forEachSequential } from '../common/async-sequence';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletLedgerService } from './wallet-ledger.service';
@@ -425,14 +426,12 @@ export class WalletService {
       // end so drift is never silently lost (Wave 2 I8).
       const perTxFailures: Array<{ txId: string; error: string }> = [];
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential financial transaction processing
-      for (const tx of pendingTxs) {
+      await forEachSequential(pendingTxs, async (tx) => {
         try {
           const wallet = walletsById.get(tx.walletId);
-          if (!wallet) continue;
+          if (!wallet) return;
 
           // PULSE:OK — each settlement needs atomic $transaction with unique amounts per wallet
-          // biome-ignore lint/performance/noAwaitInLoops: per-transfer $transaction must be sequential to preserve ledger append-only invariant
           await this.prisma.$transaction(
             async (txn) => {
               // Guard the status flip with `updateMany` so a concurrent
@@ -496,7 +495,7 @@ export class WalletService {
             });
           }
         }
-      }
+      });
 
       if (perTxFailures.length > 0) {
         // Visibility for ops — drift must not hide in per-tx logs.

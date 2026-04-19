@@ -1,6 +1,7 @@
 import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { forEachSequential } from '../utils/async-sequence';
 
 const D_1_3__0__S__D_2_3_RE = /(\+\d{1,3}|0)\s?\d{2,3}\s?\d{3,4}\s?\d{3,4}/;
 const D_1_3__0__S__D_2_3_RE_2 = /(\+\d{1,3}|0)\s?\d{2,3}/;
@@ -121,12 +122,13 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
     const items = await page.$$('div[role="article"]');
     console.log(`[MAPS] Found ${items.length} items. Processing details...`);
 
-    // biome-ignore lint/performance/noAwaitInLoops: single puppeteer page with shared DOM state — each iteration clicks, scrolls, and waits for a details panel that replaces the previous one; parallel access would race on the same tab and break selector resolution
-    for (let i = 0; i < Math.min(items.length, limit); i++) {
+    await forEachSequential(
+      Array.from({ length: Math.min(items.length, limit) }, (_, index) => index),
+      async (i) => {
       try {
         const currentItems = await page.$$('div[role="article"]');
         const item = currentItems[i];
-        if (!item) continue;
+        if (!item) return;
 
         await item.scrollIntoView();
         await item.click();
@@ -172,7 +174,8 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
         // PULSE:OK — Per-item scraping error non-critical; other items still collected
         console.error('[MAPS] Error processing item %d: %O', i, err);
       }
-    }
+      },
+    );
 
     console.log(`[MAPS] Extracted ${leads.length} leads with details.`);
   } catch (err) {

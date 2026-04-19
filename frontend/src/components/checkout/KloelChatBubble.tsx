@@ -75,7 +75,6 @@ export function KloelChatBubble({
     return () => clearTimeout(t);
   }, [enabled, delay]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: messages change is the intentional trigger to auto-scroll; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);

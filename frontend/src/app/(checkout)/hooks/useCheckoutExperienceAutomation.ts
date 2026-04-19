@@ -96,7 +96,6 @@ export function useCheckoutExperienceAutomation({
     }));
   }, [setForm, socialIdentity]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: qty change is the intentional trigger to drop any applied coupon; the effect reads couponApplied latest value
   useEffect(() => {
     if (!couponApplied) return;
     setCouponApplied(false);

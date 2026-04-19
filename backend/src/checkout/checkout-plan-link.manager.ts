@@ -1,4 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { forEachSequential } from '../common/async-sequence';
 import {
   DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
   generateUniquePublicCheckoutCode,
@@ -62,19 +63,22 @@ export class CheckoutPlanLinkManager {
       return normalizedBase;
     }
 
-    // biome-ignore lint/performance/noAwaitInLoops: retry loop for unique slug generation
-    for (let attempt = 0; attempt < 25; attempt += 1) {
+    const tryCandidate = async (attempt: number): Promise<string> => {
+      if (attempt >= 25) {
+        return this.normalizeCheckoutSlug(
+          `${normalizedBase}-${Math.random().toString(36).slice(2, 8)}`,
+        );
+      }
+
       const suffix = `${Date.now().toString(36)}${attempt.toString(36)}`.slice(-6);
       const candidate = this.normalizeCheckoutSlug(`${normalizedBase}-${suffix}`);
-      // biome-ignore lint/performance/noAwaitInLoops: slug-collision retry loop; each attempt depends on prior uniqueness check
       if (!(await this.isPublicSlugTaken(candidate, ignore))) {
         return candidate;
       }
-    }
+      return tryCandidate(attempt + 1);
+    };
 
-    return this.normalizeCheckoutSlug(
-      `${normalizedBase}-${Math.random().toString(36).slice(2, 8)}`,
-    );
+    return tryCandidate(0);
   }
 
   async isPublicCodeTaken(code: string, ignore?: PublicIdentifierIgnore) {
@@ -217,11 +221,9 @@ export class CheckoutPlanLinkManager {
         });
       }
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential plan processing with external API
-      for (const plan of plans) {
-        if (existingPlanIds.has(plan.id)) continue;
+      await forEachSequential(plans, async (plan) => {
+        if (existingPlanIds.has(plan.id)) return;
 
-        // biome-ignore lint/performance/noAwaitInLoops: per-plan count query inside $transaction; sequential to preserve txn ordering
         const existingPlanLinkCount = await tx.checkoutPlanLink.count({
           where: { planId: plan.id },
         });
@@ -236,25 +238,23 @@ export class CheckoutPlanLinkManager {
             isActive: plan.isActive,
           },
         });
-      }
+      });
 
       const affectedPlanIds = Array.from(
         new Set([...desiredPlanIds, ...existingLinks.map((link) => link.planId)]),
       );
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential plan link invalidation
-      for (const planId of affectedPlanIds) {
-        // biome-ignore lint/performance/noAwaitInLoops: per-plan link invalidation inside $transaction; sequential for primary-link promotion
+      await forEachSequential(affectedPlanIds, async (planId) => {
         const remainingLinks = await tx.checkoutPlanLink.findMany({
           where: { planId },
           orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
           select: { id: true, slug: true, isPrimary: true },
         });
 
-        if (!remainingLinks.length) continue;
+        if (!remainingLinks.length) return;
 
         const currentPrimary = remainingLinks.find((link) => link.isPrimary);
-        if (currentPrimary) continue;
+        if (currentPrimary) return;
 
         const planRecord = await tx.checkoutProductPlan.findUnique({
           where: { id: planId },
@@ -268,7 +268,7 @@ export class CheckoutPlanLinkManager {
             slug: remainingLinks[0].slug || planRecord?.slug || null,
           },
         });
-      }
+      });
     });
 
     return this.prisma.checkoutPlanLink.findMany({

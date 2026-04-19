@@ -370,15 +370,13 @@ function SmartPaymentModal({
         justifyContent: 'center',
         backdropFilter: 'blur(4px)',
       }}
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
-        }
-      }}
     >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
+      <button
+        type="button"
+        aria-label="Fechar modal"
+        onClick={onClose}
+        style={{ position: 'absolute', inset: 0, background: 'transparent', border: 'none' }}
+      />
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -389,12 +387,8 @@ function SmartPaymentModal({
           maxHeight: '85vh',
           overflowY: 'auto',
           boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <div
@@ -1660,19 +1654,11 @@ function GestaoVendas({
                 </div>
               </button>
             ) : (
-              // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-              <div
+              <button
+                type="button"
                 key={s.id}
                 onClick={() => onOpenDetail(s.id, 'sale')}
-                role="button"
-                tabIndex={0}
                 aria-label={`Abrir detalhes da venda ${s.id}`}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    (e.currentTarget as HTMLElement).click();
-                  }
-                }}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr',
@@ -1682,6 +1668,9 @@ function GestaoVendas({
                     i < sales.length - 1 ? '1px solid var(--app-border-subtle)' : 'none',
                   cursor: 'pointer',
                   transition: 'background .1s',
+                  textAlign: 'left',
+                  border: 'none',
+                  background: 'transparent',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'var(--app-bg-hover)';
@@ -1753,7 +1742,7 @@ function GestaoVendas({
                 >
                   {fmtDate(s.createdAt || new Date())}
                 </span>
-              </div>
+              </button>
             ),
           )
         )}

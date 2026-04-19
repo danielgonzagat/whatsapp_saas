@@ -1,12 +1,18 @@
 # Kloel Marketing Skills Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
+> checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Vendor the upstream marketing skills for Kloel development workflows and inject a marketing skill packet into the seller-facing CIA using real workspace context.
+**Goal:** Vendor the upstream marketing skills for Kloel development workflows and inject a
+marketing skill packet into the seller-facing CIA using real workspace context.
 
-**Architecture:** Keep the upstream skills as local project assets under `.agents/skills`, then add a backend marketing-skills package that loads, routes, and injects those assets into `UnifiedAgentService` only when a message is marketing-oriented.
+**Architecture:** Keep the upstream skills as local project assets under `.agents/skills`, then add
+a backend marketing-skills package that loads, routes, and injects those assets into
+`UnifiedAgentService` only when a message is marketing-oriented.
 
-**Tech Stack:** Markdown skill assets, NestJS services, deterministic PT-BR routing, existing OpenAI tool-calling pipeline.
+**Tech Stack:** Markdown skill assets, NestJS services, deterministic PT-BR routing, existing OpenAI
+tool-calling pipeline.
 
 ---
 
@@ -20,7 +26,8 @@
 
 - [ ] Copy the upstream skill directories into `.agents/skills/`.
 - [ ] Add a real Kloel product marketing context document in `.agents/product-marketing-context.md`.
-- [ ] Add a Kloel companion skill that teaches BR adaptation and how to combine the upstream skills for Kloel asks.
+- [ ] Add a Kloel companion skill that teaches BR adaptation and how to combine the upstream skills
+  for Kloel asks.
 
 ### Task 2: Document the Skill Surface
 

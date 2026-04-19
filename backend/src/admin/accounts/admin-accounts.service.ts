@@ -4,6 +4,7 @@ import { AdminRole, Prisma } from '@prisma/client';
 import { hash as bcryptHash } from 'bcrypt';
 import { AuthService } from '../../auth/auth.service';
 import { BCRYPT_ROUNDS } from '../../common/constants';
+import { forEachSequential } from '../../common/async-sequence';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getAdminAccountDetail, type AdminAccountDetail } from './queries/detail-account.query';
 import {
@@ -153,11 +154,10 @@ export class AdminAccountsService {
     input: { reason?: string; frozenBalanceInCents?: number },
   ): Promise<{ updated: number }> {
     let updated = 0;
-    for (const workspaceId of workspaceIds) {
-      // biome-ignore lint/performance/noAwaitInLoops: bulk state update must run sequentially per workspace to maintain audit trail ordering
+    await forEachSequential(workspaceIds, async (workspaceId) => {
       await this.updateState(workspaceId, actorId, action, input);
       updated += 1;
-    }
+    });
     return { updated };
   }
 

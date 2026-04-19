@@ -18,6 +18,7 @@ import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
+import { forEachSequential } from '../common/async-sequence';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -905,9 +906,7 @@ export class MemberAreaController {
     let totalLessonsCreated = 0;
 
     await this.prisma.$transaction(async (tx) => {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential module creation with ordering
-      for (const modData of modulesData) {
-        // biome-ignore lint/performance/noAwaitInLoops: per-module create inside $transaction; sequential for FK ordering
+      await forEachSequential(modulesData, async (modData) => {
         const createdModule = await tx.memberModule.create({
           data: {
             memberAreaId: id,
@@ -918,9 +917,7 @@ export class MemberAreaController {
         });
         totalModulesCreated++;
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential lesson creation within module
-        for (const lessonData of modData.lessons) {
-          // biome-ignore lint/performance/noAwaitInLoops: per-lesson create inside $transaction; depends on moduleId from prior step
+        await forEachSequential(modData.lessons, async (lessonData) => {
           await tx.memberLesson.create({
             data: {
               moduleId: createdModule.id,
@@ -930,8 +927,8 @@ export class MemberAreaController {
             },
           });
           totalLessonsCreated++;
-        }
-      }
+        });
+      });
 
       await tx.memberArea.update({
         where: { id },

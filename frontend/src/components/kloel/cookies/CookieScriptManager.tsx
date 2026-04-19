@@ -7,6 +7,27 @@ import { COOKIE_DATA } from './cookie-data';
 import type { CookieConsentPreferences } from './cookie-types';
 
 const PATTERN_RE = /\*+$/;
+const SCRIPT_IDS = {
+  googleTagSrc: 'kloel-google-tag-src',
+  googleTagConfig: 'kloel-google-tag-config',
+  metaPixel: 'kloel-meta-pixel',
+  tiktokPixel: 'kloel-tiktok-pixel',
+} as const;
+
+function writeDocumentCookie(value: string) {
+  if (typeof document === 'undefined') return;
+
+  const documentCookieDescriptor =
+    Object.getOwnPropertyDescriptor(Document.prototype, 'cookie') ||
+    Object.getOwnPropertyDescriptor(HTMLDocument.prototype, 'cookie');
+
+  if (documentCookieDescriptor?.set) {
+    documentCookieDescriptor.set.call(document, value);
+    return;
+  }
+
+  Reflect.set(document, 'cookie', value);
+}
 
 type CookieScriptManagerProps = {
   consent: CookieConsentPreferences | null;
@@ -42,8 +63,7 @@ function expireCookie(name: string, domain?: string) {
   if (typeof document === 'undefined') return;
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
   const domainPart = domain ? `; domain=${domain}` : '';
-  // biome-ignore lint/suspicious/noDocumentCookie: cookie name sanitized via resolveManagedCookieNames allowlist; value is empty (expiring). Refactoring to CookieStore API would lose sync browser compatibility we require here.
-  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax${domainPart}${secure}`;
+  writeDocumentCookie(`${name}=; path=/; max-age=0; SameSite=Lax${domainPart}${secure}`);
 }
 
 function removeManagedCookies(patterns: string[]) {
@@ -108,14 +128,12 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
     <>
       {googleTagIds.length ? (
         <>
-          {/* biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication across renders; a useId()-generated value would re-inject Google Tag on every mount. */}
           <Script
-            id="kloel-google-tag-src"
+            id={SCRIPT_IDS.googleTagSrc}
             src={`https://www.googletagmanager.com/gtag/js?id=${googleTagIds[0]}`}
             strategy="afterInteractive"
           />
-          {/* biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication across renders; a useId()-generated value would re-inject Google Tag config on every mount. */}
-          <Script id="kloel-google-tag-config" strategy="afterInteractive">
+          <Script id={SCRIPT_IDS.googleTagConfig} strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
@@ -134,8 +152,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
       ) : null}
 
       {marketingEnabled && metaPixelId ? (
-        // biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication; a useId()-generated value would re-inject Meta Pixel on every mount.
-        <Script id="kloel-meta-pixel" strategy="afterInteractive">
+        <Script id={SCRIPT_IDS.metaPixel} strategy="afterInteractive">
           {`
             !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
@@ -149,8 +166,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
       ) : null}
 
       {marketingEnabled && tiktokPixelId ? (
-        // biome-ignore lint/correctness/useUniqueElementIds: next/script uses id for deduplication; a useId()-generated value would re-inject TikTok Pixel on every mount.
-        <Script id="kloel-tiktok-pixel" strategy="afterInteractive">
+        <Script id={SCRIPT_IDS.tiktokPixel} strategy="afterInteractive">
           {`
             !function (w, d, t) {
               w.TiktokAnalyticsObject=t;

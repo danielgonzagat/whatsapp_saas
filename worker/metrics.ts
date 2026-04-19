@@ -1,6 +1,7 @@
 import { Queue } from 'bullmq';
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 import { autopilotQueue, connection, queueOptions, queueRegistry } from './queue';
+import { forEachSequential } from './utils/async-sequence';
 
 const registry = new Registry();
 collectDefaultMetrics({ register: registry });
@@ -116,8 +117,7 @@ async function refreshQueueMetrics() {
   try {
     queueGauge.reset();
     const queueNames = Object.keys(queueRegistry);
-    // biome-ignore lint/performance/noAwaitInLoops: per-queue Prometheus gauge refresh — each iteration instantiates a fresh BullMQ Queue for the DLQ which opens a Redis connection; parallel execution would multiply Redis client count by |queueNames|*2 and hit MAXCLIENTS
-    for (const name of queueNames) {
+    await forEachSequential(queueNames, async (name) => {
       const q = queueRegistry[name];
       const mainCounts = await q.getJobCounts();
       Object.entries(mainCounts).forEach(([state, value]) => {
@@ -129,7 +129,7 @@ async function refreshQueueMetrics() {
       Object.entries(dlqCounts).forEach(([state, value]) => {
         queueGauge.labels(`${name}-dlq`, state, 'dlq').set(typeof value === 'number' ? value : 0);
       });
-    }
+    });
   } catch {
     queueGauge.labels('unknown', 'error', 'main').set(1);
   }

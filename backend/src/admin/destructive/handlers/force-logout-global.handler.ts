@@ -38,8 +38,7 @@ export class ForceLogoutGlobalHandler implements DestructiveHandler {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async undo(): Promise<DestructiveHandlerResult> {
-    throw new UnsupportedUndoError(DestructiveIntentKind.FORCE_LOGOUT_GLOBAL);
+  undo(): Promise<DestructiveHandlerResult> {
+    return Promise.reject(new UnsupportedUndoError(DestructiveIntentKind.FORCE_LOGOUT_GLOBAL));
   }
 }

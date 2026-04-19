@@ -4,6 +4,7 @@ import type {
   PublicCheckoutTestimonial,
   PublicCheckoutThemeProps,
 } from '@/lib/public-checkout-contract';
+import Image from 'next/image';
 import type * as React from 'react';
 import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
@@ -220,10 +221,10 @@ export default function CheckoutBlanc({
 
   const renderProductThumb = (size = 72) =>
     productImage ? (
-      // biome-ignore lint/performance/noImgElement: merchant-configured product image from arbitrary URL, no need to optimize via next/image
-      <img
+      <Image
         src={productImage}
         alt={productName}
+        unoptimized
         width={size}
         height={size}
         style={{
@@ -1423,11 +1424,9 @@ export default function CheckoutBlanc({
               ) : null}
 
               {supportsPix ? (
-                // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-                <div
+                <button
+                  type="button"
                   onClick={() => setPayMethod('pix')}
-                  role="button"
-                  tabIndex={0}
                   aria-label="Pagar com PIX"
                   aria-pressed={payMethod === 'pix'}
                   style={{
@@ -1436,12 +1435,9 @@ export default function CheckoutBlanc({
                     padding: '16px 18px',
                     cursor: 'pointer',
                     transition: 'border-color 0.2s',
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      (e.currentTarget as HTMLElement).click();
-                    }
+                    width: '100%',
+                    textAlign: 'left',
+                    background: '#fff',
                   }}
                 >
                   <div
@@ -1478,14 +1474,12 @@ export default function CheckoutBlanc({
                       </div>
                     </>
                   ) : null}
-                </div>
+                </button>
               ) : null}
 
               {supportsBoleto ? (
-                // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-                <div
-                  role="button"
-                  tabIndex={0}
+                <button
+                  type="button"
                   aria-pressed={payMethod === 'boleto'}
                   onClick={() => setPayMethod('boleto')}
                   style={{
@@ -1495,12 +1489,9 @@ export default function CheckoutBlanc({
                     cursor: 'pointer',
                     transition: 'border-color 0.2s',
                     marginTop: 12,
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      (e.currentTarget as HTMLElement).click();
-                    }
+                    width: '100%',
+                    textAlign: 'left',
+                    background: '#fff',
                   }}
                 >
                   <div
@@ -1540,7 +1531,7 @@ export default function CheckoutBlanc({
                       </div>
                     </>
                   ) : null}
-                </div>
+                </button>
               ) : null}
 
               {submitError ? (

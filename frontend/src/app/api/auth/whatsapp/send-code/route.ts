@@ -1,5 +1,6 @@
 import { revalidateTag } from 'next/cache';
 // PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
+import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';
 
@@ -8,9 +9,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     let lastError: unknown;
 
-    // biome-ignore lint/performance/noAwaitInLoops: WhatsApp verification-code dispatch failover — parallel fan-out would send multiple OTP codes to the user's phone and burn WhatsApp template quota; must try one candidate at a time and stop on first 2xx
-    for (const baseUrl of getBackendCandidateUrls()) {
-      const response = await fetch(`${baseUrl}/auth/whatsapp/send-code`, {
+    const response = await findFirstSequential(getBackendCandidateUrls(), async (baseUrl) => {
+      const attempt = await fetch(`${baseUrl}/auth/whatsapp/send-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -24,18 +24,21 @@ export async function POST(request: NextRequest) {
         return null;
       });
 
-      if (!response) continue;
-      if (response.status === 404 || response.status === 405) {
-        lastError = new Error(`upstream ${response.status} at ${baseUrl}/auth/whatsapp/send-code`);
-        continue;
+      if (!attempt) return null;
+      if (attempt.status === 404 || attempt.status === 405) {
+        lastError = new Error(`upstream ${attempt.status} at ${baseUrl}/auth/whatsapp/send-code`);
+        return null;
       }
+      return attempt;
+    });
 
-      const data = await response.json().catch(() => ({}));
-      revalidateTag('auth', 'max');
-      return NextResponse.json(data, { status: response.status });
+    if (!response) {
+      throw lastError || new Error('Unable to reach WhatsApp send-code endpoint');
     }
 
-    throw lastError || new Error('Unable to reach WhatsApp send-code endpoint');
+    const data = await response.json().catch(() => ({}));
+    revalidateTag('auth', 'max');
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('[Auth Proxy] whatsapp send-code error:', error);
     return NextResponse.json({ message: 'Erro ao enviar código' }, { status: 502 });

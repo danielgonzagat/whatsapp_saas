@@ -1,5 +1,8 @@
 'use client';
 
-// biome-ignore lint/performance/noBarrelFile: compatibility shim for historical import path; two named re-exports, tree-shakable
-export { ToastProvider, useToast } from './Toast';
-export type { ToastType } from './Toast';
+import { ToastProvider as ToastProviderComponent, useToast as useToastHook } from './Toast';
+import type { ToastType as ToastKind } from './Toast';
+
+export const ToastProvider = ToastProviderComponent;
+export const useToast = useToastHook;
+export type ToastType = ToastKind;
