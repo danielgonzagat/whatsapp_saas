@@ -83,3 +83,44 @@ export function markAssistantEnded(prev: ChatMessage[], assistantId: string): Ch
     message.id === assistantId ? { ...message, isStreaming: false } : message,
   );
 }
+
+export interface GuestSsePayload {
+  sessionId?: string;
+  content?: unknown;
+  chunk?: unknown;
+  delta?: unknown;
+}
+
+export function parseGuestSseLine(line: string): GuestSsePayload | null {
+  if (!line.startsWith('data: ')) return null;
+  try {
+    return JSON.parse(line.slice(6)) as GuestSsePayload;
+  } catch {
+    return null;
+  }
+}
+
+export function pickGuestChunk(payload: GuestSsePayload): string {
+  const candidate = payload.content ?? payload.chunk ?? payload.delta ?? '';
+  return typeof candidate === 'string' ? candidate : String(candidate ?? '');
+}
+
+export function appendAssistantContent(
+  prev: ChatMessage[],
+  assistantId: string,
+  fullContent: string,
+): ChatMessage[] {
+  return prev.map((message) =>
+    message.id === assistantId && message.role === 'assistant'
+      ? { ...message, content: fullContent }
+      : message,
+  );
+}
+
+export function persistGuestSession(storageKey: string, sessionId: string): void {
+  try {
+    localStorage.setItem(storageKey, sessionId);
+  } catch {
+    // localStorage unavailable in private tabs / SSR - fallback silently.
+  }
+}

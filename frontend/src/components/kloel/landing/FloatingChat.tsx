@@ -8,9 +8,13 @@ import { apiUrl } from '@/lib/http';
 import { parseKloelStreamPayload } from '@/lib/kloel-stream-events';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  appendAssistantContent,
   buildPreparedMessages,
   markAssistantEnded,
   markAssistantError,
+  parseGuestSseLine,
+  persistGuestSession,
+  pickGuestChunk,
 } from './FloatingChat.helpers';
 
 interface FloatingChatProps {
@@ -258,27 +262,17 @@ export function FloatingChat({
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
         for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const parsed = JSON.parse(line.slice(6));
-            if (parsed.sessionId) {
-              setGuestSessionId(parsed.sessionId);
-              try {
-                localStorage.setItem(GUEST_SESSION_KEY, parsed.sessionId);
-              } catch {}
-            }
-            const chunk = parsed.content || parsed.chunk || parsed.delta || '';
-            if (chunk) {
-              full += chunk;
-              setMessages((prev) => {
-                return prev.map((message) =>
-                  message.id === assistantMessageId && message.role === 'assistant'
-                    ? { ...message, content: full }
-                    : message,
-                );
-              });
-            }
-          } catch {}
+          const payload = parseGuestSseLine(line);
+          if (!payload) continue;
+          if (payload.sessionId) {
+            setGuestSessionId(payload.sessionId);
+            persistGuestSession(GUEST_SESSION_KEY, payload.sessionId);
+          }
+          const chunk = pickGuestChunk(payload);
+          if (chunk) {
+            full += chunk;
+            setMessages((prev) => appendAssistantContent(prev, assistantMessageId, full));
+          }
         }
         await readGuestStream();
       };
@@ -315,34 +309,33 @@ export function FloatingChat({
       let buffer = '';
       let full = '';
 
+      const processAuthLine = (line: string) => {
+        if (!line.startsWith('data: ')) return;
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(line.slice(6));
+        } catch {
+          return;
+        }
+        const events = parseKloelStreamPayload(parsed);
+        for (const event of events) {
+          if (event.type === 'thread' && 'conversationId' in event && event.conversationId) {
+            setConversationId(event.conversationId as string);
+          }
+          if (event.type === 'content' && 'text' in event && event.text) {
+            full += event.text as string;
+            setMessages((prev) => appendAssistantContent(prev, assistantMessageId, full));
+          }
+        }
+      };
+
       const readAuthStream = async (): Promise<void> => {
         const { done, value } = await reader.read();
         if (done) return;
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const parsed = JSON.parse(line.slice(6));
-            const events = parseKloelStreamPayload(parsed);
-            for (const event of events) {
-              if (event.type === 'thread' && 'conversationId' in event && event.conversationId) {
-                setConversationId(event.conversationId as string);
-              }
-              if (event.type === 'content' && 'text' in event && event.text) {
-                full += event.text as string;
-                setMessages((prev) => {
-                  return prev.map((message) =>
-                    message.id === assistantMessageId && message.role === 'assistant'
-                      ? { ...message, content: full }
-                      : message,
-                  );
-                });
-              }
-            }
-          } catch {}
-        }
+        for (const line of lines) processAuthLine(line);
         await readAuthStream();
       };
 
