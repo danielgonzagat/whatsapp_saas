@@ -1,7 +1,13 @@
 'use client';
 
 import { useCRMMutations, useDeals, usePipelines } from '@/hooks/useCRM';
-import { type DragEvent, type FormEvent, useCallback, useState } from 'react';
+import {
+  type CSSProperties,
+  type FormEvent,
+  type DragEvent as ReactDragEvent,
+  useCallback,
+  useState,
+} from 'react';
 import { CRM_ICONS } from './crm-pipeline-icons';
 import {
   type CRMDeal,
@@ -132,19 +138,14 @@ export default function CRMPipelineView() {
   const showDealLoading = dlLoading && !dealArr.length;
 
   /* ── drag & drop ── */
-  const onDragStart = useCallback((e: DragEvent, dealId: string) => {
+  const onDragStart = useCallback((e: ReactDragEvent, dealId: string) => {
     setDragDealId(dealId);
     e.dataTransfer.effectAllowed = 'move';
   }, []);
 
-  const onDragOver = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  }, []);
-
-  const onDrop = useCallback(
-    async (e: DragEvent, stageId: string) => {
-      e.preventDefault();
+  const handleStageDrop = useCallback(
+    async (event: globalThis.DragEvent, stageId: string) => {
+      event.preventDefault();
       if (!dragDealId) return;
       try {
         await moveDeal(dragDealId, stageId);
@@ -157,34 +158,46 @@ export default function CRMPipelineView() {
     [dragDealId, moveDeal, mutateDeals],
   );
 
-  /* ── create deal ── */
-  /* eslint-disable react-hooks/preserve-manual-memoization -- pipeId is a stable derived value per render; memoization is correct */
-  const handleCreate = useCallback(
-    async (e: FormEvent, stageId: string) => {
-      e.preventDefault();
-      if (!formTitle.trim() || submitting) return;
-      setSubmitting(true);
-      try {
-        await createDeal({
-          title: formTitle.trim(),
-          value: Number.parseFloat(formValue) || 0,
-          contact: formContact.trim() || undefined,
-          pipeline: pipeId,
-          stage: stageId,
-        });
-        await mutateDeals();
-        setFormTitle('');
-        setFormValue('');
-        setFormContact('');
-        setAddingStage(null);
-      } catch {
-        /* silent */
-      }
-      setSubmitting(false);
+  const bindStageDropZone = useCallback(
+    (stageId: string) => (element: HTMLDivElement | null) => {
+      if (!element) return;
+
+      element.ondragover = (event) => {
+        event.preventDefault();
+        if (event.dataTransfer) {
+          event.dataTransfer.dropEffect = 'move';
+        }
+      };
+      element.ondrop = (event) => {
+        void handleStageDrop(event, stageId);
+      };
     },
-    [formTitle, formValue, formContact, pipeId, submitting, createDeal, mutateDeals],
+    [handleStageDrop],
   );
-  /* eslint-enable react-hooks/preserve-manual-memoization */
+
+  /* ── create deal ── */
+  const handleCreate = async (e: FormEvent, stageId: string) => {
+    e.preventDefault();
+    if (!formTitle.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await createDeal({
+        title: formTitle.trim(),
+        value: Number.parseFloat(formValue) || 0,
+        contact: formContact.trim() || undefined,
+        pipeline: pipeId,
+        stage: stageId,
+      });
+      await mutateDeals();
+      setFormTitle('');
+      setFormValue('');
+      setFormContact('');
+      setAddingStage(null);
+    } catch {
+      /* silent */
+    }
+    setSubmitting(false);
+  };
 
   /* ── deal detail handlers ── */
   const openDetail = useCallback((deal: CRMDeal) => {
@@ -384,11 +397,9 @@ export default function CRMPipelineView() {
             const total = stageTotal(sid);
 
             return (
-              // biome-ignore lint/a11y/noStaticElementInteractions: drag-drop column receives HTML5 drag events; no click/key interaction needed
               <div
                 key={sid}
-                onDragOver={onDragOver}
-                onDrop={(e) => onDrop(e, sid)}
+                ref={bindStageDropZone(sid)}
                 style={{
                   minWidth: 280,
                   width: 280,
@@ -564,7 +575,6 @@ export default function CRMPipelineView() {
                       style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
                     >
                       <input
-                        autoFocus
                         placeholder="Titulo do deal"
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
@@ -677,10 +687,9 @@ export default function CRMPipelineView() {
             }
           }}
         >
-          <div
+          <dialog
+            open
             onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
             style={{
               background: 'var(--app-bg-card)',
               border: '1px solid var(--app-border-primary)',
@@ -766,7 +775,7 @@ export default function CRMPipelineView() {
               )}
               {detailDeal.notes && <DetailRow label="Notas" value={detailDeal.notes} />}
             </div>
-          </div>
+          </dialog>
         </div>
       )}
     </div>
@@ -817,7 +826,7 @@ function DetailRow({
 }
 
 /* ── shared styles ── */
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   background: 'var(--app-bg-primary)',
   border: '1px solid var(--app-border-primary)',
   borderRadius: 5,
@@ -829,7 +838,7 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
 };
 
-const btnStyle: React.CSSProperties = {
+const btnStyle: CSSProperties = {
   border: '1px solid var(--app-border-primary)',
   borderRadius: 5,
   fontFamily: "var(--font-sora), 'Sora', sans-serif",

@@ -175,9 +175,8 @@ function ProjectCard({
   const dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: wrapper groups thumbnail, title, and inline delete button; role="group" is the correct ARIA mapping
-    <div
-      role="group"
+    <section
+      aria-label={design.name ?? 'Projeto'}
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
@@ -191,11 +190,9 @@ function ProjectCard({
         cursor: 'pointer',
       }}
     >
-      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
-      <div
+      <button
+        type="button"
         onClick={onClick}
-        role="button"
-        tabIndex={0}
         aria-label={`Abrir ${design.name ?? 'projeto'}`}
         style={{
           height: 96,
@@ -203,12 +200,10 @@ function ProjectCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+          width: '100%',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
         }}
       >
         {design.thumbnailUrl ? (
@@ -243,20 +238,12 @@ function ProjectCard({
             />
           </div>
         )}
-      </div>
-      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
-      <div
-        role="button"
-        tabIndex={0}
+      </button>
+      <button
+        type="button"
         aria-label={`Abrir ${design.name ?? 'projeto'}`}
         onClick={onClick}
-        style={{ padding: '8px 10px' }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
-        }}
+        style={{ padding: '8px 10px', width: '100%', border: 'none', textAlign: 'left' }}
       >
         <p
           style={{
@@ -275,7 +262,7 @@ function ProjectCard({
         <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
           {design.format} &middot; {dateStr}
         </p>
-      </div>
+      </button>
       {h && (
         <button
           type="button"
@@ -299,6 +286,6 @@ function ProjectCard({
           {IC.trash(12)}
         </button>
       )}
-    </div>
+    </section>
   );
 }

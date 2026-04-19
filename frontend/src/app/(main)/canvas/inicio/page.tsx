@@ -244,79 +244,71 @@ function DesignCard({
   onClick: () => void;
   onDelete: () => void;
 }) {
-  const [h, setH] = useState(false);
   const date = new Date(design.updatedAt);
   const dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: hover handlers toggle visibility of action buttons only; container itself is non-interactive
     <div
-      onMouseEnter={() => setH(true)}
-      onMouseLeave={() => setH(false)}
       style={{
         background: 'var(--app-bg-card)',
-        border: `1px solid ${h ? '#E85D3050' : '#1C1C1F'}`,
+        border: '1px solid #1C1C1F',
         borderRadius: 6,
-        cursor: 'pointer',
         transition: 'all 0.25s',
         overflow: 'hidden',
         textAlign: 'left',
         position: 'relative',
       }}
     >
-      {/* Delete button — shows on hover */}
-      {h && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          title="Excluir design"
-          style={{
-            position: 'absolute',
-            top: 6,
-            right: 6,
-            zIndex: 2,
-            width: 22,
-            height: 22,
-            borderRadius: 4,
-            background: 'var(--app-bg-primary)',
-            border: '1px solid #2A2A2E',
-            color: '#FF6B6B',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 12,
-            lineHeight: 1,
-          }}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        title="Excluir design"
+        style={{
+          position: 'absolute',
+          top: 6,
+          right: 6,
+          zIndex: 2,
+          width: 22,
+          height: 22,
+          borderRadius: 4,
+          background: 'var(--app-bg-primary)',
+          border: '1px solid #2A2A2E',
+          color: '#FF6B6B',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 12,
+          lineHeight: 1,
+        }}
+      >
+        <svg
+          aria-hidden="true"
+          width={16}
+          height={16}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
         >
-          <svg
-            aria-hidden="true"
-            width={16}
-            height={16}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      )}
-      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
-      <div
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+      <button
+        type="button"
         onClick={onClick}
-        role="button"
-        tabIndex={0}
         aria-label="Abrir template"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+        style={{
+          all: 'unset',
+          display: 'block',
+          boxSizing: 'border-box',
+          cursor: 'pointer',
+          width: '100%',
+          textAlign: 'left',
         }}
       >
         <div
@@ -386,7 +378,7 @@ function DesignCard({
             {design.format} &middot; {dateStr}
           </p>
         </div>
-      </div>
+      </button>
     </div>
   );
 }

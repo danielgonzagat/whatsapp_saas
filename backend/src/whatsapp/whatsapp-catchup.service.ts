@@ -4,6 +4,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
+import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
@@ -373,9 +374,11 @@ export class WhatsAppCatchupService {
       const since = this.resolveCatchupSince(sessionMeta);
       const processedChatIds = new Set<string>();
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential multi-pass sync with state tracking
-      for (let pass = 0; pass < this.maxPasses; pass += 1) {
-        // biome-ignore lint/performance/noAwaitInLoops: per-workspace provider getChats must be sequential to avoid provider thrashing
+      const runPass = async (pass: number): Promise<void> => {
+        if (pass >= this.maxPasses) {
+          return;
+        }
+
         const rawChats = await this.providerRegistry.getChats(workspaceId);
         const pendingChats = this.normalizeChats(rawChats)
           .filter((chat) => !!chat.id)
@@ -415,15 +418,14 @@ export class WhatsAppCatchupService {
 
         const chats = candidateChats.slice(0, this.maxChats);
         if (!chats.length) {
-          break;
+          return;
         }
 
         if (candidateChats.length > chats.length || pendingChats.length > candidateChats.length) {
           hadOverflow = true;
         }
 
-        // biome-ignore lint/performance/noAwaitInLoops: sequential per-chat processing with import tracking
-        for (const chat of chats) {
+        await forEachSequential(chats, async (chat) => {
           processedChatIds.add(chat.id);
           processedChats += 1;
 
@@ -440,7 +442,6 @@ export class WhatsAppCatchupService {
             processedChats === estimatedTotalChats ||
             processedChats % 5 === 0
           ) {
-            // biome-ignore lint/performance/noAwaitInLoops: agent event publish per chat preserves catch-up ordering
             await this.agentEvents.publish({
               type: 'status',
               workspaceId,
@@ -478,38 +479,40 @@ export class WhatsAppCatchupService {
           });
 
           if (!messages.length) {
-            continue;
+            return;
           }
 
           touchedChats += 1;
 
-          // biome-ignore lint/performance/noAwaitInLoops: sequential message processing preserving order
-          for (const message of messages) {
+          await forEachSequential(messages, async (message) => {
             if (message.fromMe) {
-              // biome-ignore lint/performance/noAwaitInLoops: per-message historical outbound persist must be sequential for timeline integrity
               const persisted = await this.persistHistoricalOutboundMessage(workspaceId, message);
               if (persisted) {
                 importedMessages += 1;
               }
-              continue;
+              return;
             }
 
             const inbound = this.toInboundMessage(workspaceId, message, providerType);
-            if (!inbound) continue;
+            if (!inbound) return;
 
             const result = await this.inboundProcessor.process(inbound);
             if (!result.deduped) {
               importedMessages += 1;
             }
-          }
+          });
 
           if (this.markReadWithoutReplyOnImport) {
             await this.providerRegistry
               .readChatMessages(workspaceId, chat.id)
               .catch((err) => this.logger.warn('Failed to mark chat as read', err.message));
           }
-        }
-      }
+        });
+
+        await runPass(pass + 1);
+      };
+
+      await runPass(0);
 
       await this.persistCatchupSnapshot(workspaceId, {
         lastCatchupAt: new Date().toISOString(),
@@ -1132,9 +1135,11 @@ export class WhatsAppCatchupService {
       ? Math.min(this.maxPagesPerChat, this.fallbackPagesPerChat)
       : this.maxPagesPerChat;
 
-    // biome-ignore lint/performance/noAwaitInLoops: paginated API fetch with offset tracking
-    for (let page = 0; page < maxPages; page += 1) {
-      // biome-ignore lint/performance/noAwaitInLoops: per-chat provider getChatMessages uses cursor pagination; sequential required
+    const loadPage = async (page: number): Promise<void> => {
+      if (page >= maxPages) {
+        return;
+      }
+
       const rawMessages = await this.providerRegistry.getChatMessages(workspaceId, chat.id, {
         limit: this.maxMessagesPerChat,
         offset,
@@ -1144,7 +1149,7 @@ export class WhatsAppCatchupService {
         .sort((a, b) => this.resolveTimestamp(a) - this.resolveTimestamp(b));
 
       if (!normalizedPage.length) {
-        break;
+        return;
       }
 
       if (normalizedPage.length >= this.maxMessagesPerChat) {
@@ -1160,13 +1165,13 @@ export class WhatsAppCatchupService {
       offset += normalizedPage.length;
 
       if (normalizedPage.length < this.maxMessagesPerChat) {
-        break;
+        return;
       }
 
       const inboundCollectedCount = collected.filter((message) => !message.fromMe).length;
 
       if (unreadCount > 0 && inboundCollectedCount >= unreadCount) {
-        break;
+        return;
       }
 
       if (
@@ -1175,9 +1180,12 @@ export class WhatsAppCatchupService {
         !fallbackScan &&
         normalizedPage.every((message) => this.resolveTimestamp(message) < since.getTime())
       ) {
-        break;
+        return;
       }
-    }
+      await loadPage(page + 1);
+    };
+
+    await loadPage(0);
 
     if (unreadCount > 0 && collected.length < unreadCount) {
       hadOverflow = true;
@@ -1466,8 +1474,7 @@ export class WhatsAppCatchupService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential contact processing with DB writes
-    for (const contact of contacts) {
+    await forEachSequential(contacts, async (contact) => {
       const customFields = this.normalizeJsonObject(contact.customFields);
       const storedName = String(contact.name || '').trim();
       const remotePushName = safeStr(customFields.remotePushName).trim();
@@ -1479,7 +1486,7 @@ export class WhatsAppCatchupService {
         this.isPlaceholderContactName(remotePushName, contact.phone);
 
       if (!hasPlaceholderData) {
-        continue;
+        return;
       }
 
       const nextCustomFields = { ...customFields };
@@ -1503,7 +1510,6 @@ export class WhatsAppCatchupService {
       nextCustomFields.placeholderRelationCount = relationCount;
       nextCustomFields.nameResolutionStatus = trustedName ? 'resolved' : 'pending';
 
-      // biome-ignore lint/performance/noAwaitInLoops: per-contact updateMany batches; sequential to preserve audit ordering
       await this.prisma.contact.updateMany({
         where: { id: contact.id, workspaceId },
         data: {
@@ -1511,7 +1517,7 @@ export class WhatsAppCatchupService {
           customFields: nextCustomFields as Prisma.InputJsonValue,
         },
       });
-    }
+    });
   }
 
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {

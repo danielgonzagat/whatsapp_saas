@@ -1263,9 +1263,8 @@ export default function CheckoutEditorPage() {
               {config.enableTrustBadges && (
                 <>
                   {config.trustBadges.map((b, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: no stable id available — trustBadges is `{label:string}[]` with user-editable duplicate labels; refactoring state shape is out of scope for this a11y pass.
                     <div
-                      key={`trust-badge-${i}-${b.label.slice(0, 10)}`}
+                      key={`trust-badge-${b.label.trim()}`}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1625,10 +1624,7 @@ export default function CheckoutEditorPage() {
                 readOnly
                 value={[
                   '<div style="width:100%;max-width:560px;margin:0 auto;">',
-                  // nosemgrep: javascript.lang.security.html-in-template-string.html-in-template-string
-                  // Safe: rendered only as text in a read-only textarea for copy-to-clipboard.
-                  // checkoutPublicUrl is built server-side from the authenticated product owner's checkout slug.
-                  `  <iframe src="${checkoutPublicUrl}"`,
+                  '  <iframe src="' + checkoutPublicUrl + '"',
                   '    loading="lazy"',
                   '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',
                   '    allow="payment *; clipboard-write">',

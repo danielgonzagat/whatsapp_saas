@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonArray, toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -260,11 +261,9 @@ export class CheckoutService {
       select: { id: true },
     });
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential legacy plan migration
-    for (const legacyPlan of legacyPlans) {
-      // biome-ignore lint/performance/noAwaitInLoops: per-plan legacy checkout migration must be sequential to avoid duplicate creation
+    await forEachSequential(legacyPlans, async (legacyPlan) => {
       await this.ensureLegacyCheckoutForPlan(legacyPlan.id);
-    }
+    });
   }
 
   // ─── Products ──────────────────────────────────────────────────────────────

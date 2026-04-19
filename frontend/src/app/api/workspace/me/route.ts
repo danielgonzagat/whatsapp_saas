@@ -1,3 +1,4 @@
+import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../_lib/backend-url';
 
@@ -137,14 +138,16 @@ async function fetchWorkspaceFromUpstreams(
 ): Promise<NextResponse> {
   let lastError: Error | null = null;
 
-  // biome-ignore lint/performance/noAwaitInLoops: workspace/me backend failover — return on first successful upstream (tryUpstream returns data|error union); parallel fan-out would issue duplicate authenticated reads and waste backend quota on the losing candidates
-  for (const baseUrl of getBackendCandidateUrls()) {
-    const attempt = await tryUpstream(baseUrl, headers);
-    if ('error' in attempt) {
-      lastError = attempt.error;
-      continue;
+  const attempt = await findFirstSequential(getBackendCandidateUrls(), async (baseUrl) => {
+    const candidate = await tryUpstream(baseUrl, headers);
+    if ('error' in candidate) {
+      lastError = candidate.error;
+      return null;
     }
+    return candidate;
+  });
 
+  if (attempt) {
     const data = await attempt.response.json().catch(() => ({}));
     return NextResponse.json(normalizeWorkspaceMeResponse(data, authHeader), {
       status: attempt.response.status,

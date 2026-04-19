@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { PrismaClient, Prisma } from '@prisma/client';
+import { forEachSequential } from '../utils/async-sequence';
 
 /**
  * Subset of PrismaClient used by commercial-intelligence persistence functions.
@@ -631,8 +632,7 @@ export async function persistMarketSignals(
     signals: MarketSignal[];
   },
 ) {
-  // biome-ignore lint/performance/noAwaitInLoops: sequential market-signal upsert — each upsertMemory writes to Memory keyed by `market_signal:${normalizedKey}`; parallel upserts race on the (workspaceId, key) unique index and cause P2002 conflicts
-  for (const signal of input.signals.slice(0, 10)) {
+  await forEachSequential(input.signals.slice(0, 10), async (signal) => {
     await upsertMemory(prisma, {
       workspaceId: input.workspaceId,
       key: `market_signal:${signal.normalizedKey}`,
@@ -645,7 +645,7 @@ export async function persistMarketSignals(
         examples: signal.examples,
       },
     });
-  }
+  });
 }
 
 export async function persistBusinessSnapshot(

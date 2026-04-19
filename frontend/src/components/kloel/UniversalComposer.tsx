@@ -119,7 +119,6 @@ export function UniversalComposer({
   }, []);
 
   // Auto-resize textarea
-  // biome-ignore lint/correctness/useExhaustiveDependencies: message content change is the intentional trigger to resize the textarea to fit its value
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {

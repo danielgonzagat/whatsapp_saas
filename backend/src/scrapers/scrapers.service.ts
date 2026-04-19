@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -91,10 +92,8 @@ export class ScrapersService {
 
     let importedCount = 0;
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing with external calls
-    for (const lead of leads) {
+    await forEachSequential(leads, async (lead) => {
       // PULSE:OK — upsert requires compound unique where per contact phone; cannot batch
-      // biome-ignore lint/performance/noAwaitInLoops: per-contact upsert preserves scrape-order audit trail
       await this.prisma.contact.upsert({
         where: {
           workspaceId_phone: {
@@ -129,7 +128,7 @@ export class ScrapersService {
       });
 
       importedCount++;
-    }
+    });
 
     return { message: 'Leads imported successfully', count: importedCount };
   }

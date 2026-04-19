@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { StripeService } from '../../billing/stripe.service';
 import type { StripePaymentIntent } from '../../billing/stripe-types';
+import { forEachSequential } from '../../common/async-sequence';
 import { ConnectService } from '../connect/connect.service';
 import { LedgerService } from '../ledger/ledger.service';
 import type { SplitRole } from '../split/split.types';
@@ -135,14 +136,13 @@ export class StripeWebhookProcessor {
     let transfersDispatched = 0;
     let ledgerEntriesCreated = 0;
 
-    for (const line of lines) {
+    await forEachSequential(lines, async (line) => {
       const amountCents = BigInt(line.amountCents);
-      if (amountCents <= 0n) continue;
+      if (amountCents <= 0n) return;
 
       // Seller already received the funds via the Direct Charge — no
       // separate transfer needed. Other roles need one.
       if (line.role !== 'seller') {
-        // biome-ignore lint/performance/noAwaitInLoops: per-split Stripe transfer dispatch must be sequential for ledger idempotency
         await this.dispatchTransfer({
           paymentIntentId: paymentIntent.id,
           sellerStripeAccountId,
@@ -159,7 +159,7 @@ export class StripeWebhookProcessor {
         this.logger.warn(
           `processSaleSucceeded: no local ConnectAccountBalance for accountId=${line.accountId} role=${line.role}; transfer dispatched but ledger not credited`,
         );
-        continue;
+        return;
       }
 
       await this.ledgerService.creditPending({
@@ -174,7 +174,7 @@ export class StripeWebhookProcessor {
         },
       });
       ledgerEntriesCreated += 1;
-    }
+    });
 
     this.logger.log(
       `processSaleSucceeded pi=${paymentIntent.id}: transfers=${transfersDispatched} ledger=${ledgerEntriesCreated}`,

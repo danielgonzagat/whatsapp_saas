@@ -1,12 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-// Stripe v22 CJS entry uses `export =`; the import-equals form is required
-// because v22 dropped the `default` runtime export that the default-import
-// transpilation depends on. See ADR 0003 and stripe-node v22 release notes.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import Stripe = require('stripe');
 
 import { STRIPE_API_VERSION } from './stripe.constants';
+import { StripeRuntime } from './stripe-runtime';
 import type { StripeBalance, StripeClient } from './stripe-types';
 
 /**
@@ -41,7 +37,7 @@ export class StripeService {
       );
     }
 
-    this.client = new Stripe(secretKey, {
+    this.client = new StripeRuntime(secretKey, {
       apiVersion: STRIPE_API_VERSION,
       appInfo: {
         name: 'kloel-backend',

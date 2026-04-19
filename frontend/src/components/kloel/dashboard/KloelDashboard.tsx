@@ -492,10 +492,10 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
               textDecoration: 'none',
             }}
           >
-            {/* biome-ignore lint/performance/noImgElement: AI-generated ephemeral image URL, not hosted on configured CDN, next/image adds no benefit */}
-            <img
+            <Image
               src={generatedImageUrl}
               alt="Imagem criada pelo Kloel"
+              unoptimized
               width={800}
               height={600}
               style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
@@ -675,7 +675,6 @@ function MessageBlock({
   onAssistantRegenerate?: (messageId: string) => Promise<void>;
   onCancelProcessing?: () => void;
 }) {
-  const [isHovered, setIsHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [draftText, setDraftText] = useState(message.text);
   const assistantVersions = useMemo(
@@ -712,11 +711,8 @@ function MessageBlock({
 
   if (message.role === 'user') {
     return (
-      // biome-ignore lint/a11y/noStaticElementInteractions: hover handlers toggle visibility of action buttons only; container itself is non-interactive
       <div
         style={{ display: 'flex', justifyContent: 'flex-end' }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         <div style={{ width: 'min(78%, 680px)' }}>
           {isEditing ? (
@@ -825,7 +821,7 @@ function MessageBlock({
               <MessageActionBar
                 content={message.text}
                 align="right"
-                visible={isHovered}
+                visible
                 actions={[
                   {
                     id: 'edit',
@@ -1167,7 +1163,6 @@ export default function KloelDashboard() {
     return () => window.removeEventListener('kloel:new-chat', handler);
   }, [resetToNewChat]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: new message or thinking state flipping are the intentional scroll triggers; ref is read imperatively
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages.length, isThinking]);
@@ -1313,7 +1308,7 @@ export default function KloelDashboard() {
     setIsDragActive(false);
   }, []);
 
-  const handleDragEnter = useCallback((event: ReactDragEvent<HTMLDivElement>) => {
+  const handleDragEnter = useCallback((event: ReactDragEvent<HTMLElement>) => {
     if (!hasDraggedFiles(event.dataTransfer)) return;
     event.preventDefault();
     event.stopPropagation();
@@ -1322,7 +1317,7 @@ export default function KloelDashboard() {
   }, []);
 
   const handleDragOver = useCallback(
-    (event: ReactDragEvent<HTMLDivElement>) => {
+    (event: ReactDragEvent<HTMLElement>) => {
       if (!hasDraggedFiles(event.dataTransfer)) return;
       event.preventDefault();
       event.stopPropagation();
@@ -1334,7 +1329,7 @@ export default function KloelDashboard() {
     [isDragActive],
   );
 
-  const handleDragLeave = useCallback((event: ReactDragEvent<HTMLDivElement>) => {
+  const handleDragLeave = useCallback((event: ReactDragEvent<HTMLElement>) => {
     if (!hasDraggedFiles(event.dataTransfer)) return;
     event.preventDefault();
     event.stopPropagation();
@@ -1345,7 +1340,7 @@ export default function KloelDashboard() {
   }, []);
 
   const handleDropFiles = useCallback(
-    async (event: ReactDragEvent<HTMLDivElement>) => {
+    async (event: ReactDragEvent<HTMLElement>) => {
       if (!hasDraggedFiles(event.dataTransfer)) return;
       event.preventDefault();
       event.stopPropagation();
@@ -1808,9 +1803,7 @@ export default function KloelDashboard() {
   const composerPlaceholder = capabilityPromptLabel(activeCapability, hasMessages);
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: chat area needs role="region" with explicit aria-label; no native section/article fits this scrollable drop-zone container
-    <div
-      role="region"
+    <section
       aria-label="Área de chat"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
@@ -1917,9 +1910,9 @@ export default function KloelDashboard() {
             justifyContent: 'center',
             paddingTop: hasMessages ? 18 : 32,
             paddingBottom: CHAT_SAFE_BOTTOM,
-            minHeight: 0,
-          }}
-        >
+        minHeight: 0,
+      }}
+    >
           <motion.div
             layout
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
@@ -1980,6 +1973,6 @@ export default function KloelDashboard() {
           </motion.div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

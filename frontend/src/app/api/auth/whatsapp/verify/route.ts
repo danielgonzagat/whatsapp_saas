@@ -1,5 +1,6 @@
 import { revalidateTag } from 'next/cache';
 // PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
+import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';
 import { setSharedAuthCookies } from '../../_lib/shared-auth-cookies';
@@ -9,9 +10,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     let lastError: unknown;
 
-    // biome-ignore lint/performance/noAwaitInLoops: WhatsApp OTP verification failover — must try one backend at a time because success sets auth cookies on the response; parallel fan-out would race on setSharedAuthCookies and also double-invalidate the OTP server-side
-    for (const baseUrl of getBackendCandidateUrls()) {
-      const response = await fetch(`${baseUrl}/auth/whatsapp/verify`, {
+    const response = await findFirstSequential(getBackendCandidateUrls(), async (baseUrl) => {
+      const attempt = await fetch(`${baseUrl}/auth/whatsapp/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,24 +25,27 @@ export async function POST(request: NextRequest) {
         return null;
       });
 
-      if (!response) continue;
-      if (response.status === 404 || response.status === 405) {
-        lastError = new Error(`upstream ${response.status} at ${baseUrl}/auth/whatsapp/verify`);
-        continue;
+      if (!attempt) return null;
+      if (attempt.status === 404 || attempt.status === 405) {
+        lastError = new Error(`upstream ${attempt.status} at ${baseUrl}/auth/whatsapp/verify`);
+        return null;
       }
+      return attempt;
+    });
 
-      const data = await response.json().catch(() => ({}));
-      revalidateTag('auth', 'max');
-      const res = NextResponse.json(data, { status: response.status });
-
-      if (response.ok && data.access_token) {
-        setSharedAuthCookies(request, res, data);
-      }
-
-      return res;
+    if (!response) {
+      throw lastError || new Error('Unable to reach WhatsApp verify endpoint');
     }
 
-    throw lastError || new Error('Unable to reach WhatsApp verify endpoint');
+    const data = await response.json().catch(() => ({}));
+    revalidateTag('auth', 'max');
+    const res = NextResponse.json(data, { status: response.status });
+
+    if (response.ok && data.access_token) {
+      setSharedAuthCookies(request, res, data);
+    }
+
+    return res;
   } catch (error) {
     console.error('[Auth Proxy] whatsapp verify error:', error);
     return NextResponse.json({ message: 'Erro ao verificar código' }, { status: 502 });

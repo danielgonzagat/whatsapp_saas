@@ -27,6 +27,20 @@ const SIDEBAR_TABS = [
 
 type SidebarTabId = (typeof SIDEBAR_TABS)[number]['id'] | null;
 
+type SelectedCanvasObject = {
+  type?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string;
+  fontStyle?: string;
+  underline?: boolean;
+  textAlign?: string;
+  fill?: string | null | object;
+  stroke?: string | null | object;
+  strokeWidth?: number;
+  opacity?: number;
+};
+
 /* ═══ Shared inline styles ═══ */
 const panelHeading: React.CSSProperties = {
   fontSize: 11,
@@ -93,6 +107,7 @@ export default function CanvasEditor() {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const editorRef = useRef<KloelEditor | null>(null);
+  const [editorUi, setEditorUi] = useState<KloelEditor | null>(null);
   const resizeWRef = useRef<HTMLInputElement>(null);
   const resizeHRef = useRef<HTMLInputElement>(null);
 
@@ -101,8 +116,9 @@ export default function CanvasEditor() {
   const [saved, setSaved] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [sidebarTab, setSidebarTab] = useState<SidebarTabId>('templates');
-  // biome-ignore lint/suspicious/noExplicitAny: fabric.js objects have a complex dynamic type system
-  const [selectedObj, setSelectedObj] = useState<any>(null);
+  const [selectedObj, setSelectedObj] = useState<SelectedCanvasObject | SelectedCanvasObject[] | null>(
+    null,
+  );
   const [uploadDrag, setUploadDrag] = useState(false);
   const [_layerList, setLayerList] = useState<unknown[]>([]);
 
@@ -124,13 +140,23 @@ export default function CanvasEditor() {
   const [designName, setDesignName] = useState(name);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentId = useRef<string | null>(designId || null);
+  const initialSizeRef = useRef({ width: w, height: h });
+  const initialDesignIdRef = useRef(designId);
+  const initialTemplateIdRef = useRef(tplId);
+  const initialAiImageRef = useRef(aiImage);
+  const designNameRef = useRef(designName);
+
+  useEffect(() => {
+    designNameRef.current = designName;
+  }, [designName]);
 
   /* ═══ Initialize editor ═══ */
-  // biome-ignore lint/correctness/useExhaustiveDependencies: deliberately run once on mount to instantiate the editor; canvas dims (w/h) are only consumed for initial sizing
   useEffect(() => {
     if (!canvasRef.current) return;
-    const editor = new KloelEditor(canvasRef.current, w, h);
+    const { width, height } = initialSizeRef.current;
+    const editor = new KloelEditor(canvasRef.current, width, height);
     editorRef.current = editor;
+    setEditorUi(editor);
 
     /* Selection tracking */
     editor.selection.onSelectionChange((objs) => {
@@ -164,10 +190,10 @@ export default function CanvasEditor() {
             const res = await apiFetch<{ design?: { id?: string } }>('/canvas/designs', {
               method: 'POST',
               body: {
-                name: designName,
-                format: `${w}x${h}`,
-                width: w,
-                height: h,
+                name: designNameRef.current,
+                format: `${width}x${height}`,
+                width,
+                height,
                 elements: json,
                 ...(thumbnailUrl ? { thumbnailUrl } : {}),
               },
@@ -178,7 +204,7 @@ export default function CanvasEditor() {
               method: 'PUT',
               body: {
                 elements: json,
-                name: designName,
+                name: designNameRef.current,
                 ...(thumbnailUrl ? { thumbnailUrl } : {}),
               },
             });
@@ -193,8 +219,8 @@ export default function CanvasEditor() {
     });
 
     /* Load existing design or template */
-    if (designId) {
-      apiFetch<{ design?: { elements?: unknown } }>(`/canvas/designs/${designId}`)
+    if (initialDesignIdRef.current) {
+      apiFetch<{ design?: { elements?: unknown } }>(`/canvas/designs/${initialDesignIdRef.current}`)
         .then((res) => {
           const design = res?.data?.design;
           if (design?.elements) {
@@ -203,14 +229,14 @@ export default function CanvasEditor() {
           }
         })
         .catch(() => {});
-    } else if (tplId) {
-      const tpl = PRODUCT_TEMPLATES.find((t) => t.id === tplId);
+    } else if (initialTemplateIdRef.current) {
+      const tpl = PRODUCT_TEMPLATES.find((t) => t.id === initialTemplateIdRef.current);
       if (tpl?.json) editor.loadJSON(tpl.json).catch(() => {});
     }
 
     /* AI image */
-    if (aiImage) {
-      editor.image.addImage(decodeURIComponent(aiImage)).catch(() => {});
+    if (initialAiImageRef.current) {
+      editor.image.addImage(decodeURIComponent(initialAiImageRef.current)).catch(() => {});
     }
 
     /* Zoom tracking */
@@ -226,6 +252,7 @@ export default function CanvasEditor() {
     return () => {
       editor.dispose();
       editorRef.current = null;
+      setEditorUi(null);
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, []);
@@ -257,9 +284,9 @@ export default function CanvasEditor() {
     editorRef.current?.setSize(w, h);
     setTimeout(() => {
       editorRef.current?.zoom.zoomToFit();
-      setZoom(editorRef.current?.zoom.getZoom() ?? 100);
-    }, 50);
-  }, []);
+        setZoom(editorRef.current?.zoom.getZoom() ?? 100);
+      }, 50);
+    }, []);
 
   const handleZoomIn = useCallback(() => {
     editorRef.current?.zoom.zoomIn();
@@ -358,6 +385,7 @@ export default function CanvasEditor() {
 
   /* ═══ Sidebar panel renderers ═══ */
   const renderPanel = () => {
+    const editor = editorUi;
     switch (sidebarTab) {
       /* ── Templates ── */
       case 'templates':
@@ -619,16 +647,13 @@ export default function CanvasEditor() {
         return (
           <div>
             <p style={panelHeading}>Uploads</p>
-            {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
-            <div
+            <section
               onDragOver={(e) => {
                 e.preventDefault();
                 setUploadDrag(true);
               }}
               onDragLeave={() => setUploadDrag(false)}
               onDrop={handleDrop}
-              role="button"
-              tabIndex={0}
               aria-label="Área de upload. Solte arquivos aqui."
               style={{
                 border: `2px dashed ${uploadDrag ? '#E85D30' : '#2A2A2E'}`,
@@ -661,7 +686,7 @@ export default function CanvasEditor() {
                   style={{ display: 'none' }}
                 />
               </label>
-            </div>
+            </section>
             <p style={{ ...panelSubtext, fontSize: 9 }}>
               Formatos aceitos: JPG, PNG, SVG, WebP. Max 10 MB.
             </p>
@@ -758,7 +783,7 @@ export default function CanvasEditor() {
                   input.accept = 'image/*';
                   input.onchange = (ev) => {
                     const file = (ev.target as HTMLInputElement).files?.[0];
-                    if (file) editorRef.current?.background.setImageFromFile(file);
+                    if (file) editor?.background.setImageFromFile(file);
                   };
                   input.click();
                 }}
@@ -777,7 +802,7 @@ export default function CanvasEditor() {
               </button>
               <button
                 type="button"
-                onClick={() => editorRef.current?.background.removeBackground()}
+                onClick={() => editor?.background.removeBackground()}
                 style={{
                   ...cardBtn,
                   width: '100%',
@@ -796,7 +821,7 @@ export default function CanvasEditor() {
 
       /* ── Layers ── */
       case 'layers': {
-        const objects = editorRef.current?.layers.getObjects() ?? [];
+        const objects = editor?.layers.getObjects() ?? [];
         return (
           <div>
             <p style={panelHeading}>Camadas</p>
@@ -808,15 +833,15 @@ export default function CanvasEditor() {
                   const objName =
                     ('name' in obj && typeof obj.name === 'string' ? obj.name : '') ||
                     `${objType} ${layerNumber}`;
-                  const isActive = editorRef.current?.canvas.getActiveObject() === obj;
+                  const isActive = editor?.canvas.getActiveObject() === obj;
                   return (
                     <button
                       type="button"
                       key={`layer-${objType}-${layerNumber}-${objName}`}
                       onClick={() => {
-                        if (!editorRef.current) return;
-                        editorRef.current.canvas.setActiveObject(obj);
-                        editorRef.current.canvas.requestRenderAll();
+                        if (!editor) return;
+                        editor.canvas.setActiveObject(obj);
+                        editor.canvas.requestRenderAll();
                       }}
                       style={{
                         ...cardBtn,
@@ -840,10 +865,9 @@ export default function CanvasEditor() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (obj.visible === false) editorRef.current?.layers.showObject(obj);
-                            else editorRef.current?.layers.hideObject(obj);
-                            if (editorRef.current)
-                              setLayerList([...editorRef.current.layers.getObjects()]);
+                            if (obj.visible === false) editor?.layers.showObject(obj);
+                            else editor?.layers.hideObject(obj);
+                            if (editor) setLayerList([...editor.layers.getObjects()]);
                           }}
                           style={{
                             background: 'none',
@@ -862,11 +886,9 @@ export default function CanvasEditor() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (obj.selectable === false)
-                              editorRef.current?.layers.unlockObject(obj);
-                            else editorRef.current?.layers.lockObject(obj);
-                            if (editorRef.current)
-                              setLayerList([...editorRef.current.layers.getObjects()]);
+                            if (obj.selectable === false) editor?.layers.unlockObject(obj);
+                            else editor?.layers.lockObject(obj);
+                            if (editor) setLayerList([...editor.layers.getObjects()]);
                           }}
                           style={{
                             background: 'none',
@@ -914,7 +936,7 @@ export default function CanvasEditor() {
                 <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                   <button
                     type="button"
-                    onClick={() => editorRef.current?.clipboard.duplicate()}
+                    onClick={() => editor?.clipboard.duplicate()}
                     style={{
                       ...cardBtn,
                       flex: 1,
@@ -929,9 +951,8 @@ export default function CanvasEditor() {
                   <button
                     type="button"
                     onClick={() => {
-                      editorRef.current?.selection.deleteSelected();
-                      if (editorRef.current)
-                        setLayerList([...editorRef.current.layers.getObjects()]);
+                      editor?.selection.deleteSelected();
+                      if (editor) setLayerList([...editor.layers.getObjects()]);
                     }}
                     style={{
                       ...cardBtn,
@@ -959,7 +980,7 @@ export default function CanvasEditor() {
 
       /* ── Tools ── */
       case 'tools': {
-        const isDrawing = editorRef.current?.canvas.isDrawingMode ?? false;
+        const isDrawing = editor?.canvas.isDrawingMode ?? false;
         return (
           <div>
             <p style={panelHeading}>Ferramentas</p>
@@ -968,14 +989,14 @@ export default function CanvasEditor() {
               <button
                 type="button"
                 onClick={() => {
-                  const canvas = editorRef.current?.canvas;
+                  const canvas = editor?.canvas;
                   if (!canvas) return;
                   canvas.isDrawingMode = !canvas.isDrawingMode;
                   if (canvas.isDrawingMode && canvas.freeDrawingBrush) {
                     canvas.freeDrawingBrush.color = '#E85D30';
                     canvas.freeDrawingBrush.width = 3;
                   }
-                  if (editorRef.current) setLayerList([...editorRef.current.layers.getObjects()]);
+                  if (editor) setLayerList([...editor.layers.getObjects()]);
                 }}
                 style={{
                   ...cardBtn,
@@ -1242,15 +1263,13 @@ export default function CanvasEditor() {
                 borderRight: '1px solid #1C1C1F',
               }}
             >
-              {/* eslint-disable-next-line react-hooks/refs -- renderPanel reads editorRef for layers/tools panels; this is intentional */}
               {renderPanel()}
             </div>
           )}
         </div>
 
         {/* ── Canvas viewport ── */}
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: drop zone receives HTML5 drag events; no click/key interaction needed */}
-        <div
+        <section
           style={{
             flex: 1,
             background: '#19191C',
@@ -1446,7 +1465,7 @@ export default function CanvasEditor() {
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Cor</span>
                     <input
                       type="color"
-                      value={selectedObj.fill || '#000000'}
+                      value={typeof selectedObj.fill === 'string' ? selectedObj.fill : '#000000'}
                       onChange={(e) => updateProp('fill', e.target.value)}
                       style={{
                         width: 20,
@@ -1473,7 +1492,7 @@ export default function CanvasEditor() {
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Preench.</span>
                     <input
                       type="color"
-                      value={selectedObj.fill || '#E0DDD8'}
+                      value={typeof selectedObj.fill === 'string' ? selectedObj.fill : '#E0DDD8'}
                       onChange={(e) => updateProp('fill', e.target.value)}
                       style={{
                         width: 20,
@@ -1492,7 +1511,9 @@ export default function CanvasEditor() {
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Borda</span>
                     <input
                       type="color"
-                      value={selectedObj.stroke || '#000000'}
+                      value={
+                        typeof selectedObj.stroke === 'string' ? selectedObj.stroke : '#000000'
+                      }
                       onChange={(e) => {
                         updateProp('stroke', e.target.value);
                         if (!selectedObj.strokeWidth) updateProp('strokeWidth', 2);
@@ -1644,7 +1665,7 @@ export default function CanvasEditor() {
           >
             <canvas ref={canvasRef} />
           </div>
-        </div>
+        </section>
       </div>
 
       {/* ── Bottom bar ── */}

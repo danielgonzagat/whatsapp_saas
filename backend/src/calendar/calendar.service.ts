@@ -39,6 +39,58 @@ interface CalendarConfig {
   };
 }
 
+type GoogleCalendarCreatedEvent = {
+  id?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  start?: { dateTime?: string | Date | null } | null;
+  end?: { dateTime?: string | Date | null } | null;
+  location?: string | null;
+  hangoutLink?: string | null;
+};
+
+type GoogleCalendarModule = {
+  google: {
+    auth: {
+      OAuth2: new (
+        clientId?: string,
+        clientSecret?: string,
+      ) => {
+        setCredentials(credentials: { refresh_token?: string; access_token?: string }): void;
+      };
+    };
+    calendar(args: {
+      version: 'v3';
+      auth: {
+        setCredentials(credentials: { refresh_token?: string; access_token?: string }): void;
+      };
+    }): {
+      events: {
+        insert(args: {
+          calendarId: string;
+          requestBody: {
+            summary: string;
+            description?: string;
+            start: { dateTime: string };
+            end: { dateTime: string };
+            location?: string;
+            attendees?: Array<{ email: string }>;
+            conferenceData?:
+              | {
+                  createRequest: {
+                    requestId: string;
+                    conferenceSolutionKey: { type: 'hangoutsMeet' };
+                  };
+                }
+              | undefined;
+          };
+          conferenceDataVersion: number;
+        }): Promise<{ data: GoogleCalendarCreatedEvent }>;
+      };
+    };
+  };
+};
+
 /**
  * 📅 Calendar Service
  *
@@ -220,8 +272,8 @@ export class CalendarService {
   ): Promise<CalendarEvent | null> {
     try {
       // Importar googleapis dinamicamente para evitar dependência obrigatória
-      // @ts-expect-error -- optional dependency loaded only when Google Calendar integration is configured
-      const { google } = await import('googleapis');
+      const googleCalendarModuleName = 'googleapis';
+      const { google } = (await import(googleCalendarModuleName)) as GoogleCalendarModule;
 
       const oauth2Client = new google.auth.OAuth2(
         config.credentials?.clientId || this.configService.get('GOOGLE_CLIENT_ID'),

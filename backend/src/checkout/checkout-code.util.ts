@@ -29,14 +29,16 @@ export async function generateUniquePublicCheckoutCode(
   exists: (candidate: string) => Promise<boolean>,
   length = DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
 ) {
-  // biome-ignore lint/performance/noAwaitInLoops: retry loop for unique code generation
-  for (let attempt = 0; attempt < 24; attempt += 1) {
+  const run = async (attempt: number): Promise<string> => {
+    if (attempt >= 24) {
+      throw new Error('Não foi possível gerar um código público único');
+    }
     const candidate = generatePublicCheckoutCode(length);
-    // biome-ignore lint/performance/noAwaitInLoops: collision-retry loop for public checkout code generation; sequential required
     if (!(await exists(candidate))) {
       return candidate;
     }
-  }
+    return run(attempt + 1);
+  };
 
-  throw new Error('Não foi possível gerar um código público único');
+  return run(0);
 }

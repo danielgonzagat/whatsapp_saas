@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { webhookQueue } from '../queue/queue';
 
@@ -30,11 +31,9 @@ export class WebhookDispatcherService {
 
     const eventDate = new Date().toISOString();
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential webhook dispatch with error isolation
-    for (const sub of subscriptions) {
+    await forEachSequential(subscriptions, async (sub) => {
       // Deduplicate via jobId: same subscription + event + payload hash
       const jobId = `webhook-dispatch:${sub.id}:${event}:${randomUUID()}`;
-      // biome-ignore lint/performance/noAwaitInLoops: BullMQ webhookQueue.add per subscription preserves delivery ordering
       await webhookQueue.add(
         'send-webhook',
         {
@@ -50,6 +49,6 @@ export class WebhookDispatcherService {
           backoff: { type: 'exponential', delay: 5000 },
         },
       );
-    }
+    });
   }
 }

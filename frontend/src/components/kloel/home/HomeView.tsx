@@ -9,6 +9,7 @@ import type {
   DashboardHomePeriod,
 } from '@/lib/api/home';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
@@ -1393,10 +1394,10 @@ export function HomeView() {
                           }}
                         >
                           {product.imageUrl ? (
-                            // biome-ignore lint/performance/noImgElement: merchant-configured product image from arbitrary URL, sized by container
-                            <img
+                            <NextImage
                               src={product.imageUrl}
                               alt={product.name}
+                              unoptimized
                               width={40}
                               height={40}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -1557,11 +1558,12 @@ export function HomeView() {
                         }}
                       >
                         {conversation.avatarUrl ? (
-                          // biome-ignore lint/correctness/useImageSize: avatar URL is dynamic (user-supplied) and rendered at container-driven 100% size
-                          // biome-ignore lint/performance/noImgElement: dynamic user avatar; next/image remote loader not configured for arbitrary hosts
-                          <img
+                          <NextImage
                             src={conversation.avatarUrl}
                             alt={conversation.contactName}
+                            unoptimized
+                            width={144}
+                            height={144}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         ) : (

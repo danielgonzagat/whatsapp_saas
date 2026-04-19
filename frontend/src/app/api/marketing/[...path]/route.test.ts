@@ -59,18 +59,15 @@ describe('marketing proxy route', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, channel: 'whatsapp' });
-    expect(fetchSpy).toHaveBeenCalledWith(
+    const request = fetchSpy.mock.calls[0]?.[0] as Request;
+    expect(request.url).toBe(
       'https://backend.example.com/marketing/connect/status?source=whatsapp',
-      expect.objectContaining({
-        method: 'GET',
-        redirect: 'manual',
-        headers: expect.objectContaining({
-          Accept: 'application/json',
-          Authorization: 'Bearer cookie-token',
-          'x-workspace-id': 'ws-cookie',
-        }),
-      }),
     );
+    expect(request.method).toBe('GET');
+    expect(request.redirect).toBe('manual');
+    expect(request.headers.get('Accept')).toBe('application/json');
+    expect(request.headers.get('Authorization')).toBe('Bearer cookie-token');
+    expect(request.headers.get('x-workspace-id')).toBe('ws-cookie');
   });
 
   it('translates upstream login redirects into a 401 response', async () => {

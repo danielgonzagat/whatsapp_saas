@@ -19,6 +19,16 @@ type Mode = 'login' | 'register';
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+function navigateCurrentWindow(url: string) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 /* ────────────────────────────────────────────────────────────
    GOOGLE SIGN-IN HOOK
    Loads the GIS SDK once and exposes a trigger function.
@@ -493,10 +503,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       const nextPath = resolveNextPath(fallbackPath);
       const destination = new URL(buildAppUrl(nextPath, window.location.host));
       destination.searchParams.set('auth', '1');
-      // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
-      // Safe: fallbackPath/nextPath routed through sanitizeNextPath (rejects //, requires /, blocks auth paths);
-      // buildAppUrl constrains the host to the kloel app subdomain.
-      window.location.replace(destination.toString());
+      navigateCurrentWindow(destination.toString());
     },
     [resolveNextPath],
   );

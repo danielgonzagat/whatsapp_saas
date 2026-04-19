@@ -3,12 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
-// Stripe v22 requires CJS-style import (see backend/src/billing/stripe.service.ts).
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import Stripe = require('stripe');
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { StripeRuntime } from '../billing/stripe-runtime';
 import type { StripeClient, StripeSubscription } from '../billing/stripe-types';
+import { forEachSequential } from '../common/async-sequence';
 import { StorageService } from '../common/storage/storage.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
@@ -1148,7 +1147,7 @@ export class UnifiedAgentService {
       return null;
     }
 
-    return new Stripe(secretKey);
+    return new StripeRuntime(secretKey);
   }
 
   /**
@@ -1324,10 +1323,9 @@ Mensagem: ${message}`,
 
     // 5. Processar tool calls
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential OpenAI tool call execution
-      for (const toolCall of assistantMessage.tool_calls) {
+      await forEachSequential(assistantMessage.tool_calls, async (toolCall) => {
         if (toolCall.type !== 'function') {
-          continue;
+          return;
         }
         const toolName = toolCall.function.name;
         let toolArgs: Record<string, unknown> = {};
@@ -1356,7 +1354,7 @@ Mensagem: ${message}`,
 
         // Registrar evento
         await this.logAutopilotEvent(workspaceId, contactId, toolName, toolArgs, result);
-      }
+      });
     }
 
     // 6. Extrair intent e confidence
@@ -4064,8 +4062,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
       // Criar contatos
       let created = 0;
-      // biome-ignore lint/performance/noAwaitInLoops: sequential per-contact CRM enrichment
-      for (const c of contacts) {
+      await forEachSequential(contacts, async (c) => {
         try {
           // PULSE:OK — upsert requires unique compound where per contact; cannot batch
           await this.prisma.contact.upsert({
@@ -4085,7 +4082,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         } catch (_error) {
           // PULSE:OK — Contact import duplicate is expected; skip and continue importing others
         }
-      }
+      });
 
       return {
         success: true,
@@ -4125,8 +4122,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
     const productPrice = product?.price || 0;
 
     // Criar fluxo para cada estágio
-    // biome-ignore lint/performance/noAwaitInLoops: sequential stage processing with dependent data
-    for (const stage of stages) {
+    await forEachSequential(stages, async (stage) => {
       let flowName = '';
       let trigger = 'manual';
       let triggerValue = '';
@@ -4249,7 +4245,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       });
 
       createdFlows.push(flow.name);
-    }
+    });
 
     // Criar fluxo de follow-up se solicitado
     if (includeFollowUps) {

@@ -1342,10 +1342,8 @@ function VendasTab({
             const st = stMap[s.status ?? ''] || { c: V.bl, l: s.status };
             const FI = formIcon[s.paymentMethod ?? ''] || IC.card;
             return (
-              // biome-ignore lint/a11y/useSemanticElements: grid-based report layout needs role="row" without table semantics; native <tr> requires <table> ancestry not used here
-              <div
+              <section
                 key={s.id}
-                role="row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '0.7fr 1.4fr 0.5fr 0.8fr 0.7fr 0.4fr',
@@ -1379,7 +1377,7 @@ function VendasTab({
                   {R$(s.totalInCents || 0)}
                 </span>
                 <StatusDot color={st.c} />
-              </div>
+              </section>
             );
           })
         )}
@@ -2423,7 +2421,6 @@ function RecusaTab({
           <EmptyState message="Nenhuma recusa no período" />
         ) : (
           rows.map((r: ReportRow, i: number) => (
-            // biome-ignore lint/a11y/noStaticElementInteractions: hover handlers are purely decorative; row has no click behavior
             <div
               key={r.id || i}
               style={{
@@ -2432,12 +2429,6 @@ function RecusaTab({
                 padding: '12px 14px',
                 borderBottom: i < rows.length - 1 ? `1px solid ${V.b}` : 'none',
                 alignItems: 'center',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = V.e;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
               }}
             >
               <span style={{ fontFamily: M, fontSize: 10, color: V.t2 }}>

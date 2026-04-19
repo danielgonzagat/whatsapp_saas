@@ -1,25 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { type Job, Worker } from 'bullmq';
 import OpenAI from 'openai';
+import { toFile } from 'openai/uploads';
 import { prisma } from './db';
 import { resolveWorkerOpenAIModel } from './providers/openai-models';
 import { connection } from './queue';
-import { validateUrl } from './utils/ssrf-protection';
+import { safeRequest, validateUrl } from './utils/ssrf-protection';
 
 const PATTERN_RE = /\/+$/;
 
-// SECURITY: UPLOAD_DIR is derived from __dirname (server binary location), not user input.
-// All file writes within this directory use safePath() to guard against path traversal.
 const UPLOAD_DIR = path.resolve(__dirname, '../backend/public/audio');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: UPLOAD_DIR = path.resolve(__dirname, '../backend/public/audio') — derived from the worker binary location, no user input.
-if (!fs.existsSync(UPLOAD_DIR)) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: UPLOAD_DIR is __dirname-derived; no user input.
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
+const UPLOAD_DIR_URL = pathToFileURL(`${UPLOAD_DIR}${path.sep}`);
+
+fs.mkdirSync(UPLOAD_DIR_URL, { recursive: true });
 
 /**
  * Resolves a file path within a base directory and guards against path traversal.
@@ -32,6 +28,10 @@ function safePath(basedir: string, filename: string): string {
     throw new Error('Path traversal detected');
   }
   return resolved;
+}
+
+function safeFileUrl(basedir: string, filename: string): URL {
+  return pathToFileURL(safePath(basedir, filename));
 }
 
 let openaiClient: OpenAI | null = null;
@@ -95,10 +95,8 @@ async function handleGenerateAudio(job: Job) {
 
     const buffer = Buffer.from(await response.arrayBuffer());
     const fileName = `${jobId}.mp3`;
-    const filePath = safePath(UPLOAD_DIR, fileName);
-    // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-    // Safe: filePath passed through safePath() which asserts containment in UPLOAD_DIR (__dirname-derived). jobId is a DB primary key, not user free-form input.
-    fs.writeFileSync(filePath, buffer);
+    const fileUrl = safeFileUrl(UPLOAD_DIR, fileName);
+    fs.writeFileSync(fileUrl, buffer);
 
     const publicUrl = `${resolvePublicBackendBaseUrl()}/audio/${fileName}`;
 
@@ -111,12 +109,10 @@ async function handleGenerateAudio(job: Job) {
       },
     });
 
-    // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring -- server-side log; jobId is internal UUID, publicUrl is server-generated CDN URL
-    console.log(`✅ Voice Job ${jobId} completed. URL: ${publicUrl}`);
+    console.log('✅ Voice Job completed', { jobId, publicUrl });
     return { success: true, outputUrl: publicUrl };
   } catch (err) {
-    // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring -- server-side log; jobId is internal UUID, err is not user-controlled as a format string
-    console.error(`❌ Voice Job ${jobId} failed:`, err);
+    console.error('❌ Voice Job failed', { jobId, error: err });
     await prisma.voiceJob.update({
       where: { id: jobId },
       data: { status: 'FAILED' },
@@ -136,33 +132,31 @@ async function handleTranscription(job: Job) {
       throw new Error(`SSRF blocked for media URL: ${urlValidation.error}`);
     }
 
-    const response = await fetch(mediaUrl, { signal: AbortSignal.timeout(30000) });
+    const response = await safeRequest({
+      url: mediaUrl,
+      timeout: 30000,
+    });
     if (!response.ok) {
       throw new Error(`Failed to download audio: ${response.statusText}`);
     }
 
-    // Use randomUUID for temp filename to prevent path traversal via phone
-    const tempFile = safePath(UPLOAD_DIR, `temp_${randomUUID()}.mp3`);
-    // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-    // Safe: tempFile is safePath(UPLOAD_DIR, `temp_${randomUUID()}.mp3`) — UPLOAD_DIR is __dirname-derived, randomUUID() is crypto-generated. No user input.
-    fs.writeFileSync(tempFile, Buffer.from(await response.arrayBuffer()));
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
+    const transcriptionUpload = await toFile(audioBuffer, `temp_${randomUUID()}.mp3`, {
+      type: 'audio/mpeg',
+    });
 
     const openai = getOpenAIClient();
     let transcription: OpenAI.Audio.Transcriptions.TranscriptionVerbose;
     try {
       transcription = await openai.audio.transcriptions.create({
-        // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-        // Safe: tempFile is safePath(UPLOAD_DIR, randomUUID-based name). No user input.
-        file: fs.createReadStream(tempFile),
+        file: transcriptionUpload,
         model: resolveWorkerOpenAIModel('audio_understanding'),
         language: 'pt',
         response_format: 'verbose_json',
       });
     } catch {
       transcription = await openai.audio.transcriptions.create({
-        // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-        // Safe: tempFile is safePath(UPLOAD_DIR, randomUUID-based name). No user input.
-        file: fs.createReadStream(tempFile),
+        file: transcriptionUpload,
         model: resolveWorkerOpenAIModel('audio_understanding_fallback'),
         language: 'pt',
         response_format: 'verbose_json',
@@ -170,13 +164,6 @@ async function handleTranscription(job: Job) {
     }
 
     const transcribedText = transcription.text || '';
-    // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-    // Safe: tempFile is safePath(UPLOAD_DIR, randomUUID-based name). No user input.
-    if (fs.existsSync(tempFile)) {
-      // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-      // Safe: tempFile is safePath(UPLOAD_DIR, randomUUID-based name). No user input.
-      fs.unlinkSync(tempFile);
-    }
 
     const contact = await prisma.contact.findFirst({
       where: { workspaceId, phone },

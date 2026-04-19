@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
 import { InboxService } from '../inbox/inbox.service';
@@ -806,9 +807,7 @@ export class WhatsappService {
     }
 
     let scheduled = 0;
-    // biome-ignore lint/performance/noAwaitInLoops: WhatsApp message sending requires sequential delivery
-    for (const target of targets) {
-      // biome-ignore lint/performance/noAwaitInLoops: BullMQ autopilotQueue.add per target preserves per-contact scoring order
+    await forEachSequential(targets, async (target) => {
       await autopilotQueue.add(
         'score-contact',
         {
@@ -825,7 +824,7 @@ export class WhatsappService {
         },
       );
       scheduled += 1;
-    }
+    });
 
     return {
       scheduled: true,
@@ -1535,32 +1534,28 @@ export class WhatsappService {
   async optInBulk(workspaceId: string, phones: string[]) {
     const unique = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
     const results: { phone: string; ok: boolean }[] = [];
-    // biome-ignore lint/performance/noAwaitInLoops: sequential contact sync with rate limit protection
-    for (const phone of unique) {
+    await forEachSequential(unique, async (phone) => {
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: per-phone optInContact must be sequential to avoid duplicate consent records
         await this.optInContact(workspaceId, phone);
         results.push({ phone, ok: true });
       } catch {
         results.push({ phone, ok: false });
       }
-    }
+    });
     return { ok: true, processed: results.length, results };
   }
 
   async optOutBulk(workspaceId: string, phones: string[]) {
     const unique = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
     const results: { phone: string; ok: boolean }[] = [];
-    // biome-ignore lint/performance/noAwaitInLoops: sequential contact sync with rate limit protection
-    for (const phone of unique) {
+    await forEachSequential(unique, async (phone) => {
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: per-phone optOutContact must be sequential to honor consent revocation order
         await this.optOutContact(workspaceId, phone);
         results.push({ phone, ok: true });
       } catch {
         results.push({ phone, ok: false });
       }
-    }
+    });
     return { ok: true, processed: results.length, results };
   }
 
@@ -1814,9 +1809,11 @@ export class WhatsappService {
     );
     const deadline = Date.now() + ttlMs;
 
-    // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for session state
-    while (Date.now() < deadline) {
-      // biome-ignore lint/performance/noAwaitInLoops: Redis SET NX lock acquire loop; sequential polling for distributed lock
+    const tryAcquire = async (): Promise<T> => {
+      if (Date.now() >= deadline) {
+        return operation();
+      }
+
       const acquired = await this.redis.set(key, token, 'PX', ttlMs, 'NX');
       if (acquired === 'OK') {
         try {
@@ -1830,9 +1827,10 @@ export class WhatsappService {
       }
 
       await this.sleep(250 + Math.floor(Math.random() * 250));
-    }
+      return tryAcquire();
+    };
 
-    return operation();
+    return tryAcquire();
   }
 
   private async simulateHumanPresence(
@@ -2388,11 +2386,9 @@ export class WhatsappService {
   ): Promise<void> {
     const candidates = await this.resolveReadChatCandidates(workspaceId, chatIdOrPhone);
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential candidate resolution with early return
-    for (const candidate of candidates) {
-      // biome-ignore lint/performance/noAwaitInLoops: per-candidate readChatMessages with early return; sequential required
+    await forEachSequential(candidates, async (candidate) => {
       await this.providerRegistry.readChatMessages(workspaceId, candidate).catch(() => undefined);
-    }
+    });
   }
 
   // ============================================================

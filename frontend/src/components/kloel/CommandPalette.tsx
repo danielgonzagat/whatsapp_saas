@@ -440,19 +440,9 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
         }
       `}</style>
 
-      {/* biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained */}
       <div
         className="kloel-search-shell"
         onClick={onClose}
-        role="button"
-        tabIndex={0}
-        aria-label="Fechar busca"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
-        }}
       >
         <div
           className={cn('kloel-search-modal', className)}

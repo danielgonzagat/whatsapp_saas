@@ -4,6 +4,7 @@ import { prisma } from './db';
 import { connection } from './queue';
 import { triggerFlowForScrapedLeads } from './scrapers/auto-trigger';
 import { scrapeGoogleMaps } from './scrapers/google-maps';
+import { forEachSequential } from './utils/async-sequence';
 
 /**
  * =======================================================
@@ -134,12 +135,11 @@ async function processScraperJob(job: Job): Promise<void> {
 
     const importedContacts: string[] = [];
     let savedCount = 0;
-    // biome-ignore lint/performance/noAwaitInLoops: sequential lead import — persistLeadWithCrm opens a Prisma $transaction per lead that upserts Contact + pipes it into CRM stage 0; parallel execution races on the workspace-scoped uniqueness constraint for (workspaceId, phone)
-    for (const lead of leads) {
+    await forEachSequential(leads, async (lead) => {
       const contactId = await persistLeadWithCrm(lead, { jobId, workspaceId, firstStageId });
       importedContacts.push(contactId);
       savedCount++;
-    }
+    });
 
     await prisma.scrapingJob.update({
       where: { id: jobId },

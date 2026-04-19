@@ -40,6 +40,16 @@ interface Plan {
   cta: string;
 }
 
+function navigateCurrentWindow(url: string) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 const PLANS: Plan[] = [
   {
     id: 'starter',
@@ -163,9 +173,7 @@ export default function PricingPage() {
         if (!isKloelDomain) {
           throw new Error('Redirecionamento bloqueado: destino externo desconhecido.');
         }
-        // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
-        // Safe: target is validated above to be same-origin or *.kloel.com before this assignment.
-        window.location.href = target.href;
+        navigateCurrentWindow(target.toString());
       } else {
         throw new Error('No checkout URL returned');
       }

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type { Dispatch, SetStateAction } from 'react';
 import type { CheckoutDisplayTestimonial } from '@/lib/public-checkout-contract';
 import { ChDown, ChUp, Mn, PAYMENT_BADGES, Pl, Star, Tag } from './checkout-theme-shared';
@@ -337,12 +338,12 @@ function SummaryProductRow({
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
       {productImage ? (
-        // biome-ignore lint/performance/noImgElement: dynamic product image from merchant-configured URL, no need to optimize via next/image
-        <img
+        <Image
           src={productImage}
           alt={productName}
           width={72}
           height={72}
+          unoptimized
           style={{
             width: 72,
             height: 72,

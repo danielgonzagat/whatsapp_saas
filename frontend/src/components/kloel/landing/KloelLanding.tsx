@@ -1,15 +1,14 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-
 'use client';
 import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
 import { useState, useEffect, useRef, useId } from 'react';
 import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
-import { delayForTypewriter } from './KloelLanding.helpers';
+import {
+  delayForTypewriter,
+  runSequentialList,
+  runSequentialRange,
+} from './KloelLanding.helpers';
 import ThanosSection from './ThanosSection';
-
-const PATTERN_RE = /[.,!?]/;
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -18,6 +17,97 @@ const V = '#0A0A0C';
 const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?<>{}|/\\~';
 const rc = () => GC[Math.floor(Math.random() * GC.length)];
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type HeroLoopPhase = 'idle' | 'typing' | 'strike' | 'death' | 'hidden';
+
+type HeroLoopViewState = {
+  text: string;
+  strike: number;
+  suffix: string;
+  phase: HeroLoopPhase;
+};
+
+type HeroLoopGlitchSlice = {
+  top: number;
+  h: number;
+  off: number;
+};
+
+type HeroLoopGlitchState = {
+  on: boolean;
+  text: string;
+  shk: [number, number];
+  chr: number;
+  slices: HeroLoopGlitchSlice[];
+  flash: boolean;
+};
+
+type MultiChannelKey = 'wa' | 'ig' | 'em';
+type MultiChannelFlowType = 'lead' | 'ai' | 'ok';
+
+type MultiChannelMessage = {
+  ch: MultiChannelKey;
+  f: MultiChannelFlowType;
+  text: string;
+  t: string;
+  n?: string;
+};
+
+type MultiChannelState = Record<MultiChannelKey, MultiChannelMessage[]>;
+
+const HERO_LOOP_PRIMARY = 'O Marketing Digital';
+const HERO_LOOP_DEATH_SUFFIX = ' acabou.';
+const HERO_LOOP_RESURRECTED = 'O Marketing Artificial começou.';
+const FINAL_MANIFEST_FIRST = 'Morre o Marketing Digital.';
+const FINAL_MANIFEST_SECOND_PREFIX = 'Nasce o ';
+const FINAL_MANIFEST_SECOND_EMPHASIS = 'Marketing Artificial';
+const FINAL_MANIFEST_SECOND = `${FINAL_MANIFEST_SECOND_PREFIX}${FINAL_MANIFEST_SECOND_EMPHASIS}`;
+const MULTI_CHANNEL_FLOW: MultiChannelMessage[] = [
+  { ch: 'wa', f: 'lead', n: 'Marina C.', text: 'Vi o anuncio, quanto custa?', t: '09:02' },
+  { ch: 'ig', f: 'lead', n: 'Pedro A.', text: 'Amei o produto! Como compro?', t: '09:03' },
+  {
+    ch: 'wa',
+    f: 'ai',
+    text: 'Ola Marina! R$497 a vista ou 12x. Posso enviar o link?',
+    t: '09:02',
+  },
+  {
+    ch: 'em',
+    f: 'ai',
+    n: 'Email',
+    text: 'Assunto: Julia, seu bonus expira hoje — 30% OFF',
+    t: '09:04',
+  },
+  {
+    ch: 'ig',
+    f: 'ai',
+    text: 'Ola Pedro! Acesso vitalício por R$497. Cupom INSTA20 = 20% OFF!',
+    t: '09:03',
+  },
+  { ch: 'wa', f: 'lead', n: 'Marina C.', text: 'Quero sim!', t: '09:05' },
+  { ch: 'wa', f: 'ai', text: 'Link: pay.kloel.com/ck/abc — Pix, cartão ou boleto.', t: '09:05' },
+  { ch: 'ig', f: 'lead', n: 'Pedro A.', text: 'Me manda o link!', t: '09:06' },
+  { ch: 'em', f: 'ai', n: 'Evento', text: 'Julia clicou no link — checkout aberto', t: '09:06' },
+  { ch: 'ig', f: 'ai', text: 'pay.kloel.com/ck/pedro — Cupom INSTA20 já aplicado!', t: '09:06' },
+  { ch: 'wa', f: 'ok', text: 'Pagamento confirmado — R$397 via Pix', t: '09:08' },
+  { ch: 'ig', f: 'ok', text: 'Pagamento confirmado — R$397,60 via cartão', t: '09:09' },
+  { ch: 'em', f: 'ok', text: 'Pagamento confirmado — R$347,90 via Pix', t: '09:10' },
+];
+
+function scrambleText(src: string, chaos: number) {
+  return src
+    .split('')
+    .map((c) => (c === ' ' ? ' ' : Math.random() < chaos ? rc() : c))
+    .join('');
+}
+
+function buildGlitchSlices(): HeroLoopGlitchSlice[] {
+  return Array.from({ length: 5 }, () => ({
+    top: Math.random() * 100,
+    h: 2 + Math.random() * 14,
+    off: (Math.random() - 0.5) * 28,
+  }));
+}
 
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
@@ -60,11 +150,13 @@ function BrandDivider({ compact = false }: { compact?: boolean }) {
 }
 
 function HeroLoop() {
-  const L1 = 'O Marketing Digital';
-  const DEATH = ' acabou.';
-  const L2 = 'O Marketing Artificial começou.';
-  const [vis, setVis] = useState({ text: '', strike: 0, suffix: '', phase: 'idle' });
-  const [gx, setGx] = useState({
+  const [vis, setVis] = useState<HeroLoopViewState>({
+    text: '',
+    strike: 0,
+    suffix: '',
+    phase: 'idle',
+  });
+  const [gx, setGx] = useState<HeroLoopGlitchState>({
     on: false,
     text: '',
     shk: [0, 0],
@@ -73,7 +165,7 @@ function HeroLoop() {
     flash: false,
   });
   const [resurrected, setResurrected] = useState(false);
-  const noiseRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const noiseRef = useRef<HTMLCanvasElement | null>(null);
   const gxRef = useRef<boolean>(false);
   const m = useRef<boolean>(true);
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -94,6 +186,7 @@ function HeroLoop() {
     const cv = noiseRef.current;
     if (!cv) return;
     const ctx = cv.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
     cv.width = 600;
     cv.height = 120;
     let raf2: number;
@@ -124,18 +217,6 @@ function HeroLoop() {
     };
   }, [prefersReducedMotion]);
 
-  const scramble = (src, chaos) =>
-    src
-      .split('')
-      .map((c) => (c === ' ' ? ' ' : Math.random() < chaos ? rc() : c))
-      .join('');
-  const mkSlices = () =>
-    Array.from({ length: 5 }, () => ({
-      top: Math.random() * 100,
-      h: 2 + Math.random() * 14,
-      off: (Math.random() - 0.5) * 28,
-    }));
-
   useEffect(() => {
     if (prefersReducedMotion) {
       setVis({ text: '', strike: 0, suffix: '', phase: 'hidden' });
@@ -145,117 +226,172 @@ function HeroLoop() {
     }
 
     const run = async () => {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential processing required
-      while (m.current) {
+      if (!m.current) {
+        return;
+      }
+
+      const full = HERO_LOOP_PRIMARY + HERO_LOOP_DEATH_SUFFIX;
+
+      const continueWhileMounted = () => m.current;
+      const cycle = async (): Promise<void> => {
+        if (!continueWhileMounted()) {
+          return;
+        }
+
         setResurrected(false);
         setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
-        // TYPE
-        for (let i = 0; i <= L1.length; i++) {
-          if (!m.current) return;
-          setVis({ text: L1.slice(0, i), strike: 0, suffix: '', phase: 'typing' });
-          // biome-ignore lint/performance/noAwaitInLoops: sequential typing animation — each character renders after the previous frame's delay
-          await wait(L1[i] === ' ' ? 45 : 55 + Math.random() * 35);
-        }
+        await runSequentialRange(
+          0,
+          HERO_LOOP_PRIMARY.length,
+          1,
+          async (index) => {
+            setVis({
+              text: HERO_LOOP_PRIMARY.slice(0, index),
+              strike: 0,
+              suffix: '',
+              phase: 'typing',
+            });
+            await wait(HERO_LOOP_PRIMARY[index] === ' ' ? 45 : 55 + Math.random() * 35);
+          },
+          continueWhileMounted,
+        );
+        if (!continueWhileMounted()) return;
         await wait(450);
-        // STRIKE
         setVis((d) => ({ ...d, phase: 'strike' }));
-        for (let i = 0; i <= 100; i += 3) {
-          if (!m.current) return;
-          setVis((d) => ({ ...d, strike: i }));
-          // biome-ignore lint/performance/noAwaitInLoops: sequential strike animation frames — each tick paints after the previous
-          await wait(7);
-        }
+        await runSequentialRange(
+          0,
+          100,
+          3,
+          async (index) => {
+            setVis((d) => ({ ...d, strike: index }));
+            await wait(7);
+          },
+          continueWhileMounted,
+        );
+        if (!continueWhileMounted()) return;
         await wait(250);
-        // MORREU
-        for (let i = 0; i <= DEATH.length; i++) {
-          if (!m.current) return;
-          setVis((d) => ({ ...d, suffix: DEATH.slice(0, i), phase: 'death' }));
-          // biome-ignore lint/performance/noAwaitInLoops: sequential death-suffix typing animation
-          await wait(75 + Math.random() * 35);
-        }
+        await runSequentialRange(
+          0,
+          HERO_LOOP_DEATH_SUFFIX.length,
+          1,
+          async (index) => {
+            setVis((d) => ({
+              ...d,
+              suffix: HERO_LOOP_DEATH_SUFFIX.slice(0, index),
+              phase: 'death',
+            }));
+            await wait(75 + Math.random() * 35);
+          },
+          continueWhileMounted,
+        );
+        if (!continueWhileMounted()) return;
         await wait(700);
-        // GLITCH BUILD
-        const full = L1 + DEATH;
-        for (let i = 0; i < 8; i++) {
-          if (!m.current) return;
-          setGx({
-            on: true,
-            text: scramble(full, i * 0.06),
-            shk: [(Math.random() - 0.5) * i * 0.6, (Math.random() - 0.5) * i * 0.4],
-            chr: i * 1.8,
-            slices: i > 4 ? mkSlices() : [],
-            flash: false,
-          });
-          // biome-ignore lint/performance/noAwaitInLoops: sequential glitch-build animation frames
-          await wait(45);
-        }
-        // CHAOS
-        for (let i = 0; i < 16; i++) {
-          if (!m.current) return;
-          setGx({
-            on: true,
-            text: scramble(full, Math.min(1, 0.3 + i * 0.05)),
-            shk: [(Math.random() - 0.5) * 14, (Math.random() - 0.5) * 7],
-            chr: 8 + Math.random() * 7,
-            slices: mkSlices(),
-            flash: i === 8,
-          });
-          // biome-ignore lint/performance/noAwaitInLoops: sequential chaos-phase animation frames
-          await wait(38);
-        }
-        // FLASH
+        await runSequentialRange(
+          0,
+          7,
+          1,
+          async (index) => {
+            setGx({
+              on: true,
+              text: scrambleText(full, index * 0.06),
+              shk: [
+                (Math.random() - 0.5) * index * 0.6,
+                (Math.random() - 0.5) * index * 0.4,
+              ],
+              chr: index * 1.8,
+              slices: index > 4 ? buildGlitchSlices() : [],
+              flash: false,
+            });
+            await wait(45);
+          },
+          continueWhileMounted,
+        );
+        if (!continueWhileMounted()) return;
+        await runSequentialRange(
+          0,
+          15,
+          1,
+          async (index) => {
+            setGx({
+              on: true,
+              text: scrambleText(full, Math.min(1, 0.3 + index * 0.05)),
+              shk: [(Math.random() - 0.5) * 14, (Math.random() - 0.5) * 7],
+              chr: 8 + Math.random() * 7,
+              slices: buildGlitchSlices(),
+              flash: index === 8,
+            });
+            await wait(38);
+          },
+          continueWhileMounted,
+        );
+        if (!continueWhileMounted()) return;
         setGx((g) => ({ ...g, flash: true, chr: 20 }));
         await wait(50);
-        // RESOLVE
         setVis((d) => ({ ...d, phase: 'hidden' }));
-        // biome-ignore lint/performance/noAwaitInLoops: resolve-phase animation — each of the 14 frames must render with its own setGx state before sleeping; Promise.all would render all frames in the same tick and skip the dissolve-to-resolve transition
-        for (let i = 0; i < 14; i++) {
-          if (!m.current) return;
-          const p = i / 14;
-          const mixed = L2.split('')
-            .map((c2, _ci) => (c2 === ' ' ? ' ' : Math.random() < p ? c2 : rc()))
-            .join('');
-          setGx({
-            on: true,
-            text: mixed,
-            shk: [(Math.random() - 0.5) * (7 - p * 7), (Math.random() - 0.5) * (3 - p * 3)],
-            chr: (1 - p) * 10,
-            slices: p > 0.6 ? [] : mkSlices(),
-            flash: false,
-          });
-          // biome-ignore lint/performance/noAwaitInLoops: 38ms per-frame delay is the perceived animation cadence — removing the await collapses the 14-frame resolve effect into a single visual jump
-          await wait(38);
-        }
-        // CLEAN
+        await runSequentialRange(
+          0,
+          13,
+          1,
+          async (index) => {
+            const progress = index / 14;
+            const mixed = HERO_LOOP_RESURRECTED.split('')
+              .map((character) =>
+                character === ' ' ? ' ' : Math.random() < progress ? character : rc(),
+              )
+              .join('');
+            setGx({
+              on: true,
+              text: mixed,
+              shk: [
+                (Math.random() - 0.5) * (7 - progress * 7),
+                (Math.random() - 0.5) * (3 - progress * 3),
+              ],
+              chr: (1 - progress) * 10,
+              slices: progress > 0.6 ? [] : buildGlitchSlices(),
+              flash: false,
+            });
+            await wait(38);
+          },
+          continueWhileMounted,
+        );
+        if (!continueWhileMounted()) return;
         setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
         setResurrected(true);
         await wait(3200);
-        // GLITCH BACK
-        for (let i = 0; i < 6; i++) {
-          if (!m.current) return;
-          setGx({
-            on: true,
-            text: scramble(L2, i * 0.14),
-            shk: [(Math.random() - 0.5) * i * 1.8, (Math.random() - 0.5) * i],
-            chr: i * 2.5,
-            slices: i > 3 ? mkSlices() : [],
-            flash: false,
-          });
-          // biome-ignore lint/performance/noAwaitInLoops: sequential glitch-back animation frames
-          await wait(45);
-        }
+        if (!continueWhileMounted()) return;
+        await runSequentialRange(
+          0,
+          5,
+          1,
+          async (index) => {
+            setGx({
+              on: true,
+              text: scrambleText(HERO_LOOP_RESURRECTED, index * 0.14),
+              shk: [(Math.random() - 0.5) * index * 1.8, (Math.random() - 0.5) * index],
+              chr: index * 2.5,
+              slices: index > 3 ? buildGlitchSlices() : [],
+              flash: false,
+            });
+            await wait(45);
+          },
+          continueWhileMounted,
+        );
+        if (!continueWhileMounted()) return;
         setGx((g) => ({ ...g, flash: true }));
         await wait(40);
         setResurrected(false);
         setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
         await wait(250);
-      }
+        if (!continueWhileMounted()) return;
+        await cycle();
+      };
+
+      await cycle();
     };
     run();
     return () => {
       m.current = false;
     };
-    // biome-ignore lint/correctness/useExhaustiveDependencies: mkSlices and scramble are pure helpers defined inline; including them would recreate on every render and restart the animation loop
   }, [prefersReducedMotion]);
 
   const ts = {
@@ -279,7 +415,7 @@ function HeroLoop() {
           justifyContent: 'center',
         }}
       >
-        <div style={{ ...ts, color: E }}>{L2}</div>
+        <div style={{ ...ts, color: E }}>{HERO_LOOP_RESURRECTED}</div>
       </div>
     );
   }
@@ -403,7 +539,7 @@ function HeroLoop() {
         )}
         {resurrected && !gx.on && (
           <span style={{ ...ts, color: E, transition: 'opacity .4s' }}>
-            O Marketing Artificial começou.
+            {HERO_LOOP_RESURRECTED}
           </span>
         )}
       </div>
@@ -413,40 +549,9 @@ function HeroLoop() {
 
 function MultiChannel() {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [msgs, setMsgs] = useState({ wa: [], ig: [], em: [] });
+  const [msgs, setMsgs] = useState<MultiChannelState>({ wa: [], ig: [], em: [] });
   const ref = useRef<HTMLDivElement | null>(null);
   const [go, setGo] = useState(false);
-  const flow = [
-    { ch: 'wa', f: 'lead', n: 'Marina C.', text: 'Vi o anuncio, quanto custa?', t: '09:02' },
-    { ch: 'ig', f: 'lead', n: 'Pedro A.', text: 'Amei o produto! Como compro?', t: '09:03' },
-    {
-      ch: 'wa',
-      f: 'ai',
-      text: 'Ola Marina! R$497 a vista ou 12x. Posso enviar o link?',
-      t: '09:02',
-    },
-    {
-      ch: 'em',
-      f: 'ai',
-      n: 'Email',
-      text: 'Assunto: Julia, seu bonus expira hoje — 30% OFF',
-      t: '09:04',
-    },
-    {
-      ch: 'ig',
-      f: 'ai',
-      text: 'Ola Pedro! Acesso vitalício por R$497. Cupom INSTA20 = 20% OFF!',
-      t: '09:03',
-    },
-    { ch: 'wa', f: 'lead', n: 'Marina C.', text: 'Quero sim!', t: '09:05' },
-    { ch: 'wa', f: 'ai', text: 'Link: pay.kloel.com/ck/abc — Pix, cartão ou boleto.', t: '09:05' },
-    { ch: 'ig', f: 'lead', n: 'Pedro A.', text: 'Me manda o link!', t: '09:06' },
-    { ch: 'em', f: 'ai', n: 'Evento', text: 'Julia clicou no link — checkout aberto', t: '09:06' },
-    { ch: 'ig', f: 'ai', text: 'pay.kloel.com/ck/pedro — Cupom INSTA20 já aplicado!', t: '09:06' },
-    { ch: 'wa', f: 'ok', text: 'Pagamento confirmado — R$397 via Pix', t: '09:08' },
-    { ch: 'ig', f: 'ok', text: 'Pagamento confirmado — R$397,60 via cartão', t: '09:09' },
-    { ch: 'em', f: 'ok', text: 'Pagamento confirmado — R$347,90 via Pix', t: '09:10' },
-  ];
   useEffect(() => {
     if (prefersReducedMotion) {
       setGo(true);
@@ -467,37 +572,41 @@ function MultiChannel() {
     o.observe(el);
     return () => o.disconnect();
   }, [prefersReducedMotion]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: flow is a module-level static literal, length never changes at runtime; go/prefersReducedMotion are the real triggers
   useEffect(() => {
     if (!go) return;
     if (prefersReducedMotion) {
       setMsgs({
-        wa: flow.filter((message) => message.ch === 'wa'),
-        ig: flow.filter((message) => message.ch === 'ig'),
-        em: flow.filter((message) => message.ch === 'em'),
+        wa: MULTI_CHANNEL_FLOW.filter((message) => message.ch === 'wa'),
+        ig: MULTI_CHANNEL_FLOW.filter((message) => message.ch === 'ig'),
+        em: MULTI_CHANNEL_FLOW.filter((message) => message.ch === 'em'),
       });
       return;
     }
 
     let c = false;
     const run = async () => {
-      for (let i = 0; i < flow.length; i++) {
-        if (c) return;
-        // biome-ignore lint/performance/noAwaitInLoops: sequential message-drop animation — each bubble appears after its predecessor's dwell time
-        await wait(flow[i].f === 'ai' ? 1100 : flow[i].f === 'ok' ? 1400 : 650);
-        if (c) return;
-        const msg = flow[i];
-        setMsgs((p) => ({ ...p, [msg.ch]: [...p[msg.ch], msg] }));
-      }
+      await runSequentialList(
+        MULTI_CHANNEL_FLOW,
+        async (msg) => {
+          await wait(msg.f === 'ai' ? 1100 : msg.f === 'ok' ? 1400 : 650);
+          if (c) return;
+          setMsgs((p) => ({ ...p, [msg.ch]: [...p[msg.ch], msg] }));
+        },
+        () => !c,
+      );
     };
     run();
     return () => {
       c = true;
     };
   }, [go, prefersReducedMotion]);
-  const colors = { wa: '#25D366', ig: '#E1306C', em: E };
-  const names = { wa: 'WhatsApp', ig: 'Instagram DM', em: 'Email' };
-  const renderPanel = (ch: string) => (
+  const colors: Record<MultiChannelKey, string> = { wa: '#25D366', ig: '#E1306C', em: E };
+  const names: Record<MultiChannelKey, string> = {
+    wa: 'WhatsApp',
+    ig: 'Instagram DM',
+    em: 'Email',
+  };
+  const renderPanel = (ch: MultiChannelKey) => (
     <div
       style={{
         background: '#111113',
@@ -532,7 +641,7 @@ function MultiChannel() {
         </span>
       </div>
       <div style={{ padding: 8, minHeight: 120, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {(msgs[ch] || []).map((msg, _i) =>
+        {msgs[ch].map((msg) =>
           msg.f === 'ok' ? (
             <div
               key={`${msg.f}-${msg.ch}-${msg.t}-${msg.text}`}
@@ -689,18 +798,13 @@ function LivePulse() {
 
 function FinalManifestLoop() {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const FIRST = 'Morre o Marketing Digital.';
-  const SECOND_PREFIX = 'Nasce o ';
-  const SECOND_EMPHASIS = 'Marketing Artificial';
-  const SECOND = `${SECOND_PREFIX}${SECOND_EMPHASIS}`;
   const [text, setText] = useState('');
   const [tone, setTone] = useState<'light' | 'ember'>('light');
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: FIRST/SECOND/SECOND_PREFIX/SECOND_EMPHASIS are component-local constants that never change; only prefersReducedMotion should restart the typewriter loop
   useEffect(() => {
     if (prefersReducedMotion) {
       setTone('ember');
-      setText(SECOND);
+      setText(FINAL_MANIFEST_SECOND);
       return;
     }
 
@@ -708,42 +812,64 @@ function FinalManifestLoop() {
 
     const typePhrase = async (phrase: string, nextTone: 'light' | 'ember') => {
       setTone(nextTone);
-      for (let i = 1; i <= phrase.length; i++) {
-        if (!alive) return;
-        setText(phrase.slice(0, i));
-        // biome-ignore lint/performance/noAwaitInLoops: sequential typing animation — each character renders after the previous frame's delay
-        await wait(delayForTypewriter(phrase[i - 1], 'type', i - 1, phrase));
-        if (phrase === SECOND && i === SECOND_PREFIX.length) {
-          await wait(320);
-        }
-      }
+      await runSequentialRange(
+        1,
+        phrase.length,
+        1,
+        async (index) => {
+          setText(phrase.slice(0, index));
+          await wait(delayForTypewriter(phrase[index - 1], 'type', index - 1, phrase));
+          if (phrase === FINAL_MANIFEST_SECOND && index === FINAL_MANIFEST_SECOND_PREFIX.length) {
+            await wait(320);
+          }
+        },
+        () => alive,
+      );
     };
 
     const deletePhrase = async (phrase: string, nextTone: 'light' | 'ember') => {
       setTone(nextTone);
-      for (let i = phrase.length - 1; i >= 0; i--) {
-        if (!alive) return;
-        setText(phrase.slice(0, i));
-        // biome-ignore lint/performance/noAwaitInLoops: sequential delete animation — characters disappear one-by-one in order
-        await wait(delayForTypewriter(phrase[i], 'delete', i, phrase));
-      }
+      await runSequentialRange(
+        phrase.length - 1,
+        0,
+        -1,
+        async (index) => {
+          setText(phrase.slice(0, index));
+          await wait(delayForTypewriter(phrase[index], 'delete', index, phrase));
+        },
+        () => alive,
+      );
     };
 
-    const run = async () => {
-      while (alive) {
+    const run = async (): Promise<void> => {
+      if (!alive) {
+        return;
+      }
+
+      const cycle = async (): Promise<void> => {
+        if (!alive) {
+          return;
+        }
+
         setText('');
         setTone('light');
-        // biome-ignore lint/performance/noAwaitInLoops: headline cycle is intentionally sequential; each phase depends on the previous state transition
         await wait(420);
-        await typePhrase(FIRST, 'light');
+        await typePhrase(FINAL_MANIFEST_FIRST, 'light');
+        if (!alive) return;
         await wait(1600);
-        await deletePhrase(FIRST, 'light');
+        await deletePhrase(FINAL_MANIFEST_FIRST, 'light');
+        if (!alive) return;
         await wait(720);
-        await typePhrase(SECOND, 'ember');
+        await typePhrase(FINAL_MANIFEST_SECOND, 'ember');
+        if (!alive) return;
         await wait(8000);
-        await deletePhrase(SECOND, 'ember');
+        await deletePhrase(FINAL_MANIFEST_SECOND, 'ember');
+        if (!alive) return;
         await wait(900);
-      }
+        await cycle();
+      };
+
+      await cycle();
     };
 
     void run();
@@ -759,8 +885,14 @@ function FinalManifestLoop() {
       return <span style={{ color: '#E0DDD8' }}>{text}</span>;
     }
 
-    const prefix = SECOND_PREFIX.slice(0, Math.min(text.length, SECOND_PREFIX.length));
-    const emphasis = text.length > SECOND_PREFIX.length ? text.slice(SECOND_PREFIX.length) : '';
+    const prefix = FINAL_MANIFEST_SECOND_PREFIX.slice(
+      0,
+      Math.min(text.length, FINAL_MANIFEST_SECOND_PREFIX.length),
+    );
+    const emphasis =
+      text.length > FINAL_MANIFEST_SECOND_PREFIX.length
+        ? text.slice(FINAL_MANIFEST_SECOND_PREFIX.length)
+        : '';
 
     return (
       <>
@@ -770,7 +902,8 @@ function FinalManifestLoop() {
     );
   };
 
-  const cursorColor = tone === 'ember' && text.length > SECOND_PREFIX.length ? E : '#E0DDD8';
+  const cursorColor =
+    tone === 'ember' && text.length > FINAL_MANIFEST_SECOND_PREFIX.length ? E : '#E0DDD8';
 
   return (
     <div

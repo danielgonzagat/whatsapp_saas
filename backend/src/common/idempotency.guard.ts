@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type Redis from 'ioredis';
+import { pollUntil } from './async-sequence';
 import { FeatureFlagService } from './feature-flags/feature-flag.service';
 import { bodyFingerprint, buildCacheKey, buildScopeKey } from './idempotency-fingerprint';
 
@@ -252,26 +253,43 @@ export class IdempotencyGuard implements CanActivate {
 
     if (cached?.processing === true) {
       // Another request is in flight. Poll briefly for its completion.
-      // biome-ignore lint/performance/noAwaitInLoops: polling loop waiting for lock release
-      for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
-        // biome-ignore lint/performance/noAwaitInLoops: polling sleep inside retry loop awaiting idempotency key release
-        await sleep(POLL_INTERVAL_MS);
-        const retry = await this.redis.get(cacheKey).catch(() => null);
-        if (!retry) {
-          // The in-flight request errored and cleared the placeholder.
-          return { kind: 'proceed' };
-        }
-        let retryParsed: Record<string, unknown> | undefined;
-        try {
-          retryParsed = JSON.parse(retry);
-        } catch {
-          return { kind: 'proceed' };
-        }
-        if (retryParsed?.processing !== true && retryParsed?.body !== undefined) {
-          const response = context.switchToHttp().getResponse();
-          response.status(retryParsed.statusCode || 200).json(retryParsed.body);
-          return { kind: 'responded' };
-        }
+      const polled = await pollUntil<{
+        kind: 'pending' | 'proceed' | 'responded';
+        statusCode?: number;
+        body?: unknown;
+      }>({
+        timeoutMs: POLL_MAX_ATTEMPTS * POLL_INTERVAL_MS,
+        intervalMs: POLL_INTERVAL_MS,
+        sleep,
+        read: async () => {
+          const retry = await this.redis.get(cacheKey).catch(() => null);
+          if (!retry) {
+            return { kind: 'proceed' };
+          }
+          try {
+            const retryParsed = JSON.parse(retry) as Record<string, unknown>;
+            if (retryParsed?.processing !== true && retryParsed?.body !== undefined) {
+              return {
+                kind: 'responded',
+                statusCode: Number(retryParsed.statusCode || 200),
+                body: retryParsed.body,
+              };
+            }
+          } catch {
+            return { kind: 'proceed' };
+          }
+          return { kind: 'pending' };
+        },
+        stop: (value) => value.kind !== 'pending',
+      });
+      if (polled.kind === 'proceed') {
+        // The in-flight request errored and cleared the placeholder.
+        return { kind: 'proceed' };
+      }
+      if (polled.kind === 'responded') {
+        const response = context.switchToHttp().getResponse();
+        response.status(polled.statusCode || 200).json(polled.body);
+        return { kind: 'responded' };
       }
       // Poll exhausted. The placeholder is stale (crashed peer?). Clear it
       // and let this request proceed normally.

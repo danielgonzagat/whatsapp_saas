@@ -1,3 +1,4 @@
+import { findFirstSequential } from '@/lib/async-sequence';
 import type { NextRequest } from 'next/server';
 import { getBackendCandidateUrls } from '../_lib/backend-url';
 
@@ -70,12 +71,11 @@ async function fetchWhatsAppUpstream(
   });
   let lastError: unknown;
 
-  for (const baseUrl of getBackendCandidateUrls()) {
+  const response = await findFirstSequential(getBackendCandidateUrls(), async (baseUrl) => {
     const url = `${baseUrl}${upstreamPath}`;
 
     try {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential fallback across backend candidates — parallel would waste upstream quota and defeat failover ordering
-      const response = await fetch(url, {
+      const attempt = await fetch(url, {
         method,
         headers,
         body: rawBody || undefined,
@@ -83,24 +83,29 @@ async function fetchWhatsAppUpstream(
         redirect: 'manual',
       });
 
-      if (response.status === 404 || response.status === 405) {
-        lastError = new Error(`upstream ${response.status} at ${url}`);
-        continue;
+      if (attempt.status === 404 || attempt.status === 405) {
+        lastError = new Error(`upstream ${attempt.status} at ${url}`);
+        return null;
       }
 
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get('location') || 'unknown-location';
+      if (attempt.status >= 300 && attempt.status < 400) {
+        const location = attempt.headers.get('location') || 'unknown-location';
         lastError = createProxyRequestError(
           `upstream redirect at ${url} -> ${location}`,
           isAuthRedirectLike(location) ? 401 : 502,
         );
-        continue;
+        return null;
       }
 
-      return response;
+      return attempt;
     } catch (error) {
       lastError = error;
+      return null;
     }
+  });
+
+  if (response) {
+    return response;
   }
 
   throw lastError || new Error('Unable to reach upstream WhatsApp endpoint');

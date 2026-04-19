@@ -86,10 +86,9 @@ export function MessageBubble({
     }
   }, [isEditing, message.content]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset active version when message or latest version changes; assistantVersions.length is derived from those
   useEffect(() => {
     setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0));
-  }, [message.id, latestVersionId]);
+  }, [assistantVersions.length, latestVersionId, message.id]);
 
   const visibleAssistantContent =
     assistantVersions[Math.min(activeVersionIndex, Math.max(assistantVersions.length - 1, 0))]
@@ -100,9 +99,8 @@ export function MessageBubble({
     !isUser && !isToolEvent && (processingTrace.length > 0 || isAssistantProcessing);
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: message bubble groups block-level content plus hover affordances; role="group" is the correct ARIA mapping
-    <div
-      role="group"
+    <section
+      aria-label={isUser ? 'Mensagem do usuario' : 'Mensagem da Kloel'}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -364,7 +362,7 @@ export function MessageBubble({
           </>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 

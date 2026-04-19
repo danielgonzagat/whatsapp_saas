@@ -1,4 +1,5 @@
 // PULSE:OK — server-side heartbeat proxy forwards telemetry only; there is no SWR cache key to invalidate in this route.
+import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';
 
@@ -32,9 +33,8 @@ export async function POST(request: NextRequest) {
 
   let lastError: unknown;
 
-  // biome-ignore lint/performance/noAwaitInLoops: PULSE heartbeat failover — first 2xx wins so telemetry is recorded exactly once; parallel fan-out would double-count liveness pings across backends and distort the heartbeat histogram
-  for (const baseUrl of getBackendCandidateUrls()) {
-    const response = await fetch(`${baseUrl}/pulse/live/heartbeat`, {
+  const response = await findFirstSequential(getBackendCandidateUrls(), async (baseUrl) => {
+    const attempt = await fetch(`${baseUrl}/pulse/live/heartbeat`, {
       method: 'POST',
       headers: {
         Authorization: authHeader,
@@ -50,17 +50,21 @@ export async function POST(request: NextRequest) {
       return null;
     });
 
-    if (!response) {
-      continue;
+    if (!attempt) {
+      return null;
     }
 
-    if (response.status === 404 || response.status === 405) {
-      lastError = new Error(`upstream ${response.status} at ${baseUrl}/pulse/live/heartbeat`);
-      continue;
+    if (attempt.status === 404 || attempt.status === 405) {
+      lastError = new Error(`upstream ${attempt.status} at ${baseUrl}/pulse/live/heartbeat`);
+      return null;
     }
 
-    const data = await response.json().catch(() => ({}));
-    return NextResponse.json(data, { status: response.status });
+    const data = await attempt.json().catch(() => ({}));
+    return NextResponse.json(data, { status: attempt.status });
+  });
+
+  if (response) {
+    return response;
   }
 
   console.error('[Pulse Proxy] heartbeat error:', lastError);

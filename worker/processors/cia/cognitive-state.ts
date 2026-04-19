@@ -1,10 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { DemandState } from '../../providers/commercial-intelligence';
-// biome-ignore lint/performance/noNamespaceImport: RX aggregates ~20 regex constants consumed as RX.*_RE — listing all named imports is noisier
-import * as RX from './cognitive-state-patterns';
+import { RX } from './cognitive-state-patterns';
 
-const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const U0300__U036F_RE = /\p{M}/gu;
 const B_MEU_MINHA_MEUS_MINHAS_RE = /\b(meu|minha|meus|minhas|empresa|rotina|cliente|trabalho)\b/gi;
 
 export type CustomerIntent =
@@ -123,6 +122,12 @@ const TRUST_OBJECTION_HINTS = [
 
 const URGENCY_HINTS = ['hoje', 'agora', 'urgente', 'rapido', 'rápido', 'ainda hoje', 'essa semana'];
 
+const REFUND_RISK_HINTS = ['reembolso', 'cancel', 'devolu'];
+const HEALTH_RISK_HINTS = ['medic', 'receita', 'laudo', 'rea'];
+const FAILED_RESOLUTION_HINTS = ['nao resolveu', 'nao resolvi', 'não resolveu', 'não resolvi'];
+const TECHNICAL_STYLE_HINTS = ['como funciona', 'composi', 'tecnic'];
+const DIRECT_STYLE_HINTS = ['preco', 'preço', 'quanto', 'prazo'];
+
 const DESIRE_HINTS: Array<{ keyword: string; tag: string }> = [
   { keyword: 'resultado', tag: 'resultado_rapido' },
   { keyword: 'seguro', tag: 'seguranca' },
@@ -223,14 +228,10 @@ function inferRiskFlags(text: string, intent: CustomerIntent) {
   if (includesAny(text, LEGAL_RISK_HINTS)) {
     riskFlags.push('LEGAL_RISK');
   }
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a WhatsApp message (bounded length, sanitized upstream).
-  if (RX.REEMBOLSO_CANCEL_DEVOLU_RE.test(text)) {
+  if (includesAny(text, REFUND_RISK_HINTS)) {
     riskFlags.push('REFUND_RISK');
   }
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a bounded WhatsApp message string.
-  if (RX.MEDIC_RECEITA_LAUDO_REA_RE.test(text)) {
+  if (includesAny(text, HEALTH_RISK_HINTS)) {
     riskFlags.push('HEALTH_RISK');
   }
   if (intent === 'SUPPORT') {
@@ -289,26 +290,20 @@ function inferCorePain(text: string, objections: string[], desires: string[]) {
   if (objections.includes('timing')) return 'urgencia com receio de demora';
   if (desires.includes('resultado_rapido')) return 'quer resultado perceptivel rapido';
   if (desires.includes('seguranca')) return 'busca seguranca para decidir';
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a bounded WhatsApp message string.
-  if (RX.NAO_RESOLVEU_N_O_RESOLV_RE.test(text)) {
+  if (includesAny(text, FAILED_RESOLUTION_HINTS)) {
     return 'frustracao por tentativas anteriores sem resultado';
   }
   return null;
 }
 
 function inferPreferredStyle(text: string, emotionalTone: string) {
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a bounded WhatsApp message string.
-  if (RX.COMO_FUNCIONA_COMPOSI_T_RE.test(text)) {
+  if (includesAny(text, TECHNICAL_STYLE_HINTS)) {
     return 'technical' as const;
   }
   if (emotionalTone === 'frustrated' || emotionalTone === 'anxious') {
     return 'empathetic' as const;
   }
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: RX.*_RE are module-scope literal regexes with simple alternation only — no nested quantifiers. Input `text` is a bounded WhatsApp message string.
-  if (RX.PRECO_PRE_O_QUANTO_PRAZ_RE.test(text)) {
+  if (includesAny(text, DIRECT_STYLE_HINTS)) {
     return 'direct' as const;
   }
   return 'consultative' as const;

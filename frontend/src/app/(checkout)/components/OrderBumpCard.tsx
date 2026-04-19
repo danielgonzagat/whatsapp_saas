@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
 export interface OrderBumpData {
@@ -44,14 +46,13 @@ export default function OrderBumpCard({
   const borderCol = bump.highlightColor || accentColor;
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: card contains block-level marketing copy and imagery, so native <input type="checkbox"> cannot wrap it; div+role="checkbox" is the correct ARIA mapping
-    <div
+    <button
+      type="button"
       onClick={() => onToggle(bump.id)}
-      role="checkbox"
-      tabIndex={0}
-      aria-checked={checked}
+      aria-pressed={checked}
       aria-label={bump.productName ?? 'Order bump'}
       style={{
+        all: 'unset',
         border: `2px dashed ${checked ? borderCol : `${borderCol}44`}`,
         background: checked ? `${borderCol}08` : cardBg,
         borderRadius: '12px',
@@ -59,17 +60,14 @@ export default function OrderBumpCard({
         marginBottom: '10px',
         cursor: 'pointer',
         transition: 'all 0.2s',
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
-        }
+        display: 'block',
+        boxSizing: 'border-box',
+        width: '100%',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {/* Checkbox */}
-        <div
+        <span
           style={{
             width: '22px',
             height: '22px',
@@ -95,16 +93,16 @@ export default function OrderBumpCard({
               />
             </svg>
           )}
-        </div>
+        </span>
 
         {/* Image */}
         {bump.image && (
-          // biome-ignore lint/performance/noImgElement: merchant-configured bump image URL, no need to optimize via next/image
-          <img
+          <Image
             src={bump.image}
             alt={bump.productName}
             width={44}
             height={44}
+            unoptimized
             style={{
               width: '44px',
               height: '44px',
@@ -116,25 +114,31 @@ export default function OrderBumpCard({
         )}
 
         {/* Text */}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: borderCol, marginBottom: '2px' }}>
+        <span style={{ flex: 1 }}>
+          <span
+            style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: borderCol, marginBottom: '2px' }}
+          >
             {bump.checkboxLabel || 'Sim, eu quero!'}
-          </div>
-          <div style={{ fontSize: '12px', color: mutedColor }}>{bump.description}</div>
-        </div>
+          </span>
+          <span style={{ display: 'block', fontSize: '12px', color: mutedColor }}>
+            {bump.description}
+          </span>
+        </span>
 
         {/* Price */}
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <span style={{ textAlign: 'right', flexShrink: 0 }}>
           {bump.compareAtPrice != null && (
-            <div style={{ fontSize: '11px', color: mutedColor, textDecoration: 'line-through' }}>
+            <span
+              style={{ display: 'block', fontSize: '11px', color: mutedColor, textDecoration: 'line-through' }}
+            >
               {formatBRL(bump.compareAtPrice)}
-            </div>
+            </span>
           )}
-          <div style={{ fontSize: '14px', fontWeight: 700, color: borderCol }}>
+          <span style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: borderCol }}>
             {formatBRL(bump.priceInCents)}
-          </div>
-        </div>
-      </div>
-    </div>
+          </span>
+        </span>
+      </span>
+    </button>
   );
 }

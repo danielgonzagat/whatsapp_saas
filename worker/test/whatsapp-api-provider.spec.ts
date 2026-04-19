@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+function getFetchRequest(fetchMock: ReturnType<typeof vi.fn>) {
+  return fetchMock.mock.calls[0]?.[0] as Request;
+}
+
 describe('whatsappApiProvider', () => {
   const originalEnv = {
     BACKEND_URL: process.env.BACKEND_URL,
@@ -48,12 +52,11 @@ describe('whatsappApiProvider', () => {
     const result = await whatsappApiProvider.getStatus('ws-1');
 
     expect(result.connected).toBe(true);
-    expect(fetchMock).toHaveBeenCalledWith(
+    const request = getFetchRequest(fetchMock);
+    expect(request.url).toBe(
       'https://api.kloel.test/internal/whatsapp-runtime/status?workspaceId=ws-1',
-      expect.objectContaining({
-        method: 'GET',
-      }),
     );
+    expect(request.method).toBe('GET');
   });
 
   it('sends text messages through the backend runtime proxy with the internal key', async () => {
@@ -78,21 +81,18 @@ describe('whatsappApiProvider', () => {
       success: true,
       messageId: 'wamid.123',
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.kloel.test/internal/whatsapp-runtime/send-text',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-          'X-Internal-Key': 'internal-secret',
-        }),
-        body: JSON.stringify({
-          workspaceId: 'ws-1',
-          to: '5511999999999',
-          message: 'Oi',
-          quotedMessageId: 'wamid.quote',
-          externalId: undefined,
-        }),
+    const request = getFetchRequest(fetchMock);
+    expect(request.url).toBe('https://api.kloel.test/internal/whatsapp-runtime/send-text');
+    expect(request.method).toBe('POST');
+    expect(request.headers.get('Content-Type')).toBe('application/json');
+    expect(request.headers.get('X-Internal-Key')).toBe('internal-secret');
+    await expect(request.text()).resolves.toBe(
+      JSON.stringify({
+        workspaceId: 'ws-1',
+        to: '5511999999999',
+        message: 'Oi',
+        quotedMessageId: 'wamid.quote',
+        externalId: undefined,
       }),
     );
   });

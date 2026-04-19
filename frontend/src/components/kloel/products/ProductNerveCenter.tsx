@@ -12,6 +12,7 @@ import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
 import { buildPublicCheckoutEntryUrl, getPrimaryCheckoutLinkForPlan } from '@/lib/checkout-links';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, useMemo, useId } from 'react';
 import { mutate } from 'swr';
@@ -503,7 +504,6 @@ export default function ProductNerveCenter({
     setPlanVisible(selectedPlanObj.vis);
     setPlanError('');
     planConfigInitRef.current = false;
-    // biome-ignore lint/correctness/useExhaustiveDependencies: selectedPlanObj is derived from selPlan+PLANS; tracking its individual fields avoids spurious reruns when the object reference changes without field changes
   }, [
     selectedPlanObj?.id,
     selectedPlanObj?.name,
@@ -515,7 +515,6 @@ export default function ProductNerveCenter({
     currentPlanRaw.shippingPrice,
   ]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only re-run when planCheckoutConfig changes (one-shot init guarded by planConfigInitRef); other reads are latest-value reads, not triggers
   useEffect(() => {
     if (!planCheckoutConfig) return;
     if (planConfigInitRef.current) return;
@@ -557,7 +556,13 @@ export default function ProductNerveCenter({
         planCheckoutConfig.affiliateCustomCommissionPercent ?? p.commissionPercent ?? 30,
       ).replace('.', ','),
     );
-  }, [planCheckoutConfig]);
+  }, [
+    currentPlanRaw?.checkoutConfig?.productImage,
+    currentPlanRaw.shippingPrice,
+    p.commissionPercent,
+    planCheckoutConfig,
+    selectedPlanObj?.freeShip,
+  ]);
 
   useEffect(() => {
     if (planSub !== 'pagamento' || !productId) return;
@@ -1098,10 +1103,10 @@ export default function ProductNerveCenter({
             }}
           >
             {currentImageUrl ? (
-              // biome-ignore lint/performance/noImgElement: user-uploaded/preview image, intrinsic size derived from file, sized by container
-              <img
+              <Image
                 src={currentImageUrl}
                 alt=""
+                unoptimized
                 width={400}
                 height={400}
                 style={{
@@ -2785,10 +2790,12 @@ export default function ProductNerveCenter({
                           }}
                         >
                           {product.coverImage ? (
-                            // biome-ignore lint/correctness/useImageSize: product cover URL is dynamic (merchant-uploaded); size is enforced by the parent container
-                            <img
+                            <Image
                               src={product.coverImage}
                               alt=""
+                              unoptimized
+                              width={192}
+                              height={192}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                           ) : (
@@ -2869,10 +2876,12 @@ export default function ProductNerveCenter({
                             }}
                           >
                             {image ? (
-                              // biome-ignore lint/performance/noImgElement: dynamic product image from user-entered URL; next/image remote loader not configured for arbitrary hosts
-                              <img
+                              <Image
                                 src={image}
                                 alt=""
+                                unoptimized
+                                width={208}
+                                height={208}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               />
                             ) : (

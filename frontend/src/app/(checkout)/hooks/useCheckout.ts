@@ -65,6 +65,11 @@ export interface CouponResult {
   message?: string;
 }
 
+function createCheckoutApiRequest(path: string, init?: RequestInit): Request {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return new Request(`${API_BASE}${normalizedPath}`, init);
+}
+
 /* ─── useOrderStatus ───────────────────────────────────────────────────────── */
 
 export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
@@ -85,9 +90,9 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
 
     const fetchStatus = async () => {
       try {
-        // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-        // Safe: URL is `${API_BASE}/checkout/public/order/${orderId}/status` — API_BASE is a compile-time env constant; `orderId` is an opaque identifier propagated from a previous backend-issued order response, interpolated into a fixed path. No user-controlled host.
-        const res = await fetch(`${API_BASE}/checkout/public/order/${orderId}/status`);
+        const res = await fetch(
+          createCheckoutApiRequest(`/checkout/public/order/${orderId}/status`),
+        );
         if (!res.ok) throw new Error('Erro ao buscar status do pedido');
         const json: OrderStatusData = await res.json();
         setData(json);
@@ -115,13 +120,15 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
 /* ─── createOrder ──────────────────────────────────────────────────────────── */
 
 export async function createOrder(data: CreateOrderData) {
-  const res = await fetch(`${API_BASE}/checkout/public/order`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
+  const res = await fetch(
+    createCheckoutApiRequest('/checkout/public/order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    }),
+  );
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -141,11 +148,13 @@ export async function validateCoupon(
   planId: string,
   orderValue: number,
 ): Promise<CouponResult> {
-  const res = await fetch(`${API_BASE}/checkout/public/validate-coupon`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workspaceId, code, planId, orderValue }),
-  });
+  const res = await fetch(
+    createCheckoutApiRequest('/checkout/public/validate-coupon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workspaceId, code, planId, orderValue }),
+    }),
+  );
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -158,12 +167,12 @@ export async function validateCoupon(
 /* ─── acceptUpsell / declineUpsell ─────────────────────────────────────────── */
 
 export async function acceptUpsell(orderId: string, upsellId: string) {
-  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-  // Safe: URL base is compile-time API_BASE; orderId/upsellId are opaque backend-issued identifiers interpolated into a fixed path template. No user-controlled host.
-  const res = await fetch(`${API_BASE}/checkout/public/upsell/${orderId}/accept/${upsellId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const res = await fetch(
+    createCheckoutApiRequest(`/checkout/public/upsell/${orderId}/accept/${upsellId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  );
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -174,12 +183,12 @@ export async function acceptUpsell(orderId: string, upsellId: string) {
 }
 
 export async function declineUpsell(orderId: string, upsellId: string) {
-  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-  // Safe: URL base is compile-time API_BASE; orderId/upsellId are opaque backend-issued identifiers interpolated into a fixed path template. No user-controlled host.
-  const res = await fetch(`${API_BASE}/checkout/public/upsell/${orderId}/decline/${upsellId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const res = await fetch(
+    createCheckoutApiRequest(`/checkout/public/upsell/${orderId}/decline/${upsellId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  );
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

@@ -6,6 +6,7 @@ import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { tokenStorage } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
+import { readStreamSequential } from '@/lib/async-sequence';
 import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
@@ -203,7 +204,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // ─── Auto-scroll during typing ───
-  // biome-ignore lint/correctness/useExhaustiveDependencies: displayedText change is the intentional trigger to scroll each new character into view; ref is read imperatively
   useEffect(() => {
     if (isTyping && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -302,11 +302,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
           const decoder = new TextDecoder();
 
-          // biome-ignore lint/performance/noAwaitInLoops: HomeScreen SSE stream — each reader.read() chunk must decode and render to the message state before the next read so user-visible tokens arrive in order; parallel reads would interleave data: frames mid-JSON
-          for (;;) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
+          await readStreamSequential(() => reader.read(), async ({ value }) => {
             const chunk = decoder.decode(value, { stream: true });
             const lines = chunk.split('\n');
 
@@ -324,7 +320,8 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 fullContent += update.contentDelta;
               }
             }
-          }
+            return false;
+          });
         } else {
           const response = await sendAuthenticatedKloelMessage({
             message: messageText,
@@ -553,7 +550,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   }, [conversationTitleMap, setActiveConversation]);
 
   // ─── Auto-scroll on new messages ───
-  // biome-ignore lint/correctness/useExhaustiveDependencies: messages.length change is the intentional trigger to auto-scroll; ref is read imperatively
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -1067,9 +1063,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             padding: '12px 0 16px',
           }}
         >
-          {/* biome-ignore lint/a11y/useSemanticElements: a native <search> element lacks broad support; role="search" is the recommended fallback for a custom composite search bar */}
-          <div
-            role="search"
+          <form
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -1089,6 +1083,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               const el = e.currentTarget;
               el.style.borderColor = '#222226';
               el.style.boxShadow = 'none';
+            }}
+            onSubmit={(event) => {
+              event.preventDefault();
             }}
           >
             {/* Paperclip */}
@@ -1190,7 +1187,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 <SendIcon size={12} />
               </button>
             )}
-          </div>
+          </form>
         </div>
       </div>
     </div>

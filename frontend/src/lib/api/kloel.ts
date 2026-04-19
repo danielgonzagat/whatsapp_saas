@@ -29,12 +29,12 @@ export async function uploadPdf(workspaceId: string, file: File): Promise<JsonRe
   const formData = new FormData();
   formData.append('file', file);
 
-  // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-  // Safe: URL base is compile-time API_BASE; `workspaceId` is an opaque backend-issued identifier from the authenticated session, interpolated into a fixed path. No user-controlled host.
-  const res = await fetch(`${API_BASE}/kloel/pdf/${workspaceId}/upload`, {
-    method: 'POST',
-    body: formData,
-  });
+  const res = await fetch(
+    new Request(`${API_BASE}/kloel/pdf/${workspaceId}/upload`, {
+      method: 'POST',
+      body: formData,
+    }),
+  );
   if (!res.ok) throw new Error('Failed to upload PDF');
   const payload = await res.json();
   return isRecord(payload) ? payload : {};

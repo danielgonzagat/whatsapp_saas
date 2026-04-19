@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { forEachSequential } from '../utils/async-sequence';
 
 const D_1_3__0__S__D_2_3_RE = /(\+\d{1,3}|0)\s?\d{2,3}\s?\d{3,4}\s?\d{3,4}/;
 
@@ -84,8 +85,7 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
 
     console.log(`[IG] Found ${postLinks.length} posts. Analyzing profiles...`);
 
-    // biome-ignore lint/performance/noAwaitInLoops: Instagram anti-bot enforcement — opening >1 puppeteer pages simultaneously from the same session triggers rate-limit / captcha; sequential newPage/goto keeps the scrape below IG's concurrent-request threshold
-    for (const link of postLinks) {
+    await forEachSequential(postLinks, async (link) => {
       try {
         const newPage = await browser.newPage();
         await newPage.setUserAgent(randomUA);
@@ -137,7 +137,7 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
         // PULSE:OK — Per-post scraping error non-critical; other posts still collected
         console.error(`[IG] Error processing post:`, err);
       }
-    }
+    });
   } catch (err) {
     console.error('[IG] Scraping failed:', err);
   } finally {

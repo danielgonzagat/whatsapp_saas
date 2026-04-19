@@ -2,9 +2,11 @@
 // reduce the host component's cyclomatic complexity. Behaviour matches the
 // original branch-by-branch table exactly; no visual delta is introduced.
 
-const PATTERN_RE = /[.,!?]/;
+const PAUSE_MARKS = new Set(['.', ',', '!', '?']);
 
 export type TypewriterMode = 'type' | 'delete';
+
+type ContinueWhile = () => boolean;
 
 export function delayForTypewriter(
   character: string,
@@ -14,10 +16,7 @@ export function delayForTypewriter(
 ): number {
   const prev = phrase[index - 1] ?? '';
   const next = phrase[index + 1] ?? '';
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: PATTERN_RE is a module-scope literal /[.,!?]/ char-class regex; `character` is a single
-  // character from a hardcoded phrase used for typewriter animation. No user input, no nested quantifiers.
-  const isPauseMark = PATTERN_RE.test(character);
+  const isPauseMark = PAUSE_MARKS.has(character);
 
   if (mode === 'delete') {
     if (index === phrase.length - 1) return 190 + Math.random() * 90;
@@ -33,4 +32,34 @@ export function delayForTypewriter(
   if (prev === ' ') return 102 + Math.random() * 74;
   if (next === ' ') return 88 + Math.random() * 54;
   return 72 + Math.random() * 72;
+}
+
+export async function runSequentialRange(
+  start: number,
+  end: number,
+  step: number,
+  callback: (index: number) => Promise<void> | void,
+  continueWhile: ContinueWhile = () => true,
+): Promise<void> {
+  const withinBounds = step >= 0 ? start <= end : start >= end;
+  if (!withinBounds || !continueWhile()) {
+    return;
+  }
+
+  await callback(start);
+  await runSequentialRange(start + step, end, step, callback, continueWhile);
+}
+
+export async function runSequentialList<T>(
+  items: readonly T[],
+  callback: (item: T, index: number) => Promise<void> | void,
+  continueWhile: ContinueWhile = () => true,
+  index = 0,
+): Promise<void> {
+  if (index >= items.length || !continueWhile()) {
+    return;
+  }
+
+  await callback(items[index], index);
+  await runSequentialList(items, callback, continueWhile, index + 1);
 }

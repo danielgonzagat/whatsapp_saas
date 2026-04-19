@@ -12,8 +12,7 @@
  * `new Redis(...)` keep working.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const IoRedisMock = require('ioredis-mock');
+import IoRedisMock from 'ioredis-mock';
 
 export default IoRedisMock;
 export type Redis = InstanceType<typeof IoRedisMock>;

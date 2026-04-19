@@ -435,7 +435,6 @@ function CheckoutConfigPanel({
     updateConfig: saveCkCfg,
     isLoading: ckLoading,
   } = useCheckoutConfig(ckEdit);
-  // biome-ignore lint/suspicious/noExplicitAny: checkout config has dynamic fields from API
   const [ckLocal, setCkLocal] = useState<JsonRecord>({});
   const [ckSaving, setCkSaving] = useState(false);
   const [ckSaved, setCkSaved] = useState(false);

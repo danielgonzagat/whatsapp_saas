@@ -87,17 +87,12 @@ export async function callOpenAIWithRetry<T>(
   options?: RetryOptions,
 ): Promise<T> {
   const opts = { ...DEFAULT_RETRY_OPTIONS, ...options };
-  let lastError: unknown;
-
-  // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff
-  for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
+  const run = async (attempt: number): Promise<T> => {
     try {
-      // biome-ignore lint/performance/noAwaitInLoops: retry loop for OpenAI with exponential backoff on rate limit errors
       return await fn();
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      lastError = err;
 
       if (!isRetryableError(err)) {
         if (!isTestEnv) {
@@ -127,10 +122,11 @@ export async function callOpenAIWithRetry<T>(
       }
 
       await new Promise((resolve) => setTimeout(resolve, delay));
+      return run(attempt + 1);
     }
-  }
+  };
 
-  throw lastError;
+  return run(0);
 }
 
 /**

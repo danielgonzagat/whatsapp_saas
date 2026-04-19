@@ -1,4 +1,5 @@
 import { type Job, Worker } from 'bullmq';
+import { forEachSequential } from '../utils/async-sequence';
 import { prisma } from '../db';
 import { FlowEngineGlobal } from '../flow-engine-global';
 import { WorkerLogger } from '../logger';
@@ -63,17 +64,15 @@ async function checkInactivity(workspaceId: string) {
     take: 50, // Batch process
   });
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential lead processing
-  for (const lead of leads) {
+  await forEachSequential(leads, async (lead) => {
     // Check if we already nudged recently (custom field or tag)
     const hasNudged = (lead.customFields as Record<string, unknown> | null)?.last_nudge_at;
-    if (hasNudged && new Date(String(hasNudged)) > twoHoursAgo) continue;
+    if (hasNudged && new Date(String(hasNudged)) > twoHoursAgo) return;
 
     log.info('ghost_closer_trigger', { phone: lead.phone });
 
     // Trigger Nudge Flow
     // Ideally, we should have a configured "Nudge Flow ID" in workspace settings
-    // biome-ignore lint/performance/noAwaitInLoops: per-lead lookup avoids re-reading workspace settings before deciding whether to enqueue; parallelizing would duplicate writes in the same tick
     const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
     const nudgeFlowId = (workspace?.providerSettings as Record<string, unknown> | null)
       ?.nudgeFlowId as string | undefined;
@@ -114,5 +113,5 @@ async function checkInactivity(workspaceId: string) {
         });
       }
     }
-  }
+  });
 }

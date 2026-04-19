@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { InboxService } from '../inbox/inbox.service';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
@@ -397,14 +398,19 @@ export class InboundProcessorService {
     const cached = await this.redis.get(cacheKey);
     if (cached && cached !== 'processing') return cached;
     if (cached === 'processing') {
-      // biome-ignore lint/performance/noAwaitInLoops: retry loop for upsert race condition
-      for (let attempt = 0; attempt < 3; attempt++) {
-        // biome-ignore lint/performance/noAwaitInLoops: sleep between batches enforces WhatsApp provider rate limit
+      const waitForResolvedDuplicate = async (attempt: number): Promise<string | null> => {
+        if (attempt >= 3) return null;
         await this.sleep(150);
         const refreshed = await this.redis.get(cacheKey);
         if (refreshed && refreshed !== 'processing') {
           return refreshed;
         }
+        return waitForResolvedDuplicate(attempt + 1);
+      };
+
+      const resolvedDuplicate = await waitForResolvedDuplicate(0);
+      if (resolvedDuplicate) {
+        return resolvedDuplicate;
       }
     }
 
@@ -846,11 +852,8 @@ export class InboundProcessorService {
         ],
       });
 
-      // biome-ignore lint/performance/noAwaitInLoops: WhatsApp reply plan requires sequential delivery
-      for (let index = 0; index < replyPlan.length; index += 1) {
-        const plan = replyPlan[index];
+      await forEachSequential(replyPlan, async (plan, index) => {
         // messageLimit: enforced via PlanLimitsService.trackMessageSend
-        // biome-ignore lint/performance/noAwaitInLoops: WhatsApp sendMessage must be sequential per chat for delivery ordering
         const sendResult = await this.whatsappService.sendMessage(
           input.workspaceId,
           input.phone,
@@ -869,7 +872,7 @@ export class InboundProcessorService {
           );
           return;
         }
-      }
+      });
 
       keepReplyLock = true;
     } finally {

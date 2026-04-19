@@ -19,7 +19,6 @@ import { createRedisClient } from '../common/redis/redis.util';
   },
 })
 export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
-  /* eslint-disable @typescript-eslint/no-floating-promises */
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('FlowsGateway');
 
@@ -75,7 +74,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
         client.disconnect(true);
         return;
       }
-      client.join(`workspace:${workspaceId}`);
+      void client.join(`workspace:${workspaceId}`);
       this.logger.log(`Client connected: ${client.id} to workspace:${workspaceId}`);
     } catch (err) {
       this.logger.warn(`Client ${client.id} disconnected: invalid token (${err?.message || err})`);

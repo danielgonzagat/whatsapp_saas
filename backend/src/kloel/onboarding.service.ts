@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -146,9 +147,7 @@ export class OnboardingService {
   }
 
   private async finalize(workspaceId: string, data: Record<string, string>): Promise<void> {
-    // biome-ignore lint/performance/noAwaitInLoops: sequential workspace settings update
-    for (const [key, value] of Object.entries(data)) {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential per-step memory persistence in onboarding wizard
+    await forEachSequential(Object.entries(data), async ([key, value]) => {
       await this.prisma.kloelMemory
         .create({
           data: {
@@ -159,7 +158,7 @@ export class OnboardingService {
           },
         })
         .catch((err) => this.logger.warn('Failed to save onboarding memory', err.message));
-    }
+    });
     this.logger.log(`Onboarding finalizado para ${workspaceId}`);
   }
 }

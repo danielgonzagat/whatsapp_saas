@@ -8,6 +8,7 @@ import type {
   PublicCheckoutMerchantInfo,
   PublicCheckoutThemeProps,
 } from '@/lib/public-checkout-contract';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { type CreateOrderData, createOrder, validateCoupon } from './useCheckout';
@@ -157,12 +158,17 @@ function useResetCouponOnQtyChange(
   setCouponApplied: (v: boolean) => void,
   setDiscount: (v: number) => void,
 ): void {
-  // biome-ignore lint/correctness/useExhaustiveDependencies: qty change is the intentional trigger to drop any applied coupon; couponApplied is read as latest value inside the effect
+  const couponAppliedRef = useRef(couponApplied);
+
   useEffect(() => {
-    if (!couponApplied) return;
+    couponAppliedRef.current = couponApplied;
+  }, [couponApplied]);
+
+  useEffect(() => {
+    if (!couponAppliedRef.current) return;
     setCouponApplied(false);
     setDiscount(0);
-  }, [qty]);
+  }, [qty, setCouponApplied, setDiscount]);
 }
 
 type VariableShippingParams = {
@@ -337,6 +343,7 @@ export function useCheckoutExperience({
   defaults,
   helpers,
 }: UseCheckoutExperienceOptions) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [couponCode, setCouponCode] = useState('');
@@ -744,17 +751,13 @@ export function useCheckoutExperience({
         setSuccessOrderNumber(String(result?.orderNumber || resultData?.orderNumber || ''));
         setShowSuccess(true);
         redirectTimer.current = window.setTimeout(() => {
-          // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
-          // Safe: successPath is a relative /order/:id/* path built by resolveSuccessRedirect.
-          window.location.href = successPath;
+          router.push(successPath);
         }, 1200);
         return;
       }
-      // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
-      // Safe: successPath is a relative /order/:id/* path built by resolveSuccessRedirect.
-      window.location.href = successPath;
+      router.push(successPath);
     },
-    [payMethod],
+    [payMethod, router],
   );
 
   const runPreflightForFinalize = useCallback((): PreflightOutcome => {

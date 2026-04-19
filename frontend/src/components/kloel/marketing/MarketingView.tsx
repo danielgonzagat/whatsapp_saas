@@ -28,6 +28,33 @@ const BG_CARD = KLOEL_THEME.bgCard;
 const BG_ELEVATED = KLOEL_THEME.bgSecondary;
 const BORDER = KLOEL_THEME.borderPrimary;
 const EMBER = KLOEL_THEME.accent;
+const META_OAUTH_HOSTS = new Set([
+  'facebook.com',
+  'www.facebook.com',
+  'business.facebook.com',
+  'instagram.com',
+  'www.instagram.com',
+  'api.instagram.com',
+]);
+
+function navigateCurrentWindow(url: string) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function isTrustedMetaOauthUrl(value: string): boolean {
+  try {
+    const target = new URL(value);
+    return target.protocol === 'https:' && META_OAUTH_HOSTS.has(target.hostname);
+  } catch {
+    return false;
+  }
+}
 
 // ── Icons (SVG arrow functions) ──
 const IC: Record<string, (s: number) => React.ReactElement> = {
@@ -2084,18 +2111,10 @@ function ChannelNerveRow({ channelKey, cfg, data, isMobile, onOpen }: ChannelNer
   const isLive = data?.status === 'live';
   const intensity = data?.sales ?? 0;
   return (
-    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
-    <div
+    <button
+      type="button"
       onClick={() => onOpen(channelKey)}
-      role="button"
-      tabIndex={0}
       aria-label={`Abrir canal ${cfg.label ?? channelKey}`}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
-        }
-      }}
       style={{
         position: 'relative',
         display: 'flex',
@@ -2150,7 +2169,7 @@ function ChannelNerveRow({ channelKey, cfg, data, isMobile, onOpen }: ChannelNer
         <span style={{ color: cfg.color }}>{intensity} vendas</span>
       </div>
       <NP w={160} h={28} color={cfg.color} />
-    </div>
+    </button>
   );
 }
 
@@ -2574,10 +2593,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
         );
         const url = String(res?.data?.url || '').trim();
         if (!url) throw new Error('Nao foi possivel iniciar a conexao oficial da Meta.');
-        // nosemgrep: javascript.browser.security.open-redirect-from-function.js-open-redirect-from-function
-        // Safe: url is a Meta OAuth URL returned by our own /meta/auth/url backend endpoint;
-        // channelKey is a 3-value union ('whatsapp' | 'instagram' | 'facebook') and not user-controlled.
-        window.location.href = url;
+        if (!isTrustedMetaOauthUrl(url)) {
+          throw new Error('Redirecionamento bloqueado: destino Meta invalido.');
+        }
+        navigateCurrentWindow(url);
       } catch (error: unknown) {
         setConnectingKey(null);
         setConnectionMessage(error instanceof Error ? error.message : 'Falha ao abrir a Meta.');

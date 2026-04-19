@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
 import { resolveWorkerOpenAIModel } from './openai-models';
+import { forEachSequential } from '../utils/async-sequence';
 
 const prisma = new PrismaClient();
 
@@ -59,8 +60,7 @@ export class SemanticMemory {
       });
     }
 
-    // biome-ignore lint/performance/noAwaitInLoops: OpenAI embeddings + Prisma create chain per fact — parallel fan-out would both blow OpenAI TPM limits and race two writers on the same KnowledgeBase row; each fact needs its preceding write committed
-    for (const fact of facts) {
+    await forEachSequential(facts, async (fact) => {
       // Generate Embedding
       const embeddingResponse = await this.openai.embeddings.create({
         model: 'text-embedding-3-small',
@@ -92,7 +92,7 @@ export class SemanticMemory {
             INSERT INTO "Vector" ("id", "content", "embedding", "sourceId")
             VALUES (gen_random_uuid(), ${fact}, ${vectorStr}::vector, ${source.id});
         `;
-    }
+    });
   }
 
   /**

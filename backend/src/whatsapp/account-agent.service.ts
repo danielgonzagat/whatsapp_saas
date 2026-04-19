@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
@@ -1156,22 +1157,23 @@ export class AccountAgentService {
     });
     const existingUrls = new Set(existingLinks.map((item) => item.paymentUrl));
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential offer creation with unique constraints
-    for (const offer of offers.filter((item) => item.url && !existingUrls.has(String(item.url)))) {
+    await forEachSequential(
+      offers.filter((item) => item.url && !existingUrls.has(String(item.url))),
+      async (offer) => {
       // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
-      // biome-ignore lint/performance/noAwaitInLoops: per-plan externalPaymentLink create must be sequential for idempotency key uniqueness
-      await this.prisma.externalPaymentLink.create({
-        data: {
-          workspaceId,
-          platform: 'other',
-          productName: session.productName,
-          price: offer.price || prices[0] || 0,
-          paymentUrl: offer.url,
-          checkoutUrl: offer.url,
-          isActive: true,
-        },
-      });
-    }
+        await this.prisma.externalPaymentLink.create({
+          data: {
+            workspaceId,
+            platform: 'other',
+            productName: session.productName,
+            price: offer.price || prices[0] || 0,
+            paymentUrl: offer.url,
+            checkoutUrl: offer.url,
+            isActive: true,
+          },
+        });
+      },
+    );
 
     this.logger.log(
       `Account agent materialized product ${session.productName} (${product.id}) for workspace ${workspaceId}`,

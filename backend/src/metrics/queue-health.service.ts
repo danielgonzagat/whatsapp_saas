@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 // Queue health service only reads queue state — no jobs enqueued, deduplication not applicable.
 import { Queue } from 'bullmq';
+import { forEachSequential } from '../common/async-sequence';
 import {
   autopilotQueue,
   campaignQueue,
@@ -49,14 +50,12 @@ export class QueueHealthService {
   async getQueuesStatus(): Promise<QueueSummary[]> {
     const results: QueueSummary[] = [];
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential queue metrics collection with DLQ creation
-    for (const queue of this.queues) {
+    await forEachSequential(this.queues, async (queue) => {
       // IMPORTANTE: usar queueOptions com connection explícita, não queue.opts
       const dlq = new Queue(`${queue.name}-dlq`, {
         ...queueOptions,
         connection,
       });
-      // biome-ignore lint/performance/noAwaitInLoops: queue metrics aggregated with internal Promise.all; outer loop iterates queue names
       const [mainCounts, dlqCounts] = await Promise.all([
         queue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
         dlq.getJobCounts('waiting', 'active', 'delayed', 'failed'),
@@ -68,7 +67,7 @@ export class QueueHealthService {
         dlq: dlqCounts,
         threshold: this.threshold,
       });
-    }
+    });
 
     return results;
   }

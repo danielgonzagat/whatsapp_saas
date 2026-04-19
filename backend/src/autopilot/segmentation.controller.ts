@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PRESET_SEGMENTS, SegmentCriteria, SegmentationService } from './segmentation.service';
 
@@ -116,16 +117,14 @@ export class SegmentationController {
     const presets = this.segmentationService.getAvailablePresets();
     const stats: Record<string, number> = {};
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential preset creation with unique constraints
-    for (const preset of presets) {
-      // biome-ignore lint/performance/noAwaitInLoops: iterate preset segments sequentially to preserve response ordering
+    await forEachSequential(presets, async (preset) => {
       const result = await this.segmentationService.getPresetSegment(
         workspaceId,
         preset.name as keyof typeof PRESET_SEGMENTS,
         { limit: 10000 },
       );
       stats[preset.name] = result.total;
-    }
+    });
 
     return {
       workspaceId,

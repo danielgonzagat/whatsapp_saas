@@ -1,6 +1,7 @@
 import { Queue } from 'bullmq';
 import { queueOptions, queueRegistry } from './queue';
 import { redis } from './redis-client';
+import { forEachSequential } from './utils/async-sequence';
 
 const OPS_WEBHOOK =
   process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || process.env.AUTOPILOT_ALERT_WEBHOOK;
@@ -60,8 +61,7 @@ async function healQueue(dlqName: string, originalQueueName: string) {
     'Connection terminated',
   ];
 
-  // biome-ignore lint/performance/noAwaitInLoops: sequential job processing
-  for (const job of jobs) {
+  await forEachSequential(jobs, async (job) => {
     const reason = (job.data?.failedReason || job.failedReason || '').toLowerCase();
     const isTransient = TRANSIENT_ERRORS.some((err) => reason.includes(err.toLowerCase()));
 
@@ -73,11 +73,10 @@ async function healQueue(dlqName: string, originalQueueName: string) {
     if (isTransient) {
       // Limit re-heal attempts to prevent infinite loops
       const reHealKey = `dlq:reheal:${job.id}`;
-      // biome-ignore lint/performance/noAwaitInLoops: re-heal counter must be read and incremented atomically per job before deciding whether to retry
       const reHealCount = Number.parseInt((await redis.get(reHealKey)) || '0', 10);
       if (reHealCount >= 3) {
         console.warn(`[Self-Healing] Job ${job.id} re-healed 3 times, permanently dead — skipping`);
-        continue;
+        return;
       }
       await redis.set(reHealKey, String(reHealCount + 1), 'EX', 86400); // 24h TTL
 
@@ -94,7 +93,7 @@ async function healQueue(dlqName: string, originalQueueName: string) {
       // Remove from DLQ
       await job.remove();
     }
-  }
+  });
 }
 
 async function checkDlqs() {
@@ -102,13 +101,12 @@ async function checkDlqs() {
   // Importing queueRegistry as 'any' to bypass potential type strictness on iteration if it's an array
   const queues = queueRegistry as Array<{ name: string }>;
 
-  for (const queue of queues) {
+  await forEachSequential(queues, async (queue) => {
     const name = queue.name; // e.g. 'flow-jobs'
     const dlqName = `${name}-dlq`;
 
     try {
       // 1. Attempt Self-Healing first
-      // biome-ignore lint/performance/noAwaitInLoops: healQueue mutates Redis state per queue; parallel heals race and double-rescue the same jobs
       await healQueue(dlqName, name);
 
       // 2. Monitor leftovers
@@ -126,7 +124,7 @@ async function checkDlqs() {
       // PULSE:OK — DLQ heal failure is non-critical; other queues still checked
       console.warn('[DLQ Monitor] error checking/healing', dlqName, errInstanceofError?.message);
     }
-  }
+  });
 }
 
 const dlqMonitorInterval = setInterval(checkDlqs, INTERVAL);

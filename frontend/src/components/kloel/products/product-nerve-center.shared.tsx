@@ -540,11 +540,7 @@ export function Modal({
   const { isMobile } = useResponsiveViewport();
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: block-level content, div+role retained
     <div
-      role="button"
-      tabIndex={0}
-      aria-label={`Fechar ${title}`}
       style={{
         position: 'fixed',
         inset: 0,
@@ -556,15 +552,13 @@ export function Modal({
         justifyContent: 'center',
         padding: isMobile ? 12 : 20,
       }}
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
-        }
-      }}
     >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
+      <button
+        type="button"
+        aria-label={`Fechar ${title}`}
+        onClick={onClose}
+        style={{ position: 'absolute', inset: 0, background: 'transparent', border: 'none' }}
+      />
       <div
         onClick={(event) => event.stopPropagation()}
         style={{
@@ -576,12 +570,8 @@ export function Modal({
           width: '100%',
           maxHeight: isMobile ? '88vh' : '85vh',
           overflowY: 'auto',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>

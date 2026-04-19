@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { forEachSequential } from '../common/async-sequence';
 import { escapeHtml } from '../common/utils/html-escape.util';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import { FacebookCAPIService } from './facebook-capi.service';
@@ -82,10 +83,8 @@ export class CheckoutPostPaymentEffectsService {
           Boolean(pixel.accessToken),
       );
 
-      // biome-ignore lint/performance/noAwaitInLoops: sequential Facebook CAPI event sending
-      for (const pixel of fbPixels) {
-        if (!pixel.pixelId || !pixel.accessToken) continue;
-        // biome-ignore lint/performance/noAwaitInLoops: Facebook CAPI events must preserve per-order ordering for attribution
+      await forEachSequential(fbPixels, async (pixel) => {
+        if (!pixel.pixelId || !pixel.accessToken) return;
         await this.facebookCAPI.sendEvent({
           pixelId: pixel.pixelId,
           accessToken: pixel.accessToken,
@@ -98,7 +97,7 @@ export class CheckoutPostPaymentEffectsService {
           ip: order.ipAddress || undefined,
           userAgent: order.userAgent || undefined,
         });
-      }
+      });
     } catch (error) {
       this.logger.error(`Facebook CAPI lookup error: ${error}`);
     }

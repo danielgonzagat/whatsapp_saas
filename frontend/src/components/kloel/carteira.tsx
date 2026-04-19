@@ -17,7 +17,7 @@ import {
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
 import { usePathname, useRouter } from 'next/navigation';
-import { startTransition, useEffect, useState, useId } from 'react';
+import { startTransition, useCallback, useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 
 const PATTERN_RE = /"/g;
@@ -443,6 +443,12 @@ function WithdrawModal({
   const [withdrawError, setWithdrawError] = useState('');
   const [selectedBank, setSelectedBank] = useState(0);
   const { accounts: rawAccounts } = useBankAccounts();
+  const withdrawInputRef = useCallback((element: HTMLInputElement | null) => {
+    if (!element) return;
+    requestAnimationFrame(() => {
+      element.focus();
+    });
+  }, []);
 
   const bankAccounts = (rawAccounts as unknown as RawBankAccount[]).map((a) => ({
     bank: a.bankName || a.bank || a.name || 'Conta',
@@ -521,7 +527,6 @@ function WithdrawModal({
         }
       }}
     >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
@@ -530,12 +535,6 @@ function WithdrawModal({
           borderRadius: 6,
           width: 440,
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
         }}
       >
         <div
@@ -629,8 +628,7 @@ function WithdrawModal({
                 value={withdrawAmount}
                 onChange={(e) => onWithdrawAmountChange(e.target.value)}
                 placeholder="0,00"
-                // biome-ignore lint/a11y/noAutofocus: intentional for primary input
-                autoFocus
+                ref={withdrawInputRef}
                 style={{
                   flex: 1,
                   background: 'none',
@@ -821,7 +819,6 @@ function AntecipateModal({
         }
       }}
     >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: onClick and onKeyDown exist solely to stop propagation on the modal body; it is not itself interactive */}
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
@@ -830,12 +827,6 @@ function AntecipateModal({
           borderRadius: 6,
           width: 440,
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
         }}
       >
         <div
@@ -1582,10 +1573,8 @@ function TabExtrato({
           filtered.map((t, i) => {
             const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale;
             return (
-              // biome-ignore lint/a11y/useSemanticElements: grid-based transactions layout needs role="row" without table semantics; native <tr> requires <table> ancestry not used here
               <div
                 key={t.id}
-                role="row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: isMobile ? '1fr' : '36px 2fr 0.8fr 0.6fr 1fr 0.6fr',

@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
@@ -47,18 +48,16 @@ export class FollowUpService {
       : [];
     const contactsMap = new Map(contactsList.map((c) => [`${c.workspaceId}:${c.id}`, c]));
 
-    // biome-ignore lint/performance/noAwaitInLoops: sequential follow-up execution with rate limiting
-    for (const followUp of due) {
+    await forEachSequential(due, async (followUp) => {
       try {
         const contact = contactsMap.get(`${followUp.workspaceId}:${followUp.contactId}`) ?? null;
 
         if (!contact?.phone) {
-          // biome-ignore lint/performance/noAwaitInLoops: per-followup update must respect sequential scheduling state transitions
           await this.update(followUp.workspaceId, followUp.id, {
             status: 'cancelled',
             reason: 'contact_phone_missing',
           });
-          continue;
+          return;
         }
 
         await autopilotQueue.add(
@@ -85,7 +84,7 @@ export class FollowUpService {
           `Failed to dispatch follow-up ${followUp.id}: ${error instanceof Error ? error.message : 'unknown error'}`,
         );
       }
-    }
+    });
   }
 
   /**

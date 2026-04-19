@@ -1,5 +1,6 @@
 import { prisma } from '../db';
 import { flowQueue } from '../queue';
+import { forEachSequential } from '../utils/async-sequence';
 
 /**
  * Dispara um fluxo automaticamente após scraping, se configurado no workspace.
@@ -23,10 +24,9 @@ export async function triggerFlowForScrapedLeads(
   const flow = await prisma.flow.findFirst({ where: { id: resolvedFlowId, workspaceId } });
   if (!flow) return;
 
-  // biome-ignore lint/performance/noAwaitInLoops: per-contact flow dispatch — each iteration does a workspace-isolation check (contact.workspaceId !== workspaceId) then adds to BullMQ; sequential bounds Redis connection pressure and preserves the dispatch order used by downstream flow scheduling metrics
-  for (const contactId of contactIds) {
+  await forEachSequential(contactIds, async (contactId) => {
     const contact = await prisma.contact.findUnique({ where: { id: contactId } });
-    if (!contact?.phone || contact.workspaceId !== workspaceId) continue;
+    if (!contact?.phone || contact.workspaceId !== workspaceId) return;
 
     await flowQueue.add('run-flow', {
       flowId: resolvedFlowId,
@@ -36,5 +36,5 @@ export async function triggerFlowForScrapedLeads(
       workspaceId,
       workspace: null,
     });
-  }
+  });
 }
