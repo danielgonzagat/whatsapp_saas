@@ -23,18 +23,18 @@ import {
   type AdminHomePeriod,
   type ResolvedAdminHomeRange,
 } from './range.util';
+import {
+  computeApprovalRate,
+  computeAverageTicket,
+  deltaPct,
+  makeMoneyKpi,
+  makeNumberKpi,
+  normalizeRecurringAmountToMonthlyCents,
+  type KpiMoneyValue,
+  type KpiNumberValue,
+} from './kpi-math.util';
 
-export interface KpiMoneyValue {
-  value: number;
-  previous: number | null;
-  deltaPct: number | null;
-}
-
-export interface KpiNumberValue {
-  value: number;
-  previous: number | null;
-  deltaPct: number | null;
-}
+export type { KpiMoneyValue, KpiNumberValue };
 
 export interface KpiRateValue {
   value: number | null;
@@ -94,46 +94,6 @@ interface Snapshot {
   churnRate: number | null;
   conversationCount: number;
   responseTimeMinutes: number | null;
-}
-
-function deltaPctFromZeroBaseline(curr: number): number | null {
-  return curr === 0 ? 0 : null;
-}
-
-function deltaPct(curr: number, prev: number | null): number | null {
-  if (prev === null) return null;
-  if (prev === 0) return deltaPctFromZeroBaseline(curr);
-  return ((curr - prev) / prev) * 100;
-}
-
-function makeMoneyKpi(curr: number, prev: number | null): KpiMoneyValue {
-  return { value: curr, previous: prev, deltaPct: deltaPct(curr, prev) };
-}
-
-function makeNumberKpi(curr: number, prev: number | null): KpiNumberValue {
-  return { value: curr, previous: prev, deltaPct: deltaPct(curr, prev) };
-}
-
-function computeApprovalRate(approved: number, declined: number): number | null {
-  const denom = approved + declined;
-  if (denom === 0) return null;
-  return approved / denom;
-}
-
-function computeAverageTicket(gmvInCents: number, approvedCount: number): number {
-  if (approvedCount === 0) return 0;
-  return Math.round(gmvInCents / approvedCount);
-}
-
-function normalizeRecurringAmountToMonthlyCents(amount: number, interval: string): number {
-  const cents = Math.round(amount * 100);
-  const normalized = interval.toUpperCase();
-  if (normalized === 'YEARLY' || normalized === 'ANNUAL') return Math.round(cents / 12);
-  if (normalized === 'WEEKLY') return Math.round(cents * 4.345);
-  if (normalized === 'DAILY') return Math.round(cents * 30.4375);
-  if (normalized === 'QUARTERLY') return Math.round(cents / 3);
-  if (normalized === 'SEMIANNUAL') return Math.round(cents / 6);
-  return cents;
 }
 
 @Injectable()

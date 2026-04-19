@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { computeGrowthRate, computeHealthScore } from './admin-clients.metrics';
 
 export interface AdminClientRow {
   workspaceId: string;
@@ -36,33 +37,6 @@ const DEFAULT_TAKE = 50;
 const MAX_TAKE = 100;
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
-
-function growthRateWhenNoPreviousBaseline(current: number): number | null {
-  return current > 0 ? null : 0;
-}
-
-function computeGrowthRate(current: number, previous: number): number | null {
-  if (previous <= 0) return growthRateWhenNoPreviousBaseline(current);
-  return (current - previous) / previous;
-}
-
-function computeHealthScore(input: {
-  gmvLast30dInCents: number;
-  previousGmvLast30dInCents: number;
-  lastSaleAt: string | null;
-  kycStatus: string;
-  customDomain: string | null;
-  productCount: number;
-}): number {
-  let score = 35;
-  if (input.gmvLast30dInCents > 0) score += 25;
-  if (input.previousGmvLast30dInCents <= input.gmvLast30dInCents) score += 10;
-  if (input.lastSaleAt) score += 10;
-  if (input.kycStatus === 'approved') score += 10;
-  if (input.customDomain) score += 5;
-  if (input.productCount > 0) score += 5;
-  return Math.max(0, Math.min(100, score));
-}
 
 @Injectable()
 export class AdminClientsService {

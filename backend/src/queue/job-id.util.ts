@@ -1,18 +1,10 @@
+import {
+  coerceToInputString,
+  isAllowedQueueIdChar,
+  stripLeadingTrailingUnderscores,
+} from './job-id-chars.util';
+
 const MAX_QUEUE_ID_LENGTH = 80;
-
-function coerceToInputString(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
-  return '';
-}
-
-function isAllowedQueueIdChar(char: string): boolean {
-  const code = char.charCodeAt(0);
-  const isDigit = code >= 48 && code <= 57;
-  const isUpper = code >= 65 && code <= 90;
-  const isLower = code >= 97 && code <= 122;
-  return isDigit || isUpper || isLower || char === '_' || char === '-';
-}
 
 type AccumulatorState = { normalized: string; previousWasSeparator: boolean };
 
@@ -38,14 +30,6 @@ function accumulateNormalizedChars(input: string): string {
     if (state.normalized.length >= MAX_QUEUE_ID_LENGTH) break;
   }
   return state.normalized;
-}
-
-function stripLeadingTrailingUnderscores(value: string): string {
-  let start = 0;
-  let end = value.length;
-  while (start < end && value[start] === '_') start += 1;
-  while (end > start && value[end - 1] === '_') end -= 1;
-  return value.slice(start, end);
 }
 
 function sanitizeQueueIdPart(value: unknown): string {

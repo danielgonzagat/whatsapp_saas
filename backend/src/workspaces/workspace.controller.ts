@@ -8,11 +8,15 @@ import {
   type ProviderSettings,
   type ProviderSessionSnapshot,
 } from '../whatsapp/provider-settings.types';
-import {
-  resolveWhatsAppProvider,
-  type ResolvedWhatsAppProvider,
-} from '../whatsapp/providers/provider-env';
+import { resolveWhatsAppProvider } from '../whatsapp/providers/provider-env';
 import { SetSettingsDto } from './dto/set-settings.dto';
+import {
+  buildProviderSessionSnapshot,
+  computeDisconnectReason,
+  computeNormalizedStatus,
+  extractPhoneNumberId,
+  extractRawStatus,
+} from './provider-status.util';
 import { WorkspaceService } from './workspace.service';
 
 interface AccountUpdateBody {
@@ -161,145 +165,4 @@ export class WorkspaceController {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.updateAccountSettings(workspaceId, body || {});
   }
-}
-
-type NormalizedConnectionStatus =
-  | 'connected'
-  | 'connecting'
-  | 'failed'
-  | 'disconnected'
-  | 'connection_incomplete';
-
-type WhatsAppProviderType = ResolvedWhatsAppProvider;
-
-function extractRawStatus(session: ProviderSessionSnapshot, settings: ProviderSettings): string {
-  return String(session.rawStatus || session.status || settings.connectionStatus || '')
-    .trim()
-    .toUpperCase();
-}
-
-function extractPhoneNumberId(
-  providerType: WhatsAppProviderType,
-  session: ProviderSessionSnapshot,
-): string | null {
-  if (providerType !== 'meta-cloud') return null;
-  const trimmed = String(session.phoneNumberId || '').trim();
-  return trimmed || null;
-}
-
-function resolveWahaStatus(rawStatus: string): NormalizedConnectionStatus {
-  if (rawStatus === 'CONNECTED' || rawStatus === 'WORKING') return 'connected';
-  if (rawStatus === 'SCAN_QR_CODE' || rawStatus === 'STARTING' || rawStatus === 'OPENING') {
-    return 'connecting';
-  }
-  if (rawStatus === 'FAILED') return 'failed';
-  return 'disconnected';
-}
-
-function resolveMetaStatus(
-  rawStatus: string,
-  phoneNumberId: string | null,
-): NormalizedConnectionStatus {
-  if (rawStatus === 'CONNECTED' || rawStatus === 'WORKING') return 'connected';
-  return phoneNumberId ? 'connection_incomplete' : 'disconnected';
-}
-
-function computeNormalizedStatus(
-  providerType: WhatsAppProviderType,
-  rawStatus: string,
-  phoneNumberId: string | null,
-): NormalizedConnectionStatus {
-  if (providerType === 'whatsapp-api') return resolveWahaStatus(rawStatus);
-  return resolveMetaStatus(rawStatus, phoneNumberId);
-}
-
-function metaDisconnectReason(phoneNumberId: string | null): string {
-  return phoneNumberId ? 'meta_whatsapp_phone_number_id_missing' : 'meta_auth_required';
-}
-
-function wahaDisconnectReason(status: NormalizedConnectionStatus): string {
-  if (status === 'connecting') return 'waha_qr_pending';
-  if (status === 'failed') return 'waha_session_failed';
-  return 'waha_session_disconnected';
-}
-
-function computeDisconnectReason(
-  session: ProviderSessionSnapshot,
-  providerType: WhatsAppProviderType,
-  normalizedStatus: NormalizedConnectionStatus,
-  phoneNumberId: string | null,
-): string {
-  const sessionReason = session.disconnectReason;
-  if (typeof sessionReason === 'string' && sessionReason.trim()) {
-    return sessionReason;
-  }
-  return providerType === 'meta-cloud'
-    ? metaDisconnectReason(phoneNumberId)
-    : wahaDisconnectReason(normalizedStatus);
-}
-
-function pickWahaQrCode(providerType: WhatsAppProviderType, qrCode: unknown): string | null {
-  if (providerType !== 'whatsapp-api') return null;
-  if (typeof qrCode !== 'string') return null;
-  const trimmed = qrCode.trim();
-  return trimmed ? qrCode : null;
-}
-
-function pickMetaAuthUrl(providerType: WhatsAppProviderType, authUrl: unknown): string | null {
-  if (providerType !== 'meta-cloud') return null;
-  if (typeof authUrl !== 'string') return null;
-  const trimmed = authUrl.trim();
-  return trimmed ? authUrl : null;
-}
-
-function resolveRawStatusFallback(
-  rawStatus: string,
-  providerType: WhatsAppProviderType,
-  normalizedStatus: NormalizedConnectionStatus,
-  phoneNumberId: string | null,
-): string {
-  if (rawStatus) return rawStatus;
-  if (normalizedStatus === 'connected') return 'CONNECTED';
-  if (providerType === 'meta-cloud' && phoneNumberId) return 'CONNECTION_INCOMPLETE';
-  if (providerType === 'whatsapp-api' && normalizedStatus === 'connecting') return 'SCAN_QR_CODE';
-  return 'DISCONNECTED';
-}
-
-interface BuildSnapshotParams {
-  providerType: WhatsAppProviderType;
-  session: ProviderSessionSnapshot;
-  rawStatus: string;
-  normalizedStatus: NormalizedConnectionStatus;
-  phoneNumberId: string | null;
-  disconnectReason: string;
-  workspaceId: string;
-}
-
-function buildProviderSessionSnapshot(params: BuildSnapshotParams): ProviderSessionSnapshot {
-  const {
-    providerType,
-    session,
-    rawStatus,
-    normalizedStatus,
-    phoneNumberId,
-    disconnectReason,
-    workspaceId,
-  } = params;
-
-  return {
-    qrCode: pickWahaQrCode(providerType, session.qrCode),
-    status: normalizedStatus,
-    authUrl: pickMetaAuthUrl(providerType, session.authUrl),
-    selfIds: Array.isArray(session.selfIds) ? session.selfIds : [],
-    provider: providerType,
-    pushName: session.pushName || null,
-    rawStatus: resolveRawStatusFallback(rawStatus, providerType, normalizedStatus, phoneNumberId),
-    connectedAt: session.connectedAt || null,
-    lastUpdated: session.lastUpdated || null,
-    phoneNumber: session.phoneNumber || null,
-    sessionName: String(session.sessionName || '').trim() || workspaceId,
-    phoneNumberId,
-    disconnectReason: normalizedStatus === 'connected' ? null : disconnectReason,
-    whatsappBusinessId: providerType === 'meta-cloud' ? session.whatsappBusinessId || null : null,
-  };
 }
