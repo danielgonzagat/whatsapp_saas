@@ -58,11 +58,10 @@ export interface AdminAccountDetail {
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
-export async function getAdminAccountDetail(
-  prisma: PrismaService,
-  workspaceId: string,
-): Promise<AdminAccountDetail | null> {
-  const workspace = await prisma.workspace.findUnique({
+type AdminAccountWorkspaceRow = NonNullable<Awaited<ReturnType<typeof loadWorkspaceForAdmin>>>;
+
+function loadWorkspaceForAdmin(prisma: PrismaService, workspaceId: string) {
+  return prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: {
       id: true,
@@ -98,25 +97,100 @@ export async function getAdminAccountDetail(
       },
     },
   });
-  if (!workspace) return null;
-  const owner =
-    workspace.agents.find((agent) => agent.role === 'ADMIN') ?? workspace.agents[0] ?? null;
-  const providerSettings = asProviderSettings(workspace.providerSettings);
-  const accountAdminState =
-    providerSettings.accountAdmin &&
-    typeof providerSettings.accountAdmin === 'object' &&
-    !Array.isArray(providerSettings.accountAdmin)
-      ? (providerSettings.accountAdmin as Record<string, unknown>)
-      : {};
+}
 
+function extractAccountAdminState(workspace: AdminAccountWorkspaceRow): Record<string, unknown> {
+  const providerSettings = asProviderSettings(workspace.providerSettings);
+  const adminState = providerSettings.accountAdmin;
+  if (adminState && typeof adminState === 'object' && !Array.isArray(adminState)) {
+    return adminState as Record<string, unknown>;
+  }
+  return {};
+}
+
+function trimmedStringOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+function buildLifecycle(state: Record<string, unknown>): AdminAccountDetail['lifecycle'] {
+  return {
+    suspended: state.suspended === true,
+    blocked: state.blocked === true,
+    frozenBalanceInCents: Number(state.frozenBalanceInCents ?? 0),
+    reason: trimmedStringOrNull(state.reason),
+    updatedAt:
+      typeof state.updatedAt === 'string' && state.updatedAt.trim() ? state.updatedAt : null,
+    updatedBy:
+      typeof state.updatedBy === 'string' && state.updatedBy.trim() ? state.updatedBy : null,
+  };
+}
+
+function mapAgents(agents: AdminAccountWorkspaceRow['agents']): AdminAccountAgent[] {
+  return agents.map((a) => ({
+    id: a.id,
+    name: a.name,
+    email: a.email,
+    role: a.role,
+    kycStatus: a.kycStatus,
+    kycSubmittedAt: a.kycSubmittedAt?.toISOString() ?? null,
+    kycApprovedAt: a.kycApprovedAt?.toISOString() ?? null,
+    kycRejectedReason: a.kycRejectedReason,
+  }));
+}
+
+function mapKycDocuments(
+  kycDocuments: AdminAccountWorkspaceRow['kycDocuments'],
+): AdminAccountKycDocument[] {
+  return kycDocuments.map((d) => ({
+    id: d.id,
+    type: d.type,
+    fileUrl: d.fileUrl,
+    fileName: d.fileName,
+    status: d.status,
+    rejectedReason: d.rejectedReason,
+    reviewedAt: d.reviewedAt?.toISOString() ?? null,
+    createdAt: d.createdAt.toISOString(),
+  }));
+}
+
+type RecentOrderRow = Awaited<ReturnType<typeof loadRecentOrders>>[number];
+
+function mapRecentOrders(recentOrders: RecentOrderRow[]): AdminAccountDetail['recentOrders'] {
+  return recentOrders.map((o) => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    status: o.status,
+    totalInCents: o.totalInCents,
+    customerEmail: o.customerEmail,
+    createdAt: o.createdAt.toISOString(),
+    paidAt: o.paidAt?.toISOString() ?? null,
+  }));
+}
+
+function loadRecentOrders(prisma: PrismaService, workspaceId: string) {
+  return prisma.checkoutOrder.findMany({
+    where: { workspaceId },
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+    select: {
+      id: true,
+      orderNumber: true,
+      status: true,
+      totalInCents: true,
+      customerEmail: true,
+      createdAt: true,
+      paidAt: true,
+    },
+  });
+}
+
+function loadGmvAndCounts(prisma: PrismaService, workspaceId: string) {
   const windowFrom = new Date(Date.now() - WINDOW_MS);
-  const [gmv30d, gmvAll, productCount, recentOrders] = await Promise.all([
+  return Promise.all([
     prisma.checkoutOrder.aggregate({
-      where: {
-        workspaceId,
-        status: { in: PAID_STATUSES },
-        paidAt: { gte: windowFrom },
-      },
+      where: { workspaceId, status: { in: PAID_STATUSES }, paidAt: { gte: windowFrom } },
       _sum: { totalInCents: true },
     }),
     prisma.checkoutOrder.aggregate({
@@ -124,21 +198,22 @@ export async function getAdminAccountDetail(
       _sum: { totalInCents: true },
     }),
     prisma.product.count({ where: { workspaceId } }),
-    prisma.checkoutOrder.findMany({
-      where: { workspaceId },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        totalInCents: true,
-        customerEmail: true,
-        createdAt: true,
-        paidAt: true,
-      },
-    }),
+    loadRecentOrders(prisma, workspaceId),
   ]);
+}
+
+export async function getAdminAccountDetail(
+  prisma: PrismaService,
+  workspaceId: string,
+): Promise<AdminAccountDetail | null> {
+  const workspace = await loadWorkspaceForAdmin(prisma, workspaceId);
+  if (!workspace) return null;
+
+  const owner =
+    workspace.agents.find((agent) => agent.role === 'ADMIN') ?? workspace.agents[0] ?? null;
+  const lifecycle = buildLifecycle(extractAccountAdminState(workspace));
+
+  const [gmv30d, gmvAll, productCount, recentOrders] = await loadGmvAndCounts(prisma, workspaceId);
 
   return {
     workspaceId: workspace.id,
@@ -147,54 +222,12 @@ export async function getAdminAccountDetail(
     updatedAt: workspace.updatedAt.toISOString(),
     ownerAgentId: owner?.id ?? null,
     ownerEmail: owner?.email ?? null,
-    lifecycle: {
-      suspended: accountAdminState.suspended === true,
-      blocked: accountAdminState.blocked === true,
-      frozenBalanceInCents: Number(accountAdminState.frozenBalanceInCents ?? 0),
-      reason:
-        typeof accountAdminState.reason === 'string' && accountAdminState.reason.trim()
-          ? accountAdminState.reason.trim()
-          : null,
-      updatedAt:
-        typeof accountAdminState.updatedAt === 'string' && accountAdminState.updatedAt.trim()
-          ? accountAdminState.updatedAt
-          : null,
-      updatedBy:
-        typeof accountAdminState.updatedBy === 'string' && accountAdminState.updatedBy.trim()
-          ? accountAdminState.updatedBy
-          : null,
-    },
-    agents: workspace.agents.map((a) => ({
-      id: a.id,
-      name: a.name,
-      email: a.email,
-      role: a.role,
-      kycStatus: a.kycStatus,
-      kycSubmittedAt: a.kycSubmittedAt?.toISOString() ?? null,
-      kycApprovedAt: a.kycApprovedAt?.toISOString() ?? null,
-      kycRejectedReason: a.kycRejectedReason,
-    })),
-    kycDocuments: workspace.kycDocuments.map((d) => ({
-      id: d.id,
-      type: d.type,
-      fileUrl: d.fileUrl,
-      fileName: d.fileName,
-      status: d.status,
-      rejectedReason: d.rejectedReason,
-      reviewedAt: d.reviewedAt?.toISOString() ?? null,
-      createdAt: d.createdAt.toISOString(),
-    })),
+    lifecycle,
+    agents: mapAgents(workspace.agents),
+    kycDocuments: mapKycDocuments(workspace.kycDocuments),
     productCount,
     gmvLast30dInCents: Number(gmv30d._sum.totalInCents ?? 0),
     gmvAllTimeInCents: Number(gmvAll._sum.totalInCents ?? 0),
-    recentOrders: recentOrders.map((o) => ({
-      id: o.id,
-      orderNumber: o.orderNumber,
-      status: o.status,
-      totalInCents: o.totalInCents,
-      customerEmail: o.customerEmail,
-      createdAt: o.createdAt.toISOString(),
-      paidAt: o.paidAt?.toISOString() ?? null,
-    })),
+    recentOrders: mapRecentOrders(recentOrders),
   };
 }

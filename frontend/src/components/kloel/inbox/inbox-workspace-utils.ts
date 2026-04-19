@@ -5,6 +5,33 @@ export const INBOX_DIGIT_RE = /\D/g;
 export type ChannelFilter = 'all' | 'whatsapp' | 'email' | 'instagram';
 export type StatusFilter = 'open' | 'closed' | 'all';
 
+export const INBOX_SOURCE_LABELS: Record<string, string> = {
+  leads: 'Leads',
+  followups: 'Follow-ups',
+  marketing: 'Marketing',
+  scrapers: 'Scrapers',
+  flow: 'Flow',
+};
+
+export interface ParsedInboxMessage {
+  convId: string | undefined;
+  messageId: string | undefined;
+  newMsg: Record<string, unknown>;
+}
+
+export function parseInboxMessagePayload(payload: Record<string, unknown>): ParsedInboxMessage {
+  const nestedMessage =
+    payload.message && typeof payload.message === 'object' && !Array.isArray(payload.message)
+      ? (payload.message as Record<string, unknown>)
+      : null;
+  const newMsg = nestedMessage ?? payload;
+  const convId =
+    (typeof payload.conversationId === 'string' ? payload.conversationId : undefined) ??
+    (typeof newMsg.conversationId === 'string' ? newMsg.conversationId : undefined);
+  const messageId = typeof newMsg.id === 'string' ? newMsg.id : undefined;
+  return { convId, messageId, newMsg };
+}
+
 export function extractErrorMessage(err: unknown, fallback: string) {
   if (
     err &&

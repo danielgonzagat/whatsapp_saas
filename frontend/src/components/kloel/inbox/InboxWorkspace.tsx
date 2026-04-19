@@ -25,9 +25,11 @@ import {
   type ChannelFilter,
   INBOX_DIGIT_RE as D_RE,
   INBOX_RESPONSIVE_VARS,
+  INBOX_SOURCE_LABELS,
   type StatusFilter,
   extractErrorMessage,
   formatInboxTime as formatTime,
+  parseInboxMessagePayload,
 } from './inbox-workspace-utils';
 
 interface InboxWorkspaceProps {
@@ -78,16 +80,7 @@ export function InboxWorkspace({
   const source = searchParams?.get('source') || '';
   const requestedDraft = searchParams?.get('draft');
 
-  const sourceLabel = useMemo(() => {
-    const labels: Record<string, string> = {
-      leads: 'Leads',
-      followups: 'Follow-ups',
-      marketing: 'Marketing',
-      scrapers: 'Scrapers',
-      flow: 'Flow',
-    };
-    return labels[source] || '';
-  }, [source]);
+  const sourceLabel = useMemo(() => INBOX_SOURCE_LABELS[source] || '', [source]);
 
   const selectedConversation = useMemo(
     () => conversations.find((c) => c.id === selectedConversationId) || null,
@@ -281,15 +274,7 @@ export function InboxWorkspace({
 
     const unsubNewMsg = subscribe('message:new', (payload: Record<string, unknown>) => {
       refreshConversations();
-      const nestedMessage =
-        payload.message && typeof payload.message === 'object' && !Array.isArray(payload.message)
-          ? (payload.message as Record<string, unknown>)
-          : null;
-      const newMsg = nestedMessage ?? payload;
-      const convId =
-        (typeof payload.conversationId === 'string' ? payload.conversationId : undefined) ??
-        (typeof newMsg.conversationId === 'string' ? newMsg.conversationId : undefined);
-      const messageId = typeof newMsg.id === 'string' ? newMsg.id : undefined;
+      const { convId, messageId, newMsg } = parseInboxMessagePayload(payload);
       if (convId && convId === selectedIdRef.current && messageId) {
         const typedMsg: Message = newMsg as unknown as Message;
         setMessages((prev) => {

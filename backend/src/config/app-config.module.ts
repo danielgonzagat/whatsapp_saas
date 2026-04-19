@@ -17,51 +17,67 @@ import * as Joi from 'joi';
  * deployments that intentionally don't need Redis (e.g. a stub
  * health-check service). When set, this validator skips its check.
  */
-function redisInProductionValidator(value: Record<string, unknown>): Record<string, unknown> {
-  const isProd = value.NODE_ENV === 'production';
-  const mode =
-    typeof value.REDIS_MODE === 'string'
-      ? value.REDIS_MODE.toLowerCase()
-      : typeof value.REDIS_MODE === 'number' || typeof value.REDIS_MODE === 'boolean'
-        ? String(value.REDIS_MODE).toLowerCase()
-        : '';
-  if (!isProd) return value;
-  if (mode === 'disabled') return value;
+function resolveRedisMode(raw: unknown): string {
+  if (typeof raw === 'string') return raw.toLowerCase();
+  if (typeof raw === 'number' || typeof raw === 'boolean') return String(raw).toLowerCase();
+  return '';
+}
 
-  const hasUrl = !!(value.REDIS_URL || value.REDIS_FALLBACK_URL);
-  const hasComponents =
-    !!(value.REDIS_HOST || value.REDISHOST) && !!(value.REDIS_PASSWORD || value.REDISPASSWORD);
+function hasRedisUrlConfigured(value: Record<string, unknown>): boolean {
+  return !!(value.REDIS_URL || value.REDIS_FALLBACK_URL);
+}
 
-  if (!hasUrl && !hasComponents) {
-    throw new Error(
-      'Redis is required in production but no Redis URL could be resolved from env. ' +
-        'Set REDIS_URL, REDIS_FALLBACK_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
-        'To opt out entirely, set REDIS_MODE=disabled.',
-    );
-  }
+function hasRedisComponentAuth(value: Record<string, unknown>): boolean {
+  return !!(value.REDIS_HOST || value.REDISHOST) && !!(value.REDIS_PASSWORD || value.REDISPASSWORD);
+}
 
-  const candidates = [
-    typeof value.REDIS_URL === 'string' ? value.REDIS_URL : '',
-    typeof value.REDIS_FALLBACK_URL === 'string' ? value.REDIS_FALLBACK_URL : '',
+function collectRedisUrlCandidates(value: Record<string, unknown>): string[] {
+  const host =
     typeof value.REDIS_HOST === 'string'
       ? value.REDIS_HOST
       : typeof value.REDISHOST === 'string'
         ? value.REDISHOST
-        : '',
-  ].filter(Boolean);
+        : '';
+  const urls = [
+    typeof value.REDIS_URL === 'string' ? value.REDIS_URL : '',
+    typeof value.REDIS_FALLBACK_URL === 'string' ? value.REDIS_FALLBACK_URL : '',
+    host,
+  ];
+  return urls.filter(Boolean);
+}
 
-  if (
-    candidates.some(
-      (candidate) =>
-        candidate.includes('mainline.proxy.rlwy.net') || candidate.includes('.proxy.rlwy.net'),
-    )
-  ) {
-    throw new Error(
-      'Redis must use Railway internal networking in production. ' +
-        'Configure REDIS_URL from the Redis service (for example redis://default:***@redis.railway.internal:6379) ' +
-        'and remove REDIS_PUBLIC_URL/public proxy hosts from backend/worker env.',
-    );
-  }
+function includesRailwayPublicProxy(candidate: string): boolean {
+  return candidate.includes('mainline.proxy.rlwy.net') || candidate.includes('.proxy.rlwy.net');
+}
+
+function assertRedisConfigured(value: Record<string, unknown>): void {
+  if (hasRedisUrlConfigured(value) || hasRedisComponentAuth(value)) return;
+  throw new Error(
+    'Redis is required in production but no Redis URL could be resolved from env. ' +
+      'Set REDIS_URL, REDIS_FALLBACK_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
+      'To opt out entirely, set REDIS_MODE=disabled.',
+  );
+}
+
+function assertNoPublicProxyHost(value: Record<string, unknown>): void {
+  const candidates = collectRedisUrlCandidates(value);
+  if (!candidates.some(includesRailwayPublicProxy)) return;
+  throw new Error(
+    'Redis must use Railway internal networking in production. ' +
+      'Configure REDIS_URL from the Redis service (for example redis://default:***@redis.railway.internal:6379) ' +
+      'and remove REDIS_PUBLIC_URL/public proxy hosts from backend/worker env.',
+  );
+}
+
+function redisInProductionValidator(value: Record<string, unknown>): Record<string, unknown> {
+  const isProd = value.NODE_ENV === 'production';
+  if (!isProd) return value;
+
+  const mode = resolveRedisMode(value.REDIS_MODE);
+  if (mode === 'disabled') return value;
+
+  assertRedisConfigured(value);
+  assertNoPublicProxyHost(value);
   return value;
 }
 

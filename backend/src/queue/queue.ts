@@ -271,41 +271,51 @@ function getOrCreateQueue(name: string): BullQueue {
   return _queues[name];
 }
 
+function collectClosePromises(): Array<Promise<unknown>> {
+  const promises: Array<Promise<unknown>> = [];
+  for (const events of Object.values(_queueEvents)) {
+    promises.push(events.close().catch(() => undefined));
+  }
+  for (const queue of Object.values(_queues)) {
+    promises.push(queue.close().catch(() => undefined));
+  }
+  for (const queue of Object.values(_dlqQueues)) {
+    promises.push(queue.close().catch(() => undefined));
+  }
+  return promises;
+}
+
+async function closeConnectionSafely(): Promise<void> {
+  if (!_connection) return;
+  if (typeof _connection.quit === 'function') {
+    await _connection.quit().catch(() => undefined);
+    return;
+  }
+  if (typeof _connection.disconnect === 'function') {
+    await Promise.resolve(_connection.disconnect()).catch(() => undefined);
+  }
+}
+
+function resetQueueStateRegistries(): void {
+  for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
+  for (const k of Object.keys(_dlqQueues)) delete _dlqQueues[k];
+  for (const k of Object.keys(_queues)) delete _queues[k];
+  for (const k of Object.keys(queueRegistry)) delete queueRegistry[k];
+  _connection = null;
+  _queueOptions = null;
+  _initialized = false;
+}
+
 // Usado por Jest para evitar handles abertos (Redis/QueueEvents) após os testes.
 export async function shutdownQueueSystem() {
   try {
-    const closePromises: Array<Promise<unknown>> = [];
-
-    for (const events of Object.values(_queueEvents)) {
-      closePromises.push(events.close().catch(() => undefined));
-    }
-    for (const queue of Object.values(_queues)) {
-      closePromises.push(queue.close().catch(() => undefined));
-    }
-    for (const queue of Object.values(_dlqQueues)) {
-      closePromises.push(queue.close().catch(() => undefined));
-    }
-
-    await Promise.all(closePromises);
-
-    if (_connection) {
-      if (typeof _connection.quit === 'function') {
-        await _connection.quit().catch(() => undefined);
-      } else if (typeof _connection.disconnect === 'function') {
-        await Promise.resolve(_connection.disconnect()).catch(() => undefined);
-      }
-    }
+    await Promise.all(collectClosePromises());
+    await closeConnectionSafely();
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : 'unknown_error';
     warn('[QUEUE] Falha ao encerrar filas (ignorado em teardown):', errMsg);
   } finally {
-    for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
-    for (const k of Object.keys(_dlqQueues)) delete _dlqQueues[k];
-    for (const k of Object.keys(_queues)) delete _queues[k];
-    for (const k of Object.keys(queueRegistry)) delete queueRegistry[k];
-    _connection = null;
-    _queueOptions = null;
-    _initialized = false;
+    resetQueueStateRegistries();
   }
 }
 

@@ -138,29 +138,12 @@ interface TeamApiResponse {
   invites?: TeamInvite[];
 }
 
-// BrasilAPI CNPJ response subset used for auto-fill.
-interface BrasilApiCnpjResponse {
-  razao_social?: string;
-  nome_fantasia?: string;
-  cep?: string;
-  logradouro?: string;
-  numero?: string;
-  complemento?: string;
-  bairro?: string;
-  municipio?: string;
-  uf?: string;
-  qsa?: Array<{ nome_socio?: string; cnpj_cpf_do_socio?: string }>;
-}
-
-// ViaCEP response subset used for address auto-fill.
-interface ViaCepResponse {
-  logradouro?: string;
-  complemento?: string;
-  bairro?: string;
-  localidade?: string;
-  uf?: string;
-  erro?: boolean;
-}
+import {
+  type BrasilApiCnpjResponse,
+  type ViaCepResponse,
+  mergeCepIntoForm,
+  mergeCnpjIntoForm,
+} from './ContaView.helpers';
 
 // ═══ HELPERS ═══
 
@@ -1259,20 +1242,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
       if (!res.ok) return;
       const data: BrasilApiCnpjResponse = await res.json();
-      setForm((prev) => ({
-        ...prev,
-        razaoSocial: data.razao_social || prev.razaoSocial,
-        nomeFantasia: data.nome_fantasia || prev.nomeFantasia,
-        cep: data.cep || prev.cep,
-        rua: data.logradouro || prev.rua,
-        numero: data.numero || prev.numero,
-        complemento: data.complemento || prev.complemento,
-        bairro: data.bairro || prev.bairro,
-        cidade: data.municipio || prev.cidade,
-        uf: data.uf || prev.uf,
-        responsavelNome: data.qsa?.[0]?.nome_socio || prev.responsavelNome,
-        responsavelCpf: data.qsa?.[0]?.cnpj_cpf_do_socio || prev.responsavelCpf,
-      }));
+      setForm((prev) => mergeCnpjIntoForm(prev, data));
     } catch {
       /* API offline, don't block */
     } finally {
@@ -1290,14 +1260,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
       if (!res.ok) return;
       const data: ViaCepResponse = await res.json();
       if (data.erro) return;
-      setForm((prev) => ({
-        ...prev,
-        rua: data.logradouro || prev.rua,
-        complemento: data.complemento || prev.complemento,
-        bairro: data.bairro || prev.bairro,
-        cidade: data.localidade || prev.cidade,
-        uf: data.uf || prev.uf,
-      }));
+      setForm((prev) => mergeCepIntoForm(prev, data));
     } catch {
       /* API offline */
     } finally {

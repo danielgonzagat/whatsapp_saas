@@ -18,12 +18,24 @@ import { affiliateApi } from '@/lib/api/misc';
 import { productApi } from '@/lib/api/products';
 import { uploadChatFile } from '@/lib/api/kloel';
 import {
-  KLOEL_CHAT_CAPABILITY_PLACEHOLDERS,
   type KloelChatAttachment,
   type KloelChatCapability,
   type KloelChatRequestMetadata,
   type KloelLinkedProduct,
 } from '@/lib/kloel-chat';
+import {
+  type JsonRecord,
+  capabilityPromptLabel,
+  computeAttachmentKind,
+  computeDrainStep,
+  createClientRequestId,
+  getGreeting,
+  hasDraggedFiles,
+  isRecord,
+  toErrorMessage,
+  toMessageMetadata,
+  unwrapApiPayload,
+} from './KloelDashboard.helpers';
 import {
   loadKloelThreadMessages,
   regenerateKloelConversationMessage,
@@ -71,8 +83,6 @@ const CHAT_SCROLL_BOTTOM_SPACE = 56;
 const SLOW_HINT_DELAY_MS = 30_000;
 const MAX_ATTACHMENTS_PER_PROMPT = 10;
 
-type JsonRecord = Record<string, unknown>;
-
 interface OwnedProductSummary {
   id?: string | null;
   name?: string | null;
@@ -102,33 +112,6 @@ interface AssistantAssetSource {
   url?: string | null;
 }
 
-function isRecord(value: unknown): value is JsonRecord {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function unwrapApiPayload<T>(payload: unknown): T {
-  if (isRecord(payload) && payload.data !== undefined) {
-    return payload.data as T;
-  }
-  return payload as T;
-}
-
-function toMessageMetadata(metadata: unknown): JsonRecord | null {
-  return isRecord(metadata) ? metadata : null;
-}
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  if (isRecord(error) && typeof error.message === 'string' && error.message.trim()) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 type DashboardMessage = {
   id: string;
   role: 'user' | 'assistant';
@@ -142,13 +125,6 @@ type AffiliateRequestRow = {
   affiliateProductId?: string | null;
   affiliateProduct?: AffiliateCatalogProduct | null;
 };
-
-function capabilityPromptLabel(capability: KloelChatCapability | null, hasMessages: boolean) {
-  if (capability) {
-    return KLOEL_CHAT_CAPABILITY_PLACEHOLDERS[capability];
-  }
-  return hasMessages ? 'Responder...' : 'Como posso ajudar você hoje?';
-}
 
 function resolveOwnedProductStatus(product: OwnedProductSummary): KloelLinkedProduct['status'] {
   const rawStatus = String(product.status || '')
@@ -225,39 +201,10 @@ function mapLinkableProducts(payload: {
   return [...owned, ...affiliate];
 }
 
-function createClientRequestId() {
-  return (
-    globalThis.crypto?.randomUUID?.() ||
-    `kloel_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-  );
-}
-
-function hasDraggedFiles(dataTransfer: DataTransfer | null | undefined) {
-  if (!dataTransfer) return false;
-  if (dataTransfer.files && dataTransfer.files.length > 0) return true;
-  return Array.from(dataTransfer.items || []).some((item) => item.kind === 'file');
-}
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'Bom dia';
-  if (hour >= 12 && hour < 18) return 'Boa tarde';
-  if (hour >= 18) return 'Boa noite';
-  return 'Boa madrugada';
-}
-
-function computeAttachmentKind(file: File): KloelChatAttachment['kind'] {
-  if (file.type.startsWith('image/')) return 'image';
-  if (file.type.startsWith('audio/')) return 'audio';
-  return 'document';
-}
-
-function computeDrainStep(bufferLength: number) {
-  if (bufferLength > 280) return 28;
-  if (bufferLength > 120) return 18;
-  if (bufferLength > 48) return 10;
-  return 5;
-}
+// Pure helpers moved to KloelDashboard.helpers.ts (capabilityPromptLabel,
+// createClientRequestId, hasDraggedFiles, getGreeting, computeAttachmentKind,
+// computeDrainStep, isRecord, unwrapApiPayload, toMessageMetadata,
+// toErrorMessage, JsonRecord).
 
 function DropOverlay() {
   return (

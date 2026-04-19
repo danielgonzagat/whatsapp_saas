@@ -29,75 +29,32 @@ const B = KLOEL_THEME.borderPrimary;
 const F = "'Sora', system-ui, sans-serif";
 const M = "'JetBrains Mono', monospace";
 
-const STEPS = ['Conectar', 'Produtos', 'Arsenal', 'Configurar'] as const;
-const WAHA_QR_POLL_INTERVAL_MS = 1200;
-const WAHA_QR_TRANSITION_DELAY_MS = 150;
-
-const MEDIA_TYPES = [
-  { value: 'photo', label: 'Foto do produto', icon: '📸' },
-  { value: 'video', label: 'Vídeo de demonstração', icon: '🎬' },
-  { value: 'audio', label: 'Áudio / Depoimento', icon: '🎙️' },
-  { value: 'testimonial', label: 'Print de depoimento', icon: '💬' },
-  { value: 'result', label: 'Prova de resultado', icon: '📊' },
-  { value: 'document', label: 'Documento / Certificado', icon: '📄' },
-  { value: 'bonus', label: 'Bônus incluído', icon: '🎁' },
-] as const;
-
-const TONE_OPTIONS = [
-  ['professional', 'Profissional', 'Direto, confiante, corporativo'],
-  ['friendly', 'Amigável', 'Próximo, descontraído, caloroso'],
-  ['urgent', 'Urgente', 'Escassez, exclusividade, ação'],
-] as const;
-
-type ProductKind = 'own' | 'affiliate';
-type ToneMode = (typeof TONE_OPTIONS)[number][0];
-type MediaTypeValue = (typeof MEDIA_TYPES)[number]['value'];
-
-function isToneMode(value: unknown): value is ToneMode {
-  return typeof value === 'string' && TONE_OPTIONS.some(([option]) => option === value);
-}
-
-interface SelectableProduct {
-  id: string;
-  name: string;
-  price: number;
-  type: ProductKind;
-  imageUrl: string | null;
-  affiliateComm: number | null;
-  producer: string | null;
-}
-
-interface ArsenalItem {
-  id: string;
-  fileName: string;
-  url: string;
-  type: MediaTypeValue | '';
-  productId: string;
-  description: string;
-  mimeType?: string | null;
-  size?: number | null;
-}
-
-interface WhatsAppSetupConfig {
-  tone: ToneMode;
-  maxDiscount: number;
-  followUp: boolean;
-  followUpHours: number;
-  workingHours: string;
-  greeting: string;
-}
-
-interface WhatsAppSetupState {
-  version: number;
-  sessionName: string;
-  selectedProducts: SelectableProduct[];
-  arsenal: ArsenalItem[];
-  config: WhatsAppSetupConfig;
-  configuredAt: string | null;
-  activatedAt: string | null;
-  lastCompletedStep: number;
-  updatedAt: string | null;
-}
+import {
+  type ArsenalItem,
+  MEDIA_TYPES,
+  type MediaTypeValue,
+  SESSION_EXPIRED_MESSAGE,
+  STEPS,
+  type SelectableProduct,
+  TONE_OPTIONS,
+  type ToneMode,
+  WAHA_QR_POLL_INTERVAL_MS,
+  WAHA_QR_TRANSITION_DELAY_MS,
+  type WhatsAppSetupConfig,
+  type WhatsAppSetupState,
+  buildDefaultSetup,
+  formatCompact,
+  formatMoney,
+  getErrorMessage,
+  getErrorStatus,
+  getProductIcon,
+  normalizeAffiliateProducts,
+  normalizeArsenal,
+  normalizeOwnedProduct,
+  normalizeSetup,
+  nowIso,
+  serializeSetup,
+} from './WhatsAppExperience.helpers';
 
 interface SummaryProductCard extends SelectableProduct {
   salesCount: number;
@@ -149,294 +106,7 @@ interface WhatsAppExperienceProps {
   onConnectionRefresh?: () => Promise<unknown> | unknown;
 }
 
-const SESSION_EXPIRED_MESSAGE =
-  'Sua sessão expirou. Recarregue a página e faça login novamente para continuar acompanhando o WhatsApp.';
-
-function getErrorMessage(error: unknown, fallback = 'Erro desconhecido') {
-  if (
-    error &&
-    typeof error === 'object' &&
-    'message' in error &&
-    typeof (error as { message?: unknown }).message === 'string'
-  ) {
-    return (error as { message: string }).message;
-  }
-  return fallback;
-}
-
-function getErrorStatus(error: unknown) {
-  if (
-    error &&
-    typeof error === 'object' &&
-    'status' in error &&
-    typeof (error as { status?: unknown }).status === 'number'
-  ) {
-    return (error as { status: number }).status;
-  }
-
-  return 0;
-}
-
-function nowIso() {
-  return new Date().toISOString();
-}
-
-function toNumber(value: unknown, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function toStringValue(value: unknown, fallback = '') {
-  return typeof value === 'string' ? value : fallback;
-}
-
-function formatMoney(value: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(Number.isFinite(value) ? value : 0);
-}
-
-function formatCompact(value: number) {
-  const safe = Number.isFinite(value) ? value : 0;
-  if (safe >= 1000) {
-    return `${(safe / 1000).toFixed(1)}k`;
-  }
-  return String(safe);
-}
-
-function buildDefaultSetup(workspaceId: string): WhatsAppSetupState {
-  return {
-    version: 1,
-    sessionName: workspaceId,
-    selectedProducts: [],
-    arsenal: [],
-    config: {
-      tone: 'professional',
-      maxDiscount: 10,
-      followUp: true,
-      followUpHours: 24,
-      workingHours: '08:00-22:00',
-      greeting: '',
-    },
-    configuredAt: null,
-    activatedAt: null,
-    lastCompletedStep: 0,
-    updatedAt: null,
-  };
-}
-
-function resolveWorkingHours(raw: unknown) {
-  if (typeof raw === 'string' && raw.includes('-')) {
-    return raw;
-  }
-
-  const record = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  const start = toStringValue(record.start || record.workingHoursStart, '08:00');
-  const end = toStringValue(record.end || record.workingHoursEnd, '22:00');
-  return `${start}-${end}`;
-}
-
-function resolveProductImageUrl(product: Record<string, unknown>): string | null {
-  if (typeof product.imageUrl === 'string') return product.imageUrl;
-  if (typeof product.image === 'string') return product.image;
-  return null;
-}
-
-function resolveProducerField(product: Record<string, unknown>): string | null {
-  const producer = product.producer;
-  if (typeof producer === 'string' && producer.trim()) {
-    return producer;
-  }
-  return null;
-}
-
-function normalizeSelectedProduct(raw: Record<string, unknown>): SelectableProduct {
-  return {
-    id: String(raw.id || raw.productId || ''),
-    name: toStringValue(raw.name, 'Produto'),
-    price: toNumber(raw.price),
-    type: raw.type === 'affiliate' ? 'affiliate' : 'own',
-    imageUrl: resolveProductImageUrl(raw),
-    affiliateComm: raw.affiliateComm == null ? null : toNumber(raw.affiliateComm, 0),
-    producer: resolveProducerField(raw),
-  };
-}
-
-function normalizeSelectedProducts(value: unknown): SelectableProduct[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
-    .map(normalizeSelectedProduct)
-    .filter((product) => product.id);
-}
-
-function normalizeArsenalMediaType(value: unknown): MediaTypeValue | '' {
-  return (MEDIA_TYPES.some((option) => option.value === value) ? value : '') as MediaTypeValue | '';
-}
-
-function normalizeArsenalItem(raw: Record<string, unknown>): ArsenalItem {
-  return {
-    id: String(raw.id || crypto.randomUUID()),
-    fileName: toStringValue(raw.fileName, 'arquivo'),
-    url: toStringValue(raw.url),
-    type: normalizeArsenalMediaType(raw.type),
-    productId: toStringValue(raw.productId),
-    description: toStringValue(raw.description),
-    mimeType: typeof raw.mimeType === 'string' ? raw.mimeType : null,
-    size: raw.size == null ? null : toNumber(raw.size, 0),
-  };
-}
-
-function normalizeArsenal(value: unknown): ArsenalItem[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
-    .map(normalizeArsenalItem);
-}
-
-function resolveFollowUp(config: Record<string, unknown>, fallbackValue: boolean): boolean {
-  if (typeof config.followUp === 'boolean') return config.followUp;
-  if (typeof config.followUpEnabled === 'boolean') return config.followUpEnabled;
-  return fallbackValue;
-}
-
-function normalizeConfig(
-  config: Record<string, unknown>,
-  fallback: WhatsAppSetupConfig,
-): WhatsAppSetupConfig {
-  return {
-    tone: isToneMode(config.tone) ? config.tone : fallback.tone,
-    maxDiscount: Math.min(50, Math.max(0, toNumber(config.maxDiscount, 10))),
-    followUp: resolveFollowUp(config, fallback.followUp),
-    followUpHours: Math.min(72, Math.max(1, toNumber(config.followUpHours, 24))),
-    workingHours: resolveWorkingHours(config.workingHours || config),
-    greeting: toStringValue(config.greeting || config.instructions),
-  };
-}
-
-function normalizeSetup(raw: unknown, workspaceId: string): WhatsAppSetupState {
-  const fallback = buildDefaultSetup(workspaceId);
-  const value = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  const selectedProducts = normalizeSelectedProducts(value.selectedProducts);
-  const arsenal = normalizeArsenal(value.arsenal);
-  const config =
-    value.config && typeof value.config === 'object'
-      ? (value.config as Record<string, unknown>)
-      : ({} as Record<string, unknown>);
-
-  return {
-    version: toNumber(value.version, 1),
-    sessionName: toStringValue(value.sessionName, workspaceId) || workspaceId,
-    selectedProducts,
-    arsenal,
-    config: normalizeConfig(config, fallback.config),
-    configuredAt: typeof value.configuredAt === 'string' ? value.configuredAt : null,
-    activatedAt: typeof value.activatedAt === 'string' ? value.activatedAt : null,
-    lastCompletedStep: Math.min(3, Math.max(0, toNumber(value.lastCompletedStep, 0))),
-    updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : null,
-  };
-}
-
-function serializeSetup(setup: WhatsAppSetupState) {
-  return {
-    ...setup,
-    config: {
-      ...setup.config,
-      followUpEnabled: setup.config.followUp,
-      instructions: setup.config.greeting,
-      workingHours: setup.config.workingHours,
-    },
-  };
-}
-
-function resolveProductImage(product: Record<string, unknown>) {
-  if (typeof product.imageUrl === 'string' && product.imageUrl.trim()) {
-    return product.imageUrl;
-  }
-  if (Array.isArray(product.images)) {
-    const first = product.images.find((item) => typeof item === 'string' && item.trim());
-    if (typeof first === 'string') {
-      return first;
-    }
-  }
-  return null;
-}
-
-function normalizeOwnedProduct(raw: unknown): SelectableProduct | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const product = raw as Record<string, unknown>;
-  const status = String(product.status || '').toUpperCase();
-  if (status && status !== 'APPROVED') return null;
-  if (product.active === false) return null;
-  const id = String(product.id || '').trim();
-  if (!id) return null;
-
-  return {
-    id,
-    name: toStringValue(product.name, 'Produto'),
-    price: toNumber(product.price),
-    type: 'own',
-    imageUrl: resolveProductImage(product),
-    affiliateComm: null,
-    producer: null,
-  };
-}
-
-function normalizeAffiliateProducts(raw: unknown): SelectableProduct[] {
-  const payload = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  const items = Array.isArray(payload.products) ? payload.products : [];
-
-  return items
-    .map<SelectableProduct | null>((item) => {
-      if (!item || typeof item !== 'object') return null;
-      const request = item as Record<string, unknown>;
-      const affiliateProduct = (
-        request.affiliateProduct && typeof request.affiliateProduct === 'object'
-          ? request.affiliateProduct
-          : {}
-      ) as Record<string, unknown>;
-      if (request.status !== 'APPROVED' && affiliateProduct.isApproved !== true) {
-        return null;
-      }
-
-      const id = String(affiliateProduct.id || request.affiliateProductId || '').trim();
-      if (!id) return null;
-
-      return {
-        id,
-        name: toStringValue(affiliateProduct.name, 'Produto afiliado'),
-        price: toNumber(affiliateProduct.price),
-        type: 'affiliate',
-        imageUrl:
-          typeof affiliateProduct.imageUrl === 'string'
-            ? affiliateProduct.imageUrl
-            : typeof affiliateProduct.thumbnailUrl === 'string'
-              ? affiliateProduct.thumbnailUrl
-              : null,
-        affiliateComm:
-          affiliateProduct.commission == null ? null : toNumber(affiliateProduct.commission, 0),
-        producer:
-          typeof affiliateProduct.producer === 'string' && affiliateProduct.producer.trim()
-            ? affiliateProduct.producer
-            : 'Marketplace',
-      };
-    })
-    .filter((item): item is SelectableProduct => Boolean(item));
-}
-
-function getProductIcon(product: SelectableProduct) {
-  if (product.imageUrl) {
-    return null;
-  }
-  const name = product.name.toLowerCase();
-  if (product.type === 'affiliate') return '🔗';
-  if (name.includes('curso') || name.includes('class')) return '🎓';
-  if (name.includes('kit') || name.includes('template')) return '📋';
-  return '📦';
-}
+// Pure helpers moved to ./WhatsAppExperience.helpers.ts.
 
 function Steps({ current, steps }: { current: number; steps: readonly string[] }) {
   return (
