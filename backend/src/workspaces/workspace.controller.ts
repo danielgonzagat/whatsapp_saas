@@ -122,6 +122,12 @@ export class WorkspaceController {
       workspaceId,
     });
     snapshot.provider = providerSurface;
+    if (providerSurface === 'legacy-runtime') {
+      snapshot.qrCode = null;
+      if (snapshot.disconnectReason === 'waha_qr_pending') {
+        snapshot.disconnectReason = 'legacy_runtime_qr_pending';
+      }
+    }
     settings.whatsappApiSession = snapshot;
     delete settings.whatsappWebSession;
     return this.sanitizeProviderSettings(settings) as ProviderSettings;
