@@ -67,7 +67,8 @@ For multi-step tasks, state a brief plan:
 3. [Step] -> verify: [check]
 ```
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant
+clarification.
 
 ---
 
@@ -202,21 +203,33 @@ Before saying "done", "fixed", or "complete":
 
 ## 13. Stripe Migration (active mandate)
 
-KLOEL is migrating ALL payment infrastructure from Asaas + Mercado Pago to **Stripe Connect Platform Model with Custom Accounts**. This is an active multi-phase mandate authorized by the repo owner on 2026-04-17.
+KLOEL is migrating ALL payment infrastructure from Asaas + Mercado Pago to **Stripe Connect Platform
+Model with Custom Accounts**. This is an active multi-phase mandate authorized by the repo owner on
+2026-04-17.
 
-**Founding ADR**: [docs/adr/0003-stripe-connect-platform-model.md](docs/adr/0003-stripe-connect-platform-model.md).
-**Executable plan (read before touching any payment code)**: [docs/plans/STRIPE_MIGRATION_PLAN.md](docs/plans/STRIPE_MIGRATION_PLAN.md).
+**Founding ADR**:
+[docs/adr/0003-stripe-connect-platform-model.md](docs/adr/0003-stripe-connect-platform-model.md).
+**Executable plan (read before touching any payment code)**:
+[docs/plans/STRIPE_MIGRATION_PLAN.md](docs/plans/STRIPE_MIGRATION_PLAN.md).
 
 ### Non-negotiable rules for any agent touching payment code
 
-1. **Money in `bigint` cents always**. Never `number`. Stripe rejects float-rounding errors in splits.
-2. **Coverage ≥ 95% in SplitEngine, LedgerEngine, FraudEngine**. Bug here = real loss + legal exposure.
-3. **Idempotent webhooks**. The `WebhookEvent` table with `@@unique([provider, externalId])` stays. Re-delivered webhooks must be no-ops.
-4. **Immutable ledger**. `LedgerEntry` rows are never UPDATEd. Corrections add a new ADJUSTMENT entry.
-5. **Preserve the UX shell** (CLAUDE.md master rule). Migration replaces the engine under the hood; visible checkout UX stays.
-6. **Test keys in dev, live keys only in production via Railway secret manager**. `sk_live_*` never appears in tests, .env files, screenshots, or chat.
-7. **ADR-driven**. Any deviation from the plan requires a new ADR. No improvisation. If you discover a constraint that invalidates ADR 0003, stop and report.
-8. **Phase gates**. Don't skip phases. Each phase has criteria-of-done in the plan. Don't mark complete without evidence (commit hash, test output).
+1. **Money in `bigint` cents always**. Never `number`. Stripe rejects float-rounding errors in
+   splits.
+2. **Coverage ≥ 95% in SplitEngine, LedgerEngine, FraudEngine**. Bug here = real loss + legal
+   exposure.
+3. **Idempotent webhooks**. The `WebhookEvent` table with `@@unique([provider, externalId])` stays.
+   Re-delivered webhooks must be no-ops.
+4. **Immutable ledger**. `LedgerEntry` rows are never UPDATEd. Corrections add a new ADJUSTMENT
+   entry.
+5. **Preserve the UX shell** (CLAUDE.md master rule). Migration replaces the engine under the hood;
+   visible checkout UX stays.
+6. **Test keys in dev, live keys only in production via Railway secret manager**. `sk_live_*` never
+   appears in tests, .env files, screenshots, or chat.
+7. **ADR-driven**. Any deviation from the plan requires a new ADR. No improvisation. If you discover
+   a constraint that invalidates ADR 0003, stop and report.
+8. **Phase gates**. Don't skip phases. Each phase has criteria-of-done in the plan. Don't mark
+   complete without evidence (commit hash, test output).
 
 ### Where each piece will live (target tree)
 

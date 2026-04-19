@@ -1,18 +1,22 @@
 # STRIPE CUTOVER PLAN
 
 > **Status**: Completed.
-> **ADR fundador**: [docs/adr/0003-stripe-connect-platform-model.md](../adr/0003-stripe-connect-platform-model.md)
+> **ADR fundador**:
+> [docs/adr/0003-stripe-connect-platform-model.md](../adr/0003-stripe-connect-platform-model.md)
 > **Estado atual**: Stripe é a única infraestrutura ativa de pagamento do KLOEL.
 
 ## Objetivo
 
-Consolidar checkout, Pix, webhooks, wallet, refunds e fluxos públicos em Stripe, removendo provedores legados do runtime ativo e deixando o repositório pronto para evolução do `Payment Kernel` sobre uma base única.
+Consolidar checkout, Pix, webhooks, wallet, refunds e fluxos públicos em Stripe, removendo
+provedores legados do runtime ativo e deixando o repositório pronto para evolução do
+`Payment Kernel` sobre uma base única.
 
 ## Resultado entregue
 
 - Checkout público consolidado em Stripe.
 - Pix de teste mantido no fluxo principal.
-- Webhook de pagamento consolidado em [backend/src/webhooks/payment-webhook.controller.ts](../../backend/src/webhooks/payment-webhook.controller.ts).
+- Webhook de pagamento consolidado em
+  [backend/src/webhooks/payment-webhook.controller.ts](../../backend/src/webhooks/payment-webhook.controller.ts).
 - Serviços de pagamento do Kloel consolidados em Stripe:
   - [backend/src/kloel/payment.service.ts](../../backend/src/kloel/payment.service.ts)
   - [backend/src/kloel/smart-payment.service.ts](../../backend/src/kloel/smart-payment.service.ts)

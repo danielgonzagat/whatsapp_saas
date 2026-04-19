@@ -1,6 +1,7 @@
 # GitHub Repository Hardening
 
-These settings cannot be enforced fully from repository code alone. Apply them in GitHub repository settings for the KLOEL repo.
+These settings cannot be enforced fully from repository code alone. Apply them in GitHub repository
+settings for the KLOEL repo.
 
 ## Code Security
 
@@ -57,7 +58,8 @@ Use the exact check names that appear in GitHub UI. The repository source of tru
 - `.github/workflows/deploy-production.yml`
 - `.github/workflows/release-please.yml`
 
-The old `.github/workflows/deploy.yml` is intentionally disabled to avoid duplicate production deploy paths.
+The old `.github/workflows/deploy.yml` is intentionally disabled to avoid duplicate production
+deploy paths.
 
 ## GitHub Environments
 
@@ -91,7 +93,9 @@ Configure environment variables:
 
 ## Operational Rule
 
-Do not consider the repository hardened until the settings above are enabled in GitHub itself. The repository code now contains the workflows and policies; the GitHub-side switches still need to be turned on.
+Do not consider the repository hardened until the settings above are enabled in GitHub itself. The
+repository code now contains the workflows and policies; the GitHub-side switches still need to be
+turned on.
 
 ## Dependabot Automation
 
@@ -115,26 +119,35 @@ The repository also uses `release-please` to keep versioning and changelog gener
 - `release-please-config.json`
 - `.release-please-manifest.json`
 
-Release PRs are created by automation on `main`. They must remain compatible with the enforced branch policy of one approving review, CODEOWNER review on critical paths, and the required CI checks.
+Release PRs are created by automation on `main`. They must remain compatible with the enforced
+branch policy of one approving review, CODEOWNER review on critical paths, and the required CI
+checks.
 
 ## Quality Ratchets
 
 Keep the repository-level ratchets active:
 
-- `seatbelt:check` must run in CI and fail on new ESLint violations above the committed baseline in `.eslint-seatbelt.tsv`
-- `quality:dead-code` must run in CI so Knip evidence is refreshed and the ratchet can reject new dead code
-- `quality:graph` must run in CI so Madge evidence is refreshed and the ratchet can reject new circular dependencies
+- `seatbelt:check` must run in CI and fail on new ESLint violations above the committed baseline in
+  `.eslint-seatbelt.tsv`
+- `quality:dead-code` must run in CI so Knip evidence is refreshed and the ratchet can reject new
+  dead code
+- `quality:graph` must run in CI so Madge evidence is refreshed and the ratchet can reject new
+  circular dependencies
 - `ratchet:check` must remain required
-- `Codecov` must stay connected, and `codecov/patch` must stay required so patch coverage never drops below the configured floor in `codecov.yml`
-- `coverage:normalize` must run before coverage uploads so LCOV paths stay repo-relative in the monorepo
-- `Codacy Static Code Analysis` and `Codacy Diff Coverage` must stay active through the Codacy GitHub app
+- `Codecov` must stay connected, and `codecov/patch` must stay required so patch coverage never
+  drops below the configured floor in `codecov.yml`
+- `coverage:normalize` must run before coverage uploads so LCOV paths stay repo-relative in the
+  monorepo
+- `Codacy Static Code Analysis` and `Codacy Diff Coverage` must stay active through the Codacy
+  GitHub app
 - Codacy coverage upload must stay active in CI through the pinned official action
 
 ## Codacy Guardrails MCP
 
 Keep the local MCP bridge active for AI-assisted development:
 
-- `.mcp.json` must contain the `codacy` MCP server using the official `@codacy/codacy-mcp` package directly or the committed launcher `scripts/mcp/codacy-mcp-launcher.sh`
+- `.mcp.json` must contain the `codacy` MCP server using the official `@codacy/codacy-mcp` package
+  directly or the committed launcher `scripts/mcp/codacy-mcp-launcher.sh`
 - local shell env must expose `CODACY_ACCOUNT_TOKEN` (or `CODACY_API_TOKEN`) for the MCP server
 - local shell env should also expose:
   - `CODACY_ORGANIZATION_PROVIDER=gh`
@@ -149,7 +162,8 @@ The repository contains:
 - `scripts/ops/install-auto-sync-launchagent.sh`
 - `scripts/ops/print-auto-sync-status.sh`
 
-Installing the LaunchAgent makes the Mac poll `origin/main` every 60 seconds and fast-forward the local repo automatically, but only when:
+Installing the LaunchAgent makes the Mac poll `origin/main` every 60 seconds and fast-forward the
+local repo automatically, but only when:
 
 - the current branch is `main`
 - the working tree is clean
@@ -157,7 +171,9 @@ Installing the LaunchAgent makes the Mac poll `origin/main` every 60 seconds and
 
 This avoids overwriting local work while keeping the machine synced after Dependabot merges.
 
-Additionally, the sync script keeps a dedicated mirror clone at `~/whatsapp_saas_live` hard-synced to `origin/main`, so the machine always has one fully updated copy even if the working repo is dirty.
+Additionally, the sync script keeps a dedicated mirror clone at `~/whatsapp_saas_live` hard-synced
+to `origin/main`, so the machine always has one fully updated copy even if the working repo is
+dirty.
 
 The sync writes local status to:
 
@@ -180,6 +196,8 @@ The live PULSE execution trace now writes outside the repo by default:
 
 - `~/Library/Application Support/Kloel/pulse/PULSE_EXECUTION_TRACE.json`
 
-`PULSE_EXECUTION_TRACE.json` remains ignored in the repo root because CI and final artifact generation may still materialize a root copy intentionally.
+`PULSE_EXECUTION_TRACE.json` remains ignored in the repo root because CI and final artifact
+generation may still materialize a root copy intentionally.
 
-Versioned PULSE evidence files remain part of the repository contract; only local-only trace/screenshot spillover is ignored.
+Versioned PULSE evidence files remain part of the repository contract; only local-only
+trace/screenshot spillover is ignored.

@@ -2,7 +2,8 @@
 
 ## What this installs
 
-Kloel now vendors the upstream `coreyhaines31/marketingskills` library into project-local `.agents/skills/`.
+Kloel now vendors the upstream `coreyhaines31/marketingskills` library into project-local
+`.agents/skills/`.
 
 As of **April 19, 2026**, the upstream repository exposes **36** public skills:
 
@@ -52,8 +53,10 @@ Kloel adds:
 
 These two files make the upstream library useful for Kloel-specific work:
 
-- the context document captures Kloel positioning, ICP, objections, differentiation, and BR operator language
-- the companion skill tells future agents to combine the upstream frameworks with Brazilian-market adaptation and Kloel realities
+- the context document captures Kloel positioning, ICP, objections, differentiation, and BR operator
+  language
+- the companion skill tells future agents to combine the upstream frameworks with Brazilian-market
+  adaptation and Kloel realities
 
 ## Two operating levels
 
@@ -81,7 +84,9 @@ The agent should combine:
 
 The seller-facing CIA should not expose the word "skill" to sellers.
 
-Instead, the backend loads the same marketing domains as internal playbooks and injects them only when the seller ask is marketing-related. The CIA must answer in native pt-BR and ground its answer in live workspace data.
+Instead, the backend loads the same marketing domains as internal playbooks and injects them only
+when the seller ask is marketing-related. The CIA must answer in native pt-BR and ground its answer
+in live workspace data.
 
 ## Updating from upstream
 
@@ -93,5 +98,7 @@ Instead, the backend loads the same marketing domains as internal playbooks and 
 
 ## Notes
 
-- Kloel intentionally treats the upstream library as the reference taxonomy, but not as a literal final output style.
-- All seller-facing usage must be adapted to Brazilian info-product and e-commerce language, examples, and execution realities.
+- Kloel intentionally treats the upstream library as the reference taxonomy, but not as a literal
+  final output style.
+- All seller-facing usage must be adapted to Brazilian info-product and e-commerce language,
+  examples, and execution realities.
