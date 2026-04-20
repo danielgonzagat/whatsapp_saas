@@ -1,7 +1,9 @@
 import { adminFetch } from './admin-client';
 
+/** Admin account kyc status type. */
 export type AdminAccountKycStatus = 'pending' | 'submitted' | 'approved' | 'rejected' | 'unknown';
 
+/** Admin account row shape. */
 export interface AdminAccountRow {
   workspaceId: string;
   name: string;
@@ -17,11 +19,13 @@ export interface AdminAccountRow {
   frozenBalanceInCents: number;
 }
 
+/** List accounts response shape. */
 export interface ListAccountsResponse {
   items: AdminAccountRow[];
   total: number;
 }
 
+/** Admin account agent shape. */
 export interface AdminAccountAgent {
   id: string;
   name: string;
@@ -33,6 +37,7 @@ export interface AdminAccountAgent {
   kycRejectedReason: string | null;
 }
 
+/** Admin account kyc document shape. */
 export interface AdminAccountKycDocument {
   id: string;
   type: string;
@@ -44,6 +49,7 @@ export interface AdminAccountKycDocument {
   createdAt: string;
 }
 
+/** Admin account detail shape. */
 export interface AdminAccountDetail {
   workspaceId: string;
   name: string;
@@ -75,6 +81,7 @@ export interface AdminAccountDetail {
   }>;
 }
 
+/** Admin account impersonation session shape. */
 export interface AdminAccountImpersonationSession {
   access_token: string;
   refresh_token: string;
@@ -95,6 +102,7 @@ export interface AdminAccountImpersonationSession {
   }>;
 }
 
+/** Kyc queue row shape. */
 export interface KycQueueRow {
   agentId: string;
   agentName: string;
@@ -106,11 +114,13 @@ export interface KycQueueRow {
   documentCount: number;
 }
 
+/** Kyc queue response shape. */
 export interface KycQueueResponse {
   items: KycQueueRow[];
   total: number;
 }
 
+/** List accounts query shape. */
 export interface ListAccountsQuery {
   search?: string;
   kycStatus?: string;
@@ -118,15 +128,25 @@ export interface ListAccountsQuery {
   take?: number;
 }
 
+/** Admin account state action type. */
 export type AdminAccountStateAction = 'SUSPEND' | 'BLOCK' | 'UNBLOCK' | 'FREEZE' | 'UNFREEZE';
 
+/** Admin accounts api. */
 export const adminAccountsApi = {
   list(query: ListAccountsQuery = {}): Promise<ListAccountsResponse> {
     const params = new URLSearchParams();
-    if (query.search) params.set('search', query.search);
-    if (query.kycStatus) params.set('kycStatus', query.kycStatus);
-    if (query.skip !== undefined) params.set('skip', String(query.skip));
-    if (query.take !== undefined) params.set('take', String(query.take));
+    if (query.search) {
+      params.set('search', query.search);
+    }
+    if (query.kycStatus) {
+      params.set('kycStatus', query.kycStatus);
+    }
+    if (query.skip !== undefined) {
+      params.set('skip', String(query.skip));
+    }
+    if (query.take !== undefined) {
+      params.set('take', String(query.take));
+    }
     const qs = params.toString();
     return adminFetch<ListAccountsResponse>(qs ? `/accounts?${qs}` : '/accounts');
   },

@@ -30,7 +30,9 @@ const FONT_SANS = "var(--font-sora), 'Sora', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";
 
 function formatMoney(value: number | null | undefined) {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) {
+    return '—';
+  }
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -39,7 +41,9 @@ function formatMoney(value: number | null | undefined) {
 }
 
 function formatInteger(value: number | null | undefined) {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) {
+    return '—';
+  }
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
 }
 
@@ -71,7 +75,9 @@ function statusTone(status: string) {
 }
 
 function pct(value: number, total: number) {
-  if (!total) return 0;
+  if (!total) {
+    return 0;
+  }
   return Math.max(0, Math.min(100, Math.round((value / total) * 100)));
 }
 
@@ -248,6 +254,7 @@ function ProductCard({
   );
 }
 
+/** Produtos page. */
 export default function ProdutosPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -345,7 +352,9 @@ export default function ProdutosPage() {
 
   async function rejectProduct(product: AdminProductRow) {
     const reason = window.prompt('Motivo da rejeição');
-    if (!reason) return;
+    if (!reason) {
+      return;
+    }
 
     setBusyId(product.id);
     try {

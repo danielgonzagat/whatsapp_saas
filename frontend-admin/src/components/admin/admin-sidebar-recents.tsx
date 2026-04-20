@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { ConversationsIcon } from './admin-sidebar-config';
 import { useAdminChatHistory } from '@/lib/admin-chat-history';
 
+/** Admin sidebar recents. */
 export function AdminSidebarRecents({ expanded }: { expanded: boolean }) {
   const router = useRouter();
   const { sessions, activeSessionId, setActiveSessionId } = useAdminChatHistory();

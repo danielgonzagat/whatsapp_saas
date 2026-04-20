@@ -9,12 +9,17 @@ import { AdminNotificationsPanel } from './admin-notifications-panel';
 
 function initialsFromName(name?: string | null) {
   const trimmed = String(name || '').trim();
-  if (!trimmed) return 'A';
+  if (!trimmed) {
+    return 'A';
+  }
   const parts = trimmed.split(/\s+/);
-  if (parts.length === 1) return parts[0]?.slice(0, 1).toUpperCase() || 'A';
+  if (parts.length === 1) {
+    return parts[0]?.slice(0, 1).toUpperCase() || 'A';
+  }
   return `${parts[0]?.slice(0, 1) || ''}${parts[parts.length - 1]?.slice(0, 1) || ''}`.toUpperCase();
 }
 
+/** Admin sidebar user menu. */
 export function AdminSidebarUserMenu({ expanded }: { expanded: boolean }) {
   const router = useRouter();
   const { admin, logout } = useAdminSession();
@@ -28,7 +33,9 @@ export function AdminSidebarUserMenu({ expanded }: { expanded: boolean }) {
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
 
     const handlePointerDown = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) {

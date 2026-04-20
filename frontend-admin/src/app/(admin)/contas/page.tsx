@@ -32,6 +32,7 @@ function kycLabel(value: AdminAccountKycStatus) {
   return value;
 }
 
+/** Contas page. */
 export default function ContasPage() {
   const [search, setSearch] = useState('');
   const [kycStatus, setKycStatus] = useState<'' | AdminAccountKycStatus>('');
@@ -57,7 +58,9 @@ export default function ContasPage() {
   const selectedCount = selected.length;
 
   async function applyBulkAction(action: 'SUSPEND' | 'BLOCK' | 'UNBLOCK') {
-    if (selected.length === 0) return;
+    if (selected.length === 0) {
+      return;
+    }
     setBulkBusy(true);
     try {
       await adminAccountsApi.bulkUpdateState({

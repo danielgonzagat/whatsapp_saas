@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Admin audit record shape. */
 export interface AdminAuditRecord {
   id: string;
   adminUserId: string | null;
@@ -13,11 +14,13 @@ export interface AdminAuditRecord {
   adminUser?: { id: string; name: string; email: string; role: string } | null;
 }
 
+/** Admin audit list response shape. */
 export interface AdminAuditListResponse {
   items: AdminAuditRecord[];
   total: number;
 }
 
+/** Admin audit list filters shape. */
 export interface AdminAuditListFilters {
   adminUserId?: string;
   action?: string;
@@ -28,6 +31,7 @@ export interface AdminAuditListFilters {
   take?: number;
 }
 
+/** Admin audit api. */
 export const adminAuditApi = {
   list(filters: AdminAuditListFilters = {}): Promise<AdminAuditListResponse> {
     const params = new URLSearchParams();

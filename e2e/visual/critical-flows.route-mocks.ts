@@ -34,7 +34,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
 
   if (route.name === 'inbox') {
     await page.route('**/inbox/*/conversations', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -42,7 +44,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       });
     });
     await page.route('**/inbox/*/agents', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -50,7 +54,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       });
     });
     await page.route('**/inbox/conversations/*/messages', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -62,7 +68,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
 
   if (route.name === 'crm') {
     await page.route('**/crm/pipelines**', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       const request = requestRoute.request();
       const pathname = new URL(request.url()).pathname;
       if (request.method() !== 'GET' || !pathname.endsWith('/crm/pipelines')) {
@@ -75,7 +83,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       });
     });
     await page.route('**/crm/deals**', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       const request = requestRoute.request();
       const pathname = new URL(request.url()).pathname;
       if (request.method() !== 'GET' || !pathname.endsWith('/crm/deals')) {
@@ -92,7 +102,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
 
   if (route.name === 'wallet') {
     await page.route('**/kloel/wallet/*/balance', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -100,7 +112,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       });
     });
     await page.route('**/kloel/wallet/*/transactions', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -108,7 +122,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       });
     });
     await page.route('**/kloel/wallet/*/chart', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -116,7 +132,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       });
     });
     await page.route('**/kloel/wallet/*/monthly', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -124,7 +142,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       });
     });
     await page.route('**/kloel/wallet/*/withdrawals', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -132,7 +152,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       });
     });
     await page.route('**/kloel/wallet/*/anticipations', async (requestRoute) => {
-      if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+      if (requestRoute.request().isNavigationRequest()) {
+        return requestRoute.fallback();
+      }
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -147,7 +169,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
   }
 
   await page.route(`**/products/${VISUAL_PRODUCT_EDIT_ID}/urls`, async (requestRoute) => {
-    if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+    if (requestRoute.request().isNavigationRequest()) {
+      return requestRoute.fallback();
+    }
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -156,7 +180,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
   });
 
   await page.route(`**/products/${VISUAL_PRODUCT_EDIT_ID}/coupons`, async (requestRoute) => {
-    if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+    if (requestRoute.request().isNavigationRequest()) {
+      return requestRoute.fallback();
+    }
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -165,7 +191,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
   });
 
   await page.route(`**/products/${VISUAL_PRODUCT_EDIT_ID}`, async (requestRoute) => {
-    if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+    if (requestRoute.request().isNavigationRequest()) {
+      return requestRoute.fallback();
+    }
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -178,7 +206,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       return requestRoute.fallback();
     }
     const pathname = new URL(requestRoute.request().url()).pathname;
-    if (!pathname.endsWith('/products')) return requestRoute.fallback();
+    if (!pathname.endsWith('/products')) {
+      return requestRoute.fallback();
+    }
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -187,10 +217,14 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
   });
 
   await page.route('**/checkout/products', async (requestRoute) => {
-    if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+    if (requestRoute.request().isNavigationRequest()) {
+      return requestRoute.fallback();
+    }
     const method = requestRoute.request().method();
     const pathname = new URL(requestRoute.request().url()).pathname;
-    if (!pathname.endsWith('/checkout/products')) return requestRoute.fallback();
+    if (!pathname.endsWith('/checkout/products')) {
+      return requestRoute.fallback();
+    }
     if (method === 'GET') {
       await requestRoute.fulfill({
         status: 200,
@@ -211,7 +245,9 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
   });
 
   await page.route(`**/checkout/products/${VISUAL_CHECKOUT_PRODUCT_ID}`, async (requestRoute) => {
-    if (requestRoute.request().isNavigationRequest()) return requestRoute.fallback();
+    if (requestRoute.request().isNavigationRequest()) {
+      return requestRoute.fallback();
+    }
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',

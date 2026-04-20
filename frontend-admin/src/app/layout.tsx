@@ -6,6 +6,7 @@ import { AdminSessionProvider } from '@/lib/auth/admin-session-context';
 import { jetbrainsMono, sora } from './fonts';
 import './globals.css';
 
+/** Metadata. */
 export const metadata: Metadata = {
   title: 'Kloel',
   description:
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
   },
 };
 
+/** Viewport. */
 export const viewport: Viewport = {
   // Viewport theme color is the LIGHT default. When the user flips the
   // toggle to dark we update meta[name=theme-color] at runtime via
@@ -28,6 +30,7 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/** Root layout. */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>

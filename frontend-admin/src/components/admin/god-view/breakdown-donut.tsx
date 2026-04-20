@@ -18,15 +18,18 @@ const COLORS = [
   'rgba(232, 93, 48, 0.16)',
 ];
 
+/** Breakdown datum shape. */
 export interface BreakdownDatum {
   label: string;
   gmvInCents: number;
 }
 
+/** Breakdown donut props shape. */
 export interface BreakdownDonutProps {
   data: BreakdownDatum[];
 }
 
+/** Breakdown donut. */
 export function BreakdownDonut({ data }: BreakdownDonutProps) {
   if (data.length === 0) {
     return (

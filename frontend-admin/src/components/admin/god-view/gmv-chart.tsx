@@ -19,6 +19,7 @@ const BRL = new Intl.NumberFormat('pt-BR', {
 
 const SHORT_DATE = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' });
 
+/** Gmv chart props shape. */
 export interface GmvChartProps {
   data: GmvDailyPoint[];
 }
@@ -37,6 +38,7 @@ function toRows(data: GmvDailyPoint[]): ChartRow[] {
   }));
 }
 
+/** Gmv chart. */
 export function GmvChart({ data }: GmvChartProps) {
   if (data.length === 0) {
     return (

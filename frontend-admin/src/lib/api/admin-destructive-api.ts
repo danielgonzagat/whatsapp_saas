@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Destructive intent kind type. */
 export type DestructiveIntentKind =
   | 'ACCOUNT_SUSPEND'
   | 'ACCOUNT_DEACTIVATE'
@@ -12,6 +13,7 @@ export type DestructiveIntentKind =
   | 'FORCE_LOGOUT_GLOBAL'
   | 'CACHE_PURGE';
 
+/** Destructive intent status type. */
 export type DestructiveIntentStatus =
   | 'PENDING'
   | 'CONFIRMED'
@@ -21,6 +23,7 @@ export type DestructiveIntentStatus =
   | 'EXPIRED'
   | 'UNDONE';
 
+/** Destructive intent view shape. */
 export interface DestructiveIntentView {
   id: string;
   kind: DestructiveIntentKind;
@@ -41,6 +44,7 @@ export interface DestructiveIntentView {
   resultSnapshot: Record<string, unknown> | null;
 }
 
+/** Create intent input shape. */
 export interface CreateIntentInput {
   kind: DestructiveIntentKind;
   targetType: string;
@@ -49,6 +53,7 @@ export interface CreateIntentInput {
   ttlSeconds?: number;
 }
 
+/** Admin destructive api. */
 export const adminDestructiveApi = {
   create(input: CreateIntentInput): Promise<DestructiveIntentView> {
     return adminFetch<DestructiveIntentView>('/destructive-intents', {

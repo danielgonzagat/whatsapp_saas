@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { AdminAppShell } from '@/components/admin/admin-app-shell';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 
+/** Admin layout. */
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { admin, isBooting } = useAdminSession();

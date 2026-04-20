@@ -50,7 +50,9 @@ const METHOD_LABELS: Record<PaymentMethodValue, string> = {
 const FONT_MONO = "'JetBrains Mono', monospace";
 
 function formatInteger(value: number | null | undefined) {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) {
+    return '—';
+  }
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
 }
 
@@ -79,6 +81,7 @@ function DayBars({ values }: { values: Array<{ label: string; totalInCents: numb
   );
 }
 
+/** Vendas page. */
 export default function VendasPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -110,7 +113,9 @@ export default function VendasPage() {
         ? 'Motivo administrativo do estorno'
         : 'Motivo administrativo do chargeback/fraude',
     );
-    if (note === null) return;
+    if (note === null) {
+      return;
+    }
 
     setBusyOrderId(orderId);
     try {

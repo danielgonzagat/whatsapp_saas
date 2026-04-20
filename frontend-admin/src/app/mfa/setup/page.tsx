@@ -12,6 +12,7 @@ import { AdminApiClientError } from '@/lib/api/admin-errors';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 import type { MfaSetupPayload } from '@/lib/auth/admin-session-types';
 
+/** Mfa setup page. */
 export default function MfaSetupPage() {
   return (
     <Suspense fallback={null}>
@@ -48,7 +49,9 @@ function MfaSetupScreen() {
         }
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         if (err instanceof AdminApiClientError) {
           setError(err.message);
         } else {

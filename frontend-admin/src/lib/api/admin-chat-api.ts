@@ -1,7 +1,9 @@
 import { adminFetch } from './admin-client';
 
+/** Admin chat role type. */
 export type AdminChatRole = 'USER' | 'ASSISTANT' | 'TOOL' | 'SYSTEM';
 
+/** Admin chat message view shape. */
 export interface AdminChatMessageView {
   id: string;
   role: AdminChatRole;
@@ -12,6 +14,7 @@ export interface AdminChatMessageView {
   createdAt: string;
 }
 
+/** Admin chat session view shape. */
 export interface AdminChatSessionView {
   id: string;
   title: string | null;
@@ -21,11 +24,13 @@ export interface AdminChatSessionView {
   messages: AdminChatMessageView[];
 }
 
+/** Send message input shape. */
 export interface SendMessageInput {
   sessionId?: string;
   content: string;
 }
 
+/** Admin chat api. */
 export const adminChatApi = {
   sendMessage(input: SendMessageInput): Promise<AdminChatSessionView> {
     return adminFetch<AdminChatSessionView>('/chat/message', {

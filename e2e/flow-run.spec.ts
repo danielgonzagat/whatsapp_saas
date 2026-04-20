@@ -14,13 +14,13 @@ test.describe('Flow Execution E2E', () => {
     await page.click('text=Novo Fluxo');
     await page.fill('input[name="name"]', 'E2E Test Flow');
     await page.click('button:has-text("Criar")');
-    
+
     // Wait for editor
     await expect(page).toHaveURL(/\/flows\/editor\/.*/);
 
     // 3. Open Test Console
     await page.click('button[aria-label="Testar Fluxo"]');
-    
+
     // 4. Run Flow
     await page.fill('input[placeholder="Telefone (ex: 5511...)"]', '5511999999999');
     await page.click('button:has-text("Iniciar Teste")');

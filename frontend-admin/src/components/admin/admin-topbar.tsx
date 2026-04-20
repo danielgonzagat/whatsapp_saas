@@ -21,6 +21,7 @@ const ROLE_VARIANT: Record<string, 'ember' | 'warning' | 'default'> = {
   STAFF: 'default',
 };
 
+/** Admin topbar. */
 export function AdminTopbar() {
   const router = useRouter();
   const { admin, logout } = useAdminSession();

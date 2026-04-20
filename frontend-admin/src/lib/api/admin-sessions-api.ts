@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Admin session record shape. */
 export interface AdminSessionRecord {
   id: string;
   ip: string;
@@ -9,6 +10,7 @@ export interface AdminSessionRecord {
   revokedAt: string | null;
 }
 
+/** Admin sessions api. */
 export const adminSessionsApi = {
   listMine(): Promise<AdminSessionRecord[]> {
     return adminFetch<AdminSessionRecord[]>('/sessions/me');

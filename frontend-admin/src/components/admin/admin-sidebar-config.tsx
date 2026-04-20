@@ -15,12 +15,14 @@ import {
   Wallet,
 } from 'lucide-react';
 
+/** Admin sidebar sub item shape. */
 export interface AdminSidebarSubItem {
   key: string;
   label: string;
   href: string;
 }
 
+/** Admin sidebar item shape. */
 export interface AdminSidebarItem {
   key: string;
   label: string;
@@ -30,11 +32,13 @@ export interface AdminSidebarItem {
   minRole?: 'OWNER' | 'MANAGER' | 'STAFF';
 }
 
+/** Admin sidebar section shape. */
 export interface AdminSidebarSection {
   key: string;
   items: AdminSidebarItem[];
 }
 
+/** Admin sidebar icon type. */
 export type AdminSidebarIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
 interface SharedIconProps extends Omit<SVGProps<SVGSVGElement>, 'color'> {
@@ -43,6 +47,7 @@ interface SharedIconProps extends Omit<SVGProps<SVGSVGElement>, 'color'> {
   style?: CSSProperties;
 }
 
+/** Home icon. */
 export function HomeIcon({ size = 18, color = 'currentColor', style, ...props }: SharedIconProps) {
   return (
     <svg
@@ -72,6 +77,7 @@ export function HomeIcon({ size = 18, color = 'currentColor', style, ...props }:
   );
 }
 
+/** Sales icon. */
 export function SalesIcon({ size = 18, color = 'currentColor', style, ...props }: SharedIconProps) {
   return (
     <svg
@@ -123,6 +129,7 @@ export function SalesIcon({ size = 18, color = 'currentColor', style, ...props }
   );
 }
 
+/** Sidebar toggle icon. */
 export function SidebarToggleIcon({
   color = 'var(--app-text-secondary)',
   size = 18,
@@ -148,6 +155,7 @@ export function SidebarToggleIcon({
   );
 }
 
+/** Conversations icon. */
 export function ConversationsIcon({
   size = 18,
   color = 'currentColor',
@@ -182,6 +190,7 @@ export function ConversationsIcon({
   );
 }
 
+/** Admin_sidebar_sections. */
 export const ADMIN_SIDEBAR_SECTIONS: readonly AdminSidebarSection[] = [
   {
     key: 'operational',
@@ -264,6 +273,7 @@ export const ADMIN_SIDEBAR_SECTIONS: readonly AdminSidebarSection[] = [
   },
 ] as const;
 
+/** Admin_ai_actions. */
 export const ADMIN_AI_ACTIONS = [
   { key: 'new-chat', label: 'Novo chat', href: '/chat', icon: Plus },
   { key: 'search', label: 'Buscar', href: '/chat', icon: Search },

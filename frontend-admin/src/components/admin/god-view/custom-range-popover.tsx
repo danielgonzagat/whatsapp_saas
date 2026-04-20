@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
+/** Custom range value shape. */
 export interface CustomRangeValue {
   from: string;
   to: string;
 }
 
+/** Custom range popover. */
 export function CustomRangePopover({
   value,
   onApply,
@@ -24,7 +26,9 @@ export function CustomRangePopover({
   }, [value.from, value.to]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
 
     const handlePointer = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
@@ -89,7 +93,9 @@ export function CustomRangePopover({
               type="button"
               size="sm"
               onClick={() => {
-                if (!draft.from || !draft.to) return;
+                if (!draft.from || !draft.to) {
+                  return;
+                }
                 onApply(draft);
                 setOpen(false);
               }}

@@ -19,7 +19,9 @@ import {
 } from '@/lib/api/admin-compliance-api';
 
 function formatDateTime(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) {
+    return '—';
+  }
   try {
     return new Date(iso).toLocaleString('pt-BR');
   } catch {
@@ -27,6 +29,7 @@ function formatDateTime(iso: string | null): string {
   }
 }
 
+/** Compliance page. */
 export default function CompliancePage() {
   const { data } = useSWR<AdminComplianceOverviewResponse>('admin/compliance/overview', () =>
     adminComplianceApi.overview({ period: '30D' }),

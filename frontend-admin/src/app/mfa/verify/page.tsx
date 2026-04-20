@@ -10,6 +10,7 @@ import { adminAuthApi } from '@/lib/api/admin-auth-api';
 import { AdminApiClientError } from '@/lib/api/admin-errors';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 
+/** Mfa verify page. */
 export default function MfaVerifyPage() {
   return (
     <Suspense fallback={null}>

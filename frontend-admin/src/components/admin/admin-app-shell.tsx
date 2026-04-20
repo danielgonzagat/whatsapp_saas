@@ -28,21 +28,46 @@ const MOBILE_LABELS: Record<string, string> = {
 };
 
 function labelForPath(pathname: string) {
-  if (pathname.startsWith('/produtos')) return MOBILE_LABELS['/produtos'];
-  if (pathname.startsWith('/marketing')) return MOBILE_LABELS['/marketing'];
-  if (pathname.startsWith('/vendas')) return MOBILE_LABELS['/vendas'];
-  if (pathname.startsWith('/carteira')) return MOBILE_LABELS['/carteira'];
-  if (pathname.startsWith('/relatorios')) return MOBILE_LABELS['/relatorios'];
-  if (pathname.startsWith('/contas')) return MOBILE_LABELS['/contas'];
-  if (pathname.startsWith('/compliance')) return MOBILE_LABELS['/compliance'];
-  if (pathname.startsWith('/clientes')) return MOBILE_LABELS['/clientes'];
-  if (pathname.startsWith('/configuracoes')) return MOBILE_LABELS['/configuracoes'];
-  if (pathname.startsWith('/audit')) return MOBILE_LABELS['/audit'];
-  if (pathname.startsWith('/perfil')) return MOBILE_LABELS['/perfil'];
-  if (pathname.startsWith('/chat')) return MOBILE_LABELS['/chat'];
+  if (pathname.startsWith('/produtos')) {
+    return MOBILE_LABELS['/produtos'];
+  }
+  if (pathname.startsWith('/marketing')) {
+    return MOBILE_LABELS['/marketing'];
+  }
+  if (pathname.startsWith('/vendas')) {
+    return MOBILE_LABELS['/vendas'];
+  }
+  if (pathname.startsWith('/carteira')) {
+    return MOBILE_LABELS['/carteira'];
+  }
+  if (pathname.startsWith('/relatorios')) {
+    return MOBILE_LABELS['/relatorios'];
+  }
+  if (pathname.startsWith('/contas')) {
+    return MOBILE_LABELS['/contas'];
+  }
+  if (pathname.startsWith('/compliance')) {
+    return MOBILE_LABELS['/compliance'];
+  }
+  if (pathname.startsWith('/clientes')) {
+    return MOBILE_LABELS['/clientes'];
+  }
+  if (pathname.startsWith('/configuracoes')) {
+    return MOBILE_LABELS['/configuracoes'];
+  }
+  if (pathname.startsWith('/audit')) {
+    return MOBILE_LABELS['/audit'];
+  }
+  if (pathname.startsWith('/perfil')) {
+    return MOBILE_LABELS['/perfil'];
+  }
+  if (pathname.startsWith('/chat')) {
+    return MOBILE_LABELS['/chat'];
+  }
   return MOBILE_LABELS[pathname] || 'Kloel';
 }
 
+/** Admin app shell. */
 export function AdminAppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();

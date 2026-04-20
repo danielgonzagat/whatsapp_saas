@@ -19,7 +19,9 @@ function sessionSearchText(session: AdminChatSessionSummary) {
 }
 
 function formatTimeLabel(iso?: string) {
-  if (!iso) return 'Agora';
+  if (!iso) {
+    return 'Agora';
+  }
   const date = new Date(iso);
   const now = new Date();
   const sameDay = date.toDateString() === now.toDateString();
@@ -28,6 +30,7 @@ function formatTimeLabel(iso?: string) {
     : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
+/** Admin search modal. */
 export function AdminSearchModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const { sessions, setActiveSessionId } = useAdminChatHistory();
@@ -37,7 +40,9 @@ export function AdminSearchModal({ open, onClose }: { open: boolean; onClose: ()
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const timer = window.setTimeout(() => inputRef.current?.focus(), 32);
@@ -57,7 +62,9 @@ export function AdminSearchModal({ open, onClose }: { open: boolean; onClose: ()
 
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return sessions.slice(0, 20);
+    if (!normalized) {
+      return sessions.slice(0, 20);
+    }
 
     return sessions
       .filter((session) => sessionSearchText(session).includes(normalized))
@@ -72,7 +79,9 @@ export function AdminSearchModal({ open, onClose }: { open: boolean; onClose: ()
     itemRefs.current[selectedIndex]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [selectedIndex]);
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   const hasQuery = query.trim().length > 0;
 

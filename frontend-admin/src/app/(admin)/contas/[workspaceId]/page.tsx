@@ -37,7 +37,9 @@ const ORDER_STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'd
 };
 
 function formatDateTime(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) {
+    return '—';
+  }
   try {
     return new Date(iso).toLocaleString('pt-BR');
   } catch {
@@ -45,6 +47,7 @@ function formatDateTime(iso: string | null): string {
   }
 }
 
+/** Account detail page. */
 export default function AccountDetailPage({
   params,
 }: {

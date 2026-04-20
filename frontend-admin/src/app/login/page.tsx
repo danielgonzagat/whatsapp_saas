@@ -11,6 +11,7 @@ import { AdminApiClientError } from '@/lib/api/admin-errors';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 import type { LoginResponse } from '@/lib/auth/admin-session-types';
 
+/** Login page. */
 export default function LoginPage() {
   const router = useRouter();
   const { persistSession } = useAdminSession();

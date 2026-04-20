@@ -11,7 +11,9 @@ test.describe('Billing reactivation flow', () => {
       console.error('[E2E][pageerror]', err);
     });
     page.on('console', (msg) => {
-      if (msg.type() === 'error') console.error('[E2E][console.error]', msg.text());
+      if (msg.type() === 'error') {
+        console.error('[E2E][console.error]', msg.text());
+      }
     });
 
     try {

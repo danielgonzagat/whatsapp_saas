@@ -57,7 +57,9 @@ const ALL_MODULES = [
 const ALL_ACTIONS = ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'APPROVE', 'EXPORT'] as const;
 
 function formatDateTime(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) {
+    return '—';
+  }
   try {
     return new Date(iso).toLocaleString('pt-BR');
   } catch {
@@ -65,6 +67,7 @@ function formatDateTime(iso: string | null): string {
   }
 }
 
+/** Configuracoes page. */
 export default function ConfiguracoesPage() {
   const router = useRouter();
   const { admin } = useAdminSession();
@@ -97,7 +100,9 @@ export default function ConfiguracoesPage() {
     () => adminConfigApi.overview(configSearch || undefined),
   );
 
-  if (!admin || admin.role !== 'OWNER') return null;
+  if (!admin || admin.role !== 'OWNER') {
+    return null;
+  }
   const userList = users ?? [];
 
   return (
@@ -637,7 +642,9 @@ function PermissionEditor({
   }
 
   async function save() {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
     setError(null);
     setBusy(true);
     try {
@@ -658,7 +665,9 @@ function PermissionEditor({
     }
   }
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   return (
     <Card>

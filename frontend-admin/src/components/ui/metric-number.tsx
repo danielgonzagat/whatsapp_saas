@@ -1,6 +1,7 @@
 import type * as React from 'react';
 import { cn } from '@/lib/utils';
 
+/** Metric number props shape. */
 export interface MetricNumberProps extends React.HTMLAttributes<HTMLSpanElement> {
   /** Integer cents when `kind='currency-brl'`; raw number otherwise. */
   value: number | null | undefined;

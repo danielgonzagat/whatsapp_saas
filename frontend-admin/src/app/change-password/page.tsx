@@ -11,6 +11,7 @@ import { AdminApiClientError } from '@/lib/api/admin-errors';
 
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
 
+/** Change password page. */
 export default function ChangePasswordPage() {
   return (
     <Suspense fallback={null}>

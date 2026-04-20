@@ -4,6 +4,7 @@ import { Bell } from 'lucide-react';
 import useSWR from 'swr';
 import { adminNotificationsApi } from '@/lib/api/admin-notifications-api';
 
+/** Admin notifications panel. */
 export function AdminNotificationsPanel() {
   const { data, mutate, isLoading } = useSWR('admin/notifications', () =>
     adminNotificationsApi.list(),

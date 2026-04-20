@@ -11,14 +11,23 @@ export function resolveGreeting(hour: number): string {
     // Fall back to a neutral greeting on bad input rather than throwing.
     return 'Olá';
   }
-  if (hour < 5) return 'Boa madrugada';
-  if (hour < 12) return 'Bom dia';
-  if (hour < 18) return 'Boa tarde';
+  if (hour < 5) {
+    return 'Boa madrugada';
+  }
+  if (hour < 12) {
+    return 'Bom dia';
+  }
+  if (hour < 18) {
+    return 'Boa tarde';
+  }
   return 'Boa noite';
 }
 
+/** First name. */
 export function firstName(fullName: string): string {
   const trimmed = fullName.trim();
-  if (!trimmed) return '';
+  if (!trimmed) {
+    return '';
+  }
   return trimmed.split(/\s+/)[0];
 }

@@ -5,6 +5,7 @@ import type {
 } from '../auth/admin-session-types';
 import { adminFetch } from './admin-client';
 
+/** Admin auth api. */
 export const adminAuthApi = {
   login(email: string, password: string): Promise<LoginResponse> {
     return adminFetch<LoginResponse>('/auth/login', {

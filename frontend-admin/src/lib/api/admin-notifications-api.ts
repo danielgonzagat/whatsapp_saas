@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Admin notifications response shape. */
 export interface AdminNotificationsResponse {
   items: Array<{
     id: string;
@@ -19,6 +20,7 @@ export interface AdminNotificationsResponse {
   };
 }
 
+/** Admin notifications api. */
 export const adminNotificationsApi = {
   list() {
     return adminFetch<AdminNotificationsResponse>('/notifications');

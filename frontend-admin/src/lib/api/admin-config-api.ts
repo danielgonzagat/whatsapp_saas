@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Admin config workspace row shape. */
 export interface AdminConfigWorkspaceRow {
   workspaceId: string;
   name: string;
@@ -12,6 +13,7 @@ export interface AdminConfigWorkspaceRow {
   updatedAt: string;
 }
 
+/** Admin config overview response shape. */
 export interface AdminConfigOverviewResponse {
   metrics: {
     totalWorkspaces: number;
@@ -23,6 +25,7 @@ export interface AdminConfigOverviewResponse {
   workspaces: AdminConfigWorkspaceRow[];
 }
 
+/** Admin config api. */
 export const adminConfigApi = {
   overview(search?: string): Promise<AdminConfigOverviewResponse> {
     const qs = search ? `?search=${encodeURIComponent(search)}` : '';

@@ -59,23 +59,35 @@ function formatPercent(value: number | null | undefined) {
 }
 
 function formatDelta(deltaPct: number | null | undefined) {
-  if (deltaPct === null || deltaPct === undefined) return 'Sem comparativo anterior';
+  if (deltaPct === null || deltaPct === undefined) {
+    return 'Sem comparativo anterior';
+  }
   const sign = deltaPct >= 0 ? '+' : '';
   return `${sign}${PERCENT_FORMATTER.format(deltaPct)}% vs período anterior`;
 }
 
 function formatRelativeTime(value?: string | null) {
-  if (!value) return 'Agora';
+  if (!value) {
+    return 'Agora';
+  }
 
   const diffMs = Date.now() - new Date(value).getTime();
-  if (!Number.isFinite(diffMs) || diffMs < 0) return 'Agora';
+  if (!Number.isFinite(diffMs) || diffMs < 0) {
+    return 'Agora';
+  }
 
   const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return 'Agora';
-  if (minutes < 60) return `há ${minutes} min`;
+  if (minutes < 1) {
+    return 'Agora';
+  }
+  if (minutes < 60) {
+    return `há ${minutes} min`;
+  }
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `há ${hours} h`;
+  if (hours < 24) {
+    return `há ${hours} h`;
+  }
 
   const days = Math.floor(hours / 24);
   return `há ${days} d`;
@@ -93,7 +105,9 @@ function Sparkline({
   height?: number;
 }) {
   const points = useMemo(() => {
-    if (!data.length) return '';
+    if (!data.length) {
+      return '';
+    }
     const max = Math.max(...data);
     const min = Math.min(...data);
     const range = max - min || 1;
@@ -255,6 +269,7 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
+/** Admin home page. */
 export default function AdminHomePage() {
   const router = useRouter();
   const { admin } = useAdminSession();

@@ -14,6 +14,7 @@ import {
 import { AdminApiClientError } from '@/lib/api/admin-errors';
 
 type Phase = 'reason' | 'challenge' | 'success' | 'failed';
+/** Destructive confirm dialog props shape. */
 export interface DestructiveConfirmDialogProps {
   open: boolean;
   onClose(): void;
@@ -24,6 +25,7 @@ export interface DestructiveConfirmDialogProps {
   onSuccess?(result: DestructiveIntentView): void;
 }
 
+/** Destructive confirm dialog. */
 export function DestructiveConfirmDialog({
   open,
   onClose,
@@ -51,10 +53,14 @@ export function DestructiveConfirmDialog({
   }, []);
 
   useEffect(() => {
-    if (!open) reset();
+    if (!open) {
+      reset();
+    }
   }, [open, reset]);
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   async function onCreate(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();

@@ -137,7 +137,9 @@ test.describe('WhatsApp connection flow', () => {
     await expect(page.getByAltText('QR Code E2E WhatsApp')).toHaveCount(0);
   });
 
-  test('shows Meta embedded-signup guidance in the real WhatsApp drawer harness', async ({ page }) => {
+  test('shows Meta embedded-signup guidance in the real WhatsApp drawer harness', async ({
+    page,
+  }) => {
     await page.goto(`${FRONTEND_URL}/e2e/whatsapp-console`);
 
     await page.locator('button').filter({ hasText: 'QR Code' }).first().click();

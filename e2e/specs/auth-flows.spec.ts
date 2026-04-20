@@ -38,9 +38,7 @@ test('auth: check-email, register duplicate, legacy oauth blocked', async ({ req
   expect(legacyOauth.status()).toBe(400);
 });
 
-test('auth: secure google oauth endpoint accepts a real Google credential', async ({
-  request,
-}) => {
+test('auth: secure google oauth endpoint accepts a real Google credential', async ({ request }) => {
   test.skip(
     !process.env.E2E_GOOGLE_TEST_CREDENTIAL,
     'Defina E2E_GOOGLE_TEST_CREDENTIAL para validar o fluxo Google real.',

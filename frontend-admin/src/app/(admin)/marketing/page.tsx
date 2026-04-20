@@ -29,7 +29,9 @@ const FONT_SANS = "var(--font-sora), 'Sora', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";
 
 function formatMoney(value: number | null | undefined) {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) {
+    return '—';
+  }
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -38,10 +40,13 @@ function formatMoney(value: number | null | undefined) {
 }
 
 function formatInteger(value: number | null | undefined) {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) {
+    return '—';
+  }
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
 }
 
+/** Marketing page. */
 export default function MarketingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

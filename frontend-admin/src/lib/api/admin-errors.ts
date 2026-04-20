@@ -27,12 +27,14 @@ export type AdminErrorCode =
   | 'admin.audit.immutable'
   | 'admin.internal.crypto_failure';
 
+/** Admin api error shape shape. */
 export interface AdminApiErrorShape {
   code: AdminErrorCode | string;
   message: string;
   [extra: string]: unknown;
 }
 
+/** Admin api client error. */
 export class AdminApiClientError extends Error {
   readonly code: string;
   readonly status: number;

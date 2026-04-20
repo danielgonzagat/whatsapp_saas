@@ -20,6 +20,7 @@ import type { AdminRole } from './admin-session-types';
 const REFRESH_KEY = 'kloel-admin:refresh';
 const ADMIN_KEY = 'kloel-admin:admin';
 
+/** Stored admin shape. */
 export interface StoredAdmin {
   id: string;
   name: string;
@@ -49,10 +50,16 @@ class AdminSessionStorage {
   }
 
   getAdmin(): StoredAdmin | null {
-    if (this.admin) return this.admin;
-    if (typeof window === 'undefined') return null;
+    if (this.admin) {
+      return this.admin;
+    }
+    if (typeof window === 'undefined') {
+      return null;
+    }
     const raw = window.localStorage.getItem(ADMIN_KEY);
-    if (!raw) return null;
+    if (!raw) {
+      return null;
+    }
     try {
       const parsed = JSON.parse(raw) as StoredAdmin;
       this.admin = parsed;
@@ -63,7 +70,9 @@ class AdminSessionStorage {
   }
 
   setRefreshToken(token: string | null): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     if (token) {
       window.localStorage.setItem(REFRESH_KEY, token);
     } else {
@@ -72,7 +81,9 @@ class AdminSessionStorage {
   }
 
   getRefreshToken(): string | null {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') {
+      return null;
+    }
     return window.localStorage.getItem(REFRESH_KEY);
   }
 
@@ -86,10 +97,14 @@ class AdminSessionStorage {
   }
 
   async getAccessToken(): Promise<string | null> {
-    if (this.accessToken) return this.accessToken;
+    if (this.accessToken) {
+      return this.accessToken;
+    }
 
     const rawRefresh = this.getRefreshToken();
-    if (!rawRefresh || !this.refreshFn) return null;
+    if (!rawRefresh || !this.refreshFn) {
+      return null;
+    }
 
     if (!this.refreshPromise) {
       const fn = this.refreshFn;
@@ -121,10 +136,12 @@ class AdminSessionStorage {
   }
 }
 
+/** Refresh result shape. */
 export interface RefreshResult {
   accessToken: string;
   refreshToken: string;
   admin: StoredAdmin;
 }
 
+/** Admin session storage. */
 export const adminSessionStorage = new AdminSessionStorage();

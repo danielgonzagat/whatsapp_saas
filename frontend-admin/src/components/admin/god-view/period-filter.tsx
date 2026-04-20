@@ -10,6 +10,7 @@ const OPTIONS: { value: AdminHomePeriod; label: string }[] = [
   { value: '30D', label: '30 dias' },
 ];
 
+/** Period filter props shape. */
 export interface PeriodFilterProps {
   value: AdminHomePeriod;
   onChange: (next: AdminHomePeriod) => void;
@@ -18,6 +19,7 @@ export interface PeriodFilterProps {
   className?: string;
 }
 
+/** Period filter. */
 export function PeriodFilter({
   value,
   onChange,

@@ -16,6 +16,7 @@ export const sora = localFont({
   fallback: ['system-ui', 'sans-serif'],
 });
 
+/** Jetbrains mono. */
 export const jetbrainsMono = localFont({
   src: [
     {

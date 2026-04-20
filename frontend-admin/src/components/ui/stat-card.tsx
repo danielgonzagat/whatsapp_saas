@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { MetricNumber, type MetricNumberProps } from '@/components/ui/metric-number';
 import { cn } from '@/lib/utils';
 
+/** Stat card props shape. */
 export interface StatCardProps {
   label: string;
   /** Primary metric value. Null renders an em-dash. */
@@ -52,6 +53,7 @@ function DeltaPill({ pct }: { pct: number }) {
   );
 }
 
+/** Stat card. */
 export function StatCard({
   label,
   value,

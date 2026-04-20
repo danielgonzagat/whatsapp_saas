@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Admin product row shape. */
 export interface AdminProductRow {
   id: string;
   workspaceId: string;
@@ -26,11 +27,13 @@ export interface AdminProductRow {
   };
 }
 
+/** List products response shape. */
 export interface ListProductsResponse {
   items: AdminProductRow[];
   total: number;
 }
 
+/** Admin product detail shape. */
 export interface AdminProductDetail extends AdminProductRow {
   sku: string | null;
   tags: string[];
@@ -55,6 +58,7 @@ export interface AdminProductDetail extends AdminProductRow {
   };
 }
 
+/** List products query shape. */
 export interface ListProductsQuery {
   search?: string;
   status?: string;
@@ -63,8 +67,10 @@ export interface ListProductsQuery {
   take?: number;
 }
 
+/** Admin product state action type. */
 export type AdminProductStateAction = 'PAUSE' | 'REACTIVATE';
 
+/** Admin products api. */
 export const adminProductsApi = {
   list(query: ListProductsQuery = {}): Promise<ListProductsResponse> {
     const params = new URLSearchParams();

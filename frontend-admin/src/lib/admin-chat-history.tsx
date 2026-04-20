@@ -16,6 +16,7 @@ import { useAdminSession } from '@/lib/auth/admin-session-context';
 const CACHE_KEY_SESSIONS = 'kloel-admin:chat-sessions';
 const CACHE_KEY_ACTIVE = 'kloel-admin:chat-active';
 
+/** Admin chat session summary shape. */
 export interface AdminChatSessionSummary {
   id: string;
   title: string;
@@ -37,7 +38,9 @@ interface AdminChatHistoryContextValue {
 const AdminChatHistoryContext = createContext<AdminChatHistoryContextValue | null>(null);
 
 function readCache<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
   try {
     const raw = window.localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
@@ -47,7 +50,9 @@ function readCache<T>(key: string, fallback: T): T {
 }
 
 function writeCache<T>(key: string, value: T) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {}
@@ -55,13 +60,17 @@ function writeCache<T>(key: string, value: T) {
 
 function deriveSessionTitle(session: AdminChatSessionView): string {
   const explicitTitle = String(session.title || '').trim();
-  if (explicitTitle) return explicitTitle;
+  if (explicitTitle) {
+    return explicitTitle;
+  }
 
   const firstUserMessage = session.messages.find((message) => message.role === 'USER');
   const preview = String(firstUserMessage?.content || '')
     .replace(/\s+/g, ' ')
     .trim();
-  if (!preview) return 'Nova conversa';
+  if (!preview) {
+    return 'Nova conversa';
+  }
   return preview.length > 48 ? `${preview.slice(0, 45)}...` : preview;
 }
 
@@ -94,6 +103,7 @@ function sortSessions(items: AdminChatSessionSummary[]) {
   });
 }
 
+/** Admin chat history provider. */
 export function AdminChatHistoryProvider({ children }: { children: ReactNode }) {
   const { admin } = useAdminSession();
   const [sessions, setSessions] = useState<AdminChatSessionSummary[]>([]);
@@ -115,7 +125,9 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
   }, []);
 
   const refreshSessions = useCallback(async () => {
-    if (!admin) return;
+    if (!admin) {
+      return;
+    }
     try {
       const payload = await adminChatApi.listSessions();
       persistSessions(payload.map(mapSession));
@@ -134,7 +146,9 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
   }, [admin, persistSessions, refreshSessions]);
 
   useEffect(() => {
-    if (!admin) return;
+    if (!admin) {
+      return;
+    }
 
     const handleWindowFocus = () => {
       void refreshSessions();
@@ -199,6 +213,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
   );
 }
 
+/** Use admin chat history. */
 export function useAdminChatHistory() {
   const context = useContext(AdminChatHistoryContext);
   if (!context) {

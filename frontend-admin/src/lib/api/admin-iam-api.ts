@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Admin user record shape. */
 export interface AdminUserRecord {
   id: string;
   name: string;
@@ -14,6 +15,7 @@ export interface AdminUserRecord {
   updatedAt: string;
 }
 
+/** Admin user permission shape. */
 export interface AdminUserPermission {
   id: string;
   adminUserId: string;
@@ -23,6 +25,7 @@ export interface AdminUserPermission {
   createdAt: string;
 }
 
+/** Create admin user input shape. */
 export interface CreateAdminUserInput {
   name: string;
   email: string;
@@ -30,18 +33,21 @@ export interface CreateAdminUserInput {
   role: 'OWNER' | 'MANAGER' | 'STAFF';
 }
 
+/** Update admin user input shape. */
 export interface UpdateAdminUserInput {
   name?: string;
   role?: 'OWNER' | 'MANAGER' | 'STAFF';
   status?: 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
 }
 
+/** Permission set entry shape. */
 export interface PermissionSetEntry {
   module: string;
   action: string;
   allowed: boolean;
 }
 
+/** Admin iam api. */
 export const adminIamApi = {
   listUsers(): Promise<AdminUserRecord[]> {
     return adminFetch<AdminUserRecord[]>('/users');

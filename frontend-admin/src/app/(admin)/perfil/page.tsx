@@ -18,7 +18,9 @@ import { adminUsersApi, type AdminUserRecord } from '@/lib/api/admin-users-api';
 import { AdminApiClientError } from '@/lib/api/admin-errors';
 
 function formatDate(value: string | null): string {
-  if (!value) return '—';
+  if (!value) {
+    return '—';
+  }
   try {
     return new Date(value).toLocaleString('pt-BR');
   } catch {
@@ -26,6 +28,7 @@ function formatDate(value: string | null): string {
   }
 }
 
+/** Perfil page. */
 export default function PerfilPage() {
   const {
     data: me,

@@ -41,6 +41,7 @@ function formatDateTime(iso: string): string {
   }
 }
 
+/** Product detail page. */
 export default function ProductDetailPage({ params }: { params: Promise<{ productId: string }> }) {
   const { productId } = use(params);
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -59,7 +60,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
   );
 
   async function confirmAction() {
-    if (!dialog) return;
+    if (!dialog) {
+      return;
+    }
     setFeedback(null);
     setBusy(true);
     try {

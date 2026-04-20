@@ -30,7 +30,9 @@ const KYC_OPTIONS: Array<{ value: '' | AdminClientKycStatus; label: string }> = 
 ];
 
 function formatDate(value: string | null): string {
-  if (!value) return '—';
+  if (!value) {
+    return '—';
+  }
   try {
     return new Date(value).toLocaleDateString('pt-BR');
   } catch {
@@ -38,6 +40,7 @@ function formatDate(value: string | null): string {
   }
 }
 
+/** Clientes page. */
 export default function ClientesPage() {
   const [search, setSearch] = useState('');
   const [kycStatus, setKycStatus] = useState<'' | AdminClientKycStatus>('');
@@ -69,9 +72,15 @@ export default function ClientesPage() {
       ? Math.round(
           items.reduce((sum, row) => {
             let score = 35;
-            if (row.gmvLast30dInCents > 0) score += 35;
-            if (row.lastSaleAt) score += 15;
-            if (row.kycStatus === 'approved') score += 15;
+            if (row.gmvLast30dInCents > 0) {
+              score += 35;
+            }
+            if (row.lastSaleAt) {
+              score += 15;
+            }
+            if (row.kycStatus === 'approved') {
+              score += 15;
+            }
             return sum + Math.min(score, 100);
           }, 0) / items.length,
         )

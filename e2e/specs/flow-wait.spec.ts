@@ -22,7 +22,11 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   const flow = {
     nodes: [
       { id: 'n1', type: 'messageNode', data: { text: 'start' } },
-      { id: 'n2', type: 'waitNode', data: { expectedKeywords: 'sim', timeoutSeconds: 15, yes: 'n3', no: 'n3' } },
+      {
+        id: 'n2',
+        type: 'waitNode',
+        data: { expectedKeywords: 'sim', timeoutSeconds: 15, yes: 'n3', no: 'n3' },
+      },
       { id: 'n3', type: 'messageNode', data: { text: 'done' } },
     ],
     edges: [

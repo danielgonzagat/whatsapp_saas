@@ -2,6 +2,7 @@ import { adminFetch } from './admin-client';
 import type { AdminHomePeriod } from './admin-dashboard-api';
 import type { AdminTransactionRow } from './admin-transactions-api';
 
+/** Admin compliance overview response shape. */
 export interface AdminComplianceOverviewResponse {
   range: {
     from: string;
@@ -48,12 +49,17 @@ export interface AdminComplianceOverviewResponse {
   }>;
 }
 
+/** Admin compliance api. */
 export const adminComplianceApi = {
   overview(query: { period?: AdminHomePeriod; from?: string; to?: string } = {}) {
     const params = new URLSearchParams();
     params.set('period', query.period ?? '30D');
-    if (query.from) params.set('from', query.from);
-    if (query.to) params.set('to', query.to);
+    if (query.from) {
+      params.set('from', query.from);
+    }
+    if (query.to) {
+      params.set('to', query.to);
+    }
     return adminFetch<AdminComplianceOverviewResponse>(`/compliance/overview?${params.toString()}`);
   },
 };

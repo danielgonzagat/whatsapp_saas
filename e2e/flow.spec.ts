@@ -13,7 +13,7 @@ test('login and create flow', async ({ page }) => {
   await page.click('text=Novo Fluxo');
   await page.fill('input[placeholder="Nome do fluxo"]', 'Test Flow E2E');
   await page.click('button:has-text("Criar")');
-  
+
   // 3. Verify Editor
   await expect(page).toHaveURL(/\/dashboard\/flows\/.+/);
   await expect(page.locator('.react-flow')).toBeVisible();

@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Platform wallet balance shape. */
 export interface PlatformWalletBalance {
   currency: string;
   availableInCents: number;
@@ -8,6 +9,7 @@ export interface PlatformWalletBalance {
   updatedAt: string;
 }
 
+/** Platform ledger kind type. */
 export type PlatformLedgerKind =
   | 'PLATFORM_FEE_CREDIT'
   | 'CHARGEBACK_RESERVE'
@@ -18,6 +20,7 @@ export type PlatformLedgerKind =
   | 'ADJUSTMENT_DEBIT'
   | 'RESERVE_RELEASE';
 
+/** Platform ledger row shape. */
 export interface PlatformLedgerRow {
   id: string;
   currency: string;
@@ -30,11 +33,13 @@ export interface PlatformLedgerRow {
   createdAt: string;
 }
 
+/** List ledger response shape. */
 export interface ListLedgerResponse {
   items: PlatformLedgerRow[];
   total: number;
 }
 
+/** Platform reconcile report shape. */
 export interface PlatformReconcileReport {
   currency: string;
   runAt: string;
@@ -50,6 +55,7 @@ export interface PlatformReconcileReport {
   healthy: boolean;
 }
 
+/** List ledger query shape. */
 export interface ListLedgerQuery {
   currency?: string;
   kind?: PlatformLedgerKind;
@@ -59,6 +65,7 @@ export interface ListLedgerQuery {
   take?: number;
 }
 
+/** Admin carteira api. */
 export const adminCarteiraApi = {
   balance(currency = 'BRL'): Promise<PlatformWalletBalance> {
     return adminFetch<PlatformWalletBalance>(

@@ -1,7 +1,9 @@
 import { adminFetch } from './admin-client';
 
+/** Admin client kyc status type. */
 export type AdminClientKycStatus = 'pending' | 'submitted' | 'approved' | 'rejected' | 'unknown';
 
+/** Admin client row shape. */
 export interface AdminClientRow {
   workspaceId: string;
   name: string;
@@ -20,11 +22,13 @@ export interface AdminClientRow {
   healthScore: number;
 }
 
+/** List clients response shape. */
 export interface ListClientsResponse {
   items: AdminClientRow[];
   total: number;
 }
 
+/** List clients query shape. */
 export interface ListClientsQuery {
   search?: string;
   kycStatus?: string;
@@ -32,13 +36,22 @@ export interface ListClientsQuery {
   take?: number;
 }
 
+/** Admin clients api. */
 export const adminClientsApi = {
   list(query: ListClientsQuery = {}): Promise<ListClientsResponse> {
     const params = new URLSearchParams();
-    if (query.search) params.set('search', query.search);
-    if (query.kycStatus) params.set('kycStatus', query.kycStatus);
-    if (query.skip !== undefined) params.set('skip', String(query.skip));
-    if (query.take !== undefined) params.set('take', String(query.take));
+    if (query.search) {
+      params.set('search', query.search);
+    }
+    if (query.kycStatus) {
+      params.set('kycStatus', query.kycStatus);
+    }
+    if (query.skip !== undefined) {
+      params.set('skip', String(query.skip));
+    }
+    if (query.take !== undefined) {
+      params.set('take', String(query.take));
+    }
     const qs = params.toString();
     return adminFetch<ListClientsResponse>(qs ? `/clients?${qs}` : '/clients');
   },

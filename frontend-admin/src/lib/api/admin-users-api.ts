@@ -1,6 +1,7 @@
 import type { AdminRole } from '../auth/admin-session-types';
 import { adminFetch } from './admin-client';
 
+/** Admin user record shape. */
 export interface AdminUserRecord {
   id: string;
   name: string;
@@ -15,6 +16,7 @@ export interface AdminUserRecord {
   updatedAt: string;
 }
 
+/** Admin users api. */
 export const adminUsersApi = {
   me(): Promise<AdminUserRecord> {
     return adminFetch<AdminUserRecord>('/users/me');

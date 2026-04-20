@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { MetricNumber, type MetricNumberProps } from '@/components/ui/metric-number';
 import { cn } from '@/lib/utils';
 
+/** Admin page. */
 export function AdminPage({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-full bg-[var(--app-bg-primary)] px-4 py-6 lg:px-6 lg:py-8">
@@ -12,6 +13,7 @@ export function AdminPage({ children }: { children: ReactNode }) {
   );
 }
 
+/** Admin surface. */
 export function AdminSurface({
   children,
   className,
@@ -34,6 +36,7 @@ export function AdminSurface({
   );
 }
 
+/** Admin page intro. */
 export function AdminPageIntro({
   eyebrow,
   title,
@@ -65,6 +68,7 @@ export function AdminPageIntro({
   );
 }
 
+/** Admin hero split. */
 export function AdminHeroSplit({
   label,
   value,
@@ -125,6 +129,7 @@ export function AdminHeroSplit({
   );
 }
 
+/** Admin metric grid. */
 export function AdminMetricGrid({
   items,
 }: {
@@ -162,6 +167,7 @@ export function AdminMetricGrid({
   );
 }
 
+/** Admin section header. */
 export function AdminSectionHeader({
   title,
   description,
@@ -186,6 +192,7 @@ export function AdminSectionHeader({
   );
 }
 
+/** Admin pill tabs. */
 export function AdminPillTabs({
   items,
   active,
@@ -219,6 +226,7 @@ export function AdminPillTabs({
   );
 }
 
+/** Admin subinterface tabs. */
 export function AdminSubinterfaceTabs({
   items,
   active,
@@ -257,6 +265,7 @@ export function AdminSubinterfaceTabs({
   );
 }
 
+/** Admin ticker. */
 export function AdminTicker({
   items,
   emptyLabel = 'Sem atualizações recentes',
@@ -298,6 +307,7 @@ export function AdminTicker({
   );
 }
 
+/** Admin progress list. */
 export function AdminProgressList({
   items,
   accent = 'var(--app-accent)',
@@ -337,6 +347,7 @@ export function AdminProgressList({
   );
 }
 
+/** Admin timeline feed. */
 export function AdminTimelineFeed({
   items,
 }: {
@@ -381,6 +392,7 @@ export function AdminTimelineFeed({
   );
 }
 
+/** Admin empty state. */
 export function AdminEmptyState({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 px-6 py-10 text-center">

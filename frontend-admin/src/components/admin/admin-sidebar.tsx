@@ -17,7 +17,9 @@ import { useAdminSession } from '@/lib/auth/admin-session-context';
 const STORAGE_KEY = 'kloel-admin:sidebar-expanded';
 
 function roleAllows(minRole: 'OWNER' | 'MANAGER' | 'STAFF' | undefined, role: string) {
-  if (!minRole) return true;
+  if (!minRole) {
+    return true;
+  }
   const order = { STAFF: 0, MANAGER: 1, OWNER: 2 } as const;
   const current = order[role as keyof typeof order] ?? 0;
   return current >= order[minRole];
@@ -29,16 +31,23 @@ function routeMatches(
   searchParams: { get(name: string): string | null },
 ) {
   const [routePath, routeQuery] = href.split('?');
-  if (routePath !== pathname) return false;
-  if (!routeQuery) return true;
+  if (routePath !== pathname) {
+    return false;
+  }
+  if (!routeQuery) {
+    return true;
+  }
 
   const expected = new URLSearchParams(routeQuery);
   for (const [key, value] of expected.entries()) {
-    if (searchParams.get(key) !== value) return false;
+    if (searchParams.get(key) !== value) {
+      return false;
+    }
   }
   return true;
 }
 
+/** Admin sidebar. */
 export function AdminSidebar({
   expanded,
   onToggle,
@@ -169,7 +178,9 @@ export function AdminSidebar({
           const items = section.items.filter((item) =>
             roleAllows(item.minRole, admin?.role || 'STAFF'),
           );
-          if (items.length === 0) return null;
+          if (items.length === 0) {
+            return null;
+          }
 
           return (
             <div key={section.key} className="px-1.5">
@@ -304,8 +315,11 @@ function SidebarItemRow({
   );
 }
 
+/** Get initial admin sidebar expanded. */
 export function getInitialAdminSidebarExpanded() {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {
+    return false;
+  }
   try {
     return window.localStorage.getItem(STORAGE_KEY) === 'true';
   } catch {
@@ -313,8 +327,11 @@ export function getInitialAdminSidebarExpanded() {
   }
 }
 
+/** Persist admin sidebar expanded. */
 export function persistAdminSidebarExpanded(expanded: boolean) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     window.localStorage.setItem(STORAGE_KEY, String(expanded));
   } catch {}

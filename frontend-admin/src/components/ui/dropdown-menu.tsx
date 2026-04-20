@@ -4,11 +4,16 @@ import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import type * as React from 'react';
 import { cn } from '@/lib/utils';
 
+/** Dropdown menu. */
 export const DropdownMenu = DropdownMenuPrimitive.Root;
+/** Dropdown menu trigger. */
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+/** Dropdown menu group. */
 export const DropdownMenuGroup = DropdownMenuPrimitive.Group;
+/** Dropdown menu portal. */
 export const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 
+/** Dropdown menu content. */
 export function DropdownMenuContent({
   className,
   sideOffset = 6,
@@ -28,6 +33,7 @@ export function DropdownMenuContent({
   );
 }
 
+/** Dropdown menu item. */
 export function DropdownMenuItem({
   className,
   inset,
@@ -45,6 +51,7 @@ export function DropdownMenuItem({
   );
 }
 
+/** Dropdown menu label. */
 export function DropdownMenuLabel({
   className,
   ...props
@@ -60,6 +67,7 @@ export function DropdownMenuLabel({
   );
 }
 
+/** Dropdown menu separator. */
 export function DropdownMenuSeparator({
   className,
   ...props

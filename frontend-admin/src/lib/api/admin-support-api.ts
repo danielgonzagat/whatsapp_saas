@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Admin support overview item shape. */
 export interface AdminSupportOverviewItem {
   conversationId: string;
   workspaceId: string;
@@ -16,11 +17,13 @@ export interface AdminSupportOverviewItem {
   lastMessageAt: string;
 }
 
+/** Admin support overview response shape. */
 export interface AdminSupportOverviewResponse {
   items: AdminSupportOverviewItem[];
   total: number;
 }
 
+/** Admin support detail response shape. */
 export interface AdminSupportDetailResponse {
   ticket: AdminSupportOverviewItem;
   macros: Array<{ key: string; label: string; content: string }>;
@@ -34,6 +37,7 @@ export interface AdminSupportDetailResponse {
   }>;
 }
 
+/** Admin support api. */
 export const adminSupportApi = {
   overview(search?: string): Promise<AdminSupportOverviewResponse> {
     const qs = search ? `?search=${encodeURIComponent(search)}` : '';

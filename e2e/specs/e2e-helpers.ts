@@ -31,7 +31,9 @@ type E2EAuthCacheFile = {
 
 function decodeJwtPayload(token: string): Record<string, any> | null {
   const [, payload = ''] = token.split('.');
-  if (!payload) return null;
+  if (!payload) {
+    return null;
+  }
 
   try {
     const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
@@ -45,7 +47,9 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
 function hasSufficientTokenLifetime(token: string, minRemainingMs = 5 * 60 * 1000): boolean {
   const payload = decodeJwtPayload(token);
   const exp = typeof payload?.exp === 'number' ? payload.exp : null;
-  if (!exp) return true;
+  if (!exp) {
+    return true;
+  }
   return exp * 1000 - Date.now() > minRemainingMs;
 }
 
@@ -149,7 +153,9 @@ function resolveMarketingUrl(): string {
 function resolveTargetUrl(envKeys: readonly string[], fallback: string): string {
   for (const key of envKeys) {
     const value = getEnv(key);
-    if (value) return value;
+    if (value) {
+      return value;
+    }
   }
   return fallback;
 }
@@ -297,7 +303,9 @@ export async function bootstrapAuthenticatedPage(
 }
 
 export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAuthContext> {
-  if (cachedAuth) return cachedAuth;
+  if (cachedAuth) {
+    return cachedAuth;
+  }
 
   cachedAuth = (async () => {
     const { apiUrl } = getE2EBaseUrls();
@@ -321,7 +329,9 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
 
     const readCache = (): E2EAuthCacheFile | null => {
       try {
-        if (!fs.existsSync(cacheFile)) return null;
+        if (!fs.existsSync(cacheFile)) {
+          return null;
+        }
         const raw = fs.readFileSync(cacheFile, 'utf8');
         return JSON.parse(raw || '{}') as E2EAuthCacheFile;
       } catch {

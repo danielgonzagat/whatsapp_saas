@@ -1,6 +1,7 @@
 import { adminFetch } from './admin-client';
 import type { AdminHomePeriod } from './admin-dashboard-api';
 
+/** Admin marketing overview response shape. */
 export interface AdminMarketingOverviewResponse {
   range: {
     from: string;
@@ -48,12 +49,17 @@ export interface AdminMarketingOverviewResponse {
   }>;
 }
 
+/** Admin marketing api. */
 export const adminMarketingApi = {
   overview(query: { period?: AdminHomePeriod; from?: string; to?: string } = {}) {
     const params = new URLSearchParams();
     params.set('period', query.period ?? '30D');
-    if (query.from) params.set('from', query.from);
-    if (query.to) params.set('to', query.to);
+    if (query.from) {
+      params.set('from', query.from);
+    }
+    if (query.to) {
+      params.set('to', query.to);
+    }
     return adminFetch<AdminMarketingOverviewResponse>(`/marketing/overview?${params.toString()}`);
   },
 };

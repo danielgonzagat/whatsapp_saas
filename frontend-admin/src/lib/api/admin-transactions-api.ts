@@ -1,5 +1,6 @@
 import { adminFetch } from './admin-client';
 
+/** Order status value type. */
 export type OrderStatusValue =
   | 'PENDING'
   | 'PROCESSING'
@@ -10,9 +11,12 @@ export type OrderStatusValue =
   | 'REFUNDED'
   | 'CHARGEBACK';
 
+/** Payment method value type. */
 export type PaymentMethodValue = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+/** Admin transaction action type. */
 export type AdminTransactionAction = 'REFUND' | 'CHARGEBACK';
 
+/** Admin transaction row shape. */
 export interface AdminTransactionRow {
   id: string;
   orderNumber: string;
@@ -35,12 +39,14 @@ export interface AdminTransactionRow {
   affiliateId: string | null;
 }
 
+/** List transactions response shape. */
 export interface ListTransactionsResponse {
   items: AdminTransactionRow[];
   total: number;
   sum: { totalInCents: number };
 }
 
+/** List transactions query shape. */
 export interface ListTransactionsQuery {
   search?: string;
   status?: OrderStatusValue;
@@ -53,6 +59,7 @@ export interface ListTransactionsQuery {
   take?: number;
 }
 
+/** Admin transactions api. */
 export const adminTransactionsApi = {
   list(query: ListTransactionsQuery = {}): Promise<ListTransactionsResponse> {
     const params = new URLSearchParams();

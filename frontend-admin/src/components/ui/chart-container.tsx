@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
+/** Chart container props shape. */
 export interface ChartContainerProps {
   title: string;
   description?: string;

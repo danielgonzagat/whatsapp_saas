@@ -31,16 +31,24 @@ function formatDate(iso: string): string {
 }
 
 function isoOrUndefined(value: string): string | undefined {
-  if (!value) return undefined;
+  if (!value) {
+    return undefined;
+  }
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return undefined;
+  if (Number.isNaN(d.getTime())) {
+    return undefined;
+  }
   return d.toISOString();
 }
 
 function csvEscape(value: unknown): string {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) {
+    return '';
+  }
   const s = typeof value === 'string' ? value : JSON.stringify(value);
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  if (/[",\n]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
   return s;
 }
 
@@ -84,6 +92,7 @@ function downloadCsv(filename: string, content: string): void {
   URL.revokeObjectURL(url);
 }
 
+/** Audit page. */
 export default function AuditPage() {
   const [page, setPage] = useState(0);
   const [actionFilter, setActionFilter] = useState('');

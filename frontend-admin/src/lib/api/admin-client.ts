@@ -37,7 +37,9 @@ export async function adminFetch<TResponse = unknown, TBody = unknown>(
   const auth = options.auth ?? 'access';
   if (auth === 'access') {
     const token = await adminSessionStorage.getAccessToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
   } else if (auth === 'explicit' && options.explicitToken) {
     headers.Authorization = `Bearer ${options.explicitToken}`;
   }
@@ -72,4 +74,5 @@ export async function adminFetch<TResponse = unknown, TBody = unknown>(
   return payload as TResponse;
 }
 
+/** Admin api url. */
 export const adminApiUrl = API_URL;

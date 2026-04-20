@@ -26,18 +26,27 @@ function firstName(name?: string | null) {
 }
 
 function greetingFor(hour: number) {
-  if (hour >= 5 && hour < 12) return 'Bom dia';
-  if (hour >= 12 && hour < 18) return 'Boa tarde';
-  if (hour >= 18) return 'Boa noite';
+  if (hour >= 5 && hour < 12) {
+    return 'Bom dia';
+  }
+  if (hour >= 12 && hour < 18) {
+    return 'Boa tarde';
+  }
+  if (hour >= 18) {
+    return 'Boa noite';
+  }
   return 'Boa madrugada';
 }
 
 function buildPayload(content: string, moduleContext: string | null) {
   const normalized = content.trim();
-  if (!moduleContext) return normalized;
+  if (!moduleContext) {
+    return normalized;
+  }
   return `Contexto administrativo ativo: ${moduleContext}.\n\n${normalized}`;
 }
 
+/** Admin chat view. */
 export function AdminChatView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -69,11 +78,15 @@ export function AdminChatView() {
 
       try {
         const fresh = await adminChatApi.getSession(nextSessionId);
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setSession(fresh);
         upsertSession(fresh);
       } catch (loadError) {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setError(
           loadError instanceof Error ? loadError.message : 'Não foi possível carregar a conversa.',
         );
@@ -116,14 +129,18 @@ export function AdminChatView() {
 
   useEffect(() => {
     const textarea = inputRef.current;
-    if (!textarea) return;
+    if (!textarea) {
+      return;
+    }
     textarea.style.height = '26px';
     textarea.style.height = `${Math.min(textarea.scrollHeight, 208)}px`;
   }, [input]);
 
   async function handleSubmit() {
     const content = input.trim();
-    if (!content || busy) return;
+    if (!content || busy) {
+      return;
+    }
 
     const currentRequest = ++requestCounterRef.current;
     setBusy(true);
@@ -135,7 +152,9 @@ export function AdminChatView() {
         content: buildPayload(content, moduleContext),
       });
 
-      if (requestCounterRef.current !== currentRequest) return;
+      if (requestCounterRef.current !== currentRequest) {
+        return;
+      }
 
       setSession(nextSession);
       upsertSession(nextSession);
@@ -148,7 +167,9 @@ export function AdminChatView() {
         });
       }
     } catch (submitError) {
-      if (requestCounterRef.current !== currentRequest) return;
+      if (requestCounterRef.current !== currentRequest) {
+        return;
+      }
       setError(
         submitError instanceof Error
           ? submitError.message
@@ -275,7 +296,9 @@ export function AdminChatView() {
               value={input}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
-                if (event.nativeEvent.isComposing) return;
+                if (event.nativeEvent.isComposing) {
+                  return;
+                }
                 if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault();
                   void handleSubmit();

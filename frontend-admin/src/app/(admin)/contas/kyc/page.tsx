@@ -23,7 +23,9 @@ import {
 import { AdminApiClientError } from '@/lib/api/admin-errors';
 
 function formatDate(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) {
+    return '—';
+  }
   try {
     return new Date(iso).toLocaleString('pt-BR');
   } catch {
@@ -33,6 +35,7 @@ function formatDate(iso: string | null): string {
 
 type Pending = { agentId: string; kind: 'approve' | 'reject' | 'reverify' } | null;
 
+/** Kyc queue page. */
 export default function KycQueuePage() {
   const { data, error, isLoading, mutate } = useSWR<KycQueueResponse>(
     'admin/accounts/kyc/queue',
@@ -47,7 +50,9 @@ export default function KycQueuePage() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   async function submitAction() {
-    if (!pending) return;
+    if (!pending) {
+      return;
+    }
     setFeedback(null);
     setBusy(true);
     try {
@@ -99,7 +104,9 @@ export default function KycQueuePage() {
             label: 'Aguardando +48h',
             value:
               data?.items.filter((row) => {
-                if (!row.kycSubmittedAt) return false;
+                if (!row.kycSubmittedAt) {
+                  return false;
+                }
                 return Date.now() - new Date(row.kycSubmittedAt).getTime() > 48 * 60 * 60 * 1000;
               }).length ?? null,
             kind: 'integer',

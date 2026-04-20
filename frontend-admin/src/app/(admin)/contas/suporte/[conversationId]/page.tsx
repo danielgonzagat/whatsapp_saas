@@ -13,6 +13,7 @@ import {
 } from '@/components/admin/admin-monitor-ui';
 import { adminSupportApi } from '@/lib/api/admin-support-api';
 
+/** Support ticket page. */
 export default function SupportTicketPage({
   params,
 }: {

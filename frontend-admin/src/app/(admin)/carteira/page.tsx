@@ -66,6 +66,7 @@ function RevenueBars({ values }: { values: number[] }) {
   );
 }
 
+/** Carteira page. */
 export default function CarteiraPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

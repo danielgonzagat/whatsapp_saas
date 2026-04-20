@@ -5,6 +5,7 @@ import type {
   PaymentMethodValue,
 } from './admin-transactions-api';
 
+/** Admin sales overview response shape. */
 export interface AdminSalesOverviewResponse {
   summary: {
     revenueKloelInCents: number;
@@ -29,6 +30,7 @@ export interface AdminSalesOverviewResponse {
   items: AdminTransactionRow[];
 }
 
+/** Admin sales api. */
 export const adminSalesApi = {
   overview(
     query: {

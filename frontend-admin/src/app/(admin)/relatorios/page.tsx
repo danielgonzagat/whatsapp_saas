@@ -18,7 +18,9 @@ import { adminReportsApi, type AdminReportsOverviewResponse } from '@/lib/api/ad
 import type { AdminHomePeriod } from '@/lib/api/admin-dashboard-api';
 
 function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
-  if (rows.length === 0) return;
+  if (rows.length === 0) {
+    return;
+  }
   const headers = Object.keys(rows[0]);
   const content = [
     headers.join(','),
@@ -44,6 +46,7 @@ function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
   URL.revokeObjectURL(url);
 }
 
+/** Relatorios page. */
 export default function RelatoriosPage() {
   const [period, setPeriod] = useState<AdminHomePeriod>('30D');
   const [customRange, setCustomRange] = useState({ from: '', to: '' });

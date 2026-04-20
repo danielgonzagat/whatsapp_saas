@@ -16,6 +16,7 @@ interface AdminSessionContextValue {
 
 const AdminSessionContext = createContext<AdminSessionContextValue | null>(null);
 
+/** Admin session provider. */
 export function AdminSessionProvider({ children }: { children: ReactNode }) {
   const [admin, setAdminState] = useState<StoredAdmin | null>(null);
   const [isBooting, setIsBooting] = useState(true);
@@ -76,7 +77,9 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
         adminSessionStorage.clear();
       }
 
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
 
       setAdminState(adminSessionStorage.getAdmin());
       setIsBooting(false);
@@ -97,6 +100,7 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
   return <AdminSessionContext.Provider value={value}>{children}</AdminSessionContext.Provider>;
 }
 
+/** Use admin session. */
 export function useAdminSession(): AdminSessionContextValue {
   const ctx = useContext(AdminSessionContext);
   if (!ctx) {
