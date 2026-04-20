@@ -1,8 +1,6 @@
 # Site Type Templates
 
-Full page hierarchy templates with ASCII trees, URL maps, and navigation
-recommendations for common
-site types.
+Full page hierarchy templates with ASCII trees, URL maps, and navigation recommendations for common site types.
 
 ---
 
@@ -44,30 +42,27 @@ Homepage (/)
 
 ### URL Map
 
-| Page          | URL                 | Nav Location        | Priority   |
-| ------------- | ------------------- | ------------------- | ---------- |
-| Homepage      | `/`                 | Header (logo)       | Critical   |
-| Features      | `/features`         | Header              | High       |
-| Feature pages | `/features/{slug}`  | Header dropdown     | Medium     |
-| Pricing       | `/pricing`          | Header              | Critical   |
-| Customers     | `/customers`        | Header              | Medium     |
-| Case studies  | `/customers/{slug}` | Customers dropdown  | Medium     |
-| Blog          | `/blog`             | Header (Resources)  | High       |
-| Blog posts    | `/blog/{slug}`      | —                   | Medium     |
-| Integrations  | `/integrations`     | Header              | Medium     |
-| Docs          | `/docs`             | Header              | Medium     |
-| Compare       | `/compare/{slug}`   | Footer              | High (SEO) |
-| About         | `/about`            | Footer              | Low        |
-| Pricing CTA   | `/pricing`          | Header (CTA button) | Critical   |
+| Page | URL | Nav Location | Priority |
+|------|-----|-------------|----------|
+| Homepage | `/` | Header (logo) | Critical |
+| Features | `/features` | Header | High |
+| Feature pages | `/features/{slug}` | Header dropdown | Medium |
+| Pricing | `/pricing` | Header | Critical |
+| Customers | `/customers` | Header | Medium |
+| Case studies | `/customers/{slug}` | Customers dropdown | Medium |
+| Blog | `/blog` | Header (Resources) | High |
+| Blog posts | `/blog/{slug}` | — | Medium |
+| Integrations | `/integrations` | Header | Medium |
+| Docs | `/docs` | Header | Medium |
+| Compare | `/compare/{slug}` | Footer | High (SEO) |
+| About | `/about` | Footer | Low |
+| Pricing CTA | `/pricing` | Header (CTA button) | Critical |
 
 ### Navigation
 
-**Header (6 items + CTA)**: Features | Pricing | Customers | Resources |
-Integrations | Docs |
-[Get Started]
+**Header (6 items + CTA)**: Features | Pricing | Customers | Resources | Integrations | Docs | [Get Started]
 
 **Footer columns**:
-
 - Product: Features, Pricing, Integrations, Changelog, Security
 - Resources: Blog, Templates, Guides, Case Studies
 - Company: About, Careers, Contact, Press
@@ -100,15 +95,15 @@ Homepage (/)
 
 ### URL Map
 
-| Page       | URL                     | Nav Location    | Priority |
-| ---------- | ----------------------- | --------------- | -------- |
-| Homepage   | `/`                     | Header (logo)   | Critical |
-| Blog index | `/blog`                 | Header          | High     |
-| Categories | `/blog/category/{slug}` | Header dropdown | Medium   |
-| Posts      | `/blog/{slug}`          | —               | Medium   |
-| Newsletter | `/newsletter`           | Header (CTA)    | High     |
-| Guides     | `/resources/guides`     | Header          | Medium   |
-| About      | `/about`                | Header          | Low      |
+| Page | URL | Nav Location | Priority |
+|------|-----|-------------|----------|
+| Homepage | `/` | Header (logo) | Critical |
+| Blog index | `/blog` | Header | High |
+| Categories | `/blog/category/{slug}` | Header dropdown | Medium |
+| Posts | `/blog/{slug}` | — | Medium |
+| Newsletter | `/newsletter` | Header (CTA) | High |
+| Guides | `/resources/guides` | Header | Medium |
+| About | `/about` | Header | Low |
 
 ### Navigation
 
@@ -153,22 +148,20 @@ Homepage (/)
 
 ### URL Map
 
-| Page        | URL                          | Nav Location         | Priority |
-| ----------- | ---------------------------- | -------------------- | -------- |
-| Homepage    | `/`                          | Header (logo)        | Critical |
-| Shop        | `/shop`                      | Header               | Critical |
-| Categories  | `/shop/{category}`           | Header mega menu     | High     |
-| Products    | `/shop/{category}/{product}` | —                    | High     |
-| Collections | `/collections/{slug}`        | Header               | Medium   |
-| Sale        | `/sale`                      | Header (highlighted) | High     |
-| Cart        | `/cart`                      | Header (icon)        | Critical |
-| Account     | `/account`                   | Header (icon)        | Medium   |
+| Page | URL | Nav Location | Priority |
+|------|-----|-------------|----------|
+| Homepage | `/` | Header (logo) | Critical |
+| Shop | `/shop` | Header | Critical |
+| Categories | `/shop/{category}` | Header mega menu | High |
+| Products | `/shop/{category}/{product}` | — | High |
+| Collections | `/collections/{slug}` | Header | Medium |
+| Sale | `/sale` | Header (highlighted) | High |
+| Cart | `/cart` | Header (icon) | Critical |
+| Account | `/account` | Header (icon) | Medium |
 
 ### Navigation
 
-**Header (5 items + cart/account)**: Shop (mega menu) | Collections | Sale |
-Blog | Help |
-[Cart icon] [Account icon]
+**Header (5 items + cart/account)**: Shop (mega menu) | Collections | Sale | Blog | Help | [Cart icon] [Account icon]
 
 **Mega menu under Shop**: Category columns with featured products/images
 
@@ -200,21 +193,19 @@ Docs Home (/docs)
 
 ### URL Map
 
-| Page            | URL                     | Nav Location     | Priority |
-| --------------- | ----------------------- | ---------------- | -------- |
-| Docs home       | `/docs`                 | Header           | High     |
-| Getting Started | `/docs/getting-started` | Sidebar (top)    | Critical |
-| Guides          | `/docs/guides`          | Sidebar          | High     |
-| API Reference   | `/docs/api`             | Sidebar          | High     |
-| Changelog       | `/docs/changelog`       | Sidebar (bottom) | Low      |
+| Page | URL | Nav Location | Priority |
+|------|-----|-------------|----------|
+| Docs home | `/docs` | Header | High |
+| Getting Started | `/docs/getting-started` | Sidebar (top) | Critical |
+| Guides | `/docs/guides` | Sidebar | High |
+| API Reference | `/docs/api` | Sidebar | High |
+| Changelog | `/docs/changelog` | Sidebar (bottom) | Low |
 
 ### Navigation
 
 **Header**: Docs | API | Blog | Community | GitHub | [Dashboard]
 
-**Sidebar** (persistent, left): Getting Started, Guides, API Reference,
-Examples, Changelog — with
-expandable subsections
+**Sidebar** (persistent, left): Getting Started, Guides, API Reference, Examples, Changelog — with expandable subsections
 
 **On-page**: Previous/Next navigation at bottom of each doc page
 
@@ -258,13 +249,9 @@ Homepage (/)
 
 ### Navigation
 
-**Header (7 items + CTA)**: Product | Solutions | Pricing | Resources | Blog |
-Docs | Integrations |
-[Start Free Trial]
+**Header (7 items + CTA)**: Product | Solutions | Pricing | Resources | Blog | Docs | Integrations | [Start Free Trial]
 
-Use mega menus for Product (features list), Solutions (use cases + industries),
-and Resources (blog,
-guides, templates, webinars, case studies).
+Use mega menus for Product (features list), Solutions (use cases + industries), and Resources (blog, guides, templates, webinars, case studies).
 
 ---
 
@@ -289,21 +276,18 @@ Homepage (/)
 
 ### URL Map
 
-| Page          | URL                | Nav Location    | Priority |
-| ------------- | ------------------ | --------------- | -------- |
-| Homepage      | `/`                | Header (logo)   | Critical |
-| Services      | `/services`        | Header          | High     |
-| Service pages | `/services/{slug}` | Header dropdown | High     |
-| About         | `/about`           | Header          | Medium   |
-| Testimonials  | `/testimonials`    | Header          | Medium   |
-| Blog          | `/blog`            | Header          | Medium   |
-| Contact       | `/contact`         | Header (CTA)    | High     |
+| Page | URL | Nav Location | Priority |
+|------|-----|-------------|----------|
+| Homepage | `/` | Header (logo) | Critical |
+| Services | `/services` | Header | High |
+| Service pages | `/services/{slug}` | Header dropdown | High |
+| About | `/about` | Header | Medium |
+| Testimonials | `/testimonials` | Header | Medium |
+| Blog | `/blog` | Header | Medium |
+| Contact | `/contact` | Header (CTA) | High |
 
 ### Navigation
 
-**Header (5 items + CTA)**: Services | About | Testimonials | Blog | [Contact
-Us]
+**Header (5 items + CTA)**: Services | About | Testimonials | Blog | [Contact Us]
 
-Keep it simple. Small business sites should be flat (1-2 levels max). Every page
-should be reachable
-from the header.
+Keep it simple. Small business sites should be flat (1-2 levels max). Every page should be reachable from the header.

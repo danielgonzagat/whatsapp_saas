@@ -3,37 +3,31 @@
 Detailed guidance for building and managing affiliate programs.
 
 ## Contents
-
 - Commission Structures
 - Cookie Duration
 - Affiliate Recruitment
 - Affiliate Enablement
-- Tools & Platforms (Referral Program Tools, Affiliate Program Tools, Choosing a
-  Tool)
+- Tools & Platforms (Referral Program Tools, Affiliate Program Tools, Choosing a Tool)
 - Fraud Prevention (Common Referral Fraud, Prevention Measures)
 
 ## Commission Structures
 
-### Percentage of sale
-
+**Percentage of sale:**
 - Standard: 10-30% of first sale or first year
 - Works for: E-commerce, SaaS with clear pricing
 - Example: "Earn 25% of every sale you refer"
 
-### Flat fee per action
-
+**Flat fee per action:**
 - Standard: $5-500 depending on value
 - Works for: Lead gen, trials, freemium
 - Example: "$50 for every qualified demo"
 
-### Recurring commission
-
+**Recurring commission:**
 - Standard: 10-25% of recurring revenue
 - Works for: Subscription products
 - Example: "20% of subscription for 12 months"
 
-### Tiered commission
-
+**Tiered commission:**
 - Works for: Motivating high performers
 - Example: "20% for 1-10 sales, 25% for 11-25, 30% for 26+"
 
@@ -43,20 +37,19 @@ Detailed guidance for building and managing affiliate programs.
 
 How long after click does affiliate get credit?
 
-| Duration   | Use Case                                 |
-| ---------- | ---------------------------------------- |
-| 24 hours   | High-volume, low-consideration purchases |
-| 7-14 days  | Standard e-commerce                      |
-| 30 days    | Standard SaaS/B2B                        |
-| 60-90 days | Long sales cycles, enterprise            |
-| Lifetime   | Premium affiliate relationships          |
+| Duration | Use Case |
+|----------|----------|
+| 24 hours | High-volume, low-consideration purchases |
+| 7-14 days | Standard e-commerce |
+| 30 days | Standard SaaS/B2B |
+| 60-90 days | Long sales cycles, enterprise |
+| Lifetime | Premium affiliate relationships |
 
 ---
 
 ## Affiliate Recruitment
 
-### Where to find affiliates
-
+### Where to find affiliates:
 - Existing customers who create content
 - Industry bloggers and reviewers
 - YouTubers in your niche
@@ -64,21 +57,17 @@ How long after click does affiliate get credit?
 - Complementary tool companies
 - Consultants and agencies
 
-### Outreach template
-
+### Outreach template:
 ```
 Subject: Partnership opportunity — [Your Product]
 
 Hi [Name],
 
-I've been following your content on [topic] — particularly [specific
-piece] — and think there could be a great fit for a partnership.
+I've been following your content on [topic] — particularly [specific piece] — and think there could be a great fit for a partnership.
 
-[Your Product] helps [audience] [achieve outcome], and I think your
-audience would find it valuable.
+[Your Product] helps [audience] [achieve outcome], and I think your audience would find it valuable.
 
-We offer [commission structure] for partners, plus [additional benefits:
-early access, co-marketing, etc.].
+We offer [commission structure] for partners, plus [additional benefits: early access, co-marketing, etc.].
 
 Would you be open to learning more?
 
@@ -90,7 +79,6 @@ Would you be open to learning more?
 ## Affiliate Enablement
 
 Provide affiliates with:
-
 - [ ] Unique tracking links/codes
 - [ ] Product overview and key benefits
 - [ ] Target audience description
@@ -108,8 +96,7 @@ Provide affiliates with:
 
 ### Referral Program Tools
 
-### Full-featured platforms
-
+**Full-featured platforms:**
 - ReferralCandy — E-commerce focused
 - Ambassador — Enterprise referral programs
 - Friendbuy — E-commerce and subscription
@@ -117,37 +104,30 @@ Provide affiliates with:
 - Mention Me — AI-powered referral marketing
 - Viral Loops — Template-based campaigns
 
-### Built-in options
-
+**Built-in options:**
 - Stripe (basic referral tracking)
 - HubSpot (CRM-integrated)
 - Segment (tracking and analytics)
 
 ### Affiliate Program Tools
 
-### Affiliate networks
-
+**Affiliate networks:**
 - ShareASale — Large merchant network
 - Impact — Enterprise partnerships
 - PartnerStack — SaaS focused
 - Tapfiliate — Simple SaaS affiliate tracking
 - FirstPromoter — SaaS affiliate management
 
-### Partner Relationship Management (PRM)
+**Partner Relationship Management (PRM):**
+- Introw — Full PRM with deal registration, commissions, tiers, QBRs, and partner engagement tracking ([integration guide](../../../tools/integrations/introw.md))
 
-- Introw — Full PRM with deal registration, commissions, tiers, QBRs, and
-  partner engagement
-  tracking ([integration guide](../../../tools/integrations/introw.md))
-
-### Self-hosted
-
+**Self-hosted:**
 - Rewardful — Stripe-integrated affiliates
 - Refersion — E-commerce affiliates
 
 ### Choosing a Tool
 
 Consider:
-
 - Integration with your payment system
 - Fraud detection capabilities
 - Payout management
@@ -160,7 +140,6 @@ Consider:
 ## Fraud Prevention
 
 ### Common Referral Fraud
-
 - Self-referrals (creating fake accounts)
 - Referral rings (groups referring each other)
 - Coupon sites posting referral codes
@@ -169,23 +148,20 @@ Consider:
 
 ### Prevention Measures
 
-### Technical
-
+**Technical:**
 - Email verification required
 - Device fingerprinting
 - IP address monitoring
 - Delayed reward payout (after activation)
 - Minimum activity threshold
 
-### Policy
-
+**Policy:**
 - Clear terms of service
 - Maximum referrals per period
 - Reward clawback for refunds/chargebacks
 - Manual review for suspicious patterns
 
-### Structural
-
+**Structural:**
 - Require referred user to take meaningful action
 - Cap lifetime rewards
 - Pay rewards in product credit (less attractive to fraudsters)

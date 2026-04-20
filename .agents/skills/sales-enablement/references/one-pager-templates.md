@@ -1,12 +1,10 @@
 # One-Pager Templates
 
-Templates for different one-pager use cases, with layout guidance and copy
-prompts.
+Templates for different one-pager use cases, with layout guidance and copy prompts.
 
 ## Product Overview One-Pager
 
-The default one-pager. Introduces your product to someone who knows nothing
-about you.
+The default one-pager. Introduces your product to someone who knows nothing about you.
 
 ### Structure
 
@@ -35,18 +33,15 @@ PROOF
 
 ### Copy Prompts
 
-- Headline: "What do you do, in one sentence, that makes someone say 'tell me
-  more'?"
+- Headline: "What do you do, in one sentence, that makes someone say 'tell me more'?"
 - Problem: "What is your buyer struggling with before they find you?"
-- Differentiators: "If you could only tell them 3 things, what would make them
-  choose you?"
+- Differentiators: "If you could only tell them 3 things, what would make them choose you?"
 
 ---
 
 ## Use-Case Specific One-Pager
 
-Tailored to a specific workflow, vertical, or problem. More targeted than the
-product overview.
+Tailored to a specific workflow, vertical, or problem. More targeted than the product overview.
 
 ### Structure
 
@@ -85,9 +80,7 @@ CUSTOMER SPOTLIGHT
 
 ## Post-Meeting Leave-Behind
 
-Designed to reinforce a conversation that already happened. Summarizes what you
-discussed and
-proposes next steps.
+Designed to reinforce a conversation that already happened. Summarizes what you discussed and proposes next steps.
 
 ### Structure
 
@@ -129,9 +122,7 @@ PROPOSED NEXT STEPS
 
 ## Champion Enablement One-Pager
 
-Designed specifically for your internal champion to share with their team and
-leadership. Written to
-make them look smart.
+Designed specifically for your internal champion to share with their team and leadership. Written to make them look smart.
 
 ### Structure
 
@@ -185,8 +176,7 @@ Questions? Talk to [Champion name] or [Your name at email].
 1. **Headline** — Largest text, top of page, immediately communicates value
 2. **Section headers** — Bold, clear, act as scannable anchors
 3. **Body text** — Short sentences, bullet points preferred over paragraphs
-4. **Proof elements** — Metrics and quotes should visually stand out
-   (larger font, color, or callout box)
+4. **Proof elements** — Metrics and quotes should visually stand out (larger font, color, or callout box)
 5. **CTA** — Prominent placement, bottom of page or bottom-right
 
 ### Whitespace
@@ -197,12 +187,12 @@ Questions? Talk to [Champion name] or [Your name at email].
 
 ### Font Sizing
 
-| Element             | Suggested Size |
-| ------------------- | -------------- |
-| Headline            | 18-24pt        |
-| Section headers     | 12-14pt bold   |
-| Body text           | 10-11pt        |
-| Fine print / footer | 8-9pt          |
+| Element | Suggested Size |
+|---------|---------------|
+| Headline | 18-24pt |
+| Section headers | 12-14pt bold |
+| Body text | 10-11pt |
+| Fine print / footer | 8-9pt |
 
 ### Color
 

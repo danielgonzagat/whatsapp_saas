@@ -156,8 +156,7 @@ Highest-impact changes that take under 1 hour:
 
 Note: Without paid ASO tools, exact search volume is unavailable. These
 suggestions are based on category analysis, competitor metadata, and semantic
-relevance. Validate with AppTweak, Sensor Tower, or MobileAction for volume
-data.
+relevance. Validate with AppTweak, Sensor Tower, or MobileAction for volume data.
 
 ---
 

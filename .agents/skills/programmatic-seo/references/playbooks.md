@@ -1,41 +1,35 @@
 # The 12 Programmatic SEO Playbooks
 
-Beyond mixing and matching data point permutations, these are the proven
-playbooks for programmatic
-SEO.
+Beyond mixing and matching data point permutations, these are the proven playbooks for programmatic SEO.
 
 ## Contents
-
 - 1. Templates
-- 1. Curation
-- 1. Conversions
-- 1. Comparisons
-- 1. Examples
-- 1. Locations
-- 1. Personas
-- 1. Integrations
-- 1. Glossary
-- 1. Translations
-- 1. Directory
-- 1. Profiles
+- 2. Curation
+- 3. Conversions
+- 4. Comparisons
+- 5. Examples
+- 6. Locations
+- 7. Personas
+- 8. Integrations
+- 9. Glossary
+- 10. Translations
+- 11. Directory
+- 12. Profiles
 - Choosing Your Playbook (Match to Your Assets, Combine Playbooks)
 
 ## 1. Templates
 
 **Pattern**: "[Type] template" or "free [type] template"
-**Example searches**: "resume template", "invoice template", "pitch deck
-template"
+**Example searches**: "resume template", "invoice template", "pitch deck template"
 
 **What it is**: Downloadable or interactive templates users can use directly.
 
 **Why it works**:
-
 - High intent—people need it now
 - Shareable/linkable assets
 - Natural for product-led companies
 
 **Value requirements**:
-
 - Actually usable templates (not just previews)
 - Multiple variations per type
 - Quality comparable to paid options
@@ -48,19 +42,16 @@ template"
 ## 2. Curation
 
 **Pattern**: "best [category]" or "top [number] [things]"
-**Example searches**: "best website builders", "top 10 crm software", "best free
-design tools"
+**Example searches**: "best website builders", "top 10 crm software", "best free design tools"
 
 **What it is**: Curated lists ranking or recommending options in a category.
 
 **Why it works**:
-
 - Comparison shoppers searching for guidance
 - High commercial intent
 - Evergreen with updates
 
 **Value requirements**:
-
 - Genuine evaluation criteria
 - Real testing or expertise
 - Regular updates (date visible)
@@ -75,17 +66,14 @@ design tools"
 **Pattern**: "[X] to [Y]" or "[amount] [unit] in [unit]"
 **Example searches**: "$10 USD to GBP", "100 kg to lbs", "pdf to word"
 
-**What it is**: Tools or pages that convert between formats, units, or
-currencies.
+**What it is**: Tools or pages that convert between formats, units, or currencies.
 
 **Why it works**:
-
 - Instant utility
 - Extremely high search volume
 - Repeat usage potential
 
 **Value requirements**:
-
 - Accurate, real-time data
 - Fast, functional tool
 - Related conversions suggested
@@ -98,19 +86,16 @@ currencies.
 ## 4. Comparisons
 
 **Pattern**: "[X] vs [Y]" or "[X] alternative"
-**Example searches**: "webflow vs wordpress", "notion vs coda", "figma
-alternatives"
+**Example searches**: "webflow vs wordpress", "notion vs coda", "figma alternatives"
 
 **What it is**: Head-to-head comparisons between products, tools, or options.
 
 **Why it works**:
-
 - High purchase intent
 - Clear search pattern
 - Scales with number of competitors
 
 **Value requirements**:
-
 - Honest, balanced analysis
 - Actual feature comparison data
 - Clear recommendation by use case
@@ -118,26 +103,23 @@ alternatives"
 
 **URL structure**: `/compare/[x]-vs-[y]/` or `/[x]-vs-[y]/`
 
-### See also: competitor-alternatives skill for detailed frameworks
+*See also: competitor-alternatives skill for detailed frameworks*
 
 ---
 
 ## 5. Examples
 
-**Pattern**: "[type] examples" or "[category] inspiration" **Example searches**:
-"saas landing page
-examples", "email subject line examples", "portfolio website examples"
+**Pattern**: "[type] examples" or "[category] inspiration"
+**Example searches**: "saas landing page examples", "email subject line examples", "portfolio website examples"
 
 **What it is**: Galleries or collections of real-world examples for inspiration.
 
 **Why it works**:
-
 - Research phase traffic
 - Highly shareable
 - Natural for design/creative tools
 
 **Value requirements**:
-
 - Real, high-quality examples
 - Screenshots or embeds
 - Categorization/filtering
@@ -149,21 +131,17 @@ examples", "email subject line examples", "portfolio website examples"
 
 ## 6. Locations
 
-**Pattern**: "[service/thing] in [location] " **Example searches**: "coworking
-spaces in san diego",
-"dentists in austin", "best restaurants in brooklyn"
+**Pattern**: "[service/thing] in [location]"
+**Example searches**: "coworking spaces in san diego", "dentists in austin", "best restaurants in brooklyn"
 
-**What it is**: Location-specific pages for services, businesses, or
-information.
+**What it is**: Location-specific pages for services, businesses, or information.
 
 **Why it works**:
-
 - Local intent is massive
 - Scales with geography
 - Natural for marketplaces/directories
 
 **Value requirements**:
-
 - Actual local data (not just city name swapped)
 - Local providers/options listed
 - Location-specific insights (pricing, regulations)
@@ -175,21 +153,17 @@ information.
 
 ## 7. Personas
 
-**Pattern**: "[product] for [audience] " or "[solution] for [role/industry] "
-**Example searches**:
-"payroll software for agencies", "crm for real estate", "project management for
-freelancers"
+**Pattern**: "[product] for [audience]" or "[solution] for [role/industry]"
+**Example searches**: "payroll software for agencies", "crm for real estate", "project management for freelancers"
 
 **What it is**: Tailored landing pages addressing specific audience segments.
 
 **Why it works**:
-
 - Speaks directly to searcher's context
 - Higher conversion than generic pages
 - Scales with personas
 
 **Value requirements**:
-
 - Genuine persona-specific content
 - Relevant features highlighted
 - Testimonials from that segment
@@ -201,21 +175,17 @@ freelancers"
 
 ## 8. Integrations
 
-**Pattern**: "[your product] [other product] integration" or "[product] +
-[product]"
-**Example searches**: "slack asana integration", "zapier airtable", "hubspot
-salesforce sync"
+**Pattern**: "[your product] [other product] integration" or "[product] + [product]"
+**Example searches**: "slack asana integration", "zapier airtable", "hubspot salesforce sync"
 
 **What it is**: Pages explaining how your product works with other tools.
 
 **Why it works**:
-
 - Captures users of other products
 - High intent (they want the solution)
 - Scales with integration ecosystem
 
 **Value requirements**:
-
 - Real integration details
 - Setup instructions
 - Use cases for the combination
@@ -228,19 +198,16 @@ salesforce sync"
 ## 9. Glossary
 
 **Pattern**: "what is [term]" or "[term] definition" or "[term] meaning"
-**Example searches**: "what is pSEO", "api definition", "what does crm stand
-for"
+**Example searches**: "what is pSEO", "api definition", "what does crm stand for"
 
 **What it is**: Educational definitions of industry terms and concepts.
 
 **Why it works**:
-
 - Top-of-funnel awareness
 - Establishes expertise
 - Natural internal linking opportunities
 
 **Value requirements**:
-
 - Clear, accurate definitions
 - Examples and context
 - Related terms linked
@@ -255,17 +222,14 @@ for"
 **Pattern**: Same content in multiple languages
 **Example searches**: "qué es pSEO", "was ist SEO", "マーケティングとは"
 
-**What it is**: Your content translated and localized for other language
-markets.
+**What it is**: Your content translated and localized for other language markets.
 
 **Why it works**:
-
 - Opens entirely new markets
 - Lower competition in many languages
 - Multiplies your content reach
 
 **Value requirements**:
-
 - Quality translation (not just Google Translate)
 - Cultural localization
 - hreflang tags properly implemented
@@ -278,19 +242,16 @@ markets.
 ## 11. Directory
 
 **Pattern**: "[category] tools" or "[type] software" or "[category] companies"
-**Example searches**: "ai copywriting tools", "email marketing software", "crm
-companies"
+**Example searches**: "ai copywriting tools", "email marketing software", "crm companies"
 
 **What it is**: Comprehensive directories listing options in a category.
 
 **Why it works**:
-
 - Research phase capture
 - Link building magnet
 - Natural for aggregators/reviewers
 
 **Value requirements**:
-
 - Comprehensive coverage
 - Useful filtering/sorting
 - Details per listing (not just names)
@@ -303,19 +264,16 @@ companies"
 ## 12. Profiles
 
 **Pattern**: "[person/company name]" or "[entity] + [attribute]"
-**Example searches**: "stripe ceo", "airbnb founding story", "elon musk
-companies"
+**Example searches**: "stripe ceo", "airbnb founding story", "elon musk companies"
 
 **What it is**: Profile pages about notable people, companies, or entities.
 
 **Why it works**:
-
 - Informational intent traffic
 - Builds topical authority
 - Natural for B2B, news, research
 
 **Value requirements**:
-
 - Accurate, sourced information
 - Regularly updated
 - Unique insights or aggregation
@@ -329,22 +287,21 @@ companies"
 
 ### Match to Your Assets
 
-| If you have...            | Consider...                  |
-| ------------------------- | ---------------------------- |
-| Proprietary data          | Stats, Directories, Profiles |
-| Product with integrations | Integrations                 |
-| Design/creative product   | Templates, Examples          |
-| Multi-segment audience    | Personas                     |
-| Local presence            | Locations                    |
-| Tool or utility product   | Conversions                  |
-| Content/expertise         | Glossary, Curation           |
-| International potential   | Translations                 |
-| Competitor landscape      | Comparisons                  |
+| If you have... | Consider... |
+|----------------|-------------|
+| Proprietary data | Stats, Directories, Profiles |
+| Product with integrations | Integrations |
+| Design/creative product | Templates, Examples |
+| Multi-segment audience | Personas |
+| Local presence | Locations |
+| Tool or utility product | Conversions |
+| Content/expertise | Glossary, Curation |
+| International potential | Translations |
+| Competitor landscape | Comparisons |
 
 ### Combine Playbooks
 
 You can layer multiple playbooks:
-
 - **Locations + Personas**: "Marketing agencies for startups in Austin"
 - **Curation + Locations**: "Best coworking spaces in San Diego"
 - **Integrations + Personas**: "Slack for sales teams"

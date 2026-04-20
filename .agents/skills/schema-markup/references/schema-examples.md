@@ -3,7 +3,6 @@
 Complete JSON-LD examples for common schema types.
 
 ## Contents
-
 - Organization
 - WebSite (with SearchAction)
 - Article / BlogPosting
@@ -175,7 +174,7 @@ For pages with frequently asked questions.
       "name": "What is schema markup?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Schema markup is a structured data vocabulary that helps search engines..."
+        "text": "Schema markup is a structured data vocabulary that helps search engines understand your content..."
       }
     },
     {
@@ -183,7 +182,7 @@ For pages with frequently asked questions.
       "name": "How do I implement schema?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The recommended approach is to use JSON-LD format, placing the script in head..."
+        "text": "The recommended approach is to use JSON-LD format, placing the script in your page's head..."
       }
     }
   ]
@@ -378,8 +377,8 @@ Combine multiple schema types using @graph.
 ```jsx
 export default function ProductPage({ product }) {
   const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
+    "@context": "https://schema.org",
+    "@type": "Product",
     name: product.name,
     // ... other properties
   };

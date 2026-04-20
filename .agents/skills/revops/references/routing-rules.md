@@ -1,7 +1,6 @@
 # Lead Routing Rules
 
-Decision trees, platform-specific configurations, territory routing, ABM
-routing, and speed-to-lead benchmarks.
+Decision trees, platform-specific configurations, territory routing, ABM routing, and speed-to-lead benchmarks.
 
 ## Routing Decision Tree
 
@@ -30,8 +29,7 @@ New Lead Arrives
    └─ If no rep available: Assign to team queue with 1-hour SLA
 ```
 
-Customize this tree for your business. The key principle: **route to the
-most specific match first, fall back to general.**
+Customize this tree for your business. The key principle: **route to the most specific match first, fall back to general.**
 
 ---
 
@@ -47,16 +45,14 @@ most specific match first, fall back to general.**
 
 ### HubSpot Round-Robin Setup
 
-### Using HubSpot's rotation tool
-
+**Using HubSpot's rotation tool:**
 - Navigate to Automation → Workflows
 - Trigger: Contact property "Lifecycle Stage" equals "MQL"
 - Action: Rotate contact owner among selected users
 - Options: Even distribution, skip unavailable owners
 - Add delay + task creation after assignment
 
-### Custom rotation with workflows
-
+**Custom rotation with workflows:**
 1. Create a custom property "Rotation Counter" (number)
 2. Workflow trigger: New MQL created
 3. Branch by rotation counter value (0, 1, 2... for each rep)
@@ -66,14 +62,12 @@ most specific match first, fall back to general.**
 
 ### Salesforce Round-Robin Setup
 
-### Using Lead Assignment Rules
-
+**Using Lead Assignment Rules:**
 1. Setup → Feature Settings → Marketing → Lead Assignment Rules
 2. Create rule entries in priority order (most specific first)
 3. For round-robin: Use assignment rule + custom logic
 
-### Using Flow for advanced routing
-
+**Using Flow for advanced routing:**
 1. Create a Record-Triggered Flow on Lead creation
 2. Get Records: Query a custom "Rep Queue" object for next available rep
 3. Decision element: Check rep availability, capacity, territory
@@ -87,30 +81,30 @@ most specific match first, fall back to general.**
 
 ### By Geography
 
-| Territory     | Regions                        | Assigned Team      |
-| ------------- | ------------------------------ | ------------------ |
-| West          | CA, WA, OR, NV, AZ, UT, CO, HI | Team West          |
-| Central       | TX, IL, MN, MO, OH, MI, WI, IN | Team Central       |
-| East          | NY, MA, PA, NJ, CT, VA, FL, GA | Team East          |
-| International | All non-US                     | International team |
+| Territory | Regions | Assigned Team |
+|-----------|---------|---------------|
+| West | CA, WA, OR, NV, AZ, UT, CO, HI | Team West |
+| Central | TX, IL, MN, MO, OH, MI, WI, IN | Team Central |
+| East | NY, MA, PA, NJ, CT, VA, FL, GA | Team East |
+| International | All non-US | International team |
 
 ### By Company Size
 
-| Segment    | Company Size       | Team                   |
-| ---------- | ------------------ | ---------------------- |
-| SMB        | 1-50 employees     | Inside sales           |
-| Mid-market | 51-500 employees   | Mid-market AEs         |
-| Enterprise | 501-5000 employees | Enterprise AEs         |
-| Strategic  | 5000+ employees    | Strategic account team |
+| Segment | Company Size | Team |
+|---------|-------------|------|
+| SMB | 1-50 employees | Inside sales |
+| Mid-market | 51-500 employees | Mid-market AEs |
+| Enterprise | 501-5000 employees | Enterprise AEs |
+| Strategic | 5000+ employees | Strategic account team |
 
 ### By Industry
 
-| Vertical   | Industries                    | Specialist                 |
-| ---------- | ----------------------------- | -------------------------- |
-| Tech       | SaaS, IT services, hardware   | Tech vertical rep          |
-| Financial  | Banking, insurance, fintech   | Financial vertical rep     |
-| Healthcare | Hospitals, pharma, healthtech | Healthcare vertical rep    |
-| General    | All others                    | General pool (round-robin) |
+| Vertical | Industries | Specialist |
+|----------|-----------|------------|
+| Tech | SaaS, IT services, hardware | Tech vertical rep |
+| Financial | Banking, insurance, fintech | Financial vertical rep |
+| Healthcare | Hospitals, pharma, healthtech | Healthcare vertical rep |
+| General | All others | General pool (round-robin) |
 
 ### Hybrid Territory Model
 
@@ -137,8 +131,7 @@ Lead arrives
 
 1. **Define target account list** (typically 50-500 accounts)
 2. **Assign account owners** in CRM (1 rep per account)
-3. **Match logic:** Any lead from a target account domain routes to account
-   owner
+3. **Match logic:** Any lead from a target account domain routes to account owner
 4. **Matching rules:**
    - Email domain match (primary)
    - Company name fuzzy match (secondary, requires manual review)
@@ -146,16 +139,15 @@ Lead arrives
 
 ### ABM Routing Rules
 
-| Tier   | Account Type                 | Routing                     | Response SLA      |
-| ------ | ---------------------------- | --------------------------- | ----------------- |
-| Tier 1 | Top 20 strategic accounts    | Named owner, instant alert  | 1 hour            |
-| Tier 2 | Top 100 target accounts      | Named owner, standard alert | 4 hours           |
-| Tier 3 | Target industry / size match | Territory or round-robin    | Same business day |
+| Tier | Account Type | Routing | Response SLA |
+|------|-------------|---------|--------------|
+| Tier 1 | Top 20 strategic accounts | Named owner, instant alert | 1 hour |
+| Tier 2 | Top 100 target accounts | Named owner, standard alert | 4 hours |
+| Tier 3 | Target industry / size match | Territory or round-robin | Same business day |
 
 ### Multi-Contact Handling
 
 When multiple contacts from the same account engage:
-
 - Route all contacts to the **same account owner**
 - Notify the owner of new contacts entering
 - Track account-level engagement score (sum of all contacts)
@@ -167,14 +159,14 @@ When multiple contacts from the same account engage:
 
 ### Response Time Impact on Conversion
 
-| Response Time   | Relative Qualification Rate    | Notes                    |
-| --------------- | ------------------------------ | ------------------------ |
-| Under 5 minutes | **21x** more likely to qualify | Gold standard            |
-| 5-10 minutes    | 10x more likely                | Still strong             |
-| 10-30 minutes   | 4x more likely                 | Acceptable for most      |
-| 30 min - 1 hour | 2x more likely                 | Below best practice      |
-| 1-24 hours      | Baseline                       | Industry average         |
-| 24+ hours       | 60% lower than baseline        | Lead is effectively cold |
+| Response Time | Relative Qualification Rate | Notes |
+|---------------|---------------------------|-------|
+| Under 5 minutes | **21x** more likely to qualify | Gold standard |
+| 5-10 minutes | 10x more likely | Still strong |
+| 10-30 minutes | 4x more likely | Acceptable for most |
+| 30 min - 1 hour | 2x more likely | Below best practice |
+| 1-24 hours | Baseline | Industry average |
+| 24+ hours | 60% lower than baseline | Lead is effectively cold |
 
 Source: Lead Connect, InsideSales.com
 
@@ -187,14 +179,12 @@ Source: Lead Connect, InsideSales.com
    - 15 min: Backup rep alerted
    - 30 min: Manager alerted
    - 1 hour: Lead reassigned to next available rep
-4. **Measure and report** — Track actual response times weekly; recognize fast
-   responders
+4. **Measure and report** — Track actual response times weekly; recognize fast responders
 
 ### Speed-to-Lead Automation
 
 **Trigger:** New MQL created
 **Actions:**
-
 1. Assign to rep via routing rules (instant)
 2. Send push notification + email to rep
 3. Create task: "Contact [Lead Name] — 5 min SLA"
@@ -206,7 +196,6 @@ Source: Lead Connect, InsideSales.com
 ### Measuring Speed-to-Lead
 
 Track these metrics weekly:
-
 - **Average time to first contact** (from MQL creation to first call/email)
 - **Median time to first contact** (less skewed by outliers)
 - **% of leads contacted within SLA** (target: 90%+)

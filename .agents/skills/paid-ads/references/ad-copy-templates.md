@@ -3,10 +3,7 @@
 Detailed formulas and templates for writing high-converting ad copy.
 
 ## Contents
-
-- Primary Text Formulas (Problem-Agitate-Solve, Before-After-Bridge, Social
-  Proof Lead,
-  Feature-Benefit Bridge, Direct Response)
+- Primary Text Formulas (Problem-Agitate-Solve, Before-After-Bridge, Social Proof Lead, Feature-Benefit Bridge, Direct Response)
 - Headline Formulas (For Search Ads, For Social Ads)
 - CTA Variations (Soft CTAs, Hard CTAs, Urgency CTAs, Action-Oriented CTAs)
 - Platform-Specific Copy Guidelines (Google Search Ads, Meta Ads, LinkedIn Ads)
@@ -23,8 +20,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [CTA]
 ```
 
-### Example
-
+**Example:**
 > Spending hours on manual reporting every week?
 > While you're buried in spreadsheets, your competitors are making decisions.
 > [Product] automates your reports in minutes.
@@ -40,8 +36,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [Your product as the bridge]
 ```
 
-### Example
-
+**Example:**
 > Before: Chasing down approvals across email, Slack, and spreadsheets.
 > After: Every approval tracked, automated, and on time.
 > [Product] connects your tools and keeps projects moving.
@@ -56,8 +51,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [CTA]
 ```
 
-### Example
-
+**Example:**
 > "We cut our reporting time by 75%." — Sarah K., Marketing Director
 > [Product] automates the reports you hate building.
 > See how it works →
@@ -72,8 +66,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [Which means...]
 ```
 
-### Example
-
+**Example:**
 > Real-time collaboration on documents
 > So your team always works from the latest version
 > Which means no more version confusion or lost work
@@ -88,8 +81,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [CTA with urgency if genuine]
 ```
 
-### Example
-
+**Example:**
 > Cut your reporting time by 80%
 > Join 5,000+ marketing teams already using [Product]
 > Start free → First month 50% off
@@ -100,26 +92,26 @@ Detailed formulas and templates for writing high-converting ad copy.
 
 ### For Search Ads
 
-| Formula                      | Example                                      |
-| ---------------------------- | -------------------------------------------- |
-| [Keyword] + [Benefit]        | "Project Management That Teams Actually Use" |
-| [Action] + [Outcome]         | "Automate Reports \| Save 10 Hours Weekly"   |
-| [Question]                   | "Tired of Manual Data Entry?"                |
-| [Number] + [Benefit]         | "500+ Teams Trust [Product] for [Outcome]"   |
-| [Keyword] + [Differentiator] | "CRM Built for Small Teams"                  |
-| [Price/Offer] + [Keyword]    | "Free Project Management \| No Credit Card"  |
+| Formula | Example |
+|---------|---------|
+| [Keyword] + [Benefit] | "Project Management That Teams Actually Use" |
+| [Action] + [Outcome] | "Automate Reports \| Save 10 Hours Weekly" |
+| [Question] | "Tired of Manual Data Entry?" |
+| [Number] + [Benefit] | "500+ Teams Trust [Product] for [Outcome]" |
+| [Keyword] + [Differentiator] | "CRM Built for Small Teams" |
+| [Price/Offer] + [Keyword] | "Free Project Management \| No Credit Card" |
 
 ### For Social Ads
 
-| Type             | Example                                          |
-| ---------------- | ------------------------------------------------ |
-| Outcome hook     | "How we 3x'd our conversion rate"                |
-| Curiosity hook   | "The reporting hack no one talks about"          |
-| Contrarian hook  | "Why we stopped using [common tool]"             |
-| Specificity hook | "The exact template we use for..."               |
-| Question hook    | "What if you could cut your admin time in half?" |
-| Number hook      | "7 ways to improve your workflow today"          |
-| Story hook       | "We almost gave up. Then we found..."            |
+| Type | Example |
+|------|---------|
+| Outcome hook | "How we 3x'd our conversion rate" |
+| Curiosity hook | "The reporting hack no one talks about" |
+| Contrarian hook | "Why we stopped using [common tool]" |
+| Specificity hook | "The exact template we use for..." |
+| Question hook | "What if you could cut your admin time in half?" |
+| Number hook | "7 ways to improve your workflow today" |
+| Story hook | "We almost gave up. Then we found..." |
 
 ---
 

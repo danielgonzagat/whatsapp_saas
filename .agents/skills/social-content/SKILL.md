@@ -1,59 +1,37 @@
 ---
 name: social-content
-description: "When the user wants help creating, scheduling, or optimizing
-social media content for
-LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platforms. Also use
-when the user
-mentions 'LinkedIn post,' 'Twitter thread,' 'social media,' 'content calendar,'
-'social scheduling,'
-'engagement,' 'viral content,' 'what should I post,' 'repurpose this content,'
-'tweet ideas,'
-'LinkedIn carousel,' 'social media strategy,' or 'grow my following.' Use this
-for any social media
-content creation, repurposing, or scheduling task. For broader content strategy,
-see
-content-strategy."
+description: "When the user wants help creating, scheduling, or optimizing social media content for LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platforms. Also use when the user mentions 'LinkedIn post,' 'Twitter thread,' 'social media,' 'content calendar,' 'social scheduling,' 'engagement,' 'viral content,' 'what should I post,' 'repurpose this content,' 'tweet ideas,' 'LinkedIn carousel,' 'social media strategy,' or 'grow my following.' Use this for any social media content creation, repurposing, or scheduling task. For broader content strategy, see content-strategy."
 metadata:
   version: 1.2.0
 ---
 
 # Social Content
 
-You are an expert social media strategist. Your goal is to help create engaging
-content that builds
-audience, drives engagement, and supports business goals.
+You are an expert social media strategist. Your goal is to help create engaging content that builds audience, drives engagement, and supports business goals.
 
 ## Before Creating Content
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or
-`.claude/product-marketing-context.md` in older
-setups), read it before asking questions. Use that context and only ask for
-information not already
-covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Gather this context (ask if not provided):
 
 ### 1. Goals
-
 - What's the primary objective? (Brand awareness, leads, traffic, community)
 - What action do you want people to take?
 - Are you building personal brand, company brand, or both?
 
 ### 2. Audience
-
 - Who are you trying to reach?
 - What platforms are they most active on?
 - What content do they engage with?
 
 ### 3. Brand Voice
-
 - What's your tone? (Professional, casual, witty, authoritative)
 - Any topics to avoid?
 - Any specific terminology or style guidelines?
 
 ### 4. Resources
-
 - How much time can you dedicate to social?
 - Do you have existing content to repurpose?
 - Can you create video content?
@@ -62,41 +40,37 @@ Gather this context (ask if not provided):
 
 ## Platform Quick Reference
 
-| Platform  | Best For                           | Frequency                 | Key Format           |
-| --------- | ---------------------------------- | ------------------------- | -------------------- |
-| LinkedIn  | B2B, thought leadership            | 3-5x/week                 | Carousels, stories   |
-| Twitter/X | Tech, real-time, community         | 3-10x/day                 | Threads, hot takes   |
-| Instagram | Visual brands, lifestyle           | 1-2 posts + Stories daily | Reels, carousels     |
-| TikTok    | Brand awareness, younger audiences | 1-4x/day                  | Short-form video     |
-| Facebook  | Communities, local businesses      | 1-2x/day                  | Groups, native video |
+| Platform | Best For | Frequency | Key Format |
+|----------|----------|-----------|------------|
+| LinkedIn | B2B, thought leadership | 3-5x/week | Carousels, stories |
+| Twitter/X | Tech, real-time, community | 3-10x/day | Threads, hot takes |
+| Instagram | Visual brands, lifestyle | 1-2 posts + Stories daily | Reels, carousels |
+| TikTok | Brand awareness, younger audiences | 1-4x/day | Short-form video |
+| Facebook | Communities, local businesses | 1-2x/day | Groups, native video |
 
-**For detailed platform strategies**: See
-[references/platforms.md](references/platforms.md)
+**For detailed platform strategies**: See [references/platforms.md](references/platforms.md)
 
-**For hashtag limits and character counts**: See
-[references/platform-limits.md](references/platform-limits.md)
+**For hashtag limits and character counts**: See [references/platform-limits.md](references/platform-limits.md)
 
 ---
 
 ## Content Pillars Framework
 
-Build your content around 3-5 pillars that align with your expertise and
-audience interests.
+Build your content around 3-5 pillars that align with your expertise and audience interests.
 
 ### Example for a SaaS Founder
 
-| Pillar            | % of Content | Topics                                |
-| ----------------- | ------------ | ------------------------------------- |
-| Industry insights | 30%          | Trends, data, predictions             |
-| Behind-the-scenes | 25%          | Building the company, lessons learned |
-| Educational       | 25%          | How-tos, frameworks, tips             |
-| Personal          | 15%          | Stories, values, hot takes            |
-| Promotional       | 5%           | Product updates, offers               |
+| Pillar | % of Content | Topics |
+|--------|--------------|--------|
+| Industry insights | 30% | Trends, data, predictions |
+| Behind-the-scenes | 25% | Building the company, lessons learned |
+| Educational | 25% | How-tos, frameworks, tips |
+| Personal | 15% | Stories, values, hot takes |
+| Promotional | 5% | Product updates, offers |
 
 ### Pillar Development Questions
 
 For each pillar, ask:
-
 1. What unique perspective do you have?
 2. What questions does your audience ask?
 3. What content has performed well before?
@@ -110,79 +84,65 @@ For each pillar, ask:
 The first line determines whether anyone reads the rest.
 
 ### Curiosity Hooks
-
 - "I was wrong about [common belief]."
 - "The real reason [outcome] happens isn't what you think."
 - "[Impressive result] — and it only took [surprisingly short time]."
 
 ### Story Hooks
-
 - "Last week, [unexpected thing] happened."
 - "I almost [big mistake/failure]."
 - "3 years ago, I [past state]. Today, [current state]."
 
 ### Value Hooks
-
 - "How to [desirable outcome] (without [common pain]):"
 - "[Number] [things] that [outcome]:"
 - "Stop [common mistake]. Do this instead:"
 
 ### Contrarian Hooks
-
 - "Unpopular opinion: [bold statement]"
 - "[Common advice] is wrong. Here's why:"
 - "I stopped [common practice] and [positive result]."
 
-**For post templates and more hooks**: See
-[references/post-templates.md](references/post-templates.md)
+**For post templates and more hooks**: See [references/post-templates.md](references/post-templates.md)
 
 ---
 
 ## Content Repurposing System
 
-Turn one piece of content into many. The best social content isn't created from
-scratch — it's
-extracted from longer-form pillar content and adapted to each platform.
+Turn one piece of content into many. The best social content isn't created from scratch — it's extracted from longer-form pillar content and adapted to each platform.
 
 ### Blog Post → Social Content
 
-| Platform  | Format                         |
-| --------- | ------------------------------ |
-| LinkedIn  | Key insight + link in comments |
-| LinkedIn  | Carousel of main points        |
-| Twitter/X | Thread of key takeaways        |
-| Instagram | Carousel with visuals          |
-| Instagram | Reel summarizing the post      |
+| Platform | Format |
+|----------|--------|
+| LinkedIn | Key insight + link in comments |
+| LinkedIn | Carousel of main points |
+| Twitter/X | Thread of key takeaways |
+| Instagram | Carousel with visuals |
+| Instagram | Reel summarizing the post |
 
 ### Podcast / Video → Social Content
 
-Extract "content atoms" — self-contained moments from any long-form content that
-work on their own:
+Extract "content atoms" — self-contained moments from any long-form content that work on their own:
 
-| Atom Type          | What to Look For                                                   | Best Platform                           |
-| ------------------ | ------------------------------------------------------------------ | --------------------------------------- |
-| Quotable moment    | A bold claim, hot take, or memorable line (15-60 sec)              | Twitter/X, LinkedIn, TikTok             |
-| Story arc          | A complete mini-story with setup, conflict, resolution (60-90 sec) | Instagram Reels, TikTok, YouTube Shorts |
-| Tactical tip       | A specific how-to or framework explained clearly (30-60 sec)       | LinkedIn, YouTube Shorts                |
-| Controversial take | A contrarian opinion that sparks debate                            | Twitter/X, LinkedIn                     |
-| Data/stat callout  | A surprising number or research finding                            | LinkedIn carousel, Twitter/X            |
-| Behind-the-scenes  | Authentic, unpolished moments                                      | Instagram Stories, TikTok               |
+| Atom Type | What to Look For | Best Platform |
+|-----------|-----------------|---------------|
+| Quotable moment | A bold claim, hot take, or memorable line (15-60 sec) | Twitter/X, LinkedIn, TikTok |
+| Story arc | A complete mini-story with setup, conflict, resolution (60-90 sec) | Instagram Reels, TikTok, YouTube Shorts |
+| Tactical tip | A specific how-to or framework explained clearly (30-60 sec) | LinkedIn, YouTube Shorts |
+| Controversial take | A contrarian opinion that sparks debate | Twitter/X, LinkedIn |
+| Data/stat callout | A surprising number or research finding | LinkedIn carousel, Twitter/X |
+| Behind-the-scenes | Authentic, unpolished moments | Instagram Stories, TikTok |
 
-### Podcast repurposing workflow
-
-1. **Get transcript** — use Whisper, Descript, or your podcast host's
-   transcription
-2. **Mark timestamps** — flag the 5-10 best moments while listening or scanning
-   transcript
-3. **Extract clips** — pull video/audio clips for each moment (Descript, Opus
-   Clip, or manual)
-4. **Write standalone captions** — each clip needs context; don't assume the
-   viewer heard the rest
+**Podcast repurposing workflow:**
+1. **Get transcript** — use Whisper, Descript, or your podcast host's transcription
+2. **Mark timestamps** — flag the 5-10 best moments while listening or scanning transcript
+3. **Extract clips** — pull video/audio clips for each moment (Descript, Opus Clip, or manual)
+4. **Write standalone captions** — each clip needs context; don't assume the viewer heard the rest
 5. **Add subtitles** — most social video is watched without sound
 6. **Schedule across 1-2 weeks** — spread a single episode across multiple posts
 
-### Per episode, aim for
-
+**Per episode, aim for:**
 - 3-5 short video clips or audiograms (15-60 sec) for Reels/TikTok/Shorts
 - 1-2 LinkedIn text posts from key insights
 - 1 Twitter/X thread of takeaways
@@ -191,22 +151,22 @@ work on their own:
 
 ### Webinar / Live Event → Social Content
 
-| Extract                         | Format                                |
-| ------------------------------- | ------------------------------------- |
-| Key slides with commentary      | LinkedIn carousel                     |
-| Q&A highlights                  | Twitter/X thread                      |
-| Speaker quotes                  | Quote graphics for Instagram/LinkedIn |
-| Audience reactions/poll results | Engagement posts                      |
-| Full recording → short clips    | Reels, TikTok, Shorts                 |
+| Extract | Format |
+|---------|--------|
+| Key slides with commentary | LinkedIn carousel |
+| Q&A highlights | Twitter/X thread |
+| Speaker quotes | Quote graphics for Instagram/LinkedIn |
+| Audience reactions/poll results | Engagement posts |
+| Full recording → short clips | Reels, TikTok, Shorts |
 
 ### Newsletter → Social Content
 
-| Extract                       | Format                   |
-| ----------------------------- | ------------------------ |
-| Main insight                  | LinkedIn post            |
-| Curated links with commentary | Twitter/X thread         |
-| Data or stat                  | Quote graphic            |
-| Hot take or opinion           | Twitter/X post, LinkedIn |
+| Extract | Format |
+|---------|--------|
+| Main insight | LinkedIn post |
+| Curated links with commentary | Twitter/X thread |
+| Data or stat | Quote graphic |
+| Hot take or opinion | Twitter/X post, LinkedIn |
 
 ### Repurposing Workflow
 
@@ -223,13 +183,13 @@ work on their own:
 
 ### Weekly Planning Template
 
-| Day | LinkedIn         | Twitter/X  | Instagram   |
-| --- | ---------------- | ---------- | ----------- |
-| Mon | Industry insight | Thread     | Carousel    |
-| Tue | Behind-scenes    | Engagement | Story       |
-| Wed | Educational      | Tips tweet | Reel        |
-| Thu | Story post       | Thread     | Educational |
-| Fri | Hot take         | Engagement | Story       |
+| Day | LinkedIn | Twitter/X | Instagram |
+|-----|----------|-----------|-----------|
+| Mon | Industry insight | Thread | Carousel |
+| Tue | Behind-scenes | Engagement | Story |
+| Wed | Educational | Tips tweet | Reel |
+| Thu | Story post | Thread | Educational |
+| Fri | Hot take | Engagement | Story |
 
 ### Batching Strategy (2-3 hours weekly)
 
@@ -273,8 +233,7 @@ work on their own:
 
 **Awareness:** Impressions, Reach, Follower growth rate
 
-**Engagement:** Engagement rate, Comments (higher value than likes),
-Shares/reposts, Saves
+**Engagement:** Engagement rate, Comments (higher value than likes), Shares/reposts, Saves
 
 **Conversion:** Link clicks, Profile visits, DMs received, Leads attributed
 
@@ -288,15 +247,13 @@ Shares/reposts, Saves
 
 ### Optimization Actions
 
-### If engagement is low
-
+**If engagement is low:**
 - Test new hooks
 - Post at different times
 - Try different formats
 - Increase engagement with others
 
-### If reach is declining
-
+**If reach is declining:**
 - Avoid external links in post body
 - Increase posting frequency
 - Engage more in comments
@@ -307,14 +264,12 @@ Shares/reposts, Saves
 ## Content Ideas by Situation
 
 ### When You're Starting Out
-
 - Document your journey
 - Share what you're learning
 - Curate and comment on industry content
 - Engage heavily with established accounts
 
 ### When You're Stuck
-
 - Repurpose old high-performing content
 - Ask your audience what they want
 - Comment on industry news
@@ -328,8 +283,7 @@ Shares/reposts, Saves
 
 **Schedule:** Core content posts, Threads, Carousels, Evergreen content
 
-**Post live:** Real-time commentary, Responses to news/trends, Engagement with
-others
+**Post live:** Real-time commentary, Responses to news/trends, Engagement with others
 
 ### Queue Management
 
@@ -351,8 +305,7 @@ Instead of guessing, analyze what's working for top creators in your niche:
 5. **Layer your voice** — Apply patterns with authenticity
 6. **Convert** — Bridge attention to business results
 
-**For the complete framework**: See
-[references/reverse-engineering.md](references/reverse-engineering.md)
+**For the complete framework**: See [references/reverse-engineering.md](references/reverse-engineering.md)
 
 ---
 
