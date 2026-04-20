@@ -1,5 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminAction, AdminModule, PlatformLedgerKind } from '@prisma/client';
 import { Public } from '../../auth/public.decorator';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
@@ -8,6 +17,10 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { AdminAuditService } from '../audit/admin-audit.service';
+import { ConnectLedgerReconciliationService } from '../../payments/ledger/connect-ledger-reconciliation.service';
+import { ConnectPayoutApprovalService } from '../../payments/connect/connect-payout-approval.service';
+import { ConnectService } from '../../payments/connect/connect.service';
+import { LedgerService } from '../../payments/ledger/ledger.service';
 import { PlatformPayoutService } from '../../platform-wallet/platform-payout.service';
 import { PlatformWalletReconcileService } from '../../platform-wallet/platform-wallet-reconcile.service';
 import { PlatformWalletService } from '../../platform-wallet/platform-wallet.service';
@@ -25,6 +38,10 @@ export class AdminCarteiraController {
     private readonly wallet: PlatformWalletService,
     private readonly reconcile: PlatformWalletReconcileService,
     private readonly platformPayout: PlatformPayoutService,
+    private readonly connectService: ConnectService,
+    private readonly connectLedger: LedgerService,
+    private readonly connectReconcile: ConnectLedgerReconciliationService,
+    private readonly connectPayoutApprovalService: ConnectPayoutApprovalService,
     private readonly audit: AdminAuditService,
   ) {}
 
@@ -64,6 +81,46 @@ export class AdminCarteiraController {
     return this.reconcile.reconcile(currency ?? 'BRL');
   }
 
+  @Get('connect/accounts')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
+  async listConnectAccounts(@Query('workspaceId') workspaceId?: string) {
+    const balances = await this.connectService.listBalances(
+      workspaceId ? String(workspaceId).trim() : undefined,
+    );
+
+    const accounts = await Promise.all(
+      balances.map(async (balance) => {
+        const [snapshot, onboarding] = await Promise.all([
+          this.connectLedger.getBalance(balance.id),
+          this.connectService.getOnboardingStatus(balance.stripeAccountId).catch(() => null),
+        ]);
+
+        return {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          stripeAccountId: balance.stripeAccountId,
+          accountType: balance.accountType,
+          pendingCents: snapshot.pendingCents.toString(),
+          availableCents: snapshot.availableCents.toString(),
+          lifetimeReceivedCents: snapshot.lifetimeReceivedCents.toString(),
+          lifetimePaidOutCents: snapshot.lifetimePaidOutCents.toString(),
+          lifetimeChargebacksCents: snapshot.lifetimeChargebacksCents.toString(),
+          onboarding,
+        };
+      }),
+    );
+
+    return { accounts };
+  }
+
+  @Get('connect/reconcile')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
+  async reconcileConnect(@Query('workspaceId') workspaceId?: string) {
+    return this.connectReconcile.reconcile({
+      workspaceId: workspaceId ? String(workspaceId).trim() : undefined,
+    });
+  }
+
   @Get('payouts')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listPayouts(@Query('skip') skip?: string, @Query('take') take?: string) {
@@ -100,6 +157,22 @@ export class AdminCarteiraController {
       }),
       total: result.total,
     };
+  }
+
+  @Get('connect/payout-requests')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
+  async listConnectPayoutRequests(
+    @Query('workspaceId') workspaceId?: string,
+    @Query('state') state?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.connectPayoutApprovalService.listAdminRequests({
+      workspaceId: workspaceId ? String(workspaceId).trim() : undefined,
+      state: state ? String(state).trim() : undefined,
+      skip: skip ? Number(skip) : undefined,
+      take: take ? Number(take) : undefined,
+    });
   }
 
   @Post('payouts')
@@ -165,6 +238,49 @@ export class AdminCarteiraController {
       status: result.status,
       amountCents: result.amountCents.toString(),
       currency: result.currency,
+    };
+  }
+
+  @Post('connect/payout-requests/:approvalRequestId/approve')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
+  async approveConnectPayoutRequest(
+    @Param('approvalRequestId') approvalRequestId: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    const normalizedId = String(approvalRequestId || '').trim();
+    if (!normalizedId) {
+      throw new BadRequestException('approvalRequestId is required');
+    }
+
+    return {
+      success: true,
+      ...(await this.connectPayoutApprovalService.approveRequest({
+        approvalRequestId: normalizedId,
+        adminUserId: admin.id,
+      })),
+    };
+  }
+
+  @Post('connect/payout-requests/:approvalRequestId/reject')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
+  async rejectConnectPayoutRequest(
+    @Param('approvalRequestId') approvalRequestId: string,
+    @Body() body: { reason?: string },
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    const normalizedId = String(approvalRequestId || '').trim();
+    if (!normalizedId) {
+      throw new BadRequestException('approvalRequestId is required');
+    }
+
+    return {
+      success: true,
+      ...(await this.connectPayoutApprovalService.rejectRequest({
+        approvalRequestId: normalizedId,
+        adminUserId: admin.id,
+        reason:
+          typeof body?.reason === 'string' && body.reason.trim() ? body.reason.trim() : undefined,
+      })),
     };
   }
 }

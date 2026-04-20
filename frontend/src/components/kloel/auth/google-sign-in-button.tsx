@@ -1,6 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import {
+  buildGoogleRenderConfig,
+  createGoogleCredentialCallback,
+  resolveGoogleButtonWidth,
+} from './google-sign-in-button.helpers';
 
 type GoogleSignInButtonProps = {
   mode: 'signup' | 'login';
@@ -105,43 +110,18 @@ export function GoogleSignInButton({
         ux_mode: 'popup',
         auto_select: false,
         cancel_on_tap_outside: true,
-        callback: async (response) => {
-          const credential = response.credential?.trim();
-          if (!credential) {
-            const message = 'Google não retornou uma credencial válida.';
-            setLocalError(message);
-            onError?.(message);
-            return;
-          }
-
-          setIsSubmitting(true);
-          setLocalError(null);
-
-          try {
-            const result = await onCredential(credential);
-            if (!result.success) {
-              const message = result.error || 'Falha ao autenticar com Google.';
-              setLocalError(message);
-              onError?.(message);
-            }
-          } finally {
-            setIsSubmitting(false);
-          }
-        },
+        callback: createGoogleCredentialCallback({
+          onCredential,
+          setLocalError,
+          setIsSubmitting,
+          onError,
+        }),
       });
       initializedRef.current = clientId;
     }
 
-    const width = Math.max(280, Math.min(360, target.clientWidth || 320));
-    window.google.accounts.id.renderButton(target, {
-      type: 'standard',
-      theme: 'outline',
-      size: 'large',
-      text: mode === 'signup' ? 'signup_with' : 'signin_with',
-      shape: 'rectangular',
-      logo_alignment: 'left',
-      width,
-    });
+    const width = resolveGoogleButtonWidth(target);
+    window.google.accounts.id.renderButton(target, buildGoogleRenderConfig(mode, width));
   }, [clientId, mode, onCredential, onError, sdkReady]);
 
   if (!clientId) {

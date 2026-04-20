@@ -9,7 +9,7 @@ import {
   InsufficientAvailableBalanceError,
 } from '../ledger/ledger.types';
 
-import { ConnectPayoutService } from './connect-payout.service';
+import { ConnectPayoutService, ConnectPayoutsNotEnabledError } from './connect-payout.service';
 
 function makeBalance(overrides: Record<string, unknown> = {}) {
   return {
@@ -61,6 +61,9 @@ describe('ConnectPayoutService.createPayout', () => {
     };
     const stripe = {
       stripe: {
+        accounts: {
+          retrieve: jest.fn().mockResolvedValue({ id: 'acct_seller_1', payouts_enabled: true }),
+        },
         payouts: {
           create: jest.fn().mockResolvedValue({ id: 'po_123', status: 'pending' }),
         },
@@ -121,7 +124,12 @@ describe('ConnectPayoutService.createPayout', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
     };
-    const stripe = { stripe: { payouts: { create: jest.fn() } } };
+    const stripe = {
+      stripe: {
+        accounts: { retrieve: jest.fn() },
+        payouts: { create: jest.fn() },
+      },
+    };
     const ledger = { debitAvailableForPayout: jest.fn(), creditAvailableByAdjustment: jest.fn() };
     const financialAlert = {
       withdrawalFailed: jest.fn(),
@@ -136,6 +144,7 @@ describe('ConnectPayoutService.createPayout', () => {
       }),
     ).rejects.toBeInstanceOf(AccountBalanceNotFoundError);
     expect(stripe.stripe.payouts.create).not.toHaveBeenCalled();
+    expect(stripe.stripe.accounts.retrieve).not.toHaveBeenCalled();
     expect(financialAlert.withdrawalFailed).not.toHaveBeenCalled();
   });
 
@@ -145,7 +154,14 @@ describe('ConnectPayoutService.createPayout', () => {
         findUnique: jest.fn().mockResolvedValue(makeBalance({ availableBalanceCents: 999n })),
       },
     };
-    const stripe = { stripe: { payouts: { create: jest.fn() } } };
+    const stripe = {
+      stripe: {
+        accounts: {
+          retrieve: jest.fn().mockResolvedValue({ id: 'acct_seller_1', payouts_enabled: true }),
+        },
+        payouts: { create: jest.fn() },
+      },
+    };
     const ledger = { debitAvailableForPayout: jest.fn(), creditAvailableByAdjustment: jest.fn() };
     const financialAlert = {
       withdrawalFailed: jest.fn(),
@@ -159,8 +175,48 @@ describe('ConnectPayoutService.createPayout', () => {
         requestId: 'po_req_short',
       }),
     ).rejects.toBeInstanceOf(InsufficientAvailableBalanceError);
+    expect(stripe.stripe.accounts.retrieve).not.toHaveBeenCalled();
     expect(stripe.stripe.payouts.create).not.toHaveBeenCalled();
     expect(financialAlert.withdrawalFailed).not.toHaveBeenCalled();
+  });
+
+  it('blocks payout execution before ledger debit when Stripe payouts are disabled', async () => {
+    const prisma = {
+      connectAccountBalance: {
+        findUnique: jest.fn().mockResolvedValue(makeBalance()),
+      },
+    };
+    const stripe = {
+      stripe: {
+        accounts: {
+          retrieve: jest.fn().mockResolvedValue({
+            id: 'acct_seller_1',
+            payouts_enabled: false,
+            requirements: {
+              disabled_reason: 'requirements.pending_verification',
+            },
+          }),
+        },
+        payouts: { create: jest.fn() },
+      },
+    };
+    const ledger = { debitAvailableForPayout: jest.fn(), creditAvailableByAdjustment: jest.fn() };
+    const financialAlert = {
+      withdrawalFailed: jest.fn(),
+    };
+    const service = await buildService({ prisma, stripe, ledger, financialAlert });
+
+    await expect(
+      service.createPayout({
+        accountBalanceId: 'cab_seller_1',
+        amountCents: 1_000n,
+        requestId: 'po_req_disabled',
+      }),
+    ).rejects.toBeInstanceOf(ConnectPayoutsNotEnabledError);
+
+    expect(stripe.stripe.accounts.retrieve).toHaveBeenCalledWith('acct_seller_1');
+    expect(ledger.debitAvailableForPayout).not.toHaveBeenCalled();
+    expect(stripe.stripe.payouts.create).not.toHaveBeenCalled();
   });
 
   it('recredits the local balance if Stripe payout creation fails synchronously after the local debit', async () => {
@@ -171,6 +227,9 @@ describe('ConnectPayoutService.createPayout', () => {
     };
     const stripe = {
       stripe: {
+        accounts: {
+          retrieve: jest.fn().mockResolvedValue({ id: 'acct_seller_1', payouts_enabled: true }),
+        },
         payouts: {
           create: jest.fn().mockRejectedValue(new Error('stripe timeout')),
         },
@@ -225,7 +284,12 @@ describe('ConnectPayoutService.handleFailedPayout', () => {
         findUnique: jest.fn(),
       },
     };
-    const stripe = { stripe: { payouts: { create: jest.fn() } } };
+    const stripe = {
+      stripe: {
+        accounts: { retrieve: jest.fn() },
+        payouts: { create: jest.fn() },
+      },
+    };
     const ledger = {
       debitAvailableForPayout: jest.fn(),
       creditAvailableByAdjustment: jest.fn().mockResolvedValue({ id: 'cle_adj_1' }),

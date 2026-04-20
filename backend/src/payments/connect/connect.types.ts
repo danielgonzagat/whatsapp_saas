@@ -28,6 +28,20 @@ export interface OnboardingStatus {
   capabilities: Record<string, string>;
 }
 
+export interface CreateOnboardingLinkInput {
+  stripeAccountId: string;
+  refreshUrl: string;
+  returnUrl: string;
+  type?: 'account_onboarding' | 'account_update';
+}
+
+export interface CreateOnboardingLinkResult {
+  stripeAccountId: string;
+  url: string;
+  expiresAt: string | null;
+  type: 'account_onboarding' | 'account_update';
+}
+
 export class ConnectAccountAlreadyExistsError extends Error {
   constructor(
     public readonly workspaceId: string,

@@ -32,6 +32,9 @@ export type StripePaymentIntent = Unwrap<
 export type StripeRefund = Unwrap<Awaited<ReturnType<StripeClient['refunds']['create']>>>;
 export type StripeTransfer = Unwrap<Awaited<ReturnType<StripeClient['transfers']['create']>>>;
 export type StripeAccount = Unwrap<Awaited<ReturnType<StripeClient['accounts']['create']>>>;
+export type StripeAccountLink = Unwrap<
+  Awaited<ReturnType<StripeClient['accountLinks']['create']>>
+>;
 export type StripePayout = Unwrap<Awaited<ReturnType<StripeClient['payouts']['create']>>>;
 export type StripeEvent = Unwrap<ReturnType<StripeClient['webhooks']['constructEvent']>>;
 export type StripeBillingPortalSession = Unwrap<

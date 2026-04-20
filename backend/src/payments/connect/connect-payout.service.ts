@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { StripeService } from '../../billing/stripe.service';
+import type { StripeAccount } from '../../billing/stripe-types';
 import { FinancialAlertService } from '../../common/financial-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -31,6 +32,21 @@ export interface HandleFailedConnectPayoutInput {
   amountCents: bigint;
 }
 
+export class ConnectPayoutsNotEnabledError extends Error {
+  constructor(
+    public readonly accountBalanceId: string,
+    public readonly stripeAccountId: string,
+    public readonly disabledReason: string | null,
+  ) {
+    super(
+      `Stripe connected account ${stripeAccountId} cannot receive payouts for ${accountBalanceId}${
+        disabledReason ? ` (${disabledReason})` : ''
+      }.`,
+    );
+    this.name = 'ConnectPayoutsNotEnabledError';
+  }
+}
+
 /**
  * Executes Kloel-controlled manual payouts for Stripe Custom connected
  * accounts. Provider call happens with a caller-supplied request id as the
@@ -59,6 +75,17 @@ export class ConnectPayoutService {
         balance.id,
         input.amountCents,
         balance.availableBalanceCents,
+      );
+    }
+
+    const account = (await this.stripeService.stripe.accounts.retrieve(
+      balance.stripeAccountId,
+    )) as StripeAccount;
+    if (!account.payouts_enabled) {
+      throw new ConnectPayoutsNotEnabledError(
+        balance.id,
+        balance.stripeAccountId,
+        account.requirements?.disabled_reason ?? null,
       );
     }
 

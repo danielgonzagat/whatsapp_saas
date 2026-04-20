@@ -2,11 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { ConnectAccountBalance } from '@prisma/client';
 
 import { StripeService } from '../../billing/stripe.service';
-import type { StripeAccount } from '../../billing/stripe-types';
+import type { StripeAccount, StripeAccountLink } from '../../billing/stripe-types';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import {
   ConnectAccountAlreadyExistsError,
+  type CreateOnboardingLinkInput,
+  type CreateOnboardingLinkResult,
   type CreateCustomAccountInput,
   type CreateCustomAccountResult,
   type OnboardingStatus,
@@ -118,6 +120,26 @@ export class ConnectService {
     };
   }
 
+  async createOnboardingLink(
+    input: CreateOnboardingLinkInput,
+  ): Promise<CreateOnboardingLinkResult> {
+    const type = input.type ?? 'account_onboarding';
+    const link = (await this.stripeService.stripe.accountLinks.create({
+      account: input.stripeAccountId,
+      refresh_url: input.refreshUrl,
+      return_url: input.returnUrl,
+      type,
+    })) as StripeAccountLink;
+
+    return {
+      stripeAccountId: input.stripeAccountId,
+      url: link.url,
+      expiresAt:
+        typeof link.expires_at === 'number' ? new Date(link.expires_at * 1000).toISOString() : null,
+      type,
+    };
+  }
+
   /**
    * Find the local balance row by Stripe account id. Returns null when the
    * account exists in Stripe but Kloel has no local mirror — useful when
@@ -128,6 +150,13 @@ export class ConnectService {
   ): Promise<ConnectAccountBalance | null> {
     return this.prisma.connectAccountBalance.findUnique({
       where: { stripeAccountId },
+    });
+  }
+
+  async listBalances(workspaceId?: string): Promise<ConnectAccountBalance[]> {
+    return this.prisma.connectAccountBalance.findMany({
+      where: workspaceId ? { workspaceId } : undefined,
+      orderBy: [{ workspaceId: 'asc' }, { accountType: 'asc' }, { createdAt: 'asc' }],
     });
   }
 }

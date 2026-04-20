@@ -13,6 +13,9 @@ type StripeStub = {
       create: jest.Mock;
       retrieve: jest.Mock;
     };
+    accountLinks: {
+      create: jest.Mock;
+    };
   };
 };
 
@@ -22,6 +25,9 @@ function makeStripeStub(): StripeStub {
       accounts: {
         create: jest.fn(),
         retrieve: jest.fn(),
+      },
+      accountLinks: {
+        create: jest.fn(),
       },
     },
   };
@@ -231,6 +237,68 @@ describe('ConnectService.getOnboardingStatus', () => {
     expect(status.requirementsPastDue).toEqual([]);
     expect(status.requirementsDisabledReason).toBeNull();
     expect(status.capabilities).toEqual({});
+  });
+});
+
+describe('ConnectService.createOnboardingLink', () => {
+  it('creates an account onboarding link with caller-provided URLs', async () => {
+    const stripe = makeStripeStub();
+    const expiresAtEpoch = 1_776_000_000;
+    stripe.stripe.accountLinks.create.mockResolvedValue({
+      url: 'https://connect.stripe.test/onboarding',
+      expires_at: expiresAtEpoch,
+    });
+    const prisma = makePrismaStub();
+    const service = await buildService(stripe, prisma);
+
+    const result = await service.createOnboardingLink({
+      stripeAccountId: 'acct_status',
+      refreshUrl: 'https://app.kloel.test/connect/refresh',
+      returnUrl: 'https://app.kloel.test/connect/return',
+      type: 'account_update',
+    });
+
+    expect(stripe.stripe.accountLinks.create).toHaveBeenCalledWith({
+      account: 'acct_status',
+      refresh_url: 'https://app.kloel.test/connect/refresh',
+      return_url: 'https://app.kloel.test/connect/return',
+      type: 'account_update',
+    });
+    expect(result).toEqual({
+      stripeAccountId: 'acct_status',
+      url: 'https://connect.stripe.test/onboarding',
+      expiresAt: new Date(expiresAtEpoch * 1000).toISOString(),
+      type: 'account_update',
+    });
+  });
+
+  it('defaults to account_onboarding when type is omitted', async () => {
+    const stripe = makeStripeStub();
+    stripe.stripe.accountLinks.create.mockResolvedValue({
+      url: 'https://connect.stripe.test/onboarding',
+      expires_at: null,
+    });
+    const prisma = makePrismaStub();
+    const service = await buildService(stripe, prisma);
+
+    const result = await service.createOnboardingLink({
+      stripeAccountId: 'acct_status',
+      refreshUrl: 'https://app.kloel.test/connect/refresh',
+      returnUrl: 'https://app.kloel.test/connect/return',
+    });
+
+    expect(stripe.stripe.accountLinks.create).toHaveBeenCalledWith({
+      account: 'acct_status',
+      refresh_url: 'https://app.kloel.test/connect/refresh',
+      return_url: 'https://app.kloel.test/connect/return',
+      type: 'account_onboarding',
+    });
+    expect(result).toEqual({
+      stripeAccountId: 'acct_status',
+      url: 'https://connect.stripe.test/onboarding',
+      expiresAt: null,
+      type: 'account_onboarding',
+    });
   });
 });
 
