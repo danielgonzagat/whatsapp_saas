@@ -132,6 +132,12 @@ describe('WhatsappService', () => {
   ];
 
   beforeEach(() => {
+    // Freeze time so the `days: 30` cutoff deterministically includes
+    // contact-1 (cataloged 2026-03-21) and excludes contact-2 (2026-03-20),
+    // independent of wall-clock date.
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    jest.setSystemTime(new Date('2026-04-20T00:00:00.000Z'));
+
     const queueModule = jest.requireMock('../queue/queue');
     mockAutopilotAdd = queueModule.autopilotQueue.add;
     mockFlowAdd = queueModule.flowQueue.add;
@@ -373,6 +379,7 @@ describe('WhatsappService', () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     jest.clearAllMocks();
   });
 

@@ -87,10 +87,7 @@ describe('Financial Scenarios', () => {
       prismaMock.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
           kloelWallet: {
-            update: jest.fn().mockResolvedValue({
-              ...mockWallet,
-              availableBalance: 200, // 500 - 300
-            }),
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
           },
           kloelWalletTransaction: {
             create: jest.fn().mockResolvedValue(createdTx),
@@ -121,10 +118,7 @@ describe('Financial Scenarios', () => {
           // First call succeeds
           return cb({
             kloelWallet: {
-              update: jest.fn().mockResolvedValue({
-                ...mockWallet,
-                availableBalance: 100, // 500 - 400
-              }),
+              updateMany: jest.fn().mockResolvedValue({ count: 1 }),
             },
             kloelWalletTransaction: {
               create: jest.fn().mockResolvedValue({ id: 'tx-race-1' }),
@@ -163,7 +157,9 @@ describe('Financial Scenarios', () => {
       const createdTx = { id: 'tx-sale-1' };
       prismaMock.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
-          kloelWallet: prismaMock.kloelWallet,
+          kloelWallet: {
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          },
           kloelWalletTransaction: {
             create: jest.fn().mockResolvedValue(createdTx),
           },

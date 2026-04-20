@@ -13,7 +13,11 @@ describe('AppController', () => {
     conversation: { count: jest.Mock };
   };
 
+  let originalDiagToken: string | undefined;
+
   beforeEach(async () => {
+    originalDiagToken = process.env.DIAG_TOKEN;
+    delete process.env.DIAG_TOKEN;
     prisma = {
       $queryRaw: jest.fn(),
       workspace: { count: jest.fn().mockResolvedValue(0) },
@@ -33,6 +37,14 @@ describe('AppController', () => {
     }).compile();
 
     appController = app.get<AppController>(AppController);
+  });
+
+  afterEach(() => {
+    if (originalDiagToken === undefined) {
+      delete process.env.DIAG_TOKEN;
+    } else {
+      process.env.DIAG_TOKEN = originalDiagToken;
+    }
   });
 
   describe('root', () => {
