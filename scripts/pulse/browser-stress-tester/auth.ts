@@ -37,6 +37,7 @@ async function httpJson(url: string, opts: RequestInit = {}): Promise<any> {
   }
 }
 
+/** Obtain auth token. */
 export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentials> {
   const email = process.env.E2E_ADMIN_EMAIL || DEFAULT_EMAIL;
   const password = process.env.E2E_ADMIN_PASSWORD || DEFAULT_PASSWORD;
@@ -102,6 +103,7 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
   );
 }
 
+/** Inject auth. */
 export async function injectAuth(
   page: Page,
   creds: AuthCredentials,
@@ -138,6 +140,7 @@ export async function injectAuth(
   await page.waitForTimeout(1000);
 }
 
+/** Verify auth. */
 export async function verifyAuth(page: Page, frontendUrl: string): Promise<boolean> {
   await page.goto(`${frontendUrl}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 20000 });
   // Wait a bit for client-side auth check

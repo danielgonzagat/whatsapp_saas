@@ -36,6 +36,7 @@ function isIdContext(lines: string[], idx: number): boolean {
   return /\.toString\(36\)|crypto|uuid|nanoid|key=|key:/i.test(line);
 }
 
+/** Detect facades. */
 export function detectFacades(config: PulseConfig): FacadeEntry[] {
   const facades: FacadeEntry[] = [];
   const allDirs = [config.frontendDir, config.backendDir];

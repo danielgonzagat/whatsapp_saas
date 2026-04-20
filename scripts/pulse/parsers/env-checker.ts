@@ -61,6 +61,7 @@ function readEnvExample(rootDir: string): Set<string> {
   return new Set();
 }
 
+/** Check env vars. */
 export function checkEnvVars(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
   const documentedVars = readEnvExample(config.rootDir);

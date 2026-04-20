@@ -1095,6 +1095,7 @@ function buildSummary(results: PulseFlowResult[]): string {
   return `Flow evidence summary: ${passed} passed, ${failed} failed, ${accepted} accepted, ${missing} missing evidence.`;
 }
 
+/** Run declared flows. */
 export async function runDeclaredFlows(input: RunDeclaredFlowsInput): Promise<PulseFlowEvidence> {
   const allowedFlowIds = new Set(input.flowIds || []);
   const specs = getApplicableSpecs(input.environment, input.manifest).filter(

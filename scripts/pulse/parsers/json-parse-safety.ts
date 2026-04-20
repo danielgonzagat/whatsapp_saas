@@ -116,6 +116,7 @@ function buildTryLineSet(lines: string[]): Set<number> {
   return inTry;
 }
 
+/** Check json parse safety. */
 export function checkJsonParseSafety(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

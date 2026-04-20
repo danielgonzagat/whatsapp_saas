@@ -3,8 +3,11 @@ import * as path from 'path';
 import type { PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
+/** Hook function shape. */
 export interface HookFunction {
+  /** Method property. */
   method: string;
+  /** Endpoint property. */
   endpoint: string;
 }
 

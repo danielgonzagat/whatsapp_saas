@@ -27,6 +27,7 @@ function isCommentLine(line: string): boolean {
   return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*');
 }
 
+/** Check hydration. */
 export function checkHydration(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

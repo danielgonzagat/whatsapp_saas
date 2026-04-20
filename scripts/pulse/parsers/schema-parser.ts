@@ -5,6 +5,7 @@ function toCamelCase(name: string): string {
   return name.charAt(0).toLowerCase() + name.slice(1);
 }
 
+/** Parse schema. */
 export function parseSchema(config: PulseConfig): PrismaModel[] {
   if (!config.schemaPath || !fs.existsSync(config.schemaPath)) {
     return [];

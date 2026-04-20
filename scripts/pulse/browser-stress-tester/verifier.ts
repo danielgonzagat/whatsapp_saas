@@ -4,6 +4,7 @@ import type { Page } from 'playwright';
 import type { BrowserTestStatus, ObservedApiCall } from './types';
 import type { InteractionChain } from '../functional-map-types';
 
+/** Classify result. */
 export function classifyResult(observations: {
   apiCalls: ObservedApiCall[];
   domChanged: boolean;
@@ -77,6 +78,7 @@ export function classifyResult(observations: {
   return { status: 'FACHADA', reason: 'No API call and no DOM change — nothing happened' };
 }
 
+/** Verify persistence. */
 export async function verifyPersistence(
   page: Page,
   route: string,

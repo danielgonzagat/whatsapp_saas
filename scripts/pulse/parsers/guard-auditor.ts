@@ -56,6 +56,7 @@ function detectGlobalAuthGuard(rootDir: string): boolean {
   return false;
 }
 
+/** Check guards. */
 export function checkGuards(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

@@ -62,6 +62,7 @@ async function fetchPage(
   }
 }
 
+/** Check ssr render. */
 export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running frontend
 

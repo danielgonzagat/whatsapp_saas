@@ -63,6 +63,7 @@ const MONITORED_DEPS = new Set([
   '@prisma/client',
 ]);
 
+/** Check infra config. */
 export function checkInfraConfig(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

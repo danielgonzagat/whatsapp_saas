@@ -108,6 +108,7 @@ function runTsc(
   }
 }
 
+/** Check builds. */
 export function checkBuilds(config: PulseConfig): Break[] {
   if (!process.env.PULSE_DEEP) {
     return [];

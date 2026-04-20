@@ -175,6 +175,7 @@ function runJest(projectDir: string, rootDir: string, label: string): Break[] {
   return breaks;
 }
 
+/** Check tests. */
 export function checkTests(config: PulseConfig): Break[] {
   if (!process.env.PULSE_DEEP) {
     return [];

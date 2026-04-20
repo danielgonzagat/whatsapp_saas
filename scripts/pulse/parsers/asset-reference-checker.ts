@@ -13,6 +13,7 @@ const STATIC_SRC_RE = /\bsrc\s*=\s*['"`](\/(?:images|icons|assets)\/[^'"`\s]+)['
 // Also catch next/image or img with template literal paths that are static
 const STATIC_SRC_CURLY_RE = /\bsrc=\{['"`](\/(?:images|icons|assets)\/[^'"`\s]+)['"`]\}/g;
 
+/** Check asset references. */
 export function checkAssetReferences(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

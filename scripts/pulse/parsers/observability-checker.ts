@@ -32,6 +32,7 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
+/** Check observability. */
 export function checkObservability(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

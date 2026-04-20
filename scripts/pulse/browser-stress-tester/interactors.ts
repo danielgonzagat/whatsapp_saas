@@ -7,10 +7,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
+/** Interaction result shape. */
 export interface InteractionResult {
+  /** Api calls property. */
   apiCalls: ObservedApiCall[];
+  /** Dom changed property. */
   domChanged: boolean;
+  /** Console errors property. */
   consoleErrors: string[];
+  /** Error property. */
   error: string | null;
 }
 
@@ -19,14 +24,17 @@ const DANGEROUS_RE =
   /^(excluir|deletar|remover|delete|remove|sair|logout|desconectar|disconnect|apagar|cancelar assinatura|encerrar)/i;
 const NAVIGATION_ONLY_RE = /^(voltar|back|anterior|← |sair|fechar|cancelar|close)$/i;
 
+/** Is dangerous element. */
 export function isDangerousElement(label: string): boolean {
   return DANGEROUS_RE.test(label.trim());
 }
 
+/** Is navigation only. */
 export function isNavigationOnly(label: string): boolean {
   return NAVIGATION_ONLY_RE.test(label.trim());
 }
 
+/** Interact with element. */
 export async function interactWithElement(
   page: Page,
   selector: string,

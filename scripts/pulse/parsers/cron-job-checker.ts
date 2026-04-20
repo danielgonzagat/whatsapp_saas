@@ -56,6 +56,7 @@ function hasTryCatch(bodyLines: string[]): boolean {
   return bodyLines.some((line) => /\btry\s*\{/.test(line));
 }
 
+/** Check cron jobs. */
 export function checkCronJobs(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

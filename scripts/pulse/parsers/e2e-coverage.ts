@@ -64,6 +64,7 @@ const CORE_FLOWS: CoreFlow[] = [
   },
 ];
 
+/** Check e2 e coverage. */
 export function checkE2ECoverage(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

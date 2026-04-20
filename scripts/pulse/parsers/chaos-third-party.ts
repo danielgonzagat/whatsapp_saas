@@ -24,6 +24,7 @@ function readSafe(file: string): string {
   }
 }
 
+/** Check chaos third party. */
 export function checkChaosThirdParty(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

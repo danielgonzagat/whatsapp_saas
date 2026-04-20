@@ -79,6 +79,7 @@ function isDeepIndent(line: string): boolean {
   return spaces >= 4;
 }
 
+/** Check next js patterns. */
 export function checkNextJSPatterns(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

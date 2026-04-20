@@ -38,6 +38,7 @@ function makeAlgNoneJwt(): string {
   return `${header}.${payload}.`;
 }
 
+/** Check auth flow. */
 export async function checkAuthFlow(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
   if (!process.env.PULSE_DEEP) {

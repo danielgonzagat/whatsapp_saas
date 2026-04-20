@@ -1783,6 +1783,7 @@ function getBlockingTier(tierStatuses: PulseCertificationTierStatus[]): number |
   return first ? first.id : null;
 }
 
+/** Compute certification. */
 export function computeCertification(input: ComputeCertificationInput): PulseCertification {
   const env = getEnvironment();
   const manifest = input.manifestResult.manifest;

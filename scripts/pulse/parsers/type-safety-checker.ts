@@ -15,6 +15,7 @@ function isFinancialPath(filePath: string): boolean {
   return FINANCIAL_PATH_SEGMENTS.some((seg) => lower.includes(`/${seg}`));
 }
 
+/** Check type safety. */
 export function checkTypeSafety(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

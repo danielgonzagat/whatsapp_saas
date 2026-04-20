@@ -52,6 +52,7 @@ function extractControllerPath(line: string): string | null {
   return match[1] ?? '';
 }
 
+/** Check duplicate routes. */
 export function checkDuplicateRoutes(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

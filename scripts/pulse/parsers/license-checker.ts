@@ -100,6 +100,7 @@ function loadAllowlist(rootDir: string): Set<string> {
   }
 }
 
+/** Check licenses. */
 export function checkLicenses(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

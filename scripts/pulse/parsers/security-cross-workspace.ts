@@ -77,6 +77,7 @@ function looksLikeRealData(body: any): boolean {
   return false;
 }
 
+/** Check security cross workspace. */
 export async function checkSecurityCrossWorkspace(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
   if (!isDeepMode()) {

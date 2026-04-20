@@ -85,6 +85,7 @@ function isInsideTry(lines: string[], targetIdx: number): boolean {
   return false;
 }
 
+/** Check prisma safety. */
 export function checkPrismaSafety(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
   const files = walkFiles(config.backendDir, ['.ts']);

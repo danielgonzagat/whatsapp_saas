@@ -18,6 +18,7 @@
 import type { Break, PulseConfig } from '../types';
 import { dbQuery } from './runtime-utils';
 
+/** Check data integrity. */
 export async function checkDataIntegrity(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires DB access
   if (!process.env.PULSE_DEEP) {

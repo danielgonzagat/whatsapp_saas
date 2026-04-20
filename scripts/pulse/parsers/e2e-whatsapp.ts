@@ -30,6 +30,7 @@ import {
   getBackendUrl,
 } from './runtime-utils';
 
+/** Check e2e whatsapp. */
 export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB + LLM mock
   if (!process.env.PULSE_DEEP) {

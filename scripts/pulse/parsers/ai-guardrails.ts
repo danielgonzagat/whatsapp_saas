@@ -37,6 +37,7 @@ function findAgentFiles(backendDir: string): string[] {
   );
 }
 
+/** Check ai guardrails. */
 export function checkAiGuardrails(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

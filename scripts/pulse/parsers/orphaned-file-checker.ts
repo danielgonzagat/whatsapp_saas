@@ -21,6 +21,7 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** Check orphaned files. */
 export function checkOrphanedFiles(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

@@ -54,6 +54,7 @@ function buildDefaultSummary(trace: PulseExecutionTrace): string {
   return `Execution completed: ${passed} phase(s) passed.`;
 }
 
+/** Pulse execution tracer. */
 export class PulseExecutionTracer {
   private readonly artifactPath: string;
   private readonly trace: PulseExecutionTrace;
@@ -75,6 +76,7 @@ export class PulseExecutionTracer {
     this.flush();
   }
 
+  /** Set context. */
   setContext(target?: PulseCertificationTarget, environment?: PulseEnvironment): void {
     if (target) {
       this.trace.certificationTarget = target;
@@ -87,6 +89,7 @@ export class PulseExecutionTracer {
     this.flush();
   }
 
+  /** Start phase. */
   startPhase(phase: string, metadata?: Record<string, string | number | boolean>): void {
     const entry: PulseExecutionPhase = {
       phase,
@@ -100,6 +103,7 @@ export class PulseExecutionTracer {
     this.flush();
   }
 
+  /** Finish phase. */
   finishPhase(
     phase: string,
     status: Exclude<PulseExecutionPhaseStatus, 'running'>,
@@ -143,10 +147,12 @@ export class PulseExecutionTracer {
     this.flush();
   }
 
+  /** Get snapshot. */
   getSnapshot(): PulseExecutionTrace {
     return JSON.parse(JSON.stringify(this.trace)) as PulseExecutionTrace;
   }
 
+  /** Get artifact path. */
   getArtifactPath(): string {
     return this.artifactPath;
   }
@@ -157,6 +163,7 @@ export class PulseExecutionTracer {
   }
 }
 
+/** Run phase with trace. */
 export async function runPhaseWithTrace<T>(
   tracer: PulseExecutionTracer,
   phase: string,
@@ -213,6 +220,7 @@ export async function runPhaseWithTrace<T>(
   }
 }
 
+/** Get execution trace artifact name. */
 export function getExecutionTraceArtifactName(): string {
   return EXECUTION_TRACE_ARTIFACT;
 }

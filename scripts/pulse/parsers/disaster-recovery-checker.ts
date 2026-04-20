@@ -34,6 +34,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 
+/** Check disaster recovery. */
 export function checkDisasterRecovery(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

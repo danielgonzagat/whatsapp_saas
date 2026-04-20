@@ -89,6 +89,7 @@ function breakIcon(type: string): string {
   return `${DIM}[---]${RESET}`;
 }
 
+/** Render dashboard. */
 export function renderDashboard(
   health: PulseHealth,
   certification?: PulseCertification,

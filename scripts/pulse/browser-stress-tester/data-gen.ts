@@ -3,6 +3,7 @@
 const TEST_PREFIX = 'PULSE_TEST_';
 const ts = () => Date.now().toString(36);
 
+/** Generate test data. */
 export function generateTestData(context: {
   placeholder?: string;
   label?: string;
@@ -99,6 +100,7 @@ export function generateTestImage(): Buffer {
   );
 }
 
+/** Is test data. */
 export function isTestData(value: string): boolean {
   return value.includes(TEST_PREFIX);
 }

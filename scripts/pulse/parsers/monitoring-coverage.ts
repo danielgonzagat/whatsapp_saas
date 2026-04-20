@@ -52,6 +52,7 @@ import * as path from 'path';
 import { walkFiles, readFileSafe } from './utils';
 import type { Break, PulseConfig } from '../types';
 
+/** Check monitoring coverage. */
 export function checkMonitoringCoverage(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

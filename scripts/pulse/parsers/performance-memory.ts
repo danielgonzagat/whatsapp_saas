@@ -81,6 +81,7 @@ function computeBraceDepths(lines: string[]): number[] {
   return depths;
 }
 
+/** Check performance memory. */
 export function checkPerformanceMemory(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

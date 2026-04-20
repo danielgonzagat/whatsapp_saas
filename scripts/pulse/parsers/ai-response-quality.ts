@@ -34,6 +34,7 @@ function findAgentFiles(backendDir: string): string[] {
   );
 }
 
+/** Check ai response quality. */
 export function checkAiResponseQuality(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

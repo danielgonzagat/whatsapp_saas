@@ -597,6 +597,7 @@ function buildDivergence(
   };
 }
 
+/** Extract codebase truth. */
 export function extractCodebaseTruth(
   config: PulseConfig,
   coreData: CoreParserData,

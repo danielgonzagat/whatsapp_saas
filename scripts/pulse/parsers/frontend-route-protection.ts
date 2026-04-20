@@ -71,6 +71,7 @@ function hasAuthGuard(content: string): boolean {
   return redirectsToLogin && checksAuth;
 }
 
+/** Check frontend route protection. */
 export function checkFrontendRouteProtection(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

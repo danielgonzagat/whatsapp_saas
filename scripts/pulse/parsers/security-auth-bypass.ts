@@ -57,6 +57,7 @@ interface TestCase {
   detail: string;
 }
 
+/** Check security auth bypass. */
 export async function checkSecurityAuthBypass(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
   if (!process.env.PULSE_DEEP) {

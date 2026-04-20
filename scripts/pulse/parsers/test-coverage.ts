@@ -57,6 +57,7 @@ function runCoverage(dir: string): void {
   }
 }
 
+/** Check test coverage. */
 export function checkTestCoverage(config: PulseConfig): Break[] {
   if (!process.env.PULSE_DEEP) {
     return [];

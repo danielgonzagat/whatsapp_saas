@@ -18,6 +18,7 @@ function shouldSkipFile(file: string): boolean {
   return /\.(spec|test)\.ts$|__tests__|__mocks__|\/seed\.|\/migration\.|fixture/i.test(file);
 }
 
+/** Check sensitive data. */
 export function checkSensitiveData(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

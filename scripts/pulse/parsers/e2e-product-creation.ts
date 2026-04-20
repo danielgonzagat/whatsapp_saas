@@ -42,6 +42,7 @@ import {
   getBackendUrl,
 } from './runtime-utils';
 
+/** Check e2e product creation. */
 export async function checkE2eProductCreation(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
   if (!process.env.PULSE_DEEP) {

@@ -70,6 +70,7 @@ function runAudit(dir: string): AuditReport | null {
   }
 }
 
+/** Check npm audit. */
 export function checkNpmAudit(config: PulseConfig): Break[] {
   if (!process.env.PULSE_DEEP) {
     return [];

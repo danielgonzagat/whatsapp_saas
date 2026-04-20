@@ -562,6 +562,7 @@ function resolveHandler(
   return { type: 'real', apiCalls: [] };
 }
 
+/** Parse ui elements. */
 export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry): UIElement[] {
   const elements: UIElement[] = [];
   const files = walkFiles(config.frontendDir, ['.tsx', '.jsx']);

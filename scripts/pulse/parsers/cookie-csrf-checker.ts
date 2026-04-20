@@ -26,6 +26,7 @@ function extractCookieOptions(lines: string[], startLine: number): string {
   return chunk;
 }
 
+/** Check cookie security. */
 export function checkCookieSecurity(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

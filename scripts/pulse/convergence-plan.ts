@@ -683,6 +683,7 @@ function buildGenericGateUnits(input: BuildPulseConvergencePlanInput): PulseConv
   return units;
 }
 
+/** Build convergence plan. */
 export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): PulseConvergencePlan {
   const queue = [
     ...buildScenarioUnits(input),
@@ -737,6 +738,7 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
   };
 }
 
+/** Render convergence plan markdown. */
 export function renderConvergencePlanMarkdown(plan: PulseConvergencePlan): string {
   const lines: string[] = [];
 

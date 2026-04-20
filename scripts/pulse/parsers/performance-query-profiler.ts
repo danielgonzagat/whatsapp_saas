@@ -28,6 +28,7 @@ function isCommentLine(line: string): boolean {
   return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*');
 }
 
+/** Check performance query profiler. */
 export function checkPerformanceQueryProfiler(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

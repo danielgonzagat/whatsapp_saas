@@ -27,6 +27,7 @@ import {
   getBackendUrl,
 } from './runtime-utils';
 
+/** Check e2e payment. */
 export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
   if (!process.env.PULSE_DEEP) {

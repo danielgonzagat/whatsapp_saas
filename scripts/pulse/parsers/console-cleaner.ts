@@ -21,6 +21,7 @@ function isLoggerOrBootstrap(filePath: string): boolean {
   );
 }
 
+/** Check console usage. */
 export function checkConsoleUsage(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

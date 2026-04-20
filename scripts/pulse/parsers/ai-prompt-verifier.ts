@@ -102,6 +102,7 @@ const REQUIRED_SECTIONS: PromptSection[] = [
   },
 ];
 
+/** Check ai prompt verifier. */
 export function checkAiPromptVerifier(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

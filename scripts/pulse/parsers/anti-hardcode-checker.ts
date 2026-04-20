@@ -87,6 +87,7 @@ function looksLikeUserFacingLiteral(line: string): boolean {
   return STRING_LITERAL_RE.test(line);
 }
 
+/** Check anti hardcode. */
 export function checkAntiHardcode(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
   const sourceFiles = [

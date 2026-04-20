@@ -49,6 +49,7 @@ function escapeMarkdown(s: string): string {
   return escapeMarkdownTableCell(s);
 }
 
+/** Generate functional map report. */
 export function generateFunctionalMapReport(result: FunctionalMapResult, rootDir: string): string {
   const lines: string[] = [];
   const { summary, pages } = result;

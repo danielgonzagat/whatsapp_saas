@@ -21,14 +21,23 @@ import { execFileSync } from 'child_process';
 
 type RailwayVarsSource = 'env-json' | 'railway-cli-token' | 'railway-cli' | 'none';
 
+/** Pulse runtime resolution shape. */
 export interface PulseRuntimeResolution {
+  /** Backend url property. */
   backendUrl: string;
+  /** Backend source property. */
   backendSource: string;
+  /** Frontend url property. */
   frontendUrl: string;
+  /** Frontend source property. */
   frontendSource: string;
+  /** Db configured property. */
   dbConfigured: boolean;
+  /** Db source property. */
   dbSource: string;
+  /** Railway vars source property. */
   railwayVarsSource: RailwayVarsSource;
+  /** Summary property. */
   summary: string;
 }
 
@@ -105,6 +114,7 @@ function tryRailwayVariablesCli(token?: string): Record<string, string> | null {
   return null;
 }
 
+/** Get railway vars. */
 export function getRailwayVars(): Record<string, string> {
   if (_railwayVars) {
     return _railwayVars;
@@ -167,6 +177,7 @@ function resolveDbSource(candidates: Array<[string | undefined | null, string]>)
   return { configured: false, source: 'none' };
 }
 
+/** Get runtime resolution. */
 export function getRuntimeResolution(): PulseRuntimeResolution {
   const vars = getRailwayVars();
   const backend = resolveFirstUrl([
@@ -219,10 +230,12 @@ export function getBackendUrl(): string {
   return getRuntimeResolution().backendUrl;
 }
 
+/** Get frontend url. */
 export function getFrontendUrl(): string {
   return getRuntimeResolution().frontendUrl;
 }
 
+/** Get db url. */
 export function getDbUrl(): string {
   if (process.env.PULSE_DATABASE_URL) {
     return process.env.PULSE_DATABASE_URL;
@@ -231,6 +244,7 @@ export function getDbUrl(): string {
   return vars.DATABASE_URL || '';
 }
 
+/** Get jwt secret. */
 export function getJwtSecret(): string {
   if (process.env.PULSE_JWT_SECRET) {
     return process.env.PULSE_JWT_SECRET;
@@ -239,6 +253,7 @@ export function getJwtSecret(): string {
   return vars.JWT_SECRET || 'pulse-test-secret';
 }
 
+/** Get runtime internal token. */
 export function getRuntimeInternalToken(): string {
   const vars = getRailwayVars();
   return (
@@ -294,10 +309,12 @@ interface HttpOptions {
   headers?: Record<string, string>;
 }
 
+/** Http get. */
 export async function httpGet(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('GET', path, undefined, opts);
 }
 
+/** Http post. */
 export async function httpPost(
   path: string,
   body?: any,
@@ -306,6 +323,7 @@ export async function httpPost(
   return httpRequest('POST', path, body, opts);
 }
 
+/** Http put. */
 export async function httpPut(
   path: string,
   body?: any,
@@ -314,6 +332,7 @@ export async function httpPut(
   return httpRequest('PUT', path, body, opts);
 }
 
+/** Http delete. */
 export async function httpDelete(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('DELETE', path, undefined, opts);
 }
@@ -418,6 +437,7 @@ export function isDeepMode(): boolean {
   return !!process.env.PULSE_DEEP;
 }
 
+/** Is total mode. */
 export function isTotalMode(): boolean {
   return !!process.env.PULSE_TOTAL;
 }

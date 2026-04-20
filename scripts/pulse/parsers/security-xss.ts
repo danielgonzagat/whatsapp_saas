@@ -65,6 +65,7 @@ function isJsonResponse(headers: Record<string, string>): boolean {
   return ct.includes('application/json');
 }
 
+/** Check security xss. */
 export async function checkSecurityXss(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
   if (!isDeepMode()) {

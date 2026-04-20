@@ -56,6 +56,7 @@ function resolveParserFunction(mod: Record<string, unknown>): PulseParserDefinit
   return null;
 }
 
+/** Load parser inventory. */
 export function loadParserInventory(
   config: PulseConfig,
   options: LoadParserInventoryOptions = {},

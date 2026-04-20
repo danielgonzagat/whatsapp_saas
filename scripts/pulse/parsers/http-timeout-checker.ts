@@ -15,6 +15,7 @@ function isFetchWrapperDefinition(lines: string[], lineIdx: number): boolean {
   return /(?:export\s+(?:async\s+)?function|const)\s+(?:swrFetcher|apiFetch)\b/.test(context);
 }
 
+/** Check http timeouts. */
 export function checkHttpTimeouts(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

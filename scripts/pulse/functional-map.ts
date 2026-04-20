@@ -134,6 +134,7 @@ function resolveImportPath(importPath: string, frontendDir: string): string | nu
   return null;
 }
 
+/** Resolve component tree. */
 export function resolveComponentTree(
   pageFile: string,
   frontendDir: string,

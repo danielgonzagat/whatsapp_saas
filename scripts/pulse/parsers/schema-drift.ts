@@ -104,6 +104,7 @@ function extractTableMappings(schemaPath: string): Map<string, string> {
   return map;
 }
 
+/** Check schema drift. */
 export async function checkSchemaDrift(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires DB access
   if (!isDeepMode()) {

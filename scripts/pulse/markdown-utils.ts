@@ -1,3 +1,4 @@
+/** Flatten inline text. */
 export function flattenInlineText(value: string): string {
   let result = '';
   let lastWasWhitespace = false;
@@ -26,6 +27,7 @@ export function flattenInlineText(value: string): string {
   return result.trim();
 }
 
+/** Escape markdown table cell. */
 export function escapeMarkdownTableCell(value: string): string {
   const flattened = flattenInlineText(value);
   let result = '';

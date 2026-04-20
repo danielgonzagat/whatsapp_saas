@@ -40,6 +40,7 @@ const FILE_UPLOAD_RE = /multer|@UploadedFile|FileInterceptor|S3|putObject|upload
 const WORKSPACE_THROTTLE_RE =
   /ThrottlerGuard|WorkspaceThrottle|throttle.*workspace|workspace.*throttle/i;
 
+/** Check cost limits. */
 export function checkCostLimits(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

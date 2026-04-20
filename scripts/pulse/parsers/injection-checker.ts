@@ -33,6 +33,7 @@ function isDynamicRequire(line: string, matchIndex: number): boolean {
   return !(inner.startsWith("'") || inner.startsWith('"') || inner.startsWith('`'));
 }
 
+/** Check injection. */
 export function checkInjection(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

@@ -101,6 +101,7 @@ function generateCorrectionPrompt(breaks: Break[]): string {
   return lines.join('\n');
 }
 
+/** Generate report. */
 export function generateReport(health: PulseHealth, rootDir: string): string {
   const lines: string[] = [];
 

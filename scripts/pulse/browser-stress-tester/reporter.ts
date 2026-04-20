@@ -46,6 +46,7 @@ function statusIcon(s: BrowserTestStatus): string {
   }
 }
 
+/** Generate stress test report. */
 export function generateStressTestReport(
   result: StressTestResult,
   fmapResult: FunctionalMapResult | null,
@@ -251,6 +252,7 @@ export function generateStressTestReport(
   return reportPath;
 }
 
+/** Render terminal summary. */
 export function renderTerminalSummary(result: StressTestResult): void {
   const R = '\x1b[0m';
   const B = '\x1b[1m';

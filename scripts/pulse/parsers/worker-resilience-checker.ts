@@ -39,6 +39,7 @@ function isCommentLine(trimmed: string): boolean {
   return trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*');
 }
 
+/** Check worker resilience. */
 export function checkWorkerResilience(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

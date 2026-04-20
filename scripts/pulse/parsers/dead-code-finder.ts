@@ -59,6 +59,7 @@ function extractExports(content: string): string[] {
   return names;
 }
 
+/** Check dead code. */
 export function checkDeadCode(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

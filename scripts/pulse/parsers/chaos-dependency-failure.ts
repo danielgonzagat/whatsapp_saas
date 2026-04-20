@@ -24,6 +24,7 @@ function readSafe(file: string): string {
   }
 }
 
+/** Check chaos dependency failure. */
 export function checkChaosDependencyFailure(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

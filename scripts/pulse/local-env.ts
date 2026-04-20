@@ -29,6 +29,7 @@ function parseEnvFile(content: string): Array<[string, string]> {
   return pairs;
 }
 
+/** Load pulse local env. */
 export function loadPulseLocalEnv(rootDir: string): string[] {
   const candidateFiles = ['.env.pulse.local'];
 

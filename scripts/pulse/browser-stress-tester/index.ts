@@ -188,6 +188,7 @@ function buildSummaryForPreflight(status: BrowserPreflightStatus): string {
   return 'Browser preflight passed.';
 }
 
+/** Run browser stress test. */
 export async function runBrowserStressTest(
   options: BrowserStressRunOptions = {},
 ): Promise<BrowserStressRunResult> {

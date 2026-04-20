@@ -84,6 +84,7 @@ function classifyWorkflow(file: string, content: string): WorkflowKind {
   return 'primary';
 }
 
+/** Check cicd. */
 export function checkCicd(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
   const workflowsDir = path.join(config.rootDir, '.github', 'workflows');

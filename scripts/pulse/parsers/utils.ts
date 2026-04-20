@@ -13,6 +13,7 @@ const IGNORE_DIRS = new Set([
   '.vercel',
 ]);
 
+/** Walk files. */
 export function walkFiles(dir: string, exts: string[] = ['.ts', '.tsx', '.js', '.jsx']): string[] {
   if (!fs.existsSync(dir)) {
     return [];
@@ -43,6 +44,7 @@ export function walkFiles(dir: string, exts: string[] = ['.ts', '.tsx', '.js', '
   return results;
 }
 
+/** Read file safe. */
 export function readFileSafe(filePath: string): string {
   try {
     return fs.readFileSync(filePath, 'utf8');

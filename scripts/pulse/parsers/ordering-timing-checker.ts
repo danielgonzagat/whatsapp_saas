@@ -28,6 +28,7 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
+/** Check ordering timing. */
 export function checkOrderingTiming(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

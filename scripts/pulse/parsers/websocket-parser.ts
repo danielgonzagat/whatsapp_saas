@@ -14,6 +14,7 @@ function extractQuotedString(s: string): string | null {
   return m ? m[1] : null;
 }
 
+/** Check web sockets. */
 export function checkWebSockets(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

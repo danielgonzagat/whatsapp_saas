@@ -3,6 +3,7 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
+/** Check missing await. */
 export function checkMissingAwait(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

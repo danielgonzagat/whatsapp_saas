@@ -11,6 +11,7 @@ function shouldSkipFile(filePath: string): boolean {
 // i.e., the closing paren follows immediately (possibly with whitespace)
 const DATE_NO_LOCALE_RE = /\.to(?:LocaleDate|Locale|LocaleTime)String\s*\(\s*\)/g;
 
+/** Check locale consistency. */
 export function checkLocaleConsistency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

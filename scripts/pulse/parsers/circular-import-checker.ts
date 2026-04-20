@@ -88,6 +88,7 @@ function extractModuleImports(content: string): string[] {
   return imports;
 }
 
+/** Check circular imports. */
 export function checkCircularImports(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

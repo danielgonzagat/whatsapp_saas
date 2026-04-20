@@ -12,6 +12,7 @@ import type {
 } from './types';
 import { buildApiModuleMap } from './parsers/api-parser';
 
+/** Normalize for match. */
 export function normalizeForMatch(p: string): string {
   return p
     .replace(/\/+/g, '/')
@@ -20,8 +21,10 @@ export function normalizeForMatch(p: string): string {
     .toLowerCase();
 }
 
+/** Route key type. */
 export type RouteKey = string; // "GET:/campaigns/:_"
 
+/** Build route lookup. */
 export function buildRouteLookup(
   routes: BackendRoute[],
   globalPrefix: string,
@@ -38,6 +41,7 @@ export function buildRouteLookup(
   return map;
 }
 
+/** Match api call to route. */
 export function matchApiCallToRoute(
   call: APICall,
   routeLookup: Map<RouteKey, BackendRoute>,
@@ -85,6 +89,7 @@ export function matchApiCallToRoute(
   return null;
 }
 
+/** Build service model map. */
 export function buildServiceModelMap(traces: ServiceTrace[]): Map<string, string[]> {
   // "serviceName.methodName" -> ["ModelName", ...]
   const map = new Map<string, string[]>();
@@ -97,6 +102,7 @@ export function buildServiceModelMap(traces: ServiceTrace[]): Map<string, string
   return map;
 }
 
+/** Resolve route models. */
 export function resolveRouteModels(
   route: BackendRoute,
   serviceModelMap: Map<string, string[]>,
@@ -130,19 +136,31 @@ export function resolveRouteModels(
   return [...models];
 }
 
+/** Pulse graph input shape. */
 export interface PulseGraphInput {
+  /** Ui elements property. */
   uiElements: UIElement[];
+  /** Api calls property. */
   apiCalls: APICall[];
+  /** Backend routes property. */
   backendRoutes: BackendRoute[];
+  /** Prisma models property. */
   prismaModels: PrismaModel[];
+  /** Service traces property. */
   serviceTraces: ServiceTrace[];
+  /** Proxy routes property. */
   proxyRoutes: ProxyRoute[];
+  /** Facades property. */
   facades: FacadeEntry[];
+  /** Global prefix property. */
   globalPrefix: string;
+  /** Config property. */
   config?: PulseConfig;
+  /** Extended breaks property. */
   extendedBreaks?: Break[];
 }
 
+/** Build graph. */
 export function buildGraph(input: PulseGraphInput): PulseHealth {
   const {
     uiElements,

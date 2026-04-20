@@ -36,6 +36,7 @@ function findControllerBlocks(
   return blocks;
 }
 
+/** Parse backend routes. */
 export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
   const routes: BackendRoute[] = [];
   const files = walkFiles(config.backendDir, ['.ts']).filter((f) => f.endsWith('.controller.ts'));

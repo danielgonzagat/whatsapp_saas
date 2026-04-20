@@ -69,6 +69,7 @@ function detectWrongStatusCode(line: string): boolean {
   return false;
 }
 
+/** Check api response consistency. */
 export function checkApiResponseConsistency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

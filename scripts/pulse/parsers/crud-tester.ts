@@ -20,6 +20,7 @@ import {
   getFrontendUrl,
 } from './runtime-utils';
 
+/** Check crud. */
 export async function checkCrud(config: PulseConfig): Promise<Break[]> {
   if (!isDeepMode()) {
     return [];

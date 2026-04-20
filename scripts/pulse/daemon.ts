@@ -29,20 +29,33 @@ import { extractCodebaseTruth } from './codebase-truth';
 import { buildResolvedManifest } from './resolved-manifest';
 import type { PulseExecutionTracer } from './execution-trace';
 
+/** Full scan result shape. */
 export interface FullScanResult {
+  /** Health property. */
   health: PulseHealth;
+  /** Core data property. */
   coreData: CoreParserData;
+  /** Manifest property. */
   manifest: PulseManifest | null;
+  /** Manifest result property. */
   manifestResult: PulseManifestLoadResult;
+  /** Codebase truth property. */
   codebaseTruth: PulseCodebaseTruth;
+  /** Resolved manifest property. */
   resolvedManifest: PulseResolvedManifest;
+  /** Certification property. */
   certification: PulseCertification;
+  /** Parser inventory property. */
   parserInventory: PulseParserInventory;
 }
 
+/** Full scan options shape. */
 export interface FullScanOptions {
+  /** Include parser property. */
   includeParser?: (name: string) => boolean;
+  /** Parser timeout ms property. */
   parserTimeoutMs?: number;
+  /** Tracer property. */
   tracer?: PulseExecutionTracer;
 }
 
@@ -71,6 +84,7 @@ function getParserType(filePath: string, config: PulseConfig): ParserType | null
   return null;
 }
 
+/** Start daemon. */
 export async function startDaemon(config: PulseConfig): Promise<void> {
   let chokidar: any;
   try {
@@ -167,6 +181,7 @@ async function runParserWithTimeout(
   }
 }
 
+/** Full scan. */
 export async function fullScan(
   config: PulseConfig,
   options: FullScanOptions = {},

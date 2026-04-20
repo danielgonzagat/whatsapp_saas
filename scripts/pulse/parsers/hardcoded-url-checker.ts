@@ -97,6 +97,7 @@ function isConfigDocLine(file: string): boolean {
   );
 }
 
+/** Check hardcoded urls. */
 export function checkHardcodedUrls(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

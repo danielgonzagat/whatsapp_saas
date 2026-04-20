@@ -39,6 +39,7 @@ const OPTIMISTIC_LOCK_RE =
   /version|updatedAt.*where|where.*version|prisma\.\$executeRaw|SELECT\s+FOR\s+UPDATE/i;
 const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
 
+/** Check concurrency. */
 export function checkConcurrency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

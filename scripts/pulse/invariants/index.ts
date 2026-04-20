@@ -179,6 +179,7 @@ function buildSummary(results: PulseInvariantResult[]): string {
   return `Invariant evidence summary: ${passed} passed, ${failed} failed, ${accepted} accepted, ${missing} missing evidence.`;
 }
 
+/** Run declared invariants. */
 export function runDeclaredInvariants(input: RunDeclaredInvariantsInput): PulseInvariantEvidence {
   const allowedInvariantIds = new Set(input.invariantIds || []);
   const specs = getApplicableSpecs(input.environment, input.manifest).filter(

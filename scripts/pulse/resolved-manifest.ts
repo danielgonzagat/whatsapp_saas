@@ -814,6 +814,7 @@ function buildFlowGroups(
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/** Build resolved manifest. */
 export function buildResolvedManifest(
   manifest: PulseManifest | null,
   manifestPath: string | null,

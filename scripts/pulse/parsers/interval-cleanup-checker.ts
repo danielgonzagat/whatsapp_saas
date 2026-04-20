@@ -35,6 +35,7 @@ function firstMatchLine(lines: string[], re: RegExp): number {
   return 1;
 }
 
+/** Check interval cleanup. */
 export function checkIntervalCleanup(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

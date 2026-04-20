@@ -44,6 +44,7 @@ function containsStackTrace(body: any): boolean {
   return STACK_TRACE_PATTERNS.some((p) => str.includes(p));
 }
 
+/** Check api contract. */
 export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
   if (!process.env.PULSE_DEEP) {

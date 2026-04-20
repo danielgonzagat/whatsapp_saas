@@ -24,6 +24,7 @@ import { walkFiles } from './utils';
 
 const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel/i;
 
+/** Check test quality. */
 export function checkTestQuality(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

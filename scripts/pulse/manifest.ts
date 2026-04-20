@@ -3,8 +3,10 @@ import * as path from 'path';
 import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from './types';
 import type { CoreParserData } from './functional-map-types';
 
+/** Pulse_manifest_filename. */
 export const PULSE_MANIFEST_FILENAME = 'pulse.manifest.json';
 
+/** Supported_stacks. */
 export const SUPPORTED_STACKS = new Set([
   'nextjs-app-router',
   'react-ui',
@@ -825,6 +827,7 @@ function discoverSurfaceKinds(config: PulseConfig, coreData: CoreParserData): st
   return [...discovered].sort();
 }
 
+/** Load pulse manifest. */
 export function loadPulseManifest(
   config: PulseConfig,
   coreData: CoreParserData,

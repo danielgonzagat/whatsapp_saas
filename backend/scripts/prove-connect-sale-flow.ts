@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import type { ConnectAccountType } from '@prisma/client';
 
@@ -181,7 +181,7 @@ async function createAccounts(
 }
 
 async function main() {
-  const runId = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+  const runId = `${Date.now()}-${randomBytes(4).toString('hex')}`;
   const workspaceId = `live-proof-${runId}`;
   const config = new ConfigService(process.env as Record<string, string>);
   const prisma = new PrismaService();

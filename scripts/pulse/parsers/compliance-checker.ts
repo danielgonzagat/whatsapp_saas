@@ -66,6 +66,7 @@ function collectAppRoutes(appDir: string): Set<string> {
   return routes;
 }
 
+/** Check compliance. */
 export function checkCompliance(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

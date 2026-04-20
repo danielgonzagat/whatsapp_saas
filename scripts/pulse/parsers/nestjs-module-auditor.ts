@@ -127,6 +127,7 @@ function parseModule(file: string): ModuleRecord | null {
   return { file, name, providers, controllers, exports: exports_, imports };
 }
 
+/** Check nest js modules. */
 export function checkNestJSModules(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

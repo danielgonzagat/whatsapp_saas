@@ -29,6 +29,7 @@ import {
   getBackendUrl,
 } from './runtime-utils';
 
+/** Check webhook simulator. */
 export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
   if (!process.env.PULSE_DEEP) {

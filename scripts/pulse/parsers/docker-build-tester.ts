@@ -62,6 +62,7 @@ function dockerfilePath(serviceDir: string): string {
   return path.join(serviceDir, 'Dockerfile');
 }
 
+/** Check docker build. */
 export function checkDockerBuild(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

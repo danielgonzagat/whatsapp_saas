@@ -65,6 +65,7 @@ function hasClassValidatorDecorator(lines: string[], lineIdx: number): boolean {
   return false;
 }
 
+/** Check dtos. */
 export function checkDtos(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

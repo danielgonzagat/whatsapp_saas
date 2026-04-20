@@ -106,6 +106,7 @@ function catchBodyRethrows(bodyLines: string[]): boolean {
   return bodyLines.some((l) => /\bthrow\b/.test(l.trim()));
 }
 
+/** Check error handlers. */
 export function checkErrorHandlers(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

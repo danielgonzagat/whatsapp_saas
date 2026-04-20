@@ -19,6 +19,7 @@ const PRISMA_ACCESS_PATTERNS = [
   new RegExp(`\\btx\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
 ];
 
+/** Trace services. */
 export function traceServices(config: PulseConfig): ServiceTrace[] {
   const traces: ServiceTrace[] = [];
   // Scan BOTH services AND controllers for Prisma model access

@@ -38,6 +38,7 @@ function countCssInJsMedia(content: string): number {
   return (content.match(/['"`]@media\b/g) || []).length;
 }
 
+/** Check responsive. */
 export function checkResponsive(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

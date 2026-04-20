@@ -30,6 +30,7 @@ function isCommentLine(line: string): boolean {
   return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('{/*');
 }
 
+/** Check accessibility. */
 export function checkAccessibility(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

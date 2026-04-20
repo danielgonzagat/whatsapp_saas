@@ -34,6 +34,7 @@ const PAYMENT_ENDPOINT_RE = /createPayment|createCharge|createBilling|checkout.*
 const UPSERT_RE = /\.upsert\s*\(|createOrUpdate|findOrCreate/i;
 const DUPLICATE_CHECK_RE = /alreadyExists|isDuplicate|existingRecord|externalId.*unique|@@unique/i;
 
+/** Check idempotency. */
 export function checkIdempotency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

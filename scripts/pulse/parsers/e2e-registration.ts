@@ -41,6 +41,7 @@ import {
   getBackendUrl,
 } from './runtime-utils';
 
+/** Check e2e registration. */
 export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
   if (!process.env.PULSE_DEEP) {

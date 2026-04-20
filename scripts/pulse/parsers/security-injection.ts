@@ -104,6 +104,7 @@ const SQL_PAYLOADS = [
   "\\'; WAITFOR DELAY '0:0:5' --",
 ];
 
+/** Check security injection. */
 export async function checkSecurityInjection(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
   if (!isDeepMode()) {

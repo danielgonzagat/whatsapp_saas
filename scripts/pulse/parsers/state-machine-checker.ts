@@ -50,6 +50,7 @@ const STATUS_CHECK_RE =
 const PAYMENT_PAID_RE = /status:\s*['"`]PAID['"`]|\.status\s*=\s*['"`]PAID['"`]/;
 const PAYMENT_PROCESSING_CHECK_RE = /status.*PROCESSING|PROCESSING.*status/;
 
+/** Check state machine. */
 export function checkStateMachine(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

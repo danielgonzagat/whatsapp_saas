@@ -13,36 +13,65 @@ import type {
 import { buildConvergencePlan, renderConvergencePlanMarkdown } from './convergence-plan';
 import { escapeMarkdownTableCell } from './markdown-utils';
 
+/** Pulse artifact snapshot shape. */
 export interface PulseArtifactSnapshot {
+  /** Health property. */
   health: PulseHealth;
+  /** Manifest property. */
   manifest: PulseManifest | null;
+  /** Codebase truth property. */
   codebaseTruth: PulseCodebaseTruth;
+  /** Resolved manifest property. */
   resolvedManifest: PulseResolvedManifest;
+  /** Certification property. */
   certification: PulseCertification;
 }
 
+/** Pulse artifact paths shape. */
 export interface PulseArtifactPaths {
+  /** Report path property. */
   reportPath: string;
+  /** Matrix path property. */
   matrixPath: string;
+  /** Certificate path property. */
   certificatePath: string;
+  /** Convergence plan path property. */
   convergencePlanPath: string;
+  /** Convergence plan markdown path property. */
   convergencePlanMarkdownPath: string;
+  /** Runtime evidence path property. */
   runtimeEvidencePath: string;
+  /** Runtime probes path property. */
   runtimeProbesPath: string;
+  /** Browser evidence path property. */
   browserEvidencePath: string;
+  /** Flow evidence path property. */
   flowEvidencePath: string;
+  /** Invariant evidence path property. */
   invariantEvidencePath: string;
+  /** Observability evidence path property. */
   observabilityEvidencePath: string;
+  /** Recovery evidence path property. */
   recoveryEvidencePath: string;
+  /** Customer evidence path property. */
   customerEvidencePath: string;
+  /** Operator evidence path property. */
   operatorEvidencePath: string;
+  /** Admin evidence path property. */
   adminEvidencePath: string;
+  /** Soak evidence path property. */
   soakEvidencePath: string;
+  /** Scenario coverage path property. */
   scenarioCoveragePath: string;
+  /** World state path property. */
   worldStatePath: string;
+  /** Execution trace path property. */
   executionTracePath: string;
+  /** Codebase truth path property. */
   codebaseTruthPath: string;
+  /** Resolved manifest path property. */
   resolvedManifestPath: string;
+  /** Product map path property. */
   productMapPath: string;
 }
 
@@ -612,6 +641,7 @@ function buildCertificate(
   );
 }
 
+/** Generate artifacts. */
 export function generateArtifacts(
   snapshot: PulseArtifactSnapshot,
   rootDir: string,

@@ -30,6 +30,7 @@ interface CollectRuntimeEvidenceOptions {
   requireDbConnectivity?: boolean;
 }
 
+/** Pulse runtime probe id type. */
 export type PulseRuntimeProbeId =
   | 'backend-health'
   | 'auth-session'
@@ -534,10 +535,12 @@ function getRequestedProbeIds(probeIds?: string[]): PulseRuntimeProbeId[] {
   return DEFAULT_RUNTIME_PROBE_IDS.filter((probeId) => probeIds.includes(probeId));
 }
 
+/** Get runtime probe ids. */
 export function getRuntimeProbeIds(probeIds?: string[]): PulseRuntimeProbeId[] {
   return getRequestedProbeIds(probeIds);
 }
 
+/** Collect runtime probe. */
 export async function collectRuntimeProbe(
   env: PulseEnvironment,
   probeId: PulseRuntimeProbeId,
@@ -576,6 +579,7 @@ export async function collectRuntimeProbe(
   return runDbProbe(context, options.requireDbConnectivity || env === 'total');
 }
 
+/** Summarize runtime evidence. */
 export function summarizeRuntimeEvidence(
   env: PulseEnvironment,
   probes: PulseRuntimeProbe[],
@@ -627,6 +631,7 @@ export function summarizeRuntimeEvidence(
   };
 }
 
+/** Collect runtime evidence. */
 export async function collectRuntimeEvidence(
   env: PulseEnvironment,
   options: CollectRuntimeEvidenceOptions = {},
@@ -649,6 +654,7 @@ function scanTextIfExists(filePath: string): string {
   return fs.readFileSync(filePath, 'utf8');
 }
 
+/** Collect observability evidence. */
 export function collectObservabilityEvidence(
   rootDir: string,
   runtimeEvidence: PulseRuntimeEvidence,
@@ -726,6 +732,7 @@ export function collectObservabilityEvidence(
   };
 }
 
+/** Collect recovery evidence. */
 export function collectRecoveryEvidence(rootDir: string): PulseRecoveryEvidence {
   const backupManifestPresent = fs.existsSync(path.join(rootDir, '.backup-manifest.json'));
   const backupPolicyPresent = fs.existsSync(path.join(rootDir, '.backup-policy.json'));

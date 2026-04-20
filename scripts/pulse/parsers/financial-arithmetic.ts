@@ -18,6 +18,7 @@ const DIVISION_BY_VAR_RE = /\b(?:[\w.[\]]+)\s*\/\s*(?!\/|=|\*)[a-zA-Z_]\w*\s*[;,
 const ZERO_GUARD_RE =
   /(?:=== 0|!== 0|\|\|\s*1\b|Math\.max\s*\(|if\s*\(.*=== 0|if\s*\(!|divisor|denominator)/i;
 
+/** Check financial arithmetic. */
 export function checkFinancialArithmetic(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
   const files = walkFiles(config.backendDir, ['.ts']);

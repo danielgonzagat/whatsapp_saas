@@ -16,6 +16,7 @@ const REDIS_GET_RE = /\bredis\s*\.(?:get|hget|mget|lrange|smembers)\s*\(\s*['"`]
 // Detects TTL on the same line or nearby
 const TTL_SIGNALS_RE = /\bEX\b|\bPX\b|\bexpire\b|\bttl\b|\bEXAT\b|\bsetex\b|\bpexpire\b/i;
 
+/** Check redis keys. */
 export function checkRedisKeys(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

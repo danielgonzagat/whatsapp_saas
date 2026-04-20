@@ -41,6 +41,7 @@ const OFFLINE_PROTECTION_RE =
   /localStorage\s*\.\s*setItem.*form|draft|autosave|formPersist|offlineQueue/i;
 const FORM_BACKUP_RE = /saveFormState|persistForm|formDraft|savedDraft/i;
 
+/** Check browser network. */
 export function checkBrowserNetwork(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

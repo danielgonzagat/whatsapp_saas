@@ -47,6 +47,7 @@ const ADMIN_OPERATIONS = [
   /forceReset|adminReset|bypassLimit/i,
 ];
 
+/** Check audit trail. */
 export function checkAuditTrail(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

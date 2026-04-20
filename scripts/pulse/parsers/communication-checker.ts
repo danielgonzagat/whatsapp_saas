@@ -41,6 +41,7 @@ const EMAIL_SERVICE_RE = /sendgrid|resend|ses|postmark|mailgun|nodemailer/i;
 const SALE_NOTIFICATION_RE = /orderPaid|paymentConfirmed|saleMade|notifyOwner|ownerNotif/i;
 const PAYMENT_WEBHOOK_RE = /webhook.*payment|payment.*webhook|checkout.*webhook/i;
 
+/** Check communication. */
 export function checkCommunication(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

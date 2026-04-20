@@ -68,6 +68,7 @@ async function fireRequests(
   return Promise.all(requests);
 }
 
+/** Check security rate limit. */
 export async function checkSecurityRateLimit(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
   if (!isDeepMode()) {

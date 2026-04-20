@@ -41,6 +41,7 @@ function median(values: number[]): number {
   return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
 }
 
+/** Check performance response time. */
 export async function checkPerformanceResponseTime(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
   if (!process.env.PULSE_DEEP) {

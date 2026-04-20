@@ -4,17 +4,29 @@ import type {
   PulseEnvironment,
 } from './types';
 
+/** Pulse profile selection shape. */
 export interface PulseProfileSelection {
+  /** Profile property. */
   profile: PulseCertificationProfile;
+  /** Environment property. */
   environment: PulseEnvironment;
+  /** Certification target property. */
   certificationTarget: PulseCertificationTarget;
+  /** Requested modes property. */
   requestedModes: Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'>;
+  /** Runtime probe ids property. */
   runtimeProbeIds: string[];
+  /** Flow ids property. */
   flowIds: string[];
+  /** Invariant ids property. */
   invariantIds: string[];
+  /** Scenario ids property. */
   scenarioIds: string[];
+  /** Parser timeout ms property. */
   parserTimeoutMs: number;
+  /** Phase timeout ms property. */
   phaseTimeoutMs: number;
+  /** Include parser. */
   includeParser(name: string): boolean;
 }
 
@@ -78,6 +90,7 @@ const CORE_CRITICAL_SKIPPED_PARSERS = [
 
 const CORE_CRITICAL_SKIPPED_SET = new Set<string>(CORE_CRITICAL_SKIPPED_PARSERS);
 
+/** Parse certification profile. */
 export function parseCertificationProfile(
   value: string | null | undefined,
 ): PulseCertificationProfile | null {
@@ -90,6 +103,7 @@ export function parseCertificationProfile(
   return null;
 }
 
+/** Get profile selection. */
 export function getProfileSelection(profile: PulseCertificationProfile): PulseProfileSelection {
   if (profile === 'core-critical') {
     return {
@@ -134,6 +148,7 @@ export function getProfileSelection(profile: PulseCertificationProfile): PulsePr
   };
 }
 
+/** Get target label. */
 export function getTargetLabel(target: PulseCertificationTarget): string {
   if (target.profile) {
     return target.profile;

@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseConfig } from './types';
 
+/** Detect config. */
 export function detectConfig(rootDir: string): PulseConfig {
   // Auto-detect frontend
   const frontendCandidates = ['frontend/src', 'src', 'client/src', 'app'];

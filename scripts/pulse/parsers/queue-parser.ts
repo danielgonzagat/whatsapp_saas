@@ -14,6 +14,7 @@ function extractQuotedString(s: string): string | null {
   return m ? m[1] : null;
 }
 
+/** Check queues. */
 export function checkQueues(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

@@ -152,6 +152,7 @@ function hasWriteWithoutValidation(
   return !hasValidation;
 }
 
+/** Check data consistency. */
 export function checkDataConsistency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

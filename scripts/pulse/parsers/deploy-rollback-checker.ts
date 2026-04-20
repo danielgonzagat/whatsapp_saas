@@ -34,6 +34,7 @@ const DESTRUCTIVE_MIGRATION_RE =
 // Additive-only (safe) patterns
 const ADDITIVE_ONLY_RE = /CREATE\s+TABLE|ADD\s+COLUMN|CREATE\s+INDEX/i;
 
+/** Check deploy rollback. */
 export function checkDeployRollback(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

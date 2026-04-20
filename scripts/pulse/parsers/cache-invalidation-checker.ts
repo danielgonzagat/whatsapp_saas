@@ -32,6 +32,7 @@ const SWR_MUTATE_RE = /\bmutate\s*\(|\brevalidate\s*\(|\buseSWRConfig|mutate\s*\
 const REDIS_WRITE_RE = /redis\.set|redis\.hset|redis\.zadd|\.setEx|\.set\s*\(/i;
 const REDIS_DEL_RE = /redis\.del|redis\.hdel|redis\.expire|cache\.invalidate/i;
 
+/** Check cache invalidation. */
 export function checkCacheInvalidation(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 

@@ -64,6 +64,7 @@ function pushLimited(
   limits.set(key, current + 1);
 }
 
+/** Check visual design. */
 export function checkVisualDesign(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
   const perFileLimits = new Map<string, number>();
