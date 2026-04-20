@@ -25,8 +25,7 @@ Review this repository with a production-hardening mindset.
 ## Naming and Style
 
 - Preserve the existing shell and UX contract. Do not suggest full rewrites when
-  a local fix is
-  possible.
+  a local fix is possible.
 - Prefer concrete naming over vague helpers.
 - In NestJS, prefer typed Prisma access over new `prismaAny` usage.
 - In Next.js, preserve mounted shell and use localized loading states.

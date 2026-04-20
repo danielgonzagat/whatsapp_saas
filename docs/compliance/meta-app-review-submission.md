@@ -4,11 +4,17 @@
 
 ### 1. End-user Kloel authentication
 
-Kloel users can sign in with Facebook on the authentication surface. The browser loads the Meta JavaScript SDK, requests `public_profile,email`, exchanges the user access token with the backend, and links the social account to the Kloel user record.
+Kloel users can sign in with Facebook on the authentication surface. The browser
+loads the Meta JavaScript SDK, requests `public_profile,email`, exchanges the
+user access token with the backend, and links the social account to the Kloel
+user record.
 
 ### 2. Embedded Signup and channel onboarding
 
-Workspace owners can connect official Meta channels from the Kloel app through the Embedded Signup flow. The backend generates the Meta OAuth URL, handles the callback, exchanges tokens, and stores the connected Page, Instagram Business Account, WhatsApp Business Account, and phone number metadata.
+Workspace owners can connect official Meta channels from the Kloel app through
+the Embedded Signup flow. The backend generates the Meta OAuth URL, handles the
+callback, exchanges tokens, and stores the connected Page, Instagram Business
+Account, WhatsApp Business Account, and phone number metadata.
 
 ### 3. Privacy callbacks required by App Review
 
@@ -20,24 +26,24 @@ Kloel exposes and validates:
 
 ## Permissions currently used
 
-| Permission | Feature | Why Kloel needs it |
-| --- | --- | --- |
-| `email` | User login | Identify the Kloel user and recover the correct account during sign-in |
-| `public_profile` | User login | Display user name and avatar after sign-in |
-| `pages_show_list` | Embedded Signup / channel selection | Let the workspace owner choose the Facebook Pages they control |
-| `pages_read_engagement` | Connected Page insights and ingestion | Read Page engagement context needed for inbox and campaign operations |
-| `pages_manage_metadata` | Messaging/webhook setup | Maintain webhook-capable Page metadata for connected workspaces |
-| `pages_messaging` | Messenger inbox and autonomous replies | Read and respond to Messenger conversations from the Kloel inbox |
-| `instagram_basic` | Instagram connection discovery | Identify the connected Instagram Business Account |
-| `instagram_manage_messages` | Instagram DM inbox | Read and respond to Instagram direct messages |
-| `instagram_manage_comments` | Instagram engagement operations | Read and manage post comments handled by Kloel |
-| `instagram_content_publish` | Content operations | Support approved publishing workflows for connected Instagram assets |
-| `business_management` | Business asset discovery | Discover and manage the business assets a workspace owner authorizes |
-| `ads_management` | Marketing operations | Access the ad account surface used in Kloel marketing workflows |
-| `ads_read` | Marketing reporting | Read ad account information for reporting and diagnostics |
-| `catalog_management` | Commerce asset access | Access commerce catalog surfaces used by connected businesses |
-| `whatsapp_business_management` | WhatsApp Cloud onboarding | Configure the customer's WhatsApp Business assets |
-| `whatsapp_business_messaging` | Official WhatsApp operation | Send and receive WhatsApp Cloud messages on behalf of the authorized workspace |
+| Permission                     | Feature                                | Why Kloel needs it                                                             |
+| ------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------ |
+| `email`                        | User login                             | Identify the Kloel user and recover the correct account during sign-in         |
+| `public_profile`               | User login                             | Display user name and avatar after sign-in                                     |
+| `pages_show_list`              | Embedded Signup / channel selection    | Let the workspace owner choose the Facebook Pages they control                 |
+| `pages_read_engagement`        | Connected Page insights and ingestion  | Read Page engagement context needed for inbox and campaign operations          |
+| `pages_manage_metadata`        | Messaging/webhook setup                | Maintain webhook-capable Page metadata for connected workspaces                |
+| `pages_messaging`              | Messenger inbox and autonomous replies | Read and respond to Messenger conversations from the Kloel inbox               |
+| `instagram_basic`              | Instagram connection discovery         | Identify the connected Instagram Business Account                              |
+| `instagram_manage_messages`    | Instagram DM inbox                     | Read and respond to Instagram direct messages                                  |
+| `instagram_manage_comments`    | Instagram engagement operations        | Read and manage post comments handled by Kloel                                 |
+| `instagram_content_publish`    | Content operations                     | Support approved publishing workflows for connected Instagram assets           |
+| `business_management`          | Business asset discovery               | Discover and manage the business assets a workspace owner authorizes           |
+| `ads_management`               | Marketing operations                   | Access the ad account surface used in Kloel marketing workflows                |
+| `ads_read`                     | Marketing reporting                    | Read ad account information for reporting and diagnostics                      |
+| `catalog_management`           | Commerce asset access                  | Access commerce catalog surfaces used by connected businesses                  |
+| `whatsapp_business_management` | WhatsApp Cloud onboarding              | Configure the customer's WhatsApp Business assets                              |
+| `whatsapp_business_messaging`  | Official WhatsApp operation            | Send and receive WhatsApp Cloud messages on behalf of the authorized workspace |
 
 ## URLs to configure in Meta
 
@@ -56,7 +62,8 @@ Kloel exposes and validates:
 - Embedded Signup / Meta OAuth callback:
   `https://app.kloel.com/api/meta/auth/callback`
 
-If your ingress publishes the backend without the `/api` prefix, keep the controller paths and adjust only the public base URL.
+If your ingress publishes the backend without the `/api` prefix, keep the
+controller paths and adjust only the public base URL.
 
 ### JavaScript SDK allowed domains
 
@@ -72,7 +79,9 @@ If your ingress publishes the backend without the `/api` prefix, keep the contro
 2. Click `Continuar com Facebook`.
 3. Complete the Meta login and show the user landing in the Kloel app.
 4. Open the integration area and click the Meta channel connection flow.
-5. Show the OAuth/Embedded Signup redirect generated by the backend and explain that the callback stores the selected Meta assets in the workspace connection.
+5. Show the OAuth/Embedded Signup redirect generated by the backend and explain
+   that the callback stores the selected Meta assets in the workspace
+   connection.
 6. Open `https://kloel.com/privacy` and highlight the Meta permissions section.
 7. Open `https://kloel.com/data-deletion` and explain the three deletion paths.
 
@@ -80,15 +89,24 @@ If your ingress publishes the backend without the `/api` prefix, keep the contro
 
 ### Facebook Login
 
-We request `email` and `public_profile` so the Kloel user can sign in without a password and the correct Kloel account can be recovered and linked. The data is used only for authentication and interface personalization.
+We request `email` and `public_profile` so the Kloel user can sign in without a
+password and the correct Kloel account can be recovered and linked. The data is
+used only for authentication and interface personalization.
 
 ### Embedded Signup / official Meta channels
 
-We request business, Page, Instagram, and WhatsApp permissions so the workspace owner can authorize Kloel to operate the official channels they explicitly connect. Kloel uses the returned tokens to power the unified inbox, official WhatsApp Cloud messaging, Instagram DM ingestion, and Messenger operations for that workspace only.
+We request business, Page, Instagram, and WhatsApp permissions so the workspace
+owner can authorize Kloel to operate the official channels they explicitly
+connect. Kloel uses the returned tokens to power the unified inbox, official
+WhatsApp Cloud messaging, Instagram DM ingestion, and Messenger operations for
+that workspace only.
 
 ### Data deletion and deauthorize callbacks
 
-When a user removes Kloel from Meta surfaces or requests data deletion, Meta sends a signed callback to Kloel. Kloel validates the signature, revokes access, records the event, and either revokes the social link or completes a deletion workflow with a public confirmation code.
+When a user removes Kloel from Meta surfaces or requests data deletion, Meta
+sends a signed callback to Kloel. Kloel validates the signature, revokes access,
+records the event, and either revokes the social link or completes a deletion
+workflow with a public confirmation code.
 
 ## Test account checklist for Daniel
 
@@ -99,4 +117,5 @@ Before submitting the form, prepare a reviewable Kloel workspace with:
 - one Meta test business / Page / Instagram / WhatsApp asset set
 - one checkout or inbox surface populated enough to show the product context
 
-Store the credentials and reviewer instructions in the Meta App Review form only. Do not hardcode them in the repository.
+Store the credentials and reviewer instructions in the Meta App Review form
+only. Do not hardcode them in the repository.

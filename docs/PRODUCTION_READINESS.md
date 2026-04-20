@@ -3,9 +3,8 @@
 ## Objective
 
 Production readiness in this repository is enforced by code, workflows, and
-documents. The goal is
-to block avoidable regressions before they reach money, messaging, or customer
-data.
+documents. The goal is to block avoidable regressions before they reach money,
+messaging, or customer data.
 
 ## Hard Gates
 
@@ -21,8 +20,7 @@ These are the repository-level hard gates:
 ## Minimum Launch Baseline
 
 The platform is considered minimally ready for real users only when all of the
-following remain
-true:
+following remain true:
 
 - auth, products, checkout, wallet, and messaging flows pass CI,
 - staging exists and is used before production,
@@ -65,12 +63,10 @@ true:
 ## What This Does Not Replace
 
 `readiness:check` and `pulse:ci` are hard guards, not legal advice and not full
-penetration
-testing. They reduce blind spots; they do not eliminate engineering
+penetration testing. They reduce blind spots; they do not eliminate engineering
 responsibility.
 
 ## Rule
 
 If readiness, backup, monitoring, compliance, or staging drift out of policy,
-the repository should
-fail fast before production changes are allowed.
+the repository should fail fast before production changes are allowed.

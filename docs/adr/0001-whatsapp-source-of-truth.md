@@ -1,9 +1,7 @@
 # ADR 0001: WhatsApp Source of Truth
 
-**Status:** Accepted
-**Date:** 2026-04-08
-**Deciders:** Daniel (owner), KLOEL engineering
-**Supersedes:** none
+**Status:** Accepted **Date:** 2026-04-08 **Deciders:** Daniel (owner), KLOEL
+engineering **Supersedes:** none
 
 ---
 

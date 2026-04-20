@@ -1,8 +1,7 @@
 # 🤖 WhatsApp Autopilot™ & Money Machine™ - Documentation
 
 Welcome to the future of automated sales. This system is not just a chatbot;
-it's a fully autonomous
-revenue employee.
+it's a fully autonomous revenue employee.
 
 ## 🌟 Key Features
 
@@ -15,8 +14,8 @@ revenue employee.
 - **Decides** the best action: Send Offer, Schedule Meeting, Handle Objection,
   or Handover to Human.
 - **SmartTime Integration:** If a buying signal comes at 3 AM, it schedules the
-  "Closing Message"
-  for the next morning's "Golden Hour" (e.g., 10 AM) to maximize conversion.
+  "Closing Message" for the next morning's "Golden Hour" (e.g., 10 AM) to
+  maximize conversion.
 
 ### How to use
 
@@ -71,8 +70,7 @@ revenue employee.
 - **Providers:** Supports Meta Cloud API, Evolution API, WPPConnect, and
   UltraWA.
 - **AI Brain:** Powered by OpenAI (GPT-4o recommended for Autopilot). Configure
-  API Key in `.env` or
-  Settings.
+  API Key in `.env` or Settings.
 - **Anti-Ban:** Smart Jitter (random delays) is active by default to simulate
   human typing speeds.
 
@@ -88,36 +86,28 @@ revenue employee.
 
 - O Autopilot tenta WhatsApp primeiro. Se falhar e o canal estiver habilitado:
 - **Email:** `MAIL_HOST` , `MAIL_PORT` , `MAIL_USER` , `MAIL_PASS` , `MAIL_FROM`
-  - toggle em Settings →
-  Canais.
+  - toggle em Settings → Canais.
 - **Telegram:** opcional com `TELEGRAM_BOT_TOKEN` e
   `customFields.telegramChatId` no contato.
 - Proteções: `AUTOPILOT_CONTACT_DAILY_LIMIT` (default 5) e
-  `AUTOPILOT_WORKSPACE_DAILY_LIMIT`
-  (default 1000) por 24h.
+  `AUTOPILOT_WORKSPACE_DAILY_LIMIT` (default 1000) por 24h.
 - Ciclo automático: job horário roda follow-ups para conversas silenciosas
   (`AUTOPILOT_SILENCE_HOURS`, default 24h).
 - Janela de disparo do ciclo: `AUTOPILOT_WINDOW_START` / `AUTOPILOT_WINDOW_END`
-  (default 8→22) e
-  limite por ciclo `AUTOPILOT_CYCLE_LIMIT` (default 200).
+  (default 8→22) e limite por ciclo `AUTOPILOT_CYCLE_LIMIT` (default 200).
 - Alertas operacionais: `AUTOPILOT_QUEUE_WAITING_THRESHOLD` (default 200)
-  dispara webhook
-  ( `AUTOPILOT_ALERT_WEBHOOK` ou `OPS_WEBHOOK_URL` ) se fila do Autopilot
-  acumular jobs (verificador
-  roda a cada 60s).
+  dispara webhook ( `AUTOPILOT_ALERT_WEBHOOK` ou `OPS_WEBHOOK_URL` ) se fila do
+  Autopilot acumular jobs (verificador roda a cada 60s).
 - Reengajamento inteligente: mensagens com sinal de compra disparam
-  `GHOST_CLOSER` e agendam um
-  follow-up 45min depois; se o lead responder nesse intervalo, o follow-up é
-  pulado. Contador
-  Prometheus `worker_autopilot_ghost_closer_total` mede execuções/erros.
-  Exemplos de alertas em
-  `worker/autopilot-alerts.yaml`.
+  `GHOST_CLOSER` e agendam um follow-up 45min depois; se o lead responder nesse
+  intervalo, o follow-up é pulado. Contador Prometheus
+  `worker_autopilot_ghost_closer_total` mede execuções/erros. Exemplos de
+  alertas em `worker/autopilot-alerts.yaml`.
 - UI: Dashboard mostra janela/limites atuais (runtime-config), backlog de
-  follow-ups (jobs delayed)
-  e status do agente.
+  follow-ups (jobs delayed) e status do agente.
 - Grafana: painel pronto em `worker/autopilot-grafana.json` (queue
-  waiting/delayed/failed,
-  erros/execuções de GhostCloser/LeadUnlocker e decisões por ação).
+  waiting/delayed/failed, erros/execuções de GhostCloser/LeadUnlocker e decisões
+  por ação).
 
 ---
 

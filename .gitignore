@@ -52,3 +52,5 @@ PULSE_EXECUTION_TRACE.json
 .env*.local
 
 .agents/
+
+.agents/

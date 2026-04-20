@@ -4,13 +4,18 @@
 
 - Mandatory.
 - Extends the existing Terminator contract; it does not replace it.
-- Applies to every Kloel product surface, chat surface, operator surface, and AI-generated UI output.
+- Applies to every Kloel product surface, chat surface, operator surface, and
+  AI-generated UI output.
 
 ## Precedence
 
-1. Preserve Kloel brand identity already defined in the repo: light-first, dark-second, ember accent, no emojis in product UI, SVG-only icons, restrained chrome.
-2. For app/product surfaces, this contract is the product-layer refinement that raises Kloel to the benchmark of Claude, ChatGPT, Linear, and Vercel.
-3. If an older local component conflicts with this contract, the component must converge to this contract instead of inventing a third standard.
+1. Preserve Kloel brand identity already defined in the repo: light-first,
+   dark-second, ember accent, no emojis in product UI, SVG-only icons,
+   restrained chrome.
+2. For app/product surfaces, this contract is the product-layer refinement that
+   raises Kloel to the benchmark of Claude, ChatGPT, Linear, and Vercel.
+3. If an older local component conflicts with this contract, the component must
+   converge to this contract instead of inventing a third standard.
 
 ## Typography
 
@@ -18,7 +23,8 @@
   - `Inter`, `Geist Sans`, system sans fallbacks.
 - Monospace surfaces use:
   - `JetBrains Mono`, `Geist Mono`, system mono fallbacks.
-- Brand/display surfaces may still use the existing brand typography where needed, but core product readability wins inside the app.
+- Brand/display surfaces may still use the existing brand typography where
+  needed, but core product readability wins inside the app.
 - Non-negotiable:
   - chat body text is never below `16px`
   - chat body line-height is `1.5` to `1.625`
@@ -27,7 +33,8 @@
 
 ## Color and Surfaces
 
-- Light mode is primary. Dark mode is secondary and must remain visually coherent without overriding the light-first contract.
+- Light mode is primary. Dark mode is secondary and must remain visually
+  coherent without overriding the light-first contract.
 - Background hierarchy must use luminance stepping, not decorative gradients:
   - `--bg-base: #0a0a0a`
   - `--bg-primary: #0f0f0f`
@@ -56,15 +63,18 @@
   - `8px`
 - Large composer/container radius:
   - `12px` to `16px`
-- Whitespace is a premium signal. Prefer more breathing room over tighter packing.
+- Whitespace is a premium signal. Prefer more breathing room over tighter
+  packing.
 
 ## Chat Product Contract
 
 - AI messages are not messenger bubbles with tails.
-- AI responses breathe on the page; user messages may have subtle background differentiation.
+- AI responses breathe on the page; user messages may have subtle background
+  differentiation.
 - Message actions live below the response as understated monochrome icons.
 - Regenerated assistant replies must preserve versions and expose navigation.
-- The composer is multiline, auto-growing, and never horizontal-scrolls user text.
+- The composer is multiline, auto-growing, and never horizontal-scrolls user
+  text.
 - Scroll behavior:
   - user scroll intent always wins
   - auto-scroll only when already at bottom
@@ -72,8 +82,10 @@
 
 ## Thinking, Processing, and Streaming
 
-- Never show a heavy card, debug box, or faux “operational bubble” for generic processing.
-- If the model is processing and there is no real human-readable reasoning from the provider/model:
+- Never show a heavy card, debug box, or faux “operational bubble” for generic
+  processing.
+- If the model is processing and there is no real human-readable reasoning from
+  the provider/model:
   - show only a subtle branded animation plus an elapsed timer
   - show no invented narrative text
 - If a provider later supplies real reasoning content:
@@ -87,7 +99,8 @@
 ## Markdown Rendering
 
 - Default answer style is conversational prose.
-- Lists, headings, tables, and code blocks are used only when the content needs them.
+- Lists, headings, tables, and code blocks are used only when the content needs
+  them.
 - Code blocks must support:
   - syntax highlighting
   - copy affordance
@@ -98,7 +111,8 @@
 
 - The welcome state is minimal, breathable, and brand-anchored.
 - Greeting is concise.
-- Suggestions are optional and only exist when they are contextually useful and honest.
+- Suggestions are optional and only exist when they are contextually useful and
+  honest.
 - No clutter, onboarding walls, or fake capability theater.
 
 ## Motion

@@ -20,8 +20,7 @@
 - Data breach or security compromise
 - Payment processing failure affecting all users
 
-**Response time:** Immediate (within 15 minutes)
-**Resolution target:** 4 hours
+**Response time:** Immediate (within 15 minutes) **Resolution target:** 4 hours
 
 ### P2 -- Major (Significant Degradation)
 
@@ -30,8 +29,7 @@
 - Authentication system down
 - Redis completely unavailable
 
-**Response time:** 30 minutes
-**Resolution target:** 8 hours
+**Response time:** 30 minutes **Resolution target:** 8 hours
 
 ### P3 -- Minor (Limited Impact)
 
@@ -40,8 +38,7 @@
 - Performance degradation (>2x normal latency)
 - Worker queue backlog growing
 
-**Response time:** 2 hours
-**Resolution target:** 24 hours
+**Response time:** 2 hours **Resolution target:** 24 hours
 
 ### P4 -- Low (Cosmetic / Non-Urgent)
 
@@ -49,8 +46,7 @@
 - Non-critical background job failures
 - Logging/monitoring gaps
 
-**Response time:** Next business day
-**Resolution target:** 1 week
+**Response time:** Next business day **Resolution target:** 1 week
 
 ---
 
@@ -82,8 +78,7 @@
 ### Scenario 1: Database Loss
 
 **Symptoms:** Application returns 500 errors, Prisma connection timeouts,
-"relation does not exist"
-errors.
+"relation does not exist" errors.
 
 ### Steps
 
@@ -104,8 +99,8 @@ errors.
    - Railway dashboard: PostgreSQL service > Backups
    - S3: `aws s3 ls s3://kloel-backups/postgres/`
 
-4. **Restore from backup**
-   Follow the PostgreSQL Restore procedure in [RESTORE.md](./RESTORE.md).
+4. **Restore from backup** Follow the PostgreSQL Restore procedure in
+   [RESTORE.md](./RESTORE.md).
 
 5. **Run pending migrations**
 
@@ -127,8 +122,7 @@ errors.
 ### Scenario 2: Redis Loss
 
 **Symptoms:** Slow responses, BullMQ jobs not processing, rate limiting not
-working, stale cache
-data.
+working, stale cache data.
 
 ### Steps
 
@@ -321,12 +315,12 @@ Complete this for every P1 and P2 incident:
 
 ## Emergency Contacts
 
-| Role             | Contact             | Method            |
-| ---------------- | ------------------- | ----------------- |
+| Role             | Contact               | Method            |
+| ---------------- | --------------------- | ----------------- |
 | Engineering Lead | <daniel@kloel.com>    | Email / WhatsApp  |
 | Railway Support  | <support@railway.app> | Email / Dashboard |
 | Vercel Support   | <support@vercel.com>  | Email / Dashboard |
-| AWS Support      | AWS Console         | Support ticket    |
+| AWS Support      | AWS Console           | Support ticket    |
 
 ---
 

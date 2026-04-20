@@ -1,17 +1,14 @@
 # STRIPE CUTOVER PLAN
 
-> **Status**: Completed.
-> **ADR fundador**:
+> **Status**: Completed. **ADR fundador**:
 > [docs/adr/0003-stripe-connect-platform-model.md](../adr/0003-stripe-connect-platform-model.md)
 > **Estado atual**: Stripe é a única infraestrutura ativa de pagamento do KLOEL.
 
 ## Objetivo
 
 Consolidar checkout, Pix, webhooks, wallet, refunds e fluxos públicos em Stripe,
-removendo
-provedores legados do runtime ativo e deixando o repositório pronto para
-evolução do
-`Payment Kernel` sobre uma base única.
+removendo provedores legados do runtime ativo e deixando o repositório pronto
+para evolução do `Payment Kernel` sobre uma base única.
 
 ## Resultado entregue
 
@@ -25,8 +22,7 @@ evolução do
   - [backend/src/kloel/smart-payment.service.ts](../../backend/src/kloel/smart-payment.service.ts)
   - [backend/src/kloel/unified-agent.service.ts](../../backend/src/kloel/unified-agent.service.ts)
 - Frontend público e social checkout alinhados ao contrato Stripe:
-  - [frontend/src/app/(public)/pay/[id]
-    /page.tsx](<../../frontend/src/app/(public)/pay/[id]/page.tsx>)
+  - [frontend/src/app/(public)/pay/[id] /page.tsx](<../../frontend/src/app/(public)/pay/[id]/page.tsx>)
   - [frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.ts](<../../frontend/src/app/(checkout)
     /hooks/useCheckoutExperienceSocial.ts>)
   - [frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx](<../../frontend/src/app/(checkout)
@@ -48,8 +44,7 @@ evolução do
 - Toda evolução de pagamento deve partir do `Payment Kernel` e não de
   integrações paralelas.
 - Saldo exibido ao usuário continua sendo governado pelo ledger Kloel, não por
-  saldo bruto do
-  rail.
+  saldo bruto do rail.
 - Qualquer mudança estrutural de pagamentos deve manter este plano e o ADR
   sincronizados.
 

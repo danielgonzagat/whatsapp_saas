@@ -3,8 +3,7 @@
 ## Objective
 
 Monitoring is not optional. The platform handles money, conversations, queues,
-and automation.
-Production must page humans before users discover the failure.
+and automation. Production must page humans before users discover the failure.
 
 ## Existing Technical Surfaces
 

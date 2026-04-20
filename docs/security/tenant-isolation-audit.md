@@ -1,30 +1,28 @@
 # Tenant Isolation Audit (Invariant I4)
 
-> Status: PR P2.5-1 — initial sweep landed 2026-04-08
-> Owners: KLOEL engineering
+> Status: PR P2.5-1 — initial sweep landed 2026-04-08 Owners: KLOEL engineering
 > Related: ADR 0001 (WhatsApp source of truth), Big Tech hardening plan
 
 ## What this enforces
 
 KLOEL is a multi-tenant SaaS. Every workspace stores its own contacts,
-conversations, messages, flows, products, payments, and so on. A bug
-that lets workspace A read or mutate workspace B's data would be a
-data-confidentiality incident — exactly the class of catastrophic
-issue that's expensive to detect after the fact and trivial to
-introduce in everyday CRUD code.
+conversations, messages, flows, products, payments, and so on. A bug that lets
+workspace A read or mutate workspace B's data would be a data-confidentiality
+incident — exactly the class of catastrophic issue that's expensive to detect
+after the fact and trivial to introduce in everyday CRUD code.
 
 **Invariant I4 (tenant isolation)** is the rule we enforce in code:
 
-> Every Prisma query on a workspace-scoped model MUST filter by
-> `workspaceId` in its `where` clause, OR be explicitly listed in
-> the audit allowlist with a justification.
+> Every Prisma query on a workspace-scoped model MUST filter by `workspaceId` in
+> its `where` clause, OR be explicitly listed in the audit allowlist with a
+> justification.
 
 ## How the static scanner works
 
-`scripts/ops/check-tenant-filter.mjs` walks `backend/src/` and
-`worker/`, finds every Prisma call that matches
-`(this.)?prisma(Any)?.<model>.<method>(...)` or `tx.<model>.<method>(...)`,
-extracts the `where` clause, and classifies each finding into one of:
+`scripts/ops/check-tenant-filter.mjs` walks `backend/src/` and `worker/`, finds
+every Prisma call that matches `(this.)?prisma(Any)?.<model>.<method>(...)` or
+`tx.<model>.<method>(...)`, extracts the `where` clause, and classifies each
+finding into one of:
 
 | Bucket              | Meaning                                                                                                                                          | Action                                                          |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
@@ -36,15 +34,14 @@ extracts the `where` clause, and classifies each finding into one of:
 | `BUG`               | Model has a `workspaceId String` field but the query's `where` clause does not reference it.                                                     | Block CI until fixed or allowlisted.                            |
 
 The script auto-loads the model classification from
-`backend/prisma/schema.prisma` on every run, so as new workspace-scoped
-models are added they're automatically protected — no manual list to
-maintain.
+`backend/prisma/schema.prisma` on every run, so as new workspace-scoped models
+are added they're automatically protected — no manual list to maintain.
 
 ## The allowlist
 
-`scripts/ops/tenant-filter-allowlist.json` is the source of truth for
-"we know about this query and it is correct". Each entry pins a
-specific `(file, line, model)` triple and a free-text `reason`.
+`scripts/ops/tenant-filter-allowlist.json` is the source of truth for "we know
+about this query and it is correct". Each entry pins a specific
+`(file, line, model)` triple and a free-text `reason`.
 
 When a finding lands in the allowlist, **the reason MUST be a concrete
 justification**:
@@ -60,20 +57,20 @@ justification**:
 ```
 
 The initial allowlist generated for PR P2.5-1 has placeholder reasons
-(`"TODO — review and either fix or document why cross-tenant"`). Each
-follow-up PR that touches one of these files should:
+(`"TODO — review and either fix or document why cross-tenant"`). Each follow-up
+PR that touches one of these files should:
 
-1. Either fix the query to include `workspaceId` and **delete the
-   allowlist entry**, or
+1. Either fix the query to include `workspaceId` and **delete the allowlist
+   entry**, or
 2. Replace the placeholder reason with a real justification.
 
-Over time the allowlist shrinks. The number of entries with TODO
-reasons is the working backlog for this audit.
+Over time the allowlist shrinks. The number of entries with TODO reasons is the
+working backlog for this audit.
 
 ## Categories of legitimate cross-tenant queries
 
-These are the patterns that will accumulate in the allowlist with
-real (non-TODO) reasons:
+These are the patterns that will accumulate in the allowlist with real
+(non-TODO) reasons:
 
 | Category                | Example                                      | Why it's safe                                   |
 | ----------------------- | -------------------------------------------- | ----------------------------------------------- |
@@ -87,8 +84,8 @@ real (non-TODO) reasons:
 
 These are real bugs that must be fixed, not allowlisted:
 
-- User-facing controllers that read or mutate workspace data without
-  binding to the authenticated user's workspace
+- User-facing controllers that read or mutate workspace data without binding to
+  the authenticated user's workspace
 - Service methods called from request handlers that take a `workspaceId`
   parameter but don't include it in the query
 - Aggregations on revenue/sales/usage that should be scoped per workspace
@@ -127,35 +124,34 @@ node scripts/ops/check-tenant-filter.mjs --summary
 | Unknown model                         | 5         |
 | **BUG (workspace-scoped, no filter)** | **93**    |
 
-All 93 BUGs are currently in the allowlist with TODO reasons. Each
-must be triaged and either fixed or given a real justification before
-the corresponding code path can be considered audited.
+All 93 BUGs are currently in the allowlist with TODO reasons. Each must be
+triaged and either fixed or given a real justification before the corresponding
+code path can be considered audited.
 
 ## Runtime defense in depth (P2.5-2)
 
-`backend/test/cross-tenant-denial.e2e-spec.ts` is the runtime
-counterpart to the static scanner. The static scanner can only see
-what's literally in the source code; the runtime test catches:
+`backend/test/cross-tenant-denial.e2e-spec.ts` is the runtime counterpart to the
+static scanner. The static scanner can only see what's literally in the source
+code; the runtime test catches:
 
-- service helpers that "look scoped" but are reachable from a code
-  path that bypasses the auth guard
-- route handlers that trust a URL parameter without cross-checking
-  it against JWT claims
-- aggregated read endpoints that join across tables and forget to
-  re-apply the workspace filter on the joined side
+- service helpers that "look scoped" but are reachable from a code path that
+  bypasses the auth guard
+- route handlers that trust a URL parameter without cross-checking it against
+  JWT claims
+- aggregated read endpoints that join across tables and forget to re-apply the
+  workspace filter on the joined side
 
-The test creates two workspaces (A and B) with distinct seed data
-and asserts that responses scoped to workspace A NEVER contain any
-identifier or text owned by workspace B. Add new rows to the test
-matrix as new endpoints are audited.
+The test creates two workspaces (A and B) with distinct seed data and asserts
+that responses scoped to workspace A NEVER contain any identifier or text owned
+by workspace B. Add new rows to the test matrix as new endpoints are audited.
 
 ## Redis key scanner (P2.5-3)
 
-`scripts/ops/check-tenant-keys.mjs` is the third leg of the audit.
-It walks the same source tree and finds every call to a Redis key
-operation (set/get/del/setex/incr/expire/hset/lpush/sadd/zadd/etc.)
-on `redis`, `redisPub`, `redisSub`, `cache`, or `cacheManager`. For
-each call, it extracts the first argument (the key) and classifies:
+`scripts/ops/check-tenant-keys.mjs` is the third leg of the audit. It walks the
+same source tree and finds every call to a Redis key operation
+(set/get/del/setex/incr/expire/hset/lpush/sadd/zadd/etc.) on `redis`,
+`redisPub`, `redisSub`, `cache`, or `cacheManager`. For each call, it extracts
+the first argument (the key) and classifies:
 
 | Bucket          | Meaning                                                                                                               | Action                                                                  |
 | --------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -164,10 +160,9 @@ each call, it extracts the first argument (the key) and classifies:
 | `PARAMETERIZED` | Key is passed as a non-literal variable (e.g. `redis.set(key, value)` where `key` is computed elsewhere).             | Soft warning. The scanner can't follow the variable; review the caller. |
 | `BUG`           | Key is a literal string with no `workspaceId` reference and doesn't match any global pattern.                         | Block CI until fixed or allowlisted.                                    |
 
-The same allowlist mechanism applies. After the initial sweep on
-2026-04-08, the scanner reports zero `BUG`-level findings — every
-literal key is either workspace-scoped or matches a documented
-global pattern.
+The same allowlist mechanism applies. After the initial sweep on 2026-04-08, the
+scanner reports zero `BUG`-level findings — every literal key is either
+workspace-scoped or matches a documented global pattern.
 
 ## Initial sweep numbers — Redis key audit (2026-04-08)
 
@@ -181,7 +176,7 @@ global pattern.
 
 ## Related work
 
-Phase P2.5 (tenant isolation) is now complete. The next layer of
-defense — cache invalidation correctness, lock-key collision
-prevention, queue-payload tenant binding — lives in follow-up
-work and is tracked in the deferred section of the master plan.
+Phase P2.5 (tenant isolation) is now complete. The next layer of defense — cache
+invalidation correctness, lock-key collision prevention, queue-payload tenant
+binding — lives in follow-up work and is tracked in the deferred section of the
+master plan.

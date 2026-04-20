@@ -125,8 +125,7 @@ Estado atual:
   já carrega `workspace/me` , canais, provider e jitter.
 - Os dados de conta são persistidos via endpoints reais de workspace/account.
 - O maior gap remanescente nesta área deixou de ser persistência básica e passou
-  a ser cobertura de
-  webhooks, domínio, API keys e time/permissões.
+  a ser cobertura de webhooks, domínio, API keys e time/permissões.
 
 Conclusão:
 
@@ -148,8 +147,7 @@ Conclusão:
 
 - A área já saiu do estado majoritariamente mockado.
 - O gap principal agora é upload dedicado de arquivo e cobertura de todos os
-  fluxos de
-  mídia/conhecimento.
+  fluxos de mídia/conhecimento.
 
 ### 3. Pagamentos
 
@@ -157,11 +155,9 @@ Estado atual:
 
 - [`billing-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/billing-settings-section.tsx)
   já opera saldo, pendências, Asaas, PIX, boleto, relatório de vendas, links
-  externos, tracking e
-  credenciais por plataforma.
+  externos, tracking e credenciais por plataforma.
 - O módulo ainda precisa ser expandido se a meta for paridade total com todos os
-  cenários de
-  plataforma, mas não está mais fragmentado como antes.
+  cenários de plataforma, mas não está mais fragmentado como antes.
 
 Conclusão:
 
@@ -180,8 +176,7 @@ Estado atual:
 Conclusão:
 
 - O usuário já enxerga atividade real, mas ainda falta unificar todos os
-  domínios de conta no mesmo
-  stream.
+  domínios de conta no mesmo stream.
 
 ### 5. WhatsApp
 
@@ -192,8 +187,7 @@ Estado atual antes do patch:
   /whatsapp/page.tsx) já possuía QR/status/reset/desconexão.
 - O painel lateral direito não reaproveitava isso; usava
   [`AgentConsole.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/AgentConsole.tsx)
-  ,
-  que era um monitor mockado.
+  , que era um monitor mockado.
 
 Estado atual depois do patch:
 

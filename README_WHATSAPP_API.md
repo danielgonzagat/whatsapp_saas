@@ -3,8 +3,7 @@
 ## Visão Geral
 
 Este projeto utiliza o [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/)
-como **provider
-oficial** para envio de mensagens WhatsApp.
+como **provider oficial** para envio de mensagens WhatsApp.
 
 ### Vantagens
 
@@ -57,14 +56,12 @@ BACKEND_URL=https://seu-backend.up.railway.app
 ```
 
 Importante: o runtime atual falha cedo se `WAHA_API_URL` não estiver definido.
-Não existe mais
-fallback implícito para uma instância WAHA hardcoded.
+Não existe mais fallback implícito para uma instância WAHA hardcoded.
 
 ### 2. WAHA como Serviço Externo
 
 O WAHA roda como serviço externo (ex.: Railway). Não há mais container local no
-`docker-compose.yml`
-.
+`docker-compose.yml` .
 
 ```bash
 docker-compose up -d
@@ -74,29 +71,29 @@ docker-compose up -d
 
 ### Sessão
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `POST` | `/whatsapp-api/session/start` | Inicia nova sessão |
-| `GET` | `/whatsapp-api/session/status` | Status da sessão |
-| `GET` | `/whatsapp-api/session/qr` | QR Code para auth |
-| `DELETE` | `/whatsapp-api/session/disconnect` | Encerra sessão |
-| `POST` | `/whatsapp-api/session/logout` | Logout/reset completo da sessão |
+| Método   | Endpoint                           | Descrição                       |
+| -------- | ---------------------------------- | ------------------------------- |
+| `POST`   | `/whatsapp-api/session/start`      | Inicia nova sessão              |
+| `GET`    | `/whatsapp-api/session/status`     | Status da sessão                |
+| `GET`    | `/whatsapp-api/session/qr`         | QR Code para auth               |
+| `DELETE` | `/whatsapp-api/session/disconnect` | Encerra sessão                  |
+| `POST`   | `/whatsapp-api/session/logout`     | Logout/reset completo da sessão |
 
 ### Mensagens
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `POST` | `/whatsapp-api/send/:phone` | Envia mensagem |
-| `GET` | `/whatsapp-api/check/:phone` | Verifica se está no WhatsApp |
+| Método | Endpoint                     | Descrição                    |
+| ------ | ---------------------------- | ---------------------------- |
+| `POST` | `/whatsapp-api/send/:phone`  | Envia mensagem               |
+| `GET`  | `/whatsapp-api/check/:phone` | Verifica se está no WhatsApp |
 
 ### Health
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `GET` | `/whatsapp-api/health` | Health check do serviço |
-| `GET` | `/whatsapp-api/provider-status` | Status do provider |
-| `GET` | `/health/system` | Health consolidado (DB, Redis, WAHA, worker, config) |
-| `GET` | `/health/ready` | Alias de readiness |
+| Método | Endpoint                        | Descrição                                            |
+| ------ | ------------------------------- | ---------------------------------------------------- |
+| `GET`  | `/whatsapp-api/health`          | Health check do serviço                              |
+| `GET`  | `/whatsapp-api/provider-status` | Status do provider                                   |
+| `GET`  | `/health/system`                | Health consolidado (DB, Redis, WAHA, worker, config) |
+| `GET`  | `/health/ready`                 | Alias de readiness                                   |
 
 ## Exemplos de Uso
 
@@ -158,14 +155,14 @@ POST /webhooks/whatsapp-api
 
 ### Eventos Suportados
 
-| Evento | Descrição |
-|--------|-----------|
-| `message` | Mensagem recebida |
+| Evento           | Descrição                 |
+| ---------------- | ------------------------- |
+| `message`        | Mensagem recebida         |
 | `message_create` | Mensagem criada (enviada) |
-| `qr` | QR Code gerado |
-| `ready` | Sessão pronta |
-| `authenticated` | Autenticação concluída |
-| `disconnected` | Sessão desconectada |
+| `qr`             | QR Code gerado            |
+| `ready`          | Sessão pronta             |
+| `authenticated`  | Autenticação concluída    |
+| `disconnected`   | Sessão desconectada       |
 
 Observações operacionais:
 
@@ -188,13 +185,13 @@ Para usar o `whatsapp-api` como provider do workspace, configure em
 
 ### Providers Disponíveis
 
-| Provider | Descrição |
-|----------|-----------|
-| `whatsapp-api` | **RECOMENDADO** - WAHA (WhatsApp HTTP API) |
-| `wpp` | WPPConnect (legado) |
-| `meta` | Meta Cloud API (oficial, requer aprovação) |
-| `evolution` | Evolution API |
-| `auto` | Seleção automática baseada em disponibilidade |
+| Provider       | Descrição                                     |
+| -------------- | --------------------------------------------- |
+| `whatsapp-api` | **RECOMENDADO** - WAHA (WhatsApp HTTP API)    |
+| `wpp`          | WPPConnect (legado)                           |
+| `meta`         | Meta Cloud API (oficial, requer aprovação)    |
+| `evolution`    | Evolution API                                 |
+| `auto`         | Seleção automática baseada em disponibilidade |
 
 ## Arquivos Criados/Modificados
 

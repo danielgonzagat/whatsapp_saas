@@ -1,35 +1,53 @@
 # KLOEL — CLAUDE.md
 
 > Este arquivo é lido automaticamente pelo Claude Code no início de toda sessão.
-> Ele contém: identidade do projeto, filosofia de construção, ordem de dependências,
-> padrões de qualidade, e definição de "pronto" para cada módulo.
+> Ele contém: identidade do projeto, filosofia de construção, ordem de
+> dependências, padrões de qualidade, e definição de "pronto" para cada módulo.
 > NÃO precisa ser colado como prompt. Ele é contexto permanente.
 
 ---
 
 ## REGRA DE AUTONOMIA (2026-04-18)
 
-Quando Daniel pedir para trabalhar autonomamente (ex.: "trabalhe autonomamente", "continue autonomo", "até completar 100%"):
+Quando Daniel pedir para trabalhar autonomamente (ex.: "trabalhe autonomamente",
+"continue autonomo", "até completar 100%"):
 
 1. **NÃO pare para relatar** progresso intermediário.
-2. **NÃO pare para pedir confirmação** ou tirar dúvidas — o escopo já está completo.
-3. **Trabalhe continuamente** até esgotar o que é tecnicamente seguro fazer ou até completar 100% do escopo.
-4. **Commits e pushes frequentes**, sem interrupções narrativas. Use apenas mensagens curtas entre commits quando houver um sinal importante (falha real de build, bloqueio intransponível).
-5. **Relatório final só no fim do escopo** ou quando um bloqueio objetivo impedir continuação.
+2. **NÃO pare para pedir confirmação** ou tirar dúvidas — o escopo já está
+   completo.
+3. **Trabalhe continuamente** até esgotar o que é tecnicamente seguro fazer ou
+   até completar 100% do escopo.
+4. **Commits e pushes frequentes**, sem interrupções narrativas. Use apenas
+   mensagens curtas entre commits quando houver um sinal importante (falha real
+   de build, bloqueio intransponível).
+5. **Relatório final só no fim do escopo** ou quando um bloqueio objetivo
+   impedir continuação.
 
 Parar sem necessidade quando Daniel pediu autonomia é violação desta regra.
 
 ## REGRA DE CODACY (2026-04-19)
 
-1. O Codacy deste repo opera em **MAX-RIGOR LOCK**. O objetivo padrao e manter **todas** as ferramentas/patterns aplicaveis ativas, com gates/coverage/duplication/complexity no nivel mais estrito viavel.
+1. O Codacy deste repo opera em **MAX-RIGOR LOCK**. O objetivo padrao e manter
+   **todas** as ferramentas/patterns aplicaveis ativas, com
+   gates/coverage/duplication/complexity no nivel mais estrito viavel.
 2. **Permitido**:
    - `npm run codacy:sync` para snapshot read-only.
    - `npm run codacy:check-max-rigor` para verificar drift.
-   - `npm run codacy:enforce-max-rigor` para reaplicar o estado canonico maximo quando houver drift autorizado.
-3. **Proibido** reduzir escopo, desativar regra, desativar pattern, criar draft para relaxamento, adicionar exclude path, trocar threshold por valor mais fraco, ou alterar qualquer configuracao live do Codacy fora do script canonico.
-4. **Proibido** usar comentarios para satisfazer Codacy. `biome-ignore`, `nosemgrep`, `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`, `codacy:disable`, `codacy:ignore`, `NOSONAR` e `noqa` sao bypasses proibidos.
-5. **Proibido** usar skip tags de commit para tentar desligar analise (`[codacy skip]`, `[skip codacy]`, `[ci skip]`, `[skip ci]`).
-6. Para reduzir issues, **corrija codigo real**. Se uma regra parecer ruido, documente a evidencia, mas nao enfraqueca o Codacy sem aprovacao humana explicita.
+   - `npm run codacy:enforce-max-rigor` para reaplicar o estado canonico maximo
+     quando houver drift autorizado.
+3. **Proibido** reduzir escopo, desativar regra, desativar pattern, criar draft
+   para relaxamento, adicionar exclude path, trocar threshold por valor mais
+   fraco, ou alterar qualquer configuracao live do Codacy fora do script
+   canonico.
+4. **Proibido** usar comentarios para satisfazer Codacy. `biome-ignore`,
+   `nosemgrep`, `eslint-disable`, `@ts-ignore`, `@ts-expect-error`,
+   `@ts-nocheck`, `codacy:disable`, `codacy:ignore`, `NOSONAR` e `noqa` sao
+   bypasses proibidos.
+5. **Proibido** usar skip tags de commit para tentar desligar analise
+   (`[codacy skip]`, `[skip codacy]`, `[ci skip]`, `[skip ci]`).
+6. Para reduzir issues, **corrija codigo real**. Se uma regra parecer ruido,
+   documente a evidencia, mas nao enfraqueca o Codacy sem aprovacao humana
+   explicita.
 
 ---
 
@@ -39,8 +57,11 @@ KLOEL é uma plataforma AI-native de marketing digital e vendas. Monorepo com:
 
 - **Frontend**: Next.js (Vercel) — `frontend/`
 - **Backend**: NestJS + Prisma (Railway) — `backend/`
-- **Worker**: BullMQ — `worker/` (WhatsApp via WAHA + Meta Cloud API providers, see `docs/adr/0001-whatsapp-source-of-truth.md`)
-- **Design System**: Terminator — void black (#0A0A0C), Ember (#E85D30), Sora font, JetBrains Mono para números, sem gradientes, sem emojis, sem border-radius > 6px, SVG icons only
+- **Worker**: BullMQ — `worker/` (WhatsApp via WAHA + Meta Cloud API providers,
+  see `docs/adr/0001-whatsapp-source-of-truth.md`)
+- **Design System**: Terminator — void black (#0A0A0C), Ember (#E85D30), Sora
+  font, JetBrains Mono para números, sem gradientes, sem emojis, sem
+  border-radius > 6px, SVG icons only
 
 **Estado atual**: 184k linhas, 812 arquivos, 107 models Prisma, 89 controllers.
 ~40-50% funcionalidade real, resto é shell visual com dados fake.
@@ -51,13 +72,15 @@ KLOEL é uma plataforma AI-native de marketing digital e vendas. Monorepo com:
 
 ## REGRA MESTRA — PRESERVAR A CASCA, CONVERTER EM MÁQUINA
 
-NÃO remover telas, tabs, fluxos, componentes, rotas, copy, navegação, affordances.
-NÃO reescrever uma tela inteira sem necessidade.
-NÃO inventar especificações que não estejam no código existente.
+NÃO remover telas, tabs, fluxos, componentes, rotas, copy, navegação,
+affordances. NÃO reescrever uma tela inteira sem necessidade. NÃO inventar
+especificações que não estejam no código existente.
 
-A casca visual é o **contrato de UX**. A missão é fazer a realidade obedecer ao contrato.
+A casca visual é o **contrato de UX**. A missão é fazer a realidade obedecer ao
+contrato.
 
-**SIM converter**: dado fake → dado real, handler placebo → handler real, integração simulada → integração real ou estado honesto.
+**SIM converter**: dado fake → dado real, handler placebo → handler real,
+integração simulada → integração real ou estado honesto.
 
 ### Estados Honestos (substituem dados fake)
 
@@ -74,8 +97,8 @@ A casca visual é o **contrato de UX**. A missão é fazer a realidade obedecer 
 
 ## ORDEM DE CONSTRUÇÃO (DAG)
 
-Um módulo só avança quando TODAS as dependências estão a 100%.
-100% = PULSE mostra zero desconexões nesse módulo.
+Um módulo só avança quando TODAS as dependências estão a 100%. 100% = PULSE
+mostra zero desconexões nesse módulo.
 
 ```
 FASE 0 — INFRAESTRUTURA
@@ -131,7 +154,9 @@ FASE 6 — OPERACIONAL
 
 ### TIER 1 — Funcional
 
-Auth (90%), WhatsApp Core (95%), Autopilot (90%), Flows (90%), Checkout (85%), Billing (85%), KYC (85%), Inbox (85%), Wallet (80%), Unified Agent (75%), CRM (80%), Dashboard (75%), Analytics (75%), Reports (75%)
+Auth (90%), WhatsApp Core (95%), Autopilot (90%), Flows (90%), Checkout (85%),
+Billing (85%), KYC (85%), Inbox (85%), Wallet (80%), Unified Agent (75%), CRM
+(80%), Dashboard (75%), Analytics (75%), Reports (75%)
 
 ### TIER 2 — Parcialmente Funcional
 
@@ -181,7 +206,11 @@ Todo módulo que lida com dinheiro, dados de usuário, ou integração externa:
 
 ## REGRA DE AUTO-CORRECAO DO PULSE
 
-Cada false positive ou ponto cego do PULSE que for encontrado → **corrigir o PULSE imediatamente** para nunca mais errar naquele tipo. O PULSE nao e um scanner estatico — ele evolui a cada erro descoberto. Se o PULSE disse que algo estava quebrado e nao estava → fix no parser. Se o PULSE nao viu algo que deveria ter visto → fix no detector. Zero tolerancia para erros repetidos.
+Cada false positive ou ponto cego do PULSE que for encontrado → **corrigir o
+PULSE imediatamente** para nunca mais errar naquele tipo. O PULSE nao e um
+scanner estatico — ele evolui a cada erro descoberto. Se o PULSE disse que algo
+estava quebrado e nao estava → fix no parser. Se o PULSE nao viu algo que
+deveria ter visto → fix no detector. Zero tolerancia para erros repetidos.
 
 ---
 
@@ -189,22 +218,27 @@ Cada false positive ou ponto cego do PULSE que for encontrado → **corrigir o P
 
 ### PULSE (Sistema Nervoso)
 
-- `npx ts-node --project scripts/pulse/tsconfig.json scripts/pulse/index.ts` — scan unico
+- `npx ts-node --project scripts/pulse/tsconfig.json scripts/pulse/index.ts` —
+  scan unico
 - `npx ts-node scripts/pulse/index.ts --watch` — daemon vivo
 - `npx ts-node scripts/pulse/index.ts --report` — gera PULSE_REPORT.md
 
 ### Artefatos de Controle
 
-- `AUDIT_FEATURE_MATRIX.md` — estado de cada rota (READY/PARTIAL/SHELL_ONLY/MOCKED/BROKEN)
+- `AUDIT_FEATURE_MATRIX.md` — estado de cada rota
+  (READY/PARTIAL/SHELL_ONLY/MOCKED/BROKEN)
 - `VALIDATION_LOG.md` — evidência de cada validação
 - `SHELL_PRESERVATION_NOTES.md` — o que mudou visualmente e porquê
 - `PULSE_REPORT.md` — output do scanner
 
 ### Segredos Locais de Operação
 
-- Antes de inspecionar Railway/Vercel/runtime real, verificar `.env.pulse.local` na raiz do repo.
-- Esse arquivo é **local e gitignored**. Pode conter tokens e endpoints de inspeção para PULSE e agentes.
-- Nunca imprimir os valores em respostas. Usar apenas em memória para queries, logs e diagnósticos.
+- Antes de inspecionar Railway/Vercel/runtime real, verificar `.env.pulse.local`
+  na raiz do repo.
+- Esse arquivo é **local e gitignored**. Pode conter tokens e endpoints de
+  inspeção para PULSE e agentes.
+- Nunca imprimir os valores em respostas. Usar apenas em memória para queries,
+  logs e diagnósticos.
 
 ### Hooks de Disciplina
 
@@ -213,19 +247,23 @@ Cada false positive ou ponto cego do PULSE que for encontrado → **corrigir o P
 - Após editar schema → `npx prisma generate && npx prisma validate`
 - Não declarar conclusão com erros de build não documentados
 - Antes de push → `npm run guard:db-push && npm run typecheck && npm test`
-- Nunca reintroduzir `prisma db push` em scripts de produção, CI, Docker ou automação
+- Nunca reintroduzir `prisma db push` em scripts de produção, CI, Docker ou
+  automação
 
 ### Enforcement Local
 
 - Husky + lint-staged + commitlint são parte do contrato do repo
-- `.claude/settings.json` deve continuar com hooks de `PreToolUse`, `PostToolUse` e `Stop`
-- `.editorconfig` e `.prettierrc.json` são a fonte única de formatação do monorepo
+- `.claude/settings.json` deve continuar com hooks de `PreToolUse`,
+  `PostToolUse` e `Stop`
+- `.editorconfig` e `.prettierrc.json` são a fonte única de formatação do
+  monorepo
 
 ## ARQUIVOS PROTEGIDOS — SOMENTE O DONO DO REPOSITORIO PODE EDITAR
 
 Os seguintes arquivos e diretorios sao infraestrutura de qualidade e governanca.
-Nenhuma IA CLI tem permissao de editar, deletar, mover ou renomear estes arquivos.
-Se uma regra precisa mudar, a IA deve pedir ao dono do repositorio para fazer a mudanca.
+Nenhuma IA CLI tem permissao de editar, deletar, mover ou renomear estes
+arquivos. Se uma regra precisa mudar, a IA deve pedir ao dono do repositorio
+para fazer a mudanca.
 
 Arquivos protegidos:
 
@@ -244,12 +282,15 @@ Arquivos protegidos:
 - `worker/eslint.config.mjs`
 - `backend/src/lib/ai-models.ts`
 
-Qualquer tentativa de editar estes arquivos para contornar uma validacao e considerada gambiarra e sera revertida.
+Qualquer tentativa de editar estes arquivos para contornar uma validacao e
+considerada gambiarra e sera revertida.
 
 ### GitHub Hardening
 
-- `CI`, `CodeQL`, `Deploy Staging`, `Deploy Production` e `Nightly Ops Audit` são guardrails obrigatórios
-- `Dependabot` deve permanecer ativo para root, backend, frontend, worker, e2e e GitHub Actions
+- `CI`, `CodeQL`, `Deploy Staging`, `Deploy Production` e `Nightly Ops Audit`
+  são guardrails obrigatórios
+- `Dependabot` deve permanecer ativo para root, backend, frontend, worker, e2e e
+  GitHub Actions
 - Settings manuais obrigatórias vivem em `docs/GITHUB_REPOSITORY_SETTINGS.md`
 
 ---
@@ -287,25 +328,26 @@ Qualquer tentativa de editar estes arquivos para contornar uma validacao e consi
 
 ### prismaAny
 
-O codebase tem 133 usos de `this.prismaAny.` (bypass de tipos). Funciona mas é frágil.
-Em código novo, SEMPRE usar `this.prisma.` tipado. Migrar `prismaAny` progressivamente.
+O codebase tem 133 usos de `this.prismaAny.` (bypass de tipos). Funciona mas é
+frágil. Em código novo, SEMPRE usar `this.prisma.` tipado. Migrar `prismaAny`
+progressivamente.
 
 ### Proxy Routes (Next.js → Backend)
 
-Frontend calls a `/api/whatsapp-api/*`, `/api/auth/*`, `/api/kyc/*`, `/api/workspace/*`
-passam por route handlers Next.js que fazem proxy pro backend.
-O PULSE sabe resolver essas rotas.
+Frontend calls a `/api/whatsapp-api/*`, `/api/auth/*`, `/api/kyc/*`,
+`/api/workspace/*` passam por route handlers Next.js que fazem proxy pro
+backend. O PULSE sabe resolver essas rotas.
 
 ### API Layer
 
 Toda chamada API do frontend usa `apiFetch()` de `frontend/src/lib/api/core.ts`.
-19 módulos de API em `frontend/src/lib/api/`.
-SWR hooks usam `swrFetcher` que wrapa `apiFetch`.
+19 módulos de API em `frontend/src/lib/api/`. SWR hooks usam `swrFetcher` que
+wrapa `apiFetch`.
 
 ### Design Tokens
 
-Importar de `@/lib/design-tokens`: `colors`, `motion`, `radius`, `spacing`.
-Usar `colors.ember.primary` (#E85D30) para accent, `colors.text.silver` para texto.
+Importar de `@/lib/design-tokens`: `colors`, `motion`, `radius`, `spacing`. Usar
+`colors.ember.primary` (#E85D30) para accent, `colors.text.silver` para texto.
 Toggle components em `frontend/src/components/kloel/Forms.tsx`.
 
 ---
@@ -314,12 +356,14 @@ Toggle components em `frontend/src/components/kloel/Forms.tsx`.
 
 ### Webhook Verification
 
-- Stripe: header `stripe-signature` validado contra `STRIPE_WEBHOOK_SECRET` em `backend/src/webhooks/payment-webhook.controller.ts`
+- Stripe: header `stripe-signature` validado contra `STRIPE_WEBHOOK_SECRET` em
+  `backend/src/webhooks/payment-webhook.controller.ts`
 - Webhooks sem assinatura valida: rejeitados com 400/403
 
 ### Idempotencia
 
-- Checkout webhooks verificam `externalId` antes de processar — duplicatas ignoradas
+- Checkout webhooks verificam `externalId` antes de processar — duplicatas
+  ignoradas
 - Stripe webhooks verificam evento/intent e ignoram duplicatas
 
 ### Rate Limiting
@@ -348,10 +392,14 @@ Toggle components em `frontend/src/components/kloel/Forms.tsx`.
 ## STRIPE PAYMENT BASELINE
 
 > **Decisão arquitetural ativa**. Autorizada pelo dono do repo em 2026-04-17.
-> ADR fundador: [docs/adr/0003-stripe-connect-platform-model.md](docs/adr/0003-stripe-connect-platform-model.md).
-> **Plano executável (ler antes de tocar qualquer código de pagamento)**: [docs/plans/STRIPE_MIGRATION_PLAN.md](docs/plans/STRIPE_MIGRATION_PLAN.md).
+> ADR fundador:
+> [docs/adr/0003-stripe-connect-platform-model.md](docs/adr/0003-stripe-connect-platform-model.md).
+> **Plano executável (ler antes de tocar qualquer código de pagamento)**:
+> [docs/plans/STRIPE_MIGRATION_PLAN.md](docs/plans/STRIPE_MIGRATION_PLAN.md).
 
-KLOEL adota **Stripe Connect Platform Model** como única infraestrutura ativa de pagamento. O cutover para Stripe-only está concluído no runtime ativo; qualquer evolução nova deve partir dessa base única.
+KLOEL adota **Stripe Connect Platform Model** como única infraestrutura ativa de
+pagamento. O cutover para Stripe-only está concluído no runtime ativo; qualquer
+evolução nova deve partir dessa base única.
 
 **Não-negociáveis** (qualquer agente que tocar este código):
 
@@ -374,7 +422,8 @@ KLOEL adota **Stripe Connect Platform Model** como única infraestrutura ativa d
 6. Payment Kernel multi-stakeholder
 ```
 
-**Bloqueios conhecidos** (manter sincronizado com `docs/plans/STRIPE_MIGRATION_PLAN.md`):
+**Bloqueios conhecidos** (manter sincronizado com
+`docs/plans/STRIPE_MIGRATION_PLAN.md`):
 
 - PIX capability na conta Stripe live — Daniel precisa solicitar via dashboard.
 - Webhook endpoint live em produção — criar via dashboard ou API após FASE 0.

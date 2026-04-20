@@ -12,7 +12,8 @@ Recommended method: DNS TXT on the apex domain.
 4. Wait for propagation.
 5. Click `Verify` in Search Console.
 
-Do not use a temporary subdomain-only verification. OAuth reviewers want the actual production domain.
+Do not use a temporary subdomain-only verification. OAuth reviewers want the
+actual production domain.
 
 ## 2. Meta Business Manager domain verification
 
@@ -27,7 +28,9 @@ Recommended method: DNS TXT in Cloudflare.
 5. Add it in Cloudflare DNS.
 6. Verify the domain in Meta.
 
-If Meta forces HTML tag verification instead, place the meta tag on the marketing site root layout and redeploy. DNS remains the cleaner long-term option.
+If Meta forces HTML tag verification instead, place the meta tag on the
+marketing site root layout and redeploy. DNS remains the cleaner long-term
+option.
 
 ## 3. Meta webhook public endpoint
 
@@ -48,7 +51,8 @@ Meta calls the GET endpoint with:
 - `hub.verify_token=<token>`
 - `hub.challenge=<challenge>`
 
-Kloel compares `hub.verify_token` with `META_WEBHOOK_VERIFY_TOKEN` and echoes the sanitized `hub.challenge` as plain text.
+Kloel compares `hub.verify_token` with `META_WEBHOOK_VERIFY_TOKEN` and echoes
+the sanitized `hub.challenge` as plain text.
 
 ### Signed POST flow
 
@@ -94,13 +98,15 @@ Recommended public URL if `app.kloel.com` proxies `/api/*` to the backend:
 
 - `https://app.kloel.com/api/auth/google/risc-events`
 
-Register it with the Google RISC API after the service account with the `risc` scope is ready.
+Register it with the Google RISC API after the service account with the `risc`
+scope is ready.
 
 ## 6. Smoke test command
 
 The repository now contains `scripts/smoke-test-prod.ts`.
 
-Because `package.json` is governance-protected, no new root `npm run` alias was added automatically. Run it with:
+Because `package.json` is governance-protected, no new root `npm run` alias was
+added automatically. Run it with:
 
 ```bash
 npm --prefix frontend exec -- tsx scripts/smoke-test-prod.ts

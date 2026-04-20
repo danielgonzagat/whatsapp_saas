@@ -1,9 +1,8 @@
 # CHANGELOG DE CORRECAO — Kloel Platform
 
-**Data:** 28 de Março de 2026
-**Escopo:** Eliminacao de mentiras visuais, dados falsos, codigo morto e
-refatoracao estrutural
-**Resultado:** 36 arquivos alterados, +4.011/-4.226 linhas
+**Data:** 28 de Março de 2026 **Escopo:** Eliminacao de mentiras visuais, dados
+falsos, codigo morto e refatoracao estrutural **Resultado:** 36 arquivos
+alterados, +4.011/-4.226 linhas
 
 ---
 
@@ -15,8 +14,7 @@ refatoracao estrutural
 - **AnunciosView.tsx** reescrito de 627 para 75 linhas
 - Removidos: dados hardcoded de 3 plataformas (Meta/Google/TikTok), 10 campanhas
   fictitcias, 5 regras de IA fake, 6 acoes de IA simuladas, profit ticker
-  animado,
-  canvas NeuralPulse
+  animado, canvas NeuralPulse
 - Substituido por `ContextualEmptyState` com contexto "anuncios"
 - Navegacao de 6 tabs mantida funcional para uso futuro
 - Adicionado contexto 'anuncios' em EmptyStates.tsx

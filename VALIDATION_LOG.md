@@ -24,14 +24,11 @@
 
 ### Evidence
 
-- `./backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json
-scripts/pulse/index.ts --manifest-validate`
+- `./backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json scripts/pulse/index.ts --manifest-validate`
   -> PASS
-- `./backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json
-scripts/pulse/index.ts --report`
+- `./backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json scripts/pulse/index.ts --report`
   -> PASS (gera report + matrix + certificate)
-- `./backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json
-scripts/pulse/index.ts --certify`
+- `./backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json scripts/pulse/index.ts --certify`
   -> exit code 1 esperado; certificacao honesta retornando `PARTIAL`
 
 ### Resultado
@@ -170,9 +167,9 @@ modules).
 - **FASE 7 (webhook side)** StripeWebhookProcessor: payment_intent.succeeded
   fan-out — dispatches transfers + credits ledger with per-role maturation. 9
   tests.
-- **PaymentsModule + WalletModule** wired into AppModule. Boot smoke (`npm run
-backend:boot-smoke`) — OK, RoutesResolver reached with all cycle modules
-  initialized.
+- **PaymentsModule + WalletModule** wired into AppModule. Boot smoke
+  (`npm run backend:boot-smoke`) — OK, RoutesResolver reached with all cycle
+  modules initialized.
 
 ### Frontend FASE 8 — scaffold delivered, integration deferred
 

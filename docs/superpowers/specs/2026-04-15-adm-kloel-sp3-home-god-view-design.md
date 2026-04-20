@@ -1,18 +1,15 @@
 # adm.kloel.com — SP-3 — Home God View Dashboard
 
-**Spec ID:** SP-3
-**Date:** 2026-04-15
-**Branch (planned):** `feat/adm-sp3-home-god-view`
-**Status:** Draft — written during SP-0..2 CI wait. Will be executed after
-SP-0..2 merges.
+**Spec ID:** SP-3 **Date:** 2026-04-15 **Branch (planned):**
+`feat/adm-sp3-home-god-view` **Status:** Draft — written during SP-0..2 CI wait.
+Will be executed after SP-0..2 merges.
 
 ## 1. Purpose
 
 Replace the current honest-placeholder Home page in `adm.kloel.com` (SP-2 landed
-a greeting + SP
-status cards) with the **God View Dashboard**: the screen that a Kloel operator
-opens every morning
-to understand the platform's commercial health.
+a greeting + SP status cards) with the **God View Dashboard**: the screen that a
+Kloel operator opens every morning to understand the platform's commercial
+health.
 
 ## 2. Scope
 
@@ -21,32 +18,27 @@ to understand the platform's commercial health.
 - New backend endpoint:
   `GET /admin/dashboard/home?from=...&to=...&compareTo=...`
 - New backend service: `AdminDashboardService` that aggregates **global** (not
-  per-workspace) data
-  across all existing Prisma models.
+  per-workspace) data across all existing Prisma models.
 - Rewrite of `frontend-admin/src/app/(admin)/page.tsx` to render KPI cards +
-  charts, keeping the
-  SP-2 greeting.
+  charts, keeping the SP-2 greeting.
 - Small visual primitives added to `frontend-admin/src/components/ui/` :
-  `stat-card` ,
-  `chart-container`, `metric-number` (monospace digits per CLAUDE.md).
+  `stat-card` , `chart-container`, `metric-number` (monospace digits per
+  CLAUDE.md).
 - Period filter (Hoje / 7d / 30d / 90d / 12m / Custom) + compare-to-previous
   period toggle.
 - Visual parity with the sales/reports pattern in `frontend/` (same typography,
-  same card borders,
-  same chart palette).
+  same card borders, same chart palette).
 - Unit tests on aggregation helpers + permission matrix probe for `HOME.VIEW`.
 - Honest empty states: any KPI backed by a model that has no data for the period
-  shows `—` with a
-  tooltip `"Sem dados para o período"`. Never fake numbers. Never `Math.random`.
+  shows `—` with a tooltip `"Sem dados para o período"`. Never fake numbers.
+  Never `Math.random`.
 
 ### Out of scope (deferred)
 
 - Revenue Kloel in R$ — requires platform fee configuration (SP-9/SP-11). The
-  KPI card renders `—`
-  with a tooltip linking to SP-9.
+  KPI card renders `—` with a tooltip linking to SP-9.
 - Cohort table — needs producer onboarding timestamps that are partially
-  available. Deferred to
-  SP-3b or SP-10.
+  available. Deferred to SP-3b or SP-10.
 - Chargebacks amount breakdown by merchant category — depends on chargeback
   workflow (SP-7).
 - WebSocket live updates — we poll every 60s via SWR `refreshInterval`.
@@ -121,12 +113,10 @@ GET /admin/dashboard/home?period=TODAY|7D|30D|90D|12M|CUSTOM&from=ISO&to=ISO&com
 ```
 
 All monetary values are integers in cents (Brazilian centavos). The frontend is
-responsible for
-formatting to `R$`.
+responsible for formatting to `R$`.
 
 Guarded by `AdminAuthGuard + AdminPermissionGuard` with
-`@RequireAdminPermission(AdminModule.HOME,
-AdminAction.VIEW)`.
+`@RequireAdminPermission(AdminModule.HOME, AdminAction.VIEW)`.
 
 ## 5. Backend structure
 
@@ -187,31 +177,26 @@ Visual rules (inherited from CLAUDE.md `KLOEL_VISUAL_DESIGN_CONTRACT`):
 2. Frontend-admin build/lint/typecheck/test green.
 3. Endpoint responds correctly to all period values including CUSTOM.
 4. Empty-state policy validated: on a fresh test DB, the response is 200 OK with
-   zeros and `null` s,
-   never an error.
+   zeros and `null` s, never an error.
 5. Permission matrix probe: STAFF can GET home, STAFF cannot POST anything
-   (there are no POSTs, but
-   the gate still ratifies).
+   (there are no POSTs, but the gate still ratifies).
 6. Visual contract check still green (design tokens identity preserved).
 7. No new `any` / `ts-ignore` / new-file-too-big violations in the architecture
    gate.
 8. PR opened with screenshot of the God View rendered against an empty local DB
-   (all zeros + honest
-   empty states).
+   (all zeros + honest empty states).
 
 ## 8. Open questions flagged for Daniel (to answer during execution)
 
 - **Q1: Active producer definition.** Rolling 30d distinct workspaceId from
-  CheckoutOrder, OR any
-  workspace with a Conversation/Message/Flow execution in the window? The
-  sales-heavy definition is
-  simpler and more commercially meaningful. Default: sales-heavy unless Daniel
-  objects.
+  CheckoutOrder, OR any workspace with a Conversation/Message/Flow execution in
+  the window? The sales-heavy definition is simpler and more commercially
+  meaningful. Default: sales-heavy unless Daniel objects.
 - **Q2: Revenue Kloel placeholder.** Show `—` (proposed) or show
-  `"indisponível"` text card?
-  Recommend `—` for visual consistency with other number KPIs.
+  `"indisponível"` text card? Recommend `—` for visual consistency with other
+  number KPIs.
 - **Q3: Period default.** Open on 7D (quick operational view) or 30D (monthly
-  pulse)? Recommend
-  **30D** — matches Hotmart/Stripe default and gives more signal.
+  pulse)? Recommend **30D** — matches Hotmart/Stripe default and gives more
+  signal.
 
 Defaults above apply unless Daniel answers differently during SP-3 execution.

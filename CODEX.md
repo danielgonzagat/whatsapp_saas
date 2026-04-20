@@ -1,10 +1,12 @@
 # CODEX.md — AI CLI Behavioral Standard
 
-> Read by: OpenAI Codex CLI, GitHub Copilot CLI, Gemini CLI, and any AI agent in this repo.
-> For Claude Code: see CLAUDE.md. These principles apply IN ADDITION to CLAUDE.md.
-> Sources: Karpathy principles, obra/superpowers, affaan-m/everything-claude-code.
+> Read by: OpenAI Codex CLI, GitHub Copilot CLI, Gemini CLI, and any AI agent in
+> this repo. For Claude Code: see CLAUDE.md. These principles apply IN ADDITION
+> to CLAUDE.md. Sources: Karpathy principles, obra/superpowers,
+> affaan-m/everything-claude-code.
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial
+tasks, use judgment.
 
 ---
 
@@ -29,7 +31,8 @@ Before implementing:
 - No error handling for impossible scenarios.
 - If you write 200 lines and it could be 50, rewrite it.
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes,
+simplify.
 
 ## 3. Surgical Changes
 
@@ -67,8 +70,8 @@ For multi-step tasks, state a brief plan:
 3. [Step] -> verify: [check]
 ```
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant
-clarification.
+Strong success criteria let you loop independently. Weak criteria ("make it
+work") require constant clarification.
 
 ---
 
@@ -83,7 +86,8 @@ Do NOT edit these files. If you need to change them, ask the human:
 - `CLAUDE.md`, `AGENTS.md`, `CODEX.md`
 - `docs/design/**`, `ops/**`
 - `scripts/ops/check-*.mjs`, `.husky/pre-push`
-- `backend/eslint.config.mjs`, `frontend/eslint.config.mjs`, `worker/eslint.config.mjs`
+- `backend/eslint.config.mjs`, `frontend/eslint.config.mjs`,
+  `worker/eslint.config.mjs`
 - `.github/workflows/ci-cd.yml`
 
 ### Build Verification
@@ -96,13 +100,16 @@ After ANY code change, verify builds:
 
 ### NestJS DI Safety
 
-- NEVER reorder imports in `backend/src/**/*.ts` — breaks NestJS dependency injection
+- NEVER reorder imports in `backend/src/**/*.ts` — breaks NestJS dependency
+  injection
 - NEVER touch `*.module.ts` files unless explicitly asked
-- After backend changes: run `npm run backend:boot-smoke` to verify DI resolution
+- After backend changes: run `npm run backend:boot-smoke` to verify DI
+  resolution
 
 ### Shell Preservation
 
-- NEVER remove existing UI components, pages, tabs, navigation, or visual affordances
+- NEVER remove existing UI components, pages, tabs, navigation, or visual
+  affordances
 - Convert fake data to real data — don't remove the UI shell
 - If a feature isn't connected yet, show an honest empty state
 
@@ -118,7 +125,8 @@ After ANY code change, verify builds:
 
 **Search for existing solutions before writing new code.**
 
-- Search GitHub (`gh search code`) for implementations before writing from scratch
+- Search GitHub (`gh search code`) for implementations before writing from
+  scratch
 - Check npm/package registries for battle-tested libraries before hand-rolling
 - Prefer adopting proven approaches over writing net-new code
 - Use official docs (Context7, vendor docs) to confirm API behavior
@@ -203,9 +211,9 @@ Before saying "done", "fixed", or "complete":
 
 ## 13. Stripe Migration (active mandate)
 
-KLOEL is migrating ALL payment infrastructure from Asaas + Mercado Pago to **Stripe Connect Platform
-Model with Custom Accounts**. This is an active multi-phase mandate authorized by the repo owner on
-2026-04-17.
+KLOEL is migrating ALL payment infrastructure from Asaas + Mercado Pago to
+**Stripe Connect Platform Model with Custom Accounts**. This is an active
+multi-phase mandate authorized by the repo owner on 2026-04-17.
 
 **Founding ADR**:
 [docs/adr/0003-stripe-connect-platform-model.md](docs/adr/0003-stripe-connect-platform-model.md).
@@ -214,22 +222,25 @@ Model with Custom Accounts**. This is an active multi-phase mandate authorized b
 
 ### Non-negotiable rules for any agent touching payment code
 
-1. **Money in `bigint` cents always**. Never `number`. Stripe rejects float-rounding errors in
-   splits.
-2. **Coverage ≥ 95% in SplitEngine, LedgerEngine, FraudEngine**. Bug here = real loss + legal
-   exposure.
-3. **Idempotent webhooks**. The `WebhookEvent` table with `@@unique([provider, externalId])` stays.
-   Re-delivered webhooks must be no-ops.
-4. **Immutable ledger**. `LedgerEntry` rows are never UPDATEd. Corrections add a new ADJUSTMENT
-   entry.
-5. **Preserve the UX shell** (CLAUDE.md master rule). Migration replaces the engine under the hood;
-   visible checkout UX stays.
-6. **Test keys in dev, live keys only in production via Railway secret manager**. `sk_live_*` never
-   appears in tests, .env files, screenshots, or chat.
-7. **ADR-driven**. Any deviation from the plan requires a new ADR. No improvisation. If you discover
-   a constraint that invalidates ADR 0003, stop and report.
-8. **Phase gates**. Don't skip phases. Each phase has criteria-of-done in the plan. Don't mark
-   complete without evidence (commit hash, test output).
+1. **Money in `bigint` cents always**. Never `number`. Stripe rejects
+   float-rounding errors in splits.
+2. **Coverage ≥ 95% in SplitEngine, LedgerEngine, FraudEngine**. Bug here = real
+   loss + legal exposure.
+3. **Idempotent webhooks**. The `WebhookEvent` table with
+   `@@unique([provider, externalId])` stays. Re-delivered webhooks must be
+   no-ops.
+4. **Immutable ledger**. `LedgerEntry` rows are never UPDATEd. Corrections add a
+   new ADJUSTMENT entry.
+5. **Preserve the UX shell** (CLAUDE.md master rule). Migration replaces the
+   engine under the hood; visible checkout UX stays.
+6. **Test keys in dev, live keys only in production via Railway secret
+   manager**. `sk_live_*` never appears in tests, .env files, screenshots, or
+   chat.
+7. **ADR-driven**. Any deviation from the plan requires a new ADR. No
+   improvisation. If you discover a constraint that invalidates ADR 0003, stop
+   and report.
+8. **Phase gates**. Don't skip phases. Each phase has criteria-of-done in the
+   plan. Don't mark complete without evidence (commit hash, test output).
 
 ### Where each piece will live (target tree)
 
@@ -251,4 +262,5 @@ backend/src/billing/stripe.service.ts  # FASE 0: single SDK wrapper (apiVersion 
 3. Verify prerequisites (prior phase entregáveis are `[x]`).
 4. If PULSE or tests of prior phase are red, stop and report. Do not skip.
 5. On completion, mark `[x]` with evidence (commit hash, test output, PR link).
-6. Re-read this file periodically. Treat it as durable instruction, not chat history.
+6. Re-read this file periodically. Treat it as durable instruction, not chat
+   history.

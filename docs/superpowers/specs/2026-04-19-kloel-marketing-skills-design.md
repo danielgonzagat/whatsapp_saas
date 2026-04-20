@@ -7,16 +7,13 @@ levels:
 
 1. Project-local CLI skills for future Codex/Claude sessions working on Kloel.
 2. Runtime marketing intelligence inside the seller-facing CIA, grounded in real
-   workspace data and
-   adapted to Brazilian info-product and e-commerce contexts.
+   workspace data and adapted to Brazilian info-product and e-commerce contexts.
 
 ## Reality Check
 
 As of April 19, 2026, the upstream `marketingskills` README exposes 36 public
-skills, not 34. Kloel
-should treat those 36 skills as the canonical source set unless Daniel
-explicitly wants a pinned
-older subset.
+skills, not 34. Kloel should treat those 36 skills as the canonical source set
+unless Daniel explicitly wants a pinned older subset.
 
 ## Constraints
 
@@ -26,8 +23,7 @@ older subset.
 - Prefer deterministic routing and local file assets over fragile prompt-only
   magic.
 - Any product-facing marketing response must stay honest about missing data and
-  missing execution
-  surfaces.
+  missing execution surfaces.
 
 ## Architecture
 
@@ -35,11 +31,9 @@ older subset.
 
 - Vendor the upstream skills into project-local `.agents/skills/`.
 - Create `.agents/product-marketing-context.md` with real Kloel positioning,
-  audience, GTM,
-  objections, proof points, and Brazilian-market language.
+  audience, GTM, objections, proof points, and Brazilian-market language.
 - Add one Kloel-specific companion skill that teaches the agent how to combine
-  the upstream skills
-  with Brazilian-market adaptation and Kloel realities.
+  the upstream skills with Brazilian-market adaptation and Kloel realities.
 - Document the installation and update path in the repo.
 
 ### Layer 2: CIA Marketing Intelligence
@@ -51,13 +45,11 @@ older subset.
   - Loader: load the upstream skill markdown from
     `.agents/skills/<skill>/SKILL.md` .
   - Router: map incoming seller messages to one or more skill domains using
-    deterministic PT-BR
-    heuristics.
+    deterministic PT-BR heuristics.
   - Context builder: assemble a compact marketing snapshot from real workspace
     state.
 - `UnifiedAgentService` remains the execution brain. It receives an extra
-  "marketing packet" when
-  the seller message is marketing-oriented.
+  "marketing packet" when the seller message is marketing-oriented.
 
 ## Marketing Packet
 
@@ -97,8 +89,7 @@ Use deterministic first-pass routing to avoid cost and drift:
 
 - keyword families in PT-BR and BR operator language
 - checkout / ROAS / lançamento / afiliado / copy / SEO / email / landing /
-  oferta / churn /
-  precificação / ads
+  oferta / churn / precificação / ads
 - allow multi-skill selection
 - fall back to no packet when the message is not marketing-specific
 
@@ -130,11 +121,8 @@ Use deterministic first-pass routing to avoid cost and drift:
 ## Success Conditions
 
 - Future project sessions in Kloel have immediate access to the upstream skill
-  set and Kloel
-  context.
+  set and Kloel context.
 - CIA can detect marketing asks, load the right frameworks, and answer with
-  workspace-grounded
-  strategy.
+  workspace-grounded strategy.
 - CIA can trigger at least the existing real execution surfaces for landing
-  pages, campaigns, and
-  email.
+  pages, campaigns, and email.

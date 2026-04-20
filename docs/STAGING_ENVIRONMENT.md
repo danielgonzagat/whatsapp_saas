@@ -3,10 +3,8 @@
 ## Objective
 
 Staging is the mandatory environment between local development and production.
-Nothing that
-changes checkout, auth, wallet, messaging, queues, or billing should jump from
-localhost straight
-into production.
+Nothing that changes checkout, auth, wallet, messaging, queues, or billing
+should jump from localhost straight into production.
 
 ## Topology
 

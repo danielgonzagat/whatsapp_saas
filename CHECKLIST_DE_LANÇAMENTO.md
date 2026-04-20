@@ -438,7 +438,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 - [ ] Google OAuth URLs autorizadas
 - [ ] Backup do banco de dados
 - [ ] Migrations: confirmar estratégia (automática no startup) e/ou rodar
-  `npx prisma migrate deploy` como passo controlado
+      `npx prisma migrate deploy` como passo controlado
 
 ### Deploy
 
@@ -583,6 +583,7 @@ curl -X POST http://localhost:3030/session/default/start
    ```
 
    (SEM barra no final)
+
 3. Marque para `Production`, `Preview` e `Development`
 4. Redeploy o frontend (Deployments → Redeploy)
 
@@ -603,21 +604,21 @@ curl -sI -X OPTIONS \
 ```typescript
 app.enableCors({
   origin: [
-    'https://kloel.com',
-    'https://www.kloel.com',
-    'https://kloel-frontend.vercel.app',
-    'https://kloel.vercel.app',
-    'http://localhost:3000',
+    "https://kloel.com",
+    "https://www.kloel.com",
+    "https://kloel-frontend.vercel.app",
+    "https://kloel.vercel.app",
+    "http://localhost:3000",
   ],
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
   allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'Accept',
-    'Origin',
-    'User-Agent',
-    'Cache-Control',
-    'Pragma',
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "Origin",
+    "User-Agent",
+    "Cache-Control",
+    "Pragma",
   ],
   credentials: true,
   preflightContinue: false,

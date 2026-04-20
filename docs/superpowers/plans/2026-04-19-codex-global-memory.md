@@ -1,28 +1,22 @@
 # Codex Global Memory Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
-  superpowers:subagent-driven-development
-> (recommended) or superpowers:executing-plans to implement this plan
-  task-by-task. Steps use
+> superpowers:subagent-driven-development (recommended) or
+> superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Install a user-global persistent memory system for Codex that captures
-history
-automatically, injects a conservative startup brief in new sessions, and
-supports manual retrieval
-across the full Codex history.
+history automatically, injects a conservative startup brief in new sessions, and
+supports manual retrieval across the full Codex history.
 
 **Architecture:** Build a local Node-based memory service under
-`~/.codex/memories/codex-mem/` using
-native `node:sqlite` and an HTTP API. Install global Codex skills in
-`~/.agents/skills/` so new
-sessions can bootstrap the service and pull a short memory brief without
-touching repository-local
+`~/.codex/memories/codex-mem/` using native `node:sqlite` and an HTTP API.
+Install global Codex skills in `~/.agents/skills/` so new sessions can bootstrap
+the service and pull a short memory brief without touching repository-local
 governance surfaces.
 
 **Tech Stack:** Node.js 25, native `node:sqlite` , native `node:test` , local
-HTTP server, global
-Codex skills under `~/.agents/skills/`.
+HTTP server, global Codex skills under `~/.agents/skills/`.
 
 ---
 
@@ -39,16 +33,16 @@ Codex skills under `~/.agents/skills/`.
 - [ ] **Step 1: Write the failing test**
 
 ```js
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { resolveRuntimePaths } from '../lib/config.mjs';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { resolveRuntimePaths } from "../lib/config.mjs";
 
-test('resolveRuntimePaths builds paths under the codex memory root', () => {
-  const paths = resolveRuntimePaths('/tmp/codex-mem-root');
+test("resolveRuntimePaths builds paths under the codex memory root", () => {
+  const paths = resolveRuntimePaths("/tmp/codex-mem-root");
 
-  assert.equal(paths.root, '/tmp/codex-mem-root');
-  assert.equal(paths.dbPath, '/tmp/codex-mem-root/state/codex-mem.db');
-  assert.equal(paths.logDir, '/tmp/codex-mem-root/logs');
+  assert.equal(paths.root, "/tmp/codex-mem-root");
+  assert.equal(paths.dbPath, "/tmp/codex-mem-root/state/codex-mem.db");
+  assert.equal(paths.logDir, "/tmp/codex-mem-root/logs");
 });
 ```
 
@@ -95,26 +89,26 @@ git commit -m "docs: add codex global memory design and plan"
 - [ ] **Step 1: Write the failing test**
 
 ```js
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { openMemoryDb, upsertMemory, searchMemories } from '../lib/db.mjs';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { openMemoryDb, upsertMemory, searchMemories } from "../lib/db.mjs";
 
-test('upsertMemory stores searchable memory records', () => {
-  const db = openMemoryDb(':memory:');
+test("upsertMemory stores searchable memory records", () => {
+  const db = openMemoryDb(":memory:");
 
   upsertMemory(db, {
-    kind: 'fact',
-    title: 'User prefers conservative startup injection',
-    summary: 'Inject only short high-confidence memory briefs.',
+    kind: "fact",
+    title: "User prefers conservative startup injection",
+    summary: "Inject only short high-confidence memory briefs.",
     rawExcerpt: null,
-    tags: ['preference'],
-    contentHash: 'hash-1',
+    tags: ["preference"],
+    contentHash: "hash-1",
   });
 
-  const results = searchMemories(db, 'conservative');
+  const results = searchMemories(db, "conservative");
 
   assert.equal(results.length, 1);
-  assert.equal(results[0].kind, 'fact');
+  assert.equal(results[0].kind, "fact");
 });
 ```
 
@@ -155,32 +149,33 @@ git commit -m "feat: add codex memory database layer"
 - [ ] **Step 1: Write the failing tests**
 
 ```js
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { redactSensitiveText } from '../lib/redact.mjs';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { redactSensitiveText } from "../lib/redact.mjs";
 
-test('redactSensitiveText masks bearer tokens and jwt-like values', () => {
-  const input = 'Authorization: Bearer secret-token abc.eyJhbGciOiJIUzI1NiJ9.xyz';
+test("redactSensitiveText masks bearer tokens and jwt-like values", () => {
+  const input =
+    "Authorization: Bearer secret-token abc.eyJhbGciOiJIUzI1NiJ9.xyz";
   const output = redactSensitiveText(input);
 
   assert.match(output, /\[REDACTED\]/);
-  assert.ok(!output.includes('secret-token'));
+  assert.ok(!output.includes("secret-token"));
 });
 ```
 
 ```js
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { normalizeHistoryLine } from '../lib/normalize.mjs';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { normalizeHistoryLine } from "../lib/normalize.mjs";
 
-test('normalizeHistoryLine turns durable preference text into a fact record', () => {
+test("normalizeHistoryLine turns durable preference text into a fact record", () => {
   const record = normalizeHistoryLine({
     ts: 1775000000,
-    text: 'User prefers conservative startup injection and global memory.',
-    session_id: 'sess-1',
+    text: "User prefers conservative startup injection and global memory.",
+    session_id: "sess-1",
   });
 
-  assert.equal(record.kind, 'fact');
+  assert.equal(record.kind, "fact");
   assert.match(record.summary, /conservative startup injection/);
 });
 ```
@@ -188,8 +183,7 @@ test('normalizeHistoryLine turns durable preference text into a fact record', ()
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run:
-`node --test /Users/danielpenin/.codex/memories/codex-mem/test/redact.test.mjs
-/Users/danielpenin/.codex/memories/codex-mem/test/normalize.test.mjs`
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/redact.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/normalize.test.mjs`
 Expected: FAIL because the modules do not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -204,8 +198,7 @@ Code must:
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run:
-`node --test /Users/danielpenin/.codex/memories/codex-mem/test/redact.test.mjs
-/Users/danielpenin/.codex/memories/codex-mem/test/normalize.test.mjs`
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/redact.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/normalize.test.mjs`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -236,9 +229,7 @@ Tests must prove:
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run:
-`node --test
-/Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs
-/Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
 Expected: FAIL because ingestion modules do not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -253,9 +244,7 @@ Code must:
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run:
-`node --test
-/Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs
-/Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/ingest-history.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/ingest-sessions.test.mjs`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -285,8 +274,7 @@ Tests must prove:
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run:
-`node --test /Users/danielpenin/.codex/memories/codex-mem/test/search.test.mjs
-/Users/danielpenin/.codex/memories/codex-mem/test/brief.test.mjs`
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/search.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/brief.test.mjs`
 Expected: FAIL because ranking modules do not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -300,8 +288,7 @@ Code must:
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run:
-`node --test /Users/danielpenin/.codex/memories/codex-mem/test/search.test.mjs
-/Users/danielpenin/.codex/memories/codex-mem/test/brief.test.mjs`
+`node --test /Users/danielpenin/.codex/memories/codex-mem/test/search.test.mjs /Users/danielpenin/.codex/memories/codex-mem/test/brief.test.mjs`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -376,8 +363,7 @@ Verification goal:
 - [ ] **Step 2: Run verification to confirm absence**
 
 Run:
-`find /Users/danielpenin/.agents/skills -maxdepth 2 -type f | rg
-'codex-memory-(bootstrap|search|admin)'`
+`find /Users/danielpenin/.agents/skills -maxdepth 2 -type f | rg 'codex-memory-(bootstrap|search|admin)'`
 Expected: no matches before creation.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -392,8 +378,7 @@ Each skill must:
 - [ ] **Step 4: Run verification to confirm install**
 
 Run:
-`find /Users/danielpenin/.agents/skills -maxdepth 2 -type f | rg
-'codex-memory-(bootstrap|search|admin)'`
+`find /Users/danielpenin/.agents/skills -maxdepth 2 -type f | rg 'codex-memory-(bootstrap|search|admin)'`
 Expected: all three skills present.
 
 - [ ] **Step 5: Commit**
@@ -417,8 +402,7 @@ Expected: existing Codex history is indexed into the database without crashes.
 
 - [ ] **Step 2: Run service health check**
 
-Run: `curl -sS http://127.0.0.1:37777/health`
-Expected: JSON with `ok: true`
+Run: `curl -sS http://127.0.0.1:37777/health` Expected: JSON with `ok: true`
 
 - [ ] **Step 3: Run manual search smoke test**
 
@@ -430,8 +414,7 @@ Expected: at least one relevant result from prior Codex history.
 Run:
 `curl -sS 'http://127.0.0.1:37777/memory/brief?cwd=/Users/danielpenin/whatsapp_saas&q=continuar%20trabalho%20anterior'`
 Expected: a short JSON payload with compact sections or an explicit
-low-confidence no-brief
-response.
+low-confidence no-brief response.
 
 - [ ] **Step 5: Commit**
 
