@@ -95,8 +95,11 @@ export const AuthTokenResponseSchema = z.object({
   isNewUser: z.boolean().optional(),
 });
 
+/** Auth login response schema. */
 export const AuthLoginResponseSchema = AuthTokenResponseSchema;
+/** Auth register response schema. */
 export const AuthRegisterResponseSchema = AuthTokenResponseSchema;
+/** Auth google response schema. */
 export const AuthGoogleResponseSchema = AuthTokenResponseSchema;
 
 /**
@@ -262,15 +265,27 @@ export const WebhookDuplicateResponseSchema = z.object({
 // ─── Type exports ──────────────────────────────────────────────────────────
 
 export type AuthUser = z.infer<typeof AuthUserSchema>;
+/** Auth token response. */
 export type AuthTokenResponse = z.infer<typeof AuthTokenResponseSchema>;
+/** Auth check email response. */
 export type AuthCheckEmailResponse = z.infer<typeof AuthCheckEmailResponseSchema>;
+/** Auth refresh response. */
 export type AuthRefreshResponse = z.infer<typeof AuthRefreshResponseSchema>;
+/** Billing subscription response. */
 export type BillingSubscriptionResponse = z.infer<typeof BillingSubscriptionResponseSchema>;
+/** Billing checkout response. */
 export type BillingCheckoutResponse = z.infer<typeof BillingCheckoutResponseSchema>;
+/** Workspace me response. */
 export type WorkspaceMeResponse = z.infer<typeof WorkspaceMeResponseSchema>;
+/** Whats app status response. */
 export type WhatsAppStatusResponse = z.infer<typeof WhatsAppStatusResponseSchema>;
+/** Whats app start session response. */
 export type WhatsAppStartSessionResponse = z.infer<typeof WhatsAppStartSessionResponseSchema>;
+/** Whats app qr response. */
 export type WhatsAppQrResponse = z.infer<typeof WhatsAppQrResponseSchema>;
+/** Health liveness response. */
 export type HealthLivenessResponse = z.infer<typeof HealthLivenessResponseSchema>;
+/** Health readiness response. */
 export type HealthReadinessResponse = z.infer<typeof HealthReadinessResponseSchema>;
+/** Webhook duplicate response. */
 export type WebhookDuplicateResponse = z.infer<typeof WebhookDuplicateResponseSchema>;

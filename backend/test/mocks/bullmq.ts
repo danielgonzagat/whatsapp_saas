@@ -23,10 +23,13 @@ class DummyQueue {
   drain = async () => undefined;
 }
 
+/** Queue. */
 export class Queue extends DummyQueue {}
+/** Queue events. */
 export class QueueEvents extends DummyQueue {
   close = async () => undefined;
 }
+/** Worker. */
 export class Worker extends DummyQueue {
   close = async () => undefined;
 }

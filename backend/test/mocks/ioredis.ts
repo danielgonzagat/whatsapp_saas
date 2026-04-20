@@ -15,5 +15,7 @@
 import IoRedisMock from 'ioredis-mock';
 
 export default IoRedisMock;
+/** Redis. */
 export type Redis = InstanceType<typeof IoRedisMock>;
+/** Redis options. */
 export type RedisOptions = Record<string, unknown>;

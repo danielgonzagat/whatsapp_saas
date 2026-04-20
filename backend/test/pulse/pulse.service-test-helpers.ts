@@ -1,19 +1,26 @@
 import { PulseService } from '../../src/pulse/pulse.service';
 
+/** Internal async method. */
 export type InternalAsyncMethod = (...args: never[]) => Promise<unknown>;
+/** Internal task runner. */
 export type InternalTaskRunner = (label: string, task: () => Promise<unknown>) => void;
 
+/** Flush microtasks. */
 export const flushMicrotasks = () => new Promise((resolve) => setImmediate(resolve));
+/** Set internal value. */
 export const setInternalValue = (target: object, key: string, value: unknown) =>
   Object.defineProperty(target, key, { value, configurable: true });
+/** Expect nth background task call. */
 export const expectNthBackgroundTaskCall = (spy: jest.SpyInstance, index: number, label: string) =>
   expect(spy).toHaveBeenNthCalledWith(index, label, expect.anything());
+/** Spy on run background task. */
 export const spyOnRunBackgroundTask = (service: object) =>
   jest.spyOn(
     service as unknown as { runBackgroundTask: (label: string, task: () => Promise<void>) => void },
     'runBackgroundTask',
   );
 
+/** Fake redis. */
 export class FakeRedis {
   strings = new Map<string, string>();
   hashes = new Map<string, Map<string, string>>();
@@ -152,6 +159,7 @@ class FakeRedisPipeline {
   }
 }
 
+/** Create service. */
 export function createService({
   redis = new FakeRedis(),
   healthCheck = jest.fn().mockResolvedValue({ status: 'UP', details: {} }),
@@ -170,6 +178,7 @@ export function createService({
   return { service, redis, healthCheck, configGet };
 }
 
+/** Get internal async method. */
 export function getInternalAsyncMethod(service: object, name: string): InternalAsyncMethod {
   const method = Reflect.get(service, name);
   if (typeof method !== 'function') {
@@ -178,6 +187,7 @@ export function getInternalAsyncMethod(service: object, name: string): InternalA
   return method.bind(service) as InternalAsyncMethod;
 }
 
+/** Get internal task runner. */
 export function getInternalTaskRunner(service: object): InternalTaskRunner {
   const method = Reflect.get(service, 'runBackgroundTask');
   if (typeof method !== 'function') {
