@@ -95,7 +95,9 @@ export async function POST(request: NextRequest) {
     }
 
     const invalid = validateRegisterInput(body);
-    if (invalid) return invalid;
+    if (invalid) {
+      return invalid;
+    }
 
     const payload = resolveRegisterPayload(body);
     const response = await callBackendRegister(backendUrl, request, payload);

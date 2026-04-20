@@ -49,7 +49,9 @@ export function applyAgentStatsEvent<T extends AgentStatsShape>(
   event: AgentStreamEventLite,
 ): T {
   const next = { ...prev };
-  if (event.type === 'contact') applyContactEvent(next, event);
+  if (event.type === 'contact') {
+    applyContactEvent(next, event);
+  }
   if (event.type === 'sale') {
     next.leadsQualified += 1;
     next.actionsExecuted += 1;
@@ -57,18 +59,26 @@ export function applyAgentStatsEvent<T extends AgentStatsShape>(
   if (event.type === 'action' || event.type === 'proof' || event.type === 'account') {
     next.actionsExecuted += 1;
   }
-  if (event.type === 'backlog' || event.type === 'prompt') applyBacklogEvent(next, event);
+  if (event.type === 'backlog' || event.type === 'prompt') {
+    applyBacklogEvent(next, event);
+  }
   if (event.type === 'status' && typeof event.meta?.importedMessages === 'number') {
     next.messagesReceived = Math.max(next.messagesReceived, event.meta.importedMessages);
   }
-  if (event.type === 'summary') next.activeConversations = 0;
+  if (event.type === 'summary') {
+    next.activeConversations = 0;
+  }
   return next;
 }
 
 export function parseGuestStreamLine(line: string): GuestStreamLineUpdate | null {
-  if (!line.startsWith('data: ')) return null;
+  if (!line.startsWith('data: ')) {
+    return null;
+  }
   const data = line.slice(6);
-  if (data === '[DONE]') return null;
+  if (data === '[DONE]') {
+    return null;
+  }
   try {
     const parsed = JSON.parse(data) as {
       error?: unknown;
@@ -77,8 +87,7 @@ export function parseGuestStreamLine(line: string): GuestStreamLineUpdate | null
       message?: unknown;
     };
     if (parsed.error) {
-      const fallback =
-        'Desculpe, tive uma instabilidade agora. Tenta de novo em alguns segundos.';
+      const fallback = 'Desculpe, tive uma instabilidade agora. Tenta de novo em alguns segundos.';
       const raw = parsed.content ?? parsed.chunk ?? parsed.message ?? fallback;
       return { errorContent: String(raw) };
     }

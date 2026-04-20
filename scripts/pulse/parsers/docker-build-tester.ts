@@ -49,10 +49,7 @@ interface ServiceDef {
 }
 
 function readDockerfile(serviceDir: string): string | null {
-  const candidates = [
-    path.join(serviceDir, 'Dockerfile'),
-    path.join(serviceDir, 'dockerfile'),
-  ];
+  const candidates = [path.join(serviceDir, 'Dockerfile'), path.join(serviceDir, 'dockerfile')];
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) {
       return readFileSafe(candidate);
@@ -81,7 +78,9 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
 
   // --- Check 1: Dockerfile existence ---
   for (const svc of services) {
-    if (svc.isVercelDeployed) continue; // Vercel doesn't need a Dockerfile
+    if (svc.isVercelDeployed) {
+      continue;
+    } // Vercel doesn't need a Dockerfile
     const dfPath = dockerfilePath(svc.dir);
     if (!fs.existsSync(dfPath)) {
       breaks.push({
@@ -108,16 +107,21 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
       file: composePath,
       line: 0,
       description: 'No docker-compose.yml found',
-      detail: 'docker-compose.yml not found in project root. Local development and integration testing setup is missing.',
+      detail:
+        'docker-compose.yml not found in project root. Local development and integration testing setup is missing.',
     });
   }
 
   // --- Per-service Dockerfile static analysis ---
   for (const svc of services) {
-    if (svc.isVercelDeployed) continue;
+    if (svc.isVercelDeployed) {
+      continue;
+    }
     const dfPath = dockerfilePath(svc.dir);
     const content = readDockerfile(svc.dir);
-    if (!content) continue;
+    if (!content) {
+      continue;
+    }
 
     const lines = content.split('\n');
 
@@ -135,7 +139,7 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
     }
 
     // Check 4: Multi-stage build (frontend should have it; backend/worker optional but preferred)
-    const fromLines = lines.filter(l => /^FROM\s+/i.test(l));
+    const fromLines = lines.filter((l) => /^FROM\s+/i.test(l));
     const hasMultiStage = fromLines.length > 1 || /FROM\s+\S+\s+AS\s+\w+/i.test(content);
     if (!hasMultiStage && svc.name === 'frontend') {
       breaks.push({
@@ -152,7 +156,10 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (/^FROM\s+/i.test(line)) {
-        const imageRef = line.replace(/^FROM\s+/i, '').replace(/\s+AS\s+\w+$/i, '').trim();
+        const imageRef = line
+          .replace(/^FROM\s+/i, '')
+          .replace(/\s+AS\s+\w+$/i, '')
+          .trim();
         if (/:latest$/.test(imageRef) || !/:[a-z0-9]/.test(imageRef)) {
           breaks.push({
             type: 'DOCKER_BUILD_FAILS',
@@ -180,8 +187,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
     }
 
     // Check 7: COPY . . before npm ci (cache busting)
-    const copyAllIdx = lines.findIndex(l => /^COPY\s+\.\s+\./m.test(l));
-    const npmCiIdx = lines.findIndex(l => /npm\s+ci\b/m.test(l));
+    const copyAllIdx = lines.findIndex((l) => /^COPY\s+\.\s+\./m.test(l));
+    const npmCiIdx = lines.findIndex((l) => /npm\s+ci\b/m.test(l));
     if (copyAllIdx !== -1 && npmCiIdx !== -1 && copyAllIdx < npmCiIdx) {
       breaks.push({
         type: 'DOCKER_BUILD_FAILS',
@@ -189,7 +196,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
         file: dfPath,
         line: copyAllIdx + 1,
         description: `${svc.name} Dockerfile copies all files before npm ci (breaks layer cache)`,
-        detail: `${svc.name}/Dockerfile: "COPY . ." appears before "npm ci" at line ${copyAllIdx + 1}. ` +
+        detail:
+          `${svc.name}/Dockerfile: "COPY . ." appears before "npm ci" at line ${copyAllIdx + 1}. ` +
           `Every source change invalidates the npm install layer. Move "COPY package*.json ./" and "npm ci" before "COPY . .".`,
       });
     }
@@ -203,7 +211,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
         file: dockerignorePath,
         line: 0,
         description: `${svc.name} missing .dockerignore`,
-        detail: `${svc.name}/.dockerignore not found. The Docker build context will include node_modules, .git, and .env files, ` +
+        detail:
+          `${svc.name}/.dockerignore not found. The Docker build context will include node_modules, .git, and .env files, ` +
           `making builds slow and potentially leaking secrets.`,
       });
     } else {
@@ -216,7 +225,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
           file: dockerignorePath,
           line: 0,
           description: `${svc.name} .dockerignore does not exclude node_modules`,
-          detail: `${svc.name}/.dockerignore exists but does not exclude "node_modules". ` +
+          detail:
+            `${svc.name}/.dockerignore exists but does not exclude "node_modules". ` +
             `Sending node_modules in build context dramatically slows builds.`,
         });
       }
@@ -228,7 +238,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
           file: dockerignorePath,
           line: 0,
           description: `${svc.name} .dockerignore does not exclude .env files`,
-          detail: `${svc.name}/.dockerignore does not exclude ".env" files. ` +
+          detail:
+            `${svc.name}/.dockerignore does not exclude ".env" files. ` +
             `Secrets may be accidentally included in the Docker build context.`,
         });
       }
@@ -243,13 +254,17 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
     // Check 9: Services have restart policy
     const appServices = ['backend', 'worker', 'frontend'];
     for (const svcName of appServices) {
-      const svcIdx = composeLines.findIndex(l => new RegExp(`^  ${svcName}:`).test(l));
-      if (svcIdx === -1) continue;
+      const svcIdx = composeLines.findIndex((l) => new RegExp(`^  ${svcName}:`).test(l));
+      if (svcIdx === -1) {
+        continue;
+      }
 
       // Extract this service's block (until next top-level service)
       let svcBlock = '';
       for (let i = svcIdx; i < composeLines.length; i++) {
-        if (i > svcIdx && /^  \w+:/.test(composeLines[i])) break;
+        if (i > svcIdx && /^  \w+:/.test(composeLines[i])) {
+          break;
+        }
         svcBlock += composeLines[i] + '\n';
       }
 
@@ -261,7 +276,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
           file: actualComposePath,
           line: svcIdx + 1,
           description: `docker-compose ${svcName} service missing restart policy`,
-          detail: `docker-compose.yml: "${svcName}" service has no "restart:" policy. ` +
+          detail:
+            `docker-compose.yml: "${svcName}" service has no "restart:" policy. ` +
             `Crashed containers will not be restarted automatically in local/staging environments.`,
         });
       }
@@ -277,7 +293,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
             file: actualComposePath,
             line: svcIdx + 1,
             description: `docker-compose ${svcName} depends_on without healthcheck condition`,
-            detail: `docker-compose.yml: "${svcName}" uses depends_on without "condition: service_healthy". ` +
+            detail:
+              `docker-compose.yml: "${svcName}" uses depends_on without "condition: service_healthy". ` +
               `The service may start before the database is ready, causing connection errors.`,
           });
         }
@@ -288,7 +305,9 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
     // Exclude placeholder patterns like ${VAR:-default} and obvious dev defaults
     const hardcodedSecretLine = composeLines.findIndex((line, idx) => {
       // Skip comments
-      if (/^\s*#/.test(line)) return false;
+      if (/^\s*#/.test(line)) {
+        return false;
+      }
       // Look for KEY: value where value is a long token not from env var
       return /:\s+(?!\$\{)[A-Za-z0-9+/=_-]{32,}/.test(line);
     });
@@ -299,7 +318,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
         file: actualComposePath,
         line: hardcodedSecretLine + 1,
         description: 'docker-compose.yml may contain hardcoded secrets',
-        detail: `docker-compose.yml line ${hardcodedSecretLine + 1}: Found a long value that does not reference \${ENV_VAR}. ` +
+        detail:
+          `docker-compose.yml line ${hardcodedSecretLine + 1}: Found a long value that does not reference \${ENV_VAR}. ` +
           `Use env_file or \${SECRET} references — never hardcode tokens in compose files.`,
       });
     }

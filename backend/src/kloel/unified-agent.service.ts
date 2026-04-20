@@ -1654,11 +1654,15 @@ Mensagem: ${message}`,
         const coupon = await this.prisma.productCoupon.findFirst({
           where: { productId: this.str(args.productId), code: this.str(args.code), active: true },
         });
-        if (!coupon) return { valid: false, reason: 'not_found' };
-        if (coupon.maxUses && coupon.usedCount >= coupon.maxUses)
+        if (!coupon) {
+          return { valid: false, reason: 'not_found' };
+        }
+        if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
           return { valid: false, reason: 'max_uses_reached' };
-        if (coupon.expiresAt && coupon.expiresAt < new Date())
+        }
+        if (coupon.expiresAt && coupon.expiresAt < new Date()) {
           return { valid: false, reason: 'expired' };
+        }
         return { valid: true, coupon };
       }
 
@@ -2022,7 +2026,9 @@ Mensagem: ${message}`,
   }
 
   private async actionUpdateLeadStatus(workspaceId: string, contactId: string, args: ToolArgs) {
-    if (!contactId) return { success: false, error: 'No contact ID' };
+    if (!contactId) {
+      return { success: false, error: 'No contact ID' };
+    }
     const statusVal = this.str(args.status);
     const intentVal = this.str(args.intent);
 
@@ -2043,7 +2049,9 @@ Mensagem: ${message}`,
   }
 
   private async actionAddTag(workspaceId: string, contactId: string, args: ToolArgs) {
-    if (!contactId) return { success: false, error: 'No contact ID' };
+    if (!contactId) {
+      return { success: false, error: 'No contact ID' };
+    }
     const tagName = this.str(args.tag);
 
     // Wrap find-or-create + connect in $transaction to prevent concurrent
@@ -2707,10 +2715,11 @@ Mensagem: ${message}`,
       if (objections && Array.isArray(objections) && objections.length > 0) {
         aiConfigContext.push('OBJEÇÕES E RESPOSTAS:');
         for (const obj of objections) {
-          if (obj.q && obj.a)
+          if (obj.q && obj.a) {
             aiConfigContext.push(
               `  - Objeção: "${this.str(obj.q)}" → Resposta: "${this.str(obj.a)}"`,
             );
+          }
         }
       }
       if (cfg.tone) {
@@ -2829,9 +2838,15 @@ Mensagem: ${message}`,
 
   private isUsableLeadName(name?: string | null): boolean {
     const normalized = String(name || '').trim();
-    if (!normalized) return false;
-    if (D__D_S_RE.test(normalized)) return false;
-    if (CONTATO_RE.test(normalized)) return false;
+    if (!normalized) {
+      return false;
+    }
+    if (D__D_S_RE.test(normalized)) {
+      return false;
+    }
+    if (CONTATO_RE.test(normalized)) {
+      return false;
+    }
     return true;
   }
 
@@ -2929,7 +2944,9 @@ Mensagem: ${message}`,
           tags: { select: { name: true } },
         },
       });
-      if (contact) return contact;
+      if (contact) {
+        return contact;
+      }
     }
 
     // Buscar por telefone
@@ -2971,7 +2988,9 @@ Mensagem: ${message}`,
         ? { workspaceId, contact: { phone } }
         : null;
 
-    if (!where) return [];
+    if (!where) {
+      return [];
+    }
 
     const messages = await this.prisma.message.findMany({
       where,
@@ -3410,7 +3429,9 @@ Mensagem: ${message}`,
   }
 
   private extractIntent(actions: Array<{ tool: string; args: unknown }>, _message: string): string {
-    if (actions.length === 0) return 'IDLE';
+    if (actions.length === 0) {
+      return 'IDLE';
+    }
 
     const toolIntentMap: Record<string, string> = {
       create_payment_link: 'BUYING',
@@ -3475,7 +3496,9 @@ Mensagem: ${message}`,
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-      if (isTestEnv) return;
+      if (isTestEnv) {
+        return;
+      }
 
       const code = (err as { code?: string } | null)?.code;
       if (code === 'P2003') {
@@ -3575,7 +3598,9 @@ Mensagem: ${message}`,
       return { success: true as const };
     });
 
-    if (!result.success) return result;
+    if (!result.success) {
+      return result;
+    }
 
     return {
       success: true,

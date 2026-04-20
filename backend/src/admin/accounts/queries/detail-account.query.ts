@@ -109,7 +109,9 @@ function extractAccountAdminState(workspace: AdminAccountWorkspaceRow): Record<s
 }
 
 function trimmedStringOrNull(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
+  if (typeof value !== 'string') {
+    return null;
+  }
   const trimmed = value.trim();
   return trimmed || null;
 }
@@ -258,7 +260,9 @@ export async function getAdminAccountDetail(
   workspaceId: string,
 ): Promise<AdminAccountDetail | null> {
   const workspace = await loadWorkspaceForAdmin(prisma, workspaceId);
-  if (!workspace) return null;
+  if (!workspace) {
+    return null;
+  }
 
   const counts = await loadGmvAndCounts(prisma, workspaceId);
   return buildAdminAccountDetail(workspace, counts);

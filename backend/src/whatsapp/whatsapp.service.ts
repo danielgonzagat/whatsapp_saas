@@ -178,7 +178,9 @@ export class WhatsappService {
 
     return Array.from(merged.values()).sort((a, b) => {
       const byUpdatedAt = (b.updatedAt || '').localeCompare(a.updatedAt || '');
-      if (byUpdatedAt !== 0) return byUpdatedAt;
+      if (byUpdatedAt !== 0) {
+        return byUpdatedAt;
+      }
       return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
     });
   }
@@ -317,7 +319,9 @@ export class WhatsappService {
 
     for (const conversation of localConversations) {
       const phone = this.normalizeNumber(conversation.contact?.phone || '');
-      if (!phone) continue;
+      if (!phone) {
+        continue;
+      }
 
       const existing = merged.get(phone);
       const timestamp = existing?.timestamp || conversation.lastMessageAt?.getTime() || 0;
@@ -465,7 +469,9 @@ export class WhatsappService {
     const localByPhone = new Map<string, ConversationOperationalState>();
     for (const conversation of localConversations) {
       const phone = this.normalizeNumber(conversation.phone || '');
-      if (!phone) continue;
+      if (!phone) {
+        continue;
+      }
 
       const existing = localByPhone.get(phone);
       const currentTimestamp = this.resolveTimestamp({ createdAt: conversation.lastMessageAt });
@@ -482,7 +488,9 @@ export class WhatsappService {
     a: ReturnType<WhatsappService['buildOperationalBacklogItem']>,
     b: ReturnType<WhatsappService['buildOperationalBacklogItem']>,
   ): number {
-    if (a.pending !== b.pending) return Number(b.pending) - Number(a.pending);
+    if (a.pending !== b.pending) {
+      return Number(b.pending) - Number(a.pending);
+    }
     if (a.lastMessageTimestamp !== b.lastMessageTimestamp) {
       return b.lastMessageTimestamp - a.lastMessageTimestamp;
     }
@@ -993,7 +1001,9 @@ export class WhatsappService {
   }
 
   private normalizeJsonObject(value: unknown): Record<string, unknown> {
-    if (!value) return {};
+    if (!value) {
+      return {};
+    }
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value);
@@ -1488,7 +1498,9 @@ export class WhatsappService {
       where: { workspaceId_phone: { workspaceId, phone } },
       select: { id: true },
     });
-    if (!contact) return { ok: true };
+    if (!contact) {
+      return { ok: true };
+    }
 
     // Update optIn field directly (LGPD/GDPR compliance)
     await this.prisma.contact.updateMany({
@@ -2138,7 +2150,9 @@ export class WhatsappService {
         : this.providerRegistry.extractPhoneFromChatId(rawId),
     );
 
-    if (!phone) return null;
+    if (!phone) {
+      return null;
+    }
 
     const pushNameRaw = c?.pushName || c?.pushname;
     const pushName = typeof pushNameRaw === 'string' && pushNameRaw.trim() ? pushNameRaw : null;
@@ -2200,7 +2214,9 @@ export class WhatsappService {
         : this.providerRegistry.extractPhoneFromChatId(rawId),
     );
 
-    if (!rawId || !phone) return null;
+    if (!rawId || !phone) {
+      return null;
+    }
 
     const timestamp = this.resolveTimestamp(chat);
     const unreadCount = Number(chat?.unreadCount || chat?.unread || 0) || 0;
@@ -2264,7 +2280,9 @@ export class WhatsappService {
       ) ?? fallbackChatId,
     );
 
-    if (!id || !chatId) return null;
+    if (!id || !chatId) {
+      return null;
+    }
 
     const phone = this.normalizeNumber(
       typeof message?.phone === 'string'

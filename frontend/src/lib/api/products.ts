@@ -23,9 +23,15 @@ export const productApi = {
   getStats: async () => apiFetch<Record<string, unknown>>('/products/stats'),
   list: (params?: { category?: string; active?: boolean; search?: string }) => {
     const search = new URLSearchParams();
-    if (params?.category) search.set('category', params.category);
-    if (typeof params?.active === 'boolean') search.set('active', String(params.active));
-    if (params?.search) search.set('search', params.search);
+    if (params?.category) {
+      search.set('category', params.category);
+    }
+    if (typeof params?.active === 'boolean') {
+      search.set('active', String(params.active));
+    }
+    if (params?.search) {
+      search.set('search', params.search);
+    }
     const qs = search.toString();
     return apiFetch<{ products: CatalogProduct[]; count: number }>(
       `/products${qs ? `?${qs}` : ''}`,

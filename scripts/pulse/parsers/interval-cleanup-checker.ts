@@ -28,7 +28,9 @@ function isReactFile(content: string): boolean {
  */
 function firstMatchLine(lines: string[], re: RegExp): number {
   for (let i = 0; i < lines.length; i++) {
-    if (re.test(lines[i])) return i + 1;
+    if (re.test(lines[i])) {
+      return i + 1;
+    }
   }
   return 1;
 }
@@ -36,9 +38,13 @@ function firstMatchLine(lines: string[], re: RegExp): number {
 export function checkIntervalCleanup(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const files = walkFiles(config.frontendDir, ['.tsx', '.ts']).filter(f => {
-    if (/\.(spec|test)\.(ts|tsx)$/.test(f)) return false;
-    if (/node_modules|\.next[/\\]/.test(f)) return false;
+  const files = walkFiles(config.frontendDir, ['.tsx', '.ts']).filter((f) => {
+    if (/\.(spec|test)\.(ts|tsx)$/.test(f)) {
+      return false;
+    }
+    if (/node_modules|\.next[/\\]/.test(f)) {
+      return false;
+    }
     return true;
   });
 
@@ -51,7 +57,9 @@ export function checkIntervalCleanup(config: PulseConfig): Break[] {
     }
 
     // Only check React/client files
-    if (!isReactFile(content)) continue;
+    if (!isReactFile(content)) {
+      continue;
+    }
 
     const relFile = path.relative(config.rootDir, file);
     const lines = content.split('\n');
@@ -78,7 +86,8 @@ export function checkIntervalCleanup(config: PulseConfig): Break[] {
         severity: 'medium',
         file: relFile,
         line: ln,
-        description: 'setTimeout used without clearTimeout — potential stale closure / state update after unmount',
+        description:
+          'setTimeout used without clearTimeout — potential stale closure / state update after unmount',
         detail:
           'Capture the timer id and return clearTimeout(id) from the useEffect cleanup function.',
       });

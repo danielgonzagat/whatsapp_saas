@@ -12,7 +12,9 @@ const DEFAULT_SAMPLE_RATE = 0.35;
 const SAMPLE_ROTATION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function getSessionId() {
-  if (typeof window === 'undefined') return '';
+  if (typeof window === 'undefined') {
+    return '';
+  }
 
   const existing = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
   if (existing) {
@@ -118,8 +120,12 @@ function resolveSampleRate() {
 }
 
 function shouldSampleSession(seed: string, sampleRate: number) {
-  if (sampleRate >= 1) return true;
-  if (sampleRate <= 0) return false;
+  if (sampleRate >= 1) {
+    return true;
+  }
+  if (sampleRate <= 0) {
+    return false;
+  }
 
   let hash = 0;
   for (let index = 0; index < seed.length; index += 1) {

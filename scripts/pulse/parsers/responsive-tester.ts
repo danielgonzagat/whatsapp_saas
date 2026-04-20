@@ -84,7 +84,7 @@ export function checkResponsive(config: PulseConfig): Break[] {
   // ── Secondary check: aggregate @media across all frontend files ─────────────
   // If the entire frontend has fewer than 5 @media queries, responsive design is likely absent
   const allFrontendFiles = walkFiles(config.frontendDir, ['.tsx', '.ts', '.css', '.scss']).filter(
-    f => !/node_modules|\.next\/|dist\//.test(f),
+    (f) => !/node_modules|\.next\/|dist\//.test(f),
   );
 
   let totalMedia = 0;

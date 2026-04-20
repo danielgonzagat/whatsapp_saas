@@ -39,12 +39,16 @@ export function OnboardingModal({
 
   useEffect(
     () => () => {
-      if (finishTimer.current) clearTimeout(finishTimer.current);
+      if (finishTimer.current) {
+        clearTimeout(finishTimer.current);
+      }
     },
     [],
   );
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleNext = () => {
     if (step < 3) {
@@ -63,7 +67,9 @@ export function OnboardingModal({
 
   const handleFinish = () => {
     setIsCompleted(true);
-    if (finishTimer.current) clearTimeout(finishTimer.current);
+    if (finishTimer.current) {
+      clearTimeout(finishTimer.current);
+    }
     finishTimer.current = setTimeout(() => {
       onComplete();
     }, 2000);

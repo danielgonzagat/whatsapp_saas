@@ -11,7 +11,9 @@ export default function StockCounter({
   count,
   accentColor = '#EF4444',
 }: StockCounterProps) {
-  if (count <= 0) return null;
+  if (count <= 0) {
+    return null;
+  }
 
   return (
     <div

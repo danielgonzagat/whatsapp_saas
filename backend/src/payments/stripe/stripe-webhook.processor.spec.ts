@@ -62,6 +62,7 @@ const buildPaymentIntent = (overrides: Partial<StripePaymentIntent> = {}): Strip
   ({
     id: 'pi_sale_xyz',
     on_behalf_of: 'acct_seller',
+    latest_charge: 'ch_sale_xyz',
     currency: 'brl',
     transfer_group: 'sale:order_xyz',
     metadata: {
@@ -130,7 +131,7 @@ describe('StripeWebhookProcessor.processSaleSucceeded — happy path', () => {
     expect(ledger.creditPending).toHaveBeenCalledTimes(5);
   });
 
-  it('passes idempotency key + stripeAccount + transfer_group to each transfers.create call', async () => {
+  it('passes idempotency key + source_transaction + transfer_group to each transfers.create call', async () => {
     const stripe = makeStripeStub();
     const connect = makeConnectStub({
       acct_supplier: 'cab_supplier',
@@ -157,9 +158,10 @@ describe('StripeWebhookProcessor.processSaleSucceeded — happy path', () => {
         amount: 4_210,
         currency: 'brl',
         destination: 'acct_supplier',
+        source_transaction: 'ch_sale_xyz',
         transfer_group: 'sale:order_xyz',
       }),
-      { stripeAccount: 'acct_seller', idempotencyKey: 'pi_sale_xyz:supplier' },
+      { idempotencyKey: 'pi_sale_xyz:supplier' },
     );
   });
 
@@ -237,7 +239,7 @@ describe('StripeWebhookProcessor.processSaleSucceeded — short-circuits', () =>
     expect(stripe.stripe.transfers.create).not.toHaveBeenCalled();
   });
 
-  it('skips when on_behalf_of is missing (cannot dispatch transfers from seller)', async () => {
+  it('skips when latest_charge is missing (cannot associate fan-out transfers to the source charge)', async () => {
     const stripe = makeStripeStub();
     const connect = makeConnectStub({ acct_supplier: 'cab_supplier' });
     const ledger = makeLedgerStub();
@@ -245,7 +247,7 @@ describe('StripeWebhookProcessor.processSaleSucceeded — short-circuits', () =>
 
     const result = await processor.processSaleSucceeded(
       buildPaymentIntent({
-        on_behalf_of: null,
+        latest_charge: null,
         metadata: {
           type: 'sale',
           split_lines: JSON.stringify([

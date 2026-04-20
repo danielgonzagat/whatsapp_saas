@@ -22,9 +22,13 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
   const dirs = [config.backendDir, config.workerDir].filter(Boolean);
 
   for (const dir of dirs) {
-    const files = walkFiles(dir, ['.ts']).filter(f => {
-      if (/\.(spec|test|d)\.ts$/.test(f)) return false;
-      if (/node_modules/.test(f)) return false;
+    const files = walkFiles(dir, ['.ts']).filter((f) => {
+      if (/\.(spec|test|d)\.ts$/.test(f)) {
+        return false;
+      }
+      if (/node_modules/.test(f)) {
+        return false;
+      }
       return true;
     });
 
@@ -43,19 +47,29 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
         const trimmed = lines[i].trim();
 
         // Skip comments
-        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+          continue;
+        }
 
         // ---- Check bare fetch() calls ----
         // Match both fetch() and globalThis.fetch() / (global as any).fetch()
         if (/(?:^|[^a-zA-Z0-9_$])fetch\s*\(/.test(trimmed)) {
           // Skip internal wrapper definitions (apiFetch, swrFetcher)
-          if (isFetchWrapperDefinition(lines, i)) continue;
+          if (isFetchWrapperDefinition(lines, i)) {
+            continue;
+          }
           // Skip if line uses internal wrappers
-          if (INTERNAL_FETCH_WRAPPERS.test(trimmed)) continue;
+          if (INTERNAL_FETCH_WRAPPERS.test(trimmed)) {
+            continue;
+          }
           // Skip string occurrences and imports
-          if (/from\s+['"`]|import\s+/.test(trimmed)) continue;
+          if (/from\s+['"`]|import\s+/.test(trimmed)) {
+            continue;
+          }
           // Skip mock/test fetch references
-          if (/jest\.fn|mock|stub/i.test(trimmed)) continue;
+          if (/jest\.fn|mock|stub/i.test(trimmed)) {
+            continue;
+          }
 
           // Scan the next FETCH_WINDOW_LINES lines for timeout signals.
           // Also look back up to 10 lines for an AbortController that may be passed as a pre-built options variable.
@@ -83,7 +97,9 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
         // Match axios.get/post/put/patch/delete/request/create
         if (/\baxios\s*\./.test(trimmed)) {
           // Skip imports and type references
-          if (/import\s+|from\s+['"`]/.test(trimmed)) continue;
+          if (/import\s+|from\s+['"`]/.test(trimmed)) {
+            continue;
+          }
           // Skip axios.create() that sets a default timeout in the options
           // (those are fine if they set timeout there)
 

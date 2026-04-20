@@ -127,17 +127,23 @@ export function MediaPreviewBox({
         aria-busy={uploading}
         aria-label="Selecionar arquivo de mídia"
         onDragOver={(event) => {
-          if (uploading) return;
+          if (uploading) {
+            return;
+          }
           event.preventDefault();
           setDragActive(true);
         }}
         onDragLeave={() => setDragActive(false)}
         onDrop={(event) => {
-          if (uploading) return;
+          if (uploading) {
+            return;
+          }
           event.preventDefault();
           setDragActive(false);
           const file = event.dataTransfer.files?.[0];
-          if (file) onSelectFile(file);
+          if (file) {
+            onSelectFile(file);
+          }
         }}
         style={frameStyle}
       >
@@ -277,7 +283,9 @@ export function MediaPreviewBox({
         style={{ display: 'none' }}
         onChange={(event) => {
           const file = event.target.files?.[0];
-          if (file) onSelectFile(file);
+          if (file) {
+            onSelectFile(file);
+          }
           event.target.value = '';
         }}
       />

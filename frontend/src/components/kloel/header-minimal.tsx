@@ -170,7 +170,9 @@ export function HeaderMinimal({
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    if (typeof window === 'undefined') return;
+                    if (typeof window === 'undefined') {
+                      return;
+                    }
                     window.location.assign(
                       buildAuthUrl('/login?forceAuth=1', window.location.host),
                     );
@@ -185,7 +187,9 @@ export function HeaderMinimal({
                 </Button>
                 <Button
                   onClick={() => {
-                    if (typeof window === 'undefined') return;
+                    if (typeof window === 'undefined') {
+                      return;
+                    }
                     window.location.assign(
                       buildAuthUrl('/register?forceAuth=1', window.location.host),
                     );

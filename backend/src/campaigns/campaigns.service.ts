@@ -110,7 +110,9 @@ export class CampaignsService {
       const targetHour = bestTime.bestHour;
 
       let hoursToAdd = targetHour - currentHour;
-      if (hoursToAdd <= 0) hoursToAdd += 24;
+      if (hoursToAdd <= 0) {
+        hoursToAdd += 24;
+      }
 
       delay = hoursToAdd * 60 * 60 * 1000;
     }
@@ -238,7 +240,9 @@ export class CampaignsService {
     const missing: string[] = [];
 
     const status = settings?.whatsappApiSession?.status;
-    if (status !== 'connected') missing.push('whatsappApiSession.status=connected');
+    if (status !== 'connected') {
+      missing.push('whatsappApiSession.status=connected');
+    }
 
     if (missing.length) {
       throw new BadRequestException(
@@ -256,26 +260,31 @@ export class CampaignsService {
     variants = 3,
   ): Promise<{ created: number; variantIds: string[] }> {
     const base = await this.findOne(workspaceId, id);
-    if (!base) throw new NotFoundException('Campaign not found');
+    if (!base) {
+      throw new NotFoundException('Campaign not found');
+    }
     const variantIds: string[] = [];
 
-    await forEachSequential(Array.from({ length: Math.max(1, Math.min(variants, 10)) }), async (_, i) => {
-      const mutatedMessage = await this.mutateCopy(base.messageTemplate, i);
-      // PULSE:OK — each variant depends on mutateCopy result; sequential creation required
-      const variant = await this.prisma.campaign.create({
-        data: {
-          name: `${base.name} - Var ${i + 1}`,
-          status: 'DRAFT',
-          messageTemplate: mutatedMessage,
-          filters: base.filters,
-          stats: { sent: 0, replied: 0 },
-          aiStrategy: base.aiStrategy,
-          parentId: base.id,
-          workspaceId,
-        },
-      });
-      variantIds.push(variant.id);
-    });
+    await forEachSequential(
+      Array.from({ length: Math.max(1, Math.min(variants, 10)) }),
+      async (_, i) => {
+        const mutatedMessage = await this.mutateCopy(base.messageTemplate, i);
+        // PULSE:OK — each variant depends on mutateCopy result; sequential creation required
+        const variant = await this.prisma.campaign.create({
+          data: {
+            name: `${base.name} - Var ${i + 1}`,
+            status: 'DRAFT',
+            messageTemplate: mutatedMessage,
+            filters: base.filters,
+            stats: { sent: 0, replied: 0 },
+            aiStrategy: base.aiStrategy,
+            parentId: base.id,
+            workspaceId,
+          },
+        });
+        variantIds.push(variant.id);
+      },
+    );
 
     return { created: variantIds.length, variantIds };
   }
@@ -336,7 +345,9 @@ export class CampaignsService {
     const stats = (c?.stats || {}) as Record<string, number>;
     const sent = stats.sent || 0;
     const replied = stats.replied || 0;
-    if (!sent) return 0;
+    if (!sent) {
+      return 0;
+    }
     const conv = replied / sent;
     return conv;
   }
@@ -369,7 +380,9 @@ Retorne apenas a nova mensagem.`;
     const campaign = await this.prisma.campaign.findFirst({
       where: { id, workspaceId },
     });
-    if (!campaign) throw new NotFoundException('Campaign not found');
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found');
+    }
     if (campaign.status !== 'RUNNING' && campaign.status !== 'SCHEDULED') {
       throw new BadRequestException('Only running or scheduled campaigns can be paused');
     }

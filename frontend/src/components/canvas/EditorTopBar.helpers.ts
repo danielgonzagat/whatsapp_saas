@@ -31,6 +31,8 @@ export function parseCustomDimensions(
 ): { width: number; height: number } | null {
   const width = Number.parseInt(w, 10);
   const height = Number.parseInt(h, 10);
-  if (!(width > 0) || !(height > 0)) return null;
+  if (!(width > 0) || !(height > 0)) {
+    return null;
+  }
   return { width, height };
 }

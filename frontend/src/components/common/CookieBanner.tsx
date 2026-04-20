@@ -20,7 +20,9 @@ export default function CookieBanner() {
     }
   }, []);
 
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
 
   const handleAccept = () => {
     try {

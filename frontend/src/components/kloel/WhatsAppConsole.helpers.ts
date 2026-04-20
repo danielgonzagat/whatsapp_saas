@@ -29,8 +29,12 @@ function parseDateFromNumber(value: number): Date | null {
 
 function parseDateFromString(value: string): Date | null {
   const trimmed = value.trim();
-  if (!trimmed) return null;
-  if (D_RE.test(trimmed)) return parseDateLike(Number(trimmed));
+  if (!trimmed) {
+    return null;
+  }
+  if (D_RE.test(trimmed)) {
+    return parseDateLike(Number(trimmed));
+  }
   const parsed = new Date(trimmed);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
@@ -38,7 +42,9 @@ function parseDateFromString(value: string): Date | null {
 function pickFirstDateCandidate(candidate: Record<string, unknown>): unknown {
   for (const field of DATE_CANDIDATE_FIELDS) {
     const raw = candidate[field];
-    if (raw) return raw;
+    if (raw) {
+      return raw;
+    }
   }
   return undefined;
 }
@@ -51,12 +57,18 @@ function parseDateFromObject(candidate: Record<string, unknown>): Date | null {
 }
 
 export function parseDateLike(value?: unknown): Date | null {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? null : value;
   }
-  if (typeof value === 'number') return parseDateFromNumber(value);
-  if (typeof value === 'string') return parseDateFromString(value);
+  if (typeof value === 'number') {
+    return parseDateFromNumber(value);
+  }
+  if (typeof value === 'string') {
+    return parseDateFromString(value);
+  }
   if (typeof value === 'object') {
     return parseDateFromObject(value as Record<string, unknown>);
   }
@@ -88,19 +100,27 @@ function extractPreviewFromArray(value: unknown[]): string {
 function extractPreviewFromObject(candidate: Record<string, unknown>): string {
   for (const field of PREVIEW_TEXT_FIELDS) {
     const extracted = extractPreviewText(candidate[field]);
-    if (extracted) return extracted;
+    if (extracted) {
+      return extracted;
+    }
   }
   const nestedBody = (candidate._data as Record<string, unknown>)?.body;
   return extractPreviewText(nestedBody).trim();
 }
 
 export function extractPreviewText(value: unknown): string {
-  if (!value) return '';
-  if (typeof value === 'string') return value.trim();
+  if (!value) {
+    return '';
+  }
+  if (typeof value === 'string') {
+    return value.trim();
+  }
   if (typeof value === 'number' || typeof value === 'boolean') {
     return String(value).trim();
   }
-  if (Array.isArray(value)) return extractPreviewFromArray(value);
+  if (Array.isArray(value)) {
+    return extractPreviewFromArray(value);
+  }
   if (typeof value === 'object') {
     return extractPreviewFromObject(value as Record<string, unknown>);
   }
@@ -108,9 +128,13 @@ export function extractPreviewText(value: unknown): string {
 }
 
 export function formatClock(value?: string | number | Date | null) {
-  if (!value) return '';
+  if (!value) {
+    return '';
+  }
   const date = parseDateLike(value);
-  if (!date) return '';
+  if (!date) {
+    return '';
+  }
   return date.toLocaleTimeString('pt-BR', {
     hour: '2-digit',
     minute: '2-digit',
@@ -119,7 +143,9 @@ export function formatClock(value?: string | number | Date | null) {
 
 function extractChatRows(payload: unknown): Record<string, unknown>[] {
   const p = payload as Record<string, unknown> | unknown[];
-  if (Array.isArray(p)) return p as Record<string, unknown>[];
+  if (Array.isArray(p)) {
+    return p as Record<string, unknown>[];
+  }
   const inner = (p as Record<string, unknown>)?.chats;
   return (Array.isArray(inner) ? inner : []) as Record<string, unknown>[];
 }

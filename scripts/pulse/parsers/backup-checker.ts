@@ -24,8 +24,8 @@ export function checkBackup(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   // CHECK 1: Backup manifest exists and is recent
-  const manifestPath = process.env.BACKUP_MANIFEST_PATH
-    || path.join(config.rootDir, '.backup-manifest.json');
+  const manifestPath =
+    process.env.BACKUP_MANIFEST_PATH || path.join(config.rootDir, '.backup-manifest.json');
 
   let manifestFound = false;
   let manifestRecent = false;
@@ -66,7 +66,7 @@ export function checkBackup(config: PulseConfig): Break[] {
     path.join(config.rootDir, 'scripts', 'db-restore.ts'),
     path.join(config.rootDir, 'RESTORE.md'),
   ];
-  const runbookExists = runbookCandidates.some(p => fs.existsSync(p));
+  const runbookExists = runbookCandidates.some((p) => fs.existsSync(p));
   if (!runbookExists) {
     breaks.push({
       type: 'BACKUP_MISSING',
@@ -74,7 +74,7 @@ export function checkBackup(config: PulseConfig): Break[] {
       file: 'docs/RESTORE.md',
       line: 0,
       description: 'No DB restore runbook or restore script found in repo',
-      detail: `Expected one of: ${runbookCandidates.map(p => path.relative(config.rootDir, p)).join(', ')}`,
+      detail: `Expected one of: ${runbookCandidates.map((p) => path.relative(config.rootDir, p)).join(', ')}`,
     });
   }
 
@@ -83,7 +83,7 @@ export function checkBackup(config: PulseConfig): Break[] {
     path.join(config.rootDir, '.backup-validation.log'),
     path.join(config.rootDir, 'scripts', 'backup-validation.log'),
   ];
-  const validationExists = validationLogCandidates.some(p => fs.existsSync(p));
+  const validationExists = validationLogCandidates.some((p) => fs.existsSync(p));
   if (!validationExists) {
     breaks.push({
       type: 'BACKUP_MISSING',
@@ -91,7 +91,8 @@ export function checkBackup(config: PulseConfig): Break[] {
       file: '.backup-validation.log',
       line: 0,
       description: 'No backup restore-test validation log found — backup has never been verified',
-      detail: 'A restore test must be performed and logged; create .backup-validation.log with timestamp + result',
+      detail:
+        'A restore test must be performed and logged; create .backup-validation.log with timestamp + result',
     });
   }
 
@@ -105,8 +106,10 @@ export function checkBackup(config: PulseConfig): Break[] {
       severity: 'critical',
       file: '.backup-policy.json',
       line: 0,
-      description: 'Backup retention policy undefined — set BACKUP_RETENTION_DAYS env var or .backup-policy.json',
-      detail: 'Without a retention policy, old backups may be deleted before they are needed or fill storage indefinitely',
+      description:
+        'Backup retention policy undefined — set BACKUP_RETENTION_DAYS env var or .backup-policy.json',
+      detail:
+        'Without a retention policy, old backups may be deleted before they are needed or fill storage indefinitely',
     });
   }
 

@@ -74,17 +74,25 @@ export class CheckoutOrderSupport {
   }
 
   resolveProductImage(product?: { imageUrl?: string | null; images?: unknown } | null) {
-    if (!product) return undefined;
-    if (product.imageUrl) return product.imageUrl;
+    if (!product) {
+      return undefined;
+    }
+    if (product.imageUrl) {
+      return product.imageUrl;
+    }
     if (Array.isArray(product.images)) {
       const firstImage = product.images.find((entry) => typeof entry === 'string' && entry.trim());
-      if (typeof firstImage === 'string') return firstImage;
+      if (typeof firstImage === 'string') {
+        return firstImage;
+      }
     }
     return undefined;
   }
 
   parseAcceptedBumpIds(acceptedBumps?: Prisma.InputJsonValue) {
-    if (!Array.isArray(acceptedBumps)) return [];
+    if (!Array.isArray(acceptedBumps)) {
+      return [];
+    }
     return acceptedBumps
       .map((value) => String(value || '').trim())
       .filter((value) => Boolean(value));
@@ -135,7 +143,9 @@ export class CheckoutOrderSupport {
     ];
 
     for (const bump of planRecord.orderBumps || []) {
-      if (!acceptedBumpIds.includes(bump.id)) continue;
+      if (!acceptedBumpIds.includes(bump.id)) {
+        continue;
+      }
       items.push({
         id: bump.id,
         title: bump.productName || bump.title,

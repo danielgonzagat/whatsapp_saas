@@ -4,6 +4,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { ConnectService } from '../payments/connect/connect.service';
+import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -82,8 +83,9 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   let prisma: any;
   let stripeCharge: { createSaleCharge: jest.Mock };
   let connectService: { createCustomAccount: jest.Mock };
+  let fraudEngine: { evaluate: jest.Mock };
   let financialAlert: { paymentFailed: jest.Mock };
-  let auditService: { logWithTx: jest.Mock };
+  let auditService: { log: jest.Mock; logWithTx: jest.Mock };
   let socialLeadService: { markConvertedFromOrder: jest.Mock };
 
   beforeEach(async () => {
@@ -122,8 +124,18 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         requestedCapabilities: ['card_payments', 'transfers'],
       }),
     };
+    fraudEngine = {
+      evaluate: jest.fn().mockResolvedValue({
+        action: 'allow',
+        score: 0,
+        reasons: [],
+      }),
+    };
     financialAlert = { paymentFailed: jest.fn() };
-    auditService = { logWithTx: jest.fn().mockResolvedValue(undefined) };
+    auditService = {
+      log: jest.fn().mockResolvedValue(undefined),
+      logWithTx: jest.fn().mockResolvedValue(undefined),
+    };
     socialLeadService = { markConvertedFromOrder: jest.fn().mockResolvedValue(null) };
 
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -132,6 +144,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StripeChargeService, useValue: stripeCharge },
         { provide: ConnectService, useValue: connectService },
+        { provide: FraudEngine, useValue: fraudEngine },
         { provide: FinancialAlertService, useValue: financialAlert },
         { provide: AuditService, useValue: auditService },
         { provide: CheckoutSocialLeadService, useValue: socialLeadService },
@@ -230,6 +243,16 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
       clientSecret: 'pi_test_123_secret',
       paymentIntentId: 'pi_test_123',
       type: 'CREDIT_CARD',
+    });
+    expect(fraudEngine.evaluate).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      buyerEmail: 'cliente@example.com',
+      buyerCpf: '123.456.789-09',
+      buyerCnpj: null,
+      buyerIp: '127.0.0.1',
+      deviceFingerprint: null,
+      cardBin: null,
+      amountCents: 13_990n,
     });
   });
 
@@ -365,5 +388,139 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         gateway: 'stripe',
       }),
     );
+  });
+
+  it('blocks the checkout before hitting Stripe when the antifraud engine returns block', async () => {
+    fraudEngine.evaluate.mockResolvedValueOnce({
+      action: 'block',
+      score: 1,
+      reasons: [{ signal: 'blacklist', detail: 'CPF matched: auto_chargeback' }],
+    });
+
+    await expect(
+      service.processPayment({
+        orderId: 'order-1',
+        workspaceId: 'ws-1',
+        customerName: 'Cliente Bloqueado',
+        customerEmail: 'blocked@example.com',
+        customerCPF: '123.456.789-09',
+        paymentMethod: 'CREDIT_CARD',
+        totalInCents: 10_000,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
+    expect(auditService.log).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      action: 'CHECKOUT_PAYMENT_BLOCKED_BY_FRAUD',
+      resource: 'CheckoutOrder',
+      resourceId: 'order-1',
+      details: {
+        orderId: 'order-1',
+        paymentMethod: 'CREDIT_CARD',
+        chargedTotalInCents: 13_990,
+        fraudDecision: {
+          action: 'block',
+          score: 1,
+          reasonSignals: ['blacklist'],
+          reasons: [{ signal: 'blacklist', detail: 'CPF matched: auto_chargeback' }],
+        },
+      },
+    });
+  });
+
+  it('holds the checkout for manual review before hitting Stripe when the antifraud engine returns review', async () => {
+    fraudEngine.evaluate.mockResolvedValueOnce({
+      action: 'review',
+      score: 0.6,
+      reasons: [{ signal: 'velocity', detail: 'too many attempts from same device' }],
+    });
+
+    await expect(
+      service.processPayment({
+        orderId: 'order-1',
+        workspaceId: 'ws-1',
+        customerName: 'Cliente Em Revisão',
+        customerEmail: 'review@example.com',
+        customerCPF: '123.456.789-09',
+        paymentMethod: 'CREDIT_CARD',
+        totalInCents: 10_000,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
+    expect(auditService.log).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      action: 'CHECKOUT_PAYMENT_REVIEW_REQUIRED',
+      resource: 'CheckoutOrder',
+      resourceId: 'order-1',
+      details: {
+        orderId: 'order-1',
+        paymentMethod: 'CREDIT_CARD',
+        chargedTotalInCents: 13_990,
+        fraudDecision: {
+          action: 'review',
+          score: 0.6,
+          reasonSignals: ['velocity'],
+          reasons: [{ signal: 'velocity', detail: 'too many attempts from same device' }],
+        },
+      },
+    });
+  });
+
+  it('forces 3DS on card payments when the antifraud engine returns require_3ds', async () => {
+    const tx = {
+      checkoutPayment: {
+        create: jest.fn(async (args: any) => ({ id: 'pay_3ds_1', ...args.data })),
+      },
+      checkoutOrder: {
+        findFirst: jest.fn(),
+        updateMany: jest.fn(async () => ({ count: 1 })),
+      },
+    };
+    prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+    fraudEngine.evaluate.mockResolvedValueOnce({
+      action: 'require_3ds',
+      score: 0.4,
+      reasons: [{ signal: 'high_amount', detail: 'step-up required' }],
+    });
+
+    await service.processPayment({
+      orderId: 'order-1',
+      workspaceId: 'ws-1',
+      customerName: 'Cliente 3DS',
+      customerEmail: '3ds@example.com',
+      customerCPF: '123.456.789-09',
+      paymentMethod: 'CREDIT_CARD',
+      totalInCents: 10_000,
+    });
+
+    expect(stripeCharge.createSaleCharge).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentMethodTypes: ['card'],
+        paymentMethodOptions: {
+          card: {
+            request_three_d_secure: 'any',
+          },
+        },
+      }),
+    );
+    expect(auditService.log).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      action: 'CHECKOUT_PAYMENT_3DS_REQUIRED',
+      resource: 'CheckoutOrder',
+      resourceId: 'order-1',
+      details: {
+        orderId: 'order-1',
+        paymentMethod: 'CREDIT_CARD',
+        chargedTotalInCents: 13_990,
+        fraudDecision: {
+          action: 'require_3ds',
+          score: 0.4,
+          reasonSignals: ['high_amount'],
+          reasons: [{ signal: 'high_amount', detail: 'step-up required' }],
+        },
+      },
+    });
   });
 });

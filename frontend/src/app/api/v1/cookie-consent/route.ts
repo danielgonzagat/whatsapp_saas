@@ -31,7 +31,9 @@ function normalizeConsent(
 
 function parseConsentCookie(rawValue?: string | null): CookieConsentPreferences | null {
   const value = String(rawValue || '').trim();
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
 
   try {
     return normalizeConsent(JSON.parse(value));
@@ -69,7 +71,9 @@ function withConsentCookie(
 function firstNonEmpty(candidates: Array<string | undefined | null>): string {
   for (const candidate of candidates) {
     const value = candidate ?? '';
-    if (value) return value;
+    if (value) {
+      return value;
+    }
   }
   return '';
 }

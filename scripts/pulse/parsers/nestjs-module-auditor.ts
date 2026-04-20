@@ -44,7 +44,9 @@ function extractArrayItems(lines: string[], startIdx: number, key: string): stri
   for (let i = startIdx; i < lines.length; i++) {
     const line = lines[i];
     const keyIdx = line.indexOf(`${key}:`);
-    if (keyIdx === -1) continue;
+    if (keyIdx === -1) {
+      continue;
+    }
 
     // Collect everything from the '[' onwards
     let buffer = line.slice(keyIdx + key.length + 1);
@@ -54,14 +56,21 @@ function extractArrayItems(lines: string[], startIdx: number, key: string): stri
     for (let j = i; j < lines.length; j++) {
       const chunk = j === i ? buffer : lines[j];
       for (const ch of chunk) {
-        if (ch === '[') { depth++; started = true; }
+        if (ch === '[') {
+          depth++;
+          started = true;
+        }
         if (started && ch === ']') {
           depth--;
-          if (depth === 0) break;
+          if (depth === 0) {
+            break;
+          }
         }
       }
       buffer += (j === i ? '' : '\n') + (j === i ? '' : lines[j]);
-      if (started && depth === 0) break;
+      if (started && depth === 0) {
+        break;
+      }
     }
 
     // Extract identifiers from the collected buffer, skipping forwardRef(() => X) refs
@@ -72,7 +81,9 @@ function extractArrayItems(lines: string[], startIdx: number, key: string): stri
     let m: RegExpExecArray | null;
     while ((m = tokenRe.exec(stripped)) !== null) {
       // Skip keywords inside forwardRef (the lambda target is fine, but the `forwardRef` call itself)
-      if (m[1] === 'forwardRef') continue;
+      if (m[1] === 'forwardRef') {
+        continue;
+      }
       items.push(m[1]);
     }
     break; // found the key, stop
@@ -88,7 +99,9 @@ function parseModule(file: string): ModuleRecord | null {
     return null;
   }
 
-  if (!content.includes('@Module(')) return null;
+  if (!content.includes('@Module(')) {
+    return null;
+  }
 
   const lines = content.split('\n');
   const nameMatch = content.match(/export\s+class\s+(\w+Module)\b/);
@@ -97,9 +110,14 @@ function parseModule(file: string): ModuleRecord | null {
   // Find @Module decorator start line
   let moduleStart = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (/@Module\s*\(/.test(lines[i])) { moduleStart = i; break; }
+    if (/@Module\s*\(/.test(lines[i])) {
+      moduleStart = i;
+      break;
+    }
   }
-  if (moduleStart === -1) return null;
+  if (moduleStart === -1) {
+    return null;
+  }
 
   const providers = extractArrayItems(lines, moduleStart, 'providers');
   const controllers = extractArrayItems(lines, moduleStart, 'controllers');
@@ -113,22 +131,24 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const moduleFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    f => f.endsWith('.module.ts') && !/\.(spec|test)\.ts$/.test(f),
+    (f) => f.endsWith('.module.ts') && !/\.(spec|test)\.ts$/.test(f),
   );
 
   const serviceFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    f => f.endsWith('.service.ts') && !/\.(spec|test)\.ts$/.test(f),
+    (f) => f.endsWith('.service.ts') && !/\.(spec|test)\.ts$/.test(f),
   );
 
   const controllerFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    f => f.endsWith('.controller.ts') && !/\.(spec|test)\.ts$/.test(f),
+    (f) => f.endsWith('.controller.ts') && !/\.(spec|test)\.ts$/.test(f),
   );
 
   // Parse all modules
   const modules: ModuleRecord[] = [];
   for (const mf of moduleFiles) {
     const rec = parseModule(mf);
-    if (rec) modules.push(rec);
+    if (rec) {
+      modules.push(rec);
+    }
   }
 
   // Build global sets of provided class names and registered controller names
@@ -137,9 +157,15 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
   const allControllersInModules = new Set<string>();
 
   for (const mod of modules) {
-    for (const p of mod.providers) allProvided.add(p);
-    for (const e of mod.exports) allExported.add(e);
-    for (const c of mod.controllers) allControllersInModules.add(c);
+    for (const p of mod.providers) {
+      allProvided.add(p);
+    }
+    for (const e of mod.exports) {
+      allExported.add(e);
+    }
+    for (const c of mod.controllers) {
+      allControllersInModules.add(c);
+    }
   }
 
   // ── CHECK 1: Services injected via constructor that appear in NO module provider list ──
@@ -157,12 +183,17 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       // Match constructor injection: private/public/protected/readonly someService: ServiceClass
-      const injRe = /(?:private|public|protected|readonly)\s+\w+\s*:\s*([A-Z][A-Za-z0-9_]*Service)\b/g;
+      const injRe =
+        /(?:private|public|protected|readonly)\s+\w+\s*:\s*([A-Z][A-Za-z0-9_]*Service)\b/g;
       let m: RegExpExecArray | null;
       while ((m = injRe.exec(line)) !== null) {
         const serviceName = m[1];
-        if (FRAMEWORK_PROVIDERS.has(serviceName)) continue;
-        if (allProvided.has(serviceName) || allExported.has(serviceName)) continue;
+        if (FRAMEWORK_PROVIDERS.has(serviceName)) {
+          continue;
+        }
+        if (allProvided.has(serviceName) || allExported.has(serviceName)) {
+          continue;
+        }
 
         breaks.push({
           type: 'SERVICE_NOT_PROVIDED',
@@ -190,12 +221,17 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const injRe = /(?:private|public|protected|readonly)\s+\w+\s*:\s*([A-Z][A-Za-z0-9_]*Service)\b/g;
+      const injRe =
+        /(?:private|public|protected|readonly)\s+\w+\s*:\s*([A-Z][A-Za-z0-9_]*Service)\b/g;
       let m: RegExpExecArray | null;
       while ((m = injRe.exec(line)) !== null) {
         const serviceName = m[1];
-        if (FRAMEWORK_PROVIDERS.has(serviceName)) continue;
-        if (allProvided.has(serviceName) || allExported.has(serviceName)) continue;
+        if (FRAMEWORK_PROVIDERS.has(serviceName)) {
+          continue;
+        }
+        if (allProvided.has(serviceName) || allExported.has(serviceName)) {
+          continue;
+        }
 
         breaks.push({
           type: 'SERVICE_NOT_PROVIDED',
@@ -224,14 +260,20 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
     for (let i = 0; i < lines.length; i++) {
       // Find exported controller classes
       const classMatch = lines[i].match(/export\s+class\s+([A-Z][A-Za-z0-9_]*Controller)\b/);
-      if (!classMatch) continue;
+      if (!classMatch) {
+        continue;
+      }
 
       const controllerName = classMatch[1];
-      if (allControllersInModules.has(controllerName)) continue;
+      if (allControllersInModules.has(controllerName)) {
+        continue;
+      }
 
       // Check if any module imports array contains it (sometimes controllers referenced in imports)
-      const inImports = modules.some(m => m.imports.includes(controllerName));
-      if (inImports) continue;
+      const inImports = modules.some((m) => m.imports.includes(controllerName));
+      if (inImports) {
+        continue;
+      }
 
       breaks.push({
         type: 'CONTROLLER_NOT_REGISTERED',

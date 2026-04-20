@@ -28,7 +28,9 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
   const [customW, setCustomW] = useState('');
   const [customH, setCustomH] = useState('');
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   const openEditor = (
     fmt: FormatItem | { l: string; w: number; h: number; c: [string, string]; m: string },
@@ -39,7 +41,9 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
 
   const fmts = (): FormatItem[] => {
     const a = FORMAT_DATA[cat] || [];
-    if (cat === 'redes-sociais' && sf !== 'Populares') return a.filter((f) => f.p === sf);
+    if (cat === 'redes-sociais' && sf !== 'Populares') {
+      return a.filter((f) => f.p === sf);
+    }
     return a;
   };
 

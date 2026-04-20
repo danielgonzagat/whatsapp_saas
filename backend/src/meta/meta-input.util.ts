@@ -14,7 +14,9 @@ function isAsciiLetter(code: number): boolean {
 
 function isSafeMetaSegmentChar(char: string): boolean {
   const code = char.charCodeAt(0);
-  if (isDigit(code) || isAsciiLetter(code)) return true;
+  if (isDigit(code) || isAsciiLetter(code)) {
+    return true;
+  }
   return SAFE_META_EXTRA_CHARS.has(char);
 }
 

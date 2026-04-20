@@ -276,7 +276,9 @@ export class AutopilotService {
       intervalMs: 500,
       read: async () => {
         const current = await this.redisClient.get(smokeKey);
-        if (!current) return null;
+        if (!current) {
+          return null;
+        }
         try {
           return this.readRecord(JSON.parse(current));
         } catch {
@@ -407,7 +409,9 @@ export class AutopilotService {
   private ensureWhatsAppConnectedOrThrow(settings: Record<string, unknown>) {
     const missing: string[] = [];
     const status = (settings?.whatsappApiSession as Record<string, unknown>)?.status;
-    if (status !== 'connected') missing.push('whatsappApiSession.status=connected');
+    if (status !== 'connected') {
+      missing.push('whatsappApiSession.status=connected');
+    }
 
     if (missing.length) {
       throw new ForbiddenException(
@@ -544,8 +548,12 @@ export class AutopilotService {
       if (ev.status === 'skipped') {
         skippedTotal += 1;
         const reason = (ev.reason || '').toLowerCase();
-        if (reason.includes('optin')) skippedOptin += 1;
-        if (reason.includes('24h') || reason.includes('session')) skipped24h += 1;
+        if (reason.includes('optin')) {
+          skippedOptin += 1;
+        }
+        if (reason.includes('24h') || reason.includes('session')) {
+          skipped24h += 1;
+        }
       }
 
       if (ev.status === 'scheduled') {
@@ -624,7 +632,9 @@ export class AutopilotService {
 
     const contactActions = new Map<string, number>();
     for (const ev of events) {
-      if (!ev.contactId) continue;
+      if (!ev.contactId) {
+        continue;
+      }
       const ts = ev.createdAt.getTime();
       const current = contactActions.get(ev.contactId);
       if (!current || ts > current) {
@@ -710,7 +720,9 @@ export class AutopilotService {
     // Group inbound messages by contactId
     const inboundByContact = new Map<string, Date[]>();
     for (const msg of inboundMessages) {
-      if (!msg.contactId) continue;
+      if (!msg.contactId) {
+        continue;
+      }
       const arr = inboundByContact.get(msg.contactId) || [];
       arr.push(msg.createdAt);
       inboundByContact.set(msg.contactId, arr);
@@ -787,8 +799,11 @@ export class AutopilotService {
       const action = e.action || 'UNKNOWN';
       intents[intent] = (intents[intent] || 0) + 1;
       acts[action] = (acts[action] || 0) + 1;
-      if (e.status === 'error') errors += 1;
-      else executed += 1;
+      if (e.status === 'error') {
+        errors += 1;
+      } else {
+        executed += 1;
+      }
     });
 
     const impact = await this.getImpact(workspaceId);
@@ -1625,7 +1640,9 @@ Answer in Portuguese, short and actionable.`;
 
     for (const conv of convs) {
       const last = conv.messages[0];
-      if (!last) continue;
+      if (!last) {
+        continue;
+      }
       const ageH = (Date.now() - last.createdAt.getTime()) / 3600000;
       const text = (last.content || '').toLowerCase();
       const isBuying =
@@ -1635,9 +1652,13 @@ Answer in Portuguese, short and actionable.`;
         text.includes('quanto') ||
         text.includes('pix') ||
         text.includes('boleto');
-      if (isBuying) hot.push(conv.contact.phone);
-      else if (ageH > 72) cold.push(conv.contact.phone);
-      else warm.push(conv.contact.phone);
+      if (isBuying) {
+        hot.push(conv.contact.phone);
+      } else if (ageH > 72) {
+        cold.push(conv.contact.phone);
+      } else {
+        warm.push(conv.contact.phone);
+      }
     }
 
     const makeMsg = (title: string, body: string) => `[#${title}] ${body}`;
@@ -1736,13 +1757,17 @@ Answer in Portuguese, short and actionable.`;
   }
 
   private async computeSmartDelay(workspaceId: string, useSmartTime: boolean) {
-    if (!useSmartTime) return 0;
+    if (!useSmartTime) {
+      return 0;
+    }
     const bestTime = await this.smartTime.getBestTime(workspaceId);
     const now = new Date();
     const currentHour = now.getHours();
     const targetHour = bestTime.bestHour;
     let hoursToAdd = targetHour - currentHour;
-    if (hoursToAdd <= 0) hoursToAdd += 24;
+    if (hoursToAdd <= 0) {
+      hoursToAdd += 24;
+    }
     return hoursToAdd * 60 * 60 * 1000;
   }
 
@@ -1837,7 +1862,9 @@ Answer in Portuguese, short and actionable.`;
 
   private async processConversation(conv: AutopilotConversation, isOptimalTime: boolean) {
     const lastMsg = conv.messages[0];
-    if (!lastMsg || lastMsg.direction === 'OUTBOUND') return;
+    if (!lastMsg || lastMsg.direction === 'OUTBOUND') {
+      return;
+    }
 
     const analysis = await this.analyzeContext(conv.messages);
     const action = this.decideAction(analysis, conv, isOptimalTime);
@@ -1850,7 +1877,9 @@ Answer in Portuguese, short and actionable.`;
   private async analyzeContext(
     messages: AutopilotConversation['messages'],
   ): Promise<ConversationAnalysis> {
-    if (!this.openai) return { intent: 'unknown', sentiment: 'neutral', buyingSignal: false };
+    if (!this.openai) {
+      return { intent: 'unknown', sentiment: 'neutral', buyingSignal: false };
+    }
 
     const history = messages
       .map((m) => `${m.direction}: ${m.content}`)
@@ -1898,23 +1927,39 @@ Answer in Portuguese, short and actionable.`;
     const isNight = hour > 22 || hour < 7;
 
     if (isNight) {
-      if (buyingSignal) return 'soft_close_night';
+      if (buyingSignal) {
+        return 'soft_close_night';
+      }
       return 'auto_reply_night';
     }
 
     if (buyingSignal) {
-      if (isOptimalTime) return 'send_offer';
+      if (isOptimalTime) {
+        return 'send_offer';
+      }
       return 'send_offer_soft';
     }
 
-    if (intent === 'question_price') return 'send_price';
-    if (intent === 'scheduling') return 'send_calendar';
-    if (intent === 'complaint') return 'handover_human';
-    if (intent === 'objection') return 'handle_objection';
+    if (intent === 'question_price') {
+      return 'send_price';
+    }
+    if (intent === 'scheduling') {
+      return 'send_calendar';
+    }
+    if (intent === 'complaint') {
+      return 'handover_human';
+    }
+    if (intent === 'objection') {
+      return 'handle_objection';
+    }
 
-    if (stage === 'new') return 'qualify';
+    if (stage === 'new') {
+      return 'qualify';
+    }
     if (stage === 'closing') {
-      if (sentiment === 'positive' && !buyingSignal) return 'try_upsell';
+      if (sentiment === 'positive' && !buyingSignal) {
+        return 'try_upsell';
+      }
       return 'send_cta';
     }
 
@@ -2030,7 +2075,9 @@ Answer in Portuguese, short and actionable.`;
     conv: AutopilotConversation,
     analysis?: ConversationAnalysis,
   ) {
-    if (!this.openai) return 'Olá, como posso ajudar?';
+    if (!this.openai) {
+      return 'Olá, como posso ajudar?';
+    }
 
     const templates: Record<string, string> = {
       offer:
@@ -2055,15 +2102,18 @@ Answer in Portuguese, short and actionable.`;
     Write the WhatsApp message response (Portuguese Brazil). No quotes.
     `;
 
-    if (conv?.workspaceId) await this.planLimits.ensureTokenBudget(conv.workspaceId);
+    if (conv?.workspaceId) {
+      await this.planLimits.ensureTokenBudget(conv.workspaceId);
+    }
     const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('writer', this.config),
       messages: [{ role: 'user', content: prompt }],
     });
-    if (conv?.workspaceId)
+    if (conv?.workspaceId) {
       await this.planLimits
         .trackAiUsage(conv.workspaceId, completion?.usage?.total_tokens ?? 500)
         .catch(() => {});
+    }
 
     return completion.choices[0]?.message?.content;
   }

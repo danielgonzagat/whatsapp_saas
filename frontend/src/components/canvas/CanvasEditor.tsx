@@ -116,9 +116,9 @@ export default function CanvasEditor() {
   const [saved, setSaved] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [sidebarTab, setSidebarTab] = useState<SidebarTabId>('templates');
-  const [selectedObj, setSelectedObj] = useState<SelectedCanvasObject | SelectedCanvasObject[] | null>(
-    null,
-  );
+  const [selectedObj, setSelectedObj] = useState<
+    SelectedCanvasObject | SelectedCanvasObject[] | null
+  >(null);
   const [uploadDrag, setUploadDrag] = useState(false);
   const [_layerList, setLayerList] = useState<unknown[]>([]);
 
@@ -152,7 +152,9 @@ export default function CanvasEditor() {
 
   /* ═══ Initialize editor ═══ */
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      return;
+    }
     const { width, height } = initialSizeRef.current;
     const editor = new KloelEditor(canvasRef.current, width, height);
     editorRef.current = editor;
@@ -170,7 +172,9 @@ export default function CanvasEditor() {
 
     /* Auto-save with 3s debounce */
     editor.onChange(() => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
       setSaved(false);
 
       // Update layers list
@@ -231,7 +235,9 @@ export default function CanvasEditor() {
         .catch(() => {});
     } else if (initialTemplateIdRef.current) {
       const tpl = PRODUCT_TEMPLATES.find((t) => t.id === initialTemplateIdRef.current);
-      if (tpl?.json) editor.loadJSON(tpl.json).catch(() => {});
+      if (tpl?.json) {
+        editor.loadJSON(tpl.json).catch(() => {});
+      }
     }
 
     /* AI image */
@@ -253,7 +259,9 @@ export default function CanvasEditor() {
       editor.dispose();
       editorRef.current = null;
       setEditorUi(null);
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
     };
   }, []);
 
@@ -262,7 +270,9 @@ export default function CanvasEditor() {
   const handleRedo = useCallback(() => editorRef.current?.history.redo(), []);
   const handleExportFmt = useCallback(
     (fmt: 'png' | 'jpg' | 'svg' | 'pdf') => {
-      if (!editorRef.current) return;
+      if (!editorRef.current) {
+        return;
+      }
       try {
         editorRef.current.exporter.download(designName, fmt);
       } catch (e) {
@@ -284,9 +294,9 @@ export default function CanvasEditor() {
     editorRef.current?.setSize(w, h);
     setTimeout(() => {
       editorRef.current?.zoom.zoomToFit();
-        setZoom(editorRef.current?.zoom.getZoom() ?? 100);
-      }, 50);
-    }, []);
+      setZoom(editorRef.current?.zoom.getZoom() ?? 100);
+    }, 50);
+  }, []);
 
   const handleZoomIn = useCallback(() => {
     editorRef.current?.zoom.zoomIn();
@@ -302,24 +312,40 @@ export default function CanvasEditor() {
   }, []);
 
   const handleAddText = useCallback((preset: 'heading' | 'subheading' | 'body') => {
-    if (!editorRef.current) return;
-    if (preset === 'heading') editorRef.current.text.addHeading('Titulo');
-    else if (preset === 'subheading') editorRef.current.text.addSubheading('Subtitulo');
-    else editorRef.current.text.addBody('Corpo de texto');
+    if (!editorRef.current) {
+      return;
+    }
+    if (preset === 'heading') {
+      editorRef.current.text.addHeading('Titulo');
+    } else if (preset === 'subheading') {
+      editorRef.current.text.addSubheading('Subtitulo');
+    } else {
+      editorRef.current.text.addBody('Corpo de texto');
+    }
   }, []);
 
   const handleAddShape = useCallback((shape: 'rect' | 'circle' | 'triangle' | 'line' | 'star') => {
-    if (!editorRef.current) return;
+    if (!editorRef.current) {
+      return;
+    }
     const e = editorRef.current.shapes;
-    if (shape === 'rect') e.addRect();
-    else if (shape === 'circle') e.addCircle();
-    else if (shape === 'triangle') e.addTriangle();
-    else if (shape === 'line') e.addLine();
-    else if (shape === 'star') e.addStar();
+    if (shape === 'rect') {
+      e.addRect();
+    } else if (shape === 'circle') {
+      e.addCircle();
+    } else if (shape === 'triangle') {
+      e.addTriangle();
+    } else if (shape === 'line') {
+      e.addLine();
+    } else if (shape === 'star') {
+      e.addStar();
+    }
   }, []);
 
   const handleUpload = useCallback(async (file: File) => {
-    if (!editorRef.current) return;
+    if (!editorRef.current) {
+      return;
+    }
     try {
       await editorRef.current.image.addImageFromFile(file);
     } catch (e) {
@@ -330,7 +356,9 @@ export default function CanvasEditor() {
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) handleUpload(file);
+      if (file) {
+        handleUpload(file);
+      }
       e.target.value = '';
     },
     [handleUpload],
@@ -341,19 +369,25 @@ export default function CanvasEditor() {
       e.preventDefault();
       setUploadDrag(false);
       const file = e.dataTransfer.files[0];
-      if (file?.type.startsWith('image/')) handleUpload(file);
+      if (file?.type.startsWith('image/')) {
+        handleUpload(file);
+      }
     },
     [handleUpload],
   );
 
   const handleApplyTemplate = useCallback((tpl: (typeof PRODUCT_TEMPLATES)[number]) => {
-    if (!editorRef.current) return;
+    if (!editorRef.current) {
+      return;
+    }
     editorRef.current.loadJSON(tpl.json).catch(() => {});
     setDesignName(tpl.name);
   }, []);
 
   const handleSetBackground = useCallback((color: string) => {
-    if (!editorRef.current) return;
+    if (!editorRef.current) {
+      return;
+    }
     editorRef.current.background.setColor(color);
   }, []);
 
@@ -364,9 +398,13 @@ export default function CanvasEditor() {
   /** Update a property on the selected canvas object */
   const updateProp = useCallback((prop: string, value: unknown) => {
     const ed = editorRef.current;
-    if (!ed) return;
+    if (!ed) {
+      return;
+    }
     const obj = ed.canvas.getActiveObject();
-    if (!obj) return;
+    if (!obj) {
+      return;
+    }
     obj.set(prop as keyof typeof obj, value as never);
     obj.setCoords();
     ed.canvas.requestRenderAll();
@@ -377,7 +415,9 @@ export default function CanvasEditor() {
 
   /* Close context menu on any click */
   useEffect(() => {
-    if (!ctxMenu) return;
+    if (!ctxMenu) {
+      return;
+    }
     const close = () => setCtxMenu(null);
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
@@ -783,7 +823,9 @@ export default function CanvasEditor() {
                   input.accept = 'image/*';
                   input.onchange = (ev) => {
                     const file = (ev.target as HTMLInputElement).files?.[0];
-                    if (file) editor?.background.setImageFromFile(file);
+                    if (file) {
+                      editor?.background.setImageFromFile(file);
+                    }
                   };
                   input.click();
                 }}
@@ -839,7 +881,9 @@ export default function CanvasEditor() {
                       type="button"
                       key={`layer-${objType}-${layerNumber}-${objName}`}
                       onClick={() => {
-                        if (!editor) return;
+                        if (!editor) {
+                          return;
+                        }
                         editor.canvas.setActiveObject(obj);
                         editor.canvas.requestRenderAll();
                       }}
@@ -865,9 +909,14 @@ export default function CanvasEditor() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (obj.visible === false) editor?.layers.showObject(obj);
-                            else editor?.layers.hideObject(obj);
-                            if (editor) setLayerList([...editor.layers.getObjects()]);
+                            if (obj.visible === false) {
+                              editor?.layers.showObject(obj);
+                            } else {
+                              editor?.layers.hideObject(obj);
+                            }
+                            if (editor) {
+                              setLayerList([...editor.layers.getObjects()]);
+                            }
                           }}
                           style={{
                             background: 'none',
@@ -886,9 +935,14 @@ export default function CanvasEditor() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (obj.selectable === false) editor?.layers.unlockObject(obj);
-                            else editor?.layers.lockObject(obj);
-                            if (editor) setLayerList([...editor.layers.getObjects()]);
+                            if (obj.selectable === false) {
+                              editor?.layers.unlockObject(obj);
+                            } else {
+                              editor?.layers.lockObject(obj);
+                            }
+                            if (editor) {
+                              setLayerList([...editor.layers.getObjects()]);
+                            }
                           }}
                           style={{
                             background: 'none',
@@ -952,7 +1006,9 @@ export default function CanvasEditor() {
                     type="button"
                     onClick={() => {
                       editor?.selection.deleteSelected();
-                      if (editor) setLayerList([...editor.layers.getObjects()]);
+                      if (editor) {
+                        setLayerList([...editor.layers.getObjects()]);
+                      }
                     }}
                     style={{
                       ...cardBtn,
@@ -990,13 +1046,17 @@ export default function CanvasEditor() {
                 type="button"
                 onClick={() => {
                   const canvas = editor?.canvas;
-                  if (!canvas) return;
+                  if (!canvas) {
+                    return;
+                  }
                   canvas.isDrawingMode = !canvas.isDrawingMode;
                   if (canvas.isDrawingMode && canvas.freeDrawingBrush) {
                     canvas.freeDrawingBrush.color = '#E85D30';
                     canvas.freeDrawingBrush.width = 3;
                   }
-                  if (editor) setLayerList([...editor.layers.getObjects()]);
+                  if (editor) {
+                    setLayerList([...editor.layers.getObjects()]);
+                  }
                 }}
                 style={{
                   ...cardBtn,
@@ -1093,7 +1153,9 @@ export default function CanvasEditor() {
                     onClick={() => {
                       const nw = Number.parseInt(resizeWRef.current?.value ?? '', 10);
                       const nh = Number.parseInt(resizeHRef.current?.value ?? '', 10);
-                      if (nw > 0 && nh > 0) handleResize(nw, nh);
+                      if (nw > 0 && nh > 0) {
+                        handleResize(nw, nh);
+                      }
                     }}
                     style={{
                       background: '#E85D30',
@@ -1291,7 +1353,9 @@ export default function CanvasEditor() {
             e.stopPropagation();
             setCanvasDragOver(false);
             const file = e.dataTransfer?.files?.[0];
-            if (file?.type.startsWith('image/')) handleUpload(file);
+            if (file?.type.startsWith('image/')) {
+              handleUpload(file);
+            }
           }}
         >
           {/* ── Floating Property Bar ── */}
@@ -1516,7 +1580,9 @@ export default function CanvasEditor() {
                       }
                       onChange={(e) => {
                         updateProp('stroke', e.target.value);
-                        if (!selectedObj.strokeWidth) updateProp('strokeWidth', 2);
+                        if (!selectedObj.strokeWidth) {
+                          updateProp('strokeWidth', 2);
+                        }
                       }}
                       style={{
                         width: 20,
@@ -1846,7 +1912,9 @@ export default function CanvasEditor() {
                   transition: 'background 100ms',
                 }}
                 onMouseEnter={(e) => {
-                  if (!item.disabled) (e.target as HTMLElement).style.background = '#1C1C1F';
+                  if (!item.disabled) {
+                    (e.target as HTMLElement).style.background = '#1C1C1F';
+                  }
                 }}
                 onMouseLeave={(e) => {
                   (e.target as HTMLElement).style.background = 'none';

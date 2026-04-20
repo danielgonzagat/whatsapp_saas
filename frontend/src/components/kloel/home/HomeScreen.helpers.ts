@@ -18,9 +18,13 @@ export interface KloelChatStreamLineUpdate {
  * should be ignored (non-`data:` lines or the terminal `[DONE]` marker).
  */
 export function parseKloelChatStreamLine(line: string): KloelChatStreamLineUpdate | null {
-  if (!line.startsWith('data: ')) return null;
+  if (!line.startsWith('data: ')) {
+    return null;
+  }
   const data = line.slice(6);
-  if (data === '[DONE]') return null;
+  if (data === '[DONE]') {
+    return null;
+  }
 
   try {
     const parsed = JSON.parse(data) as {
@@ -80,7 +84,9 @@ const TYPING_DELAYS: Record<string, () => number> = {
 };
 
 export function typingSimulationDelay(char: string): number {
-  if (Math.random() < 0.08) return 2;
+  if (Math.random() < 0.08) {
+    return 2;
+  }
   const specific = TYPING_DELAYS[char];
   return specific ? specific() : 15 + Math.random() * 25;
 }

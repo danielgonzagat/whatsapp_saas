@@ -68,7 +68,9 @@ export class AffiliateController {
     req: AuthenticatedRequest,
     product: T | null | undefined,
   ): (T & { thumbnailUrl: string | null }) | null {
-    if (!product) return null;
+    if (!product) {
+      return null;
+    }
 
     return {
       ...product,
@@ -731,7 +733,9 @@ export class AffiliateController {
         affiliateProductId: productId,
       },
     });
-    if (existingRecord) return { success: true, saved: true };
+    if (existingRecord) {
+      return { success: true, saved: true };
+    }
 
     await this.prisma.affiliateRequest.create({
       data: {

@@ -40,8 +40,12 @@ function makePrismaStub(
   const stub = {
     prepaidWallet: {
       findUnique: jest.fn(async ({ where }: { where: { id?: string; workspaceId?: string } }) => {
-        if (where.id) return wallets.get(where.id) ?? null;
-        if (where.workspaceId) return walletsByWorkspace.get(where.workspaceId) ?? null;
+        if (where.id) {
+          return wallets.get(where.id) ?? null;
+        }
+        if (where.workspaceId) {
+          return walletsByWorkspace.get(where.workspaceId) ?? null;
+        }
         return null;
       }),
       upsert: jest.fn(
@@ -54,7 +58,9 @@ function makePrismaStub(
           update: Record<string, unknown>;
         }) => {
           const existing = walletsByWorkspace.get(where.workspaceId);
-          if (existing) return existing;
+          if (existing) {
+            return existing;
+          }
           const row: PrepaidWallet = {
             id: `pwl_${nextWalletId++}`,
             workspaceId: create.workspaceId,
@@ -76,7 +82,9 @@ function makePrismaStub(
       update: jest.fn(
         async ({ where, data }: { where: { id: string }; data: Partial<PrepaidWallet> }) => {
           const current = wallets.get(where.id);
-          if (!current) throw new Error(`stub: wallet not found ${where.id}`);
+          if (!current) {
+            throw new Error(`stub: wallet not found ${where.id}`);
+          }
           const next = { ...current, ...data, updatedAt: new Date() } as PrepaidWallet;
           wallets.set(where.id, next);
           walletsByWorkspace.set(next.workspaceId, next);

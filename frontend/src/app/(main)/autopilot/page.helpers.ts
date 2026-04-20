@@ -11,13 +11,17 @@ export function unwrapSettled<T>(
 }
 
 export function unwrapDataEnvelope<T>(value: unknown): T | null {
-  if (!value || typeof value !== 'object') return (value ?? null) as T | null;
+  if (!value || typeof value !== 'object') {
+    return (value ?? null) as T | null;
+  }
   const inner = (value as { data?: T }).data;
   return (inner !== undefined ? inner : (value as T)) ?? null;
 }
 
 export function unwrapArrayEnvelope<T>(value: unknown): T[] {
-  if (Array.isArray(value)) return value as T[];
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
   const inner = (value as { data?: T[] } | null | undefined)?.data;
   return Array.isArray(inner) ? (inner as T[]) : [];
 }

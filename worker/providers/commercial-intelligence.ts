@@ -340,10 +340,18 @@ export function shouldAutonomousSend(decision: CommercialDecisionEnvelope, mode:
     ['LEGAL_RISK', 'MEDICAL_RISK', 'PRICE_UNCERTAIN'].includes(flag),
   );
 
-  if (hardRisk) return false;
-  if (decision.shouldEscalate && mode === 'ASSIST') return false;
-  if (decision.confidence >= 0.85) return true;
-  if (mode === 'AUTONOMOUS' && decision.confidence >= 0.7) return true;
+  if (hardRisk) {
+    return false;
+  }
+  if (decision.shouldEscalate && mode === 'ASSIST') {
+    return false;
+  }
+  if (decision.confidence >= 0.85) {
+    return true;
+  }
+  if (mode === 'AUTONOMOUS' && decision.confidence >= 0.7) {
+    return true;
+  }
   return false;
 }
 
@@ -413,7 +421,9 @@ export function extractMarketSignals(messages: Array<string | null | undefined>)
 
   for (const rawMessage of messages) {
     const text = normalized(rawMessage);
-    if (!text) continue;
+    if (!text) {
+      continue;
+    }
     for (const hit of detectMessageSignals(text)) {
       registerSignal(hit.signalType, hit.normalizedKey, text);
     }
@@ -426,7 +436,9 @@ function resolveHumanTaskUrgency(
   decision: CommercialDecisionEnvelope,
   hasCritical: boolean,
 ): HumanTaskPayload['urgency'] {
-  if (hasCritical) return 'CRITICAL';
+  if (hasCritical) {
+    return 'CRITICAL';
+  }
   return decision.confidence < 0.45 ? 'HIGH' : 'MEDIUM';
 }
 
@@ -457,7 +469,9 @@ export function buildHumanTask(input: {
   messageContent?: string;
 }): HumanTaskPayload | null {
   const decision = input.decision;
-  if (!decision.shouldEscalate && decision.riskFlags.length === 0) return null;
+  if (!decision.shouldEscalate && decision.riskFlags.length === 0) {
+    return null;
+  }
 
   const hasCritical = decision.riskFlags.some((flag) =>
     ['LEGAL_RISK', 'MEDICAL_RISK'].includes(flag),
@@ -571,7 +585,9 @@ async function upsertMemory(
     metadata?: Record<string, unknown>;
   },
 ) {
-  if (!prisma?.kloelMemory?.upsert) return null;
+  if (!prisma?.kloelMemory?.upsert) {
+    return null;
+  }
 
   const jsonValue = toJsonValue(input.value);
   const jsonMetadata = input.metadata ? toJsonValue(input.metadata) : undefined;
@@ -676,7 +692,9 @@ export async function persistHumanTask(
     task: HumanTaskPayload;
   },
 ) {
-  if (!prisma?.kloelMemory?.create) return null;
+  if (!prisma?.kloelMemory?.create) {
+    return null;
+  }
 
   return prisma.kloelMemory.create({
     data: {
@@ -707,7 +725,9 @@ export async function persistSystemInsight(
     metadata?: Record<string, unknown>;
   },
 ) {
-  if (!prisma?.systemInsight?.findFirst || !prisma?.systemInsight?.create) return null;
+  if (!prisma?.systemInsight?.findFirst || !prisma?.systemInsight?.create) {
+    return null;
+  }
 
   const existing = await prisma.systemInsight.findFirst({
     where: {
@@ -720,7 +740,9 @@ export async function persistSystemInsight(
     },
   });
 
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
 
   return prisma.systemInsight.create({
     data: {

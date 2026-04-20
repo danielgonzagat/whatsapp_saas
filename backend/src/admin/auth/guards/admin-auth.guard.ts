@@ -22,7 +22,9 @@ const S_RE = /\s+/;
  */
 function resolveAdminJwtSecret(): string {
   const explicit = process.env.ADMIN_JWT_SECRET;
-  if (explicit && explicit.length > 0) return explicit;
+  if (explicit && explicit.length > 0) {
+    return explicit;
+  }
   if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
     return 'kloel-admin-ci-test-secret-not-for-production';
   }
@@ -30,10 +32,16 @@ function resolveAdminJwtSecret(): string {
 }
 
 function extractBearerToken(header: string | undefined): string | null {
-  if (!header) return null;
+  if (!header) {
+    return null;
+  }
   const parts = header.split(S_RE);
-  if (parts.length !== 2) return null;
-  if (parts[0].toLowerCase() !== 'bearer') return null;
+  if (parts.length !== 2) {
+    return null;
+  }
+  if (parts[0].toLowerCase() !== 'bearer') {
+    return null;
+  }
   return parts[1] || null;
 }
 
@@ -56,7 +64,9 @@ export class AdminAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    if (this.isPublicRoute(context)) return true;
+    if (this.isPublicRoute(context)) {
+      return true;
+    }
 
     const req = context.switchToHttp().getRequest<Request & { admin?: AuthenticatedAdmin }>();
     const payload = await this.verifyBearer(req);
@@ -92,7 +102,9 @@ export class AdminAuthGuard implements CanActivate {
 
   private async verifyBearer(req: Request): Promise<AdminJwtPayload> {
     const token = extractBearerToken(req.headers.authorization);
-    if (!token) throw adminErrors.invalidToken();
+    if (!token) {
+      throw adminErrors.invalidToken();
+    }
     try {
       return await this.jwt.verifyAsync<AdminJwtPayload>(token, {
         audience: 'adm.kloel.com',
@@ -127,32 +139,50 @@ export class AdminAuthGuard implements CanActivate {
         passwordChangeRequired: true,
       },
     });
-    if (!admin) throw adminErrors.invalidToken();
+    if (!admin) {
+      throw adminErrors.invalidToken();
+    }
     return admin;
   }
 
   private assertAdminStatus(admin: AdminRowForGuard): void {
-    if (admin.status === AdminUserStatus.SUSPENDED) throw adminErrors.userSuspended();
-    if (admin.status === AdminUserStatus.DEACTIVATED) throw adminErrors.userDeactivated();
+    if (admin.status === AdminUserStatus.SUSPENDED) {
+      throw adminErrors.userSuspended();
+    }
+    if (admin.status === AdminUserStatus.DEACTIVATED) {
+      throw adminErrors.userDeactivated();
+    }
   }
 
   private assertFullScopeReadiness(admin: AdminRowForGuard): void {
-    if (admin.passwordChangeRequired) throw adminErrors.invalidToken();
-    if (!admin.mfaEnabled || admin.mfaPendingSetup) throw adminErrors.invalidToken();
+    if (admin.passwordChangeRequired) {
+      throw adminErrors.invalidToken();
+    }
+    if (!admin.mfaEnabled || admin.mfaPendingSetup) {
+      throw adminErrors.invalidToken();
+    }
   }
 
   private async assertSessionActive(
     sessionId: string | undefined,
     adminUserId: string,
   ): Promise<void> {
-    if (!sessionId) throw adminErrors.invalidToken();
+    if (!sessionId) {
+      throw adminErrors.invalidToken();
+    }
     const session = await this.prisma.adminSession.findUnique({
       where: { id: sessionId },
       select: { id: true, adminUserId: true, revokedAt: true, expiresAt: true },
     });
-    if (!session || session.adminUserId !== adminUserId) throw adminErrors.invalidToken();
-    if (session.revokedAt) throw adminErrors.invalidToken();
-    if (session.expiresAt.getTime() < Date.now()) throw adminErrors.tokenExpired();
+    if (!session || session.adminUserId !== adminUserId) {
+      throw adminErrors.invalidToken();
+    }
+    if (session.revokedAt) {
+      throw adminErrors.invalidToken();
+    }
+    if (session.expiresAt.getTime() < Date.now()) {
+      throw adminErrors.tokenExpired();
+    }
   }
 }
 

@@ -120,17 +120,23 @@ export function useTooltipController() {
 
   useEffect(() => {
     return () => {
-      if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+      if (tooltipTimerRef.current) {
+        clearTimeout(tooltipTimerRef.current);
+      }
     };
   }, []);
 
   const showTooltip = (id: string) => {
-    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    if (tooltipTimerRef.current) {
+      clearTimeout(tooltipTimerRef.current);
+    }
     tooltipTimerRef.current = setTimeout(() => setTooltipId(id), 300);
   };
 
   const hideTooltip = () => {
-    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    if (tooltipTimerRef.current) {
+      clearTimeout(tooltipTimerRef.current);
+    }
     setTooltipId(null);
   };
 
@@ -147,8 +153,14 @@ export function resolveIconStroke(params: {
   disabledColor: string;
 }): string {
   const { disabled, active, hovered, focused, embeColor, secondaryColor, disabledColor } = params;
-  if (disabled) return disabledColor;
-  if (active) return embeColor;
-  if (hovered || focused) return embeColor;
+  if (disabled) {
+    return disabledColor;
+  }
+  if (active) {
+    return embeColor;
+  }
+  if (hovered || focused) {
+    return embeColor;
+  }
   return secondaryColor;
 }

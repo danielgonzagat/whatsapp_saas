@@ -123,7 +123,9 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -131,7 +133,9 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
         name: name.trim(),
         description: description.trim() || undefined,
       });
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       onCreated();
       onClose();
     } catch (e) {
@@ -343,12 +347,16 @@ function AddGroupModal({
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    if (!groupLink.trim()) return;
+    if (!groupLink.trim()) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const res = await launchApi.addGroups(launcherId, { groupLink: groupLink.trim() });
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       onAdded();
       onClose();
     } catch (e) {

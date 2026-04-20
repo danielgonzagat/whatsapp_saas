@@ -444,7 +444,9 @@ function WithdrawModal({
   const [selectedBank, setSelectedBank] = useState(0);
   const { accounts: rawAccounts } = useBankAccounts();
   const withdrawInputRef = useCallback((element: HTMLInputElement | null) => {
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     requestAnimationFrame(() => {
       element.focus();
     });
@@ -483,10 +485,18 @@ function WithdrawModal({
       const selected = bankAccounts[selectedBank];
       const body: Record<string, unknown> = { amount: Math.round(amount * 100) };
       if (selected) {
-        if (selected.pixKey) body.pixKey = selected.pixKey;
-        if (selected.bankCode) body.bankCode = selected.bankCode;
-        if (selected.agency) body.agency = selected.agency;
-        if (selected.account) body.account = selected.account;
+        if (selected.pixKey) {
+          body.pixKey = selected.pixKey;
+        }
+        if (selected.bankCode) {
+          body.bankCode = selected.bankCode;
+        }
+        if (selected.agency) {
+          body.agency = selected.agency;
+        }
+        if (selected.account) {
+          body.account = selected.account;
+        }
       }
       const res = await apiFetch(`/kloel/wallet/${workspaceId}/withdraw`, {
         method: 'POST',
@@ -506,7 +516,9 @@ function WithdrawModal({
     }
   };
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
   return (
     <div
       style={{
@@ -798,7 +810,9 @@ function AntecipateModal({
   onClose: () => void;
   pending: number;
 }) {
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
   return (
     <div
       style={{
@@ -1436,8 +1450,12 @@ function TabExtrato({
 }) {
   const { isMobile } = useResponsiveViewport();
   const filtered = txList.filter((t) => {
-    if (filterType !== 'todos' && t.type !== filterType) return false;
-    if (search && !t.desc.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterType !== 'todos' && t.type !== filterType) {
+      return false;
+    }
+    if (search && !t.desc.toLowerCase().includes(search.toLowerCase())) {
+      return false;
+    }
     return true;
   });
   return (
@@ -1505,7 +1523,9 @@ function TabExtrato({
         <button
           type="button"
           onClick={() => {
-            if (!filtered.length) return;
+            if (!filtered.length) {
+              return;
+            }
             const escape = (v: unknown) => {
               const s = String(v ?? '');
               return `"${s.replace(PATTERN_RE, '""')}"`;
@@ -2530,7 +2550,9 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
       antecipacoes: '/carteira/antecipacoes',
     };
     const nextRoute = routes[newTab] || '/carteira';
-    if (pathname === nextRoute) return;
+    if (pathname === nextRoute) {
+      return;
+    }
     startTransition(() => {
       router.push(nextRoute);
     });

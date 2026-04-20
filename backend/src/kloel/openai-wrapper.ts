@@ -38,8 +38,12 @@ const RETRYABLE_NETWORK_CODES = new Set([
 ]);
 
 function isRetryableHttpStatus(status: number | undefined): boolean {
-  if (status === 429) return true;
-  if (typeof status !== 'number') return false;
+  if (status === 429) {
+    return true;
+  }
+  if (typeof status !== 'number') {
+    return false;
+  }
   return status >= 500 && status < 600;
 }
 
@@ -48,7 +52,9 @@ function isRetryableNetworkCode(code: string | undefined): boolean {
 }
 
 function isRetryableTimeoutMessage(message: string | undefined): boolean {
-  if (typeof message !== 'string') return false;
+  if (typeof message !== 'string') {
+    return false;
+  }
   const lower = message.toLowerCase();
   return lower.includes('timeout');
 }
@@ -58,9 +64,15 @@ function isRetryableTimeoutMessage(message: string | undefined): boolean {
  */
 function isRetryableError(err: unknown): boolean {
   const errObj = err as RetryableErrorShape;
-  if (!errObj) return false;
-  if (isRetryableHttpStatus(errObj.status)) return true;
-  if (isRetryableNetworkCode(errObj.code)) return true;
+  if (!errObj) {
+    return false;
+  }
+  if (isRetryableHttpStatus(errObj.status)) {
+    return true;
+  }
+  if (isRetryableNetworkCode(errObj.code)) {
+    return true;
+  }
   return isRetryableTimeoutMessage(errObj.message);
 }
 

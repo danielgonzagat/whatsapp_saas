@@ -55,7 +55,9 @@ function clean(value?: string | null): string {
 export function normalizeDashboardContext(
   input?: DashboardContextParams | null,
 ): DashboardContextMetadata | null {
-  if (!input) return null;
+  if (!input) {
+    return null;
+  }
 
   const normalized: DashboardContextMetadata = {
     source: clean(input.source) || undefined,
@@ -82,7 +84,9 @@ export function buildDashboardContextMetadata(
   input?: DashboardContextParams | null,
 ): { dashboardContext: DashboardContextMetadata } | undefined {
   const normalized = normalizeDashboardContext(input);
-  if (!normalized) return undefined;
+  if (!normalized) {
+    return undefined;
+  }
   return { dashboardContext: normalized };
 }
 
@@ -94,7 +98,9 @@ export function readDashboardContextFromMetadata(value: unknown): DashboardConte
       : null;
   const candidate = nested ?? source;
 
-  if (!candidate) return null;
+  if (!candidate) {
+    return null;
+  }
 
   return normalizeDashboardContext(candidate as DashboardContextParams);
 }
@@ -104,7 +110,9 @@ export function getDashboardSourceLabel(source?: string | null): string {
 }
 
 export function buildDashboardHref(input?: DashboardContextParams | null): string {
-  if (!input) return KLOEL_CHAT_ROUTE;
+  if (!input) {
+    return KLOEL_CHAT_ROUTE;
+  }
 
   const params = new URLSearchParams();
 
@@ -126,7 +134,9 @@ export function buildDashboardHref(input?: DashboardContextParams | null): strin
 
   for (const [key, value] of entries) {
     const normalized = clean(value);
-    if (normalized) params.set(key, normalized);
+    if (normalized) {
+      params.set(key, normalized);
+    }
   }
 
   const query = params.toString();
@@ -134,14 +144,18 @@ export function buildDashboardHref(input?: DashboardContextParams | null): strin
 }
 
 export function buildDashboardSourceHref(input?: DashboardContextParams | null): string | null {
-  if (!input) return null;
+  if (!input) {
+    return null;
+  }
 
   const source = clean(input.source).toLowerCase();
   const params = new URLSearchParams();
 
   const pushIfPresent = (key: string, value?: string | null) => {
     const normalized = clean(value);
-    if (normalized) params.set(key, normalized);
+    if (normalized) {
+      params.set(key, normalized);
+    }
   };
 
   switch (source) {
@@ -191,7 +205,9 @@ export function buildDashboardContextPrompt(input?: DashboardContextParams | nul
   }
 
   const explicitDraft = clean(input.draft);
-  if (explicitDraft) return explicitDraft;
+  if (explicitDraft) {
+    return explicitDraft;
+  }
 
   const lines: string[] = [];
   const sourceLabel = getDashboardSourceLabel(input.source);
@@ -208,14 +224,30 @@ export function buildDashboardContextPrompt(input?: DashboardContextParams | nul
   const planName = clean(input.planName);
   const planId = clean(input.planId);
 
-  if (name) lines.push(`Nome do contato: ${name}`);
-  if (phone) lines.push(`Telefone: ${phone}`);
-  if (email) lines.push(`Email: ${email}`);
-  if (leadId) lines.push(`Lead ID: ${leadId}`);
-  if (productName) lines.push(`Produto: ${productName}`);
-  if (productId) lines.push(`Produto ID: ${productId}`);
-  if (planName) lines.push(`Plano: ${planName}`);
-  if (planId) lines.push(`Plano ID: ${planId}`);
+  if (name) {
+    lines.push(`Nome do contato: ${name}`);
+  }
+  if (phone) {
+    lines.push(`Telefone: ${phone}`);
+  }
+  if (email) {
+    lines.push(`Email: ${email}`);
+  }
+  if (leadId) {
+    lines.push(`Lead ID: ${leadId}`);
+  }
+  if (productName) {
+    lines.push(`Produto: ${productName}`);
+  }
+  if (productId) {
+    lines.push(`Produto ID: ${productId}`);
+  }
+  if (planName) {
+    lines.push(`Plano: ${planName}`);
+  }
+  if (planId) {
+    lines.push(`Plano ID: ${planId}`);
+  }
 
   if (purpose === 'recovery') {
     lines.push(
@@ -251,18 +283,34 @@ export function buildDashboardContextPrompt(input?: DashboardContextParams | nul
 }
 
 export function summarizeDashboardContext(input?: DashboardContextParams | null): string[] {
-  if (!input) return [];
+  if (!input) {
+    return [];
+  }
 
   const summary: string[] = [];
   const sourceLabel = getDashboardSourceLabel(input.source);
 
-  if (sourceLabel) summary.push(`Origem: ${sourceLabel}`);
-  if (clean(input.name)) summary.push(`Contato: ${clean(input.name)}`);
-  if (clean(input.phone)) summary.push(`Telefone: ${clean(input.phone)}`);
-  if (clean(input.email)) summary.push(`Email: ${clean(input.email)}`);
-  if (clean(input.productName)) summary.push(`Produto: ${clean(input.productName)}`);
-  if (clean(input.planName)) summary.push(`Plano: ${clean(input.planName)}`);
-  if (clean(input.purpose)) summary.push(`Objetivo: ${clean(input.purpose)}`);
+  if (sourceLabel) {
+    summary.push(`Origem: ${sourceLabel}`);
+  }
+  if (clean(input.name)) {
+    summary.push(`Contato: ${clean(input.name)}`);
+  }
+  if (clean(input.phone)) {
+    summary.push(`Telefone: ${clean(input.phone)}`);
+  }
+  if (clean(input.email)) {
+    summary.push(`Email: ${clean(input.email)}`);
+  }
+  if (clean(input.productName)) {
+    summary.push(`Produto: ${clean(input.productName)}`);
+  }
+  if (clean(input.planName)) {
+    summary.push(`Plano: ${clean(input.planName)}`);
+  }
+  if (clean(input.purpose)) {
+    summary.push(`Objetivo: ${clean(input.purpose)}`);
+  }
 
   return summary;
 }

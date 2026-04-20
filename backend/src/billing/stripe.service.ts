@@ -28,7 +28,9 @@ export class StripeService {
    * would mask configuration errors that must surface immediately.
    */
   get stripe(): StripeClient {
-    if (this.client) return this.client;
+    if (this.client) {
+      return this.client;
+    }
 
     const secretKey = this.config.get<string>('STRIPE_SECRET_KEY');
     if (!secretKey) {

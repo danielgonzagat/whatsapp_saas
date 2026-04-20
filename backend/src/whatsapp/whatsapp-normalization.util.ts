@@ -69,9 +69,15 @@ function matchesPhoneDerivedPlaceholder(
   normalized: string,
   phoneDigits: string,
 ): boolean {
-  if (!phoneDigits) return false;
-  if (lowered === `${phoneDigits} doe`) return true;
-  if (extractAsciiDigits(normalized) === phoneDigits) return true;
+  if (!phoneDigits) {
+    return false;
+  }
+  if (lowered === `${phoneDigits} doe`) {
+    return true;
+  }
+  if (extractAsciiDigits(normalized) === phoneDigits) {
+    return true;
+  }
   return false;
 }
 

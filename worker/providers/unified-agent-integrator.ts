@@ -148,8 +148,12 @@ const resolveAgentModeOverride = (autopilot: AutopilotSettings): boolean | null 
   const mode = String(autopilot?.agentMode || '')
     .trim()
     .toLowerCase();
-  if (AGENT_MODE_DISABLES.has(mode)) return false;
-  if (AGENT_MODE_ENABLES.has(mode)) return true;
+  if (AGENT_MODE_DISABLES.has(mode)) {
+    return false;
+  }
+  if (AGENT_MODE_ENABLES.has(mode)) {
+    return true;
+  }
   return null;
 };
 
@@ -158,8 +162,12 @@ const resolveAgentModeOverride = (autopilot: AutopilotSettings): boolean | null 
  * Returns `true`/`false` when settings force a decision, `null` when undecided.
  */
 const resolveUnifiedAgentSettingOverride = (autopilot: AutopilotSettings): boolean | null => {
-  if (autopilot?.useUnifiedAgent === false) return false;
-  if (autopilot?.useUnifiedAgent === true) return true;
+  if (autopilot?.useUnifiedAgent === false) {
+    return false;
+  }
+  if (autopilot?.useUnifiedAgent === true) {
+    return true;
+  }
   return resolveAgentModeOverride(autopilot);
 };
 
@@ -175,8 +183,12 @@ const matchesAnyKeyword = (text: string, keywords: readonly string[]): boolean =
  * product-specific inquiries).
  */
 const hasUnifiedAgentContentSignals = (messageContent: string): boolean => {
-  if (messageContent.length > 200) return true;
-  if (hasEnoughQuestions(messageContent)) return true;
+  if (messageContent.length > 200) {
+    return true;
+  }
+  if (hasEnoughQuestions(messageContent)) {
+    return true;
+  }
   const text = messageContent.toLowerCase();
   return matchesAnyKeyword(text, NEGOTIATION_KEYWORDS) || matchesAnyKeyword(text, PRODUCT_KEYWORDS);
 };
@@ -198,10 +210,14 @@ export function shouldUseUnifiedAgent(params: {
   const autopilot = extractAutopilotSettings(settings);
 
   const override = resolveUnifiedAgentSettingOverride(autopilot);
-  if (override !== null) return override;
+  if (override !== null) {
+    return override;
+  }
 
   // Leads quentes sempre usam o agente unificado
-  if (leadScore && leadScore >= 70) return true;
+  if (leadScore && leadScore >= 70) {
+    return true;
+  }
 
   // PR P4-1: previously this returned `messageContent.trim().length > 0`,
   // which made every preceding heuristic dead code (any non-empty

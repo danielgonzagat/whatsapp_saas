@@ -22,21 +22,27 @@ export class FlowOptimizerService {
   }
 
   async optimizeFlow(workspaceId: string, flowId: string) {
-    if (!this.openai) return;
+    if (!this.openai) {
+      return;
+    }
 
     const flow = await this.prisma.flow.findUnique({
       where: { id: flowId },
       include: { executions: { take: 50, orderBy: { createdAt: 'desc' } } },
     });
 
-    if (!flow || !flow.aiOptimization) return;
+    if (!flow || !flow.aiOptimization) {
+      return;
+    }
 
     // 1. Analyze Performance
     const total = flow.executions.length;
     const completed = flow.executions.filter((e) => e.status === 'COMPLETED').length;
     const conversionRate = total > 0 ? completed / total : 0;
 
-    if (conversionRate > 0.8) return; // Good enough
+    if (conversionRate > 0.8) {
+      return;
+    } // Good enough
 
     // 2. Generate Optimization Suggestion
     const prompt = `

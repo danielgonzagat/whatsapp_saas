@@ -10,7 +10,9 @@ interface ResponsiveViewportState {
 }
 
 function readViewportWidth() {
-  if (typeof window === 'undefined') return 0;
+  if (typeof window === 'undefined') {
+    return 0;
+  }
   return window.innerWidth || 0;
 }
 

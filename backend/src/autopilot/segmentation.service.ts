@@ -168,8 +168,12 @@ export class SegmentationService {
     }
 
     const createdAtFilter: Prisma.DateTimeFilter<'Contact'> = {};
-    if (criteria.createdAfter) createdAtFilter.gte = criteria.createdAfter;
-    if (criteria.createdBefore) createdAtFilter.lte = criteria.createdBefore;
+    if (criteria.createdAfter) {
+      createdAtFilter.gte = criteria.createdAfter;
+    }
+    if (criteria.createdBefore) {
+      createdAtFilter.lte = criteria.createdBefore;
+    }
     if (createdAtFilter.gte !== undefined || createdAtFilter.lte !== undefined) {
       where.createdAt = createdAtFilter;
     }
@@ -402,10 +406,15 @@ export class SegmentationService {
 
     // Determinar nível
     let level: 'hot' | 'warm' | 'cold' | 'ghost';
-    if (totalScore >= 60) level = 'hot';
-    else if (totalScore >= 35) level = 'warm';
-    else if (totalScore >= 15) level = 'cold';
-    else level = 'ghost';
+    if (totalScore >= 60) {
+      level = 'hot';
+    } else if (totalScore >= 35) {
+      level = 'warm';
+    } else if (totalScore >= 15) {
+      level = 'cold';
+    } else {
+      level = 'ghost';
+    }
 
     return { score: Math.round(totalScore), level, factors };
   }
@@ -477,8 +486,12 @@ export class SegmentationService {
         .filter((d) => d.status === DealStatus.WON)
         .reduce((sum, d) => sum + (d.value || 0), 0);
 
-      if (minValue !== undefined && totalValue < minValue) return false;
-      if (maxValue !== undefined && totalValue > maxValue) return false;
+      if (minValue !== undefined && totalValue < minValue) {
+        return false;
+      }
+      if (maxValue !== undefined && totalValue > maxValue) {
+        return false;
+      }
       return true;
     });
   }

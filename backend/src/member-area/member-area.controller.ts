@@ -118,7 +118,9 @@ export class MemberAreaController {
   ) {}
 
   private serializeArea(req: AuthenticatedRequest, area: Record<string, unknown>) {
-    if (!area) return area;
+    if (!area) {
+      return area;
+    }
 
     const modules = Array.isArray(area.modules) ? area.modules : [];
     const lessonsCount =
@@ -439,7 +441,9 @@ export class MemberAreaController {
       const existingRecord = await this.prisma.memberModule.findFirst({
         where: { memberAreaId: id, name: dto.name },
       });
-      if (existingRecord) return { data: existingRecord };
+      if (existingRecord) {
+        return { data: existingRecord };
+      }
     }
 
     const area = await this.prisma.memberArea.findFirst({
@@ -588,7 +592,9 @@ export class MemberAreaController {
       const existingRecord = await this.prisma.memberLesson.findFirst({
         where: { moduleId, name: dto.name },
       });
-      if (existingRecord) return { data: existingRecord };
+      if (existingRecord) {
+        return { data: existingRecord };
+      }
     }
 
     const area = await this.prisma.memberArea.findFirst({
@@ -984,7 +990,9 @@ export class MemberAreaController {
       const area = await this.prisma.memberArea.findFirst({
         where: { id: areaId, workspaceId },
       });
-      if (!area) return [];
+      if (!area) {
+        return [];
+      }
       const where: Record<string, unknown> = { memberAreaId: areaId, workspaceId };
       if (q) {
         where.OR = [
@@ -1012,7 +1020,9 @@ export class MemberAreaController {
     const area = await this.prisma.memberArea.findFirst({
       where: { id: areaId, workspaceId },
     });
-    if (!area) throw new NotFoundException('Area not found');
+    if (!area) {
+      throw new NotFoundException('Area not found');
+    }
 
     const studentName = readText(dto.studentName) ?? readText(dto.name);
     const studentEmail = readText(dto.studentEmail) ?? readText(dto.email);
@@ -1067,7 +1077,9 @@ export class MemberAreaController {
     const enrollment = await this.prisma.memberEnrollment.findFirst({
       where: { id: studentId, memberAreaId: areaId, workspaceId },
     });
-    if (!enrollment) throw new NotFoundException('Enrollment not found');
+    if (!enrollment) {
+      throw new NotFoundException('Enrollment not found');
+    }
     const updated = await this.prisma.memberEnrollment.update({
       where: { id: studentId },
       data: dto,
@@ -1088,7 +1100,9 @@ export class MemberAreaController {
     const enrollment = await this.prisma.memberEnrollment.findFirst({
       where: { id: studentId, memberAreaId: areaId, workspaceId },
     });
-    if (!enrollment) throw new NotFoundException('Enrollment not found');
+    if (!enrollment) {
+      throw new NotFoundException('Enrollment not found');
+    }
     await this.auditService.log({
       workspaceId,
       action: 'DELETE_RECORD',

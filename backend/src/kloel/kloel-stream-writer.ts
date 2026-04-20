@@ -119,13 +119,17 @@ export class KloelStreamWriter {
   }
 
   private stopHeartbeat() {
-    if (!this.heartbeatInterval) return;
+    if (!this.heartbeatInterval) {
+      return;
+    }
     clearInterval(this.heartbeatInterval);
     this.heartbeatInterval = null;
   }
 
   private writeComment(comment: string) {
-    if (this.isResponseClosed() || this.isClientDisconnected()) return;
+    if (this.isResponseClosed() || this.isClientDisconnected()) {
+      return;
+    }
 
     try {
       this.res.write(`: ${comment}\n\n`);
@@ -139,7 +143,9 @@ export class KloelStreamWriter {
   }
 
   write(data: KloelStreamEvent) {
-    if (this.isResponseClosed() || this.isClientDisconnected()) return;
+    if (this.isResponseClosed() || this.isClientDisconnected()) {
+      return;
+    }
 
     try {
       this.res.write(`data: ${serializeSsePayload(data)}\n\n`);
@@ -210,7 +216,9 @@ export class KloelStreamWriter {
     let hasStreamedContent = false;
 
     const emitAnswerChunk = (content: string) => {
-      if (!content) return;
+      if (!content) {
+        return;
+      }
       if (!hasStreamedContent) {
         hasStreamedContent = true;
         this.write(createKloelStatusEvent('streaming_token', input.streamingLabel));
@@ -235,7 +243,9 @@ export class KloelStreamWriter {
       }
 
       const content = chunk.choices[0]?.delta?.content || '';
-      if (!content) continue;
+      if (!content) {
+        continue;
+      }
       emitAnswerChunk(content);
     }
 

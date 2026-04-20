@@ -70,7 +70,9 @@ export function KloelChatBubble({
   });
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
     const t = setTimeout(() => setShow(true), delay);
     return () => clearTimeout(t);
   }, [enabled, delay]);
@@ -91,13 +93,17 @@ export function KloelChatBubble({
   }, [storageKey]);
 
   useEffect(() => {
-    if (!open || !conversationId || messages.length > 0 || !tokenStorage.getToken()) return;
+    if (!open || !conversationId || messages.length > 0 || !tokenStorage.getToken()) {
+      return;
+    }
 
     let cancelled = false;
 
     void loadKloelThreadMessages(conversationId)
       .then((threadMessages) => {
-        if (cancelled || threadMessages.length === 0) return;
+        if (cancelled || threadMessages.length === 0) {
+          return;
+        }
         setMessages(
           threadMessages.map((message, idx) => ({
             id: `thread-${message.id ?? idx}`,
@@ -118,7 +124,9 @@ export function KloelChatBubble({
   const isLeft = position === 'bottom-left';
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading) {
+      return;
+    }
     const userMsg = input.trim();
     setInput('');
     setMessages((prev) => [...prev, { id: nextMsgId(), role: 'user', text: userMsg }]);
@@ -209,7 +217,9 @@ export function KloelChatBubble({
     setLoading(false);
   };
 
-  if (!enabled || !show) return null;
+  if (!enabled || !show) {
+    return null;
+  }
 
   // Bubble (closed state)
   if (!open) {

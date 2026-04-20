@@ -71,7 +71,9 @@ function runAudit(dir: string): AuditReport | null {
 }
 
 export function checkNpmAudit(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
   const breaks: Break[] = [];
 
   const workspaces: Array<{ name: string; dir: string }> = [
@@ -81,7 +83,9 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
   ];
 
   for (const ws of workspaces) {
-    if (!fs.existsSync(path.join(ws.dir, 'package.json'))) continue;
+    if (!fs.existsSync(path.join(ws.dir, 'package.json'))) {
+      continue;
+    }
 
     const report = runAudit(ws.dir);
 
@@ -101,13 +105,16 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
 
     for (const [pkgName, vuln] of Object.entries(vulns)) {
       const severity = vuln.severity;
-      if (severity !== 'critical' && severity !== 'high') continue;
+      if (severity !== 'critical' && severity !== 'high') {
+        continue;
+      }
 
-      const fixInfo = typeof vuln.fixAvailable === 'object' && vuln.fixAvailable
-        ? `fix: upgrade to ${vuln.fixAvailable.name}@${vuln.fixAvailable.version}`
-        : vuln.fixAvailable
-          ? 'fix: run npm audit fix'
-          : 'no automatic fix available — manual review required';
+      const fixInfo =
+        typeof vuln.fixAvailable === 'object' && vuln.fixAvailable
+          ? `fix: upgrade to ${vuln.fixAvailable.name}@${vuln.fixAvailable.version}`
+          : vuln.fixAvailable
+            ? 'fix: run npm audit fix'
+            : 'no automatic fix available — manual review required';
 
       const directNote = vuln.isDirect ? ' [DIRECT DEPENDENCY]' : ' [transitive]';
 
@@ -134,7 +141,8 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
       file: '.github/dependabot.yml',
       line: 0,
       description: 'No automated dependency update tool configured (Dependabot or Renovate)',
-      detail: 'Create .github/dependabot.yml or renovate.json to get automated PRs for security patches',
+      detail:
+        'Create .github/dependabot.yml or renovate.json to get automated PRs for security patches',
     });
   }
 

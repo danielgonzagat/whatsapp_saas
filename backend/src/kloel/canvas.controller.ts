@@ -56,9 +56,13 @@ export class CanvasController {
   @Get('designs')
   async listDesigns(@Request() req: AuthenticatedRequest, @Query('productId') productId?: string) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { designs: [], count: 0 };
+    if (!workspaceId) {
+      return { designs: [], count: 0 };
+    }
     const where: Prisma.KloelDesignWhereInput = { workspaceId };
-    if (productId) where.productId = productId;
+    if (productId) {
+      where.productId = productId;
+    }
     const designs = await this.prisma.kloelDesign.findMany({
       where,
       orderBy: { updatedAt: 'desc' },
@@ -80,7 +84,9 @@ export class CanvasController {
   @Post('designs')
   async createDesign(@Request() req: AuthenticatedRequest, @Body() dto: CreateCanvasDesignDto) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) throw new NotFoundException('Workspace not found');
+    if (!workspaceId) {
+      throw new NotFoundException('Workspace not found');
+    }
     const design = await this.prisma.kloelDesign.create({
       data: {
         workspaceId,
@@ -107,7 +113,9 @@ export class CanvasController {
     const existing = await this.prisma.kloelDesign.findFirst({
       where: { id, workspaceId },
     });
-    if (!existing) throw new NotFoundException('Design not found');
+    if (!existing) {
+      throw new NotFoundException('Design not found');
+    }
     const { id: _, workspaceId: __, ...data } = dto;
     const design = await this.prisma.kloelDesign.update({
       where: { id, workspaceId },
@@ -123,7 +131,9 @@ export class CanvasController {
     const existing = await this.prisma.kloelDesign.findFirst({
       where: { id, workspaceId },
     });
-    if (!existing) throw new NotFoundException('Design not found');
+    if (!existing) {
+      throw new NotFoundException('Design not found');
+    }
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
       action: 'DELETE_RECORD',
@@ -166,14 +176,18 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+    if (workspaceId) {
+      await this.planLimits.ensureTokenBudget(workspaceId);
+    }
     const response = await openai.images.generate({
       model: 'dall-e-3',
       prompt: enrichedPrompt || dto.prompt,
       n: 1,
       size: '1024x1024',
     });
-    if (workspaceId) await this.planLimits.trackAiUsage(workspaceId, 1000).catch(() => {}); // image generation ~1000 tokens equivalent
+    if (workspaceId) {
+      await this.planLimits.trackAiUsage(workspaceId, 1000).catch(() => {});
+    } // image generation ~1000 tokens equivalent
     const imageUrl = response.data[0]?.url;
     return { success: true, imageUrl, prompt: enrichedPrompt };
   }

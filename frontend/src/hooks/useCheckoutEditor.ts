@@ -398,12 +398,16 @@ export function useCheckoutEditor(planId: string | null) {
 
   const updateConfig = useCallback(
     async (patch: Partial<CheckoutConfig>) => {
-      if (!planId) return;
+      if (!planId) {
+        return;
+      }
 
       const next = { ...config, ...patch };
       mutate(next, false);
 
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
 
       return new Promise<void>((resolve) => {
         saveTimerRef.current = setTimeout(async () => {

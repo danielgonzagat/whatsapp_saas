@@ -87,9 +87,13 @@ export class WalletService {
     paymentIntent: StripePaymentIntent,
   ): Promise<PrepaidWalletTransaction | null> {
     const walletId = paymentIntent.metadata?.wallet_id;
-    if (!walletId) return null;
+    if (!walletId) {
+      return null;
+    }
     const amountCents = BigInt(paymentIntent.amount);
-    if (amountCents <= 0n) return null;
+    if (amountCents <= 0n) {
+      return null;
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.prepaidWalletTransaction.findFirst({
@@ -173,7 +177,9 @@ export class WalletService {
       const wallet = await tx.prepaidWallet.findUnique({
         where: { workspaceId: input.workspaceId },
       });
-      if (!wallet) throw new WalletNotFoundError(input.workspaceId);
+      if (!wallet) {
+        throw new WalletNotFoundError(input.workspaceId);
+      }
 
       if (wallet.balanceCents < costCents) {
         throw new InsufficientWalletBalanceError(wallet.id, costCents, wallet.balanceCents);
@@ -208,7 +214,9 @@ export class WalletService {
 
   async getBalance(workspaceId: string): Promise<bigint> {
     const wallet = await this.prisma.prepaidWallet.findUnique({ where: { workspaceId } });
-    if (!wallet) throw new WalletNotFoundError(workspaceId);
+    if (!wallet) {
+      throw new WalletNotFoundError(workspaceId);
+    }
     return wallet.balanceCents;
   }
 

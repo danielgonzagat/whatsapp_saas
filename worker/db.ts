@@ -17,7 +17,9 @@ if (enableQueryLogs) {
 let shuttingDown = false;
 
 async function shutdownPrisma(signal: string) {
-  if (shuttingDown) return;
+  if (shuttingDown) {
+    return;
+  }
   shuttingDown = true;
 
   try {

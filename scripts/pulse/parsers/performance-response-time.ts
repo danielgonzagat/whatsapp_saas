@@ -38,14 +38,14 @@ const SLOW_THRESHOLD_MS = 500;
 function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 !== 0
-    ? sorted[mid]
-    : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
 }
 
 export async function checkPerformanceResponseTime(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const jwt = makeTestJwt();
@@ -71,7 +71,9 @@ export async function checkPerformanceResponseTime(config: PulseConfig): Promise
       timings.push(res.timeMs);
     }
 
-    if (networkError || timings.length === 0) continue;
+    if (networkError || timings.length === 0) {
+      continue;
+    }
 
     const medianMs = median(timings);
 

@@ -393,14 +393,20 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
 };
 
 function formatJsonSection(label: string, value: unknown): string | null {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   return `${label}: ${JSON.stringify(value)}`;
 }
 
 function formatObjectionsSection(objections: unknown): string | null {
-  if (!Array.isArray(objections)) return null;
+  if (!Array.isArray(objections)) {
+    return null;
+  }
   const active = objections.filter(isObjectionEntry).filter((o) => o.enabled !== false);
-  if (!active.length) return null;
+  if (!active.length) {
+    return null;
+  }
   const lines = active.map(
     (o) => `- "${o.label || o.id}": Responda com estratégia "${o.response || 'valor e benefício'}"`,
   );
@@ -408,12 +414,16 @@ function formatObjectionsSection(objections: unknown): string | null {
 }
 
 function formatToneSection(tone: unknown): string | null {
-  if (typeof tone !== 'string' || !tone) return null;
+  if (typeof tone !== 'string' || !tone) {
+    return null;
+  }
   return `TOM: ${TONE_DESCRIPTIONS[tone] || tone}`;
 }
 
 function formatNumericSection(label: string, value: unknown): string | null {
-  if (!value || typeof value !== 'number') return null;
+  if (!value || typeof value !== 'number') {
+    return null;
+  }
   return label.replace('{value}', String(value));
 }
 

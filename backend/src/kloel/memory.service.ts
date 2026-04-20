@@ -81,7 +81,9 @@ export class MemoryService {
 
     try {
       const where: Record<string, unknown> = { workspaceId };
-      if (category) where.category = category;
+      if (category) {
+        where.category = category;
+      }
 
       // Busca por texto simples
       where.OR = [
@@ -193,7 +195,9 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
     limit = 20,
   ): Promise<{ memories: MemoryItem[]; total: number }> {
     const where: Record<string, unknown> = { workspaceId };
-    if (category) where.category = category;
+    if (category) {
+      where.category = category;
+    }
 
     const [memories, total] = await Promise.all([
       this.prisma.kloelMemory.findMany({

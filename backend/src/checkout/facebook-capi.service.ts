@@ -25,10 +25,18 @@ export class FacebookCAPIService {
   async sendEvent(data: CAPIEventData): Promise<void> {
     try {
       const userData: Record<string, unknown> = {};
-      if (data.email) userData.em = [this.sha256(data.email)];
-      if (data.phone) userData.ph = [this.sha256(data.phone)];
-      if (data.ip) userData.client_ip_address = data.ip;
-      if (data.userAgent) userData.client_user_agent = data.userAgent;
+      if (data.email) {
+        userData.em = [this.sha256(data.email)];
+      }
+      if (data.phone) {
+        userData.ph = [this.sha256(data.phone)];
+      }
+      if (data.ip) {
+        userData.client_ip_address = data.ip;
+      }
+      if (data.userAgent) {
+        userData.client_user_agent = data.userAgent;
+      }
 
       const body = {
         data: [

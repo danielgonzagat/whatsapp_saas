@@ -351,8 +351,12 @@ interface FeedMessageLike {
 }
 
 function formatFeedTime(value: FeedMessageLike): string {
-  if (value.time) return value.time;
-  if (!value.createdAt) return '';
+  if (value.time) {
+    return value.time;
+  }
+  if (!value.createdAt) {
+    return '';
+  }
   return new Date(value.createdAt).toLocaleTimeString('pt-BR', {
     hour: '2-digit',
     minute: '2-digit',
@@ -385,8 +389,11 @@ function drawNeuralFrame(
     for (let x = 0; x < w; x += 2) {
       const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
       const y = h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
-      if (x === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      if (x === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
     }
     ctx.stroke();
     ctx.globalAlpha = 1;
@@ -641,7 +648,9 @@ interface MappedProduct {
 }
 
 function mapTopProducts(rawProducts: unknown): MappedProduct[] {
-  if (!rawProducts || !Array.isArray(rawProducts) || rawProducts.length === 0) return [];
+  if (!rawProducts || !Array.isArray(rawProducts) || rawProducts.length === 0) {
+    return [];
+  }
   return (rawProducts as RawProductLike[]).slice(0, 3).map((p) => ({
     name: p.name || p.title || 'Produto',
     price: p.price ?? p.amount ?? 0,
@@ -651,10 +660,14 @@ function mapTopProducts(rawProducts: unknown): MappedProduct[] {
 }
 
 function toChannelDataMap(realChannels: unknown): Record<string, ChannelRealData> {
-  if (!realChannels || typeof realChannels !== 'object') return {};
+  if (!realChannels || typeof realChannels !== 'object') {
+    return {};
+  }
   const map: Record<string, ChannelRealData> = {};
   for (const [key, val] of Object.entries(realChannels as Record<string, unknown>)) {
-    if (val && typeof val === 'object') map[key] = val as ChannelRealData;
+    if (val && typeof val === 'object') {
+      map[key] = val as ChannelRealData;
+    }
   }
   return map;
 }
@@ -662,7 +675,9 @@ function toChannelDataMap(realChannels: unknown): Record<string, ChannelRealData
 function isBrainAvgResponseMeaningful(
   avgResponseTime: string | number | null | undefined,
 ): boolean {
-  if (typeof avgResponseTime === 'number') return avgResponseTime > 0;
+  if (typeof avgResponseTime === 'number') {
+    return avgResponseTime > 0;
+  }
   if (typeof avgResponseTime === 'string') {
     const trimmed = avgResponseTime.trim();
     return trimmed !== '' && trimmed !== '--';
@@ -679,9 +694,13 @@ function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
-    if (!c) return;
+    if (!c) {
+      return;
+    }
     const ctx = c.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
     let frame = 0;
     let raf: number;
     let visible = true;
@@ -693,7 +712,9 @@ function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
     );
     obs.observe(c);
     const draw = () => {
-      if (!visible) return;
+      if (!visible) {
+        return;
+      }
       drawNeuralFrame(ctx, w, h, color, frame);
       frame++;
       raf = requestAnimationFrame(draw);
@@ -750,7 +771,9 @@ function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string })
   const [feed, setFeed] = useState<Array<{ id: string; text: string }>>([]);
   const idx = useRef(0);
   useEffect(() => {
-    if (msgs.length === 0 || (msgs.length === 1 && msgs[0] === 'Aguardando mensagens...')) return;
+    if (msgs.length === 0 || (msgs.length === 1 && msgs[0] === 'Aguardando mensagens...')) {
+      return;
+    }
     const iv = setInterval(() => {
       setFeed((p) =>
         [
@@ -832,7 +855,9 @@ function ConnectFlow({
 }) {
   const router = useRouter();
   const ch = CH_CONFIG[channelKey];
-  if (!ch) return null;
+  if (!ch) {
+    return null;
+  }
 
   return (
     <div
@@ -916,7 +941,9 @@ function WhatsAppTab({
   connection?: NonNullable<MarketingConnectStatus['channels']>['whatsapp'];
   onRefreshConnectionStatus?: () => Promise<unknown> | unknown;
 }) {
-  if (!workspaceId) return null;
+  if (!workspaceId) {
+    return null;
+  }
 
   return (
     <WhatsAppExperience
@@ -1315,7 +1342,9 @@ function EmailTab({
     emailBody.trim() !== '';
 
   const handleSend = useCallback(async () => {
-    if (!emailSubject.trim() || !emailBody.trim() || !defaultRecipientEmail) return;
+    if (!emailSubject.trim() || !emailBody.trim() || !defaultRecipientEmail) {
+      return;
+    }
     setEmailSending(true);
     setEmailResult(null);
     try {
@@ -1805,7 +1834,9 @@ function MetaConnectPrompt({
   connecting?: boolean;
 }) {
   const ch = CH_CONFIG[channelKey];
-  if (!ch) return null;
+  if (!ch) {
+    return null;
+  }
 
   return (
     <div
@@ -1922,8 +1953,10 @@ function ChannelTab({
   emailTestResult?: string | null;
 }) {
   const ch = CH_CONFIG[channelKey];
-  if (!ch) return null;
-  if (channelKey === 'whatsapp')
+  if (!ch) {
+    return null;
+  }
+  if (channelKey === 'whatsapp') {
     return (
       <WhatsAppTab
         channelData={channelData}
@@ -1935,7 +1968,8 @@ function ChannelTab({
         onRefreshConnectionStatus={onRefreshConnectionStatus}
       />
     );
-  if (channelKey === 'email')
+  }
+  if (channelKey === 'email') {
     return (
       <EmailTab
         channelData={channelData}
@@ -1950,8 +1984,9 @@ function ChannelTab({
         defaultRecipientEmail={operator || null}
       />
     );
+  }
   if (channelKey === 'instagram') {
-    if (metaConnected)
+    if (metaConnected) {
       return (
         <InstagramTab
           channelData={channelData}
@@ -1962,6 +1997,7 @@ function ChannelTab({
           connecting={connectingKey === 'instagram'}
         />
       );
+    }
     return (
       <MetaConnectPrompt
         channelKey={channelKey}
@@ -1972,7 +2008,7 @@ function ChannelTab({
     );
   }
   if (channelKey === 'facebook') {
-    if (metaConnected)
+    if (metaConnected) {
       return (
         <FacebookTab
           channelData={channelData}
@@ -1981,6 +2017,7 @@ function ChannelTab({
           connecting={connectingKey === 'facebook'}
         />
       );
+    }
     return (
       <MetaConnectPrompt
         channelKey={channelKey}
@@ -2592,7 +2629,9 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
           `/meta/auth/url?channel=${encodeURIComponent(channelKey)}&returnTo=${encodeURIComponent(returnTo)}`,
         );
         const url = String(res?.data?.url || '').trim();
-        if (!url) throw new Error('Nao foi possivel iniciar a conexao oficial da Meta.');
+        if (!url) {
+          throw new Error('Nao foi possivel iniciar a conexao oficial da Meta.');
+        }
         if (!isTrustedMetaOauthUrl(url)) {
           throw new Error('Redirecionamento bloqueado: destino Meta invalido.');
         }
@@ -2700,7 +2739,9 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const getChannelData = useCallback(
     (channelKey: string): ChannelRealData | null => {
       const cfg = CH_CONFIG[channelKey];
-      if (!cfg) return null;
+      if (!cfg) {
+        return null;
+      }
       return channelDataMap[cfg.backendKey] || null;
     },
     [channelDataMap],
@@ -2719,7 +2760,9 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     (id: string) => {
       setTab(id);
       const nextRoute = id === 'conversas' ? '/marketing' : `/marketing/${id}`;
-      if (pathname === nextRoute) return;
+      if (pathname === nextRoute) {
+        return;
+      }
       startTransition(() => {
         router.push(nextRoute);
       });

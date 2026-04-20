@@ -114,15 +114,18 @@ export class SmartRoutingService {
       const messageBody = typeof context.messageBody === 'string' ? context.messageBody : '';
 
       // Check Channel
-      if (rule.channel && rule.channel !== context.channel) continue;
+      if (rule.channel && rule.channel !== context.channel) {
+        continue;
+      }
 
       // Check Keyword
       if (
         rule.keyword &&
         messageBody &&
         !messageBody.toLowerCase().includes(rule.keyword.toLowerCase())
-      )
+      ) {
         continue;
+      }
 
       // Check Tag (if context has tags)
       // ...

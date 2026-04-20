@@ -76,7 +76,9 @@ interface RawCheckout {
 }
 
 export function mapProductEditorPlans(rawPlans: unknown): ProductEditorPlanView[] {
-  if (!Array.isArray(rawPlans)) return [];
+  if (!Array.isArray(rawPlans)) {
+    return [];
+  }
 
   return (rawPlans as RawPlan[]).map((plan) => ({
     id: plan.id,
@@ -97,14 +99,22 @@ export function mapProductEditorPlans(rawPlans: unknown): ProductEditorPlanView[
 }
 
 export function mapProductEditorCheckouts(rawCheckouts: unknown): ProductEditorCheckoutView[] {
-  if (!Array.isArray(rawCheckouts)) return [];
+  if (!Array.isArray(rawCheckouts)) {
+    return [];
+  }
 
   return (rawCheckouts as RawCheckout[]).map((checkout) => {
     const cfg: RawCheckoutConfig = checkout.checkoutConfig || {};
     const paymentMethods: string[] = [];
-    if (cfg.enablePix !== false) paymentMethods.push('PIX');
-    if (cfg.enableCreditCard !== false) paymentMethods.push('CARTÃO');
-    if (cfg.enableBoleto) paymentMethods.push('BOLETO');
+    if (cfg.enablePix !== false) {
+      paymentMethods.push('PIX');
+    }
+    if (cfg.enableCreditCard !== false) {
+      paymentMethods.push('CARTÃO');
+    }
+    if (cfg.enableBoleto) {
+      paymentMethods.push('BOLETO');
+    }
 
     return {
       id: checkout.id,

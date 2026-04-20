@@ -19,15 +19,21 @@ export function easeInOutQuart(t: number): number {
 function normalizeActions(
   action: WhatsAppProofEntry['action'],
 ): Array<Record<string, unknown> | null | undefined> {
-  if (Array.isArray(action)) return action as Array<Record<string, unknown>>;
-  if (action) return [action as unknown as Record<string, unknown>];
+  if (Array.isArray(action)) {
+    return action as Array<Record<string, unknown>>;
+  }
+  if (action) {
+    return [action as unknown as Record<string, unknown>];
+  }
   return [];
 }
 
 function extractCoordinate(
   action: Record<string, unknown> | null | undefined,
 ): [number | null, number | null] {
-  if (!action) return [null, null];
+  if (!action) {
+    return [null, null];
+  }
   const rawX = action.x;
   const rawY = action.y;
   const coordinate = action.coordinate;
@@ -51,7 +57,9 @@ export function readProofCoordinates(proofs: WhatsAppProofEntry[]): AgentCursorT
     const actions = normalizeActions(proof.action);
     for (const action of actions) {
       const [x, y] = extractCoordinate(action);
-      if (x == null || y == null) continue;
+      if (x == null || y == null) {
+        continue;
+      }
       return {
         x,
         y,

@@ -49,7 +49,9 @@ interface PixelTrackerProps {
 }
 
 function readCookieConsent(): CookieConsentPreferences | null {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === 'undefined') {
+    return null;
+  }
 
   const prefix = 'kloel_consent=';
   const match = document.cookie
@@ -57,7 +59,9 @@ function readCookieConsent(): CookieConsentPreferences | null {
     .map((entry) => entry.trim())
     .find((entry) => entry.startsWith(prefix));
 
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
 
   try {
     const parsed = JSON.parse(decodeURIComponent(match.slice(prefix.length)));
@@ -75,7 +79,9 @@ function readCookieConsent(): CookieConsentPreferences | null {
 /* ─── Event permission check ──────────────────────────────────────────────── */
 
 function shouldTrack(pixel: PixelConfig, event: PixelEvent): boolean {
-  if (!pixel.isActive) return false;
+  if (!pixel.isActive) {
+    return false;
+  }
   switch (event) {
     case 'PageView':
       return pixel.trackPageView;
@@ -93,9 +99,13 @@ function shouldTrack(pixel: PixelConfig, event: PixelEvent): boolean {
 /* ─── Script injectors ────────────────────────────────────────────────────── */
 
 function ensureFacebookPixel(pixelId: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   const pw = getPixelWindow();
-  if (pw.fbq) return;
+  if (pw.fbq) {
+    return;
+  }
   const n: PixelFn & {
     callMethod?: PixelFn;
     queue?: unknown[][];
@@ -113,7 +123,9 @@ function ensureFacebookPixel(pixelId: string): void {
     { queue: [] as unknown[][], loaded: true, version: '2.0' } as const,
   );
   pw.fbq = n;
-  if (!pw._fbq) pw._fbq = n;
+  if (!pw._fbq) {
+    pw._fbq = n;
+  }
   n.push = n;
   const s = document.createElement('script');
   s.async = true;
@@ -125,7 +137,9 @@ function ensureFacebookPixel(pixelId: string): void {
 function fireFacebook(pixelId: string, event: PixelEvent, params?: Record<string, unknown>): void {
   ensureFacebookPixel(pixelId);
   const fbq = getPixelWindow().fbq;
-  if (!fbq) return;
+  if (!fbq) {
+    return;
+  }
   if (event === 'PageView') {
     fbq('track', 'PageView');
   } else if (event === 'InitiateCheckout') {
@@ -138,9 +152,13 @@ function fireFacebook(pixelId: string, event: PixelEvent, params?: Record<string
 }
 
 function ensureGtag(pixelId: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   const pw = getPixelWindow();
-  if (pw.gtag) return;
+  if (pw.gtag) {
+    return;
+  }
   const s = document.createElement('script');
   s.async = true;
   s.src = `https://www.googletagmanager.com/gtag/js?id=${pixelId}`;
@@ -156,7 +174,9 @@ function ensureGtag(pixelId: string): void {
 function fireGoogle(pixelId: string, event: PixelEvent, params?: Record<string, unknown>): void {
   ensureGtag(pixelId);
   const gtag = getPixelWindow().gtag;
-  if (!gtag) return;
+  if (!gtag) {
+    return;
+  }
   const eventMap: Record<PixelEvent, string> = {
     PageView: 'page_view',
     InitiateCheckout: 'begin_checkout',
@@ -167,9 +187,13 @@ function fireGoogle(pixelId: string, event: PixelEvent, params?: Record<string, 
 }
 
 function ensureTikTok(pixelId: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   const pw = getPixelWindow();
-  if (pw.ttq) return;
+  if (pw.ttq) {
+    return;
+  }
   pw.TiktokAnalyticsObject = 'ttq';
   const methods = [
     'page',
@@ -204,11 +228,15 @@ function ensureTikTok(pixelId: string): void {
     };
   };
   ttqObj.setAndDefer = setAndDefer;
-  for (const m of methods) setAndDefer(ttqObj as unknown as Record<string, unknown>, m);
+  for (const m of methods) {
+    setAndDefer(ttqObj as unknown as Record<string, unknown>, m);
+  }
   ttqObj.instance = (id: string) => {
     const store = ttqObj._i as Record<string, unknown[]>;
     const inst = store[id] || [];
-    for (const m of methods) setAndDefer(inst as unknown as Record<string, unknown>, m);
+    for (const m of methods) {
+      setAndDefer(inst as unknown as Record<string, unknown>, m);
+    }
     return inst;
   };
   ttqObj.load = (id: string) => {
@@ -226,7 +254,9 @@ function ensureTikTok(pixelId: string): void {
 function fireTikTok(pixelId: string, event: PixelEvent, params?: Record<string, unknown>): void {
   ensureTikTok(pixelId);
   const ttq = getPixelWindow().ttq;
-  if (!ttq) return;
+  if (!ttq) {
+    return;
+  }
   const eventMap: Record<PixelEvent, string> = {
     PageView: 'ViewContent',
     InitiateCheckout: 'InitiateCheckout',
@@ -255,15 +285,25 @@ function buildPixelParams(
   orderId?: string,
 ): Record<string, unknown> {
   const params: Record<string, unknown> = {};
-  if (value != null) params.value = value / 100;
-  if (currency) params.currency = currency;
-  if (orderId) params.order_id = orderId;
+  if (value != null) {
+    params.value = value / 100;
+  }
+  if (currency) {
+    params.currency = currency;
+  }
+  if (orderId) {
+    params.order_id = orderId;
+  }
   return params;
 }
 
 function isConsentAllowed(pixel: PixelConfig, consent: CookieConsentPreferences): boolean {
-  if (pixel.type === 'GOOGLE_ANALYTICS' && !consent.analytics) return false;
-  if (MARKETING_PIXEL_TYPES.has(pixel.type) && !consent.marketing) return false;
+  if (pixel.type === 'GOOGLE_ANALYTICS' && !consent.analytics) {
+    return false;
+  }
+  if (MARKETING_PIXEL_TYPES.has(pixel.type) && !consent.marketing) {
+    return false;
+  }
   return true;
 }
 
@@ -301,17 +341,27 @@ export default function PixelTracker({
   const firedRef = useRef(false);
 
   useEffect(() => {
-    if (firedRef.current) return;
-    if (!pixels || pixels.length === 0) return;
+    if (firedRef.current) {
+      return;
+    }
+    if (!pixels || pixels.length === 0) {
+      return;
+    }
     const consent = readCookieConsent();
-    if (!consent) return;
+    if (!consent) {
+      return;
+    }
     firedRef.current = true;
 
     const params = buildPixelParams(value, currency, orderId);
 
     for (const pixel of pixels) {
-      if (!shouldTrack(pixel, event)) continue;
-      if (!isConsentAllowed(pixel, consent)) continue;
+      if (!shouldTrack(pixel, event)) {
+        continue;
+      }
+      if (!isConsentAllowed(pixel, consent)) {
+        continue;
+      }
       dispatchPixel(pixel, event, params);
     }
   }, [pixels, event, value, currency, orderId]);

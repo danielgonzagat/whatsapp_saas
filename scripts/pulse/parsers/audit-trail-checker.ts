@@ -37,7 +37,8 @@ const FINANCIAL_OPERATIONS = [
   /createCommission|processCommission|payCommission/i,
 ];
 
-const AUDIT_LOG_WRITE_RE = /AuditLog|auditLog|this\.auditLog|auditService|writeAudit|createAuditEntry/i;
+const AUDIT_LOG_WRITE_RE =
+  /AuditLog|auditLog|this\.auditLog|auditService|writeAudit|createAuditEntry/i;
 const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
 
 const ADMIN_OPERATIONS = [
@@ -64,8 +65,10 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
       severity: 'critical',
       file: path.relative(config.rootDir, config.schemaPath),
       line: 0,
-      description: 'AuditLog model not found in Prisma schema — financial operations cannot be audited',
-      detail: 'Add an AuditLog model with: id, workspaceId, userId, action, amount, before, after, ip, timestamp',
+      description:
+        'AuditLog model not found in Prisma schema — financial operations cannot be audited',
+      detail:
+        'Add an AuditLog model with: id, workspaceId, userId, action, amount, before, after, ip, timestamp',
     });
   }
 
@@ -73,7 +76,9 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
 
   for (const file of backendFiles) {
-    if (!/audit/i.test(path.basename(file))) continue;
+    if (!/audit/i.test(path.basename(file))) {
+      continue;
+    }
     let content: string;
     try {
       content = fs.readFileSync(file, 'utf8');
@@ -89,18 +94,21 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
         file: relFile,
         line: 0,
         description: 'AuditLog records are deletable — audit trail is not immutable',
-        detail: 'Remove any DELETE endpoints or deleteMany calls targeting AuditLog; audit logs must be append-only',
+        detail:
+          'Remove any DELETE endpoints or deleteMany calls targeting AuditLog; audit logs must be append-only',
       });
     }
   }
 
   // CHECK 1: Financial operations without AuditLog
-  const financialFiles = backendFiles.filter(f =>
-    /checkout|wallet|billing|payment|commission|kloel/i.test(f) && /service/i.test(f)
+  const financialFiles = backendFiles.filter(
+    (f) => /checkout|wallet|billing|payment|commission|kloel/i.test(f) && /service/i.test(f),
   );
 
   for (const file of financialFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) continue;
+    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -111,7 +119,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     const relFile = path.relative(config.rootDir, file);
 
-    const hasFinancialOp = FINANCIAL_OPERATIONS.some(re => re.test(content));
+    const hasFinancialOp = FINANCIAL_OPERATIONS.some((re) => re.test(content));
     const hasAuditLog = AUDIT_LOG_WRITE_RE.test(content);
     const hasTransaction = TRANSACTION_RE.test(content);
 
@@ -121,8 +129,10 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
         severity: 'critical',
         file: relFile,
         line: 0,
-        description: 'Financial operation without AuditLog write — cannot reconstruct transaction history',
-        detail: 'Every financial mutation must write an AuditLog entry with before/after state, amount, and actor',
+        description:
+          'Financial operation without AuditLog write — cannot reconstruct transaction history',
+        detail:
+          'Every financial mutation must write an AuditLog entry with before/after state, amount, and actor',
       });
     }
 
@@ -133,15 +143,19 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
         severity: 'critical',
         file: relFile,
         line: 0,
-        description: 'AuditLog written outside $transaction — audit record may exist for a rolled-back operation',
-        detail: 'Wrap both the financial operation and the AuditLog.create() inside prisma.$transaction()',
+        description:
+          'AuditLog written outside $transaction — audit record may exist for a rolled-back operation',
+        detail:
+          'Wrap both the financial operation and the AuditLog.create() inside prisma.$transaction()',
       });
     }
   }
 
   // CHECK 7: Sensitive fields in audit log content
   for (const file of backendFiles) {
-    if (!/audit/i.test(path.basename(file))) continue;
+    if (!/audit/i.test(path.basename(file))) {
+      continue;
+    }
     let content: string;
     try {
       content = fs.readFileSync(file, 'utf8');
@@ -157,15 +171,20 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
         file: relFile,
         line: 0,
         description: 'Potentially sensitive fields (password/token/CPF) may be logged in AuditLog',
-        detail: 'Sanitize before logging: omit password, token, secret fields; mask CPF/CNPJ to last 4 digits',
+        detail:
+          'Sanitize before logging: omit password, token, secret fields; mask CPF/CNPJ to last 4 digits',
       });
     }
   }
 
   // CHECK 2: Data deletion audit
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) continue;
-    if (!/service/i.test(file)) continue;
+    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+      continue;
+    }
+    if (!/service/i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -183,8 +202,10 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
           severity: 'high',
           file: relFile,
           line: 0,
-          description: 'Data deletion/anonymization without audit log — cannot prove LGPD compliance',
-          detail: 'Log every deletion: AuditLog.create({ action: "USER_DATA_DELETED", entityId, requestedBy, timestamp })',
+          description:
+            'Data deletion/anonymization without audit log — cannot prove LGPD compliance',
+          detail:
+            'Log every deletion: AuditLog.create({ action: "USER_DATA_DELETED", entityId, requestedBy, timestamp })',
         });
       }
     }
@@ -192,7 +213,9 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
   // CHECK 3: Admin actions audit
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) continue;
+    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -203,7 +226,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     const relFile = path.relative(config.rootDir, file);
 
-    const hasAdminOp = ADMIN_OPERATIONS.some(re => re.test(content));
+    const hasAdminOp = ADMIN_OPERATIONS.some((re) => re.test(content));
     if (hasAdminOp && !AUDIT_LOG_WRITE_RE.test(content)) {
       breaks.push({
         type: 'AUDIT_ADMIN_NO_LOG',

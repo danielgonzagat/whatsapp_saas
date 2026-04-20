@@ -657,9 +657,13 @@ function NeuralPulse({ w, h, color = EMBER }: { w: number; h: number; color?: st
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
-    if (!c) return;
+    if (!c) {
+      return;
+    }
     const ctx = c.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
     let frame = 0;
     let raf: number;
     let visible = true;
@@ -685,8 +689,11 @@ function NeuralPulse({ w, h, color = EMBER }: { w: number; h: number; color?: st
           const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
           const y =
             h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
         }
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -1277,14 +1284,18 @@ function CriarSite({ mode }: { mode?: string }) {
   const productName = searchParams?.get('productName') || '';
 
   useEffect(() => {
-    if (!dynamicMode || prompt.trim()) return;
+    if (!dynamicMode || prompt.trim()) {
+      return;
+    }
     setPrompt(
       'Crie uma página de vendas dinâmica que adapte headline, provas e CTA conforme origem do tráfego, interesse do visitante e produto selecionado.',
     );
   }, [dynamicMode, prompt]);
 
   useEffect(() => {
-    if (prompt.trim() || !productName) return;
+    if (prompt.trim() || !productName) {
+      return;
+    }
     setPrompt(
       `Crie uma página de vendas para o produto ${productName}, com headline forte, provas, FAQ, CTA principal e integração natural com checkout.`,
     );
@@ -1295,13 +1306,17 @@ function CriarSite({ mode }: { mode?: string }) {
     apiFetch('/kloel/site/list')
       .then((res) => {
         const data = res.data as { sites?: SiteItem[] } | undefined;
-        if (data?.sites) setSavedSites(data.sites);
+        if (data?.sites) {
+          setSavedSites(data.sites);
+        }
       })
       .finally(() => setLoadingSites(false));
   }, []);
 
   const productList = useMemo(() => {
-    if (!rawProducts || !Array.isArray(rawProducts)) return [];
+    if (!rawProducts || !Array.isArray(rawProducts)) {
+      return [];
+    }
     return (rawProducts as Record<string, unknown>[])
       .slice(0, 6)
       .map((p: Record<string, unknown>) => ({
@@ -1311,7 +1326,9 @@ function CriarSite({ mode }: { mode?: string }) {
   }, [rawProducts]);
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim()) {
+      return;
+    }
     setError('');
     setPhase('building');
     const res = await apiFetch('/kloel/site/generate', {
@@ -1344,17 +1361,23 @@ function CriarSite({ mode }: { mode?: string }) {
         method: 'PUT',
         body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml },
       });
-      if (res.error) setError(res.error);
-      else invalidateSites();
+      if (res.error) {
+        setError(res.error);
+      } else {
+        invalidateSites();
+      }
     } else {
       const res = await apiFetch('/kloel/site/save', {
         method: 'POST',
         body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml },
       });
-      if (res.error) setError(res.error);
-      else {
+      if (res.error) {
+        setError(res.error);
+      } else {
         const saveData = res.data as { site?: { id?: string } } | undefined;
-        if (saveData?.site?.id) setSavedSiteId(saveData.site.id);
+        if (saveData?.site?.id) {
+          setSavedSiteId(saveData.site.id);
+        }
         invalidateSites();
       }
     }
@@ -1390,7 +1413,9 @@ function CriarSite({ mode }: { mode?: string }) {
         return;
       }
       const publishData = pubRes.data as { url?: string } | undefined;
-      if (publishData?.url) setPublishedUrl(publishData.url);
+      if (publishData?.url) {
+        setPublishedUrl(publishData.url);
+      }
     } else {
       setPublishing(true);
       setError('');
@@ -1401,12 +1426,16 @@ function CriarSite({ mode }: { mode?: string }) {
         return;
       }
       const publishData = res.data as { url?: string } | undefined;
-      if (publishData?.url) setPublishedUrl(publishData.url);
+      if (publishData?.url) {
+        setPublishedUrl(publishData.url);
+      }
     }
   };
 
   const handleEditWithAI = async () => {
-    if (!editPrompt.trim()) return;
+    if (!editPrompt.trim()) {
+      return;
+    }
     setEditLoading(true);
     setError('');
     const res = await apiFetch('/kloel/site/generate', {
@@ -1447,7 +1476,7 @@ function CriarSite({ mode }: { mode?: string }) {
   };
 
   // ASK PHASE
-  if (phase === 'ask')
+  if (phase === 'ask') {
     return (
       <div
         style={{
@@ -1682,9 +1711,10 @@ function CriarSite({ mode }: { mode?: string }) {
         )}
       </div>
     );
+  }
 
   // BUILDING PHASE
-  if (phase === 'building')
+  if (phase === 'building') {
     return (
       <div
         style={{
@@ -1724,6 +1754,7 @@ function CriarSite({ mode }: { mode?: string }) {
         </div>
       </div>
     );
+  }
 
   // EDITOR PHASE
   return (
@@ -1900,13 +1931,17 @@ function EditarSite({ mode }: { mode?: string }) {
     apiFetch('/kloel/site/list')
       .then((res) => {
         const data = res.data as { sites?: SiteItem[] } | undefined;
-        if (data?.sites) setSavedSites(data.sites);
+        if (data?.sites) {
+          setSavedSites(data.sites);
+        }
       })
       .finally(() => setLoading(false));
   }, []);
 
   const handleEditWithAI = async () => {
-    if (!editPrompt.trim() || !selectedSite) return;
+    if (!editPrompt.trim() || !selectedSite) {
+      return;
+    }
     setEditLoading(true);
     setError('');
     const res = await apiFetch('/kloel/site/generate', {
@@ -1926,14 +1961,18 @@ function EditarSite({ mode }: { mode?: string }) {
   };
 
   const handleSave = async () => {
-    if (!selectedSite) return;
+    if (!selectedSite) {
+      return;
+    }
     setSaving(true);
     setError('');
     const res = await apiFetch(`/kloel/site/${selectedSite.id}`, {
       method: 'PUT',
       body: { name: selectedSite.name, htmlContent: selectedSite.htmlContent },
     });
-    if (res.error) setError(res.error);
+    if (res.error) {
+      setError(res.error);
+    }
     setSaving(false);
   };
 
@@ -1941,12 +1980,16 @@ function EditarSite({ mode }: { mode?: string }) {
     const res = await apiFetch(`/kloel/site/${siteId}`, { method: 'DELETE' });
     if (!res.error) {
       setSavedSites((prev) => prev.filter((s) => s.id !== siteId));
-      if (selectedSite?.id === siteId) setSelectedSite(null);
+      if (selectedSite?.id === siteId) {
+        setSelectedSite(null);
+      }
     }
   };
 
   const handleCreateVariant = async () => {
-    if (!selectedSite || !variantPrompt.trim()) return;
+    if (!selectedSite || !variantPrompt.trim()) {
+      return;
+    }
     setVariantLoading(true);
     setVariantNotice('');
     setError('');
@@ -2512,7 +2555,9 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
     (id: string) => {
       setTab(id);
       const nextRoute = id === 'visao-geral' ? '/sites' : `/sites/${id}`;
-      if (pathname === nextRoute) return;
+      if (pathname === nextRoute) {
+        return;
+      }
       startTransition(() => {
         router.push(nextRoute);
       });

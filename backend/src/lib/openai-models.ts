@@ -38,7 +38,9 @@ function readConfig(key: string, config?: ConfigLike): string | undefined {
 function firstConfiguredValue(keys: readonly string[], config?: ConfigLike): string | undefined {
   for (const key of keys) {
     const value = readConfig(key, config);
-    if (value) return value;
+    if (value) {
+      return value;
+    }
   }
   return undefined;
 }

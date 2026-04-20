@@ -57,7 +57,9 @@ function pushLimited(
   maxPerFile: number,
 ) {
   const current = limits.get(key) || 0;
-  if (current >= maxPerFile) return;
+  if (current >= maxPerFile) {
+    return;
+  }
   output.push(entry);
   limits.set(key, current + 1);
 }
@@ -69,10 +71,14 @@ export function checkVisualDesign(config: PulseConfig): Break[] {
 
   for (const file of frontendFiles) {
     const relFile = path.relative(config.rootDir, file);
-    if (isSkippable(relFile)) continue;
+    if (isSkippable(relFile)) {
+      continue;
+    }
 
     const content = readFileSafe(file);
-    if (!content) continue;
+    if (!content) {
+      continue;
+    }
 
     const lines = content.split('\n');
 

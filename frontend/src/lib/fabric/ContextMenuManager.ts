@@ -39,10 +39,14 @@ export class ContextMenuManager {
     // Use Fabric's mouse:down event — right-click is button === 2 on native MouseEvent
     this.canvas.on('mouse:down', (opt) => {
       const e = opt.e as MouseEvent;
-      if (e.button !== 2) return;
+      if (e.button !== 2) {
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
-      if (!this._renderer) return;
+      if (!this._renderer) {
+        return;
+      }
 
       const hasSelection = this.deps.selection.getSelected().length > 0;
 

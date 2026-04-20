@@ -15,8 +15,12 @@ function deltaPctFromZeroBaseline(curr: number): number | null {
 }
 
 export function deltaPct(curr: number, prev: number | null): number | null {
-  if (prev === null) return null;
-  if (prev === 0) return deltaPctFromZeroBaseline(curr);
+  if (prev === null) {
+    return null;
+  }
+  if (prev === 0) {
+    return deltaPctFromZeroBaseline(curr);
+  }
   return ((curr - prev) / prev) * 100;
 }
 
@@ -30,12 +34,16 @@ export function makeNumberKpi(curr: number, prev: number | null): KpiNumberValue
 
 export function computeApprovalRate(approved: number, declined: number): number | null {
   const denom = approved + declined;
-  if (denom === 0) return null;
+  if (denom === 0) {
+    return null;
+  }
   return approved / denom;
 }
 
 export function computeAverageTicket(gmvInCents: number, approvedCount: number): number {
-  if (approvedCount === 0) return 0;
+  if (approvedCount === 0) {
+    return 0;
+  }
   return Math.round(gmvInCents / approvedCount);
 }
 

@@ -20,8 +20,12 @@ export function isDigit(char: string): boolean {
  * same branch without each being measured as a CCN-6 hotspot by Codacy.
  */
 function coerceToString(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
   return '';
 }
 
@@ -33,7 +37,9 @@ export function extractAsciiDigits(value: unknown): string {
   const input = coerceToString(value);
   let result = '';
   for (const char of input) {
-    if (isDigit(char)) result += char;
+    if (isDigit(char)) {
+      result += char;
+    }
   }
   return result;
 }

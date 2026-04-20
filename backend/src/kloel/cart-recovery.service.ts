@@ -40,14 +40,18 @@ export class CartRecoveryService {
         return metadata.recoveryEmailSent !== true;
       });
 
-      if (toRecover.length === 0) return;
+      if (toRecover.length === 0) {
+        return;
+      }
       this.logger.log(`Found ${toRecover.length} abandoned carts to recover`);
 
       const { EmailService } = await import('../auth/email.service');
 
       await forEachSequential(toRecover, async (order) => {
         try {
-          if (!order.customerEmail) return;
+          if (!order.customerEmail) {
+            return;
+          }
 
           const emailService = new EmailService();
           const productName = order.plan?.product?.name || 'Seu pedido';

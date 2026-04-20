@@ -37,7 +37,9 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
 
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) continue;
+    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -51,7 +53,9 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (line.startsWith('//') || line.startsWith('*')) continue;
+      if (line.startsWith('//') || line.startsWith('*')) {
+        continue;
+      }
 
       // CHECK 1: Pagination without bounds
       if (/page|limit|skip|take/i.test(line) && /parseInt|Number\s*\(|\+\w/i.test(line)) {
@@ -64,7 +68,8 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
             severity: 'high',
             file: relFile,
             line: i + 1,
-            description: 'Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed',
+            description:
+              'Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed',
             detail: `${line.slice(0, 120)} — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)`,
           });
         }
@@ -80,8 +85,10 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
             severity: 'high',
             file: relFile,
             line: i + 1,
-            description: '@IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB',
-            detail: 'Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings',
+            description:
+              '@IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB',
+            detail:
+              'Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings',
           });
         }
       }
@@ -95,14 +102,19 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
             severity: 'high',
             file: relFile,
             line: i + 1,
-            description: '@IsNumber/@IsInt without @Min/@Max — allows 0, -1, Infinity; financial fields need range validation',
-            detail: 'Add @Min(0) for prices/quantities; @Max() for rate limits; @IsPositive() for amounts',
+            description:
+              '@IsNumber/@IsInt without @Min/@Max — allows 0, -1, Infinity; financial fields need range validation',
+            detail:
+              'Add @Min(0) for prices/quantities; @Max() for rate limits; @IsPositive() for amounts',
           });
         }
       }
 
       // CHECK 4: Date parsing without validation
-      if (/new Date\s*\(\s*(?!Date\.now|'|"|\d)/.test(line) && !/isValid|isNaN|instanceof Date/i.test(line)) {
+      if (
+        /new Date\s*\(\s*(?!Date\.now|'|"|\d)/.test(line) &&
+        !/isValid|isNaN|instanceof Date/i.test(line)
+      ) {
         const context = lines.slice(Math.max(0, i - 2), i + 3).join('\n');
         if (!/isValid|isNaN|isFinite|dayjs|moment/i.test(context)) {
           breaks.push({
@@ -110,7 +122,8 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
             severity: 'medium',
             file: relFile,
             line: i + 1,
-            description: 'new Date() from user input without validation — invalid dates produce Invalid Date silently',
+            description:
+              'new Date() from user input without validation — invalid dates produce Invalid Date silently',
             detail: `${line.slice(0, 120)} — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')`,
           });
         }
@@ -128,7 +141,8 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
             severity: 'high',
             file: relFile,
             line: i + 1,
-            description: 'File upload without size limit — large files may exhaust memory or storage',
+            description:
+              'File upload without size limit — large files may exhaust memory or storage',
             detail: 'Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)',
           });
         }
@@ -139,7 +153,8 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
             file: relFile,
             line: i + 1,
             description: 'File upload without MIME type validation — any file type accepted',
-            detail: 'Add fileFilter to reject non-image/non-document files; check mimetype whitelist',
+            detail:
+              'Add fileFilter to reject non-image/non-document files; check mimetype whitelist',
           });
         }
       }
@@ -153,8 +168,10 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
             severity: 'medium',
             file: relFile,
             line: i + 1,
-            description: '@IsArray() without @ArrayMaxSize — user can send array with 10k+ elements',
-            detail: 'Add @ArrayMaxSize(100) or appropriate limit to prevent DoS via large array payloads',
+            description:
+              '@IsArray() without @ArrayMaxSize — user can send array with 10k+ elements',
+            detail:
+              'Add @ArrayMaxSize(100) or appropriate limit to prevent DoS via large array payloads',
           });
         }
       }
@@ -168,8 +185,10 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
           severity: 'high',
           file: relFile,
           line: 0,
-          description: 'findMany() in reporting context without take/skip — may return all records and exhaust memory',
-          detail: 'Add take: and skip: to all findMany() calls; provide pagination for large datasets',
+          description:
+            'findMany() in reporting context without take/skip — may return all records and exhaust memory',
+          detail:
+            'Add take: and skip: to all findMany() calls; provide pagination for large datasets',
         });
       }
     }

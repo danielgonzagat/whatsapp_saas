@@ -14,7 +14,9 @@ function appendAllowedChar(state: AccumulatorState, char: string): void {
 }
 
 function appendSeparator(state: AccumulatorState): void {
-  if (state.previousWasSeparator || state.normalized.length === 0) return;
+  if (state.previousWasSeparator || state.normalized.length === 0) {
+    return;
+  }
   state.normalized += '_';
   state.previousWasSeparator = true;
 }
@@ -27,7 +29,9 @@ function accumulateNormalizedChars(input: string): string {
     } else {
       appendSeparator(state);
     }
-    if (state.normalized.length >= MAX_QUEUE_ID_LENGTH) break;
+    if (state.normalized.length >= MAX_QUEUE_ID_LENGTH) {
+      break;
+    }
   }
   return state.normalized;
 }

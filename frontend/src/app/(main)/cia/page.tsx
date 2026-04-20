@@ -71,8 +71,12 @@ function formatCurrency(value: number) {
 
 function formatPhaseLabel(value?: string | null) {
   const raw = String(value || '').trim();
-  if (!raw) return '';
-  if (raw === 'streaming_token') return '';
+  if (!raw) {
+    return '';
+  }
+  if (raw === 'streaming_token') {
+    return '';
+  }
 
   return raw
     .replace(PATTERN_RE, ' ')
@@ -82,7 +86,9 @@ function formatPhaseLabel(value?: string | null) {
 }
 
 function formatTs(ts?: string | null) {
-  if (!ts) return '';
+  if (!ts) {
+    return '';
+  }
   try {
     return new Date(ts).toLocaleString('pt-BR', {
       day: '2-digit',
@@ -137,7 +143,9 @@ export default function CiaPage() {
   const [registriesExpanded, setRegistriesExpanded] = useState(false);
 
   const loadSurface = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setLoading((current) => (surface ? current : true));
     const res = await ciaApi.getSurface(workspaceId);
     if (res.error) {
@@ -150,7 +158,9 @@ export default function CiaPage() {
   }, [surface, workspaceId]);
 
   const loadAdvancedData = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
 
     const [
       runtimeRes,
@@ -172,19 +182,36 @@ export default function CiaPage() {
       ciaApi.getConversationActionRegistry(),
     ]);
 
-    if (runtimeRes.data) setAccountRuntime(runtimeRes.data);
-    if (approvalsRes.data) setApprovals(Array.isArray(approvalsRes.data) ? approvalsRes.data : []);
-    if (inputSessionsRes.data)
+    if (runtimeRes.data) {
+      setAccountRuntime(runtimeRes.data);
+    }
+    if (approvalsRes.data) {
+      setApprovals(Array.isArray(approvalsRes.data) ? approvalsRes.data : []);
+    }
+    if (inputSessionsRes.data) {
       setInputSessions(Array.isArray(inputSessionsRes.data) ? inputSessionsRes.data : []);
-    if (workItemsRes.data) setWorkItems(Array.isArray(workItemsRes.data) ? workItemsRes.data : []);
-    if (accountProofRes.data) setAccountProof(accountProofRes.data);
-    if (cycleProofRes.data) setCycleProof(cycleProofRes.data);
-    if (capabilityRes.data) setCapabilityRegistry(capabilityRes.data);
-    if (actionRes.data) setConversationActionRegistry(actionRes.data);
+    }
+    if (workItemsRes.data) {
+      setWorkItems(Array.isArray(workItemsRes.data) ? workItemsRes.data : []);
+    }
+    if (accountProofRes.data) {
+      setAccountProof(accountProofRes.data);
+    }
+    if (cycleProofRes.data) {
+      setCycleProof(cycleProofRes.data);
+    }
+    if (capabilityRes.data) {
+      setCapabilityRegistry(capabilityRes.data);
+    }
+    if (actionRes.data) {
+      setConversationActionRegistry(actionRes.data);
+    }
   }, [workspaceId]);
 
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     void loadSurface();
     void loadAdvancedData();
     const interval = setInterval(() => {
@@ -195,12 +222,16 @@ export default function CiaPage() {
   }, [loadAdvancedData, loadSurface, workspaceId]);
 
   useEffect(() => {
-    if (!workspaceId || workspaceLoading || !surface || autoStartRef.current) return;
+    if (!workspaceId || workspaceLoading || !surface || autoStartRef.current) {
+      return;
+    }
 
     const mode = String(surface.autonomy?.mode || 'OFF');
     const reason = String(surface.autonomy?.reason || '');
     const isActive = ['LIVE', 'BACKLOG', 'FULL'].includes(mode);
-    if (isActive || reason === 'manual_pause') return;
+    if (isActive || reason === 'manual_pause') {
+      return;
+    }
 
     autoStartRef.current = true;
 
@@ -223,9 +254,13 @@ export default function CiaPage() {
   }, [loadSurface, surface, workspaceId, workspaceLoading]);
 
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     const token = tokenStorage.getToken();
-    if (!token) return;
+    if (!token) {
+      return;
+    }
 
     let cancelled = false;
 
@@ -239,15 +274,21 @@ export default function CiaPage() {
           },
         });
 
-        if (!response.ok || !response.body) return;
+        if (!response.ok || !response.body) {
+          return;
+        }
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
 
         const readStream = async (): Promise<void> => {
-          if (cancelled) return;
+          if (cancelled) {
+            return;
+          }
           const { value, done } = await reader.read();
-          if (done) return;
+          if (done) {
+            return;
+          }
           buffer += decoder.decode(value, { stream: true });
           const chunks = buffer.split('\n\n');
           buffer = chunks.pop() || '';
@@ -258,13 +299,19 @@ export default function CiaPage() {
               .filter((line) => line.startsWith('data: '))
               .map((line) => line.slice(6))
               .join('');
-            if (!payload) continue;
+            if (!payload) {
+              continue;
+            }
 
             const event = JSON.parse(payload) as StreamEvent;
-            if (event.type === 'heartbeat' && !event.message) continue;
+            if (event.type === 'heartbeat' && !event.message) {
+              continue;
+            }
 
             setSurface((current) => {
-              if (!current) return current;
+              if (!current) {
+                return current;
+              }
               const recent = [...(current.recent || []), event].slice(-12);
               return {
                 ...current,
@@ -295,7 +342,9 @@ export default function CiaPage() {
   }, [workspaceId]);
 
   async function handleAutopilotTotal() {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setActivating(true);
     const res = await ciaApi.activateAutopilotTotal(workspaceId);
     if (res.error) {
@@ -307,7 +356,9 @@ export default function CiaPage() {
   }
 
   async function handleApproveTask(task: CiaHumanTask) {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setTaskPendingId(task.id);
     const res = await ciaApi.approveHumanTask(workspaceId, task.id, {
       message: taskDrafts[task.id] || task.suggestedReply,
@@ -322,7 +373,9 @@ export default function CiaPage() {
   }
 
   async function handleRejectTask(task: CiaHumanTask) {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setTaskPendingId(task.id);
     const res = await ciaApi.rejectHumanTask(workspaceId, task.id);
     if (res.error) {
@@ -334,7 +387,9 @@ export default function CiaPage() {
   }
 
   async function handleResumeTask(task: CiaHumanTask) {
-    if (!workspaceId || !task.conversationId) return;
+    if (!workspaceId || !task.conversationId) {
+      return;
+    }
     setTaskPendingId(task.id);
     const res = await ciaApi.resumeConversation(workspaceId, task.conversationId);
     if (res.error) {
@@ -346,7 +401,9 @@ export default function CiaPage() {
   }
 
   async function handleApproveApproval(approval: CiaAccountApproval) {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setApprovalPendingId(approval.id);
     const res = await ciaApi.approveAccountApproval(workspaceId, approval.id);
     if (res.error) {
@@ -358,7 +415,9 @@ export default function CiaPage() {
   }
 
   async function handleRejectApproval(approval: CiaAccountApproval) {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setApprovalPendingId(approval.id);
     const res = await ciaApi.rejectAccountApproval(workspaceId, approval.id);
     if (res.error) {
@@ -370,9 +429,13 @@ export default function CiaPage() {
   }
 
   async function handleRespondToSession(session: CiaInputSession) {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     const answer = sessionAnswers[session.id] || '';
-    if (!answer.trim()) return;
+    if (!answer.trim()) {
+      return;
+    }
     setSessionPendingId(session.id);
     const res = await ciaApi.respondToInputSession(workspaceId, session.id, answer);
     if (res.error) {

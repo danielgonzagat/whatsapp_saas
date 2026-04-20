@@ -33,7 +33,9 @@ export class SiteController {
   @Get('list')
   async listSites(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { sites: [], count: 0 };
+    if (!workspaceId) {
+      return { sites: [], count: 0 };
+    }
     const sites = await this.prisma.kloelSite.findMany({
       where: { workspaceId },
       orderBy: { updatedAt: 'desc' },
@@ -141,7 +143,9 @@ export class SiteController {
     dto: { name?: string; htmlContent: string; productId?: string; idempotencyKey?: string },
   ) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) throw new NotFoundException('Workspace not found');
+    if (!workspaceId) {
+      throw new NotFoundException('Workspace not found');
+    }
     const site = await this.prisma.kloelSite.create({
       data: {
         workspaceId,
@@ -164,7 +168,9 @@ export class SiteController {
     const existing = await this.prisma.kloelSite.findFirst({
       where: { id, workspaceId },
     });
-    if (!existing) throw new NotFoundException('Site not found');
+    if (!existing) {
+      throw new NotFoundException('Site not found');
+    }
     const { id: _, workspaceId: __, ...data } = dto;
     await this.prisma.kloelSite.updateMany({ where: { id, workspaceId }, data });
     return { site: { ...existing, ...data }, success: true };
@@ -177,7 +183,9 @@ export class SiteController {
     const existing = await this.prisma.kloelSite.findFirst({
       where: { id, workspaceId },
     });
-    if (!existing) throw new NotFoundException('Site not found');
+    if (!existing) {
+      throw new NotFoundException('Site not found');
+    }
 
     const baseSlug = (existing.name || 'site')
       .toLowerCase()
@@ -206,7 +214,9 @@ export class SiteController {
     const existing = await this.prisma.kloelSite.findFirst({
       where: { id, workspaceId },
     });
-    if (!existing) throw new NotFoundException('Site not found');
+    if (!existing) {
+      throw new NotFoundException('Site not found');
+    }
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
       action: 'DELETE_RECORD',

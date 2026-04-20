@@ -60,8 +60,12 @@ function emptyCommerceMetrics(): CommerceMetrics {
 
 function buildProductWhere(input: ListProductsInput): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {};
-  if (input.workspaceId) where.workspaceId = input.workspaceId;
-  if (input.status) where.status = input.status;
+  if (input.workspaceId) {
+    where.workspaceId = input.workspaceId;
+  }
+  if (input.status) {
+    where.status = input.status;
+  }
   if (input.search) {
     where.OR = [
       { name: { contains: input.search, mode: 'insensitive' } },
@@ -143,7 +147,9 @@ async function buildCommerceByProduct(
     where: { productId: { in: productIds } },
     select: { id: true, productId: true },
   });
-  if (plans.length === 0) return commerceByProduct;
+  if (plans.length === 0) {
+    return commerceByProduct;
+  }
 
   const planToProduct = new Map(plans.map((plan) => [plan.id, plan.productId]));
   const planIds = plans.map((plan) => plan.id);
@@ -151,17 +157,25 @@ async function buildCommerceByProduct(
 
   for (const group of orderGroups) {
     const productId = planToProduct.get(group.planId);
-    if (!productId) continue;
+    if (!productId) {
+      continue;
+    }
     const current = commerceByProduct.get(productId);
-    if (!current) continue;
+    if (!current) {
+      continue;
+    }
     applyOrderGroupToMetrics(current, group);
   }
 
   for (const group of last30dGroups) {
     const productId = planToProduct.get(group.planId);
-    if (!productId) continue;
+    if (!productId) {
+      continue;
+    }
     const current = commerceByProduct.get(productId);
-    if (!current) continue;
+    if (!current) {
+      continue;
+    }
     current.last30dGmvInCents += Number(group._sum.totalInCents ?? 0);
   }
 
@@ -255,7 +269,9 @@ export async function listAdminProducts(
     prisma.product.count({ where }),
   ]);
 
-  if (items.length === 0) return { items: [], total };
+  if (items.length === 0) {
+    return { items: [], total };
+  }
 
   const workspaceIds = Array.from(new Set(items.map((i) => i.workspaceId)));
   const productIds = items.map((item) => item.id);

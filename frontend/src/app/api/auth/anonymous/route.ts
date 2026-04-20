@@ -22,7 +22,9 @@ export async function POST(request: NextRequest) {
         return null;
       });
 
-      if (!attempt) return null;
+      if (!attempt) {
+        return null;
+      }
       if (attempt.status === 404 || attempt.status === 405) {
         lastError = new Error(`upstream ${attempt.status} at ${baseUrl}/auth/anonymous`);
         return null;

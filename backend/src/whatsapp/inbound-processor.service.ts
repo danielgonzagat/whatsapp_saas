@@ -391,15 +391,21 @@ export class InboundProcessorService {
     workspaceId: string,
     providerMessageId: string,
   ): Promise<string | null> {
-    if (!providerMessageId) return null;
+    if (!providerMessageId) {
+      return null;
+    }
 
     // Primeiro, check rápido no Redis (cache/lock de 5 min)
     const cacheKey = `inbound:dedupe:${workspaceId}:${providerMessageId}`;
     const cached = await this.redis.get(cacheKey);
-    if (cached && cached !== 'processing') return cached;
+    if (cached && cached !== 'processing') {
+      return cached;
+    }
     if (cached === 'processing') {
       const waitForResolvedDuplicate = async (attempt: number): Promise<string | null> => {
-        if (attempt >= 3) return null;
+        if (attempt >= 3) {
+          return null;
+        }
         await this.sleep(150);
         const refreshed = await this.redis.get(cacheKey);
         if (refreshed && refreshed !== 'processing') {

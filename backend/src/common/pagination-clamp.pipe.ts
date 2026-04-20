@@ -60,13 +60,21 @@ const DEFAULT_PAGE_OPTS: Required<ClampOptions> = {
 };
 
 function clamp(raw: unknown, opts: Required<ClampOptions>): number {
-  if (raw === undefined || raw === null || raw === '') return opts.default;
+  if (raw === undefined || raw === null || raw === '') {
+    return opts.default;
+  }
   const parsed = typeof raw === 'number' ? raw : Number(raw);
-  if (!Number.isFinite(parsed)) return opts.default;
+  if (!Number.isFinite(parsed)) {
+    return opts.default;
+  }
   // Floor so "100.9" → 100, never "101".
   const integer = Math.floor(parsed);
-  if (integer < opts.min) return opts.min;
-  if (integer > opts.max) return opts.max;
+  if (integer < opts.min) {
+    return opts.min;
+  }
+  if (integer > opts.max) {
+    return opts.max;
+  }
   return integer;
 }
 

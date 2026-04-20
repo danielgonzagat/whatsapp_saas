@@ -33,19 +33,37 @@ interface PackageJson {
 
 // Licenses that are potentially incompatible with proprietary SaaS
 const INCOMPATIBLE_LICENSES = new Set([
-  'GPL-2.0', 'GPL-2.0-only', 'GPL-2.0-or-later',
-  'GPL-3.0', 'GPL-3.0-only', 'GPL-3.0-or-later',
-  'AGPL-3.0', 'AGPL-3.0-only', 'AGPL-3.0-or-later',
-  'LGPL-2.0', 'LGPL-2.0-only', 'LGPL-2.0-or-later',
-  'LGPL-2.1', 'LGPL-2.1-only', 'LGPL-2.1-or-later',
-  'LGPL-3.0', 'LGPL-3.0-only', 'LGPL-3.0-or-later',
-  'SSPL-1.0', 'BUSL-1.1',
-  'CC-BY-SA-4.0', 'CC-BY-SA-3.0',
+  'GPL-2.0',
+  'GPL-2.0-only',
+  'GPL-2.0-or-later',
+  'GPL-3.0',
+  'GPL-3.0-only',
+  'GPL-3.0-or-later',
+  'AGPL-3.0',
+  'AGPL-3.0-only',
+  'AGPL-3.0-or-later',
+  'LGPL-2.0',
+  'LGPL-2.0-only',
+  'LGPL-2.0-or-later',
+  'LGPL-2.1',
+  'LGPL-2.1-only',
+  'LGPL-2.1-or-later',
+  'LGPL-3.0',
+  'LGPL-3.0-only',
+  'LGPL-3.0-or-later',
+  'SSPL-1.0',
+  'BUSL-1.1',
+  'CC-BY-SA-4.0',
+  'CC-BY-SA-3.0',
 ]);
 
 const UNKNOWN_INDICATORS = new Set([
-  'UNLICENSED', 'SEE LICENSE IN LICENSE', 'SEE LICENSE IN LICENCE',
-  'UNKNOWN', 'CUSTOM', 'PROPRIETARY',
+  'UNLICENSED',
+  'SEE LICENSE IN LICENSE',
+  'SEE LICENSE IN LICENCE',
+  'UNKNOWN',
+  'CUSTOM',
+  'PROPRIETARY',
 ]);
 
 function readPackageJson(pkgPath: string): PackageJson | null {
@@ -57,18 +75,26 @@ function readPackageJson(pkgPath: string): PackageJson | null {
 }
 
 function getLicense(pkg: PackageJson): string {
-  if (typeof pkg.license === 'string') return pkg.license.trim().toUpperCase();
-  if (typeof pkg.license === 'object' && pkg.license?.type) return pkg.license.type.trim().toUpperCase();
-  if (Array.isArray(pkg.licenses) && pkg.licenses.length > 0) return pkg.licenses[0].type.trim().toUpperCase();
+  if (typeof pkg.license === 'string') {
+    return pkg.license.trim().toUpperCase();
+  }
+  if (typeof pkg.license === 'object' && pkg.license?.type) {
+    return pkg.license.type.trim().toUpperCase();
+  }
+  if (Array.isArray(pkg.licenses) && pkg.licenses.length > 0) {
+    return pkg.licenses[0].type.trim().toUpperCase();
+  }
   return 'UNKNOWN';
 }
 
 function loadAllowlist(rootDir: string): Set<string> {
   const allowlistPath = path.join(rootDir, '.license-allowlist.json');
-  if (!fs.existsSync(allowlistPath)) return new Set();
+  if (!fs.existsSync(allowlistPath)) {
+    return new Set();
+  }
   try {
     const raw = JSON.parse(fs.readFileSync(allowlistPath, 'utf8')) as string[];
-    return new Set(raw.map(s => s.toUpperCase()));
+    return new Set(raw.map((s) => s.toUpperCase()));
   } catch {
     return new Set();
   }
@@ -87,10 +113,14 @@ export function checkLicenses(config: PulseConfig): Break[] {
 
   for (const ws of workspaces) {
     const pkgPath = path.join(ws.dir, 'package.json');
-    if (!fs.existsSync(pkgPath)) continue;
+    if (!fs.existsSync(pkgPath)) {
+      continue;
+    }
 
     const pkg = readPackageJson(pkgPath);
-    if (!pkg) continue;
+    if (!pkg) {
+      continue;
+    }
 
     const allDeps = {
       ...pkg.dependencies,
@@ -99,20 +129,28 @@ export function checkLicenses(config: PulseConfig): Break[] {
     };
 
     const nodeModulesDir = path.join(ws.dir, 'node_modules');
-    if (!fs.existsSync(nodeModulesDir)) continue;
+    if (!fs.existsSync(nodeModulesDir)) {
+      continue;
+    }
 
     const checked = new Set<string>();
 
     for (const depName of Object.keys(allDeps)) {
-      if (checked.has(depName)) continue;
+      if (checked.has(depName)) {
+        continue;
+      }
       checked.add(depName);
 
       // Handle scoped packages (@org/name)
       const depPkgPath = path.join(nodeModulesDir, depName, 'package.json');
-      if (!fs.existsSync(depPkgPath)) continue;
+      if (!fs.existsSync(depPkgPath)) {
+        continue;
+      }
 
       const depPkg = readPackageJson(depPkgPath);
-      if (!depPkg) continue;
+      if (!depPkg) {
+        continue;
+      }
 
       const license = getLicense(depPkg);
       const relPkgPath = path.relative(config.rootDir, pkgPath);
@@ -153,8 +191,10 @@ export function checkLicenses(config: PulseConfig): Break[] {
       severity: 'low',
       file: '.license-allowlist.json',
       line: 0,
-      description: 'No license allowlist found — create .license-allowlist.json to document approved exceptions',
-      detail: 'A license allowlist documents which packages have been legally reviewed and approved despite unusual licenses',
+      description:
+        'No license allowlist found — create .license-allowlist.json to document approved exceptions',
+      detail:
+        'A license allowlist documents which packages have been legally reviewed and approved despite unusual licenses',
     });
   }
 

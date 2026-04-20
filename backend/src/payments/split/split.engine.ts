@@ -29,8 +29,12 @@ import type {
  *   Σ(splits.amount) + kloelTotal + residue === buyerPaid
  */
 function clamp(value: CentsBigInt, ceiling: CentsBigInt): CentsBigInt {
-  if (value < 0n) return 0n;
-  if (value > ceiling) return ceiling;
+  if (value < 0n) {
+    return 0n;
+  }
+  if (value > ceiling) {
+    return ceiling;
+  }
   return value;
 }
 
@@ -62,7 +66,9 @@ function validateInput(input: SplitInput): void {
     ['coproducer', input.coproducer],
     ['manager', input.manager],
   ] as const) {
-    if (!role) continue;
+    if (!role) {
+      continue;
+    }
     if (!Number.isInteger(role.percentBp) || role.percentBp < 0 || role.percentBp > 10_000) {
       throw new RangeError(
         `SplitEngine: ${field}.percentBp must be an integer in [0, 10000] (got ${role.percentBp})`,
@@ -79,7 +85,9 @@ function applyPercentRole(
   splits: SplitLine[],
   options: { keepZero: boolean },
 ): CentsBigInt {
-  if (!role) return remaining;
+  if (!role) {
+    return remaining;
+  }
 
   const calculated = (commissionBase * BigInt(role.percentBp)) / 10_000n;
   const amount = clamp(calculated, remaining);
@@ -100,9 +108,13 @@ function applySupplier(
   remaining: CentsBigInt,
   splits: SplitLine[],
 ): CentsBigInt {
-  if (!supplier) return remaining;
+  if (!supplier) {
+    return remaining;
+  }
   const amount = clamp(supplier.amountCents, remaining);
-  if (amount <= 0n) return remaining;
+  if (amount <= 0n) {
+    return remaining;
+  }
   splits.push({
     accountId: supplier.accountId,
     role: 'supplier',

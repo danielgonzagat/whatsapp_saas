@@ -1048,10 +1048,14 @@ export class CiaRuntimeService implements OnModuleDestroy {
   private compareRemotePendingChats(left: WahaChatSummary, right: WahaChatSummary): number {
     const activityDiff =
       this.resolveChatActivityTimestamp(right) - this.resolveChatActivityTimestamp(left);
-    if (activityDiff !== 0) return activityDiff;
+    if (activityDiff !== 0) {
+      return activityDiff;
+    }
 
     const unreadDiff = (Number(right.unreadCount || 0) || 0) - (Number(left.unreadCount || 0) || 0);
-    if (unreadDiff !== 0) return unreadDiff;
+    if (unreadDiff !== 0) {
+      return unreadDiff;
+    }
 
     return String(left.id || '').localeCompare(String(right.id || ''));
   }
@@ -1369,30 +1373,33 @@ export class CiaRuntimeService implements OnModuleDestroy {
         }
 
         let sendFailed = false;
-        await findFirstSequential(Array.from(replyPlan.entries()), async ([replyIndex, replyItem]) => {
-          const sendResult = await this.whatsappService.sendMessage(
-            workspaceId,
-            phone,
-            replyItem.text,
-            {
-              externalId: `cia-inline:${runId}:${safeStr(conversation.id || conversation.contactId, String(index))}:${replyIndex + 1}`,
-              quotedMessageId: replyItem.quotedMessageId,
-              complianceMode: shouldMirrorReplies ? 'reactive' : 'proactive',
-              forceDirect: true,
-            },
-          );
+        await findFirstSequential(
+          Array.from(replyPlan.entries()),
+          async ([replyIndex, replyItem]) => {
+            const sendResult = await this.whatsappService.sendMessage(
+              workspaceId,
+              phone,
+              replyItem.text,
+              {
+                externalId: `cia-inline:${runId}:${safeStr(conversation.id || conversation.contactId, String(index))}:${replyIndex + 1}`,
+                quotedMessageId: replyItem.quotedMessageId,
+                complianceMode: shouldMirrorReplies ? 'reactive' : 'proactive',
+                forceDirect: true,
+              },
+            );
 
-          if (
-            sendResult &&
-            typeof sendResult === 'object' &&
-            'error' in sendResult &&
-            sendResult.error
-          ) {
-            sendFailed = true;
-            return true;
-          }
-          return undefined;
-        });
+            if (
+              sendResult &&
+              typeof sendResult === 'object' &&
+              'error' in sendResult &&
+              sendResult.error
+            ) {
+              sendFailed = true;
+              return true;
+            }
+            return undefined;
+          },
+        );
 
         if (sendFailed) {
           skipped += 1;
@@ -1473,7 +1480,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     ];
 
     for (const candidate of candidates) {
-      if (typeof candidate !== 'string') continue;
+      if (typeof candidate !== 'string') {
+        continue;
+      }
       const normalized = candidate.trim();
       if (normalized) {
         return normalized;
@@ -1484,7 +1493,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
   }
 
   private normalizeRemoteTimestamp(value?: string | number | Date | null): string | null {
-    if (!value && value !== 0) return null;
+    if (!value && value !== 0) {
+      return null;
+    }
     const parsed =
       value instanceof Date
         ? value
@@ -1792,30 +1803,33 @@ export class CiaRuntimeService implements OnModuleDestroy {
         }
 
         let sendFailed = false;
-        await findFirstSequential(Array.from(replyPlan.entries()), async ([replyIndex, replyItem]) => {
-          const sendResult = await this.whatsappService.sendMessage(
-            workspaceId,
-            phone,
-            replyItem.text,
-            {
-              externalId: `cia-remote-inline:${runId}:${chat.id}:${replyIndex + 1}`,
-              quotedMessageId: replyItem.quotedMessageId,
-              complianceMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
-              forceDirect: true,
-            },
-          );
+        await findFirstSequential(
+          Array.from(replyPlan.entries()),
+          async ([replyIndex, replyItem]) => {
+            const sendResult = await this.whatsappService.sendMessage(
+              workspaceId,
+              phone,
+              replyItem.text,
+              {
+                externalId: `cia-remote-inline:${runId}:${chat.id}:${replyIndex + 1}`,
+                quotedMessageId: replyItem.quotedMessageId,
+                complianceMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
+                forceDirect: true,
+              },
+            );
 
-          if (
-            sendResult &&
-            typeof sendResult === 'object' &&
-            'error' in sendResult &&
-            sendResult.error
-          ) {
-            sendFailed = true;
-            return true;
-          }
-          return undefined;
-        });
+            if (
+              sendResult &&
+              typeof sendResult === 'object' &&
+              'error' in sendResult &&
+              sendResult.error
+            ) {
+              sendFailed = true;
+              return true;
+            }
+            return undefined;
+          },
+        );
 
         if (sendFailed) {
           skipped += 1;
@@ -2049,7 +2063,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
       select: { providerSettings: true },
     });
 
-    if (!workspace) return;
+    if (!workspace) {
+      return;
+    }
 
     const settings = asProviderSettings(workspace.providerSettings);
 
@@ -2198,7 +2214,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
       select: { providerSettings: true },
     });
 
-    if (!workspace) return;
+    if (!workspace) {
+      return;
+    }
 
     const settings = asProviderSettings(workspace.providerSettings);
     const autonomy = settings.autonomy || {};
@@ -2264,7 +2282,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     runId: string | undefined,
     status: string,
   ) {
-    if (!runId) return;
+    if (!runId) {
+      return;
+    }
 
     try {
       await this.prisma.autonomyRun.updateMany({

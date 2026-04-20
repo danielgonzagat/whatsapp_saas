@@ -787,11 +787,17 @@ describe('WhatsappService', () => {
         }),
       );
     } finally {
-      if (previousOptIn === undefined) delete process.env.ENFORCE_OPTIN;
-      else process.env.ENFORCE_OPTIN = previousOptIn;
+      if (previousOptIn === undefined) {
+        delete process.env.ENFORCE_OPTIN;
+      } else {
+        process.env.ENFORCE_OPTIN = previousOptIn;
+      }
 
-      if (previous24h === undefined) delete process.env.AUTOPILOT_ENFORCE_24H;
-      else process.env.AUTOPILOT_ENFORCE_24H = previous24h;
+      if (previous24h === undefined) {
+        delete process.env.AUTOPILOT_ENFORCE_24H;
+      } else {
+        process.env.AUTOPILOT_ENFORCE_24H = previous24h;
+      }
     }
   });
 

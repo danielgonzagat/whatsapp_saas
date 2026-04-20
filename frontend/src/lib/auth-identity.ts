@@ -27,17 +27,23 @@ function decodeBase64Json(base64Payload: string): Record<string, unknown> | null
 
 export function decodeKloelJwtPayload(token?: string | null): KloelTokenPayload | null {
   const normalizedToken = String(token || '').trim();
-  if (!normalizedToken) return null;
+  if (!normalizedToken) {
+    return null;
+  }
 
   const parts = normalizedToken.split('.');
-  if (parts.length < 2) return null;
+  if (parts.length < 2) {
+    return null;
+  }
 
   const payload = decodeBase64Json(parts[1] || '');
   return payload ? (payload as KloelTokenPayload) : null;
 }
 
 export function isAnonymousKloelPayload(payload?: KloelTokenPayload | null): boolean {
-  if (!payload) return false;
+  if (!payload) {
+    return false;
+  }
 
   const email = String(payload.email || '')
     .trim()
@@ -60,7 +66,9 @@ export function isAnonymousKloelToken(token?: string | null): boolean {
 
 export function hasAuthenticatedKloelToken(token?: string | null): boolean {
   const payload = decodeKloelJwtPayload(token);
-  if (!payload) return false;
+  if (!payload) {
+    return false;
+  }
 
   const hasIdentity = Boolean(
     String(payload.sub || '').trim() && String(payload.email || '').trim(),

@@ -11,7 +11,9 @@ function normalizePositiveInteger(
   max = MAX_PUBLIC_CHECKOUT_ORDER_QUANTITY,
 ) {
   const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return fallback;
+  if (!Number.isFinite(numeric)) {
+    return fallback;
+  }
   const rounded = Math.max(1, Math.round(numeric));
   return Math.min(rounded, max);
 }

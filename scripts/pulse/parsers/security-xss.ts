@@ -54,7 +54,9 @@ const XSS_PAYLOAD_IMG = `<img src=x onerror=alert(1)>`;
 /** Check if the raw (unescaped) script tag appears in a response body string */
 function containsRawScriptTag(body: any): boolean {
   const text = typeof body === 'string' ? body : JSON.stringify(body ?? '');
-  return text.includes('<script>') || text.includes('<img src=x onerror') || text.includes('<svg onload');
+  return (
+    text.includes('<script>') || text.includes('<img src=x onerror') || text.includes('<svg onload')
+  );
 }
 
 /** Return true if the content-type header indicates this is an API response (JSON), not HTML */
@@ -65,7 +67,9 @@ function isJsonResponse(headers: Record<string, string>): boolean {
 
 export async function checkSecurityXss(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
-  if (!isDeepMode()) return [];
+  if (!isDeepMode()) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const jwt = makeTestJwt();
@@ -81,13 +85,12 @@ export async function checkSecurityXss(config: PulseConfig): Promise<Break[]> {
         type: 'DIGITAL',
         price: 0,
       },
-      { jwt, timeout: 8000 }
+      { jwt, timeout: 8000 },
     );
 
     // Record was created (201/200) — now try to read it back
     if (createRes.status === 200 || createRes.status === 201) {
-      const productId: string | null =
-        createRes.body?.id || createRes.body?.data?.id || null;
+      const productId: string | null = createRes.body?.id || createRes.body?.data?.id || null;
 
       if (productId) {
         createdProductId = productId;

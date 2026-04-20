@@ -67,14 +67,18 @@ export const HealthMonitor = {
     const key = `metrics:${workspaceId}`;
     const events = await redis.lrange(key, 0, -1);
 
-    if (events.length === 0) return { score: 100, avgLatency: 0 };
+    if (events.length === 0) {
+      return { score: 100, avgLatency: 0 };
+    }
 
     let successCount = 0;
     let totalLatency = 0;
 
     events.forEach((e) => {
       const [ok, lat] = e.split(':');
-      if (ok === '1') successCount++;
+      if (ok === '1') {
+        successCount++;
+      }
       totalLatency += Number(lat);
     });
 
@@ -160,14 +164,18 @@ export const providerStatus = {
       })
       .sort((a, b) => {
         // Higher score first, then lower latency
-        if (b.score !== a.score) return b.score - a.score;
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
         return (a.avgLatency || 0) - (b.avgLatency || 0);
       })
       .map((p) => p.provider);
 
     // If we still have providers not seen yet, append them in default order
     for (const p of defaults) {
-      if (!ranking.includes(p)) ranking.push(p);
+      if (!ranking.includes(p)) {
+        ranking.push(p);
+      }
     }
 
     return ranking;

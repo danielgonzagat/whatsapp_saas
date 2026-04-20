@@ -56,7 +56,9 @@ export function ProductNerveCenterAvalTab() {
   const [showRevForm, setShowRevForm] = useState(false);
 
   const handleCreateReview = async () => {
-    if (!newRevName.trim()) return;
+    if (!newRevName.trim()) {
+      return;
+    }
     try {
       const res = await apiFetch(`/products/${productId}/reviews`, {
         method: 'POST',

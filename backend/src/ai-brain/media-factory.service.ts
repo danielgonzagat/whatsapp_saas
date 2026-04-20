@@ -14,8 +14,9 @@ export class MediaFactoryService {
   }
 
   async generateImage(prompt: string) {
-    if (!this.openai)
+    if (!this.openai) {
       throw new ServiceUnavailableException('Image generation requires OPENAI_API_KEY');
+    }
 
     // tokenBudget: non-workspace context, budget tracked at caller level
     const response = await this.openai.images.generate({
@@ -35,7 +36,9 @@ export class MediaFactoryService {
   }
 
   async generateSocialContent(topic: string, platform: 'INSTAGRAM' | 'TIKTOK') {
-    if (!this.openai) return { content: 'AI not configured' };
+    if (!this.openai) {
+      return { content: 'AI not configured' };
+    }
 
     const prompt = `
     Create a viral content script for ${platform} about: "${topic}".

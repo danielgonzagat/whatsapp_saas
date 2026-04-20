@@ -263,7 +263,9 @@ export class ConnectController {
             ? (item.details as Record<string, unknown>)
             : {};
         const balance =
-          item.entityId && typeof item.entityId === 'string' ? balanceById.get(item.entityId) : null;
+          item.entityId && typeof item.entityId === 'string'
+            ? balanceById.get(item.entityId)
+            : null;
 
         return {
           id: item.id,

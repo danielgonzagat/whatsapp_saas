@@ -43,11 +43,17 @@ export interface FlowExecution {
 }
 
 function errorMessage(err: unknown, fallback: string): string {
-  if (err instanceof Error) return err.message || fallback;
-  if (typeof err === 'string') return err || fallback;
+  if (err instanceof Error) {
+    return err.message || fallback;
+  }
+  if (typeof err === 'string') {
+    return err || fallback;
+  }
   if (err && typeof err === 'object' && 'message' in err) {
     const message = (err as { message?: unknown }).message;
-    if (typeof message === 'string') return message || fallback;
+    if (typeof message === 'string') {
+      return message || fallback;
+    }
   }
   return fallback;
 }
@@ -58,7 +64,9 @@ export function useFlows(workspaceId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchFlows = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -73,7 +81,9 @@ export function useFlows(workspaceId?: string) {
 
   const fetchFlow = useCallback(
     async (flowId: string): Promise<Flow | null> => {
-      if (!workspaceId) return null;
+      if (!workspaceId) {
+        return null;
+      }
       setLoading(true);
       setError(null);
       try {
@@ -94,7 +104,9 @@ export function useFlows(workspaceId?: string) {
       flowId: string,
       data: { nodes: Node[]; edges: Edge[]; name: string },
     ): Promise<LibFlow | undefined> => {
-      if (!workspaceId) throw new Error('Workspace não definido');
+      if (!workspaceId) {
+        throw new Error('Workspace não definido');
+      }
       setLoading(true);
       setError(null);
       try {
@@ -116,12 +128,16 @@ export function useFlows(workspaceId?: string) {
       user: string,
       startNode?: string,
     ): Promise<FlowRunResult | undefined> => {
-      if (!workspaceId) throw new Error('Workspace não definido');
+      if (!workspaceId) {
+        throw new Error('Workspace não definido');
+      }
       setLoading(true);
       setError(null);
       try {
         const flow = await fetchFlow(flowId);
-        if (!flow) throw new Error('Fluxo não encontrado');
+        if (!flow) {
+          throw new Error('Fluxo não encontrado');
+        }
 
         // Find start node if not specified
         const effectiveStartNode =
@@ -150,7 +166,9 @@ export function useFlows(workspaceId?: string) {
 
   const fetchExecutions = useCallback(
     async (limit = 50): Promise<FlowExecutionSummary[]> => {
-      if (!workspaceId) return [];
+      if (!workspaceId) {
+        return [];
+      }
       setLoading(true);
       setError(null);
       try {
@@ -170,7 +188,9 @@ export function useFlows(workspaceId?: string) {
 
   const fetchExecution = useCallback(
     async (executionId: string): Promise<FlowExecutionSummary | null> => {
-      if (!workspaceId) return null;
+      if (!workspaceId) {
+        return null;
+      }
       setLoading(true);
       setError(null);
       try {
@@ -202,7 +222,9 @@ export function useFlows(workspaceId?: string) {
 
   const createFromTemplate = useCallback(
     async (templateId: string, name: string): Promise<LibFlow | undefined> => {
-      if (!workspaceId) throw new Error('Workspace não definido');
+      if (!workspaceId) {
+        throw new Error('Workspace não definido');
+      }
       setLoading(true);
       setError(null);
       try {

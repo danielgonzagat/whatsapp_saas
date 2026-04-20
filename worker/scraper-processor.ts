@@ -60,7 +60,9 @@ async function scrapeLeadsByType(
 
 async function ensureDefaultPipeline(workspaceId: string) {
   const existing = await prisma.pipeline.findFirst({ where: { workspaceId } });
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   return prisma.pipeline.create({
     data: { name: 'Funil de Vendas', workspaceId },
   });
@@ -71,7 +73,9 @@ async function ensureFirstStage(pipelineId: string) {
     where: { pipelineId },
     orderBy: { order: 'asc' },
   });
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   return prisma.stage.create({
     data: { name: 'Lead', order: 1, color: '#3b82f6', pipelineId },
   });

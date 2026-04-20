@@ -25,15 +25,21 @@ export function PlanActivationSuccessModal({
   useEffect(() => {
     if (isOpen) {
       setShowCheck(false);
-      if (checkTimer.current) clearTimeout(checkTimer.current);
+      if (checkTimer.current) {
+        clearTimeout(checkTimer.current);
+      }
       checkTimer.current = setTimeout(() => setShowCheck(true), 300);
     }
     return () => {
-      if (checkTimer.current) clearTimeout(checkTimer.current);
+      if (checkTimer.current) {
+        clearTimeout(checkTimer.current);
+      }
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">

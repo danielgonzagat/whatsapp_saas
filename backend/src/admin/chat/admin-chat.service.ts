@@ -40,7 +40,9 @@ function parseToolInvocation(
   content: string,
 ): { name: string; args: Record<string, unknown> } | null {
   const match = content.trim().match(TOOL_S____W_____S_RE);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   const name = match[1];
   let args: Record<string, unknown> = {};
   if (match[2]) {

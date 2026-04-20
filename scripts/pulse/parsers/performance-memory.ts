@@ -56,19 +56,26 @@ function computeBraceDepths(lines: string[]): number[] {
     // Count open/close braces, but skip string literals and comments (simplified)
     for (let c = 0; c < line.length; c++) {
       const ch = line[c];
-      if (ch === '{') depth++;
-      else if (ch === '}') depth = Math.max(0, depth - 1);
+      if (ch === '{') {
+        depth++;
+      } else if (ch === '}') {
+        depth = Math.max(0, depth - 1);
+      }
       // Skip string contents (simplified — handles single and double quotes)
       else if (ch === '"' || ch === "'" || ch === '`') {
         const quote = ch;
         c++;
         while (c < line.length && line[c] !== quote) {
-          if (line[c] === '\\') c++; // escape
+          if (line[c] === '\\') {
+            c++;
+          } // escape
           c++;
         }
       }
       // Skip single-line comment remainder
-      else if (ch === '/' && line[c + 1] === '/') break;
+      else if (ch === '/' && line[c + 1] === '/') {
+        break;
+      }
     }
   }
   return depths;
@@ -80,11 +87,13 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
   const targetFiles = [
     ...walkFiles(config.workerDir, ['.ts']),
     ...walkFiles(config.backendDir, ['.ts']),
-  ].filter(f => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f));
+  ].filter((f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f));
 
   for (const file of targetFiles) {
     const content = readSafe(file);
-    if (!content) continue;
+    if (!content) {
+      continue;
+    }
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
@@ -98,23 +107,33 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
 
     for (let i = 0; i < lines.length; i++) {
       const raw = lines[i];
-      if (isCommentLine(raw)) continue;
+      if (isCommentLine(raw)) {
+        continue;
+      }
 
       // Only consider lines at module scope (brace depth 0)
-      if (braceDepths[i] !== 0) continue;
+      if (braceDepths[i] !== 0) {
+        continue;
+      }
 
       const trimmed = raw.trim();
 
       // ── Module-level Map or Set ─────────────────────────────────────────────
-      if (/(?:const|let|var)\s+\w+\s*(?:=\s*new\s+(?:Map|Set)\s*\(|:\s*(?:Map|Set)\s*<)/.test(trimmed)) {
+      if (
+        /(?:const|let|var)\s+\w+\s*(?:=\s*new\s+(?:Map|Set)\s*\(|:\s*(?:Map|Set)\s*<)/.test(trimmed)
+      ) {
         const name = extractVarName(trimmed);
-        if (name) moduleMapSets.push({ name, line: i + 1 });
+        if (name) {
+          moduleMapSets.push({ name, line: i + 1 });
+        }
       }
 
       // ── Module-level array ──────────────────────────────────────────────────
       if (/(?:const|let|var)\s+\w+(?:\s*:\s*\w+(?:<[^>]+>)?\[\])?\s*=\s*\[\s*\]/.test(trimmed)) {
         const name = extractVarName(trimmed);
-        if (name) moduleArrays.push({ name, line: i + 1 });
+        if (name) {
+          moduleArrays.push({ name, line: i + 1 });
+        }
       }
     }
 
@@ -132,7 +151,7 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
           description: `Module-level ${name} (Map/Set) grows without bound — no .delete() or .clear() found`,
           detail:
             `${name} is declared at module level, has .set()/.add() calls, but never .delete() or .clear(). ` +
-            'Unbounded module-level collections grow for the lifetime of the process and are never GC\'d.',
+            "Unbounded module-level collections grow for the lifetime of the process and are never GC'd.",
         });
       }
     }
@@ -161,14 +180,13 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
     // ── Event listener added in a loop without cleanup ───────────────────────
     for (let i = 0; i < lines.length; i++) {
       const raw = lines[i];
-      if (isCommentLine(raw)) continue;
+      if (isCommentLine(raw)) {
+        continue;
+      }
 
       const trimmed = raw.trim();
       // Check for .on('event', ...) or .addListener inside a for/while/forEach loop
-      if (
-        /\.on\s*\(\s*['"]/.test(trimmed) ||
-        /\.addListener\s*\(\s*['"]/.test(trimmed)
-      ) {
+      if (/\.on\s*\(\s*['"]/.test(trimmed) || /\.addListener\s*\(\s*['"]/.test(trimmed)) {
         // Look backwards up to 5 lines for a for/while/forEach
         const context = lines.slice(Math.max(0, i - 5), i).join('\n');
         if (/for\s*\(|while\s*\(|forEach\s*\(|\.map\s*\(/.test(context)) {

@@ -58,7 +58,9 @@ const args = process.argv.slice(2);
 const tierArgIndex = args.indexOf('--tier');
 const parsedTier = tierArgIndex >= 0 ? Number.parseInt(args[tierArgIndex + 1] || '', 10) : null;
 const profileArgIndex = args.indexOf('--profile');
-const requestedProfile = parseCertificationProfile(profileArgIndex >= 0 ? args[profileArgIndex + 1] || null : null);
+const requestedProfile = parseCertificationProfile(
+  profileArgIndex >= 0 ? args[profileArgIndex + 1] || null : null,
+);
 const flags = {
   watch: args.includes('--watch') || args.includes('-w'),
   report: args.includes('--report') || args.includes('-r'),
@@ -83,13 +85,15 @@ const flags = {
   slowMo: args.includes('--slow-mo') ? parseInt(args[args.indexOf('--slow-mo') + 1], 10) : 50,
   profile: requestedProfile,
 };
-const inferredSyntheticModes = new Set<PulseSyntheticRunMode>([
-  flags.customer ? 'customer' : null,
-  flags.operator ? 'operator' : null,
-  flags.admin ? 'admin' : null,
-  flags.shift ? 'shift' : null,
-  flags.soak ? 'soak' : null,
-].filter((value): value is PulseSyntheticRunMode => Boolean(value)));
+const inferredSyntheticModes = new Set<PulseSyntheticRunMode>(
+  [
+    flags.customer ? 'customer' : null,
+    flags.operator ? 'operator' : null,
+    flags.admin ? 'admin' : null,
+    flags.shift ? 'shift' : null,
+    flags.soak ? 'soak' : null,
+  ].filter((value): value is PulseSyntheticRunMode => Boolean(value)),
+);
 
 if (flags.final || (typeof flags.tier === 'number' && flags.tier >= 1)) {
   inferredSyntheticModes.add('customer');
@@ -133,14 +137,20 @@ function deriveEffectiveEnvironment() {
   if (flags.profile) {
     return getProfileSelection(flags.profile).environment;
   }
-  if (flags.total) return 'total' as const;
-  if (flags.deep) return 'deep' as const;
+  if (flags.total) {
+    return 'total' as const;
+  }
+  if (flags.deep) {
+    return 'deep' as const;
+  }
   return 'scan' as const;
 }
 
 function compactReason(value: string, max: number = 500): string {
   const compact = value.replace(/\s+/g, ' ').trim();
-  if (compact.length <= max) return compact;
+  if (compact.length <= max) {
+    return compact;
+  }
   return `${compact.slice(0, max - 3)}...`;
 }
 
@@ -158,43 +168,50 @@ function deriveBrowserEvidenceFromActors(
     ...syntheticEvidence.operator.results,
     ...syntheticEvidence.admin.results,
     ...syntheticEvidence.soak.results,
-  ].filter(result => result.requested && result.runner === 'playwright-spec');
+  ].filter((result) => result.requested && result.runner === 'playwright-spec');
 
   if (actorResults.length === 0) {
     return browserEvidence;
   }
 
-  const executed = actorResults.filter(result => result.executed);
-  const passed = executed.filter(result => result.status === 'passed');
-  const blocking = executed.filter(result => result.status === 'failed' || result.status === 'checker_gap');
+  const executed = actorResults.filter((result) => result.executed);
+  const passed = executed.filter((result) => result.status === 'passed');
+  const blocking = executed.filter(
+    (result) => result.status === 'failed' || result.status === 'checker_gap',
+  );
 
   return {
     ...browserEvidence,
     attempted: true,
     executed: executed.length > 0,
-    artifactPaths: [...new Set([...browserEvidence.artifactPaths, ...executed.flatMap(result => result.artifactPaths)])],
-    summary: executed.length === 0
-      ? `No requested Playwright synthetic scenarios executed successfully. Requested: ${actorResults.map(result => result.scenarioId).join(', ')}.`
-      : blocking.length > 0
-        ? `Synthetic Playwright scenarios executed with failures: ${blocking.map(result => result.scenarioId).join(', ')}.`
-        : `Synthetic Playwright scenarios executed successfully: ${passed.map(result => result.scenarioId).join(', ')}.`,
+    artifactPaths: [
+      ...new Set([
+        ...browserEvidence.artifactPaths,
+        ...executed.flatMap((result) => result.artifactPaths),
+      ]),
+    ],
+    summary:
+      executed.length === 0
+        ? `No requested Playwright synthetic scenarios executed successfully. Requested: ${actorResults.map((result) => result.scenarioId).join(', ')}.`
+        : blocking.length > 0
+          ? `Synthetic Playwright scenarios executed with failures: ${blocking.map((result) => result.scenarioId).join(', ')}.`
+          : `Synthetic Playwright scenarios executed successfully: ${passed.map((result) => result.scenarioId).join(', ')}.`,
     totalTested: actorResults.length,
     passRate: executed.length > 0 ? Math.round((passed.length / executed.length) * 100) : 0,
     blockingInteractions: blocking.length,
   };
 }
 
-function buildTimedOutRuntimeProbe(
-  probeId: string,
-): PulseRuntimeProbe {
+function buildTimedOutRuntimeProbe(probeId: string): PulseRuntimeProbe {
   const resolution = getRuntimeResolution();
-  const target = probeId === 'backend-health'
-    ? `${resolution.backendUrl}/health/system`
-    : probeId === 'auth-session'
-      ? `${resolution.backendUrl}/auth/login`
-      : probeId === 'frontend-reachability'
-        ? resolution.frontendUrl
-        : resolution.dbSource || 'database';
+  const target =
+    probeId === 'backend-health'
+      ? `${resolution.backendUrl}/health/system`
+      : probeId === 'auth-session'
+        ? `${resolution.backendUrl}/auth/login`
+        : probeId === 'frontend-reachability'
+          ? resolution.frontendUrl
+          : resolution.dbSource || 'database';
 
   return {
     probeId,
@@ -208,18 +225,16 @@ function buildTimedOutRuntimeProbe(
   };
 }
 
-function buildFailedRuntimeProbe(
-  probeId: string,
-  error: unknown,
-): PulseRuntimeProbe {
+function buildFailedRuntimeProbe(probeId: string, error: unknown): PulseRuntimeProbe {
   const resolution = getRuntimeResolution();
-  const target = probeId === 'backend-health'
-    ? `${resolution.backendUrl}/health/system`
-    : probeId === 'auth-session'
-      ? `${resolution.backendUrl}/auth/login`
-      : probeId === 'frontend-reachability'
-        ? resolution.frontendUrl
-        : resolution.dbSource || 'database';
+  const target =
+    probeId === 'backend-health'
+      ? `${resolution.backendUrl}/health/system`
+      : probeId === 'auth-session'
+        ? `${resolution.backendUrl}/auth/login`
+        : probeId === 'frontend-reachability'
+          ? resolution.frontendUrl
+          : resolution.dbSource || 'database';
 
   return {
     probeId,
@@ -228,7 +243,9 @@ function buildFailedRuntimeProbe(
     executed: false,
     status: 'missing_evidence',
     failureClass: 'missing_evidence',
-    summary: compactReason(`Runtime probe ${probeId} failed before returning structured evidence: ${String((error as Error)?.message || error || 'unknown failure')}`),
+    summary: compactReason(
+      `Runtime probe ${probeId} failed before returning structured evidence: ${String((error as Error)?.message || error || 'unknown failure')}`,
+    ),
     artifactPaths: ['PULSE_RUNTIME_EVIDENCE.json', 'PULSE_RUNTIME_PROBES.json'],
   };
 }
@@ -243,17 +260,21 @@ function buildTimedOutFlowEvidence(flowIds: string[]): PulseFlowEvidence {
     failed: [],
     accepted: [],
     artifactPaths: declared.length > 0 ? ['PULSE_FLOW_EVIDENCE.json'] : [],
-    summary: declared.length > 0
-      ? 'Declared flow execution timed out before evidence could be collected.'
-      : 'No flow specs were requested.',
-    results: declared.map(flowId => ({
+    summary:
+      declared.length > 0
+        ? 'Declared flow execution timed out before evidence could be collected.'
+        : 'No flow specs were requested.',
+    results: declared.map((flowId) => ({
       flowId,
       status: 'missing_evidence' as const,
       executed: false,
       accepted: false,
       failureClass: 'missing_evidence' as const,
       summary: `Flow ${flowId} did not complete before the flow phase timed out.`,
-      artifactPaths: ['PULSE_FLOW_EVIDENCE.json', `PULSE_FLOW_${flowId.replace(/[^a-z0-9_-]+/gi, '-')}.json`],
+      artifactPaths: [
+        'PULSE_FLOW_EVIDENCE.json',
+        `PULSE_FLOW_${flowId.replace(/[^a-z0-9_-]+/gi, '-')}.json`,
+      ],
     })),
   };
 }
@@ -268,10 +289,11 @@ function buildTimedOutInvariantEvidence(invariantIds: string[]): PulseInvariantE
     failed: [],
     accepted: [],
     artifactPaths: declared.length > 0 ? ['PULSE_INVARIANT_EVIDENCE.json'] : [],
-    summary: declared.length > 0
-      ? 'Declared invariant execution timed out before evidence could be collected.'
-      : 'No invariant specs were requested.',
-    results: declared.map(invariantId => ({
+    summary:
+      declared.length > 0
+        ? 'Declared invariant execution timed out before evidence could be collected.'
+        : 'No invariant specs were requested.',
+    results: declared.map((invariantId) => ({
       invariantId,
       status: 'missing_evidence' as const,
       evaluated: false,
@@ -287,13 +309,14 @@ function buildTimedOutActorEvidence(
   kind: PulseActorEvidence['actorKind'],
   scenarioIds: string[],
 ): PulseActorEvidence {
-  const artifactName = kind === 'customer'
-    ? 'PULSE_CUSTOMER_EVIDENCE.json'
-    : kind === 'operator'
-      ? 'PULSE_OPERATOR_EVIDENCE.json'
-      : kind === 'admin'
-        ? 'PULSE_ADMIN_EVIDENCE.json'
-        : 'PULSE_SOAK_EVIDENCE.json';
+  const artifactName =
+    kind === 'customer'
+      ? 'PULSE_CUSTOMER_EVIDENCE.json'
+      : kind === 'operator'
+        ? 'PULSE_OPERATOR_EVIDENCE.json'
+        : kind === 'admin'
+          ? 'PULSE_ADMIN_EVIDENCE.json'
+          : 'PULSE_SOAK_EVIDENCE.json';
 
   return {
     actorKind: kind,
@@ -302,11 +325,15 @@ function buildTimedOutActorEvidence(
     missing: scenarioIds,
     passed: [],
     failed: [],
-    artifactPaths: scenarioIds.length > 0 ? [artifactName, 'PULSE_WORLD_STATE.json', 'PULSE_SCENARIO_COVERAGE.json'] : [],
-    summary: scenarioIds.length > 0
-      ? `${kind} scenarios timed out before synthetic evidence could be collected.`
-      : `No ${kind} scenarios were requested.`,
-    results: scenarioIds.map(scenarioId => ({
+    artifactPaths:
+      scenarioIds.length > 0
+        ? [artifactName, 'PULSE_WORLD_STATE.json', 'PULSE_SCENARIO_COVERAGE.json']
+        : [],
+    summary:
+      scenarioIds.length > 0
+        ? `${kind} scenarios timed out before synthetic evidence could be collected.`
+        : `No ${kind} scenarios were requested.`,
+    results: scenarioIds.map((scenarioId) => ({
       scenarioId,
       actorKind: kind === 'soak' ? 'system' : kind,
       scenarioKind: 'single-session',
@@ -340,23 +367,36 @@ function buildTimedOutWorldState(
     executedScenarios: [],
     pendingAsyncExpectations: scenarioIds,
     entities: {},
-    asyncExpectationsStatus: scenarioIds.map(scenarioId => ({
+    asyncExpectationsStatus: scenarioIds.map((scenarioId) => ({
       scenarioId,
       expectation: 'phase-timeout',
       status: 'timed_out' as const,
     })),
     artifactsByScenario: Object.fromEntries(
-      scenarioIds.map(scenarioId => [scenarioId, ['PULSE_WORLD_STATE.json']]),
+      scenarioIds.map((scenarioId) => [scenarioId, ['PULSE_WORLD_STATE.json']]),
     ),
     sessions: [],
   };
 }
 
 // Activate runtime parsers when --deep/--total or synthetic actor modes are passed
-if (flags.deep || flags.total || actorModeRequested || flags.final || Boolean(flags.profile) || (typeof flags.tier === 'number' && flags.tier >= 0)) {
+if (
+  flags.deep ||
+  flags.total ||
+  actorModeRequested ||
+  flags.final ||
+  Boolean(flags.profile) ||
+  (typeof flags.tier === 'number' && flags.tier >= 0)
+) {
   process.env.PULSE_DEEP = '1';
 }
-if (flags.total || actorModeRequested || flags.final || Boolean(flags.profile) || (typeof flags.tier === 'number' && flags.tier >= 1)) {
+if (
+  flags.total ||
+  actorModeRequested ||
+  flags.final ||
+  Boolean(flags.profile) ||
+  (typeof flags.tier === 'number' && flags.tier >= 1)
+) {
   process.env.PULSE_TOTAL = '1';
 }
 
@@ -366,10 +406,7 @@ async function main() {
   const effectiveTarget = deriveEffectiveTarget();
   const effectiveEnvironment = deriveEffectiveEnvironment();
   const effectiveRequestedSyntheticModes = [
-    ...new Set([
-      ...requestedSyntheticModes,
-      ...(profileSelection?.requestedModes || []),
-    ]),
+    ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
   ];
   const effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
   const tracer = new PulseExecutionTracer(process.cwd(), effectiveTarget, effectiveEnvironment);
@@ -406,11 +443,12 @@ async function main() {
   let scanResult = await runPhaseWithTrace(
     tracer,
     'full-scan',
-    () => fullScan(config, {
-      includeParser: profileSelection?.includeParser,
-      parserTimeoutMs: profileSelection?.parserTimeoutMs,
-      tracer,
-    }),
+    () =>
+      fullScan(config, {
+        includeParser: profileSelection?.includeParser,
+        parserTimeoutMs: profileSelection?.parserTimeoutMs,
+        tracer,
+      }),
     {
       timeoutMs: profileSelection?.phaseTimeoutMs,
       metadata: {
@@ -435,9 +473,10 @@ async function main() {
       const probe = await runPhaseWithTrace(
         tracer,
         `runtime:${probeId}`,
-        () => collectRuntimeProbe(effectiveEnvironment, probeId, {
-          requireDbConnectivity: profileSelection ? true : undefined,
-        }),
+        () =>
+          collectRuntimeProbe(effectiveEnvironment, probeId, {
+            requireDbConnectivity: profileSelection ? true : undefined,
+          }),
         {
           timeoutMs: 12_000,
           metadata: {
@@ -455,8 +494,9 @@ async function main() {
   tracer.finishPhase('runtime-evidence', 'passed', {
     metadata: {
       executedChecks: runtimeEvidence.executedChecks.length,
-      missingEvidence: runtimeEvidence.probes.filter(probe => probe.status === 'missing_evidence').length,
-      failedProbes: runtimeEvidence.probes.filter(probe => probe.status === 'failed').length,
+      missingEvidence: runtimeEvidence.probes.filter((probe) => probe.status === 'missing_evidence')
+        .length,
+      failedProbes: runtimeEvidence.probes.filter((probe) => probe.status === 'failed').length,
     },
   });
   const observabilityEvidence = await runPhaseWithTrace(
@@ -479,14 +519,15 @@ async function main() {
     const browserRun = await runPhaseWithTrace(
       tracer,
       'browser-certification',
-      () => runBrowserStressTest({
-        headed: flags.headed,
-        fast: flags.fast,
-        pageFilter: flags.pageFilter,
-        groupFilter: flags.groupFilter,
-        slowMo: flags.slowMo,
-        log: true,
-      }),
+      () =>
+        runBrowserStressTest({
+          headed: flags.headed,
+          fast: flags.fast,
+          pageFilter: flags.pageFilter,
+          groupFilter: flags.groupFilter,
+          slowMo: flags.slowMo,
+          log: true,
+        }),
       {
         timeoutMs: 120_000,
         onTimeout: () => ({
@@ -532,11 +573,9 @@ async function main() {
       totalTested: browserRun.stressResult?.summary.totalTested,
       passRate: browserRun.stressResult?.summary.passRate,
       blockingInteractions: browserRun.stressResult
-        ? (
-            browserRun.stressResult.summary.byStatus.QUEBRADO
-            + browserRun.stressResult.summary.byStatus.CRASH
-            + browserRun.stressResult.summary.byStatus.TIMEOUT
-          )
+        ? browserRun.stressResult.summary.byStatus.QUEBRADO +
+          browserRun.stressResult.summary.byStatus.CRASH +
+          browserRun.stressResult.summary.byStatus.TIMEOUT
         : undefined,
     };
   } else if (effectiveEnvironment === 'total') {
@@ -553,14 +592,15 @@ async function main() {
   const flowEvidence = await runPhaseWithTrace(
     tracer,
     'declared-flows',
-    () => runDeclaredFlows({
-      environment: effectiveEnvironment,
-      manifest: scanResult.manifest,
-      health: scanResult.health,
-      parserInventory: scanResult.parserInventory,
-      flowIds: profileSelection?.flowIds,
-      enforceDiagnosticPreconditions: profileSelection?.profile !== 'core-critical',
-    }),
+    () =>
+      runDeclaredFlows({
+        environment: effectiveEnvironment,
+        manifest: scanResult.manifest,
+        health: scanResult.health,
+        parserInventory: scanResult.parserInventory,
+        flowIds: profileSelection?.flowIds,
+        enforceDiagnosticPreconditions: profileSelection?.profile !== 'core-critical',
+      }),
     {
       timeoutMs: 90_000,
       metadata: {
@@ -573,14 +613,17 @@ async function main() {
   const invariantEvidence = await runPhaseWithTrace(
     tracer,
     'declared-invariants',
-    () => Promise.resolve(runDeclaredInvariants({
-      environment: effectiveEnvironment,
-      manifest: scanResult.manifest,
-      health: scanResult.health,
-      parserInventory: scanResult.parserInventory,
-      invariantIds: profileSelection?.invariantIds,
-      enforceDiagnosticDependencies: profileSelection?.profile !== 'core-critical',
-    })),
+    () =>
+      Promise.resolve(
+        runDeclaredInvariants({
+          environment: effectiveEnvironment,
+          manifest: scanResult.manifest,
+          health: scanResult.health,
+          parserInventory: scanResult.parserInventory,
+          invariantIds: profileSelection?.invariantIds,
+          enforceDiagnosticDependencies: profileSelection?.profile !== 'core-critical',
+        }),
+      ),
     {
       timeoutMs: 30_000,
       metadata: {
@@ -593,18 +636,21 @@ async function main() {
   const syntheticEvidence = await runPhaseWithTrace(
     tracer,
     'synthetic-actors',
-    () => Promise.resolve(runSyntheticActors({
-      rootDir: config.rootDir,
-      environment: effectiveEnvironment,
-      manifest: scanResult.manifest,
-      resolvedManifest: scanResult.resolvedManifest,
-      codebaseTruth: scanResult.codebaseTruth,
-      runtimeEvidence,
-      browserEvidence,
-      flowEvidence,
-      requestedModes: effectiveRequestedSyntheticModes,
-      scenarioIds: profileSelection?.scenarioIds,
-    })),
+    () =>
+      Promise.resolve(
+        runSyntheticActors({
+          rootDir: config.rootDir,
+          environment: effectiveEnvironment,
+          manifest: scanResult.manifest,
+          resolvedManifest: scanResult.resolvedManifest,
+          codebaseTruth: scanResult.codebaseTruth,
+          runtimeEvidence,
+          browserEvidence,
+          flowEvidence,
+          requestedModes: effectiveRequestedSyntheticModes,
+          scenarioIds: profileSelection?.scenarioIds,
+        }),
+      ),
     {
       timeoutMs: 10 * 60 * 1000,
       metadata: {
@@ -613,10 +659,12 @@ async function main() {
       },
       onTimeout: () => {
         const requestedScenarioIds = profileSelection?.scenarioIds || [];
-        const customerScenarioIds = requestedScenarioIds.filter(id => id.startsWith('customer-'));
-        const operatorScenarioIds = requestedScenarioIds.filter(id => id.startsWith('operator-'));
-        const adminScenarioIds = requestedScenarioIds.filter(id => id.startsWith('admin-'));
-        const soakScenarioIds = requestedScenarioIds.filter(id => id.startsWith('system-') || id.startsWith('soak-'));
+        const customerScenarioIds = requestedScenarioIds.filter((id) => id.startsWith('customer-'));
+        const operatorScenarioIds = requestedScenarioIds.filter((id) => id.startsWith('operator-'));
+        const adminScenarioIds = requestedScenarioIds.filter((id) => id.startsWith('admin-'));
+        const soakScenarioIds = requestedScenarioIds.filter(
+          (id) => id.startsWith('system-') || id.startsWith('soak-'),
+        );
         return {
           customer: buildTimedOutActorEvidence('customer', customerScenarioIds),
           operator: buildTimedOutActorEvidence('operator', operatorScenarioIds),
@@ -642,36 +690,43 @@ async function main() {
     },
   );
 
-  browserEvidence = deriveBrowserEvidenceFromActors(effectiveActorModeRequested, browserEvidence, syntheticEvidence);
+  browserEvidence = deriveBrowserEvidenceFromActors(
+    effectiveActorModeRequested,
+    browserEvidence,
+    syntheticEvidence,
+  );
 
   certification = await runPhaseWithTrace(
     tracer,
     'final-certification',
-    () => Promise.resolve(computeCertification({
-      rootDir: config.rootDir,
-      manifestResult: scanResult.manifestResult,
-      parserInventory: scanResult.parserInventory,
-      health: scanResult.health,
-      codebaseTruth: scanResult.codebaseTruth,
-      resolvedManifest: scanResult.resolvedManifest,
-      certificationTarget: effectiveTarget,
-      executionEvidence: {
-        ...certification.evidenceSummary,
-        runtime: runtimeEvidence,
-        browser: browserEvidence,
-        flows: flowEvidence,
-        invariants: invariantEvidence,
-        observability: observabilityEvidence,
-        recovery: recoveryEvidence,
-        customer: syntheticEvidence.customer,
-        operator: syntheticEvidence.operator,
-        admin: syntheticEvidence.admin,
-        soak: syntheticEvidence.soak,
-        syntheticCoverage: syntheticEvidence.syntheticCoverage,
-        worldState: syntheticEvidence.worldState,
-        executionTrace: tracer.getSnapshot(),
-      },
-    })),
+    () =>
+      Promise.resolve(
+        computeCertification({
+          rootDir: config.rootDir,
+          manifestResult: scanResult.manifestResult,
+          parserInventory: scanResult.parserInventory,
+          health: scanResult.health,
+          codebaseTruth: scanResult.codebaseTruth,
+          resolvedManifest: scanResult.resolvedManifest,
+          certificationTarget: effectiveTarget,
+          executionEvidence: {
+            ...certification.evidenceSummary,
+            runtime: runtimeEvidence,
+            browser: browserEvidence,
+            flows: flowEvidence,
+            invariants: invariantEvidence,
+            observability: observabilityEvidence,
+            recovery: recoveryEvidence,
+            customer: syntheticEvidence.customer,
+            operator: syntheticEvidence.operator,
+            admin: syntheticEvidence.admin,
+            soak: syntheticEvidence.soak,
+            syntheticCoverage: syntheticEvidence.syntheticCoverage,
+            worldState: syntheticEvidence.worldState,
+            executionTrace: tracer.getSnapshot(),
+          },
+        }),
+      ),
     { timeoutMs: 15_000 },
   );
   certification = {
@@ -688,7 +743,11 @@ async function main() {
   };
 
   if (flags.manifestValidate) {
-    if (scanResult.manifest && certification.gates.scopeClosed.status === 'pass' && certification.gates.specComplete.status === 'pass') {
+    if (
+      scanResult.manifest &&
+      certification.gates.scopeClosed.status === 'pass' &&
+      certification.gates.specComplete.status === 'pass'
+    ) {
       console.log('  Manifest valid.');
       process.exit(0);
     }
@@ -715,13 +774,19 @@ async function main() {
     };
 
     if (flags.json) {
-      console.log(JSON.stringify({
-        health,
-        certification,
-        codebaseTruth: scanResult.codebaseTruth,
-        resolvedManifest: scanResult.resolvedManifest,
-        functionalMap: fmapResult,
-      }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            health,
+            certification,
+            codebaseTruth: scanResult.codebaseTruth,
+            resolvedManifest: scanResult.resolvedManifest,
+            functionalMap: fmapResult,
+          },
+          null,
+          2,
+        ),
+      );
     } else {
       renderDashboard(health, certification, { verbose: flags.verbose });
       renderFunctionalMapSummary(fmapResult);
@@ -736,12 +801,18 @@ async function main() {
 
   // 4. Output
   if (flags.json) {
-    console.log(JSON.stringify({
-      health,
-      certification,
-      codebaseTruth: scanResult.codebaseTruth,
-      resolvedManifest: scanResult.resolvedManifest,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          health,
+          certification,
+          codebaseTruth: scanResult.codebaseTruth,
+          resolvedManifest: scanResult.resolvedManifest,
+        },
+        null,
+        2,
+      ),
+    );
   } else if (flags.report) {
     const artifactPaths = generateArtifacts(scanResult, config.rootDir);
     renderDashboard(health, certification, { verbose: flags.verbose });
@@ -763,12 +834,12 @@ async function main() {
       process.exit(certification.status === 'CERTIFIED' ? 0 : 1);
     }
 
-    const criticalBreaks = health.breaks.filter(b => b.severity === 'high').length;
+    const criticalBreaks = health.breaks.filter((b) => b.severity === 'high').length;
     process.exit(criticalBreaks > 0 ? 1 : 0);
   }
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error('PULSE error:', e.message || e);
   process.exit(2);
 });

@@ -92,10 +92,14 @@ export function EditorTopBar({
 
   // Close dropdown on outside click
   useEffect(() => {
-    if (!dropdown) return;
+    if (!dropdown) {
+      return;
+    }
     const close = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('[data-dropdown]')) setDropdown(null);
+      if (!target.closest('[data-dropdown]')) {
+        setDropdown(null);
+      }
     };
     window.addEventListener('mousedown', close);
     return () => window.removeEventListener('mousedown', close);

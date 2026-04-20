@@ -88,7 +88,9 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Excluir checkout?')) return;
+    if (!confirm('Excluir checkout?')) {
+      return;
+    }
     await apiFetch(`/products/${productId}/checkouts/${id}`, { method: 'DELETE' });
     fetch_();
   };
@@ -105,7 +107,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
     fontFamily: "'Sora', sans-serif",
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2
@@ -115,6 +117,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
         />
       </div>
     );
+  }
 
   return (
     <div className="space-y-4">

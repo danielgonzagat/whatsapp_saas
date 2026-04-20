@@ -73,13 +73,17 @@ export function useCheckoutExperienceAutomation({
 
   useEffect(
     () => () => {
-      if (redirectTimer.current) clearTimeout(redirectTimer.current);
+      if (redirectTimer.current) {
+        clearTimeout(redirectTimer.current);
+      }
     },
     [redirectTimer],
   );
 
   useEffect(() => {
-    if (!socialIdentity) return;
+    if (!socialIdentity) {
+      return;
+    }
     setForm((prev) => ({
       ...prev,
       name: socialIdentity.name || prev.name,
@@ -97,7 +101,9 @@ export function useCheckoutExperienceAutomation({
   }, [setForm, socialIdentity]);
 
   useEffect(() => {
-    if (!couponApplied) return;
+    if (!couponApplied) {
+      return;
+    }
     setCouponApplied(false);
     setDiscount(0);
   }, [couponApplied, qty, setCouponApplied, setDiscount]);
@@ -109,20 +115,26 @@ export function useCheckoutExperienceAutomation({
     }
 
     const cepDigits = cep.replace(D_RE, '').slice(0, 8);
-    if (cepDigits.length < 8) return;
+    if (cepDigits.length < 8) {
+      return;
+    }
 
     let cancelled = false;
     checkoutPublicApi
       .calculateShipping({ slug, cep: cepDigits })
       .then((response) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         const options = response?.data?.options || [];
         setDynamicShippingInCents(
           Math.max(0, Math.round(Number(options[0]?.price || variableShippingFloorInCents))),
         );
       })
       .catch(() => {
-        if (!cancelled) setDynamicShippingInCents(variableShippingFloorInCents);
+        if (!cancelled) {
+          setDynamicShippingInCents(variableShippingFloorInCents);
+        }
       });
 
     return () => {

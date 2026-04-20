@@ -10,7 +10,9 @@ const TRAILING_SLASH_RE = /\/+$/;
 export function getServerApiBase(): string {
   const envUrl =
     process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || process.env.SERVICE_BASE_URL;
-  if (envUrl) return envUrl.replace(TRAILING_SLASH_RE, '');
+  if (envUrl) {
+    return envUrl.replace(TRAILING_SLASH_RE, '');
+  }
   return 'http://localhost:3001';
 }
 
@@ -48,7 +50,9 @@ function applyMetaImage(
   title: string,
   description: string,
 ): void {
-  if (!config.metaImage) return;
+  if (!config.metaImage) {
+    return;
+  }
   metadata.openGraph = {
     title,
     description,
@@ -63,7 +67,9 @@ function applyMetaImage(
 }
 
 function applyFavicon(metadata: Metadata, config: CheckoutConfig): void {
-  if (!config.favicon) return;
+  if (!config.favicon) {
+    return;
+  }
   metadata.icons = { icon: config.favicon };
 }
 
@@ -94,7 +100,9 @@ export async function fetchCheckoutMetadata(endpointPath: string): Promise<Metad
     const res = await fetch(`${getServerApiBase()}${endpointPath}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return { title: 'Checkout' };
+    if (!res.ok) {
+      return { title: 'Checkout' };
+    }
     const data = (await res.json()) as CheckoutMetadataSource;
     return buildCheckoutMetadata(data);
   } catch {

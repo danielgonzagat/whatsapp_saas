@@ -18,7 +18,9 @@ export class ExportManager {
       return fn();
     } finally {
       this.canvas.viewportTransform = vpt;
-      if (active) this.canvas.setActiveObject(active);
+      if (active) {
+        this.canvas.setActiveObject(active);
+      }
       this.canvas.renderAll();
     }
   }

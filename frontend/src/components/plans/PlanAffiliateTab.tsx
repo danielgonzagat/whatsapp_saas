@@ -35,7 +35,9 @@ export function PlanAffiliateTab({
 
   useEffect(
     () => () => {
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
     },
     [],
   );
@@ -84,7 +86,9 @@ export function PlanAffiliateTab({
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
       savedTimer.current = setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       console.error('Erro ao salvar config de afiliados:', e);
@@ -93,12 +97,13 @@ export function PlanAffiliateTab({
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: '#6E6E73', fontFamily: FONT_BODY }}>
         Carregando...
       </div>
     );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

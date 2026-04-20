@@ -27,7 +27,9 @@ function readFileSafe(filePath: string): string | null {
  * Returns null if unparseable.
  */
 function parseMajor(version: string): number | null {
-  if (!version || typeof version !== 'string') return null;
+  if (!version || typeof version !== 'string') {
+    return null;
+  }
   const stripped = version.replace(/^[\^~>=<v]+/, '').trim();
   const parts = stripped.split('.');
   const major = parseInt(parts[0], 10);
@@ -40,7 +42,9 @@ function extractDeps(pkg: Record<string, unknown>): Record<string, string> {
     const section = pkg[key];
     if (section && typeof section === 'object') {
       for (const [name, ver] of Object.entries(section as Record<string, string>)) {
-        if (!out[name]) out[name] = ver as string;
+        if (!out[name]) {
+          out[name] = ver as string;
+        }
       }
     }
   }
@@ -71,7 +75,8 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
       file: '.dockerignore',
       line: 1,
       description: '.dockerignore is missing at the repository root',
-      detail: 'Without .dockerignore, node_modules and sensitive files may be included in the Docker build context.',
+      detail:
+        'Without .dockerignore, node_modules and sensitive files may be included in the Docker build context.',
     });
   }
 
@@ -85,10 +90,14 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
   const MULTISTAGE_RE = /^FROM\s+\S+\s+AS\s+\S+/im;
 
   for (const dfPath of dockerfilePaths) {
-    if (!fs.existsSync(dfPath)) continue;
+    if (!fs.existsSync(dfPath)) {
+      continue;
+    }
 
     const content = readFileSafe(dfPath);
-    if (content === null) continue;
+    if (content === null) {
+      continue;
+    }
 
     if (!MULTISTAGE_RE.test(content)) {
       const relFile = path.relative(config.rootDir, dfPath);
@@ -98,7 +107,8 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
         file: relFile,
         line: 1,
         description: `Dockerfile does not use multi-stage build: ${relFile}`,
-        detail: 'Add a builder stage (FROM ... AS builder) and a lean runtime stage to reduce final image size.',
+        detail:
+          'Add a builder stage (FROM ... AS builder) and a lean runtime stage to reduce final image size.',
       });
     }
   }
@@ -114,38 +124,48 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
   const depMap = new Map<string, Array<{ label: string; version: string; major: number }>>();
 
   for (const { label, filePath } of packageJsonPaths) {
-    if (!fs.existsSync(filePath)) continue;
+    if (!fs.existsSync(filePath)) {
+      continue;
+    }
 
     const pkg = readJsonSafe(filePath);
-    if (!pkg) continue;
+    if (!pkg) {
+      continue;
+    }
 
     const allDeps = extractDeps(pkg);
     for (const depName of MONITORED_DEPS) {
       const version = allDeps[depName];
-      if (!version) continue;
+      if (!version) {
+        continue;
+      }
 
       const major = parseMajor(version);
-      if (major === null) continue;
+      if (major === null) {
+        continue;
+      }
 
-      if (!depMap.has(depName)) depMap.set(depName, []);
+      if (!depMap.has(depName)) {
+        depMap.set(depName, []);
+      }
       depMap.get(depName)!.push({ label, version, major });
     }
   }
 
   for (const [depName, entries] of depMap.entries()) {
-    if (entries.length < 2) continue;
+    if (entries.length < 2) {
+      continue;
+    }
 
-    const majors = new Set(entries.map(e => e.major));
+    const majors = new Set(entries.map((e) => e.major));
     if (majors.size > 1) {
-      const detail = entries.map(e => `${e.label}: ${e.version}`).join(', ');
+      const detail = entries.map((e) => `${e.label}: ${e.version}`).join(', ');
       // Use the first package's path as file reference
-      const firstEntry = packageJsonPaths.find(p => p.label === entries[0].label);
+      const firstEntry = packageJsonPaths.find((p) => p.label === entries[0].label);
       breaks.push({
         type: 'PACKAGE_VERSION_CONFLICT',
         severity: 'medium',
-        file: firstEntry
-          ? path.relative(config.rootDir, firstEntry.filePath)
-          : 'package.json',
+        file: firstEntry ? path.relative(config.rootDir, firstEntry.filePath) : 'package.json',
         line: 1,
         description: `Major version conflict for "${depName}" across packages`,
         detail: detail,

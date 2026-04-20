@@ -53,14 +53,26 @@ export async function listAdminTransactions(
   const take = Math.min(MAX_TAKE, Math.max(1, input.take ?? DEFAULT_TAKE));
 
   const where: Prisma.CheckoutOrderWhereInput = {};
-  if (input.workspaceId) where.workspaceId = input.workspaceId;
-  if (input.status) where.status = input.status;
-  if (input.method) where.paymentMethod = input.method;
-  if (input.gateway) where.payment = { gateway: input.gateway };
+  if (input.workspaceId) {
+    where.workspaceId = input.workspaceId;
+  }
+  if (input.status) {
+    where.status = input.status;
+  }
+  if (input.method) {
+    where.paymentMethod = input.method;
+  }
+  if (input.gateway) {
+    where.payment = { gateway: input.gateway };
+  }
   if (input.from || input.to) {
     where.createdAt = {};
-    if (input.from) where.createdAt.gte = input.from;
-    if (input.to) where.createdAt.lte = input.to;
+    if (input.from) {
+      where.createdAt.gte = input.from;
+    }
+    if (input.to) {
+      where.createdAt.lte = input.to;
+    }
   }
   if (input.search) {
     where.OR = [

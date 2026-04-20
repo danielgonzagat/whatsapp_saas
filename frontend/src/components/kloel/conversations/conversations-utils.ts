@@ -45,14 +45,20 @@ const RELATIVE_BUCKETS: readonly RelativeBucket[] = [
 
 function formatDiffMs(diffMs: number): string {
   for (const bucket of RELATIVE_BUCKETS) {
-    if (diffMs < bucket.limit) return bucket.compute(diffMs);
+    if (diffMs < bucket.limit) {
+      return bucket.compute(diffMs);
+    }
   }
   return pluralizeYears(Math.floor(diffMs / MS_DAY));
 }
 
 export function formatRelativeTime(value?: string) {
-  if (!value) return AGORA_LABEL;
+  if (!value) {
+    return AGORA_LABEL;
+  }
   const diffMs = Date.now() - new Date(value).getTime();
-  if (!Number.isFinite(diffMs) || diffMs < 0) return AGORA_LABEL;
+  if (!Number.isFinite(diffMs) || diffMs < 0) {
+    return AGORA_LABEL;
+  }
   return formatDiffMs(diffMs);
 }

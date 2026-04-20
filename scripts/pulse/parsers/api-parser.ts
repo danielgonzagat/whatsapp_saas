@@ -31,25 +31,41 @@ function normalizeEndpoint(raw: string): string {
 
   // Clean up trailing/double slashes
   p = p.replace(/\/+$/, '');
-  if (!p.startsWith('/')) p = '/' + p;
+  if (!p.startsWith('/')) {
+    p = '/' + p;
+  }
   return p.replace(/\/+/g, '/');
 }
 
 function detectMethod(context: string): string {
   const m = context.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
-  if (m) return m[1].toUpperCase();
-  if (/\.post\s*\(/i.test(context)) return 'POST';
-  if (/\.put\s*\(/i.test(context)) return 'PUT';
-  if (/\.patch\s*\(/i.test(context)) return 'PATCH';
-  if (/\.delete\s*\(/i.test(context)) return 'DELETE';
+  if (m) {
+    return m[1].toUpperCase();
+  }
+  if (/\.post\s*\(/i.test(context)) {
+    return 'POST';
+  }
+  if (/\.put\s*\(/i.test(context)) {
+    return 'PUT';
+  }
+  if (/\.patch\s*\(/i.test(context)) {
+    return 'PATCH';
+  }
+  if (/\.delete\s*\(/i.test(context)) {
+    return 'DELETE';
+  }
   return 'GET';
 }
 
 // Pass 1: Parse API module files to build function-to-endpoint map
-export function buildApiModuleMap(config: PulseConfig): Map<string, { endpoint: string; method: string }> {
+export function buildApiModuleMap(
+  config: PulseConfig,
+): Map<string, { endpoint: string; method: string }> {
   const map = new Map<string, { endpoint: string; method: string }>();
   const apiDir = path.join(config.frontendDir, 'lib', 'api');
-  if (!fs.existsSync(apiDir)) return map;
+  if (!fs.existsSync(apiDir)) {
+    return map;
+  }
 
   const files = walkFiles(apiDir, ['.ts']);
   for (const file of files) {
@@ -66,14 +82,18 @@ export function buildApiModuleMap(config: PulseConfig): Map<string, { endpoint: 
 
       // Detect exported API objects: export const productApi = { ... }
       const objDecl = line.match(/export\s+const\s+(\w+Api|\w+api)\s*=\s*\{/i);
-      if (objDecl) objectName = objDecl[1];
+      if (objDecl) {
+        objectName = objDecl[1];
+      }
 
       // Named export functions: export async function listCampaigns(...)
       const funcMatch = line.match(/export\s+(?:async\s+)?function\s+(\w+)/);
       if (funcMatch) {
         // Scan next 15 lines for apiFetch call
         const block = lines.slice(i, Math.min(i + 15, lines.length)).join('\n');
-        const apiMatch = block.match(/apiFetch\s*(?:<[^(]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/);
+        const apiMatch = block.match(
+          /apiFetch\s*(?:<[^(]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/,
+        );
         if (apiMatch) {
           const ep = normalizeEndpoint(apiMatch[1] || apiMatch[2]);
           const method = detectMethod(block);
@@ -86,7 +106,9 @@ export function buildApiModuleMap(config: PulseConfig): Map<string, { endpoint: 
         const methodMatch = line.match(/^\s+(\w+)\s*[:=]\s*(?:async\s+)?\(?/);
         if (methodMatch) {
           const block = lines.slice(i, Math.min(i + 20, lines.length)).join('\n');
-          const apiMatch = block.match(/apiFetch\s*(?:<[^(]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/);
+          const apiMatch = block.match(
+            /apiFetch\s*(?:<[^(]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/,
+          );
           if (apiMatch) {
             const ep = normalizeEndpoint(apiMatch[1] || apiMatch[2]);
             const method = detectMethod(block);
@@ -94,13 +116,19 @@ export function buildApiModuleMap(config: PulseConfig): Map<string, { endpoint: 
           } else {
             // Detect custom wrapper functions that call apiFetch internally
             // e.g. kycMutation('/kyc/submit') where kycMutation calls apiFetch(`/api${endpoint}`)
-            const wrapperMatch = block.match(/(\w+Mutation|\w+Fetch)\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/);
+            const wrapperMatch = block.match(
+              /(\w+Mutation|\w+Fetch)\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/,
+            );
             if (wrapperMatch) {
               const wrapperName = wrapperMatch[1];
               const rawEp = wrapperMatch[2] || wrapperMatch[3];
               if (rawEp) {
                 // Find the wrapper function to determine its prefix
-                const wrapperDef = content.match(new RegExp(`function\\s+${wrapperName}[\\s\\S]*?apiFetch[^(]*\\(\\s*\`([^$\`]*?)\\$\\{`));
+                const wrapperDef = content.match(
+                  new RegExp(
+                    `function\\s+${wrapperName}[\\s\\S]*?apiFetch[^(]*\\(\\s*\`([^$\`]*?)\\$\\{`,
+                  ),
+                );
                 const prefix = wrapperDef ? wrapperDef[1] : '';
                 const ep = normalizeEndpoint(prefix + rawEp);
                 const method = detectMethod(block);
@@ -124,7 +152,9 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
   for (const file of files) {
     // Skip test files and type-only files
-    if (/\.(test|spec|d)\.ts/.test(file)) continue;
+    if (/\.(test|spec|d)\.ts/.test(file)) {
+      continue;
+    }
 
     try {
       const content = fs.readFileSync(file, 'utf8');
@@ -144,10 +174,14 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           const raw = m[1];
           const endpoint = normalizeEndpoint(raw);
           // Skip malformed endpoints from wrapper functions (e.g., /api${endpoint} → /api:endpoint)
-          if (/^\/api:[a-z]/i.test(endpoint) || endpoint === '/api' || endpoint.length < 3) continue;
+          if (/^\/api:[a-z]/i.test(endpoint) || endpoint === '/api' || endpoint.length < 3) {
+            continue;
+          }
 
           const key = `${relFile}:${i + 1}:${endpoint}`;
-          if (seen.has(key)) continue;
+          if (seen.has(key)) {
+            continue;
+          }
           seen.add(key);
 
           // For method detection: extract ONLY the apiFetch() call context.
@@ -159,18 +193,35 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           for (let ci = matchStart; ci < line.length; ci++) {
             const ch = line[ci];
             stmtContext += ch;
-            if (ch === '(') { parenDepth++; started = true; }
-            if (ch === ')') { parenDepth--; if (started && parenDepth === 0) break; }
+            if (ch === '(') {
+              parenDepth++;
+              started = true;
+            }
+            if (ch === ')') {
+              parenDepth--;
+              if (started && parenDepth === 0) {
+                break;
+              }
+            }
           }
           // If parens not balanced on this line, expand to next lines
           if (started && parenDepth > 0) {
             for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
               for (const ch of lines[j]) {
                 stmtContext += ch;
-                if (ch === '(') parenDepth++;
-                if (ch === ')') { parenDepth--; if (parenDepth === 0) break; }
+                if (ch === '(') {
+                  parenDepth++;
+                }
+                if (ch === ')') {
+                  parenDepth--;
+                  if (parenDepth === 0) {
+                    break;
+                  }
+                }
               }
-              if (parenDepth === 0) break;
+              if (parenDepth === 0) {
+                break;
+              }
             }
           }
 
@@ -190,7 +241,9 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
         // Pattern 2: useSWR('/endpoint', swrFetcher)
         // Support nested generics like useSWR<Record<string, Foo>>('/endpoint', ...)
-        const swrMatch = line.match(/useSWR\s*(?:<[^(]*>)?\s*\(\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
+        const swrMatch = line.match(
+          /useSWR\s*(?:<[^(]*>)?\s*\(\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+        );
         if (swrMatch) {
           const raw = swrMatch[1] || swrMatch[2];
           if (raw && raw.startsWith('/')) {
@@ -216,15 +269,21 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
         // Pattern 3: fetch(`${API_BASE}/endpoint`) or fetch('/api/...')
         const fetchMatches = [
-          ...line.matchAll(/fetch\s*\(\s*`\$\{(?:API_BASE|API_URL|apiBase|getServerApiBase\(\))\}([^`]*)`/g),
+          ...line.matchAll(
+            /fetch\s*\(\s*`\$\{(?:API_BASE|API_URL|apiBase|getServerApiBase\(\))\}([^`]*)`/g,
+          ),
           ...line.matchAll(/fetch\s*\(\s*['"`](\/api\/[^'"`]+)['"`]/g),
         ];
         for (const m of fetchMatches) {
           const raw = m[1];
-          if (!raw || raw.length < 2) continue;
+          if (!raw || raw.length < 2) {
+            continue;
+          }
           const endpoint = normalizeEndpoint(raw);
           const key = `${relFile}:${i + 1}:${endpoint}`;
-          if (seen.has(key)) continue;
+          if (seen.has(key)) {
+            continue;
+          }
           seen.add(key);
 
           const isProxy = endpoint.startsWith('/api/');
@@ -244,7 +303,9 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         // Pattern 4a: useSWR with buildUrl helper — useSWR(buildUrl('vendas', f), ...)
         // Detects patterns like: function buildUrl(endpoint) { return `/reports/${endpoint}...`; }
         // then: useSWR(buildUrl('vendas'), ...)
-        const buildUrlMatch = line.match(/useSWR\s*(?:<[^>]*>)?\s*\(\s*buildUrl\s*\(\s*['"`]([^'"`]+)['"`]/);
+        const buildUrlMatch = line.match(
+          /useSWR\s*(?:<[^>]*>)?\s*\(\s*buildUrl\s*\(\s*['"`]([^'"`]+)['"`]/,
+        );
         if (buildUrlMatch) {
           // Find the base path from the return statement near buildUrl: return `/reports/${endpoint}...`
           const returnMatch = content.match(/function\s+buildUrl[\s\S]*?return\s+`\/([^$`]+)\$\{/);
@@ -274,7 +335,9 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         // Pattern 4b: Multiline apiFetch/useSWR — call on this line, endpoint on next line(s)
         if (apiFetchMatches.length === 0 && /apiFetch\s*(?:<[^(]*>)?\s*\(\s*$/.test(line)) {
           const block = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
-          const multiMatch = block.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
+          const multiMatch = block.match(
+            /apiFetch\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+          );
           if (multiMatch) {
             const raw = multiMatch[1] || multiMatch[2];
             if (raw) {
@@ -291,17 +354,34 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                   for (let ci = startIdx; ci < line.length; ci++) {
                     const ch = line[ci];
                     stmtContext += ch;
-                    if (ch === '(') { parenDepth++; started = true; }
-                    if (ch === ')') { parenDepth--; if (started && parenDepth === 0) break; }
+                    if (ch === '(') {
+                      parenDepth++;
+                      started = true;
+                    }
+                    if (ch === ')') {
+                      parenDepth--;
+                      if (started && parenDepth === 0) {
+                        break;
+                      }
+                    }
                   }
                   if (started && parenDepth > 0) {
                     for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
                       for (const ch of lines[j]) {
                         stmtContext += ch;
-                        if (ch === '(') parenDepth++;
-                        if (ch === ')') { parenDepth--; if (parenDepth === 0) break; }
+                        if (ch === '(') {
+                          parenDepth++;
+                        }
+                        if (ch === ')') {
+                          parenDepth--;
+                          if (parenDepth === 0) {
+                            break;
+                          }
+                        }
                       }
-                      if (parenDepth === 0) break;
+                      if (parenDepth === 0) {
+                        break;
+                      }
                     }
                   }
                   const isProxy = endpoint.startsWith('/api/');
@@ -324,7 +404,9 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
         if (!swrMatch && /useSWR\s*(?:<[^>]*>)?\s*\(\s*$/.test(line)) {
           const block = lines.slice(i, Math.min(i + 4, lines.length)).join('\n');
-          const multiMatch = block.match(/useSWR\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
+          const multiMatch = block.match(
+            /useSWR\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+          );
           if (multiMatch) {
             const raw = multiMatch[1] || multiMatch[2];
             if (raw && raw.startsWith('/')) {
@@ -350,7 +432,9 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         }
       }
     } catch (e) {
-      process.stderr.write(`  [warn] Could not parse API calls in ${file}: ${(e as Error).message}\n`);
+      process.stderr.write(
+        `  [warn] Could not parse API calls in ${file}: ${(e as Error).message}\n`,
+      );
     }
   }
 
@@ -361,9 +445,11 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
   const routes: ProxyRoute[] = [];
   const apiDir = path.join(config.frontendDir, 'app', 'api');
-  if (!fs.existsSync(apiDir)) return routes;
+  if (!fs.existsSync(apiDir)) {
+    return routes;
+  }
 
-  const routeFiles = walkFiles(apiDir, ['.ts']).filter(f => f.endsWith('route.ts'));
+  const routeFiles = walkFiles(apiDir, ['.ts']).filter((f) => f.endsWith('route.ts'));
 
   for (const file of routeFiles) {
     try {
@@ -373,7 +459,9 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
       // Derive frontend path from file system path
       // frontend/src/app/api/whatsapp-api/session/status/route.ts -> /api/whatsapp-api/session/status
       const appIdx = file.indexOf('/app/api/');
-      if (appIdx === -1) continue;
+      if (appIdx === -1) {
+        continue;
+      }
       const routePart = file.substring(appIdx + 4).replace(/\/route\.ts$/, '');
       const frontendPath = routePart.replace(/\/\[\.\.\.?\w+\]/, '/:path'); // catch-all
 
@@ -413,7 +501,9 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
         });
       }
     } catch (e) {
-      process.stderr.write(`  [warn] Could not parse proxy route ${file}: ${(e as Error).message}\n`);
+      process.stderr.write(
+        `  [warn] Could not parse proxy route ${file}: ${(e as Error).message}\n`,
+      );
     }
   }
 

@@ -31,7 +31,9 @@ import {
 
 export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
 
@@ -166,7 +168,9 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
     ];
 
     for (const wPath of webhookControllerPaths) {
-      if (!fs.existsSync(wPath)) continue;
+      if (!fs.existsSync(wPath)) {
+        continue;
+      }
       const content = fs.readFileSync(wPath, 'utf8');
 
       const hasTokenCheck =

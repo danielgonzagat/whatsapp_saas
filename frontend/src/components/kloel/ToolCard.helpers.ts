@@ -9,7 +9,9 @@ export function isActivationKey(event: KeyboardEvent): boolean {
 }
 
 export function triggerClickOnActivation(event: KeyboardEvent<HTMLElement>): void {
-  if (!isActivationKey(event)) return;
+  if (!isActivationKey(event)) {
+    return;
+  }
   event.preventDefault();
   (event.currentTarget as HTMLElement).click();
 }
@@ -25,7 +27,11 @@ export function resolveCursor(
   interactive: boolean,
   disabled: boolean | undefined,
 ): 'pointer' | 'not-allowed' | 'default' {
-  if (interactive) return 'pointer';
-  if (disabled) return 'not-allowed';
+  if (interactive) {
+    return 'pointer';
+  }
+  if (disabled) {
+    return 'not-allowed';
+  }
   return 'default';
 }

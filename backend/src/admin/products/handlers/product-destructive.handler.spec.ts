@@ -18,7 +18,9 @@ function fakePrisma(initial: ProductRow | null) {
     product: {
       findUnique: jest.fn(async () => row),
       update: jest.fn(async ({ data }: { data: Partial<ProductRow> }) => {
-        if (!row) throw new Error('not found');
+        if (!row) {
+          throw new Error('not found');
+        }
         row = { ...row, ...data };
         return row;
       }),

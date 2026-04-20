@@ -39,7 +39,9 @@ export class AdminUsersService {
 
     const email = input.email.trim().toLowerCase();
     const existing = await this.prisma.adminUser.findUnique({ where: { email } });
-    if (existing) throw adminErrors.emailInUse();
+    if (existing) {
+      throw adminErrors.emailInUse();
+    }
 
     const passwordHash = await AdminAuthService.hashPassword(input.temporaryPassword);
 
@@ -78,7 +80,9 @@ export class AdminUsersService {
 
   async findById(id: string) {
     const user = await this.prisma.adminUser.findUnique({ where: { id } });
-    if (!user) throw adminErrors.userNotFound();
+    if (!user) {
+      throw adminErrors.userNotFound();
+    }
     return this.serialize(user);
   }
 
@@ -113,9 +117,15 @@ export class AdminUsersService {
     currentRole: AdminRole,
   ): Prisma.AdminUserUpdateInput {
     const data: Prisma.AdminUserUpdateInput = {};
-    if (patch.name !== undefined) data.name = patch.name.trim();
-    if (patch.status !== undefined) data.status = patch.status;
-    if (this.isRoleChange(patch, currentRole)) data.role = patch.role;
+    if (patch.name !== undefined) {
+      data.name = patch.name.trim();
+    }
+    if (patch.status !== undefined) {
+      data.status = patch.status;
+    }
+    if (this.isRoleChange(patch, currentRole)) {
+      data.role = patch.role;
+    }
     return data;
   }
 
@@ -140,7 +150,9 @@ export class AdminUsersService {
 
   async update(id: string, patch: UpdateAdminUserInput) {
     const current = await this.prisma.adminUser.findUnique({ where: { id } });
-    if (!current) throw adminErrors.userNotFound();
+    if (!current) {
+      throw adminErrors.userNotFound();
+    }
 
     this.assertAdminUpdateAllowed(current, patch);
 
@@ -172,7 +184,9 @@ export class AdminUsersService {
     }>,
   ) {
     const target = await this.prisma.adminUser.findUnique({ where: { id: targetId } });
-    if (!target) throw adminErrors.userNotFound();
+    if (!target) {
+      throw adminErrors.userNotFound();
+    }
     await this.permissions.replace(targetId, target.role, permissions);
     await this.audit.append({
       adminUserId: actorId,
@@ -185,7 +199,9 @@ export class AdminUsersService {
   }
 
   private serialize(user: Awaited<ReturnType<PrismaService['adminUser']['findUnique']>>) {
-    if (!user) return null;
+    if (!user) {
+      return null;
+    }
     // Never return passwordHash or mfaSecret to the client.
     const { passwordHash: _pw, mfaSecret: _mfa, ...safe } = user;
     void _pw;

@@ -109,11 +109,15 @@ export function decryptString(encryptedData: string, key: string): string {
  * This is a heuristic check, not a guarantee.
  */
 export function isEncrypted(data: string): boolean {
-  if (!data || typeof data !== 'string') return false;
+  if (!data || typeof data !== 'string') {
+    return false;
+  }
 
   // Check if it's valid base64
   const base64Regex = A_ZA_Z0_9_RE;
-  if (!base64Regex.test(data)) return false;
+  if (!base64Regex.test(data)) {
+    return false;
+  }
 
   try {
     const decoded = Buffer.from(data, 'base64');
@@ -129,7 +133,9 @@ export function isEncrypted(data: string): boolean {
  * Useful for migrating from plaintext to encrypted values.
  */
 export function safeDecrypt(data: string, key: string): string {
-  if (!data) return data;
+  if (!data) {
+    return data;
+  }
 
   if (!isEncrypted(data)) {
     return data; // Return as-is if not encrypted

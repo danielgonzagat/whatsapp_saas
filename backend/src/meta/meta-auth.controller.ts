@@ -49,18 +49,24 @@ export class MetaAuthController {
     returnTo?: string | null;
   } {
     const raw = String(rawState || '').trim();
-    if (!raw) return { workspaceId: '' };
+    if (!raw) {
+      return { workspaceId: '' };
+    }
 
     const candidates = [raw];
     try {
       const decoded = decodeURIComponent(raw);
-      if (decoded && decoded !== raw) candidates.unshift(decoded);
+      if (decoded && decoded !== raw) {
+        candidates.unshift(decoded);
+      }
     } catch {
       void 0;
     }
 
     for (const candidate of candidates) {
-      if (!candidate.startsWith('{')) continue;
+      if (!candidate.startsWith('{')) {
+        continue;
+      }
       try {
         const parsed = JSON.parse(candidate);
         return {

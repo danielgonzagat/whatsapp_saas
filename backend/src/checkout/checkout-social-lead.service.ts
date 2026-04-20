@@ -418,14 +418,22 @@ export class CheckoutSocialLeadService {
   }
 
   private parseProvider(provider: string) {
-    if (provider === 'google') return CheckoutSocialProvider.GOOGLE;
-    if (provider === 'facebook') return CheckoutSocialProvider.FACEBOOK;
+    if (provider === 'google') {
+      return CheckoutSocialProvider.GOOGLE;
+    }
+    if (provider === 'facebook') {
+      return CheckoutSocialProvider.FACEBOOK;
+    }
     return CheckoutSocialProvider.APPLE;
   }
 
   private serializeProvider(provider: CheckoutSocialProvider): CaptureSocialLeadDto['provider'] {
-    if (provider === CheckoutSocialProvider.GOOGLE) return 'google';
-    if (provider === CheckoutSocialProvider.FACEBOOK) return 'facebook';
+    if (provider === CheckoutSocialProvider.GOOGLE) {
+      return 'google';
+    }
+    if (provider === CheckoutSocialProvider.FACEBOOK) {
+      return 'facebook';
+    }
     return 'apple';
   }
 
@@ -640,7 +648,9 @@ export class CheckoutSocialLeadService {
     value: Record<string, Prisma.JsonValue> | null,
     keys: readonly string[],
   ): string | null {
-    if (!value) return null;
+    if (!value) {
+      return null;
+    }
 
     for (const key of keys) {
       const candidate = value[key];

@@ -137,7 +137,9 @@ export function notificationsOverviewTool(service: AdminNotificationsService): C
     permissionAction: AdminAction.VIEW,
     inputSchema: { type: 'object', properties: {} },
     async execute(_args, context) {
-      if (!context) return { items: [], unreadCount: 0 };
+      if (!context) {
+        return { items: [], unreadCount: 0 };
+      }
       return asRecord(await service.list(context.adminUserId));
     },
   };

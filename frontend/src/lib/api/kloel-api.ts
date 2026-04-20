@@ -65,46 +65,53 @@ export const kloelApi = {
           SSE_TIMEOUT_MS,
         );
         const resetTimeout = () => {
-          if (timeoutId !== undefined) clearTimeout(timeoutId);
+          if (timeoutId !== undefined) {
+            clearTimeout(timeoutId);
+          }
           timeoutId = setTimeout(() => controller.abort('SSE idle timeout'), SSE_TIMEOUT_MS);
         };
 
         try {
-          await readStreamSequential(() => reader.read(), async ({ value }) => {
-            resetTimeout();
+          await readStreamSequential(
+            () => reader.read(),
+            async ({ value }) => {
+              resetTimeout();
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
 
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') {
-                  onDone();
-                  return true;
-                }
-                try {
-                  const parsed = JSON.parse(data);
-                  if (parsed.chunk) {
-                    onChunk(parsed.chunk);
-                  }
-                  if (parsed.error) {
-                    onError(parsed.error);
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') {
+                    onDone();
                     return true;
                   }
-                } catch {
-                  // Plain text chunk
-                  onChunk(data);
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.chunk) {
+                      onChunk(parsed.chunk);
+                    }
+                    if (parsed.error) {
+                      onError(parsed.error);
+                      return true;
+                    }
+                  } catch {
+                    // Plain text chunk
+                    onChunk(data);
+                  }
                 }
               }
-            }
-            return false;
-          });
+              return false;
+            },
+          );
 
           onDone();
         } finally {
-          if (timeoutId !== undefined) clearTimeout(timeoutId);
+          if (timeoutId !== undefined) {
+            clearTimeout(timeoutId);
+          }
         }
       } catch (err) {
         if (controller.signal.aborted) {

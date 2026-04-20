@@ -83,8 +83,12 @@ export class AdminMfaService {
   }
 
   verifyCode(encryptedSecret: string | null | undefined, code: string): void {
-    if (!encryptedSecret) throw adminErrors.mfaInvalidCode();
-    if (!RX_0_9__6_RE.test(code)) throw adminErrors.mfaInvalidCode();
+    if (!encryptedSecret) {
+      throw adminErrors.mfaInvalidCode();
+    }
+    if (!RX_0_9__6_RE.test(code)) {
+      throw adminErrors.mfaInvalidCode();
+    }
     let secret: string;
     try {
       secret = decryptAdminSecret(encryptedSecret, this.encryptionKey);
@@ -92,6 +96,8 @@ export class AdminMfaService {
       throw adminErrors.cryptoFailure();
     }
     const ok = authenticator.check(code, secret);
-    if (!ok) throw adminErrors.mfaInvalidCode();
+    if (!ok) {
+      throw adminErrors.mfaInvalidCode();
+    }
   }
 }

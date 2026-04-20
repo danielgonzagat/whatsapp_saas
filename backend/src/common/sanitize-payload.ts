@@ -67,8 +67,12 @@ function sanitizeEntry(key: string, value: unknown): unknown {
 }
 
 export function sanitizePayload(obj: unknown): unknown {
-  if (!obj || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map(sanitizePayload);
+  if (!obj || typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizePayload);
+  }
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
     result[key] = sanitizeEntry(key, value);

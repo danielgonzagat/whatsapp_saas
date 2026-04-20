@@ -27,9 +27,15 @@ interface ActivitySectionProps {
 function formatRelativeTime(date: Date) {
   const delta = Math.max(0, Date.now() - date.getTime());
   const seconds = Math.floor(delta / 1000);
-  if (seconds < 60) return 'Agora mesmo';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} min atras`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} h atras`;
+  if (seconds < 60) {
+    return 'Agora mesmo';
+  }
+  if (seconds < 3600) {
+    return `${Math.floor(seconds / 60)} min atras`;
+  }
+  if (seconds < 86400) {
+    return `${Math.floor(seconds / 3600)} h atras`;
+  }
   return `${Math.floor(seconds / 86400)} dia(s) atras`;
 }
 
@@ -43,11 +49,21 @@ function normalizeActivities(activities?: AgentActivity[]): ActivityItem[] {
     .reverse()
     .map((activity) => {
       let type: ActivityItem['type'] = 'response';
-      if (activity.type === 'message_sent') type = 'sent';
-      if (activity.type === 'error') type = 'error';
-      if (activity.type === 'lead_qualified') type = 'sale';
-      if (activity.type === 'connection_status') type = 'reconnect';
-      if (activity.type === 'follow_up_scheduled') type = 'checkout_click';
+      if (activity.type === 'message_sent') {
+        type = 'sent';
+      }
+      if (activity.type === 'error') {
+        type = 'error';
+      }
+      if (activity.type === 'lead_qualified') {
+        type = 'sale';
+      }
+      if (activity.type === 'connection_status') {
+        type = 'reconnect';
+      }
+      if (activity.type === 'follow_up_scheduled') {
+        type = 'checkout_click';
+      }
 
       return {
         id: activity.id,

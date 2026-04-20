@@ -54,7 +54,9 @@ export function ProductNerveCenterCampanhasTab({
     void loadCampaigns();
   }, [loadCampaigns]);
   const handleCreateCamp = async () => {
-    if (!campName.trim()) return;
+    if (!campName.trim()) {
+      return;
+    }
     try {
       const res = await apiFetch(`/products/${productId}/campaigns`, {
         method: 'POST',

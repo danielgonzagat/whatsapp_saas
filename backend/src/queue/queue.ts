@@ -24,8 +24,12 @@ const queueLogger = new Logger('Queue');
 const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
 const serializePrimitiveQueueLogValue = (value: unknown): string | null => {
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  if (typeof value === 'bigint') return value.toString();
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
   return null;
 };
 
@@ -38,18 +42,28 @@ const safeJsonStringifyQueueLog = (value: unknown): string => {
 };
 
 const serializeQueueLogArg = (value: unknown): string => {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
   const primitive = serializePrimitiveQueueLogValue(value);
-  if (primitive !== null) return primitive;
-  if (value instanceof Error) return value.message;
+  if (primitive !== null) {
+    return primitive;
+  }
+  if (value instanceof Error) {
+    return value.message;
+  }
   return safeJsonStringifyQueueLog(value);
 };
 
 const log = (...args: unknown[]) => {
-  if (!isTestEnv) queueLogger.log(args.map(serializeQueueLogArg).join(' '));
+  if (!isTestEnv) {
+    queueLogger.log(args.map(serializeQueueLogArg).join(' '));
+  }
 };
 const warn = (...args: unknown[]) => {
-  if (!isTestEnv) queueLogger.warn(args.map(serializeQueueLogArg).join(' '));
+  if (!isTestEnv) {
+    queueLogger.warn(args.map(serializeQueueLogArg).join(' '));
+  }
 };
 
 function readIntEnvWithFloor(envName: string, fallback: number, floor: number): number {
@@ -71,7 +85,9 @@ function resolveDefaultQueueJobOptions() {
 }
 
 function ensureInitialized() {
-  if (_initialized) return;
+  if (_initialized) {
+    return;
+  }
 
   log('🔌 [QUEUE] Inicializando conexão Redis (lazy)...');
   const redisUrl = getRedisUrl();
@@ -124,7 +140,9 @@ async function notifyOps(input: {
   reason?: string;
 }) {
   const webhook = process.env.DLQ_WEBHOOK_URL || process.env.OPS_WEBHOOK_URL;
-  if (!webhook) return;
+  if (!webhook) {
+    return;
+  }
   const webhookType = classifyWebhook(webhook);
   const isSlack = webhookType === 'slack';
   const isTeams = webhookType === 'teams';
@@ -138,7 +156,9 @@ async function notifyOps(input: {
           body?: string;
         },
       ) => Promise<unknown>);
-  if (!fetchFn) return;
+  if (!fetchFn) {
+    return;
+  }
 
   try {
     const payload = {
@@ -259,9 +279,13 @@ async function handleQueueFailedEvent(
 ): Promise<void> {
   try {
     const job = await queue.getJob(event.jobId);
-    if (!job) return;
+    if (!job) {
+      return;
+    }
     const maxAttempts = resolveMaxAttempts(job.opts);
-    if (hasAttemptsLeft(event, maxAttempts)) return;
+    if (hasAttemptsLeft(event, maxAttempts)) {
+      return;
+    }
     await moveJobToDlq(queue.name, dlq, job, event.failedReason);
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : 'unknown_error';
@@ -301,7 +325,9 @@ function collectClosePromises(): Array<Promise<unknown>> {
 }
 
 async function closeConnectionSafely(): Promise<void> {
-  if (!_connection) return;
+  if (!_connection) {
+    return;
+  }
   if (typeof _connection.quit === 'function') {
     await _connection.quit().catch(() => undefined);
     return;
@@ -312,10 +338,18 @@ async function closeConnectionSafely(): Promise<void> {
 }
 
 function resetQueueStateRegistries(): void {
-  for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
-  for (const k of Object.keys(_dlqQueues)) delete _dlqQueues[k];
-  for (const k of Object.keys(_queues)) delete _queues[k];
-  for (const k of Object.keys(queueRegistry)) delete queueRegistry[k];
+  for (const k of Object.keys(_queueEvents)) {
+    delete _queueEvents[k];
+  }
+  for (const k of Object.keys(_dlqQueues)) {
+    delete _dlqQueues[k];
+  }
+  for (const k of Object.keys(_queues)) {
+    delete _queues[k];
+  }
+  for (const k of Object.keys(queueRegistry)) {
+    delete queueRegistry[k];
+  }
   _connection = null;
   _queueOptions = null;
   _initialized = false;

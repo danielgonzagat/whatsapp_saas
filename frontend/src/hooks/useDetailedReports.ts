@@ -58,7 +58,9 @@ interface AssinaturasResponse {
 function buildUrl(endpoint: string, filters: ReportFilters = {}) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
+    if (v !== undefined && v !== null && v !== '') {
+      params.set(k, String(v));
+    }
   });
   const qs = params.toString();
   return `/reports/${endpoint}${qs ? `?${qs}` : ''}`;
@@ -205,8 +207,12 @@ export interface AdSpendReport {
 
 function buildAdSpendUrl(f: AdSpendFilters = {}) {
   const params = new URLSearchParams();
-  if (f.startDate) params.set('startDate', f.startDate);
-  if (f.endDate) params.set('endDate', f.endDate);
+  if (f.startDate) {
+    params.set('startDate', f.startDate);
+  }
+  if (f.endDate) {
+    params.set('endDate', f.endDate);
+  }
   const qs = params.toString();
   return `/reports/ad-spend${qs ? `?${qs}` : ''}`;
 }
@@ -225,7 +231,9 @@ export function useAdSpendMutations() {
 
   const registerAdSpend = async (payload: AdSpendEntry) => {
     const res = await apiFetch('/reports/ad-spend', { method: 'POST', body: payload });
-    if (res.error) throw new Error(res.error || 'Erro ao registrar ad spend');
+    if (res.error) {
+      throw new Error(res.error || 'Erro ao registrar ad spend');
+    }
     mutate(
       (key: unknown) => typeof key === 'string' && key.startsWith('/reports/ad-spend'),
       undefined,
@@ -270,7 +278,9 @@ export function useNpsMutations() {
       method: 'POST',
       body: { score, comment, orderId },
     });
-    if (res.error) throw new Error(res.error || 'Erro ao registrar NPS');
+    if (res.error) {
+      throw new Error(res.error || 'Erro ao registrar NPS');
+    }
     mutate('/reports/nps');
     return res.data;
   };

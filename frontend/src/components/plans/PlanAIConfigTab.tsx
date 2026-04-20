@@ -416,19 +416,27 @@ type StringArraySetter = (value: string[]) => void;
 type RecordStringSetter = (value: Record<string, string>) => void;
 
 function assignString(data: Record<string, unknown>, key: string, setter: StringSetter) {
-  if (typeof data[key] === 'string') setter(data[key] as string);
+  if (typeof data[key] === 'string') {
+    setter(data[key] as string);
+  }
 }
 
 function assignNumber(data: Record<string, unknown>, key: string, setter: NumberSetter) {
-  if (typeof data[key] === 'number') setter(data[key] as number);
+  if (typeof data[key] === 'number') {
+    setter(data[key] as number);
+  }
 }
 
 function assignBoolean(data: Record<string, unknown>, key: string, setter: BooleanSetter) {
-  if (typeof data[key] === 'boolean') setter(data[key] as boolean);
+  if (typeof data[key] === 'boolean') {
+    setter(data[key] as boolean);
+  }
 }
 
 function assignStringArray(data: Record<string, unknown>, key: string, setter: StringArraySetter) {
-  if (Array.isArray(data[key])) setter(data[key] as string[]);
+  if (Array.isArray(data[key])) {
+    setter(data[key] as string[]);
+  }
 }
 
 function assignRecordString(
@@ -437,7 +445,9 @@ function assignRecordString(
   setter: RecordStringSetter,
 ) {
   const value = data[key];
-  if (value && typeof value === 'object') setter(value as Record<string, string>);
+  if (value && typeof value === 'object') {
+    setter(value as Record<string, string>);
+  }
 }
 
 // ============================================
@@ -455,7 +465,9 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
 
   useEffect(
     () => () => {
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
     },
     [],
   );
@@ -529,10 +541,11 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           assignStringArray(data, 'whenOffer', setWhenOffer);
           assignStringArray(data, 'differentiators', setDifferentiators);
           assignString(data, 'scarcity', setScarcity);
-          if (data.objectionStates && typeof data.objectionStates === 'object')
+          if (data.objectionStates && typeof data.objectionStates === 'object') {
             setObjectionStates(
               data.objectionStates as Record<string, { enabled: boolean; response: string }>,
             );
+          }
           assignStringArray(data, 'socialProof', setSocialProof);
           assignRecordString(data, 'socialProofValues', setSocialProofValues);
           assignStringArray(data, 'guarantee', setGuarantee);
@@ -634,7 +647,9 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
       // PULSE:OK — visual saved badge reset after a successful onSave() + mutate() cycle.
       savedTimer.current = setTimeout(() => setSaved(false), 3000);
     } catch {}
@@ -753,7 +768,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   // Check if argument has X placeholder for numeric input
   const hasNumericPlaceholder = (arg: string) => B_X_B_RE.test(arg);
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2
@@ -763,6 +778,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         />
       </div>
     );
+  }
 
   return (
     <div className="space-y-8">

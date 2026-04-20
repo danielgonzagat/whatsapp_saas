@@ -65,7 +65,9 @@ export class PdfProcessorController {
     )
     file: { buffer: Buffer; mimetype: string; originalname: string; size: number },
   ) {
-    if (!file) throw new BadRequestException('Nenhum arquivo enviado');
+    if (!file) {
+      throw new BadRequestException('Nenhum arquivo enviado');
+    }
 
     this.logger.log(`Processando PDF: ${file.originalname}`);
 
@@ -125,8 +127,9 @@ export class PdfProcessorController {
     @Param('workspaceId') workspaceId: string,
     @Body() body: { text: string; sourceName: string },
   ) {
-    if (!body.text || !body.sourceName)
+    if (!body.text || !body.sourceName) {
       throw new BadRequestException('Texto e sourceName são obrigatórios');
+    }
 
     const analysis = await this.pdfProcessor.processText(workspaceId, body.text, body.sourceName);
 

@@ -182,12 +182,16 @@ export class MemoryManagementService {
    * Remove memórias expiradas por categoria
    */
   private async removeExpiredMemories(): Promise<number> {
-    if (!this.prisma.kloelMemory) return 0;
+    if (!this.prisma.kloelMemory) {
+      return 0;
+    }
 
     let totalRemoved = 0;
 
     await forEachSequential(Object.entries(this.EXPIRATION_DAYS), async ([category, days]) => {
-      if (category === 'default') return;
+      if (category === 'default') {
+        return;
+      }
 
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
@@ -240,7 +244,9 @@ export class MemoryManagementService {
    * Remove duplicatas (mesmo workspace + categoria + valor similar)
    */
   private async removeDuplicates(): Promise<number> {
-    if (!this.prisma.kloelMemory) return 0;
+    if (!this.prisma.kloelMemory) {
+      return 0;
+    }
 
     let totalRemoved = 0;
 
@@ -304,7 +310,9 @@ export class MemoryManagementService {
    * Remove memórias de workspaces deletados
    */
   private async removeOrphans(): Promise<number> {
-    if (!this.prisma.kloelMemory) return 0;
+    if (!this.prisma.kloelMemory) {
+      return 0;
+    }
 
     try {
       // Buscar workspaceIds únicos nas memórias
@@ -324,7 +332,9 @@ export class MemoryManagementService {
       const existingIds = new Set(existingWorkspaces.map((w) => w.id));
       const orphanIds = workspaceIds.filter((id: string) => !existingIds.has(id));
 
-      if (orphanIds.length === 0) return 0;
+      if (orphanIds.length === 0) {
+        return 0;
+      }
 
       // Remover memórias órfãs
       const result = await this.prisma.kloelMemory.deleteMany({
@@ -428,7 +438,9 @@ export class MemoryManagementService {
     workspaceId: string,
     options?: { category?: string; olderThanDays?: number },
   ): Promise<number> {
-    if (!this.prisma.kloelMemory) return 0;
+    if (!this.prisma.kloelMemory) {
+      return 0;
+    }
 
     const where: Record<string, unknown> = { workspaceId };
 
@@ -472,7 +484,9 @@ export class MemoryManagementService {
    */
   async normalizeSemanticDuplicates(workspaceId: string, category: string): Promise<number> {
     // Implementação básica - em produção usaria embeddings
-    if (!this.prisma.kloelMemory) return 0;
+    if (!this.prisma.kloelMemory) {
+      return 0;
+    }
 
     const memories = await this.prisma.kloelMemory.findMany({
       where: { workspaceId, category },
@@ -480,7 +494,9 @@ export class MemoryManagementService {
       take: 500,
     });
 
-    if (memories.length < 2) return 0;
+    if (memories.length < 2) {
+      return 0;
+    }
 
     // Agrupar por prefixo de key (ex: "product_", "lead_")
     const groups = new Map<string, typeof memories>();
@@ -496,7 +512,9 @@ export class MemoryManagementService {
     let merged = 0;
 
     await forEachSequential(groups, async ([_prefix, mems]) => {
-      if (mems.length <= 1) return;
+      if (mems.length <= 1) {
+        return;
+      }
 
       // Manter o mais recente, deletar os outros
       const sorted = mems.sort(
@@ -536,7 +554,9 @@ export class MemoryManagementService {
     memoryKey: string,
     priority: 'low' | 'normal' | 'high' | 'critical',
   ): Promise<boolean> {
-    if (!this.prisma.kloelMemory) return false;
+    if (!this.prisma.kloelMemory) {
+      return false;
+    }
 
     try {
       // Wrap find+update in $transaction to prevent concurrent writes from
@@ -546,7 +566,9 @@ export class MemoryManagementService {
           where: { workspaceId, key: memoryKey },
         });
 
-        if (!memory) return false;
+        if (!memory) {
+          return false;
+        }
 
         const value = typeof memory.value === 'object' ? memory.value : { content: memory.value };
 

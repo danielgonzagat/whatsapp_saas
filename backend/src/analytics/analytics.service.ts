@@ -18,9 +18,15 @@ interface ReportWindow {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function resolvePeriodDays(period: string): number {
-  if (period === '7d') return 7;
-  if (period === '90d') return 90;
-  if (period === '12m') return 365;
+  if (period === '7d') {
+    return 7;
+  }
+  if (period === '90d') {
+    return 90;
+  }
+  if (period === '12m') {
+    return 365;
+  }
   return 30;
 }
 
@@ -95,7 +101,9 @@ function aggregateTopProducts(paidSales: readonly ReportSale[]) {
   const productMap: Record<string, { name: string; sales: number; revenue: number }> = {};
   paidSales.forEach((s) => {
     const name = s.productName || 'Sem produto';
-    if (!productMap[name]) productMap[name] = { name, sales: 0, revenue: 0 };
+    if (!productMap[name]) {
+      productMap[name] = { name, sales: 0, revenue: 0 };
+    }
     productMap[name].sales++;
     productMap[name].revenue += s.amount;
   });
@@ -108,7 +116,9 @@ function aggregatePaymentMethods(paidSales: readonly ReportSale[]) {
   const paymentMap: Record<string, { method: string; count: number; revenue: number }> = {};
   paidSales.forEach((s) => {
     const method = s.paymentMethod || 'OUTRO';
-    if (!paymentMap[method]) paymentMap[method] = { method, count: 0, revenue: 0 };
+    if (!paymentMap[method]) {
+      paymentMap[method] = { method, count: 0, revenue: 0 };
+    }
     paymentMap[method].count++;
     paymentMap[method].revenue += s.amount;
   });
@@ -146,12 +156,16 @@ function computeSalesTrend(
   paidSales: readonly ReportSale[],
   prevPaidSales: readonly ReportSale[],
 ): number {
-  if (prevPaidSales.length === 0) return 0;
+  if (prevPaidSales.length === 0) {
+    return 0;
+  }
   return Math.round(((paidSales.length - prevPaidSales.length) / prevPaidSales.length) * 1000) / 10;
 }
 
 function computeRoas(totalRevenue: number, adSpend: number): number | null {
-  if (totalRevenue <= 0 || adSpend <= 0) return null;
+  if (totalRevenue <= 0 || adSpend <= 0) {
+    return null;
+  }
   return Math.round((totalRevenue / adSpend) * 100) / 100;
 }
 
@@ -234,17 +248,25 @@ export class AnalyticsService {
     // Process Sentiment
     const sentimentStats = { positive: 0, negative: 0, neutral: 0 };
     sentiment.forEach((s) => {
-      if (s.sentiment === 'POSITIVE') sentimentStats.positive = s._count.sentiment;
-      else if (s.sentiment === 'NEGATIVE') sentimentStats.negative = s._count.sentiment;
-      else sentimentStats.neutral += s._count.sentiment;
+      if (s.sentiment === 'POSITIVE') {
+        sentimentStats.positive = s._count.sentiment;
+      } else if (s.sentiment === 'NEGATIVE') {
+        sentimentStats.negative = s._count.sentiment;
+      } else {
+        sentimentStats.neutral += s._count.sentiment;
+      }
     });
 
     // Process Score
     const scoreStats = { high: 0, medium: 0, low: 0 };
     leadScore.forEach((c) => {
-      if (c.leadScore > 70) scoreStats.high++;
-      else if (c.leadScore > 30) scoreStats.medium++;
-      else scoreStats.low++;
+      if (c.leadScore > 70) {
+        scoreStats.high++;
+      } else if (c.leadScore > 30) {
+        scoreStats.medium++;
+      } else {
+        scoreStats.low++;
+      }
     });
 
     // Process delivery/read/error based on outbound status
@@ -313,8 +335,11 @@ export class AnalyticsService {
     messages.forEach((m) => {
       const key = m.createdAt.toISOString().split('T')[0];
       if (activity[key]) {
-        if (m.direction === 'INBOUND') activity[key].inbound++;
-        else activity[key].outbound++;
+        if (m.direction === 'INBOUND') {
+          activity[key].inbound++;
+        } else {
+          activity[key].outbound++;
+        }
       }
     });
 
@@ -538,7 +563,9 @@ export class AnalyticsService {
     sales.forEach((s) => {
       const daysAgo = Math.floor((now - new Date(s.createdAt).getTime()) / (24 * 60 * 60 * 1000));
       const idx = days - 1 - daysAgo;
-      if (idx >= 0 && idx < days) result[idx] += s.amount;
+      if (idx >= 0 && idx < days) {
+        result[idx] += s.amount;
+      }
     });
     return result;
   }

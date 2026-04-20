@@ -32,7 +32,9 @@ export class SemanticMemory {
     });
 
     const content = extraction.choices[0].message.content;
-    if (!content) return;
+    if (!content) {
+      return;
+    }
 
     let factsData: unknown = {};
     try {

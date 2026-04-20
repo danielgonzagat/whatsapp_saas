@@ -79,19 +79,25 @@ function extractYouTubeIdFromShortHost(segments: string[]): string | null {
 }
 
 function extractYouTubeIdFromEmbed(segments: string[]): string | null {
-  if (segments[0] !== 'embed') return null;
+  if (segments[0] !== 'embed') {
+    return null;
+  }
   return segments[1] ?? null;
 }
 
 function extractYouTubeId(url: URL, host: string): string | null {
   const queryId = url.searchParams.get('v');
-  if (queryId) return queryId;
+  if (queryId) {
+    return queryId;
+  }
 
   const segments = splitPathSegments(url.pathname);
 
   if (host === 'youtu.be') {
     const shortId = extractYouTubeIdFromShortHost(segments);
-    if (shortId) return shortId;
+    if (shortId) {
+      return shortId;
+    }
   }
 
   return extractYouTubeIdFromEmbed(segments);

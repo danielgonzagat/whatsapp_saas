@@ -4,9 +4,7 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
 // Paths that are financially sensitive — unsafe casts here are HIGH severity
-const FINANCIAL_PATH_SEGMENTS = [
-  'checkout', 'wallet', 'billing', 'payment', 'auth',
-];
+const FINANCIAL_PATH_SEGMENTS = ['checkout', 'wallet', 'billing', 'payment', 'auth'];
 
 function isTestFile(filePath: string): boolean {
   return /\.(spec|test)\.ts$|__tests__|__mocks__|\/seed\.|fixture/i.test(filePath);
@@ -14,13 +12,13 @@ function isTestFile(filePath: string): boolean {
 
 function isFinancialPath(filePath: string): boolean {
   const lower = filePath.toLowerCase();
-  return FINANCIAL_PATH_SEGMENTS.some(seg => lower.includes(`/${seg}`));
+  return FINANCIAL_PATH_SEGMENTS.some((seg) => lower.includes(`/${seg}`));
 }
 
 export function checkTypeSafety(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const files = walkFiles(config.backendDir, ['.ts']).filter(f => !isTestFile(f));
+  const files = walkFiles(config.backendDir, ['.ts']).filter((f) => !isTestFile(f));
 
   for (const file of files) {
     let content: string;
@@ -39,7 +37,9 @@ export function checkTypeSafety(config: PulseConfig): Break[] {
       const trimmed = line.trim();
 
       // Skip full-line comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
       // Only check the code portion (before any inline comment)
       // Simple heuristic: split on // that isn't inside a string
@@ -65,13 +65,16 @@ export function checkTypeSafety(config: PulseConfig): Break[] {
       if (/this\.prismaAny\./.test(codePart) || /\(this\.prisma\s+as\s+any\)/.test(codePart)) {
         // Skip if PULSE:OK annotation on this or preceding line
         const prevLineChk = i > 0 ? lines[i - 1] : '';
-        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLineChk)) continue;
+        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLineChk)) {
+          continue;
+        }
         breaks.push({
           type: 'PRISMA_ANY_ACCESS',
           severity: 'medium',
           file: relFile,
           line: i + 1,
-          description: 'Prisma accessed via untyped `prismaAny` or `(this.prisma as any)` — model not yet in generated schema',
+          description:
+            'Prisma accessed via untyped `prismaAny` or `(this.prisma as any)` — model not yet in generated schema',
           detail: trimmed.slice(0, 120),
         });
       }
@@ -90,7 +93,9 @@ function stripInlineComment(line: string): string {
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (inStr) {
-      if (ch === inStr && line[i - 1] !== '\\') inStr = null;
+      if (ch === inStr && line[i - 1] !== '\\') {
+        inStr = null;
+      }
     } else if (ch === '"' || ch === "'" || ch === '`') {
       inStr = ch;
     } else if (ch === '/' && line[i + 1] === '/') {

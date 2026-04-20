@@ -84,7 +84,9 @@ function isUnauthorizedStatus(status?: number): boolean {
 }
 
 function logAuthBootstrapIssue(message: string, detail?: unknown) {
-  if (process.env.NODE_ENV !== 'development') return;
+  if (process.env.NODE_ENV !== 'development') {
+    return;
+  }
   console.warn(message, detail);
 }
 
@@ -102,7 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Hydrate from JWT on client mount — avoids SSR/client mismatch (React #418)
   const hydratedRef = useRef(false);
   useEffect(() => {
-    if (hydratedRef.current) return;
+    if (hydratedRef.current) {
+      return;
+    }
     hydratedRef.current = true;
     const token = tokenStorage.getToken();
     if (token) {
@@ -117,8 +121,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user: { id: payload.sub, email: payload.email, name: payload.name || '' },
           workspace: (() => {
             const storedWorkspaceId = tokenStorage.getWorkspaceId();
-            if (storedWorkspaceId) return { id: storedWorkspaceId, name: '' };
-            if (payload.workspaceId) return { id: payload.workspaceId, name: '' };
+            if (storedWorkspaceId) {
+              return { id: storedWorkspaceId, name: '' };
+            }
+            if (payload.workspaceId) {
+              return { id: payload.workspaceId, name: '' };
+            }
             return null;
           })(),
           subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
@@ -132,7 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const claimGuestWhatsAppSession = useCallback(async (targetWorkspaceId?: string | null) => {
     const normalizedTargetWorkspaceId = String(targetWorkspaceId || '').trim();
-    if (!normalizedTargetWorkspaceId) return;
+    if (!normalizedTargetWorkspaceId) {
+      return;
+    }
 
     const sourceWorkspaceId = getGuestWorkspaceClaimCandidate();
     if (!sourceWorkspaceId || sourceWorkspaceId === normalizedTargetWorkspaceId) {
@@ -264,7 +274,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [checkAuthStatus]);
 
   const refreshSubscription = useCallback(async () => {
-    if (!authState.workspace?.id) return;
+    if (!authState.workspace?.id) {
+      return;
+    }
 
     const res = await billingApi.getSubscription();
     const subscriptionData = res.data;
@@ -352,10 +364,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const rememberWorkspaceClaimCandidateForAuthUpgrade = useCallback(() => {
-    if (authState.isAuthenticated) return;
+    if (authState.isAuthenticated) {
+      return;
+    }
 
     const existingWorkspaceId = tokenStorage.getWorkspaceId();
-    if (!existingWorkspaceId) return;
+    if (!existingWorkspaceId) {
+      return;
+    }
 
     rememberGuestWorkspaceClaimCandidate(existingWorkspaceId);
   }, [authState.isAuthenticated]);

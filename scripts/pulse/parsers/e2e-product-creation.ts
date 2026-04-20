@@ -44,7 +44,9 @@ import {
 
 export async function checkE2eProductCreation(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   let productId: string | null = null;
@@ -150,9 +152,7 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
     const listRes = await httpGet('/products', { jwt });
     if (listRes.ok) {
       const products: any[] = listRes.body?.products || listRes.body || [];
-      const found = Array.isArray(products)
-        ? products.some((p: any) => p.id === productId)
-        : false;
+      const found = Array.isArray(products) ? products.some((p: any) => p.id === productId) : false;
       if (!found) {
         breaks.push({
           type: 'E2E_PRODUCT_BROKEN',
@@ -167,10 +167,9 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
 
     // ── Step 4: Verify product in DB ─────────────────────────────────────
     try {
-      const dbRows = await dbQuery(
-        `SELECT id, name, format FROM "Product" WHERE id = $1 LIMIT 1`,
-        [productId],
-      );
+      const dbRows = await dbQuery(`SELECT id, name, format FROM "Product" WHERE id = $1 LIMIT 1`, [
+        productId,
+      ]);
       if (dbRows.length === 0) {
         breaks.push({
           type: 'E2E_PRODUCT_BROKEN',

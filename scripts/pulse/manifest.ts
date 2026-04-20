@@ -86,32 +86,47 @@ function manifestBreak(
 }
 
 function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every(item => typeof item === 'string');
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
 function isStringRecord(value: unknown): value is Record<string, string> {
-  return Boolean(value)
-    && typeof value === 'object'
-    && !Array.isArray(value)
-    && Object.values(value as Record<string, unknown>).every(item => typeof item === 'string');
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.values(value as Record<string, unknown>).every((item) => typeof item === 'string')
+  );
 }
 
 function isManifestModuleArray(value: unknown): boolean {
-  return Array.isArray(value) && value.every(entry => {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return false;
-    const record = entry as Record<string, unknown>;
-    return typeof record.name === 'string'
-      && typeof record.state === 'string'
-      && typeof record.notes === 'string';
-  });
+  return (
+    Array.isArray(value) &&
+    value.every((entry) => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+        return false;
+      }
+      const record = entry as Record<string, unknown>;
+      return (
+        typeof record.name === 'string' &&
+        typeof record.state === 'string' &&
+        typeof record.notes === 'string'
+      );
+    })
+  );
 }
 
 function isEnvironmentArray(value: unknown): boolean {
-  return Array.isArray(value) && value.every(item => item === 'scan' || item === 'deep' || item === 'total');
+  return (
+    Array.isArray(value) &&
+    value.every((item) => item === 'scan' || item === 'deep' || item === 'total')
+  );
 }
 
 function isTimeWindowModeArray(value: unknown): boolean {
-  return Array.isArray(value) && value.every(item => item === 'total' || item === 'shift' || item === 'soak');
+  return (
+    Array.isArray(value) &&
+    value.every((item) => item === 'total' || item === 'shift' || item === 'soak')
+  );
 }
 
 function isActorKind(value: unknown): boolean {
@@ -119,7 +134,13 @@ function isActorKind(value: unknown): boolean {
 }
 
 function isScenarioKind(value: unknown): boolean {
-  return ['single-session', 'multi-session', 'multi-actor', 'long-lived', 'async-reconciled'].includes(String(value));
+  return [
+    'single-session',
+    'multi-session',
+    'multi-actor',
+    'long-lived',
+    'async-reconciled',
+  ].includes(String(value));
 }
 
 function isProviderMode(value: unknown): boolean {
@@ -135,7 +156,7 @@ function isScenarioExecutionMode(value: unknown): boolean {
 }
 
 function isGateNameArray(value: unknown): boolean {
-  return Array.isArray(value) && value.every(item => VALID_GATE_NAMES.has(String(item)));
+  return Array.isArray(value) && value.every((item) => VALID_GATE_NAMES.has(String(item)));
 }
 
 function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
@@ -215,7 +236,11 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
         }
 
         const record = moduleEntry as Record<string, unknown>;
-        if (typeof record.name !== 'string' || typeof record.state !== 'string' || typeof record.notes !== 'string') {
+        if (
+          typeof record.name !== 'string' ||
+          typeof record.state !== 'string' ||
+          typeof record.notes !== 'string'
+        ) {
           issues.push(
             manifestBreak(
               'MANIFEST_INVALID',
@@ -229,7 +254,11 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
     }
   }
 
-  if ('legacyModules' in manifest && manifest.legacyModules !== undefined && !isManifestModuleArray(manifest.legacyModules)) {
+  if (
+    'legacyModules' in manifest &&
+    manifest.legacyModules !== undefined &&
+    !isManifestModuleArray(manifest.legacyModules)
+  ) {
     issues.push(
       manifestBreak(
         'MANIFEST_INVALID',
@@ -482,7 +511,11 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
           );
         }
 
-        if (!['gate', 'break_type', 'surface', 'flow', 'invariant'].includes(String(record.targetType))) {
+        if (
+          !['gate', 'break_type', 'surface', 'flow', 'invariant'].includes(
+            String(record.targetType),
+          )
+        ) {
           issues.push(
             manifestBreak(
               'MANIFEST_INVALID',
@@ -493,7 +526,10 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
           );
         }
 
-        if (typeof record.expiresAt === 'string' && ['flow', 'invariant'].includes(String(record.targetType))) {
+        if (
+          typeof record.expiresAt === 'string' &&
+          ['flow', 'invariant'].includes(String(record.targetType))
+        ) {
           const expiresAt = Date.parse(record.expiresAt);
           const maxWindowMs = 14 * 24 * 60 * 60 * 1000;
           if (!Number.isFinite(expiresAt)) {
@@ -546,12 +582,15 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
 
         const record = entry as Record<string, unknown>;
         if (
-          typeof record.id !== 'number'
-          || typeof record.name !== 'string'
-          || !isGateNameArray(record.gates)
-          || ('requireNoAcceptedFlows' in record && typeof record.requireNoAcceptedFlows !== 'boolean')
-          || ('requireNoAcceptedScenarios' in record && typeof record.requireNoAcceptedScenarios !== 'boolean')
-          || ('requireWorldStateConvergence' in record && typeof record.requireWorldStateConvergence !== 'boolean')
+          typeof record.id !== 'number' ||
+          typeof record.name !== 'string' ||
+          !isGateNameArray(record.gates) ||
+          ('requireNoAcceptedFlows' in record &&
+            typeof record.requireNoAcceptedFlows !== 'boolean') ||
+          ('requireNoAcceptedScenarios' in record &&
+            typeof record.requireNoAcceptedScenarios !== 'boolean') ||
+          ('requireWorldStateConvergence' in record &&
+            typeof record.requireWorldStateConvergence !== 'boolean')
         ) {
           issues.push(
             manifestBreak(
@@ -578,10 +617,10 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
         ),
       );
     } else if (
-      typeof record.requireAllTiersPass !== 'boolean'
-      || typeof record.requireNoAcceptedCriticalFlows !== 'boolean'
-      || typeof record.requireNoAcceptedCriticalScenarios !== 'boolean'
-      || typeof record.requireWorldStateConvergence !== 'boolean'
+      typeof record.requireAllTiersPass !== 'boolean' ||
+      typeof record.requireNoAcceptedCriticalFlows !== 'boolean' ||
+      typeof record.requireNoAcceptedCriticalScenarios !== 'boolean' ||
+      typeof record.requireWorldStateConvergence !== 'boolean'
     ) {
       issues.push(
         manifestBreak(
@@ -595,7 +634,11 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
   }
 
   if ('overrides' in manifest && manifest.overrides !== undefined) {
-    if (!manifest.overrides || typeof manifest.overrides !== 'object' || Array.isArray(manifest.overrides)) {
+    if (
+      !manifest.overrides ||
+      typeof manifest.overrides !== 'object' ||
+      Array.isArray(manifest.overrides)
+    ) {
       issues.push(
         manifestBreak(
           'MANIFEST_INVALID',
@@ -606,9 +649,18 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
       );
     } else {
       const overrides = manifest.overrides as Record<string, unknown>;
-      const arrayFields = ['excludedModules', 'criticalModules', 'internalModules', 'excludedFlowCandidates'];
+      const arrayFields = [
+        'excludedModules',
+        'criticalModules',
+        'internalModules',
+        'excludedFlowCandidates',
+      ];
       for (const field of arrayFields) {
-        if (field in overrides && overrides[field] !== undefined && !isStringArray(overrides[field])) {
+        if (
+          field in overrides &&
+          overrides[field] !== undefined &&
+          !isStringArray(overrides[field])
+        ) {
           issues.push(
             manifestBreak(
               'MANIFEST_INVALID',
@@ -622,7 +674,11 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
 
       const recordFields = ['moduleAliases', 'flowAliases'];
       for (const field of recordFields) {
-        if (field in overrides && overrides[field] !== undefined && !isStringRecord(overrides[field])) {
+        if (
+          field in overrides &&
+          overrides[field] !== undefined &&
+          !isStringRecord(overrides[field])
+        ) {
           issues.push(
             manifestBreak(
               'MANIFEST_INVALID',
@@ -639,21 +695,27 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
   if (Array.isArray(manifest.flowSpecs) && Array.isArray(manifest.temporaryAcceptances)) {
     const flowIds = new Set(
       manifest.flowSpecs
-        .filter(entry => entry && typeof entry === 'object' && !Array.isArray(entry))
-        .map(entry => String((entry as Record<string, unknown>).id || '')),
+        .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+        .map((entry) => String((entry as Record<string, unknown>).id || '')),
     );
     const invariantIds = new Set(
       Array.isArray(manifest.invariantSpecs)
         ? manifest.invariantSpecs
-          .filter(entry => entry && typeof entry === 'object' && !Array.isArray(entry))
-          .map(entry => String((entry as Record<string, unknown>).id || ''))
+            .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+            .map((entry) => String((entry as Record<string, unknown>).id || ''))
         : [],
     );
 
     for (const [index, entry] of manifest.temporaryAcceptances.entries()) {
-      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+        continue;
+      }
       const record = entry as Record<string, unknown>;
-      if (record.targetType === 'flow' && typeof record.target === 'string' && !flowIds.has(record.target)) {
+      if (
+        record.targetType === 'flow' &&
+        typeof record.target === 'string' &&
+        !flowIds.has(record.target)
+      ) {
         issues.push(
           manifestBreak(
             'MANIFEST_INVALID',
@@ -663,7 +725,11 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
           ),
         );
       }
-      if (record.targetType === 'invariant' && typeof record.target === 'string' && !invariantIds.has(record.target)) {
+      if (
+        record.targetType === 'invariant' &&
+        typeof record.target === 'string' &&
+        !invariantIds.has(record.target)
+      ) {
         issues.push(
           manifestBreak(
             'MANIFEST_INVALID',
@@ -680,20 +746,22 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
     const actorProfileKinds = new Set(
       Array.isArray(manifest.actorProfiles)
         ? manifest.actorProfiles
-          .filter(entry => entry && typeof entry === 'object' && !Array.isArray(entry))
-          .map(entry => String((entry as Record<string, unknown>).kind || ''))
+            .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+            .map((entry) => String((entry as Record<string, unknown>).kind || ''))
         : [],
     );
     const flowIds = new Set(
       Array.isArray(manifest.flowSpecs)
         ? manifest.flowSpecs
-          .filter(entry => entry && typeof entry === 'object' && !Array.isArray(entry))
-          .map(entry => String((entry as Record<string, unknown>).id || ''))
+            .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+            .map((entry) => String((entry as Record<string, unknown>).id || ''))
         : [],
     );
 
     for (const [index, entry] of manifest.scenarioSpecs.entries()) {
-      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+        continue;
+      }
       const record = entry as Record<string, unknown>;
       const actorKind = String(record.actorKind || '');
       if (actorKind && !actorProfileKinds.has(actorKind)) {
@@ -729,19 +797,38 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
 function discoverSurfaceKinds(config: PulseConfig, coreData: CoreParserData): string[] {
   const discovered = new Set<string>();
 
-  if (coreData.uiElements.length > 0) discovered.add('frontend-ui');
-  if (coreData.apiCalls.length > 0) discovered.add('frontend-api-client');
-  if (coreData.proxyRoutes.length > 0) discovered.add('frontend-proxy');
-  if (coreData.backendRoutes.length > 0) discovered.add('backend-routes');
-  if (coreData.prismaModels.length > 0) discovered.add('database-models');
-  if (fs.existsSync(config.workerDir)) discovered.add('workers');
-  if (coreData.backendRoutes.some(route => /webhook/i.test(route.fullPath))) discovered.add('webhooks');
-  if (coreData.serviceTraces.some(trace => /queue|bull|job/i.test(trace.serviceName))) discovered.add('queues');
+  if (coreData.uiElements.length > 0) {
+    discovered.add('frontend-ui');
+  }
+  if (coreData.apiCalls.length > 0) {
+    discovered.add('frontend-api-client');
+  }
+  if (coreData.proxyRoutes.length > 0) {
+    discovered.add('frontend-proxy');
+  }
+  if (coreData.backendRoutes.length > 0) {
+    discovered.add('backend-routes');
+  }
+  if (coreData.prismaModels.length > 0) {
+    discovered.add('database-models');
+  }
+  if (fs.existsSync(config.workerDir)) {
+    discovered.add('workers');
+  }
+  if (coreData.backendRoutes.some((route) => /webhook/i.test(route.fullPath))) {
+    discovered.add('webhooks');
+  }
+  if (coreData.serviceTraces.some((trace) => /queue|bull|job/i.test(trace.serviceName))) {
+    discovered.add('queues');
+  }
 
   return [...discovered].sort();
 }
 
-export function loadPulseManifest(config: PulseConfig, coreData: CoreParserData): PulseManifestLoadResult {
+export function loadPulseManifest(
+  config: PulseConfig,
+  coreData: CoreParserData,
+): PulseManifestLoadResult {
   const manifestPath = path.join(config.rootDir, PULSE_MANIFEST_FILENAME);
 
   if (!fs.existsSync(manifestPath)) {
@@ -813,10 +900,12 @@ export function loadPulseManifest(config: PulseConfig, coreData: CoreParserData)
   }
 
   const manifest = parsed as PulseManifest;
-  const unsupportedStacks = manifest.supportedStacks.filter(stack => !SUPPORTED_STACKS.has(stack));
+  const unsupportedStacks = manifest.supportedStacks.filter(
+    (stack) => !SUPPORTED_STACKS.has(stack),
+  );
   const discoveredSurfaces = discoverSurfaceKinds(config, coreData);
   const declared = new Set([...(manifest.surfaces || []), ...(manifest.excludedSurfaces || [])]);
-  const unknownSurfaces = discoveredSurfaces.filter(surface => !declared.has(surface));
+  const unknownSurfaces = discoveredSurfaces.filter((surface) => !declared.has(surface));
 
   return {
     manifest,

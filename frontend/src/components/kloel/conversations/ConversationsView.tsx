@@ -56,7 +56,9 @@ export function ConversationsView() {
 
   const filteredConversations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return conversations;
+    if (!normalizedQuery) {
+      return conversations;
+    }
 
     return conversations.filter((conversation) => {
       const title = String(conversation.title || '').toLowerCase();
@@ -75,7 +77,9 @@ export function ConversationsView() {
 
   const deleteOne = useCallback(
     (conversationId: string) => {
-      if (!window.confirm('Excluir esta conversa permanentemente?')) return;
+      if (!window.confirm('Excluir esta conversa permanentemente?')) {
+        return;
+      }
       deleteConversation(conversationId);
       setSelectedIds((current) => current.filter((id) => id !== conversationId));
     },
@@ -83,13 +87,17 @@ export function ConversationsView() {
   );
 
   const deleteSelected = useCallback(() => {
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0) {
+      return;
+    }
     const approved = window.confirm(
       selectedIds.length === 1
         ? 'Excluir a conversa selecionada permanentemente?'
         : `Excluir ${selectedIds.length} conversas permanentemente?`,
     );
-    if (!approved) return;
+    if (!approved) {
+      return;
+    }
 
     selectedIds.forEach((conversationId) => {
       deleteConversation(conversationId);

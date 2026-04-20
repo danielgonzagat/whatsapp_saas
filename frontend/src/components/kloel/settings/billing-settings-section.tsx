@@ -34,22 +34,38 @@ interface BillingSettingsSectionProps {
 }
 
 function formatMoney(value?: number | null) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return 'R$ 0,00';
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 'R$ 0,00';
+  }
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function subscriptionTone(status: BillingSettingsSectionProps['subscriptionStatus']) {
-  if (status === 'active') return 'success';
-  if (status === 'trial') return 'warning';
-  if (status === 'expired' || status === 'suspended') return 'danger';
+  if (status === 'active') {
+    return 'success';
+  }
+  if (status === 'trial') {
+    return 'warning';
+  }
+  if (status === 'expired' || status === 'suspended') {
+    return 'danger';
+  }
   return 'neutral';
 }
 
 function subscriptionLabel(status: BillingSettingsSectionProps['subscriptionStatus']) {
-  if (status === 'active') return 'Ativo';
-  if (status === 'trial') return 'Teste ativo';
-  if (status === 'expired') return 'Expirado';
-  if (status === 'suspended') return 'Suspenso';
+  if (status === 'active') {
+    return 'Ativo';
+  }
+  if (status === 'trial') {
+    return 'Teste ativo';
+  }
+  if (status === 'expired') {
+    return 'Expirado';
+  }
+  if (status === 'suspended') {
+    return 'Suspenso';
+  }
   return 'Inativo';
 }
 

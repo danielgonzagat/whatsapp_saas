@@ -110,16 +110,28 @@ export class FraudEngine {
 
   private async findBlacklistHits(ctx: FraudCheckoutContext): Promise<FraudBlacklist[]> {
     const candidates: Array<{ type: FraudBlacklistType; value: string }> = [];
-    if (ctx.buyerCpf) candidates.push({ type: 'CPF', value: ctx.buyerCpf });
-    if (ctx.buyerCnpj) candidates.push({ type: 'CNPJ', value: ctx.buyerCnpj });
-    if (ctx.buyerEmail) candidates.push({ type: 'EMAIL', value: ctx.buyerEmail.toLowerCase() });
-    if (ctx.buyerIp) candidates.push({ type: 'IP', value: ctx.buyerIp });
+    if (ctx.buyerCpf) {
+      candidates.push({ type: 'CPF', value: ctx.buyerCpf });
+    }
+    if (ctx.buyerCnpj) {
+      candidates.push({ type: 'CNPJ', value: ctx.buyerCnpj });
+    }
+    if (ctx.buyerEmail) {
+      candidates.push({ type: 'EMAIL', value: ctx.buyerEmail.toLowerCase() });
+    }
+    if (ctx.buyerIp) {
+      candidates.push({ type: 'IP', value: ctx.buyerIp });
+    }
     if (ctx.deviceFingerprint) {
       candidates.push({ type: 'DEVICE_FINGERPRINT', value: ctx.deviceFingerprint });
     }
-    if (ctx.cardBin) candidates.push({ type: 'CARD_BIN', value: ctx.cardBin });
+    if (ctx.cardBin) {
+      candidates.push({ type: 'CARD_BIN', value: ctx.cardBin });
+    }
 
-    if (candidates.length === 0) return [];
+    if (candidates.length === 0) {
+      return [];
+    }
 
     const now = new Date();
     const rows = await this.prisma.fraudBlacklist.findMany({
@@ -132,9 +144,15 @@ export class FraudEngine {
   }
 
   private scoreToAction(score: number): FraudDecision['action'] {
-    if (score >= FraudEngine.THRESHOLDS.BLOCK) return 'block';
-    if (score >= FraudEngine.THRESHOLDS.REVIEW) return 'review';
-    if (score >= FraudEngine.THRESHOLDS.REQUIRE_3DS) return 'require_3ds';
+    if (score >= FraudEngine.THRESHOLDS.BLOCK) {
+      return 'block';
+    }
+    if (score >= FraudEngine.THRESHOLDS.REVIEW) {
+      return 'review';
+    }
+    if (score >= FraudEngine.THRESHOLDS.REQUIRE_3DS) {
+      return 'require_3ds';
+    }
     return 'allow';
   }
 }

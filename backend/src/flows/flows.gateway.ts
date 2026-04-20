@@ -43,8 +43,9 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
           } catch {
             /* invalid JSON in flow log */
           }
-          if (flowLogPayload)
+          if (flowLogPayload) {
             this.server.to(`workspace:${workspaceId}`).emit('flow:log', flowLogPayload);
+          }
         } else if (channel.startsWith('alerts:')) {
           let alertPayload: Record<string, unknown> | null = null;
           try {
@@ -52,7 +53,9 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
           } catch {
             /* invalid JSON in alert */
           }
-          if (alertPayload) this.server.to(`workspace:${workspaceId}`).emit('alert', alertPayload);
+          if (alertPayload) {
+            this.server.to(`workspace:${workspaceId}`).emit('alert', alertPayload);
+          }
         }
       }
     });

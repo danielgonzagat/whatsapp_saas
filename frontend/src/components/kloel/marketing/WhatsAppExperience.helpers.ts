@@ -171,8 +171,12 @@ export function resolveWorkingHours(raw: unknown) {
 }
 
 export function resolveProductImageUrl(product: Record<string, unknown>): string | null {
-  if (typeof product.imageUrl === 'string') return product.imageUrl;
-  if (typeof product.image === 'string') return product.image;
+  if (typeof product.imageUrl === 'string') {
+    return product.imageUrl;
+  }
+  if (typeof product.image === 'string') {
+    return product.image;
+  }
   return null;
 }
 
@@ -197,7 +201,9 @@ export function normalizeSelectedProduct(raw: Record<string, unknown>): Selectab
 }
 
 export function normalizeSelectedProducts(value: unknown): SelectableProduct[] {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
   return value
     .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
     .map(normalizeSelectedProduct)
@@ -222,15 +228,21 @@ export function normalizeArsenalItem(raw: Record<string, unknown>): ArsenalItem 
 }
 
 export function normalizeArsenal(value: unknown): ArsenalItem[] {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
   return value
     .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
     .map(normalizeArsenalItem);
 }
 
 export function resolveFollowUp(config: Record<string, unknown>, fallbackValue: boolean): boolean {
-  if (typeof config.followUp === 'boolean') return config.followUp;
-  if (typeof config.followUpEnabled === 'boolean') return config.followUpEnabled;
+  if (typeof config.followUp === 'boolean') {
+    return config.followUp;
+  }
+  if (typeof config.followUpEnabled === 'boolean') {
+    return config.followUpEnabled;
+  }
   return fallbackValue;
 }
 
@@ -297,13 +309,21 @@ export function resolveProductImage(product: Record<string, unknown>) {
 }
 
 export function normalizeOwnedProduct(raw: unknown): SelectableProduct | null {
-  if (!raw || typeof raw !== 'object') return null;
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
   const product = raw as Record<string, unknown>;
   const status = String(product.status || '').toUpperCase();
-  if (status && status !== 'APPROVED') return null;
-  if (product.active === false) return null;
+  if (status && status !== 'APPROVED') {
+    return null;
+  }
+  if (product.active === false) {
+    return null;
+  }
   const id = String(product.id || '').trim();
-  if (!id) return null;
+  if (!id) {
+    return null;
+  }
 
   return {
     id,
@@ -322,7 +342,9 @@ export function normalizeAffiliateProducts(raw: unknown): SelectableProduct[] {
 
   return items
     .map<SelectableProduct | null>((item) => {
-      if (!item || typeof item !== 'object') return null;
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
       const request = item as Record<string, unknown>;
       const affiliateProduct = (
         request.affiliateProduct && typeof request.affiliateProduct === 'object'
@@ -334,7 +356,9 @@ export function normalizeAffiliateProducts(raw: unknown): SelectableProduct[] {
       }
 
       const id = String(affiliateProduct.id || request.affiliateProductId || '').trim();
-      if (!id) return null;
+      if (!id) {
+        return null;
+      }
 
       return {
         id,
@@ -368,8 +392,14 @@ export function getProductIcon(product: SelectableProduct) {
     return null;
   }
   const name = product.name.toLowerCase();
-  if (product.type === 'affiliate') return PRODUCT_ICON_AFFILIATE;
-  if (name.includes('curso') || name.includes('class')) return PRODUCT_ICON_COURSE;
-  if (name.includes('kit') || name.includes('template')) return PRODUCT_ICON_KIT;
+  if (product.type === 'affiliate') {
+    return PRODUCT_ICON_AFFILIATE;
+  }
+  if (name.includes('curso') || name.includes('class')) {
+    return PRODUCT_ICON_COURSE;
+  }
+  if (name.includes('kit') || name.includes('template')) {
+    return PRODUCT_ICON_KIT;
+  }
   return PRODUCT_ICON_DEFAULT;
 }

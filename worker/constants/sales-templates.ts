@@ -73,7 +73,9 @@ export interface TemplateVars {
  */
 export function renderTemplate(key: keyof typeof SALES_TEMPLATES, vars: TemplateVars = {}): string {
   const raw = SALES_TEMPLATES[key];
-  if (!raw) return '';
+  if (!raw) {
+    return '';
+  }
   const calendarLink = vars.calendarLink ?? process.env.DEFAULT_CALENDAR_LINK ?? '';
   return raw.replace(CALENDAR_LINK_RE, calendarLink);
 }

@@ -2,10 +2,12 @@ export async function forEachSequential<T>(
   items: Iterable<T>,
   callback: (item: T, index: number) => Promise<void>,
 ): Promise<void> {
-  const list = (Array.isArray(items) ? [...items] : Array.from(items as Iterable<T>)) as T[];
+  const list = Array.isArray(items) ? [...items] : Array.from(items);
 
   const run = async (index: number): Promise<void> => {
-    if (index >= list.length) return;
+    if (index >= list.length) {
+      return;
+    }
     await callback(list[index], index);
     await run(index + 1);
   };
@@ -17,12 +19,16 @@ export async function findFirstSequential<T, R>(
   items: Iterable<T>,
   callback: (item: T, index: number) => Promise<R | null | undefined | false>,
 ): Promise<R | undefined> {
-  const list = (Array.isArray(items) ? [...items] : Array.from(items as Iterable<T>)) as T[];
+  const list = Array.isArray(items) ? [...items] : Array.from(items);
 
   const run = async (index: number): Promise<R | undefined> => {
-    if (index >= list.length) return undefined;
+    if (index >= list.length) {
+      return undefined;
+    }
     const result = await callback(list[index], index);
-    if (result) return result;
+    if (result) {
+      return result;
+    }
     return run(index + 1);
   };
 
@@ -41,8 +47,12 @@ export async function pollUntil<T>(options: {
 
   const run = async (): Promise<T> => {
     const value = await read();
-    if (stop(value)) return value;
-    if (Date.now() - startedAt >= timeoutMs) return value;
+    if (stop(value)) {
+      return value;
+    }
+    if (Date.now() - startedAt >= timeoutMs) {
+      return value;
+    }
     await sleep(intervalMs);
     return run();
   };

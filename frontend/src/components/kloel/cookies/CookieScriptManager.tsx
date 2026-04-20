@@ -15,7 +15,9 @@ const SCRIPT_IDS = {
 } as const;
 
 function writeDocumentCookie(value: string) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
 
   const documentCookieDescriptor =
     Object.getOwnPropertyDescriptor(Document.prototype, 'cookie') ||
@@ -34,7 +36,9 @@ type CookieScriptManagerProps = {
 };
 
 function resolveManagedCookieNames(patterns: string[]): string[] {
-  if (typeof document === 'undefined') return [];
+  if (typeof document === 'undefined') {
+    return [];
+  }
 
   const cookieNames = document.cookie
     .split(';')
@@ -60,14 +64,18 @@ function resolveManagedCookieNames(patterns: string[]): string[] {
 }
 
 function expireCookie(name: string, domain?: string) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
   const domainPart = domain ? `; domain=${domain}` : '';
   writeDocumentCookie(`${name}=; path=/; max-age=0; SameSite=Lax${domainPart}${secure}`);
 }
 
 function removeManagedCookies(patterns: string[]) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
 
   const names = resolveManagedCookieNames(patterns);
   const currentHostname = window.location.hostname;

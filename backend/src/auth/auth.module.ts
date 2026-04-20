@@ -5,6 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { EmailService } from './email.service';
+import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
@@ -27,7 +28,7 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, EmailService, GoogleAuthService],
-  exports: [AuthService, JwtModule, EmailService, GoogleAuthService],
+  providers: [AuthService, EmailService, GoogleAuthService, FacebookAuthService],
+  exports: [AuthService, JwtModule, EmailService, GoogleAuthService, FacebookAuthService],
 })
 export class AuthModule {}

@@ -42,9 +42,15 @@ export interface UndoDestructiveIntentInput {
 }
 
 function clampTtl(requested: number | undefined): number {
-  if (requested === undefined) return DEFAULT_TTL_SECONDS;
-  if (requested < 30) return 30;
-  if (requested > MAX_TTL_SECONDS) return MAX_TTL_SECONDS;
+  if (requested === undefined) {
+    return DEFAULT_TTL_SECONDS;
+  }
+  if (requested < 30) {
+    return 30;
+  }
+  if (requested > MAX_TTL_SECONDS) {
+    return MAX_TTL_SECONDS;
+  }
   return Math.floor(requested);
 }
 

@@ -183,10 +183,18 @@ export class TranscriptionService {
   }
 
   private guessExtension(url: string, contentType?: string | null): string {
-    if (contentType?.includes('ogg')) return '.ogg';
-    if (contentType?.includes('mp3') || contentType?.includes('mpeg')) return '.mp3';
-    if (contentType?.includes('wav')) return '.wav';
-    if (contentType?.includes('m4a') || contentType?.includes('mp4')) return '.m4a';
+    if (contentType?.includes('ogg')) {
+      return '.ogg';
+    }
+    if (contentType?.includes('mp3') || contentType?.includes('mpeg')) {
+      return '.mp3';
+    }
+    if (contentType?.includes('wav')) {
+      return '.wav';
+    }
+    if (contentType?.includes('m4a') || contentType?.includes('mp4')) {
+      return '.m4a';
+    }
 
     // Tenta extrair da URL
     const match = url.match(OGG_MP3_WAV_M4A_OPUS_RE);

@@ -43,13 +43,17 @@ export async function listConversations(workspaceId: string): Promise<Conversati
   const res = await apiFetch<Conversation[]>(
     `/inbox/${encodeURIComponent(workspaceId)}/conversations`,
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data ?? [];
 }
 
 export async function listInboxAgents(workspaceId: string): Promise<InboxAgent[]> {
   const res = await apiFetch<InboxAgent[]>(`/inbox/${encodeURIComponent(workspaceId)}/agents`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data ?? [];
 }
 
@@ -57,7 +61,9 @@ export async function getConversationMessages(conversationId: string): Promise<M
   const res = await apiFetch<Message[]>(
     `/inbox/conversations/${encodeURIComponent(conversationId)}/messages`,
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data ?? [];
 }
 
@@ -66,7 +72,9 @@ export async function closeConversation(conversationId: string): Promise<Mutatio
     `/inbox/conversations/${encodeURIComponent(conversationId)}/close`,
     { method: 'POST' },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateInbox();
   return res.data;
 }
@@ -82,7 +90,9 @@ export async function assignConversation(
       body: { agentId },
     },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateInbox();
   return res.data;
 }

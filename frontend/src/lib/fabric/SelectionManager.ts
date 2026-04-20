@@ -13,7 +13,9 @@ export class SelectionManager {
 
   selectAll(): void {
     const objs = this.canvas.getObjects();
-    if (objs.length === 0) return;
+    if (objs.length === 0) {
+      return;
+    }
     this.canvas.discardActiveObject();
     const sel = new ActiveSelection(objs, { canvas: this.canvas });
     this.canvas.setActiveObject(sel);
@@ -31,7 +33,9 @@ export class SelectionManager {
 
   deleteSelected(): void {
     const objs = this.canvas.getActiveObjects();
-    if (objs.length === 0) return;
+    if (objs.length === 0) {
+      return;
+    }
     this.canvas.discardActiveObject();
     objs.forEach((obj) => {
       this.canvas.remove(obj);

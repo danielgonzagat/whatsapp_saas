@@ -50,7 +50,9 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
   const displayName = userName || 'Usuario';
   const displayEmail = userEmail || '';
   const initials = useMemo(() => {
-    if (!userName) return 'U';
+    if (!userName) {
+      return 'U';
+    }
     const parts = userName.trim().split(S_RE);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -59,7 +61,9 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
   }, [userName]);
   // Close popup on click outside
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
@@ -71,9 +75,13 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
 
   // Close on Escape
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);

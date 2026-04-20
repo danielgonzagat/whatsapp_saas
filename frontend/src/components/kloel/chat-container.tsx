@@ -56,13 +56,21 @@ const SENTENCE_END_RE = /[.!?]/;
 const SLOW_HINT_DELAY_MS = 30_000;
 
 function resolveActivityType(event: AgentStreamEvent): AgentActivity['type'] {
-  if (event.type === 'thought' || event.type === 'typing') return 'agent_thinking';
+  if (event.type === 'thought' || event.type === 'typing') {
+    return 'agent_thinking';
+  }
   if (event.type === 'action' || event.type === 'proof' || event.type === 'account') {
     return 'action_executed';
   }
-  if (event.type === 'contact') return 'message_sent';
-  if (event.type === 'error') return 'error';
-  if (event.type === 'sale') return 'lead_qualified';
+  if (event.type === 'contact') {
+    return 'message_sent';
+  }
+  if (event.type === 'error') {
+    return 'error';
+  }
+  if (event.type === 'sale') {
+    return 'lead_qualified';
+  }
   if (event.type === 'status' && (event.phase || '').includes('session')) {
     return 'connection_status';
   }
@@ -70,8 +78,12 @@ function resolveActivityType(event: AgentStreamEvent): AgentActivity['type'] {
 }
 
 function resolveActivityStatus(event: AgentStreamEvent): AgentActivity['status'] {
-  if (event.type === 'error') return 'error';
-  if (event.type === 'thought' || event.type === 'typing') return 'pending';
+  if (event.type === 'error') {
+    return 'error';
+  }
+  if (event.type === 'thought' || event.type === 'typing') {
+    return 'pending';
+  }
   return 'success';
 }
 
@@ -204,7 +216,9 @@ function createAgentEventKey(event: AgentStreamEvent) {
 
 function isLowSignalSyncEvent(event: AgentStreamEvent) {
   const message = String(event.message || '').trim();
-  if (!message) return true;
+  if (!message) {
+    return true;
+  }
 
   if (SINCRONIZANDO_CONVERSA_RE.test(message) || COME_ANDO_A_SINCRONIZA_RE.test(message)) {
     return true;
@@ -229,8 +243,12 @@ function currentTraceDayKey() {
 
 function formatAgentPhaseLabel(value?: string | null) {
   const raw = String(value || '').trim();
-  if (!raw) return '';
-  if (raw === 'streaming_token') return '';
+  if (!raw) {
+    return '';
+  }
+  if (raw === 'streaming_token') {
+    return '';
+  }
 
   return raw
     .replace(SEPARATOR_G_RE, ' ')
@@ -281,7 +299,9 @@ function ReasoningTraceBar({
   onToggle: () => void;
   isThinking: boolean;
 }) {
-  if (!latestThought && entries.length === 0) return null;
+  if (!latestThought && entries.length === 0) {
+    return null;
+  }
 
   return (
     <div
@@ -546,14 +566,18 @@ export function ChatContainer({
 
   useEffect(() => {
     const authError = searchParams.get('authError');
-    if (!authError) return;
+    if (!authError) {
+      return;
+    }
 
     // Mostra contexto para o usuário quando o OAuth falha no backend.
     const message = AUTH_ERROR_MESSAGES[authError];
     if (message) {
       setMessages((prev) => {
         const id = `auth_error_${authError}`;
-        if (prev.some((m) => m.id === id)) return prev;
+        if (prev.some((m) => m.id === id)) {
+          return prev;
+        }
         return [
           ...prev,
           {
@@ -590,29 +614,39 @@ export function ChatContainer({
   const traceDayRef = useRef(currentTraceDayKey());
 
   useEffect(() => {
-    if (appliedAuthDeepLink.current) return;
+    if (appliedAuthDeepLink.current) {
+      return;
+    }
 
     const authMode = searchParams.get('authMode');
-    if (authMode !== 'login' && authMode !== 'signup') return;
+    if (authMode !== 'login' && authMode !== 'signup') {
+      return;
+    }
 
     appliedAuthDeepLink.current = true;
     openAuthModal(authMode);
   }, [searchParams, openAuthModal]);
 
   useEffect(() => {
-    if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLink.current) return;
+    if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLink.current) {
+      return;
+    }
     appliedWhatsAppPanelDeepLink.current = true;
     setShowAgentDesktop(true);
   }, [shouldOpenWhatsAppPanel]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      return;
+    }
 
     const nextParams = new URLSearchParams(searchParams.toString());
     const authKeys = ['authMode', 'authError', 'email', 'authEmail'];
     const hasAuthQuery = authKeys.some((key) => nextParams.has(key));
 
-    if (!hasAuthQuery) return;
+    if (!hasAuthQuery) {
+      return;
+    }
 
     authKeys.forEach((key) => {
       nextParams.delete(key);
@@ -631,7 +665,9 @@ export function ChatContainer({
 
   const loadConversation = useCallback(
     async (conversationId: string) => {
-      if (!conversationId) return;
+      if (!conversationId) {
+        return;
+      }
 
       try {
         const payload = await loadKloelThreadMessages(conversationId);
@@ -658,12 +694,16 @@ export function ChatContainer({
   );
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      return;
+    }
 
     const targetConversationId =
       requestedConversationId || activeConversationId || activeConv || null;
 
-    if (!targetConversationId) return;
+    if (!targetConversationId) {
+      return;
+    }
     if (loadedConversationIdRef.current === targetConversationId && messages.length > 0) {
       return;
     }
@@ -692,7 +732,9 @@ export function ChatContainer({
 
     const handleLoadChat = (event: Event) => {
       const conversationId = (event as CustomEvent).detail?.conversationId;
-      if (!conversationId) return;
+      if (!conversationId) {
+        return;
+      }
       loadedConversationIdRef.current = null;
       setActiveConversationId(String(conversationId));
     };
@@ -760,7 +802,9 @@ export function ChatContainer({
       return;
     }
 
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     if (tokenStorage.getToken() && tokenStorage.getWorkspaceId()) {
       setAgentStreamEnabled(true);
     }
@@ -807,7 +851,9 @@ export function ChatContainer({
   const checkWhatsAppStatus = useCallback(async () => {
     try {
       const workspaceId = await resolveWorkspaceIdForSession();
-      if (!workspaceId) return;
+      if (!workspaceId) {
+        return;
+      }
 
       const status = await getWhatsAppStatus(workspaceId);
       if (status.connected) {
@@ -849,7 +895,9 @@ export function ChatContainer({
 
   const appendAssistantMessage = useCallback((content: string, meta?: Record<string, unknown>) => {
     const normalized = String(content || '').trim();
-    if (!normalized) return;
+    if (!normalized) {
+      return;
+    }
 
     setMessages((prev) => [
       ...prev,
@@ -868,7 +916,9 @@ export function ChatContainer({
 
   const handleAgentEvent = useCallback(
     (event: AgentStreamEvent) => {
-      if (!event?.type || !event?.message) return;
+      if (!event?.type || !event?.message) {
+        return;
+      }
       const eventTimestamp = new Date(event.ts || Date.now());
 
       if (
@@ -912,7 +962,9 @@ export function ChatContainer({
 
         setCurrentThought(event.message);
         setAgentThoughts((prev) => {
-          if (prev.length === 0) return [event.message];
+          if (prev.length === 0) {
+            return [event.message];
+          }
           const next = [...prev];
           next[next.length - 1] = event.message;
           return next;
@@ -931,7 +983,9 @@ export function ChatContainer({
       }
 
       const eventKey = createAgentEventKey(event);
-      if (seenAgentEventsRef.current.has(eventKey)) return;
+      if (seenAgentEventsRef.current.has(eventKey)) {
+        return;
+      }
       seenAgentEventsRef.current.add(eventKey);
 
       const nextDayKey = currentTraceDayKey();
@@ -1004,11 +1058,15 @@ export function ChatContainer({
   );
 
   useEffect(() => {
-    if (!agentStreamEnabled) return;
+    if (!agentStreamEnabled) {
+      return;
+    }
 
     const token = tokenStorage.getToken();
     const workspaceId = tokenStorage.getWorkspaceId();
-    if (!token || !workspaceId) return;
+    if (!token || !workspaceId) {
+      return;
+    }
 
     let isCancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1041,19 +1099,27 @@ export function ChatContainer({
         let buffer = '';
 
         const readStream = async (): Promise<void> => {
-          if (isCancelled) return;
+          if (isCancelled) {
+            return;
+          }
           const { done, value } = await reader.read();
-          if (done) return;
+          if (done) {
+            return;
+          }
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
           buffer = lines.pop() || '';
 
           for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
+            if (!line.startsWith('data: ')) {
+              continue;
+            }
 
             const data = line.slice(6);
-            if (!data || data === '[DONE]') continue;
+            if (!data || data === '[DONE]') {
+              continue;
+            }
 
             try {
               handleAgentEvent(JSON.parse(data) as AgentStreamEvent);
@@ -1066,7 +1132,9 @@ export function ChatContainer({
 
         await readStream();
       } catch (error) {
-        if (isCancelled || controller?.signal.aborted) return;
+        if (isCancelled || controller?.signal.aborted) {
+          return;
+        }
 
         console.error('Agent stream error:', error);
         setIsAgentStreamConnected(false);
@@ -1079,7 +1147,9 @@ export function ChatContainer({
     return () => {
       isCancelled = true;
       setIsAgentStreamConnected(false);
-      if (retryTimer) clearTimeout(retryTimer);
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
       controller?.abort();
     };
   }, [agentStreamEnabled, handleAgentEvent]);
@@ -1095,7 +1165,9 @@ export function ChatContainer({
   useEffect(() => {
     const interval = setInterval(() => {
       const nextDayKey = currentTraceDayKey();
-      if (traceDayRef.current === nextDayKey) return;
+      if (traceDayRef.current === nextDayKey) {
+        return;
+      }
       traceDayRef.current = nextDayKey;
       agentTraceEntriesRef.current = [];
       setAgentTraceEntries([]);
@@ -1123,12 +1195,16 @@ export function ChatContainer({
   // }, [isAuthenticated, justSignedUp, hasCompletedOnboarding])
 
   useEffect(() => {
-    if (appliedInitialDeepLink.current) return;
+    if (appliedInitialDeepLink.current) {
+      return;
+    }
     if (!initialOpenSettings) {
       appliedInitialDeepLink.current = true;
       return;
     }
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      return;
+    }
 
     setSettingsInitialTab(initialSettingsTab);
     setScrollToCreditCard(initialScrollToCreditCard);
@@ -1166,7 +1242,9 @@ export function ChatContainer({
 
   const handleSendMessageRef = useRef<(content: string) => Promise<void>>(async () => {});
   const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return;
+    if (!content.trim()) {
+      return;
+    }
     const clientRequestId = createClientRequestId();
 
     const userMessage: Message = {
@@ -1228,7 +1306,9 @@ export function ChatContainer({
 
         const readGuestStream = async (): Promise<void> => {
           const { done, value } = await reader.read();
-          if (done) return;
+          if (done) {
+            return;
+          }
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
@@ -1236,7 +1316,9 @@ export function ChatContainer({
 
           for (const line of lines) {
             const update = parseGuestStreamLine(line);
-            if (!update) continue;
+            if (!update) {
+              continue;
+            }
             if (update.errorContent) {
               fullContent = update.errorContent;
               setMessages((prev) =>
@@ -1439,7 +1521,9 @@ export function ChatContainer({
       const sourceMessage = messages.find(
         (message) => message.id === messageId && message.role === 'user',
       );
-      if (!sourceMessage) return;
+      if (!sourceMessage) {
+        return;
+      }
 
       await handleSendMessageRef.current(sourceMessage.content);
     },
@@ -1448,7 +1532,9 @@ export function ChatContainer({
 
   const handleMessageEdit = useCallback(
     async (messageId: string, nextContent: string) => {
-      if (!activeConversationId) return;
+      if (!activeConversationId) {
+        return;
+      }
 
       const updated = await updateKloelThreadMessage(messageId, nextContent);
       setMessages((prev) =>
@@ -1470,7 +1556,9 @@ export function ChatContainer({
 
   const handleAssistantFeedback = useCallback(
     async (messageId: string, type: 'positive' | 'negative' | null) => {
-      if (!activeConversationId) return;
+      if (!activeConversationId) {
+        return;
+      }
 
       const updated = await updateKloelMessageFeedback(messageId, type);
       setMessages((prev) =>
@@ -1489,7 +1577,9 @@ export function ChatContainer({
 
   const handleAssistantRegenerate = useCallback(
     async (messageId: string) => {
-      if (!activeConversationId) return;
+      if (!activeConversationId) {
+        return;
+      }
 
       setIsTyping(true);
       setMessages((prev) => {

@@ -55,16 +55,22 @@ export class WorkerRuntimeService {
   }
 
   private interpretWorkerHealthPayload(payload: unknown): boolean {
-    if (!payload || typeof payload !== 'object') return true;
+    if (!payload || typeof payload !== 'object') {
+      return true;
+    }
     const status = this.readText((payload as Record<string, unknown>).status)
       .trim()
       .toLowerCase();
-    if (!status) return true;
+    if (!status) {
+      return true;
+    }
     return status === 'ok' || status === 'up' || status === 'healthy';
   }
 
   private async readWorkerHealthResponse(response: Response): Promise<boolean> {
-    if (!response.ok) return false;
+    if (!response.ok) {
+      return false;
+    }
     const payload = await response.json().catch(() => null);
     return this.interpretWorkerHealthPayload(payload);
   }
@@ -82,10 +88,14 @@ export class WorkerRuntimeService {
   private async checkWorkerHealth(): Promise<boolean> {
     const workerHealthUrl =
       this.config.get<string>('WORKER_HEALTH_URL') || this.config.get<string>('WORKER_METRICS_URL');
-    if (!workerHealthUrl) return false;
+    if (!workerHealthUrl) {
+      return false;
+    }
 
     const fetchFn = globalThis.fetch?.bind(globalThis);
-    if (!fetchFn) return false;
+    if (!fetchFn) {
+      return false;
+    }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.getTimeoutMs());

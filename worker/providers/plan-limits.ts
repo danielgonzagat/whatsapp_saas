@@ -50,7 +50,9 @@ async function getPlan(workspaceId: string): Promise<Plan> {
     select: { plan: true, status: true },
   });
 
-  if (!subscription || subscription.status !== 'ACTIVE') return 'FREE';
+  if (!subscription || subscription.status !== 'ACTIVE') {
+    return 'FREE';
+  }
   const plan = subscription.plan?.toUpperCase() as Plan;
   return planConfig[plan] ? plan : 'FREE';
 }

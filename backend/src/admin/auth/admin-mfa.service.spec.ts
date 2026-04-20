@@ -27,8 +27,11 @@ describe('AdminMfaService', () => {
       expect(() => new AdminMfaService(makeConfig({}))).toThrow(/ADMIN_MFA_ENCRYPTION_KEY/);
     } finally {
       process.env.NODE_ENV = previousNodeEnv;
-      if (typeof previousCi === 'string') process.env.CI = previousCi;
-      else delete process.env.CI;
+      if (typeof previousCi === 'string') {
+        process.env.CI = previousCi;
+      } else {
+        delete process.env.CI;
+      }
     }
   });
 

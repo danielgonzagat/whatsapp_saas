@@ -25,20 +25,22 @@ export function checkOrphanedFiles(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   // Only check backend services, controllers, and dtos
-  const targetFiles = walkFiles(config.backendDir, ['.ts']).filter(f => {
-    if (shouldSkipFile(f)) return false;
+  const targetFiles = walkFiles(config.backendDir, ['.ts']).filter((f) => {
+    if (shouldSkipFile(f)) {
+      return false;
+    }
     const base = path.basename(f);
     return (
-      base.endsWith('.service.ts') ||
-      base.endsWith('.controller.ts') ||
-      base.endsWith('.dto.ts')
+      base.endsWith('.service.ts') || base.endsWith('.controller.ts') || base.endsWith('.dto.ts')
     );
   });
 
-  if (targetFiles.length === 0) return breaks;
+  if (targetFiles.length === 0) {
+    return breaks;
+  }
 
   // Build corpus of all backend .ts files to search for imports
-  const allBackendFiles = walkFiles(config.backendDir, ['.ts']).filter(f => {
+  const allBackendFiles = walkFiles(config.backendDir, ['.ts']).filter((f) => {
     return !/__tests__|__mocks__|\/migration\.|\/seed\.|fixture/i.test(f);
   });
 
@@ -59,7 +61,9 @@ export function checkOrphanedFiles(config: PulseConfig): Break[] {
     let isImported = false;
 
     for (const [otherFile, otherContent] of contentCache) {
-      if (otherFile === file) continue;
+      if (otherFile === file) {
+        continue;
+      }
 
       // Check for import ... from ... 'basename' or require('basename')
       const importRe = new RegExp(

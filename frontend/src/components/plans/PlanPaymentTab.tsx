@@ -113,33 +113,72 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
   const { showToast } = useToast();
 
   useEffect(() => {
-    if (!productId || !planId) return;
+    if (!productId || !planId) {
+      return;
+    }
     apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`).then(
       (res) => {
-        if (res.error || !res.data) return;
+        if (res.error || !res.data) {
+          return;
+        }
         const d = res.data as Record<string, unknown>;
-        if (d.maxInstallments != null) setMaxInstallments(String(d.maxInstallments));
-        if (d.interestFreeInstallments != null)
+        if (d.maxInstallments != null) {
+          setMaxInstallments(String(d.maxInstallments));
+        }
+        if (d.interestFreeInstallments != null) {
           setMaxNoInterest(String(d.interestFreeInstallments));
-        if (d.discountByPayment != null) setDiscountByPayment(d.discountByPayment as boolean);
-        if (d.notifyBoleto != null) setNotifyBoleto(d.notifyBoleto as boolean);
-        if (d.billingType != null) setBillingType(d.billingType as string);
-        if (d.subscriptionPeriod != null) setRecurringInterval(d.subscriptionPeriod as string);
-        if (d.trialEnabled != null) setTrialEnabled(d.trialEnabled as boolean);
-        if (d.trialDays != null) setTrialDays(String(d.trialDays));
-        if (d.trialPrice != null) setTrialPrice(String(d.trialPrice));
-        if (d.limitedBilling != null) setLimitedBilling(d.limitedBilling as boolean);
-        if (d.affiliateRecurring != null) setAffiliateRecurring(d.affiliateRecurring as boolean);
-        if (d.boletoInstallment != null) setBoletoInstallment(d.boletoInstallment as boolean);
-        if (d.boletoInstallments != null) setBoletoMaxInstallments(String(d.boletoInstallments));
-        if (d.boletoInterest != null) setBoletoInterest(d.boletoInterest as boolean);
+        }
+        if (d.discountByPayment != null) {
+          setDiscountByPayment(d.discountByPayment as boolean);
+        }
+        if (d.notifyBoleto != null) {
+          setNotifyBoleto(d.notifyBoleto as boolean);
+        }
+        if (d.billingType != null) {
+          setBillingType(d.billingType as string);
+        }
+        if (d.subscriptionPeriod != null) {
+          setRecurringInterval(d.subscriptionPeriod as string);
+        }
+        if (d.trialEnabled != null) {
+          setTrialEnabled(d.trialEnabled as boolean);
+        }
+        if (d.trialDays != null) {
+          setTrialDays(String(d.trialDays));
+        }
+        if (d.trialPrice != null) {
+          setTrialPrice(String(d.trialPrice));
+        }
+        if (d.limitedBilling != null) {
+          setLimitedBilling(d.limitedBilling as boolean);
+        }
+        if (d.affiliateRecurring != null) {
+          setAffiliateRecurring(d.affiliateRecurring as boolean);
+        }
+        if (d.boletoInstallment != null) {
+          setBoletoInstallment(d.boletoInstallment as boolean);
+        }
+        if (d.boletoInstallments != null) {
+          setBoletoMaxInstallments(String(d.boletoInstallments));
+        }
+        if (d.boletoInterest != null) {
+          setBoletoInterest(d.boletoInterest as boolean);
+        }
         const pm = d.paymentMethods as Record<string, unknown> | undefined;
         if (pm) {
-          if (pm.credit != null) setCreditEnabled(pm.credit as boolean);
-          if (pm.boleto != null) setBoletoEnabled(pm.boleto as boolean);
-          if (pm.pix != null) setPixEnabled(pm.pix as boolean);
+          if (pm.credit != null) {
+            setCreditEnabled(pm.credit as boolean);
+          }
+          if (pm.boleto != null) {
+            setBoletoEnabled(pm.boleto as boolean);
+          }
+          if (pm.pix != null) {
+            setPixEnabled(pm.pix as boolean);
+          }
         }
-        if (d.boletoEnabled != null) setBoletoEnabled(d.boletoEnabled as boolean);
+        if (d.boletoEnabled != null) {
+          setBoletoEnabled(d.boletoEnabled as boolean);
+        }
       },
     );
   }, [productId, planId]);

@@ -47,7 +47,9 @@ const redisOpts = {
 let _connection: Redis | null = null;
 
 function getConnection(): Redis {
-  if (_connection) return _connection;
+  if (_connection) {
+    return _connection;
+  }
 
   const resolved = resolveRedisUrl();
   if (!resolved) {
@@ -112,7 +114,9 @@ const additionalWorkers: Worker[] = [];
 
 function getOrCreateQueue(name: string): BullQueue {
   const existing = queueRegistryMap.get(name);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
 
   const queue = new BullQueue(name, buildQueueOptions());
   queueRegistryMap.set(name, queue);
@@ -122,7 +126,9 @@ function getOrCreateQueue(name: string): BullQueue {
 
 function attachDlq(queue: BullQueue) {
   const dlqName = `${queue.name}-dlq`;
-  if (dlqRegistryMap.has(dlqName)) return;
+  if (dlqRegistryMap.has(dlqName)) {
+    return;
+  }
 
   const dlq = new BullQueue(dlqName, buildQueueOptions());
   dlqRegistryMap.set(dlqName, dlq);
@@ -138,9 +144,13 @@ function attachDlq(queue: BullQueue) {
       };
       try {
         const job = await queue.getJob(jobId);
-        if (!job) return;
+        if (!job) {
+          return;
+        }
         const maxAttempts = job.opts.attempts ?? defaultAttempts;
-        if (attemptsMade < maxAttempts) return;
+        if (attemptsMade < maxAttempts) {
+          return;
+        }
 
         await dlq.add(
           'failed',
@@ -176,7 +186,9 @@ function attachDlq(queue: BullQueue) {
 
 export function getQueueEvents(queueName: string): QueueEvents {
   const existing = queueEventsRegistry.get(queueName);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
 
   // QueueEvents requires its own blocking connection per BullMQ docs.
   const resolved = resolveRedisUrl();
@@ -285,8 +297,12 @@ const buildWebhookBody = (
   payload: DlqPayload,
   type: 'slack' | 'teams' | 'generic',
 ): Record<string, unknown> => {
-  if (type === 'slack') return buildSlackBody(payload);
-  if (type === 'teams') return buildTeamsBody(payload);
+  if (type === 'slack') {
+    return buildSlackBody(payload);
+  }
+  if (type === 'teams') {
+    return buildTeamsBody(payload);
+  }
   return payload as unknown as Record<string, unknown>;
 };
 
@@ -298,9 +314,13 @@ const normalizeError = (err: unknown): Error =>
 
 async function notifyOps(input: DlqEvent) {
   const webhook = process.env.DLQ_WEBHOOK_URL || process.env.OPS_WEBHOOK_URL;
-  if (!webhook) return;
+  if (!webhook) {
+    return;
+  }
   const fetchFn = resolveFetch();
-  if (!fetchFn) return;
+  if (!fetchFn) {
+    return;
+  }
 
   try {
     const payload = buildDlqPayload(input);
@@ -400,10 +420,18 @@ const closeWithWarn = (item: Closeable, label: string): Promise<unknown> =>
 
 const collectClosers = (): Promise<unknown>[] => {
   const closers: Promise<unknown>[] = [];
-  for (const w of additionalWorkers) closers.push(closeWithWarn(w, 'worker'));
-  for (const ev of queueEventsRegistry.values()) closers.push(closeWithWarn(ev, 'queueEvents'));
-  for (const dlq of dlqRegistryMap.values()) closers.push(closeWithWarn(dlq, 'dlq'));
-  for (const q of queueRegistryMap.values()) closers.push(closeWithWarn(q, 'queue'));
+  for (const w of additionalWorkers) {
+    closers.push(closeWithWarn(w, 'worker'));
+  }
+  for (const ev of queueEventsRegistry.values()) {
+    closers.push(closeWithWarn(ev, 'queueEvents'));
+  }
+  for (const dlq of dlqRegistryMap.values()) {
+    closers.push(closeWithWarn(dlq, 'dlq'));
+  }
+  for (const q of queueRegistryMap.values()) {
+    closers.push(closeWithWarn(q, 'queue'));
+  }
   return closers;
 };
 
@@ -418,7 +446,9 @@ const awaitCloserOrTimeout = async (
 };
 
 const closeSharedConnection = async (): Promise<void> => {
-  if (!_connection) return;
+  if (!_connection) {
+    return;
+  }
   try {
     await _connection.quit();
   } catch (err) {

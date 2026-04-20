@@ -203,10 +203,14 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
   const { showToast } = useToast();
 
   useEffect(() => {
-    if (!productId || !planId) return;
+    if (!productId || !planId) {
+      return;
+    }
     apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`).then(
       (res) => {
-        if (res.error || !res.data) return;
+        if (res.error || !res.data) {
+          return;
+        }
         applyPlanShippingPayload(res.data as Record<string, unknown>, {
           setPackageType,
           setWidth,

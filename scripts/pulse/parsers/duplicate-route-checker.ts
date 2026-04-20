@@ -4,7 +4,7 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
 const HTTP_METHODS = ['Get', 'Post', 'Put', 'Patch', 'Delete'] as const;
-type HttpMethod = typeof HTTP_METHODS[number];
+type HttpMethod = (typeof HTTP_METHODS)[number];
 
 interface RouteEntry {
   file: string;
@@ -24,11 +24,13 @@ interface RouteEntry {
  * - Lowercase everything
  */
 function normalizePath(p: string): string {
-  return p
-    .toLowerCase()
-    .replace(/:[^/]+/g, ':_')
-    .replace(/\/+$/, '')
-    .replace(/\/+/g, '/') || '/';
+  return (
+    p
+      .toLowerCase()
+      .replace(/:[^/]+/g, ':_')
+      .replace(/\/+$/, '')
+      .replace(/\/+/g, '/') || '/'
+  );
 }
 
 function buildFullPath(controllerPath: string, methodPath: string): string {
@@ -44,7 +46,9 @@ function buildFullPath(controllerPath: string, methodPath: string): string {
  */
 function extractControllerPath(line: string): string | null {
   const match = line.match(/@Controller\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   return match[1] ?? '';
 }
 
@@ -52,7 +56,7 @@ export function checkDuplicateRoutes(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const controllerFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    f => f.endsWith('.controller.ts') && !/\.(spec|test)\.ts$/.test(f),
+    (f) => f.endsWith('.controller.ts') && !/\.(spec|test)\.ts$/.test(f),
   );
 
   // Collect all routes across all controller files
@@ -95,7 +99,9 @@ export function checkDuplicateRoutes(config: PulseConfig): Break[] {
           // Match @Get('path'), @Get("path"), @Get(`path`), @Get() with no path
           const decoratorRe = new RegExp(`^@${method}\\(\\s*(?:['"\`]([^'"\`]*)['"\`])?\\s*\\)`);
           const match = trimmed.match(decoratorRe);
-          if (!match) continue;
+          if (!match) {
+            continue;
+          }
 
           const methodPath = match[1] ?? '';
           const fullPath = buildFullPath(block.controllerPath, methodPath);
@@ -120,17 +126,23 @@ export function checkDuplicateRoutes(config: PulseConfig): Break[] {
   const routeMap = new Map<string, RouteEntry[]>();
   for (const route of allRoutes) {
     const key = `${route.httpMethod}:${route.normalizedPath}`;
-    if (!routeMap.has(key)) routeMap.set(key, []);
+    if (!routeMap.has(key)) {
+      routeMap.set(key, []);
+    }
     routeMap.get(key)!.push(route);
   }
 
   // Report duplicates where entries come from DIFFERENT files (or same file, different controller blocks)
   for (const [key, entries] of routeMap) {
-    if (entries.length < 2) continue;
+    if (entries.length < 2) {
+      continue;
+    }
 
     // Check if at least 2 entries are from different files or different controller paths
-    const uniqueSources = new Set(entries.map(e => `${e.file}::${e.controllerPath}`));
-    if (uniqueSources.size < 2) continue;
+    const uniqueSources = new Set(entries.map((e) => `${e.file}::${e.controllerPath}`));
+    if (uniqueSources.size < 2) {
+      continue;
+    }
 
     // Report each duplicate entry (after the first)
     const [first, ...rest] = entries;

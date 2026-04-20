@@ -151,8 +151,12 @@ import {
 /** Extract a user-facing error message from an unknown thrown value.
  *  Required because TS (strict) types catch variables as `unknown`. */
 function getErrorMessage(err: unknown): string | undefined {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
+  if (err instanceof Error) {
+    return err.message;
+  }
+  if (typeof err === 'string') {
+    return err;
+  }
   if (err && typeof err === 'object' && 'message' in err) {
     const msg = (err as { message: unknown }).message;
     return typeof msg === 'string' ? msg : undefined;
@@ -165,7 +169,9 @@ function getErrorMessage(err: unknown): string | undefined {
 function cleanPayload<T extends Record<string, unknown>>(obj: T): Partial<T> {
   const result: Partial<T> = {};
   for (const [k, v] of Object.entries(obj) as Array<[keyof T, T[keyof T]]>) {
-    if (v !== '' && v !== undefined && v !== null) result[k] = v;
+    if (v !== '' && v !== undefined && v !== null) {
+      result[k] = v;
+    }
   }
   return result;
 }
@@ -585,7 +591,9 @@ const SETTINGS_SECTION_ALIASES: Record<string, SettingsSectionKey> = {
 };
 
 function resolveSettingsSection(raw: string | null | undefined): SettingsSectionKey {
-  if (!raw) return DEFAULT_SETTINGS_SECTION;
+  if (!raw) {
+    return DEFAULT_SETTINGS_SECTION;
+  }
   return SETTINGS_SECTION_ALIASES[raw] || DEFAULT_SETTINGS_SECTION;
 }
 
@@ -790,7 +798,9 @@ function SaveStatusLabel({ status }: { status: 'idle' | 'success' | 'error' }) {
 }
 
 function ErrorText({ message }: { message: string | null | undefined }) {
-  if (!message) return null;
+  if (!message) {
+    return null;
+  }
   return (
     <span
       style={{
@@ -1034,7 +1044,9 @@ function DadosPessoaisSection({
 
   useEffect(
     () => () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
     },
     [],
   );
@@ -1049,7 +1061,9 @@ function DadosPessoaisSection({
     if (profile) {
       // Normalize birthDate to YYYY-MM-DD for <input type="date">
       let bd = profile.birthDate || '';
-      if (bd && bd.length > 10) bd = bd.slice(0, 10);
+      if (bd && bd.length > 10) {
+        bd = bd.slice(0, 10);
+      }
       setForm({
         name: profile.name || '',
         email: profile.email || '',
@@ -1074,13 +1088,17 @@ function DadosPessoaisSection({
         }),
       );
       setSaveStatus('success');
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
     } catch (e) {
       setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
     }
     setSaving(false);
@@ -1088,7 +1106,9 @@ function DadosPessoaisSection({
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     try {
       const dataUrl = await readFileAsDataUrl(file);
       setAvatarPreviewUrl(dataUrl);
@@ -1195,7 +1215,9 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
 
   useEffect(
     () => () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
     },
     [],
   );
@@ -1233,11 +1255,15 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
   // ── CNPJ auto-fill from BrasilAPI ──
   const lookupCnpj = async (cnpj: string) => {
     const clean = cnpj.replace(D_RE, '');
-    if (clean.length !== 14) return;
+    if (clean.length !== 14) {
+      return;
+    }
     setCnpjLoading(true);
     try {
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        return;
+      }
       const data: BrasilApiCnpjResponse = await res.json();
       setForm((prev) => mergeCnpjIntoForm(prev, data));
     } catch {
@@ -1250,13 +1276,19 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
   // ── CEP auto-fill from ViaCEP ──
   const lookupCep = async (cep: string) => {
     const clean = cep.replace(D_RE, '');
-    if (clean.length !== 8) return;
+    if (clean.length !== 8) {
+      return;
+    }
     setCepLoading(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        return;
+      }
       const data: ViaCepResponse = await res.json();
-      if (data.erro) return;
+      if (data.erro) {
+        return;
+      }
       setForm((prev) => mergeCepIntoForm(prev, data));
     } catch {
       /* API offline */
@@ -1291,13 +1323,17 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
       });
       await updateFiscal(payload);
       setSaveStatus('success');
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
     } catch (e) {
       setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
     }
     setSaving(false);
@@ -1391,7 +1427,9 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
                 onChange={(v) => {
                   set('cnpj', v);
                   const clean = v.replace(D_RE, '');
-                  if (clean.length === 14) lookupCnpj(v);
+                  if (clean.length === 14) {
+                    lookupCnpj(v);
+                  }
                 }}
                 onBlur={() => lookupCnpj(form.cnpj)}
                 mono
@@ -1476,7 +1514,9 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
               onChange={(v) => {
                 set('cep', v);
                 const clean = v.replace(D_RE, '');
-                if (clean.length === 8) lookupCep(v);
+                if (clean.length === 8) {
+                  lookupCep(v);
+                }
               }}
               onBlur={() => lookupCep(form.cep)}
               mono
@@ -1622,7 +1662,9 @@ function UploadZone({
         e.preventDefault();
         setHover(false);
         const file = e.dataTransfer.files[0];
-        if (file) onUpload(type, file);
+        if (file) {
+          onUpload(type, file);
+        }
       }}
       style={{
         border: `1px dashed ${hover ? EMBER : 'var(--app-border-primary)'}`,
@@ -1677,7 +1719,9 @@ function UploadZone({
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) onUpload(type, file);
+          if (file) {
+            onUpload(type, file);
+          }
         }}
       />
     </div>
@@ -1822,10 +1866,14 @@ function BankListItem({
         transition: 'background .1s',
       }}
       onMouseEnter={(e) => {
-        if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'var(--app-bg-hover)';
+        if (!isSelected) {
+          (e.currentTarget as HTMLElement).style.background = 'var(--app-bg-hover)';
+        }
       }}
       onMouseLeave={(e) => {
-        if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent';
+        if (!isSelected) {
+          (e.currentTarget as HTMLElement).style.background = 'transparent';
+        }
       }}
     >
       <div
@@ -1908,7 +1956,9 @@ function BankDropdownPanel({
   onSelectBank: (bank: (typeof BRAZILIAN_BANKS)[number]) => void;
 }) {
   const autoFocusRef = useCallback((element: HTMLInputElement | null) => {
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     requestAnimationFrame(() => {
       element.focus();
     });
@@ -2067,7 +2117,9 @@ function DadosBancariosSection({
 
   useEffect(
     () => () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
     },
     [],
   );
@@ -2159,13 +2211,17 @@ function DadosBancariosSection({
     try {
       await updateBank(cleanPayload(form));
       setSaveStatus('success');
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
     } catch (e) {
       setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
     }
     setSaving(false);
@@ -2728,7 +2784,9 @@ function PerfilPublicoSection({
 
   useEffect(
     () => () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
     },
     [],
   );
@@ -2766,13 +2824,17 @@ function PerfilPublicoSection({
         }),
       );
       setSaveStatus('success');
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
     } catch (err) {
       setError(getErrorMessage(err) || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
     }
     setSaving(false);
@@ -2973,7 +3035,9 @@ function LanguageOption({
     <button
       type="button"
       onClick={() => {
-        if (!lang.disabled) onActivate();
+        if (!lang.disabled) {
+          onActivate();
+        }
       }}
       style={{
         display: 'flex',
@@ -3062,7 +3126,9 @@ function LanguageOption({
 
 function IdiomasSection() {
   const [language, setLanguage] = useState(() => {
-    if (typeof window === 'undefined') return 'pt-BR';
+    if (typeof window === 'undefined') {
+      return 'pt-BR';
+    }
     return localStorage.getItem('kloel:language') || 'pt-BR';
   });
 
@@ -3606,7 +3672,9 @@ function TeamSection() {
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const handleInvite = async () => {
-    if (!inviteEmail.trim()) return;
+    if (!inviteEmail.trim()) {
+      return;
+    }
     setInviting(true);
     setInviteError('');
     setInviteSuccess('');
@@ -3635,7 +3703,9 @@ function TeamSection() {
   };
 
   const handleRemove = async (id: string) => {
-    if (!confirm('Remover este membro da equipe?')) return;
+    if (!confirm('Remover este membro da equipe?')) {
+      return;
+    }
     setRemovingId(id);
     try {
       await removeTeamMember(id);
@@ -3710,7 +3780,9 @@ function TeamSection() {
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleInvite();
+                if (e.key === 'Enter') {
+                  handleInvite();
+                }
               }}
               placeholder="email@exemplo.com"
               style={inputStyle}

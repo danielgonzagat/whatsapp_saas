@@ -50,12 +50,24 @@ type ParserType = 'schema' | 'backend' | 'service' | 'api' | 'ui' | 'facade' | '
 
 function getParserType(filePath: string, config: PulseConfig): ParserType | null {
   const rel = path.relative(config.rootDir, filePath);
-  if (rel.endsWith('schema.prisma')) return 'schema';
-  if (rel.includes('backend') && rel.endsWith('.controller.ts')) return 'backend';
-  if (rel.includes('backend') && rel.endsWith('.service.ts')) return 'service';
-  if (rel.includes('frontend') && rel.match(/\/app\/api\/.*\/route\.ts$/)) return 'proxy';
-  if (rel.includes('frontend') && rel.match(/\/lib\/api\/.*\.ts$/)) return 'api';
-  if (rel.includes('frontend') && rel.endsWith('.tsx')) return 'ui';
+  if (rel.endsWith('schema.prisma')) {
+    return 'schema';
+  }
+  if (rel.includes('backend') && rel.endsWith('.controller.ts')) {
+    return 'backend';
+  }
+  if (rel.includes('backend') && rel.endsWith('.service.ts')) {
+    return 'service';
+  }
+  if (rel.includes('frontend') && rel.match(/\/app\/api\/.*\/route\.ts$/)) {
+    return 'proxy';
+  }
+  if (rel.includes('frontend') && rel.match(/\/lib\/api\/.*\.ts$/)) {
+    return 'api';
+  }
+  if (rel.includes('frontend') && rel.endsWith('.tsx')) {
+    return 'ui';
+  }
   return null;
 }
 
@@ -84,21 +96,26 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
       ignored: /(node_modules|\.next|dist|\.git|coverage)/,
       persistent: true,
       ignoreInitial: true,
-    }
+    },
   );
 
   watcher.on('change', (filePath: string) => {
     const existing = debounceTimers.get(filePath);
-    if (existing) clearTimeout(existing);
+    if (existing) {
+      clearTimeout(existing);
+    }
 
-      debounceTimers.set(filePath, setTimeout(async () => {
+    debounceTimers.set(
+      filePath,
+      setTimeout(async () => {
         debounceTimers.delete(filePath);
         const parserType = getParserType(filePath, config);
         if (parserType) {
           scanResult = await fullScan(config); // Full re-scan for simplicity
           renderDashboard(scanResult.health, scanResult.certification, { watching: true });
         }
-      }, 500));
+      }, 500),
+    );
   });
 
   // Keyboard input
@@ -107,7 +124,8 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
     process.stdin.resume();
     process.stdin.on('data', async (data: Buffer) => {
       const key = data.toString();
-      if (key === 'q' || key === '\x03') { // q or Ctrl+C
+      if (key === 'q' || key === '\x03') {
+        // q or Ctrl+C
         watcher.close();
         process.stdin.setRawMode(false);
         process.exit(0);
@@ -143,11 +161,16 @@ async function runParserWithTimeout(
       }),
     ]);
   } finally {
-    if (timer) clearTimeout(timer);
+    if (timer) {
+      clearTimeout(timer);
+    }
   }
 }
 
-export async function fullScan(config: PulseConfig, options: FullScanOptions = {}): Promise<FullScanResult> {
+export async function fullScan(
+  config: PulseConfig,
+  options: FullScanOptions = {},
+): Promise<FullScanResult> {
   // Core parsers (1-6)
   options.tracer?.startPhase('scan:core-parsers');
   const prismaModels = parseSchema(config);
@@ -171,8 +194,14 @@ export async function fullScan(config: PulseConfig, options: FullScanOptions = {
   });
 
   const coreData: CoreParserData = {
-    uiElements, apiCalls, backendRoutes, prismaModels,
-    serviceTraces, proxyRoutes, facades, hookRegistry,
+    uiElements,
+    apiCalls,
+    backendRoutes,
+    prismaModels,
+    serviceTraces,
+    proxyRoutes,
+    facades,
+    hookRegistry,
   };
 
   // Extended parsers (7+) — collect all breaks, support async parsers
@@ -211,10 +240,12 @@ export async function fullScan(config: PulseConfig, options: FullScanOptions = {
     });
     try {
       const breaks = await runParserWithTimeout(parser, config, parserTimeoutMs);
-      extendedBreaks.push(...breaks.map(item => ({
-        ...item,
-        source: item.source || parser.name,
-      })));
+      extendedBreaks.push(
+        ...breaks.map((item) => ({
+          ...item,
+          source: item.source || parser.name,
+        })),
+      );
       options.tracer?.finishPhase(`parser:${parser.name}`, 'passed', {
         metadata: {
           breakCount: breaks.length,
@@ -264,7 +295,8 @@ export async function fullScan(config: PulseConfig, options: FullScanOptions = {
         : PULSE_MANIFEST_FILENAME,
       line: 1,
       description: `Discovered surface "${surface}" is not declared in pulse.manifest.json`,
-      detail: 'Add the surface to the manifest or explicitly exclude it to close certification scope.',
+      detail:
+        'Add the surface to the manifest or explicitly exclude it to close certification scope.',
       source: 'manifest',
       surface,
     });

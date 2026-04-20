@@ -124,7 +124,9 @@ async function attributeCampaignToContacts(
   campaignId: string,
 ): Promise<void> {
   await forEachSequential(contacts, async (contact) => {
-    if (!contact.id) return;
+    if (!contact.id) {
+      return;
+    }
     const cf = (contact.customFields || {}) as Record<string, unknown>;
     await prisma.contact.updateMany({
       where: { id: contact.id, workspaceId },

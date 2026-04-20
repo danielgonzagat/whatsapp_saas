@@ -232,9 +232,13 @@ function NP({
   const cv = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = cv.current;
-    if (!c) return;
+    if (!c) {
+      return;
+    }
     const ctx = c.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     // No data: draw a single flat line and stop
     if (intensity <= 0) {
@@ -262,8 +266,11 @@ function NP({
           const y =
             height / 2 +
             Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (height * 0.2 + i * 2) * intensity;
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
         }
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -412,7 +419,9 @@ function WarRoom({
   }));
 
   const handleCampaignToggle = async (campaign: Campaign) => {
-    if (!metaAccessToken) return;
+    if (!metaAccessToken) {
+      return;
+    }
     const newStatus = campaign.status === 'active' ? 'PAUSED' : 'ACTIVE';
     await metaAdsApi.updateCampaignStatus(campaign.id, newStatus, metaAccessToken);
     // Update local state optimistically
@@ -774,7 +783,9 @@ function WarRoom({
                     <button
                       type="button"
                       onClick={() => {
-                        if (key === 'meta') window.location.href = '/conta';
+                        if (key === 'meta') {
+                          window.location.href = '/conta';
+                        }
                       }}
                       style={{
                         marginTop: 12,
@@ -1222,14 +1233,18 @@ function PlatformTab({
   metaAccessToken?: string;
 }) {
   const p = PLATFORMS[platformKey as keyof typeof PLATFORMS];
-  if (!p) return null;
+  if (!p) {
+    return null;
+  }
   const isConnected = p.connected;
   const profit = p.revenue - p.spend;
   const profitColor = profit >= 0 ? G : R;
   const camps = CAMPAIGNS.filter((c) => c.platform === platformKey);
 
   const handleCampaignToggle = async (c: Campaign) => {
-    if (platformKey !== 'meta' || !metaAccessToken) return;
+    if (platformKey !== 'meta' || !metaAccessToken) {
+      return;
+    }
     const newStatus = c.status === 'active' ? 'PAUSED' : 'ACTIVE';
     await metaAdsApi.updateCampaignStatus(c.id, newStatus, metaAccessToken);
     CAMPAIGNS = CAMPAIGNS.map((x) =>
@@ -1325,7 +1340,9 @@ function PlatformTab({
           <button
             type="button"
             onClick={() => {
-              if (platformKey === 'meta') window.location.href = '/conta';
+              if (platformKey === 'meta') {
+                window.location.href = '/conta';
+              }
             }}
             style={{
               padding: '10px 24px',
@@ -2115,7 +2132,9 @@ function RulesTab() {
 
   useEffect(
     () => () => {
-      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+      if (scrollTimer.current) {
+        clearTimeout(scrollTimer.current);
+      }
     },
     [],
   );
@@ -2150,7 +2169,9 @@ function RulesTab() {
   };
 
   const saveEdit = async (id: string) => {
-    if (!editCondition.trim() || !editAction.trim()) return;
+    if (!editCondition.trim() || !editAction.trim()) {
+      return;
+    }
     await apiFetch(`/ad-rules/${id}`, {
       method: 'PUT',
       body: { condition: editCondition.trim(), action: editAction.trim() },
@@ -2161,7 +2182,9 @@ function RulesTab() {
   };
 
   const handleCreateRule = async () => {
-    if (!newCondition.trim() || !newAction.trim()) return;
+    if (!newCondition.trim() || !newAction.trim()) {
+      return;
+    }
     await apiFetch('/ad-rules', {
       method: 'POST',
       body: {
@@ -2179,7 +2202,9 @@ function RulesTab() {
 
   const openForm = () => {
     setShowForm(true);
-    if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    if (scrollTimer.current) {
+      clearTimeout(scrollTimer.current);
+    }
     scrollTimer.current = setTimeout(
       () => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
       100,
@@ -2379,8 +2404,12 @@ function RulesTab() {
                         value={editAction}
                         onChange={(e) => setEditAction(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveEdit(r.id);
-                          if (e.key === 'Escape') cancelEdit();
+                          if (e.key === 'Enter') {
+                            saveEdit(r.id);
+                          }
+                          if (e.key === 'Escape') {
+                            cancelEdit();
+                          }
                         }}
                         style={{
                           width: '100%',
@@ -2624,7 +2653,9 @@ function RulesTab() {
                 placeholder="Ex: Pausar campanha"
                 style={inputStyle}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreateRule();
+                  if (e.key === 'Enter') {
+                    handleCreateRule();
+                  }
                 }}
                 id={`${fid}-acao-2`}
               />
@@ -2761,7 +2792,9 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   const goToRules = () => {
     setTab('rules');
     const nextRoute = routes.rules || '/anuncios/regras';
-    if (pathname === nextRoute) return;
+    if (pathname === nextRoute) {
+      return;
+    }
     startTransition(() => {
       router.push(nextRoute);
     });
@@ -2770,7 +2803,9 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   const goToTab = (id: string) => {
     setTab(id);
     const nextRoute = routes[id] || '/anuncios';
-    if (pathname === nextRoute) return;
+    if (pathname === nextRoute) {
+      return;
+    }
     startTransition(() => {
       router.push(nextRoute);
     });

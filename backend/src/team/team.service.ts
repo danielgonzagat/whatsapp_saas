@@ -51,7 +51,9 @@ export class TeamService {
     const existingMember = await this.prisma.agent.findUnique({
       where: { workspaceId_email: { workspaceId, email } },
     });
-    if (existingMember) throw new BadRequestException('User is already a member of this workspace');
+    if (existingMember) {
+      throw new BadRequestException('User is already a member of this workspace');
+    }
 
     // 2. Check if already invited
     const existingInvite = await this.prisma.invitation.findUnique({

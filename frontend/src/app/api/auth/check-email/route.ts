@@ -64,10 +64,14 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const email = url.searchParams.get('email') || '';
-    if (!email) return emailRequiredErrorResponse();
+    if (!email) {
+      return emailRequiredErrorResponse();
+    }
 
     const backendUrl = getBackendUrl();
-    if (!backendUrl) return backendMisconfiguredResponse();
+    if (!backendUrl) {
+      return backendMisconfiguredResponse();
+    }
 
     const response = await fetch(
       `${backendUrl}/auth/check-email?email=${encodeURIComponent(email)}`,

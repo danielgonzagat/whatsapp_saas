@@ -143,10 +143,14 @@ export default function FlowBuilder({
     (event: DragEvent) => {
       event.preventDefault();
 
-      if (!reactFlowWrapper.current || !reactFlowInstance) return;
+      if (!reactFlowWrapper.current || !reactFlowInstance) {
+        return;
+      }
 
       const type = event.dataTransfer.getData('application/reactflow');
-      if (!type) return;
+      if (!type) {
+        return;
+      }
 
       const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
@@ -196,7 +200,9 @@ export default function FlowBuilder({
 
   // Handle save
   const handleSave = useCallback(async () => {
-    if (!onSave) return;
+    if (!onSave) {
+      return;
+    }
     setIsSaving(true);
     try {
       await onSave({ nodes, edges, name: flowName });

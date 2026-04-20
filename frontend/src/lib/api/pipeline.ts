@@ -39,7 +39,9 @@ export interface SalesPipeline {
 
 export async function getSalesPipeline(): Promise<SalesPipeline> {
   const res = await apiFetch<SalesPipeline>('/pipeline');
-  if (res.error) throw new Error(res.error || 'Erro ao carregar pipeline');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao carregar pipeline');
+  }
   return res.data as SalesPipeline;
 }
 
@@ -54,7 +56,9 @@ export async function createSalesDeal(payload: CreateDealPayload): Promise<Pipel
     method: 'POST',
     body: payload,
   });
-  if (res.error) throw new Error(res.error || 'Erro ao criar deal');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao criar deal');
+  }
   invalidatePipeline();
   return res.data as PipelineDeal;
 }
@@ -64,7 +68,9 @@ export async function moveSalesDeal(dealId: string, stageId: string): Promise<Pi
     method: 'PUT',
     body: { stageId },
   });
-  if (res.error) throw new Error(res.error || 'Erro ao mover deal');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao mover deal');
+  }
   invalidatePipeline();
   return res.data as PipelineDeal;
 }

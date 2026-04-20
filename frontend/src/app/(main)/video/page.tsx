@@ -169,13 +169,17 @@ export default function VideoPage() {
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
 
   const handleCreate = useCallback(async () => {
-    if (!createUrl.trim() && !createPrompt.trim()) return;
+    if (!createUrl.trim() && !createPrompt.trim()) {
+      return;
+    }
     setCreating(true);
     setCreateError(null);
     setCreateSuccess(null);
     try {
       const res = await videoApi.create(createUrl.trim(), createPrompt.trim());
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       const resData = res.data as Record<string, unknown> | null;
       setCreateSuccess(
         `Job criado: ${resData && typeof resData === 'object' && 'id' in resData ? resData.id : 'ok'}`,
@@ -225,7 +229,9 @@ export default function VideoPage() {
     try {
       const workspaceId = tokenStorage.getWorkspaceId() ?? undefined;
       const res = await voiceApi.listProfiles(workspaceId);
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       const d = res.data as VoiceProfile[] | { profiles: VoiceProfile[] } | null;
       setVoiceProfiles(
         Array.isArray(d) ? d : ((d && 'profiles' in d ? d.profiles : undefined) ?? []),
@@ -238,11 +244,15 @@ export default function VideoPage() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'voice') loadVoiceProfiles();
+    if (activeTab === 'voice') {
+      loadVoiceProfiles();
+    }
   }, [activeTab, loadVoiceProfiles]);
 
   const handleCreateVoice = useCallback(async () => {
-    if (!newVoiceName.trim()) return;
+    if (!newVoiceName.trim()) {
+      return;
+    }
     setCreatingVoice(true);
     try {
       const res = await voiceApi.createProfile({
@@ -250,7 +260,9 @@ export default function VideoPage() {
         voiceId: newVoiceId.trim() || undefined,
         provider: newVoiceProvider || undefined,
       });
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setNewVoiceName('');
       setNewVoiceId('');
       await loadVoiceProfiles();
@@ -262,7 +274,9 @@ export default function VideoPage() {
   }, [newVoiceName, newVoiceId, newVoiceProvider, loadVoiceProfiles]);
 
   const handleGenerate = useCallback(async () => {
-    if (!genText.trim()) return;
+    if (!genText.trim()) {
+      return;
+    }
     setGenerating(true);
     setGenResult(null);
     setGenError(null);
@@ -271,7 +285,9 @@ export default function VideoPage() {
         text: genText.trim(),
         voiceProfileId: genProfileId || undefined,
       });
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setGenResult(readStringField(res.data, 'audioUrl') || 'Audio gerado (sem URL)');
     } catch (e: unknown) {
       setGenError(errorMessage(e, 'Erro ao gerar audio'));
@@ -300,7 +316,9 @@ export default function VideoPage() {
         prompt: mediaPrompt.trim() || undefined,
         type: mediaType,
       });
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setMediaJobId(readStringField(res.data, 'id'));
       setMediaStatus(readStringField(res.data, 'status', 'PENDING'));
     } catch (e: unknown) {
@@ -311,10 +329,14 @@ export default function VideoPage() {
   }, [mediaUrl, mediaPrompt, mediaType]);
 
   const handleCheckMediaJob = useCallback(async () => {
-    if (!mediaJobId) return;
+    if (!mediaJobId) {
+      return;
+    }
     try {
       const res = await mediaApi.getJob(mediaJobId);
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setMediaStatus(readStringField(res.data, 'status') || mediaStatus);
     } catch (e: unknown) {
       setMediaError(errorMessage(e, 'Erro ao verificar job'));

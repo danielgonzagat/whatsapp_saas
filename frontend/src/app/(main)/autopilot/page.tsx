@@ -34,11 +34,7 @@ import {
   updateAutopilotConfig,
 } from '@/lib/api';
 import type { AskInsightsResult, MoneyMachineResult, RuntimeConfig } from '@/lib/api';
-import {
-  unwrapArrayEnvelope,
-  unwrapDataEnvelope,
-  unwrapSettled,
-} from './page.helpers';
+import { unwrapArrayEnvelope, unwrapDataEnvelope, unwrapSettled } from './page.helpers';
 import { colors } from '@/lib/design-tokens';
 import {
   Activity,
@@ -372,9 +368,13 @@ function ActionRow({ action }: { action: AutopilotAction }) {
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) return '—';
+  if (!value) {
+    return '—';
+  }
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '—';
+  if (Number.isNaN(parsed.getTime())) {
+    return '—';
+  }
   return parsed.toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -457,7 +457,9 @@ export default function AutopilotPage() {
 
   const navigate = useCallback(
     (href: string) => {
-      if (!href || pathname === href) return;
+      if (!href || pathname === href) {
+        return;
+      }
       startTransition(() => {
         router.push(href);
       });
@@ -543,7 +545,11 @@ export default function AutopilotPage() {
       setStatus(statusData);
 
       setStats(
-        unwrapSettled<AutopilotStats | null>(statsResult, (v) => (v as AutopilotStats) || null, null),
+        unwrapSettled<AutopilotStats | null>(
+          statsResult,
+          (v) => (v as AutopilotStats) || null,
+          null,
+        ),
       );
       setImpact(
         unwrapSettled<AutopilotImpact | null>(
@@ -567,7 +573,9 @@ export default function AutopilotPage() {
           null,
         ),
       );
-      setMoneyReport(unwrapSettled<MoneyReport | null>(moneyReportResult, unwrapDataEnvelope, null));
+      setMoneyReport(
+        unwrapSettled<MoneyReport | null>(moneyReportResult, unwrapDataEnvelope, null),
+      );
       setRevenueEvents(unwrapSettled<RevenueEvent[]>(revenueEventsResult, unwrapArrayEnvelope, []));
       setInsights(unwrapSettled<AutopilotInsight[]>(insightsResult, unwrapArrayEnvelope, []));
       setQueueStats(unwrapSettled<QueueStats | null>(queueStatsResult, unwrapDataEnvelope, null));
@@ -578,7 +586,9 @@ export default function AutopilotPage() {
         null,
       );
       setConfig(cfgData);
-      if (cfgData) setConfigDraft(cfgData);
+      if (cfgData) {
+        setConfigDraft(cfgData);
+      }
 
       setRuntimeConfig(
         unwrapSettled<RuntimeConfig | null>(
@@ -619,7 +629,9 @@ export default function AutopilotPage() {
   }, [fetchAutopilotData]);
 
   const handleToggle = async () => {
-    if (!effectiveWorkspaceId || !token || !status) return;
+    if (!effectiveWorkspaceId || !token || !status) {
+      return;
+    }
 
     try {
       setIsToggling(true);
@@ -642,7 +654,9 @@ export default function AutopilotPage() {
   );
 
   const handleExportActions = async () => {
-    if (!effectiveWorkspaceId || !token) return;
+    if (!effectiveWorkspaceId || !token) {
+      return;
+    }
     try {
       const csv = await exportAutopilotActions(
         effectiveWorkspaceId,
@@ -663,7 +677,9 @@ export default function AutopilotPage() {
   };
 
   const handleSmokeTest = async () => {
-    if (!effectiveWorkspaceId || !token) return;
+    if (!effectiveWorkspaceId || !token) {
+      return;
+    }
     try {
       setIsTesting(true);
       setError(null);
@@ -686,7 +702,9 @@ export default function AutopilotPage() {
   };
 
   const handleSaveConfig = async () => {
-    if (!effectiveWorkspaceId || !token) return;
+    if (!effectiveWorkspaceId || !token) {
+      return;
+    }
     try {
       setIsSavingConfig(true);
       setError(null);
@@ -703,7 +721,9 @@ export default function AutopilotPage() {
   };
 
   const handleMoneyMachine = async () => {
-    if (!effectiveWorkspaceId) return;
+    if (!effectiveWorkspaceId) {
+      return;
+    }
     try {
       setIsRunningMoneyMachine(true);
       setMoneyMachineResult(null);
@@ -722,7 +742,9 @@ export default function AutopilotPage() {
   };
 
   const handleAskInsights = async () => {
-    if (!effectiveWorkspaceId || !askQuestion.trim()) return;
+    if (!effectiveWorkspaceId || !askQuestion.trim()) {
+      return;
+    }
     try {
       setIsAsking(true);
       setAskResult(null);
@@ -736,7 +758,9 @@ export default function AutopilotPage() {
   };
 
   const handleSendDirect = async () => {
-    if (!effectiveWorkspaceId || !sendContactId.trim() || !sendMessage.trim()) return;
+    if (!effectiveWorkspaceId || !sendContactId.trim() || !sendMessage.trim()) {
+      return;
+    }
     try {
       setIsSending(true);
       setSendResult(null);
@@ -758,7 +782,9 @@ export default function AutopilotPage() {
   };
 
   const formatCurrency = (value?: number) => {
-    if (value == null) return 'R$ 0';
+    if (value == null) {
+      return 'R$ 0';
+    }
     return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
@@ -770,9 +796,15 @@ export default function AutopilotPage() {
     : 0;
 
   const queueHealthStatus = (() => {
-    if (!queueStats) return 'unknown';
-    if ((queueStats.failed || 0) > 10) return 'critical';
-    if ((queueStats.waiting || 0) > 50 || (queueStats.delayed || 0) > 20) return 'degraded';
+    if (!queueStats) {
+      return 'unknown';
+    }
+    if ((queueStats.failed || 0) > 10) {
+      return 'critical';
+    }
+    if ((queueStats.waiting || 0) > 50 || (queueStats.delayed || 0) > 20) {
+      return 'degraded';
+    }
     return 'healthy';
   })();
 

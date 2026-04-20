@@ -228,9 +228,15 @@ function asString(value: unknown): string | null {
 }
 
 function parseBigIntNumberish(value: unknown): bigint {
-  if (typeof value === 'bigint') return value;
-  if (typeof value === 'number' && Number.isInteger(value)) return BigInt(value);
-  if (typeof value === 'string' && /^-?\d+$/.test(value)) return BigInt(value);
+  if (typeof value === 'bigint') {
+    return value;
+  }
+  if (typeof value === 'number' && Number.isInteger(value)) {
+    return BigInt(value);
+  }
+  if (typeof value === 'string' && /^-?\d+$/.test(value)) {
+    return BigInt(value);
+  }
   return 0n;
 }
 
@@ -368,7 +374,9 @@ export class PaymentWebhookController {
     }
 
     const stripeDupe = await this.ensureIdempotent(eventId || event?.id || body?.id, req);
-    if (stripeDupe) return stripeDupe;
+    if (stripeDupe) {
+      return stripeDupe;
+    }
 
     // Log webhook event for audit trail
     const stripeExternalId = event?.id || eventId || body?.id || `stripe_${Date.now()}`;
@@ -877,7 +885,9 @@ export class PaymentWebhookController {
     }
 
     const genericDupe = await this.ensureIdempotent(eventId, req);
-    if (genericDupe) return genericDupe;
+    if (genericDupe) {
+      return genericDupe;
+    }
 
     // Log webhook event for audit trail
     const genericExternalId = eventId || body.orderId || `generic_${Date.now()}`;
@@ -1065,7 +1075,9 @@ export class PaymentWebhookController {
     paymentIntentId: string,
     connectPostSale: ConnectPostSaleSnapshot | undefined,
   ): Promise<void> {
-    if (!connectPostSale) return;
+    if (!connectPostSale) {
+      return;
+    }
 
     const payment = await this.loadCheckoutPaymentContext(paymentIntentId);
     const webhookData = asRecord(payment?.webhookData) ?? {};
@@ -1095,12 +1107,16 @@ export class PaymentWebhookController {
     const payment = await this.loadCheckoutPaymentContext(paymentIntentId);
     const webhookData = asRecord(payment?.webhookData);
     const splitInput = asRecord(webhookData?.splitInput);
-    if (!splitInput) return;
+    if (!splitInput) {
+      return;
+    }
 
     const platformFeeCents = parseBigIntNumberish(splitInput.platformFeeCents);
     const interestCents = parseBigIntNumberish(splitInput.interestCents);
     const totalCreditCents = platformFeeCents + interestCents;
-    if (totalCreditCents <= 0n) return;
+    if (totalCreditCents <= 0n) {
+      return;
+    }
 
     await this.appendPlatformWalletEntry(
       {
@@ -1129,7 +1145,9 @@ export class PaymentWebhookController {
     stakeholderReversedAmountCents: bigint;
     platformDebitCents: bigint;
   }): Promise<void> {
-    if (args.platformDebitCents <= 0n) return;
+    if (args.platformDebitCents <= 0n) {
+      return;
+    }
 
     const kind =
       args.triggerKind === 'refund'
@@ -1367,7 +1385,9 @@ export class PaymentWebhookController {
     }
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
     const shopifyDupe = await this.ensureIdempotent(eventId, req);
-    if (shopifyDupe) return shopifyDupe;
+    if (shopifyDupe) {
+      return shopifyDupe;
+    }
     const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
     const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
     if (digest !== hmac) {
@@ -1433,11 +1453,15 @@ export class PaymentWebhookController {
     }
 
     const paghiperDupe = await this.ensureIdempotent(eventId, req);
-    if (paghiperDupe) return paghiperDupe;
+    if (paghiperDupe) {
+      return paghiperDupe;
+    }
 
     const status = (body?.status || body?.transaction?.status || '').toLowerCase();
     const isPaid = ['paid', 'completed', 'complete'].some((s) => status.includes(s));
-    if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
+    if (!isPaid) {
+      return { ok: true, ignored: true, reason: 'status_not_paid' };
+    }
 
     const workspaceId =
       body.workspaceId || body?.metadata?.workspaceId || body?.transaction?.metadata?.workspaceId;
@@ -1491,7 +1515,9 @@ export class PaymentWebhookController {
 
     const status = (body?.status || '').toLowerCase();
     const isPaid = status === 'completed' || status === 'processing' || status === 'paid';
-    if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
+    if (!isPaid) {
+      return { ok: true, ignored: true, reason: 'status_not_paid' };
+    }
 
     const metaWorkspace = body?.meta_data?.find?.(
       (m: WooCommerceMetaData) => m.key === 'workspaceId',
@@ -1609,7 +1635,9 @@ export class PaymentWebhookController {
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
       process.env.DLQ_WEBHOOK_URL;
-    if (!url || !globalThis.fetch) return;
+    if (!url || !globalThis.fetch) {
+      return;
+    }
     try {
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {

@@ -150,7 +150,9 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
 
   const handleAddTag = useCallback(async () => {
     const value = tagInput.trim();
-    if (!value || !phone) return;
+    if (!value || !phone) {
+      return;
+    }
     setTagInput('');
     await addTag(phone, value);
     mutate();
@@ -158,7 +160,9 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
 
   const handleRemoveTag = useCallback(
     async (tag: string) => {
-      if (!phone) return;
+      if (!phone) {
+        return;
+      }
       await removeTag(phone, tag);
       mutate();
     },
@@ -174,7 +178,9 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
 
   const handleNeuroAnalyze = useCallback(async () => {
     const contactId = contact?.id;
-    if (!contactId) return;
+    if (!contactId) {
+      return;
+    }
     setNeuroLoading(true);
     setNeuroError(null);
     setNeuroResult(null);
@@ -195,7 +201,9 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
     }
   }, [contact, mutate]);
 
-  if (!phone) return null;
+  if (!phone) {
+    return null;
+  }
 
   /* ── Derived data ── */
   const name = contact?.name || phone;

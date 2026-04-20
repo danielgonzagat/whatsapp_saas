@@ -23,15 +23,27 @@ const MODULE_ALIASES: Record<string, ModuleAlias> = {
   public: { key: 'public', name: 'Public Web', tokens: ['public', 'landing', 'site'] },
   auth: { key: 'auth', name: 'Auth', tokens: ['auth', 'login', 'register', 'session'] },
   onboarding: { key: 'onboarding', name: 'Onboarding', tokens: ['onboarding'] },
-  checkout: { key: 'checkout', name: 'Checkout', tokens: ['checkout', 'order', 'preview', 'pay', 'boleto', 'pix', 'upsell'] },
+  checkout: {
+    key: 'checkout',
+    name: 'Checkout',
+    tokens: ['checkout', 'order', 'preview', 'pay', 'boleto', 'pix', 'upsell'],
+  },
   account: { key: 'account', name: 'Account', tokens: ['account', 'conta'] },
-  analytics: { key: 'analytics', name: 'Analytics', tokens: ['analytics', 'metricas', 'metrics', 'reports', 'dashboard'] },
+  analytics: {
+    key: 'analytics',
+    name: 'Analytics',
+    tokens: ['analytics', 'metricas', 'metrics', 'reports', 'dashboard'],
+  },
   ads: { key: 'ads', name: 'Ads', tokens: ['ads', 'anuncios', 'rastreamento', 'regras'] },
   autopilot: { key: 'autopilot', name: 'Autopilot', tokens: ['autopilot'] },
   billing: { key: 'billing', name: 'Billing', tokens: ['billing', 'pricing', 'subscription'] },
   campaigns: { key: 'campaigns', name: 'Campaigns', tokens: ['campaigns'] },
   canvas: { key: 'canvas', name: 'Canvas', tokens: ['canvas', 'editor', 'modelos', 'projetos'] },
-  wallet: { key: 'wallet', name: 'Wallet', tokens: ['wallet', 'carteira', 'saldo', 'movimentacoes', 'saques', 'extrato', 'antecipacoes'] },
+  wallet: {
+    key: 'wallet',
+    name: 'Wallet',
+    tokens: ['wallet', 'carteira', 'saldo', 'movimentacoes', 'saques', 'extrato', 'antecipacoes'],
+  },
   chat: { key: 'chat', name: 'Chat', tokens: ['chat'] },
   cia: { key: 'cia', name: 'CIA/Agent', tokens: ['cia', 'agent', 'assistant', 'conversation'] },
   dashboard: { key: 'dashboard', name: 'Dashboard', tokens: ['dashboard'] },
@@ -40,17 +52,41 @@ const MODULE_ALIASES: Record<string, ModuleAlias> = {
   followups: { key: 'followups', name: 'Followups', tokens: ['followups'] },
   inbox: { key: 'inbox', name: 'Inbox/Chat', tokens: ['inbox', 'chat', 'conversation'] },
   crm: { key: 'crm', name: 'CRM/Leads', tokens: ['crm', 'leads', 'contacts', 'pipeline'] },
-  marketing: { key: 'marketing', name: 'Marketing', tokens: ['marketing', 'email', 'instagram', 'facebook', 'tiktok', 'whatsapp'] },
-  partnerships: { key: 'partnerships', name: 'Partnerships', tokens: ['partnerships', 'parcerias', 'afiliados', 'colaboradores'] },
+  marketing: {
+    key: 'marketing',
+    name: 'Marketing',
+    tokens: ['marketing', 'email', 'instagram', 'facebook', 'tiktok', 'whatsapp'],
+  },
+  partnerships: {
+    key: 'partnerships',
+    name: 'Partnerships',
+    tokens: ['partnerships', 'parcerias', 'afiliados', 'colaboradores'],
+  },
   payments: { key: 'payments', name: 'Payments', tokens: ['payments', 'payment'] },
-  products: { key: 'products', name: 'Products', tokens: ['products', 'produtos', 'product', 'member', 'members', 'area', 'membros'] },
-  sales: { key: 'sales', name: 'Sales', tokens: ['sales', 'vendas', 'gestao', 'assinaturas', 'fisicos', 'pipeline'] },
+  products: {
+    key: 'products',
+    name: 'Products',
+    tokens: ['products', 'produtos', 'product', 'member', 'members', 'area', 'membros'],
+  },
+  sales: {
+    key: 'sales',
+    name: 'Sales',
+    tokens: ['sales', 'vendas', 'gestao', 'assinaturas', 'fisicos', 'pipeline'],
+  },
   scrapers: { key: 'scrapers', name: 'Scrapers', tokens: ['scrapers', 'scraper'] },
-  settings: { key: 'settings', name: 'Settings', tokens: ['settings', 'configuracoes', 'kb', 'brain'] },
+  settings: {
+    key: 'settings',
+    name: 'Settings',
+    tokens: ['settings', 'configuracoes', 'kb', 'brain'],
+  },
   sites: { key: 'sites', name: 'Sites', tokens: ['sites', 'dominios', 'hospedagem', 'protecao'] },
   video: { key: 'video', name: 'Video/Voice', tokens: ['video', 'voice', 'audio'] },
   webinars: { key: 'webinars', name: 'Webinars', tokens: ['webinars', 'webinarios'] },
-  whatsapp: { key: 'whatsapp', name: 'WhatsApp Core', tokens: ['whatsapp', 'message', 'messages', 'catalog', 'session'] },
+  whatsapp: {
+    key: 'whatsapp',
+    name: 'WhatsApp Core',
+    tokens: ['whatsapp', 'message', 'messages', 'catalog', 'session'],
+  },
   e2e: { key: 'e2e', name: 'E2E/Internal', tokens: ['e2e', 'internal'] },
   misc: { key: 'misc', name: 'Misc', tokens: ['misc'] },
 };
@@ -115,7 +151,7 @@ function normalizeText(value: string): string {
 function tokenize(value: string): string[] {
   return normalizeText(value)
     .split(/\s+/)
-    .filter(token => token.length >= 2);
+    .filter((token) => token.length >= 2);
 }
 
 function slugify(value: string): string {
@@ -130,7 +166,7 @@ function titleCase(value: string): string {
   return value
     .split(/[\s-]+/)
     .filter(Boolean)
-    .map(chunk => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
     .join(' ');
 }
 
@@ -138,7 +174,7 @@ function getRouteSegments(route: string): string[] {
   return route
     .split('/')
     .filter(Boolean)
-    .filter(segment => !segment.startsWith(':'));
+    .filter((segment) => !segment.startsWith(':'));
 }
 
 function isUserFacingGroup(group: string): boolean {
@@ -146,19 +182,27 @@ function isUserFacingGroup(group: string): boolean {
 }
 
 function getModuleAliasForPage(route: string, group: string): ModuleAlias {
-  if (group === 'e2e') return MODULE_ALIASES.e2e;
+  if (group === 'e2e') {
+    return MODULE_ALIASES.e2e;
+  }
 
   const segments = getRouteSegments(route);
   const first = segments[0] || '';
-  if (group === 'checkout') return MODULE_ALIASES.checkout;
+  if (group === 'checkout') {
+    return MODULE_ALIASES.checkout;
+  }
 
-  if (first === '' && group === 'public') return MODULE_ALIASES.public;
+  if (first === '' && group === 'public') {
+    return MODULE_ALIASES.public;
+  }
   return MODULE_ALIASES[ROUTE_ROOT_ALIASES[first] || 'misc'];
 }
 
 function getRouteRoot(route: string, group: string): string {
   const segments = getRouteSegments(route);
-  if (segments.length === 0) return group === 'public' ? '/' : group;
+  if (segments.length === 0) {
+    return group === 'public' ? '/' : group;
+  }
   return segments[0];
 }
 
@@ -170,7 +214,11 @@ function determineShellComplexity(page: PageFunctionalMap): PulseShellComplexity
   ) {
     return 'rich';
   }
-  if (page.componentFiles.length >= 4 || page.totalInteractions >= 6 || page.dataSources.length >= 1) {
+  if (
+    page.componentFiles.length >= 4 ||
+    page.totalInteractions >= 6 ||
+    page.dataSources.length >= 1
+  ) {
     return 'medium';
   }
   return 'light';
@@ -178,10 +226,12 @@ function determineShellComplexity(page: PageFunctionalMap): PulseShellComplexity
 
 function buildPageSummary(page: PageFunctionalMap): PulseTruthPageSummary {
   const moduleAlias = getModuleAliasForPage(page.route, page.group);
-  const apiBoundInteractions = page.interactions.filter(item => !!item.apiCall).length;
-  const backendBoundInteractions = page.interactions.filter(item => !!item.backendRoute).length;
-  const persistedInteractions = page.interactions.filter(item => item.prismaModels.length > 0).length;
-  const backedDataSources = page.dataSources.filter(item => item.hasBackendRoute).length;
+  const apiBoundInteractions = page.interactions.filter((item) => !!item.apiCall).length;
+  const backendBoundInteractions = page.interactions.filter((item) => !!item.backendRoute).length;
+  const persistedInteractions = page.interactions.filter(
+    (item) => item.prismaModels.length > 0,
+  ).length;
+  const backedDataSources = page.dataSources.filter((item) => item.hasBackendRoute).length;
 
   return {
     route: page.route,
@@ -205,14 +255,19 @@ function buildPageSummary(page: PageFunctionalMap): PulseTruthPageSummary {
 
 function scoreDeclaredMatch(tokensA: string[], tokensB: string[]): number {
   const setB = new Set(tokensB);
-  return tokensA.filter(token => setB.has(token)).length;
+  return tokensA.filter((token) => setB.has(token)).length;
 }
 
-function matchDeclaredModule(module: Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>, manifest: PulseManifest | null): string | null {
-  if (!manifest) return null;
+function matchDeclaredModule(
+  module: Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>,
+  manifest: PulseManifest | null,
+): string | null {
+  if (!manifest) {
+    return null;
+  }
 
   const candidateTokens = unique([
-    ...((MODULE_ALIASES[module.key]?.tokens) || []),
+    ...(MODULE_ALIASES[module.key]?.tokens || []),
     ...tokenize(module.name),
     ...module.routeRoots.flatMap(tokenize),
   ]);
@@ -220,8 +275,12 @@ function matchDeclaredModule(module: Omit<PulseDiscoveredModule, 'declaredModule
   let best: { name: string; score: number } | null = null;
 
   for (const entry of manifest.modules) {
-    if (module.userFacing && entry.state === 'INTERNAL') continue;
-    if (!module.userFacing && entry.state !== 'INTERNAL') continue;
+    if (module.userFacing && entry.state === 'INTERNAL') {
+      continue;
+    }
+    if (!module.userFacing && entry.state !== 'INTERNAL') {
+      continue;
+    }
 
     const entryTokens = unique(tokenize(entry.name));
     const exactName = normalizeText(entry.name) === normalizeText(module.name);
@@ -238,16 +297,30 @@ function matchDeclaredModule(module: Omit<PulseDiscoveredModule, 'declaredModule
   return best && best.score >= 10 ? best.name : null;
 }
 
-function classifyModuleState(module: Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>): PulseModuleState {
-  if (!module.userFacing) return 'INTERNAL';
+function classifyModuleState(
+  module: Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>,
+): PulseModuleState {
+  if (!module.userFacing) {
+    return 'INTERNAL';
+  }
 
   const total = Math.max(1, module.totalInteractions);
-  const failureLike = module.facadeInteractions + module.brokenInteractions + module.absentInteractions;
-  const connected = module.backendBoundInteractions + module.backedDataSources + module.persistedInteractions;
+  const failureLike =
+    module.facadeInteractions + module.brokenInteractions + module.absentInteractions;
+  const connected =
+    module.backendBoundInteractions + module.backedDataSources + module.persistedInteractions;
 
-  if (module.shellComplexity === 'rich' && connected === 0) return 'SHELL_ONLY';
-  if (module.facadeInteractions > Math.max(module.functioningInteractions, 0) && connected === 0) return 'MOCKED';
-  if (module.brokenInteractions + module.absentInteractions > module.functioningInteractions + module.incompleteInteractions && connected <= 1) {
+  if (module.shellComplexity === 'rich' && connected === 0) {
+    return 'SHELL_ONLY';
+  }
+  if (module.facadeInteractions > Math.max(module.functioningInteractions, 0) && connected === 0) {
+    return 'MOCKED';
+  }
+  if (
+    module.brokenInteractions + module.absentInteractions >
+      module.functioningInteractions + module.incompleteInteractions &&
+    connected <= 1
+  ) {
     return 'BROKEN';
   }
   if (
@@ -257,13 +330,22 @@ function classifyModuleState(module: Omit<PulseDiscoveredModule, 'declaredModule
   ) {
     return 'READY';
   }
-  if (module.shellComplexity !== 'light' && module.persistedInteractions === 0 && module.backedDataSources === 0 && module.backendBoundInteractions === 0) {
+  if (
+    module.shellComplexity !== 'light' &&
+    module.persistedInteractions === 0 &&
+    module.backedDataSources === 0 &&
+    module.backendBoundInteractions === 0
+  ) {
     return 'SHELL_ONLY';
   }
   return 'PARTIAL';
 }
 
-function summarizeModule(module: Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>, state: PulseModuleState, declaredModule: string | null): string {
+function summarizeModule(
+  module: Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>,
+  state: PulseModuleState,
+  declaredModule: string | null,
+): string {
   const pieces = [
     `${module.pageCount} page(s)`,
     `${module.totalInteractions} interaction(s)`,
@@ -272,24 +354,40 @@ function summarizeModule(module: Omit<PulseDiscoveredModule, 'declaredModule' | 
     `${module.backedDataSources}/${module.totalDataSources} backed data source(s)`,
     `shell=${module.shellComplexity}`,
   ];
-  if (declaredModule) pieces.push(`declared as "${declaredModule}"`);
-  if (state === 'SHELL_ONLY') pieces.push('rich frontend shell without persistence evidence');
-  if (state === 'MOCKED') pieces.push('facade/local-state signals dominate');
+  if (declaredModule) {
+    pieces.push(`declared as "${declaredModule}"`);
+  }
+  if (state === 'SHELL_ONLY') {
+    pieces.push('rich frontend shell without persistence evidence');
+  }
+  if (state === 'MOCKED') {
+    pieces.push('facade/local-state signals dominate');
+  }
   return pieces.join(', ');
 }
 
 function isLikelyMutation(interaction: InteractionChain): boolean {
-  if (!interaction.apiCall) return false;
-  if (interaction.apiCall.method && interaction.apiCall.method.toUpperCase() !== 'GET') return true;
-  return /\b(save|create|update|delete|remove|add|send|submit|pay|upload|sync|connect|approve|withdraw|checkout)\b/i
-    .test(`${interaction.elementLabel} ${interaction.handler || ''} ${interaction.apiCall.endpoint}`);
+  if (!interaction.apiCall) {
+    return false;
+  }
+  if (interaction.apiCall.method && interaction.apiCall.method.toUpperCase() !== 'GET') {
+    return true;
+  }
+  return /\b(save|create|update|delete|remove|add|send|submit|pay|upload|sync|connect|approve|withdraw|checkout)\b/i.test(
+    `${interaction.elementLabel} ${interaction.handler || ''} ${interaction.apiCall.endpoint}`,
+  );
 }
 
-function matchDeclaredFlow(candidate: Omit<PulseDiscoveredFlowCandidate, 'declaredFlow'>, manifest: PulseManifest | null): string | null {
-  if (!manifest) return null;
+function matchDeclaredFlow(
+  candidate: Omit<PulseDiscoveredFlowCandidate, 'declaredFlow'>,
+  manifest: PulseManifest | null,
+): string | null {
+  if (!manifest) {
+    return null;
+  }
 
   const candidateTokens = unique([
-    ...((MODULE_ALIASES[candidate.moduleKey]?.tokens) || []),
+    ...(MODULE_ALIASES[candidate.moduleKey]?.tokens || []),
     ...tokenize(candidate.moduleName),
     ...tokenize(candidate.pageRoute),
     ...tokenize(candidate.elementLabel),
@@ -321,15 +419,21 @@ function buildDiscoveredFlows(
   const byId = new Map<string, PulseDiscoveredFlowCandidate>();
 
   for (const page of pages) {
-    if (!isUserFacingGroup(page.group)) continue;
+    if (!isUserFacingGroup(page.group)) {
+      continue;
+    }
     const moduleAlias = getModuleAliasForPage(page.route, page.group);
 
     for (const interaction of page.interactions) {
-      if (!isLikelyMutation(interaction) || !interaction.apiCall) continue;
+      if (!isLikelyMutation(interaction) || !interaction.apiCall) {
+        continue;
+      }
 
       const endpoint = interaction.backendRoute?.fullPath || interaction.apiCall.endpoint;
       const flowId = slugify(`${moduleAlias.key}-${interaction.apiCall.method}-${endpoint}`);
-      if (!flowId) continue;
+      if (!flowId) {
+        continue;
+      }
 
       const current = byId.get(flowId);
       const base = {
@@ -373,7 +477,7 @@ function inferBackendCapabilityWithoutFrontendSurface(
   backendRoutes: BackendRoute[],
   discoveredModules: PulseDiscoveredModule[],
 ): string[] {
-  const discoveredKeys = new Set(discoveredModules.map(item => item.key));
+  const discoveredKeys = new Set(discoveredModules.map((item) => item.key));
   const counts = new Map<string, { name: string; count: number }>();
 
   for (const route of backendRoutes) {
@@ -381,11 +485,13 @@ function inferBackendCapabilityWithoutFrontendSurface(
       .replace(/^\/+/g, '')
       .split('/')
       .filter(Boolean)
-      .filter(segment => !segment.startsWith(':'))
-      .filter(segment => !['api', 'v1', 'kloel'].includes(segment.toLowerCase()));
+      .filter((segment) => !segment.startsWith(':'))
+      .filter((segment) => !['api', 'v1', 'kloel'].includes(segment.toLowerCase()));
 
     const root = segments[0];
-    if (!root) continue;
+    if (!root) {
+      continue;
+    }
     const knownAliasKey = ROUTE_ROOT_ALIASES[root];
     const moduleAlias = knownAliasKey ? MODULE_ALIASES[knownAliasKey] : null;
     const key = moduleAlias?.key || root;
@@ -412,49 +518,54 @@ function buildDivergence(
 ): PulseTruthDivergence {
   const discoveredDeclaredModules = new Set(
     discoveredModules
-      .map(item => item.declaredModule)
+      .map((item) => item.declaredModule)
       .filter((value): value is string => Boolean(value)),
   );
 
   const declaredNotDiscovered = manifest
     ? manifest.modules
-      .filter(entry => !discoveredDeclaredModules.has(entry.name))
-      .map(entry => entry.name)
-      .sort()
+        .filter((entry) => !discoveredDeclaredModules.has(entry.name))
+        .map((entry) => entry.name)
+        .sort()
     : [];
 
   const discoveredNotDeclared = discoveredModules
-    .filter(item => item.userFacing && !item.declaredModule)
-    .map(item => item.name)
+    .filter((item) => item.userFacing && !item.declaredModule)
+    .map((item) => item.name)
     .sort();
 
   const declaredButInternal = discoveredModules
-    .filter(item => item.declaredModule && item.state === 'INTERNAL')
-    .map(item => item.declaredModule as string)
+    .filter((item) => item.declaredModule && item.state === 'INTERNAL')
+    .map((item) => item.declaredModule as string)
     .sort();
 
   const frontendSurfaceWithoutBackendSupport = pages
-    .filter(page =>
-      page.shellComplexity !== 'light' &&
-      ((page.apiBoundInteractions > 0 && page.backendBoundInteractions === 0) ||
-        (page.totalDataSources > 0 && page.backedDataSources === 0))
+    .filter(
+      (page) =>
+        page.shellComplexity !== 'light' &&
+        ((page.apiBoundInteractions > 0 && page.backendBoundInteractions === 0) ||
+          (page.totalDataSources > 0 && page.backedDataSources === 0)),
     )
-    .map(page => `${page.route} (api=${page.apiBoundInteractions}, backedData=${page.backedDataSources}/${page.totalDataSources})`)
+    .map(
+      (page) =>
+        `${page.route} (api=${page.apiBoundInteractions}, backedData=${page.backedDataSources}/${page.totalDataSources})`,
+    )
     .sort();
 
   const shellWithoutPersistence = pages
-    .filter(page =>
-      page.shellComplexity !== 'light' &&
-      page.totalInteractions >= 5 &&
-      page.persistedInteractions === 0 &&
-      page.backedDataSources === 0
+    .filter(
+      (page) =>
+        page.shellComplexity !== 'light' &&
+        page.totalInteractions >= 5 &&
+        page.persistedInteractions === 0 &&
+        page.backedDataSources === 0,
     )
-    .map(page => `${page.route} (${page.shellComplexity} shell)`)
+    .map((page) => `${page.route} (${page.shellComplexity} shell)`)
     .sort();
 
   const flowCandidatesWithoutOracle = discoveredFlows
-    .filter(item => (item.connected || item.persistent) && !item.declaredFlow)
-    .map(item => `${item.id} -> ${item.pageRoute}`)
+    .filter((item) => (item.connected || item.persistent) && !item.declaredFlow)
+    .map((item) => `${item.id} -> ${item.pageRoute}`)
     .sort();
 
   const backendCapabilityWithoutFrontendSurface = inferBackendCapabilityWithoutFrontendSurface(
@@ -493,7 +604,10 @@ export function extractCodebaseTruth(
 ): PulseCodebaseTruth {
   const fmap = buildFunctionalMap(config, coreData);
   const pageSummaries = fmap.pages.map(buildPageSummary);
-  const buckets = new Map<string, Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>>();
+  const buckets = new Map<
+    string,
+    Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>
+  >();
 
   for (const page of pageSummaries) {
     const bucket = buckets.get(page.moduleKey) || {
@@ -532,7 +646,10 @@ export function extractCodebaseTruth(
     bucket.persistedInteractions += page.persistedInteractions;
     bucket.totalDataSources += page.totalDataSources;
     bucket.backedDataSources += page.backedDataSources;
-    if (page.shellComplexity === 'rich' || (page.shellComplexity === 'medium' && bucket.shellComplexity === 'light')) {
+    if (
+      page.shellComplexity === 'rich' ||
+      (page.shellComplexity === 'medium' && bucket.shellComplexity === 'light')
+    ) {
       bucket.shellComplexity = page.shellComplexity;
     }
 
@@ -540,7 +657,7 @@ export function extractCodebaseTruth(
   }
 
   const discoveredModules = [...buckets.values()]
-    .map<PulseDiscoveredModule>(bucket => {
+    .map<PulseDiscoveredModule>((bucket) => {
       const declaredModule = matchDeclaredModule(bucket, manifest);
       const state = classifyModuleState(bucket);
       return {
@@ -553,13 +670,19 @@ export function extractCodebaseTruth(
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const discoveredFlows = buildDiscoveredFlows(fmap.pages, manifest);
-  const divergence = buildDivergence(pageSummaries, discoveredModules, discoveredFlows, manifest, coreData);
+  const divergence = buildDivergence(
+    pageSummaries,
+    discoveredModules,
+    discoveredFlows,
+    manifest,
+    coreData,
+  );
 
   return {
     generatedAt: new Date().toISOString(),
     summary: {
       totalPages: pageSummaries.length,
-      userFacingPages: pageSummaries.filter(page => isUserFacingGroup(page.group)).length,
+      userFacingPages: pageSummaries.filter((page) => isUserFacingGroup(page.group)).length,
       discoveredModules: discoveredModules.length,
       discoveredFlows: discoveredFlows.length,
       blockerCount: divergence.blockerCount,

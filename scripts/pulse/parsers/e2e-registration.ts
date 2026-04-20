@@ -43,7 +43,9 @@ import {
 
 export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const testEmail = `pulse-test-${Date.now()}@test.kloel.com`;
@@ -142,10 +144,9 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
           });
         } else {
           // Verify workspace actually exists
-          const wsRows = await dbQuery(
-            `SELECT id, name FROM "Workspace" WHERE id = $1 LIMIT 1`,
-            [agent.workspaceId],
-          );
+          const wsRows = await dbQuery(`SELECT id, name FROM "Workspace" WHERE id = $1 LIMIT 1`, [
+            agent.workspaceId,
+          ]);
           if (wsRows.length === 0) {
             breaks.push({
               type: 'E2E_REGISTRATION_BROKEN',

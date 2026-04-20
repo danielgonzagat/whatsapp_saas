@@ -82,7 +82,9 @@ export const CRM = {
     const contact = await prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
     });
-    if (!contact) return;
+    if (!contact) {
+      return;
+    }
 
     const tag = await prisma.tag.upsert({
       where: {
@@ -117,7 +119,9 @@ export const CRM = {
     const contact = await prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
     });
-    if (!contact) return;
+    if (!contact) {
+      return;
+    }
 
     const tag = await prisma.tag.findUnique({
       where: {
@@ -127,7 +131,9 @@ export const CRM = {
         },
       },
     });
-    if (!tag) return;
+    if (!tag) {
+      return;
+    }
 
     await prisma.contact.update({
       where: {
@@ -153,7 +159,9 @@ export const CRM = {
     const contact = await prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
     });
-    if (!contact) return;
+    if (!contact) {
+      return;
+    }
 
     const custom = ((contact.customFields as Prisma.InputJsonObject) || {}) as Record<
       string,
@@ -178,7 +186,9 @@ export const CRM = {
     const contact = await prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
     });
-    if (!contact) return null;
+    if (!contact) {
+      return null;
+    }
     const custom = (contact.customFields as Prisma.InputJsonObject) || {};
     return custom[key] ?? null;
   },
@@ -187,7 +197,9 @@ export const CRM = {
     const contact = await prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
     });
-    if (!contact) return;
+    if (!contact) {
+      return;
+    }
 
     await prisma.contact.update({
       where: {

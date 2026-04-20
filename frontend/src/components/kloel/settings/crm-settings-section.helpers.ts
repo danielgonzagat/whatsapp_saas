@@ -11,6 +11,8 @@ export function errorMessage(error: unknown, fallback: string): string {
 }
 
 export function formatMoney(value?: number | null): string {
-  if (typeof value !== 'number' || Number.isNaN(value)) return 'R$ 0,00';
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 'R$ 0,00';
+  }
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }

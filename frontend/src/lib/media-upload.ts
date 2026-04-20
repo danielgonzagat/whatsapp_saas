@@ -11,7 +11,9 @@ export function readFileAsDataUrl(file: File): Promise<string> {
 }
 
 export function extractUploadedMediaUrl(payload: unknown): string {
-  if (!payload || typeof payload !== 'object') return '';
+  if (!payload || typeof payload !== 'object') {
+    return '';
+  }
 
   const result = payload as {
     url?: string;

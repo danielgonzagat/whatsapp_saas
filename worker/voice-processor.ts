@@ -36,7 +36,9 @@ function safeFileUrl(basedir: string, filename: string): URL {
 
 let openaiClient: OpenAI | null = null;
 function getOpenAIClient(): OpenAI {
-  if (openaiClient) return openaiClient;
+  if (openaiClient) {
+    return openaiClient;
+  }
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY not configured (required for Whisper transcription)');

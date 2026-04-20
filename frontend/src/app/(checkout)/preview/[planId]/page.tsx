@@ -16,7 +16,9 @@ export default function CheckoutPreview({ params }: { params: Promise<{ planId: 
       .catch(() => {});
   }, [planId]);
 
-  if (!config) return <div style={{ background: '#0A0A0C', minHeight: '100vh' }} />;
+  if (!config) {
+    return <div style={{ background: '#0A0A0C', minHeight: '100vh' }} />;
+  }
 
   const Theme = config.theme === 'NOIR' ? CheckoutNoirSocial : CheckoutBlancSocial;
   const plan = config.plan as { product?: unknown } | undefined;

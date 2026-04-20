@@ -225,11 +225,21 @@ export class SystemHealthService {
       this.config.get<string>('META_VERIFY_TOKEN');
 
     const missing: string[] = [];
-    if (!jwtSecret) missing.push('JWT_SECRET');
-    if (!redisUrl) missing.push('REDIS_URL');
-    if (!metaAppId) missing.push('META_APP_ID');
-    if (!metaAppSecret) missing.push('META_APP_SECRET');
-    if (!metaVerifyToken) missing.push('META_WEBHOOK_VERIFY_TOKEN');
+    if (!jwtSecret) {
+      missing.push('JWT_SECRET');
+    }
+    if (!redisUrl) {
+      missing.push('REDIS_URL');
+    }
+    if (!metaAppId) {
+      missing.push('META_APP_ID');
+    }
+    if (!metaAppSecret) {
+      missing.push('META_APP_SECRET');
+    }
+    if (!metaVerifyToken) {
+      missing.push('META_WEBHOOK_VERIFY_TOKEN');
+    }
 
     return {
       status: missing.length ? 'DOWN' : 'CONFIGURED',

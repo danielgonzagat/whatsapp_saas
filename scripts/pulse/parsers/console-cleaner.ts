@@ -15,8 +15,10 @@ function isLoggerOrBootstrap(filePath: string): boolean {
   // Skip logger implementation files and bootstrap/startup scripts
   // These legitimately use console.log before the logger is initialized
   const base = path.basename(filePath);
-  return /^(logger|bootstrap|main|resolve-redis|redis-client|db|queue)\.(ts|js)$/.test(base)
-    || /logger\.ts$|structured-logger\.ts$/.test(filePath);
+  return (
+    /^(logger|bootstrap|main|resolve-redis|redis-client|db|queue)\.(ts|js)$/.test(base) ||
+    /logger\.ts$|structured-logger\.ts$/.test(filePath)
+  );
 }
 
 export function checkConsoleUsage(config: PulseConfig): Break[] {
@@ -26,7 +28,9 @@ export function checkConsoleUsage(config: PulseConfig): Break[] {
   const prodDirs = [config.backendDir];
 
   for (const dir of prodDirs) {
-    const files = walkFiles(dir, ['.ts']).filter(f => !isTestFile(f) && !isPulseScript(f) && !isLoggerOrBootstrap(f));
+    const files = walkFiles(dir, ['.ts']).filter(
+      (f) => !isTestFile(f) && !isPulseScript(f) && !isLoggerOrBootstrap(f),
+    );
 
     for (const file of files) {
       let content: string;
@@ -43,7 +47,9 @@ export function checkConsoleUsage(config: PulseConfig): Break[] {
         const trimmed = lines[i].trim();
 
         // Skip full-line comments
-        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+          continue;
+        }
 
         // Skip if console.log is inside a comment on this line
         const codeBeforeComment = trimmed.split('//')[0];
@@ -51,7 +57,9 @@ export function checkConsoleUsage(config: PulseConfig): Break[] {
         if (/console\.log\s*\(/.test(codeBeforeComment)) {
           // Skip if annotated with PULSE:OK on this line or the line before
           const prevLine = i > 0 ? lines[i - 1].trim() : '';
-          if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) continue;
+          if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) {
+            continue;
+          }
 
           breaks.push({
             type: 'CONSOLE_IN_PRODUCTION',
@@ -71,7 +79,7 @@ export function checkConsoleUsage(config: PulseConfig): Break[] {
   const TODO_RE = /\/\/\s*(TODO|FIXME|HACK|XXX)\b/i;
 
   for (const dir of allDirs) {
-    const files = walkFiles(dir, ['.ts', '.tsx']).filter(f => !isPulseScript(f));
+    const files = walkFiles(dir, ['.ts', '.tsx']).filter((f) => !isPulseScript(f));
 
     for (const file of files) {
       let content: string;

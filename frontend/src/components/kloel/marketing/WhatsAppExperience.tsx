@@ -383,7 +383,9 @@ function ProductCard({
         )}
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: T, marginBottom: 2 }}>
+        <span
+          style={{ display: 'block', fontSize: 13, fontWeight: 600, color: T, marginBottom: 2 }}
+        >
           {product.name}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -889,20 +891,32 @@ function buildEffectiveConnection(params: {
 }
 
 function resolveStatusLabel(status: string, connected: boolean): string {
-  if (connected) return 'Ativo';
-  if (status === 'connection_incomplete') return 'Configuração pendente';
+  if (connected) {
+    return 'Ativo';
+  }
+  if (status === 'connection_incomplete') {
+    return 'Configuração pendente';
+  }
   return 'Desconectado';
 }
 
 function resolveProfileName(pushName: unknown, operator?: string | null): string {
-  if (typeof pushName === 'string' && pushName.trim()) return pushName;
-  if (typeof operator === 'string' && operator.trim()) return operator;
+  if (typeof pushName === 'string' && pushName.trim()) {
+    return pushName;
+  }
+  if (typeof operator === 'string' && operator.trim()) {
+    return operator;
+  }
   return 'Aguardando perfil';
 }
 
 function resolveConnectedPhone(phoneNumber: unknown, phoneNumberId: unknown): string {
-  if (typeof phoneNumber === 'string' && phoneNumber.trim()) return phoneNumber;
-  if (typeof phoneNumberId === 'string' && phoneNumberId.trim()) return phoneNumberId;
+  if (typeof phoneNumber === 'string' && phoneNumber.trim()) {
+    return phoneNumber;
+  }
+  if (typeof phoneNumberId === 'string' && phoneNumberId.trim()) {
+    return phoneNumberId;
+  }
   return 'Aguardando número';
 }
 
@@ -1514,7 +1528,9 @@ export default function WhatsAppExperience({
 
   const toggleProduct = (id: string) => {
     const product = productMap.get(id);
-    if (!product) return;
+    if (!product) {
+      return;
+    }
 
     setDraft((current) => ({
       ...current,

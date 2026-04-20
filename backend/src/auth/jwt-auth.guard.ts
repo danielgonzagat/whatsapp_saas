@@ -29,13 +29,17 @@ export class JwtAuthGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    if (this.isPublicRoute(context)) return true;
+    if (this.isPublicRoute(context)) {
+      return true;
+    }
 
     const request = context.switchToHttp().getRequest<JwtRequestLike>();
     const optional = isAuthOptionalInNonProd();
     const token = extractJwtToken(request);
 
-    if (!token) return this.handleMissingToken(request, optional);
+    if (!token) {
+      return this.handleMissingToken(request, optional);
+    }
     return this.verifyToken(request, token, optional);
   }
 

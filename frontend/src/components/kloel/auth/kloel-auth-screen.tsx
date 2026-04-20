@@ -50,8 +50,12 @@ function useGoogleSignIn(
 
   // ── Load Google Identity Services SDK ──
   useEffect(() => {
-    if (disabled) return;
-    if (!clientId) return;
+    if (disabled) {
+      return;
+    }
+    if (!clientId) {
+      return;
+    }
     if (window.google?.accounts?.id) {
       setSdkLoaded(true);
       return;
@@ -63,7 +67,9 @@ function useGoogleSignIn(
 
     if (existing) {
       existing.addEventListener('load', onLoad);
-      if (window.google?.accounts?.id) setSdkLoaded(true);
+      if (window.google?.accounts?.id) {
+        setSdkLoaded(true);
+      }
       return () => existing.removeEventListener('load', onLoad);
     }
 
@@ -79,11 +85,19 @@ function useGoogleSignIn(
 
   // ── Initialize SDK + render hidden Google button ──
   useEffect(() => {
-    if (disabled) return;
-    if (!sdkLoaded || !clientId || !buttonRef.current) return;
+    if (disabled) {
+      return;
+    }
+    if (!sdkLoaded || !clientId || !buttonRef.current) {
+      return;
+    }
     const g = window.google;
-    if (!g?.accounts?.id) return;
-    if (initDone.current) return;
+    if (!g?.accounts?.id) {
+      return;
+    }
+    if (initDone.current) {
+      return;
+    }
 
     g.accounts.id.initialize({
       client_id: clientId,
@@ -92,7 +106,9 @@ function useGoogleSignIn(
       cancel_on_tap_outside: true,
       callback: async (response: { credential?: string }) => {
         const cred = response.credential?.trim();
-        if (cred) await cbRef.current(cred);
+        if (cred) {
+          await cbRef.current(cred);
+        }
       },
     });
 
@@ -208,12 +224,16 @@ function AuthManifestTyping() {
     const typePhrase = (source: string) => {
       let index = 0;
       const step = () => {
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         index += 1;
         setText(source.slice(0, index));
         if (index >= source.length) {
           schedule(() => {
-            if (!alive) return;
+            if (!alive) {
+              return;
+            }
             setText('');
             typePhrase(source);
           }, 8000);
@@ -486,19 +506,27 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [forgotSent, setForgotSent] = useState(false);
 
   const shouldBypassExistingSessionRedirect = useCallback(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') {
+      return false;
+    }
     return new URLSearchParams(window.location.search).get('forceAuth') === '1';
   }, []);
 
   const resolveNextPath = useCallback((fallbackPath = '/') => {
-    if (typeof window === 'undefined') return fallbackPath;
+    if (typeof window === 'undefined') {
+      return fallbackPath;
+    }
     return sanitizeNextPath(new URLSearchParams(window.location.search).get('next'), fallbackPath);
   }, []);
 
   const redirectToApp = useCallback(
     (fallbackPath = '/') => {
-      if (typeof window === 'undefined') return;
-      if (redirectingRef.current) return;
+      if (typeof window === 'undefined') {
+        return;
+      }
+      if (redirectingRef.current) {
+        return;
+      }
       redirectingRef.current = true;
       const nextPath = resolveNextPath(fallbackPath);
       const destination = new URL(buildAppUrl(nextPath, window.location.host));

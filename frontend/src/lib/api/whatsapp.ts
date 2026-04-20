@@ -42,7 +42,9 @@ async function whatsappApiRequest<T = unknown>(
   options?: Parameters<typeof apiFetch>[1],
 ): Promise<T> {
   const res = await apiFetch<T>(path, options);
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
+  if (res.error) {
+    throw createWhatsAppApiError(res.error, res.status);
+  }
   return res.data as T;
 }
 
@@ -63,13 +65,17 @@ function readWhatsAppStatusLabel(data: Record<string, unknown> | undefined): str
 }
 
 function isConnectedWhatsAppStatus(data: Record<string, unknown> | undefined): boolean {
-  if (data?.connected === true) return true;
+  if (data?.connected === true) {
+    return true;
+  }
   return CONNECTED_WHATSAPP_STATUS_LABELS.has(readWhatsAppStatusLabel(data));
 }
 
 function normalizeWsBase(value: string | undefined): string {
   const raw = String(value || '').trim();
-  if (!raw) return '';
+  if (!raw) {
+    return '';
+  }
 
   try {
     const explicit = A_Z_A_Z__A_Z_A_Z_D_RE.test(raw)
@@ -79,8 +85,12 @@ function normalizeWsBase(value: string | undefined): string {
             typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'
           }//${raw.replace(PATTERN_RE, '')}`,
         );
-    if (explicit.protocol === 'http:') explicit.protocol = 'ws:';
-    if (explicit.protocol === 'https:') explicit.protocol = 'wss:';
+    if (explicit.protocol === 'http:') {
+      explicit.protocol = 'ws:';
+    }
+    if (explicit.protocol === 'https:') {
+      explicit.protocol = 'wss:';
+    }
     return explicit.toString().replace(PATTERN_RE_2, '');
   } catch {
     return '';
@@ -89,7 +99,9 @@ function normalizeWsBase(value: string | undefined): string {
 
 export function getWhatsAppScreencastWsBase(): string {
   const explicit = normalizeWsBase(process.env.NEXT_PUBLIC_SCREENCAST_WS_URL);
-  if (explicit) return explicit;
+  if (explicit) {
+    return explicit;
+  }
 
   if (typeof window !== 'undefined') {
     console.warn('[Kloel] NEXT_PUBLIC_SCREENCAST_WS_URL not set — screencast disabled');
@@ -145,8 +157,12 @@ interface WhatsAppStatusRaw {
 }
 
 function normalizeWhatsAppStatusLabel(rawStatus: string, connected: boolean): string {
-  if (connected) return 'connected';
-  if (rawStatus === 'CONNECTION_INCOMPLETE') return 'connection_incomplete';
+  if (connected) {
+    return 'connected';
+  }
+  if (rawStatus === 'CONNECTION_INCOMPLETE') {
+    return 'connection_incomplete';
+  }
   return rawStatus ? rawStatus.toLowerCase() : 'disconnected';
 }
 
@@ -191,7 +207,9 @@ function mapWhatsAppStatusPayload(
 
 export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
   const res = await apiFetch<WhatsAppStatusRaw>(`/api/whatsapp-api/session/status`);
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
+  if (res.error) {
+    throw createWhatsAppApiError(res.error, res.status);
+  }
 
   const data = res.data as WhatsAppStatusRaw | undefined;
   const connected = isConnectedWhatsAppStatus(data as Record<string, unknown>);
@@ -207,7 +225,9 @@ export async function initiateWhatsAppConnection(
   const res = await apiFetch<Record<string, unknown>>(`/api/whatsapp-api/session/start`, {
     method: 'POST',
   });
-  if (res.error) throw createWhatsAppApiError(res.error, res.status);
+  if (res.error) {
+    throw createWhatsAppApiError(res.error, res.status);
+  }
   invalidateWhatsApp();
 
   interface SessionStartData {
@@ -472,10 +492,18 @@ export async function getWhatsAppCatalogContacts(
   params?: { days?: number; page?: number; limit?: number; onlyCataloged?: boolean },
 ): Promise<{ contacts: WhatsAppCatalogContact[]; total: number }> {
   const qs = new URLSearchParams();
-  if (params?.days) qs.set('days', String(params.days));
-  if (params?.page) qs.set('page', String(params.page));
-  if (params?.limit) qs.set('limit', String(params.limit));
-  if (params?.onlyCataloged !== undefined) qs.set('onlyCataloged', String(params.onlyCataloged));
+  if (params?.days) {
+    qs.set('days', String(params.days));
+  }
+  if (params?.page) {
+    qs.set('page', String(params.page));
+  }
+  if (params?.limit) {
+    qs.set('limit', String(params.limit));
+  }
+  if (params?.onlyCataloged !== undefined) {
+    qs.set('onlyCataloged', String(params.onlyCataloged));
+  }
   const query = qs.toString();
   const data = await whatsappApiRequest<Record<string, unknown>>(
     `/api/whatsapp-api/catalog/contacts${query ? `?${query}` : ''}`,
@@ -488,10 +516,18 @@ export async function getWhatsAppCatalogRanking(
   params?: { days?: number; limit?: number; minLeadScore?: number; excludeBuyers?: boolean },
 ): Promise<{ contacts: WhatsAppCatalogContact[]; total: number }> {
   const qs = new URLSearchParams();
-  if (params?.days) qs.set('days', String(params.days));
-  if (params?.limit) qs.set('limit', String(params.limit));
-  if (params?.minLeadScore !== undefined) qs.set('minLeadScore', String(params.minLeadScore));
-  if (params?.excludeBuyers !== undefined) qs.set('excludeBuyers', String(params.excludeBuyers));
+  if (params?.days) {
+    qs.set('days', String(params.days));
+  }
+  if (params?.limit) {
+    qs.set('limit', String(params.limit));
+  }
+  if (params?.minLeadScore !== undefined) {
+    qs.set('minLeadScore', String(params.minLeadScore));
+  }
+  if (params?.excludeBuyers !== undefined) {
+    qs.set('excludeBuyers', String(params.excludeBuyers));
+  }
   const query = qs.toString();
   const data = await whatsappApiRequest<Record<string, unknown>>(
     `/api/whatsapp-api/catalog/ranking${query}`,
@@ -531,7 +567,9 @@ export interface WhatsappTemplate {
 export async function connectWhatsapp(_workspaceId: string): Promise<unknown> {
   // Uses existing session/status endpoint via proxy
   const res = await apiFetch<unknown>(`/api/whatsapp-api/session/status`);
-  if (res.error) throw new Error('Failed to connect WhatsApp');
+  if (res.error) {
+    throw new Error('Failed to connect WhatsApp');
+  }
   return res.data;
 }
 
@@ -548,7 +586,9 @@ export async function sendWhatsappMessage(params: {
     method: 'POST',
     body: body,
   });
-  if (res.error) throw new Error('Failed to send WhatsApp message');
+  if (res.error) {
+    throw new Error('Failed to send WhatsApp message');
+  }
   return res.data;
 }
 
@@ -566,7 +606,9 @@ export async function sendWhatsappTemplate(params: {
     method: 'POST',
     body: { ...body, type: 'template' },
   });
-  if (res.error) throw new Error('Templates require WhatsApp Business API');
+  if (res.error) {
+    throw new Error('Templates require WhatsApp Business API');
+  }
   return res.data;
 }
 
@@ -581,7 +623,9 @@ export async function whatsappOptIn(workspaceId: string, phone: string): Promise
     method: 'POST',
     body: { phones: [phone] },
   });
-  if (res.error) throw new Error('Failed to opt-in');
+  if (res.error) {
+    throw new Error('Failed to opt-in');
+  }
   return res.data;
 }
 
@@ -590,7 +634,9 @@ export async function whatsappOptOut(workspaceId: string, phone: string): Promis
     method: 'POST',
     body: { phones: [phone] },
   });
-  if (res.error) throw new Error('Failed to opt-out');
+  if (res.error) {
+    throw new Error('Failed to opt-out');
+  }
   return res.data;
 }
 
@@ -598,7 +644,9 @@ export async function whatsappOptStatus(workspaceId: string, phone: string): Pro
   const res = await apiFetch<unknown>(
     `/whatsapp/${workspaceId}/opt-status/${encodeURIComponent(phone)}`,
   );
-  if (res.error) throw new Error('Failed to get opt status');
+  if (res.error) {
+    throw new Error('Failed to get opt status');
+  }
   return res.data;
 }
 
@@ -616,7 +664,9 @@ export async function simulateWhatsAppConversation(
       body: { customerMessage, customerPhone },
     },
   );
-  if (res.error) throw new Error(res.error || 'Failed to simulate conversation');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to simulate conversation');
+  }
   return res.data as { customerPhone: string; kloelResponse: unknown };
 }
 
@@ -626,6 +676,8 @@ export async function getWhatsAppBrainStatus(): Promise<{
   version: string;
 }> {
   const res = await apiFetch<unknown>('/kloel/whatsapp/status');
-  if (res.error) throw new Error(res.error || 'Failed to get brain status');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to get brain status');
+  }
   return res.data as { status: string; service: string; version: string };
 }

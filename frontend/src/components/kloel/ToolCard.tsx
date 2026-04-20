@@ -116,7 +116,11 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
   }
 
   return (
-    <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={sharedStyle}>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={sharedStyle}
+    >
       {content}
     </div>
   );

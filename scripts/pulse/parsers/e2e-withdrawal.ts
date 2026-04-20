@@ -33,7 +33,9 @@ import {
 
 export async function checkE2eWithdrawal(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
 

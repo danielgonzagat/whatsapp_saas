@@ -1,6 +1,14 @@
 import type {
-  APICall, BackendRoute, PrismaModel, ServiceTrace,
-  ProxyRoute, UIElement, FacadeEntry, Break, PulseHealth, PulseConfig,
+  APICall,
+  BackendRoute,
+  PrismaModel,
+  ServiceTrace,
+  ProxyRoute,
+  UIElement,
+  FacadeEntry,
+  Break,
+  PulseHealth,
+  PulseConfig,
 } from './types';
 import { buildApiModuleMap } from './parsers/api-parser';
 
@@ -14,11 +22,16 @@ export function normalizeForMatch(p: string): string {
 
 export type RouteKey = string; // "GET:/campaigns/:_"
 
-export function buildRouteLookup(routes: BackendRoute[], globalPrefix: string): Map<RouteKey, BackendRoute> {
+export function buildRouteLookup(
+  routes: BackendRoute[],
+  globalPrefix: string,
+): Map<RouteKey, BackendRoute> {
   const map = new Map<RouteKey, BackendRoute>();
   for (const route of routes) {
     let fullPath = route.fullPath;
-    if (globalPrefix) fullPath = `/${globalPrefix}${fullPath}`.replace(/\/+/g, '/');
+    if (globalPrefix) {
+      fullPath = `/${globalPrefix}${fullPath}`.replace(/\/+/g, '/');
+    }
     const key = `${route.httpMethod}:${normalizeForMatch(fullPath)}`;
     map.set(key, route);
   }
@@ -34,9 +47,10 @@ export function matchApiCallToRoute(
 
   // Resolve proxy routes
   if (call.isProxy) {
-    const proxy = proxyRoutes.find(p =>
-      normalizeForMatch(p.frontendPath) === normalizeForMatch(call.normalizedPath) &&
-      p.httpMethod === call.method
+    const proxy = proxyRoutes.find(
+      (p) =>
+        normalizeForMatch(p.frontendPath) === normalizeForMatch(call.normalizedPath) &&
+        p.httpMethod === call.method,
     );
     if (proxy) {
       targetPath = proxy.backendPath;
@@ -48,14 +62,20 @@ export function matchApiCallToRoute(
 
   const key = `${call.method}:${normalizeForMatch(targetPath)}`;
   const direct = routeLookup.get(key);
-  if (direct) return direct;
+  if (direct) {
+    return direct;
+  }
 
   // Fuzzy match: try without trailing param segments (handles /endpoint vs /endpoint/:id)
   for (const [routeKey, route] of routeLookup) {
     const [rMethod, rPath] = routeKey.split(':');
-    if (rMethod !== call.method) continue;
+    if (rMethod !== call.method) {
+      continue;
+    }
     const normalTarget = normalizeForMatch(targetPath);
-    if (rPath === normalTarget) return route;
+    if (rPath === normalTarget) {
+      return route;
+    }
     // Check if one is a prefix of the other (handles nested routes)
     if (normalTarget.startsWith(rPath + '/') || rPath.startsWith(normalTarget + '/')) {
       return route;
@@ -65,9 +85,7 @@ export function matchApiCallToRoute(
   return null;
 }
 
-export function buildServiceModelMap(
-  traces: ServiceTrace[],
-): Map<string, string[]> {
+export function buildServiceModelMap(traces: ServiceTrace[]): Map<string, string[]> {
   // "serviceName.methodName" -> ["ModelName", ...]
   const map = new Map<string, string[]>();
   for (const trace of traces) {
@@ -88,18 +106,23 @@ export function resolveRouteModels(
 
   for (const svcCall of route.serviceCalls) {
     const [svcProp, methodName] = svcCall.split('.');
-    if (!methodName) continue;
+    if (!methodName) {
+      continue;
+    }
 
     // Try exact match
     const exact = serviceModelMap.get(svcCall);
-    if (exact) { exact.forEach(m => models.add(m)); continue; }
+    if (exact) {
+      exact.forEach((m) => models.add(m));
+      continue;
+    }
 
     // Try fuzzy: match service name (without 'Service' suffix) + method
     for (const trace of allTraces) {
       const shortSvc = trace.serviceName.replace(/Service$/i, '').toLowerCase();
       const shortProp = svcProp.replace(/Service$/i, '').toLowerCase();
       if (shortSvc === shortProp && trace.methodName === methodName) {
-        trace.prismaModels.forEach(m => models.add(m));
+        trace.prismaModels.forEach((m) => models.add(m));
       }
     }
   }
@@ -122,8 +145,14 @@ export interface PulseGraphInput {
 
 export function buildGraph(input: PulseGraphInput): PulseHealth {
   const {
-    uiElements, apiCalls, backendRoutes, prismaModels,
-    serviceTraces, proxyRoutes, facades, globalPrefix,
+    uiElements,
+    apiCalls,
+    backendRoutes,
+    prismaModels,
+    serviceTraces,
+    proxyRoutes,
+    facades,
+    globalPrefix,
   } = input;
 
   const breaks: Break[] = [];
@@ -138,7 +167,9 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   // === API → Backend matching ===
   for (const call of apiCalls) {
     // Skip auth/refresh proxy calls (they're internal Next.js routes)
-    if (call.normalizedPath.startsWith('/api/auth/')) continue;
+    if (call.normalizedPath.startsWith('/api/auth/')) {
+      continue;
+    }
 
     const route = matchApiCallToRoute(call, routeLookup, proxyRoutes);
     if (route) {
@@ -147,14 +178,16 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
 
       // Trace models used by this route
       const models = resolveRouteModels(route, serviceModelMap, serviceTraces);
-      models.forEach(m => usedModels.add(m));
+      models.forEach((m) => usedModels.add(m));
     } else {
       // Check if it's a known proxy route (handled by Next.js, not a break)
       if (call.isProxy) {
-        const proxyExists = proxyRoutes.some(p =>
-          normalizeForMatch(p.frontendPath) === normalizeForMatch(call.normalizedPath)
+        const proxyExists = proxyRoutes.some(
+          (p) => normalizeForMatch(p.frontendPath) === normalizeForMatch(call.normalizedPath),
         );
-        if (proxyExists) continue;
+        if (proxyExists) {
+          continue;
+        }
       }
 
       breaks.push({
@@ -183,10 +216,14 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       // Try all HTTP methods — method detection in object API modules is often wrong
       for (const [routeKey, route] of routeLookup) {
         const rPath = routeKey.substring(routeKey.indexOf(':') + 1);
-        if (rPath === normalTarget || normalTarget.startsWith(rPath + '/') || rPath.startsWith(normalTarget + '/')) {
+        if (
+          rPath === normalTarget ||
+          normalTarget.startsWith(rPath + '/') ||
+          rPath.startsWith(normalTarget + '/')
+        ) {
           consumedRoutes.add(routeKey);
           const models = resolveRouteModels(route, serviceModelMap, serviceTraces);
-          models.forEach(m => usedModels.add(m));
+          models.forEach((m) => usedModels.add(m));
         }
       }
     }
@@ -197,8 +234,11 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
     const key = `${route.httpMethod}:${normalizeForMatch(route.fullPath)}`;
     if (!consumedRoutes.has(key)) {
       // Skip public/webhook/internal/admin/worker routes — not meant for frontend consumption
-      const internalPattern = /webhook|health|cron|internal|^\/diag(\/|$)|^\/ops\/|^\/api\/v1\/|^\/copilot\/|^\/audit$|^\/auth\/send-verification$|incoming$|^\/kloel\/audio\/|^\/kloel\/pdf\/|^\/kloel\/onboarding-legacy\/|^\/kloel\/agent\/.*\/(process|simulate)$|^\/autopilot\/process$|^\/kloel\/upload\/multiple$|^\/kloel\/upload-chat$|^\/audio\/synthesize$|^\/media\/video\/ping$|^\/whatsapp-api\/send\/|^\/kyc\/auto-check$|^\/kyc\/[^/]+\/approve$|^\/whatsapp-api\/cia\/conversations\//i;
-      if (route.isPublic || internalPattern.test(route.fullPath)) continue;
+      const internalPattern =
+        /webhook|health|cron|internal|^\/diag(\/|$)|^\/ops\/|^\/api\/v1\/|^\/copilot\/|^\/audit$|^\/auth\/send-verification$|incoming$|^\/kloel\/audio\/|^\/kloel\/pdf\/|^\/kloel\/onboarding-legacy\/|^\/kloel\/agent\/.*\/(process|simulate)$|^\/autopilot\/process$|^\/kloel\/upload\/multiple$|^\/kloel\/upload-chat$|^\/audio\/synthesize$|^\/media\/video\/ping$|^\/whatsapp-api\/send\/|^\/kyc\/auto-check$|^\/kyc\/[^/]+\/approve$|^\/whatsapp-api\/cia\/conversations\//i;
+      if (route.isPublic || internalPattern.test(route.fullPath)) {
+        continue;
+      }
 
       breaks.push({
         type: 'ROUTE_NO_CALLER',
@@ -213,19 +253,21 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
 
   // === Orphaned Prisma models ===
   for (const model of prismaModels) {
-    if (usedModels.has(model.accessorName)) continue;
+    if (usedModels.has(model.accessorName)) {
+      continue;
+    }
 
     // Check if ANY service uses this model
-    const usedInService = serviceTraces.some(t =>
-      t.prismaModels.includes(model.accessorName)
-    );
+    const usedInService = serviceTraces.some((t) => t.prismaModels.includes(model.accessorName));
     if (usedInService) {
       usedModels.add(model.accessorName);
       continue;
     }
 
     // Skip common infrastructure models
-    if (/^(Workspace|Agent|RefreshToken|PasswordResetToken|DeviceToken)$/.test(model.name)) continue;
+    if (/^(Workspace|Agent|RefreshToken|PasswordResetToken|DeviceToken)$/.test(model.name)) {
+      continue;
+    }
 
     breaks.push({
       type: 'MODEL_ORPHAN',
@@ -233,7 +275,10 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       file: `backend/prisma/schema.prisma`,
       line: model.line,
       description: `Model ${model.name} has no service or controller accessing it`,
-      detail: `Fields: ${model.fields.slice(0, 5).map(f => f.name).join(', ')}${model.fields.length > 5 ? '...' : ''}`,
+      detail: `Fields: ${model.fields
+        .slice(0, 5)
+        .map((f) => f.name)
+        .join(', ')}${model.fields.length > 5 ? '...' : ''}`,
     });
   }
 
@@ -300,30 +345,60 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   const coreNodes = apiCalls.length + backendRoutes.length + prismaModels.length;
   const extendedNodes = (input.extendedBreaks?.length || 0) + coreNodes;
   const totalNodes = Math.max(coreNodes, extendedNodes);
-  const critBreaks = breaks.filter(b => b.severity === 'critical').length;
-  const highBreaks = breaks.filter(b => b.severity === 'high').length;
-  const medBreaks = breaks.filter(b => b.severity === 'medium').length;
-  const lowBreaks = breaks.filter(b => b.severity === 'low').length;
+  const critBreaks = breaks.filter((b) => b.severity === 'critical').length;
+  const highBreaks = breaks.filter((b) => b.severity === 'high').length;
+  const medBreaks = breaks.filter((b) => b.severity === 'medium').length;
+  const lowBreaks = breaks.filter((b) => b.severity === 'low').length;
   // Weighted penalty: critical issues tank the score, low issues barely affect it
   const weightedPenalty = critBreaks * 3 + highBreaks * 1.5 + medBreaks * 0.5 + lowBreaks * 0.1;
-  const penalty = totalNodes > 0
-    ? (weightedPenalty / totalNodes) * 100
-    : 0;
+  const penalty = totalNodes > 0 ? (weightedPenalty / totalNodes) * 100 : 0;
   const score = Math.max(0, Math.min(100, Math.round(100 - penalty)));
 
   // Stats
-  const uiDeadHandlers = uiElements.filter(e => e.handlerType === 'dead' || e.handlerType === 'noop').length;
-  const apiNoRoute = breaks.filter(b => b.type === 'API_NO_ROUTE').length;
-  const backendEmpty = breaks.filter(b => b.type === 'ROUTE_EMPTY').length;
-  const modelOrphans = breaks.filter(b => b.type === 'MODEL_ORPHAN').length;
-  const facadeBreaks = breaks.filter(b => b.type === 'FACADE');
-  const securityTypes = new Set(['ROUTE_NO_AUTH', 'HARDCODED_SECRET', 'SQL_INJECTION_RISK', 'CSRF_UNPROTECTED', 'XSS_DANGEROUS_HTML', 'EVAL_USAGE', 'COOKIE_NOT_HTTPONLY', 'SENSITIVE_DATA_IN_LOG', 'INTERNAL_ERROR_EXPOSED', 'MISSING_WORKSPACE_FILTER']);
-  const dataSafetyTypes = new Set(['FINANCIAL_NO_TRANSACTION', 'DANGEROUS_DELETE', 'TOFIX_WITHOUT_PARSE', 'DIVISION_BY_ZERO_RISK', 'JSON_PARSE_UNSAFE', 'EMPTY_CATCH', 'FINANCIAL_ERROR_SWALLOWED']);
-  const securityIssues = breaks.filter(b => securityTypes.has(b.type)).length;
-  const dataSafetyIssues = breaks.filter(b => dataSafetyTypes.has(b.type)).length;
-  const qualityIssues = breaks.filter(b => !securityTypes.has(b.type) && !dataSafetyTypes.has(b.type) && b.type !== 'API_NO_ROUTE' && b.type !== 'ROUTE_NO_CALLER' && b.type !== 'ROUTE_EMPTY' && b.type !== 'MODEL_ORPHAN' && b.type !== 'UI_DEAD_HANDLER' && b.type !== 'FACADE' && b.type !== 'PROXY_NO_UPSTREAM').length;
-  const unavailableChecks = breaks.filter(b => b.type === 'CHECK_UNAVAILABLE').length;
-  const unknownSurfaces = breaks.filter(b => b.type === 'UNKNOWN_SURFACE').length;
+  const uiDeadHandlers = uiElements.filter(
+    (e) => e.handlerType === 'dead' || e.handlerType === 'noop',
+  ).length;
+  const apiNoRoute = breaks.filter((b) => b.type === 'API_NO_ROUTE').length;
+  const backendEmpty = breaks.filter((b) => b.type === 'ROUTE_EMPTY').length;
+  const modelOrphans = breaks.filter((b) => b.type === 'MODEL_ORPHAN').length;
+  const facadeBreaks = breaks.filter((b) => b.type === 'FACADE');
+  const securityTypes = new Set([
+    'ROUTE_NO_AUTH',
+    'HARDCODED_SECRET',
+    'SQL_INJECTION_RISK',
+    'CSRF_UNPROTECTED',
+    'XSS_DANGEROUS_HTML',
+    'EVAL_USAGE',
+    'COOKIE_NOT_HTTPONLY',
+    'SENSITIVE_DATA_IN_LOG',
+    'INTERNAL_ERROR_EXPOSED',
+    'MISSING_WORKSPACE_FILTER',
+  ]);
+  const dataSafetyTypes = new Set([
+    'FINANCIAL_NO_TRANSACTION',
+    'DANGEROUS_DELETE',
+    'TOFIX_WITHOUT_PARSE',
+    'DIVISION_BY_ZERO_RISK',
+    'JSON_PARSE_UNSAFE',
+    'EMPTY_CATCH',
+    'FINANCIAL_ERROR_SWALLOWED',
+  ]);
+  const securityIssues = breaks.filter((b) => securityTypes.has(b.type)).length;
+  const dataSafetyIssues = breaks.filter((b) => dataSafetyTypes.has(b.type)).length;
+  const qualityIssues = breaks.filter(
+    (b) =>
+      !securityTypes.has(b.type) &&
+      !dataSafetyTypes.has(b.type) &&
+      b.type !== 'API_NO_ROUTE' &&
+      b.type !== 'ROUTE_NO_CALLER' &&
+      b.type !== 'ROUTE_EMPTY' &&
+      b.type !== 'MODEL_ORPHAN' &&
+      b.type !== 'UI_DEAD_HANDLER' &&
+      b.type !== 'FACADE' &&
+      b.type !== 'PROXY_NO_UPSTREAM',
+  ).length;
+  const unavailableChecks = breaks.filter((b) => b.type === 'CHECK_UNAVAILABLE').length;
+  const unknownSurfaces = breaks.filter((b) => b.type === 'UNKNOWN_SURFACE').length;
 
   return {
     score,
@@ -343,12 +418,12 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       modelOrphans,
       facades: facadeBreaks.length,
       facadesBySeverity: {
-        high: facadeBreaks.filter(f => f.severity === 'high').length,
-        medium: facadeBreaks.filter(f => f.severity === 'medium').length,
-        low: facadeBreaks.filter(f => f.severity === 'low').length,
+        high: facadeBreaks.filter((f) => f.severity === 'high').length,
+        medium: facadeBreaks.filter((f) => f.severity === 'medium').length,
+        low: facadeBreaks.filter((f) => f.severity === 'low').length,
       },
       proxyRoutes: proxyRoutes.length,
-      proxyNoUpstream: breaks.filter(b => b.type === 'PROXY_NO_UPSTREAM').length,
+      proxyNoUpstream: breaks.filter((b) => b.type === 'PROXY_NO_UPSTREAM').length,
       securityIssues,
       dataSafetyIssues,
       qualityIssues,

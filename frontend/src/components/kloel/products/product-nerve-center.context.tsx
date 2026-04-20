@@ -94,6 +94,8 @@ export function ProductNerveCenterProvider({
 
 export function useNerveCenterContext(): ProductNerveCenterContextValue {
   const ctx = useContext(ProductNerveCenterContext);
-  if (!ctx) throw new Error('useNerveCenterContext must be used inside ProductNerveCenterProvider');
+  if (!ctx) {
+    throw new Error('useNerveCenterContext must be used inside ProductNerveCenterProvider');
+  }
   return ctx;
 }

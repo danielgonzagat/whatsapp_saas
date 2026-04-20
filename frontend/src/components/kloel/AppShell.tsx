@@ -122,18 +122,30 @@ function resolveRoute(view: string, subView?: string): string {
       .replace(U0300__U036F_RE, '')
       .replace(S_RE, '-');
     const subKey = `${view}-${slug}`;
-    if (SUB_ROUTES[subKey]) return SUB_ROUTES[subKey];
+    if (SUB_ROUTES[subKey]) {
+      return SUB_ROUTES[subKey];
+    }
     // Fallback: try the raw subView as key
-    if (SUB_ROUTES[subView]) return SUB_ROUTES[subView];
+    if (SUB_ROUTES[subView]) {
+      return SUB_ROUTES[subView];
+    }
   }
   return VIEW_ROUTES[view] || '/';
 }
 
 function resolveActiveView(pathname: string): string {
-  if (pathname === KLOEL_CHAT_ROUTE) return '';
-  if (pathname === '/dashboard') return 'home';
-  if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
-  if (pathname.startsWith('/sites')) return 'sites';
+  if (pathname === KLOEL_CHAT_ROUTE) {
+    return '';
+  }
+  if (pathname === '/dashboard') {
+    return 'home';
+  }
+  if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) {
+    return 'produtos';
+  }
+  if (pathname.startsWith('/sites')) {
+    return 'sites';
+  }
   if (
     pathname.startsWith('/marketing') ||
     pathname.startsWith('/campaigns') ||
@@ -141,29 +153,39 @@ function resolveActiveView(pathname: string): string {
     pathname.startsWith('/funnels') ||
     pathname.startsWith('/whatsapp') ||
     pathname.startsWith('/webinarios')
-  )
+  ) {
     return 'marketing';
-  if (pathname.startsWith('/canvas')) return 'canvas';
+  }
+  if (pathname.startsWith('/canvas')) {
+    return 'canvas';
+  }
   if (
     pathname.startsWith('/leads') ||
     pathname.startsWith('/vendas') ||
     pathname.startsWith('/sales')
-  )
+  ) {
     return 'vendas';
+  }
   if (
     pathname.startsWith('/carteira') ||
     pathname.startsWith('/billing') ||
     pathname.startsWith('/payments')
-  )
+  ) {
     return 'carteira';
+  }
   if (
     pathname.startsWith('/analytics') ||
     pathname.startsWith('/metrics') ||
     pathname.startsWith('/relatorio')
-  )
+  ) {
     return 'relatorio';
-  if (pathname.startsWith('/parcerias')) return 'parcerias';
-  if (pathname.startsWith('/anuncios')) return 'anuncios';
+  }
+  if (pathname.startsWith('/parcerias')) {
+    return 'parcerias';
+  }
+  if (pathname.startsWith('/anuncios')) {
+    return 'anuncios';
+  }
   if (
     pathname.startsWith('/ferramentas') ||
     pathname.startsWith('/autopilot') ||
@@ -173,8 +195,9 @@ function resolveActiveView(pathname: string): string {
     pathname.startsWith('/video') ||
     pathname.startsWith('/cia') ||
     pathname.startsWith('/scrapers')
-  )
+  ) {
     return 'ferramentas';
+  }
   return '';
 }
 
@@ -184,8 +207,12 @@ function routeMatchesCurrent(
   searchParams: ReturnType<typeof useSearchParams>,
 ): boolean {
   const [routePath, routeQuery] = route.split('?');
-  if (routePath !== pathname) return false;
-  if (!routeQuery) return true;
+  if (routePath !== pathname) {
+    return false;
+  }
+  if (!routeQuery) {
+    return true;
+  }
 
   const expectedParams = new URLSearchParams(routeQuery);
   for (const [key, value] of expectedParams.entries()) {
@@ -453,7 +480,9 @@ export function AppShell({ children }: AppShellProps) {
 
   useEffect(
     () => () => {
-      if (newChatTimer.current) clearTimeout(newChatTimer.current);
+      if (newChatTimer.current) {
+        clearTimeout(newChatTimer.current);
+      }
     },
     [],
   );
@@ -531,7 +560,9 @@ export function AppShell({ children }: AppShellProps) {
       startTransition(() => {
         router.push(KLOEL_CHAT_ROUTE);
       });
-      if (newChatTimer.current) clearTimeout(newChatTimer.current);
+      if (newChatTimer.current) {
+        clearTimeout(newChatTimer.current);
+      }
       newChatTimer.current = setTimeout(
         () => window.dispatchEvent(new Event('kloel:new-chat')),
         500,

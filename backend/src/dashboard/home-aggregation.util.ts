@@ -53,7 +53,9 @@ function isValidDate(value: Date | null | undefined): value is Date {
 }
 
 function parseInputDate(raw: string | undefined, fallback: Date) {
-  if (!raw) return fallback;
+  if (!raw) {
+    return fallback;
+  }
   const isoDateMatch = raw.trim().match(D_4_____D_2_____D_2_RE);
   if (isoDateMatch) {
     const [, year, month, day] = isoDateMatch;
@@ -234,7 +236,9 @@ export function sumByBuckets<T>(
 
   rows.forEach((row) => {
     const date = getDate(row);
-    if (!isValidDate(date)) return;
+    if (!isValidDate(date)) {
+      return;
+    }
     const value = Number(getValue(row) || 0);
     const bucketIndex = buckets.findIndex(
       (bucket) =>
@@ -272,15 +276,21 @@ function normalizeResponseTimeDirection(
   raw: string | null | undefined,
 ): NormalizedResponseTimeRow['direction'] {
   const normalized = String(raw || '').toUpperCase();
-  if (normalized === 'INBOUND') return 'INBOUND';
-  if (normalized === 'OUTBOUND') return 'OUTBOUND';
+  if (normalized === 'INBOUND') {
+    return 'INBOUND';
+  }
+  if (normalized === 'OUTBOUND') {
+    return 'OUTBOUND';
+  }
   return 'OTHER';
 }
 
 function normalizeResponseTimeRow(row: ResponseTimeRow): NormalizedResponseTimeRow | null {
   const conversationId = String(row.conversationId || '').trim();
   const createdAt = row.createdAt;
-  if (!conversationId || !isValidDate(createdAt)) return null;
+  if (!conversationId || !isValidDate(createdAt)) {
+    return null;
+  }
   return { conversationId, direction: normalizeResponseTimeDirection(row.direction), createdAt };
 }
 
@@ -290,11 +300,15 @@ function measureOutboundResponseWindow(
   outboundAt: Date,
 ): number | null {
   const inboundAt = pendingInbound.get(conversationId);
-  if (!inboundAt) return null;
+  if (!inboundAt) {
+    return null;
+  }
 
   pendingInbound.delete(conversationId);
   const diffMs = outboundAt.getTime() - inboundAt.getTime();
-  if (diffMs < 0 || diffMs > 7 * DAY_MS) return null;
+  if (diffMs < 0 || diffMs > 7 * DAY_MS) {
+    return null;
+  }
   return diffMs;
 }
 
@@ -305,17 +319,23 @@ export function computeAverageResponseTimeSeconds(rows: ResponseTimeRow[]) {
 
   for (const rawRow of rows) {
     const row = normalizeResponseTimeRow(rawRow);
-    if (!row) continue;
+    if (!row) {
+      continue;
+    }
 
     if (row.direction === 'INBOUND') {
       pendingInbound.set(row.conversationId, row.createdAt);
       continue;
     }
 
-    if (row.direction !== 'OUTBOUND') continue;
+    if (row.direction !== 'OUTBOUND') {
+      continue;
+    }
 
     const diffMs = measureOutboundResponseWindow(pendingInbound, row.conversationId, row.createdAt);
-    if (diffMs === null) continue;
+    if (diffMs === null) {
+      continue;
+    }
 
     diffMsTotal += diffMs;
     pairs += 1;

@@ -117,7 +117,9 @@ export class AdminTransactionsService {
 
   private async runGatewayRefund(order: OrderForOperation) {
     const externalId = String(order.payment?.externalId || '').trim();
-    if (!externalId) return;
+    if (!externalId) {
+      return;
+    }
 
     const gateway = this.normalizeGateway(order.payment?.gateway);
     if (gateway === 'stripe') {

@@ -109,20 +109,28 @@ function arePrioritiesMonotonic(actions: CiaDecisionBatch['actions']): boolean {
 }
 
 function isPaymentCovered(state: CiaWorkspaceState, batch: CiaDecisionBatch): boolean {
-  if (state.clusters.PAYMENT.length === 0) return true;
+  if (state.clusters.PAYMENT.length === 0) {
+    return true;
+  }
   return batch.actions.some((action) => action.type === 'PAYMENT_RECOVERY');
 }
 
 function isHotCovered(state: CiaWorkspaceState, batch: CiaDecisionBatch): boolean {
-  if (state.clusters.HOT.length === 0) return true;
+  if (state.clusters.HOT.length === 0) {
+    return true;
+  }
   return batch.actions.some(
     (action) => action.cluster === 'HOT' || HOT_COVER_TYPES.has(action.type),
   );
 }
 
 const isExplicitOutcomeNarrated = (batch: CiaDecisionBatch): boolean => {
-  if (typeof batch.summary !== 'string' || batch.summary.trim().length === 0) return false;
-  if (batch.actions.length > 0) return true;
+  if (typeof batch.summary !== 'string' || batch.summary.trim().length === 0) {
+    return false;
+  }
+  if (batch.actions.length > 0) {
+    return true;
+  }
   return batch.summary.toLowerCase().includes('não encontrei');
 };
 
@@ -192,8 +200,12 @@ function classifyDecisionGate(
   selected: boolean,
   governor: CiaGovernorVerdict,
 ): { disposition: CiaExhaustionDisposition; gate: CiaExhaustionGate } {
-  if (selected) return { disposition: 'DISPATCHED_FOR_EXECUTION', gate: 'NONE' };
-  if (governor === 'WAIT') return { disposition: 'DEFERRED_BY_RULE', gate: 'TIMING' };
+  if (selected) {
+    return { disposition: 'DISPATCHED_FOR_EXECUTION', gate: 'NONE' };
+  }
+  if (governor === 'WAIT') {
+    return { disposition: 'DEFERRED_BY_RULE', gate: 'TIMING' };
+  }
   if (governor === 'ESCALATE') {
     return { disposition: 'DEFERRED_BY_CYCLE_BUDGET', gate: 'HUMAN_REVIEW' };
   }
@@ -342,13 +354,17 @@ function collectGuaranteeFailures(report: CiaGuaranteeReport): string[] {
 }
 
 export function assertCiaGuarantees(report: CiaGuaranteeReport): CiaGuaranteeReport {
-  if (report.guaranteed) return report;
+  if (report.guaranteed) {
+    return report;
+  }
   const failed = collectGuaranteeFailures(report);
   throw new Error(`cia_contract_violation:${failed.join(',')}`);
 }
 
 export function assertCiaExhaustion(report: CiaExhaustionReport): CiaExhaustionReport {
-  if (report.exhaustive) return report;
+  if (report.exhaustive) {
+    return report;
+  }
 
   const failed = [
     report.silentCount === 0 ? null : 'silent_candidates',

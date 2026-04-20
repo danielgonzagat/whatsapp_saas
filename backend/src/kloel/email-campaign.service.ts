@@ -17,9 +17,15 @@ export class EmailCampaignService {
   constructor() {}
 
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
-    if (process.env.RESEND_API_KEY) return 'resend';
-    if (process.env.SENDGRID_API_KEY) return 'sendgrid';
-    if (process.env.SMTP_HOST) return 'smtp';
+    if (process.env.RESEND_API_KEY) {
+      return 'resend';
+    }
+    if (process.env.SENDGRID_API_KEY) {
+      return 'sendgrid';
+    }
+    if (process.env.SMTP_HOST) {
+      return 'smtp';
+    }
     return 'log';
   }
 
@@ -101,7 +107,9 @@ export class EmailCampaignService {
             }),
             signal: AbortSignal.timeout(30000),
           });
-          if (!res.ok) throw new Error(`Resend: ${await res.text()}`);
+          if (!res.ok) {
+            throw new Error(`Resend: ${await res.text()}`);
+          }
           return true;
         }
         case 'sendgrid': {
@@ -120,7 +128,9 @@ export class EmailCampaignService {
             }),
             signal: AbortSignal.timeout(30000),
           });
-          if (!res.ok && res.status !== 202) throw new Error(`SendGrid: ${res.status}`);
+          if (!res.ok && res.status !== 202) {
+            throw new Error(`SendGrid: ${res.status}`);
+          }
           return true;
         }
         case 'smtp':

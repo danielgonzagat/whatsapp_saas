@@ -14,7 +14,9 @@ interface WorkspaceSettings {
 
 function safeTimezone(value?: string | null): string {
   const candidate = String(value || '').trim();
-  if (!candidate) return DEFAULT_TIMEZONE;
+  if (!candidate) {
+    return DEFAULT_TIMEZONE;
+  }
 
   try {
     new Intl.DateTimeFormat('en-US', {

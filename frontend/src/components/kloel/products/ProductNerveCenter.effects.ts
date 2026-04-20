@@ -35,7 +35,9 @@ export interface ProductSyncSource {
 }
 
 function toTagsString(tags: unknown): string {
-  if (Array.isArray(tags)) return tags.join(', ');
+  if (Array.isArray(tags)) {
+    return tags.join(', ');
+  }
   return typeof tags === 'string' ? tags : '';
 }
 
@@ -90,8 +92,12 @@ export function deriveDefaultShippingMode(
   hasShippingPrice: boolean,
 ): string {
   const explicit = planCheckoutConfig.shippingMode;
-  if (explicit) return String(explicit);
-  if (hasFreeShipFlag) return 'FREE';
+  if (explicit) {
+    return String(explicit);
+  }
+  if (hasFreeShipFlag) {
+    return 'FREE';
+  }
   return hasShippingPrice ? 'FIXED' : 'FREE';
 }
 
@@ -110,7 +116,8 @@ export function normalizeCommissionPercent(
   planCheckoutConfig: PlanCheckoutConfig,
   fallbackProductCommission: unknown,
 ): string {
-  const value = planCheckoutConfig.affiliateCustomCommissionPercent ?? fallbackProductCommission ?? 30;
+  const value =
+    planCheckoutConfig.affiliateCustomCommissionPercent ?? fallbackProductCommission ?? 30;
   return String(value).replace('.', ',');
 }
 
@@ -141,12 +148,7 @@ function resolveBumpImage(
   plan: CheckoutBumpPlan,
   product: CheckoutBumpProduct,
 ): string | undefined {
-  return (
-    plan.checkoutConfig?.productImage ||
-    product.imageUrl ||
-    product.images?.[0] ||
-    undefined
-  );
+  return plan.checkoutConfig?.productImage || product.imageUrl || product.images?.[0] || undefined;
 }
 
 export function buildBumpPayload(

@@ -14,7 +14,9 @@ const sendJson = (res: http.ServerResponse, status: number, data: unknown): void
 };
 
 const extractBearerToken = (auth: MaybeHeader): MaybeString => {
-  if (typeof auth !== 'string') return undefined;
+  if (typeof auth !== 'string') {
+    return undefined;
+  }
   return auth.startsWith('Bearer ') ? auth.slice(7) : undefined;
 };
 
@@ -33,8 +35,12 @@ const matchesToken = (expected: string | undefined, provided: MaybeString): bool
 
 const isAuthorized = (req: http.IncomingMessage): boolean => {
   const headerToken = resolveRequestToken(req);
-  if (matchesToken(internalApiKey, headerToken)) return true;
-  if (matchesToken(metricsToken, headerToken)) return true;
+  if (matchesToken(internalApiKey, headerToken)) {
+    return true;
+  }
+  if (matchesToken(metricsToken, headerToken)) {
+    return true;
+  }
   return !internalApiKey && !metricsToken;
 };
 

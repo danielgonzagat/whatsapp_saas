@@ -238,10 +238,14 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
             ? configRecord.testimonials
                 .map<PublicCheckoutTestimonial | null>((entry) => {
                   const testimonial = asRecord(entry);
-                  if (!testimonial) return null;
+                  if (!testimonial) {
+                    return null;
+                  }
                   const name = asString(testimonial.name).trim();
                   const text = asString(testimonial.text).trim();
-                  if (!name || !text) return null;
+                  if (!name || !text) {
+                    return null;
+                  }
                   return {
                     name,
                     text,
@@ -280,10 +284,14 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
       ? record.orderBumps
           .map<PublicCheckoutOrderBump | null>((entry) => {
             const bump = asRecord(entry);
-            if (!bump) return null;
+            if (!bump) {
+              return null;
+            }
             const id = asString(bump.id).trim();
             const title = asString(bump.title).trim();
-            if (!id || !title) return null;
+            if (!id || !title) {
+              return null;
+            }
             return {
               id,
               title,

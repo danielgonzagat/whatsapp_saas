@@ -26,14 +26,18 @@ export default function PixPaymentPage() {
 
   // Countdown timer
   useEffect(() => {
-    if (countdown <= 0) return;
+    if (countdown <= 0) {
+      return;
+    }
     const t = setInterval(() => setCountdown((prev) => Math.max(prev - 1, 0)), 1000);
     return () => clearInterval(t);
   }, [countdown]);
 
   // Redirect when paid
   useEffect(() => {
-    if (!data) return;
+    if (!data) {
+      return;
+    }
     if (data.status === 'PAID') {
       router.push(`/order/${orderId}/success`);
     }
@@ -54,17 +58,23 @@ export default function PixPaymentPage() {
 
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
     },
     [],
   );
 
   const handleCopy = useCallback(() => {
     const code = data?.payment?.pixCopyPaste;
-    if (!code) return;
+    if (!code) {
+      return;
+    }
     navigator.clipboard.writeText(code).then(() => {
       setCopied(true);
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
       copiedTimer.current = setTimeout(() => setCopied(false), 2500);
     });
   }, [data?.payment?.pixCopyPaste]);

@@ -128,7 +128,9 @@ async function tryAcquireAndRun<T>(
   operation: () => Promise<T>,
 ): Promise<{ ran: true; value: T } | { ran: false }> {
   const acquired = await redis.set(key, token, 'PX', ttlMs, 'NX');
-  if (acquired !== 'OK') return { ran: false };
+  if (acquired !== 'OK') {
+    return { ran: false };
+  }
   try {
     const value = await operation();
     return { ran: true, value };
@@ -157,7 +159,9 @@ async function withWorkspaceActionLock<T>(
       );
     }
     const attempt = await tryAcquireAndRun(key, token, config.ttlMs, operation);
-    if (attempt.ran) return attempt.value;
+    if (attempt.ran) {
+      return attempt.value;
+    }
     await sleep(config.backoffMin + Math.floor(Math.random() * config.backoffJitter));
     return attemptAcquire();
   };

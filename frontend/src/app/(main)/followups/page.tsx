@@ -78,7 +78,9 @@ export default function FollowupsPage() {
   }, [source]);
 
   const loadFollowups = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -117,7 +119,9 @@ export default function FollowupsPage() {
   }, [loadFollowups]);
 
   useEffect(() => {
-    if (!requestedPhone || search) return;
+    if (!requestedPhone || search) {
+      return;
+    }
     setSearch(requestedPhone);
   }, [requestedPhone, search]);
 
@@ -133,7 +137,9 @@ export default function FollowupsPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return '-';
+    if (!dateStr) {
+      return '-';
+    }
     try {
       return new Date(dateStr).toLocaleString('pt-BR', {
         day: '2-digit',
@@ -148,7 +154,9 @@ export default function FollowupsPage() {
   };
 
   const formatPhone = (phone: string) => {
-    if (!phone) return '-';
+    if (!phone) {
+      return '-';
+    }
     // Formata telefone brasileiro
     const cleaned = phone.replace(D_RE, '');
     if (cleaned.length === 13) {
@@ -163,8 +171,12 @@ export default function FollowupsPage() {
   const filteredFollowups = useMemo(() => {
     const query = search.trim().toLowerCase();
     return followups.filter((followup) => {
-      if (statusFilter !== 'all' && followup.status !== statusFilter) return false;
-      if (!query) return true;
+      if (statusFilter !== 'all' && followup.status !== statusFilter) {
+        return false;
+      }
+      if (!query) {
+        return true;
+      }
       return [
         followup.phone,
         followup.message,

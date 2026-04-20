@@ -26,7 +26,9 @@ function buildTitleMarkup(item: ConversationSearchResult, hasQuery: boolean, que
 
 function buildPreviewMarkup(item: ConversationSearchResult, hasQuery: boolean, query: string) {
   const rawPreview = item.previewHtml || item.matchedContent || item.title;
-  if (!hasQuery) return sanitizeMarkedHtml(rawPreview);
+  if (!hasQuery) {
+    return sanitizeMarkedHtml(rawPreview);
+  }
   return rawPreview.includes('<mark>')
     ? sanitizeMarkedHtml(rawPreview)
     : highlightPlainText(rawPreview, query);

@@ -5,8 +5,12 @@ import { walkFiles } from './utils';
 
 // Models that require pagination when queried with findMany
 const PAGINATE_SENSITIVE_MODELS = new Set([
-  'Message', 'Contact', 'KloelSale', 'WalletTransaction',
-  'ChatMessage', 'KloelMessage',
+  'Message',
+  'Contact',
+  'KloelSale',
+  'WalletTransaction',
+  'ChatMessage',
+  'KloelMessage',
 ]);
 
 // Financial file path patterns
@@ -16,7 +20,8 @@ const FINANCIAL_PATH = /checkout|wallet|payment|billing/i;
 // Must be preceded by a word boundary (model accessor), NOT a method chain on non-Prisma objects.
 // Excludes: .update(payload), .update(buffer), .create(cert), .delete() on non-Prisma objects.
 // A Prisma call is: this.prisma.model.create({) or tx.model.create({ — always followed by ({
-const MUTATION_RE = /\.\s*(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(\s*\{/g;
+const MUTATION_RE =
+  /\.\s*(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(\s*\{/g;
 
 /**
  * Extract the body of the function that contains line `targetIdx`.
@@ -46,10 +51,18 @@ function extractEnclosingFunction(lines: string[], targetIdx: number): string {
 
   for (let i = funcStart; i < Math.min(lines.length, funcStart + 200); i++) {
     for (const ch of lines[i]) {
-      if (ch === '{') { depth++; bodyStarted = true; }
-      if (ch === '}') depth--;
+      if (ch === '{') {
+        depth++;
+        bodyStarted = true;
+      }
+      if (ch === '}') {
+        depth--;
+      }
     }
-    if (bodyStarted && depth === 0) { funcEnd = i + 1; break; }
+    if (bodyStarted && depth === 0) {
+      funcEnd = i + 1;
+      break;
+    }
   }
 
   return lines.slice(funcStart, funcEnd).join('\n');
@@ -61,9 +74,13 @@ function extractEnclosingFunction(lines: string[], targetIdx: number): string {
  */
 function isInsideTry(lines: string[], targetIdx: number): boolean {
   for (let i = targetIdx; i >= Math.max(0, targetIdx - 20); i--) {
-    if (/\btry\s*\{/.test(lines[i])) return true;
+    if (/\btry\s*\{/.test(lines[i])) {
+      return true;
+    }
     // If we hit a catch/finally that closes back to this scope, stop
-    if (i < targetIdx && /\}\s*catch\b/.test(lines[i])) return false;
+    if (i < targetIdx && /\}\s*catch\b/.test(lines[i])) {
+      return false;
+    }
   }
   return false;
 }
@@ -74,7 +91,9 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
 
   for (const file of files) {
     // Skip test/spec/seed/migration/mock files
-    if (/\.(test|spec|d)\.ts$|seed|migration|fixture|mock\./i.test(file)) continue;
+    if (/\.(test|spec|d)\.ts$|seed|migration|fixture|mock\./i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -95,12 +114,16 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
       const trimmed = line.trim();
 
       // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
       // ── CHECK 1: deleteMany without where ──────────────────────────────────
       if (/\bdeleteMany\s*\(/.test(trimmed)) {
         // Skip interface/type definitions (e.g., deleteMany(args: ...) → Promise<...>)
-        const isTypeDefinition = /\bdeleteMany\s*\(\s*\w+\s*:.*\)\s*:/.test(trimmed) || /\bdeleteMany\s*\(\s*\w+\s*:.*Promise/.test(trimmed);
+        const isTypeDefinition =
+          /\bdeleteMany\s*\(\s*\w+\s*:.*\)\s*:/.test(trimmed) ||
+          /\bdeleteMany\s*\(\s*\w+\s*:.*Promise/.test(trimmed);
         if (!isTypeDefinition) {
           // Look forward up to 3 lines for `where:` or JS shorthand `{ where }` or `{ where,`
           const block = lines.slice(i, Math.min(lines.length, i + 4)).join('\n');
@@ -158,15 +181,27 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
             const jLine = lines[j];
             const jt = jLine.trim();
             // If we hit a $transaction( or $transaction([, we're inside one
-            if (/\$transaction\s*\(/.test(jt)) { isInsideTransaction = true; break; }
+            if (/\$transaction\s*\(/.test(jt)) {
+              isInsideTransaction = true;
+              break;
+            }
             // Stop at top-level class method boundaries:
             // A method is at indentation 2 (2 spaces) and starts with async/public/private/protected or name(
             const indent = jLine.match(/^(\s*)/)?.[1].length ?? 0;
-            if (indent <= 2 && /^(?:async\s+|public\s+|private\s+|protected\s+|override\s+)?(?:async\s+)?\w+\s*\(/.test(jt) && !/=>\s*/.test(jt)) {
+            if (
+              indent <= 2 &&
+              /^(?:async\s+|public\s+|private\s+|protected\s+|override\s+)?(?:async\s+)?\w+\s*\(/.test(
+                jt,
+              ) &&
+              !/=>\s*/.test(jt)
+            ) {
               break;
             }
           }
-          if (isInsideTransaction) { MUTATION_RE.lastIndex = 0; continue; }
+          if (isInsideTransaction) {
+            MUTATION_RE.lastIndex = 0;
+            continue;
+          }
 
           const funcBody = extractEnclosingFunction(lines, i);
           // Use a simpler dedup: hash by first 60 chars of funcBody
@@ -198,12 +233,14 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
       if (isFinancial && /\$transaction\s*\(/.test(trimmed)) {
         // Skip if PULSE:OK annotation on this or preceding line
         const prevLineCheck = i > 0 ? lines[i - 1] : '';
-        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLineCheck)) continue;
+        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLineCheck)) {
+          continue;
+        }
 
         // Batch-form $transaction([...]) takes no options — skip it
         // Batch form: $transaction([ or $transaction(\n  [
-        const isBatchForm = /\$transaction\s*\(\s*\[/.test(trimmed) ||
-          (lines[i + 1] && /^\s*\[/.test(lines[i + 1]));
+        const isBatchForm =
+          /\$transaction\s*\(\s*\[/.test(trimmed) || (lines[i + 1] && /^\s*\[/.test(lines[i + 1]));
         if (!isBatchForm) {
           // Look forward 5 lines for isolationLevel (inline comment or option object)
           const block = lines.slice(i, Math.min(lines.length, i + 6)).join('\n');

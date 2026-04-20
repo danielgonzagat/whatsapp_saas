@@ -90,7 +90,9 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
     await page.evaluate(
       async (selector, limit) => {
         const wrapper = document.querySelector(selector);
-        if (!wrapper) return;
+        if (!wrapper) {
+          return;
+        }
 
         await new Promise<void>((resolve) => {
           let totalHeight = 0;
@@ -125,55 +127,57 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
     await forEachSequential(
       Array.from({ length: Math.min(items.length, limit) }, (_, index) => index),
       async (i) => {
-      try {
-        const currentItems = await page.$$('div[role="article"]');
-        const item = currentItems[i];
-        if (!item) return;
-
-        await item.scrollIntoView();
-        await item.click();
-
-        // Wait for details
         try {
-          await page.waitForSelector('button[data-item-id^="phone"]', { timeout: 2000 });
-        } catch {
-          await new Promise((r) => setTimeout(r, 1000));
+          const currentItems = await page.$$('div[role="article"]');
+          const item = currentItems[i];
+          if (!item) {
+            return;
+          }
+
+          await item.scrollIntoView();
+          await item.click();
+
+          // Wait for details
+          try {
+            await page.waitForSelector('button[data-item-id^="phone"]', { timeout: 2000 });
+          } catch {
+            await new Promise((r) => setTimeout(r, 1000));
+          }
+
+          const details = await page.evaluate(() => {
+            const text = document.body.innerText;
+            const phoneRegex = D_1_3__0__S__D_2_3_RE;
+            const phoneMatch = text.match(phoneRegex);
+            const phone = phoneMatch ? phoneMatch[0] : '';
+            const name = document.querySelector('h1')?.innerText || '';
+            return { name, phone };
+          });
+
+          // Fallback
+          const listText = await item.evaluate((el) => el.innerText);
+          const listLines = listText.split('\n');
+          const name = details.name || listLines[0] || 'Unknown';
+          const phone =
+            details.phone || listLines.find((l) => l.match(D_1_3__0__S__D_2_3_RE_2)) || '';
+          const category =
+            listLines
+              .find((l) => l.includes('•'))
+              ?.split('•')[1]
+              ?.trim() || 'Unknown';
+          const address = listLines.find((l) => l.includes('Av') || l.includes('Rua')) || '';
+
+          leads.push({ name, phone, address, category });
+
+          // Back to list
+          const backButton = await page.$('button[aria-label="Back"]');
+          if (backButton) {
+            await backButton.click();
+            await page.waitForSelector(feedSelector, { timeout: 10000 });
+          }
+        } catch (err) {
+          // PULSE:OK — Per-item scraping error non-critical; other items still collected
+          console.error('[MAPS] Error processing item %d: %O', i, err);
         }
-
-        const details = await page.evaluate(() => {
-          const text = document.body.innerText;
-          const phoneRegex = D_1_3__0__S__D_2_3_RE;
-          const phoneMatch = text.match(phoneRegex);
-          const phone = phoneMatch ? phoneMatch[0] : '';
-          const name = document.querySelector('h1')?.innerText || '';
-          return { name, phone };
-        });
-
-        // Fallback
-        const listText = await item.evaluate((el) => el.innerText);
-        const listLines = listText.split('\n');
-        const name = details.name || listLines[0] || 'Unknown';
-        const phone =
-          details.phone || listLines.find((l) => l.match(D_1_3__0__S__D_2_3_RE_2)) || '';
-        const category =
-          listLines
-            .find((l) => l.includes('•'))
-            ?.split('•')[1]
-            ?.trim() || 'Unknown';
-        const address = listLines.find((l) => l.includes('Av') || l.includes('Rua')) || '';
-
-        leads.push({ name, phone, address, category });
-
-        // Back to list
-        const backButton = await page.$('button[aria-label="Back"]');
-        if (backButton) {
-          await backButton.click();
-          await page.waitForSelector(feedSelector, { timeout: 10000 });
-        }
-      } catch (err) {
-        // PULSE:OK — Per-item scraping error non-critical; other items still collected
-        console.error('[MAPS] Error processing item %d: %O', i, err);
-      }
       },
     );
 
@@ -181,7 +185,9 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
   } catch (err) {
     console.error('[MAPS] Scraping failed:', err);
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 
   return leads;

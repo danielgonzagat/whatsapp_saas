@@ -165,7 +165,9 @@ export function FlowSidebar() {
       <div className="flex-1 overflow-y-auto p-2">
         {Object.entries(categories).map(([categoryKey, categoryInfo]) => {
           const nodes = groupedNodes[categoryKey];
-          if (!nodes || nodes.length === 0) return null;
+          if (!nodes || nodes.length === 0) {
+            return null;
+          }
 
           return (
             <div key={categoryKey} className="mb-2">

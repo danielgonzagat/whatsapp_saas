@@ -49,18 +49,24 @@ function buildTryLineSet(lines: string[]): Set<number> {
         if (ch === strChar && (k === 0 || line[k - 1] !== '\\')) {
           // Closing the string
           inStr = false;
-          if (isTemplate) inTemplateLiteral = false;
+          if (isTemplate) {
+            inTemplateLiteral = false;
+          }
           strChar = '';
         }
         stripped.push(' ');
       } else if (ch === '/' && line[k + 1] === '/') {
-        while (stripped.length < line.length) stripped.push(' ');
+        while (stripped.length < line.length) {
+          stripped.push(' ');
+        }
         break;
       } else if (ch === '"' || ch === "'") {
-        inStr = true; strChar = ch;
+        inStr = true;
+        strChar = ch;
         stripped.push(' ');
       } else if (ch === '`') {
-        inStr = true; strChar = '`';
+        inStr = true;
+        strChar = '`';
         inTemplateLiteral = true;
         stripped.push(' ');
       } else {
@@ -71,7 +77,8 @@ function buildTryLineSet(lines: string[]): Set<number> {
 
     // If still in a non-template string at end of line, reset (shouldn't happen in valid TS)
     if (inStr && strChar !== '`') {
-      inStr = false; strChar = '';
+      inStr = false;
+      strChar = '';
     }
     // If inTemplateLiteral=true, carry it to the next line
 
@@ -84,7 +91,7 @@ function buildTryLineSet(lines: string[]): Set<number> {
         depth++;
         // Check if this `{` is part of a `try` (and not an inline try/catch)
         const before = s.slice(0, j);
-        const isTryBrace = /\btry\s*$/.test(before) && !(/\}\s*catch\b/.test(t));
+        const isTryBrace = /\btry\s*$/.test(before) && !/\}\s*catch\b/.test(t);
         if (isTryBrace) {
           tryOpenDepths.push(depth);
         }
@@ -115,13 +122,17 @@ export function checkJsonParseSafety(config: PulseConfig): Break[] {
   const dirs = [config.backendDir, config.workerDir];
 
   for (const dir of dirs) {
-    if (!dir) continue;
+    if (!dir) {
+      continue;
+    }
 
     const files = walkFiles(dir, ['.ts']);
 
     for (const file of files) {
       // Skip test/spec/seed/migration/mock/node_modules files
-      if (/\.(test|spec|d)\.ts$|seed|migration|fixture|mock\.|node_modules/i.test(file)) continue;
+      if (/\.(test|spec|d)\.ts$|seed|migration|fixture|mock\.|node_modules/i.test(file)) {
+        continue;
+      }
 
       let content: string;
       try {
@@ -141,15 +152,24 @@ export function checkJsonParseSafety(config: PulseConfig): Break[] {
         const trimmed = line.trim();
 
         // Skip comments
-        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+          continue;
+        }
 
         // ── CHECK 1: JSON.parse( without try block ──────────────────────────
         if (/\bJSON\.parse\s*\(/.test(trimmed)) {
           // Skip if it's in a comment (inline)
-          if (/\/\/.*JSON\.parse/.test(trimmed) && trimmed.indexOf('//') < trimmed.indexOf('JSON.parse')) continue;
+          if (
+            /\/\/.*JSON\.parse/.test(trimmed) &&
+            trimmed.indexOf('//') < trimmed.indexOf('JSON.parse')
+          ) {
+            continue;
+          }
           // Skip if PULSE:OK annotation on same or previous line
           const prevLine = i > 0 ? lines[i - 1].trim() : '';
-          if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) continue;
+          if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) {
+            continue;
+          }
 
           if (!tryLineSet.has(i)) {
             breaks.push({
@@ -167,7 +187,12 @@ export function checkJsonParseSafety(config: PulseConfig): Break[] {
         // These objects can have circular references and will throw a TypeError.
         if (/\bJSON\.stringify\s*\(\s*(?:req|request|socket|ws|ctx|context)\b/.test(trimmed)) {
           // Skip if it's in a comment
-          if (/\/\/.*JSON\.stringify/.test(trimmed) && trimmed.indexOf('//') < trimmed.indexOf('JSON.stringify')) continue;
+          if (
+            /\/\/.*JSON\.stringify/.test(trimmed) &&
+            trimmed.indexOf('//') < trimmed.indexOf('JSON.stringify')
+          ) {
+            continue;
+          }
 
           breaks.push({
             type: 'STRINGIFY_CIRCULAR_RISK',

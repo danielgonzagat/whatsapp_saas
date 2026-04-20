@@ -41,21 +41,33 @@ function normalizeToken(value?: string | null) {
 }
 
 function toLengthBucket(length: number): 'short' | 'medium' | 'long' {
-  if (length <= 90) return 'short';
-  if (length <= 220) return 'medium';
+  if (length <= 90) {
+    return 'short';
+  }
+  if (length <= 220) {
+    return 'medium';
+  }
   return 'long';
 }
 
 function toPriorityBucket(priority: number): 'low' | 'medium' | 'high' {
-  if (priority >= 70) return 'high';
-  if (priority >= 35) return 'medium';
+  if (priority >= 70) {
+    return 'high';
+  }
+  if (priority >= 35) {
+    return 'medium';
+  }
   return 'low';
 }
 
 function inferVariantFamily(variantKey?: string | null) {
   const normalized = normalizeToken(variantKey);
-  if (normalized.startsWith('payment')) return 'payment_recovery';
-  if (normalized.startsWith('followup')) return 'followup';
+  if (normalized.startsWith('payment')) {
+    return 'payment_recovery';
+  }
+  if (normalized.startsWith('followup')) {
+    return 'followup';
+  }
   return normalized === 'generic' ? null : normalized;
 }
 
@@ -107,7 +119,9 @@ export function anonymizeDecisionLog(input: {
     value.metadata && typeof value.metadata === 'object' ? value.metadata : {}
   ) as Record<string, unknown>;
   const intent = normalizeToken(String(value.intent || metadata.intent || 'generic'));
-  if (!intent) return null;
+  if (!intent) {
+    return null;
+  }
 
   const message = String(value.message || '');
   const messageLength = message.length;
@@ -144,8 +158,12 @@ function groupSignalsByDomainIntent(
 }
 
 const outcomeScore = (outcome: string): number => {
-  if (outcome === 'sold') return 4;
-  if (outcome === 'replied') return 2;
+  if (outcome === 'sold') {
+    return 4;
+  }
+  if (outcome === 'replied') {
+    return 2;
+  }
   return 0;
 };
 
@@ -170,7 +188,9 @@ const countLengthBuckets = (items: GlobalLearningSignal[]): Record<string, numbe
 const countVariantFamilies = (items: GlobalLearningSignal[]): Record<string, number> => {
   const acc: Record<string, number> = {};
   for (const item of items) {
-    if (!item.variantFamily) continue;
+    if (!item.variantFamily) {
+      continue;
+    }
     acc[item.variantFamily] = (acc[item.variantFamily] || 0) + 1;
   }
   return acc;
@@ -187,8 +207,12 @@ const resolveAggressiveness = (
   repliedRate: number,
   revenuePerSignal: number,
 ): Aggressiveness => {
-  if (soldRate >= 0.3 || revenuePerSignal >= 150) return 'HIGH';
-  if (soldRate >= 0.15 || repliedRate >= 0.4) return 'MEDIUM';
+  if (soldRate >= 0.3 || revenuePerSignal >= 150) {
+    return 'HIGH';
+  }
+  if (soldRate >= 0.15 || repliedRate >= 0.4) {
+    return 'MEDIUM';
+  }
   return 'LOW';
 };
 
@@ -280,7 +304,9 @@ export async function persistGlobalPatterns(
   redisClient: { set?: (key: string, value: string) => Promise<string | null> } | null | undefined,
   patterns: GlobalLearningPattern[],
 ) {
-  if (!redisClient?.set) return null;
+  if (!redisClient?.set) {
+    return null;
+  }
   const payload = {
     updatedAt: new Date().toISOString(),
     patterns,

@@ -13,7 +13,9 @@ export function ScrollReveal({ children, delay = 0 }: ScrollRevealProps) {
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const ob = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {

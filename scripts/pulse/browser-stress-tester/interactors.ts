@@ -15,7 +15,8 @@ export interface InteractionResult {
 }
 
 // Dangerous button text patterns — skip interaction
-const DANGEROUS_RE = /^(excluir|deletar|remover|delete|remove|sair|logout|desconectar|disconnect|apagar|cancelar assinatura|encerrar)/i;
+const DANGEROUS_RE =
+  /^(excluir|deletar|remover|delete|remove|sair|logout|desconectar|disconnect|apagar|cancelar assinatura|encerrar)/i;
 const NAVIGATION_ONLY_RE = /^(voltar|back|anterior|← |sair|fechar|cancelar|close)$/i;
 
 export function isDangerousElement(label: string): boolean {
@@ -102,7 +103,6 @@ export async function interactWithElement(
     // Check DOM change
     const domAfter = await page.evaluate(() => document.body.innerHTML.length).catch(() => 0);
     domChanged = Math.abs(domAfter - domBefore) > 10;
-
   } catch (e: any) {
     error = e.message?.slice(0, 300) || 'Unknown error';
   } finally {
@@ -113,7 +113,12 @@ export async function interactWithElement(
   return { apiCalls, domChanged, consoleErrors, error };
 }
 
-async function interactButton(page: Page, selector: string, el: DiscoveredElement, timeout: number): Promise<void> {
+async function interactButton(
+  page: Page,
+  selector: string,
+  el: DiscoveredElement,
+  timeout: number,
+): Promise<void> {
   const locator = page.locator(selector).first();
   await locator.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {});
   await locator.click({ timeout, force: false });
@@ -121,9 +126,13 @@ async function interactButton(page: Page, selector: string, el: DiscoveredElemen
   // If a dialog/modal appeared, close it after recording
   await page.waitForTimeout(500);
   const dialog = page.locator('[role="dialog"]:visible, [data-slot="dialog-content"]:visible');
-  if (await dialog.count() > 0) {
+  if ((await dialog.count()) > 0) {
     // Try to close modal
-    const closeBtn = dialog.locator('button:has-text("Fechar"), button:has-text("Cancelar"), button[aria-label="Fechar"], button:has-text("×")').first();
+    const closeBtn = dialog
+      .locator(
+        'button:has-text("Fechar"), button:has-text("Cancelar"), button[aria-label="Fechar"], button:has-text("×")',
+      )
+      .first();
     if (await closeBtn.isVisible().catch(() => false)) {
       await closeBtn.click({ timeout: 3000 }).catch(() => {});
     }
@@ -137,7 +146,9 @@ async function interactInput(page: Page, selector: string, el: DiscoveredElement
   // Check if it's read-only or disabled
   const isReadonly = await locator.getAttribute('readonly').catch(() => null);
   const isDisabled = await locator.isDisabled().catch(() => false);
-  if (isReadonly || isDisabled) return;
+  if (isReadonly || isDisabled) {
+    return;
+  }
 
   const data = generateTestData({
     placeholder: el.placeholder,
@@ -152,12 +163,18 @@ async function interactInput(page: Page, selector: string, el: DiscoveredElement
   await locator.press('Tab'); // trigger onBlur
 }
 
-async function interactTextarea(page: Page, selector: string, el: DiscoveredElement): Promise<void> {
+async function interactTextarea(
+  page: Page,
+  selector: string,
+  el: DiscoveredElement,
+): Promise<void> {
   const locator = page.locator(selector).first();
   await locator.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {});
 
   const isDisabled = await locator.isDisabled().catch(() => false);
-  if (isDisabled) return;
+  if (isDisabled) {
+    return;
+  }
 
   const data = generateTestData({
     placeholder: el.placeholder,
@@ -170,19 +187,26 @@ async function interactTextarea(page: Page, selector: string, el: DiscoveredElem
   await locator.press('Tab');
 }
 
-async function interactSelect(page: Page, selector: string, el: DiscoveredElement, timeout: number): Promise<void> {
+async function interactSelect(
+  page: Page,
+  selector: string,
+  el: DiscoveredElement,
+  timeout: number,
+): Promise<void> {
   const locator = page.locator(selector).first();
   await locator.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {});
 
   // Check if it's a native select or shadcn select-trigger
-  const tagName = await locator.evaluate(el => el.tagName).catch(() => '');
+  const tagName = await locator.evaluate((el) => el.tagName).catch(() => '');
 
   if (tagName === 'SELECT') {
     // Native select — pick second option if available
     const options = await locator.locator('option').all();
     if (options.length > 1) {
       const value = await options[1].getAttribute('value');
-      if (value) await locator.selectOption(value);
+      if (value) {
+        await locator.selectOption(value);
+      }
     }
   } else {
     // shadcn select trigger — click to open, then click an option
@@ -203,8 +227,9 @@ async function interactToggle(page: Page, selector: string, timeout: number): Pr
   await locator.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {});
 
   // Read current state
-  const beforeState = await locator.getAttribute('data-state').catch(() => null)
-    || await locator.getAttribute('aria-checked').catch(() => null);
+  const beforeState =
+    (await locator.getAttribute('data-state').catch(() => null)) ||
+    (await locator.getAttribute('aria-checked').catch(() => null));
 
   // Click to toggle
   await locator.click({ timeout });
@@ -212,8 +237,9 @@ async function interactToggle(page: Page, selector: string, timeout: number): Pr
   await page.waitForTimeout(500);
 
   // Verify state changed
-  const afterState = await locator.getAttribute('data-state').catch(() => null)
-    || await locator.getAttribute('aria-checked').catch(() => null);
+  const afterState =
+    (await locator.getAttribute('data-state').catch(() => null)) ||
+    (await locator.getAttribute('aria-checked').catch(() => null));
 
   // Restore original state by clicking again (avoid side effects)
   if (afterState !== beforeState) {

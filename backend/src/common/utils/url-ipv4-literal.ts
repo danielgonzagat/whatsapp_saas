@@ -12,7 +12,9 @@ function isValidOctet(value: number): boolean {
 }
 
 export function parseIpv4Literal(hostname: string): number[] | null {
-  if (!IPV4_LITERAL_RE.test(hostname)) return null;
+  if (!IPV4_LITERAL_RE.test(hostname)) {
+    return null;
+  }
   const octets = hostname.split('.').map((part) => Number(part));
   return octets.every(isValidOctet) ? octets : null;
 }

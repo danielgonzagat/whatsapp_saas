@@ -5,10 +5,14 @@ import { useCallback, useEffect, useState } from 'react';
 const STORAGE_KEY = 'kloel_sidebar_expanded';
 
 function getInitialExpanded(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {
+    return false;
+  }
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored !== null) return stored === 'true';
+    if (stored !== null) {
+      return stored === 'true';
+    }
   } catch {}
   return false;
 }
@@ -46,9 +50,13 @@ export function useSidebarState(): SidebarState {
 
   // Close mobile sidebar on escape
   useEffect(() => {
-    if (!mobileOpen) return;
+    if (!mobileOpen) {
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false);
+      if (e.key === 'Escape') {
+        setMobileOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

@@ -10,9 +10,15 @@ function buildDashboardHomeUrl(params?: {
   endDate?: string;
 }) {
   const search = new URLSearchParams();
-  if (params?.period) search.set('period', params.period);
-  if (params?.startDate) search.set('startDate', params.startDate);
-  if (params?.endDate) search.set('endDate', params.endDate);
+  if (params?.period) {
+    search.set('period', params.period);
+  }
+  if (params?.startDate) {
+    search.set('startDate', params.startDate);
+  }
+  if (params?.endDate) {
+    search.set('endDate', params.endDate);
+  }
   const query = search.toString();
   return `/dashboard/home${query ? `?${query}` : ''}`;
 }

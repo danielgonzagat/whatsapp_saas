@@ -26,13 +26,12 @@ function readCookieValue(request: NextRequest, name: string) {
   return request.cookies.get(name)?.value || '';
 }
 
-function firstCookieBearer(
-  request: NextRequest,
-  cookieNames: string[],
-): string | null {
+function firstCookieBearer(request: NextRequest, cookieNames: string[]): string | null {
   for (const cookieName of cookieNames) {
     const value = readCookieValue(request, cookieName);
-    if (value) return `Bearer ${value}`;
+    if (value) {
+      return `Bearer ${value}`;
+    }
   }
   return null;
 }
@@ -43,7 +42,9 @@ function bearerFromHeaderOrCookie(
   cookieNames: string[],
 ): string | null {
   const headerValue = request.headers.get(headerName);
-  if (headerValue) return `Bearer ${headerValue}`;
+  if (headerValue) {
+    return `Bearer ${headerValue}`;
+  }
   return firstCookieBearer(request, cookieNames);
 }
 
@@ -52,11 +53,7 @@ const WHATSAPP_ACCESS_COOKIES = ['kloel_access_token', 'kloel_token'];
 function resolveAuthorizationHeader(request: NextRequest): string | null {
   return (
     request.headers.get('authorization') ||
-    bearerFromHeaderOrCookie(
-      request,
-      'x-kloel-access-token',
-      WHATSAPP_ACCESS_COOKIES,
-    )
+    bearerFromHeaderOrCookie(request, 'x-kloel-access-token', WHATSAPP_ACCESS_COOKIES)
   );
 }
 

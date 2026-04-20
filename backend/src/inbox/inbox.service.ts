@@ -101,7 +101,9 @@ export class InboxService {
       const existing = await client.conversation.findFirst({
         where: { workspaceId, contactId, channel, status: { not: 'CLOSED' } },
       });
-      if (existing) return existing;
+      if (existing) {
+        return existing;
+      }
 
       try {
         return await client.conversation.create({
@@ -349,7 +351,9 @@ export class InboxService {
   }
 
   private normalizeDate(value?: Date | string | null): Date | null {
-    if (!value) return null;
+    if (!value) {
+      return null;
+    }
     if (value instanceof Date) {
       return Number.isNaN(value.getTime()) ? null : value;
     }

@@ -73,9 +73,12 @@ describe('AccountAgentService', () => {
         count: jest.fn().mockImplementation(({ where }: any = {}) => {
           return Promise.resolve(
             products.filter((product) => {
-              if (where?.workspaceId && product.workspaceId !== where.workspaceId) return false;
-              if (typeof where?.active === 'boolean' && product.active !== where.active)
+              if (where?.workspaceId && product.workspaceId !== where.workspaceId) {
                 return false;
+              }
+              if (typeof where?.active === 'boolean' && product.active !== where.active) {
+                return false;
+              }
               return true;
             }).length,
           );
@@ -107,12 +110,20 @@ describe('AccountAgentService', () => {
         }),
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
           const items = Array.from(memoryStore.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
-            if (where?.category && item.category !== where.category) return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) {
+              return false;
+            }
+            if (where?.category && item.category !== where.category) {
+              return false;
+            }
             if (where?.OR) {
               return where.OR.some((entry: any) => {
-                if (entry.type) return item.type === entry.type;
-                if (entry.category) return item.category === entry.category;
+                if (entry.type) {
+                  return item.type === entry.type;
+                }
+                if (entry.category) {
+                  return item.category === entry.category;
+                }
                 return false;
               });
             }
@@ -153,8 +164,12 @@ describe('AccountAgentService', () => {
       approvalRequest: {
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
           const items = Array.from(approvalRequests.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
-            if (where?.kind && item.kind !== where.kind) return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) {
+              return false;
+            }
+            if (where?.kind && item.kind !== where.kind) {
+              return false;
+            }
             return true;
           });
           return Promise.resolve(items);
@@ -169,8 +184,12 @@ describe('AccountAgentService', () => {
       inputCollectionSession: {
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
           const items = Array.from(inputSessions.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
-            if (where?.kind && item.kind !== where.kind) return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) {
+              return false;
+            }
+            if (where?.kind && item.kind !== where.kind) {
+              return false;
+            }
             return true;
           });
           return Promise.resolve(items);
@@ -185,7 +204,9 @@ describe('AccountAgentService', () => {
       agentWorkItem: {
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
           const items = Array.from(workItems.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) {
+              return false;
+            }
             return true;
           });
           return Promise.resolve(items);

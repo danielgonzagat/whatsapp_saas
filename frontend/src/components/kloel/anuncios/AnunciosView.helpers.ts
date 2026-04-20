@@ -26,7 +26,9 @@ function parseIntOrZero(raw: unknown): number {
 
 function pickFirstInsight(metaInsights: Record<string, unknown>): InsightData {
   const data = (metaInsights as { data?: unknown }).data;
-  if (Array.isArray(data)) return (data[0] as InsightData) ?? metaInsights;
+  if (Array.isArray(data)) {
+    return (data[0] as InsightData) ?? metaInsights;
+  }
   return metaInsights as InsightData;
 }
 
@@ -39,7 +41,10 @@ function computePurchaseRevenue(d: InsightData): number {
   const roasFirst = roasList?.[0];
   const valueSource = purchase?.value ?? roasFirst?.value ?? '0';
   const spendMultiplier = Number.parseFloat(String(d.spend ?? '1'));
-  return Number.parseFloat(String(valueSource)) * (Number.isFinite(spendMultiplier) ? spendMultiplier : 1);
+  return (
+    Number.parseFloat(String(valueSource)) *
+    (Number.isFinite(spendMultiplier) ? spendMultiplier : 1)
+  );
 }
 
 export function extractMetaPlatformMetrics(metaInsights: Record<string, unknown>): PlatformMetrics {
@@ -48,7 +53,7 @@ export function extractMetaPlatformMetrics(metaInsights: Record<string, unknown>
   const actionsLen =
     typeof d.conversions !== 'undefined'
       ? d.conversions
-      : (d.actions as unknown[] | undefined)?.length ?? '0';
+      : ((d.actions as unknown[] | undefined)?.length ?? '0');
   return {
     connected: true,
     spend: parseFloatOrZero(d.spend),
@@ -107,7 +112,8 @@ function toArray<T>(value: unknown): T[] {
 }
 
 export function mapMetaCampaign(c: Record<string, unknown>): MappedCampaign {
-  const id = typeof c.id === 'string' ? c.id : `campaign-${Math.random().toString(36).slice(2, 10)}`;
+  const id =
+    typeof c.id === 'string' ? c.id : `campaign-${Math.random().toString(36).slice(2, 10)}`;
   const firstInsight = pickInsightsList(c)[0] || {};
   const actionValues = toArray<Record<string, unknown>>(firstInsight.action_values);
   const purchaseRoas = toArray<Record<string, unknown>>(firstInsight.purchase_roas);

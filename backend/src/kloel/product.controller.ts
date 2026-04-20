@@ -104,7 +104,9 @@ export class ProductController {
     req: AuthenticatedRequest,
     product: Record<string, unknown> | null,
   ) {
-    if (!product) return product;
+    if (!product) {
+      return product;
+    }
 
     return {
       ...product,
@@ -191,10 +193,16 @@ export class ProductController {
     order: { status: string; totalInCents: number | null; plan: { productId: string } | null },
   ): void {
     const productId = order.plan?.productId;
-    if (!productId) return;
+    if (!productId) {
+      return;
+    }
     const current = metrics.get(productId);
-    if (!current) return;
-    if (!this.isPaidOrderStatus(order.status)) return;
+    if (!current) {
+      return;
+    }
+    if (!this.isPaidOrderStatus(order.status)) {
+      return;
+    }
     current.totalSales += 1;
     current.totalRevenue += Number(order.totalInCents || 0) / 100;
   }
@@ -208,9 +216,13 @@ export class ProductController {
       totalLessons: number | null;
     },
   ): void {
-    if (!area.productId) return;
+    if (!area.productId) {
+      return;
+    }
     const current = metrics.get(area.productId);
-    if (!current) return;
+    if (!current) {
+      return;
+    }
     current.memberAreasCount += 1;
     current.studentsCount += Number(area.totalStudents || 0);
     current.modulesCount += Number(area.totalModules || 0);
@@ -233,9 +245,13 @@ export class ProductController {
     plan: { productId: string; isActive: boolean; priceInCents: number | null },
   ): void {
     const current = metrics.get(plan.productId);
-    if (!current) return;
+    if (!current) {
+      return;
+    }
     current.plansCount += 1;
-    if (plan.isActive) current.activePlansCount += 1;
+    if (plan.isActive) {
+      current.activePlansCount += 1;
+    }
     const normalizedPriceInCents = Math.max(0, Math.round(Number(plan.priceInCents || 0)));
     this.updatePlanPriceRange(current, normalizedPriceInCents);
   }
@@ -252,7 +268,9 @@ export class ProductController {
     },
   ): void {
     const current = metrics.get(affiliateProduct.productId);
-    if (!current) return;
+    if (!current) {
+      return;
+    }
     current.affiliateListed = affiliateProduct.listed;
     current.affiliateCount = affiliateProduct.totalAffiliates;
     current.affiliateSales = affiliateProduct.totalSales;
@@ -276,10 +294,18 @@ export class ProductController {
       metrics.set(productId, this.emptyProductMetrics());
     }
 
-    for (const order of orders) this.applyOrderMetric(metrics, order);
-    for (const area of memberAreas) this.applyMemberAreaMetric(metrics, area);
-    for (const plan of checkoutPlans) this.applyPlanMetric(metrics, plan);
-    for (const ap of affiliateProducts) this.applyAffiliateMetric(metrics, ap);
+    for (const order of orders) {
+      this.applyOrderMetric(metrics, order);
+    }
+    for (const area of memberAreas) {
+      this.applyMemberAreaMetric(metrics, area);
+    }
+    for (const plan of checkoutPlans) {
+      this.applyPlanMetric(metrics, plan);
+    }
+    for (const ap of affiliateProducts) {
+      this.applyAffiliateMetric(metrics, ap);
+    }
 
     return metrics;
   }
@@ -413,7 +439,9 @@ export class ProductController {
       const existingRecord = await this.prisma.product.findFirst({
         where: { workspaceId, name: dto.name },
       });
-      if (existingRecord) return { data: existingRecord };
+      if (existingRecord) {
+        return { data: existingRecord };
+      }
     }
 
     const product = await this.prisma.product.create({

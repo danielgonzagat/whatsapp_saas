@@ -28,7 +28,7 @@ function readSafe(file: string): string {
 /** Find unified-agent service files */
 function findAgentFiles(backendDir: string): string[] {
   return walkFiles(backendDir, ['.ts']).filter(
-    f =>
+    (f) =>
       /unified-agent|autopilot.*service|agent.*service/i.test(path.basename(f)) &&
       !/\.(spec|test)\.ts$|dist\//.test(f),
   );
@@ -84,7 +84,9 @@ export function checkAiResponseQuality(config: PulseConfig): Break[] {
   // When LLM throws (timeout, rate limit, etc.) there must be a fallback path
   const hasFallback =
     /fallback(?:Reply|Response|Model|Brain|Writer)/i.test(combinedContent) ||
-    /catch[\s\S]{0,200}(?:return|throw)[\s\S]{0,100}(?:fallback|degraded|indispon)/i.test(combinedContent);
+    /catch[\s\S]{0,200}(?:return|throw)[\s\S]{0,100}(?:fallback|degraded|indispon)/i.test(
+      combinedContent,
+    );
 
   if (!hasFallback) {
     breaks.push({
@@ -102,8 +104,9 @@ export function checkAiResponseQuality(config: PulseConfig): Break[] {
 
   // ── CHECK 4: checkout link generation ──────────────────────────────────────
   // The agent must be able to send checkout links when purchase intent is detected
-  const hasCheckoutLink =
-    /checkout|checkoutLink|link.*compra|link.*checkout|\/checkout\//i.test(combinedContent);
+  const hasCheckoutLink = /checkout|checkoutLink|link.*compra|link.*checkout|\/checkout\//i.test(
+    combinedContent,
+  );
 
   if (!hasCheckoutLink) {
     breaks.push({

@@ -71,11 +71,17 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
   }).join(' ');
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion) {
+      return;
+    }
     const c = ref.current;
-    if (!c) return;
+    if (!c) {
+      return;
+    }
     const ctx = c.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
     let frame = 0;
     let raf: number;
     let visible = true;
@@ -87,7 +93,9 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
     );
     obs.observe(c);
     const draw = () => {
-      if (!visible) return;
+      if (!visible) {
+        return;
+      }
       ctx.clearRect(0, 0, w, h);
       for (let i = 0; i < 3; i++) {
         ctx.beginPath();
@@ -264,12 +272,20 @@ const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n))
 const fmtBRL = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 const fmtBRLCents = (n: number) => fmtBRL(n / 100);
 const timeAgo = (value?: string | null) => {
-  if (!value) return '';
+  if (!value) {
+    return '';
+  }
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
   const diffMinutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
-  if (diffMinutes < 60) return `${diffMinutes}min`;
-  if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)}h`;
+  if (diffMinutes < 60) {
+    return `${diffMinutes}min`;
+  }
+  if (diffMinutes < 1440) {
+    return `${Math.floor(diffMinutes / 60)}h`;
+  }
   return `${Math.floor(diffMinutes / 1440)}d`;
 };
 
@@ -1451,7 +1467,9 @@ function AreaMembros({
   const [saving, setSaving] = useState(false);
   const [generatingAreaId, setGeneratingAreaId] = useState<string | null>(null);
   const focusPrimaryInput = useCallback((element: HTMLInputElement | null) => {
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     requestAnimationFrame(() => {
       element.focus();
     });
@@ -1506,7 +1524,9 @@ function AreaMembros({
     fetchStudents(areaId);
   };
   const handleAddStudent = async () => {
-    if (!newStudent.name || !newStudent.email || !studentAreaId) return;
+    if (!newStudent.name || !newStudent.email || !studentAreaId) {
+      return;
+    }
     setSaving(true);
     try {
       await apiFetch(`/member-areas/${studentAreaId}/students`, {
@@ -1528,7 +1548,9 @@ function AreaMembros({
     setSaving(false);
   };
   const handleRemoveStudent = async (studentId: string) => {
-    if (!studentAreaId) return;
+    if (!studentAreaId) {
+      return;
+    }
     setSaving(true);
     try {
       await apiFetch(`/member-areas/${studentAreaId}/students/${studentId}`, { method: 'DELETE' });
@@ -1550,8 +1572,9 @@ function AreaMembros({
     });
   };
   const handleUpdateStudent = async () => {
-    if (!studentAreaId || !editingStudentId || !editStudentData.name || !editStudentData.email)
+    if (!studentAreaId || !editingStudentId || !editStudentData.name || !editStudentData.email) {
       return;
+    }
     setSaving(true);
     try {
       await apiFetch(`/member-areas/${studentAreaId}/students/${editingStudentId}`, {
@@ -1573,7 +1596,9 @@ function AreaMembros({
     setSaving(false);
   };
   const handleToggleStudentStatus = async (student: MemberAreaStudent) => {
-    if (!studentAreaId) return;
+    if (!studentAreaId) {
+      return;
+    }
     setSaving(true);
     try {
       await apiFetch(`/member-areas/${studentAreaId}/students/${student.id}`, {
@@ -1589,7 +1614,9 @@ function AreaMembros({
   };
   const handleSearchStudents = (q: string) => {
     setStudentSearch(q);
-    if (studentAreaId) fetchStudents(studentAreaId, q || undefined);
+    if (studentAreaId) {
+      fetchStudents(studentAreaId, q || undefined);
+    }
   };
 
   const toggleArea = (id: string) => setExpandedAreas((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -1598,7 +1625,9 @@ function AreaMembros({
 
   // ── Handlers ──
   const handleCreateArea = async () => {
-    if (!newArea.name.trim()) return;
+    if (!newArea.name.trim()) {
+      return;
+    }
     setSaving(true);
     try {
       await createArea({
@@ -1630,7 +1659,9 @@ function AreaMembros({
   };
 
   const handleUpdateArea = async (id: string) => {
-    if (!editAreaData.name.trim()) return;
+    if (!editAreaData.name.trim()) {
+      return;
+    }
     setSaving(true);
     try {
       await updateArea(id, {
@@ -1661,7 +1692,9 @@ function AreaMembros({
   };
 
   const handleDeleteArea = async (id: string) => {
-    if (!confirm('Excluir esta area?')) return;
+    if (!confirm('Excluir esta area?')) {
+      return;
+    }
     setSaving(true);
     try {
       await deleteArea(id);
@@ -1673,7 +1706,9 @@ function AreaMembros({
   };
 
   const handleCreateModule = async (areaId: string) => {
-    if (!newModule.name.trim()) return;
+    if (!newModule.name.trim()) {
+      return;
+    }
     setSaving(true);
     try {
       await createModule(areaId, { name: newModule.name.trim() });
@@ -1687,7 +1722,9 @@ function AreaMembros({
   };
 
   const handleUpdateModule = async (areaId: string, moduleId: string) => {
-    if (!editModuleData.name.trim()) return;
+    if (!editModuleData.name.trim()) {
+      return;
+    }
     setSaving(true);
     try {
       await updateModule(areaId, moduleId, { name: editModuleData.name.trim() });
@@ -1700,7 +1737,9 @@ function AreaMembros({
   };
 
   const handleDeleteModule = async (areaId: string, moduleId: string) => {
-    if (!confirm('Excluir este modulo?')) return;
+    if (!confirm('Excluir este modulo?')) {
+      return;
+    }
     setSaving(true);
     try {
       await deleteModule(areaId, moduleId);
@@ -1712,7 +1751,9 @@ function AreaMembros({
   };
 
   const handleCreateLesson = async (areaId: string, moduleId: string) => {
-    if (!newLesson.name.trim()) return;
+    if (!newLesson.name.trim()) {
+      return;
+    }
     setSaving(true);
     try {
       await createLesson(areaId, moduleId, {
@@ -1730,7 +1771,9 @@ function AreaMembros({
   };
 
   const handleUpdateLesson = async (areaId: string, lessonId: string) => {
-    if (!editLessonData.name.trim()) return;
+    if (!editLessonData.name.trim()) {
+      return;
+    }
     setSaving(true);
     try {
       await updateLesson(areaId, lessonId, {
@@ -1747,7 +1790,9 @@ function AreaMembros({
   };
 
   const handleDeleteLesson = async (areaId: string, lessonId: string) => {
-    if (!confirm('Excluir esta aula?')) return;
+    if (!confirm('Excluir esta aula?')) {
+      return;
+    }
     setSaving(true);
     try {
       await deleteLesson(areaId, lessonId);
@@ -4110,7 +4155,9 @@ function AfiliarSe({
 
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
     },
     [],
   );
@@ -4550,7 +4597,9 @@ function AfiliarSe({
                 onClick={() =>
                   navigator.clipboard.writeText(item.affiliateLink || '').then(() => {
                     setCopiedAffiliate(true);
-                    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+                    if (copiedTimer.current) {
+                      clearTimeout(copiedTimer.current);
+                    }
                     copiedTimer.current = setTimeout(() => setCopiedAffiliate(false), 2000);
                   })
                 }
@@ -4620,7 +4669,9 @@ function AfiliarSe({
               onClick={() =>
                 navigator.clipboard.writeText(item.affiliateLink || '').then(() => {
                   setCopiedAffiliate(true);
-                  if (copiedTimer.current) clearTimeout(copiedTimer.current);
+                  if (copiedTimer.current) {
+                    clearTimeout(copiedTimer.current);
+                  }
                   copiedTimer.current = setTimeout(() => setCopiedAffiliate(false), 2000);
                 })
               }
@@ -5385,7 +5436,9 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
     (key: string) => {
       setActiveTab(key);
       const tab = TABS.find((t) => t.key === key);
-      if (!tab || pathname === tab.route) return;
+      if (!tab || pathname === tab.route) {
+        return;
+      }
       startTransition(() => {
         router.push(tab.route);
       });
@@ -5415,7 +5468,9 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   }, []);
 
   useEffect(() => {
-    if (!requestedFeature || activeTab !== 'produtos' || displayProducts.length === 0) return;
+    if (!requestedFeature || activeTab !== 'produtos' || displayProducts.length === 0) {
+      return;
+    }
     router.replace(buildFeatureHref(displayProducts[0].id, requestedFeature));
   }, [requestedFeature, activeTab, displayProducts, router, buildFeatureHref]);
 

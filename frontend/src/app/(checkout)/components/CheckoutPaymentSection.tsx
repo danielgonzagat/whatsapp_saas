@@ -188,7 +188,9 @@ export function CheckoutSuccessModal({
   show: boolean;
   orderNumber: string;
 }) {
-  if (!show) return null;
+  if (!show) {
+    return null;
+  }
   return (
     <div
       style={{

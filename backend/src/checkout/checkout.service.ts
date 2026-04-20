@@ -324,7 +324,9 @@ export class CheckoutService {
       where: { id, workspaceId },
       select: { id: true },
     });
-    if (!baseProduct) throw new NotFoundException('Product not found');
+    if (!baseProduct) {
+      throw new NotFoundException('Product not found');
+    }
 
     await this.ensureLegacyCheckoutsForProduct(baseProduct.id);
 
@@ -373,7 +375,9 @@ export class CheckoutService {
         },
       },
     });
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
 
     const checkoutNodes = await this.planLinkManager.ensurePlansReferenceCodes(
       product.checkoutPlans,
@@ -686,7 +690,9 @@ export class CheckoutService {
         },
       },
     });
-    if (!config) throw new NotFoundException('Checkout config not found');
+    if (!config) {
+      throw new NotFoundException('Checkout config not found');
+    }
 
     const normalizedPlan = config.plan
       ? await this.planLinkManager.ensurePlanReferenceCode(config.plan)
@@ -1426,7 +1432,9 @@ export class CheckoutService {
       where: { slug },
       include: { checkoutConfig: true },
     });
-    if (!plan) throw new NotFoundException('Plano nao encontrado');
+    if (!plan) {
+      throw new NotFoundException('Plano nao encontrado');
+    }
     const quote = buildCheckoutShippingQuote({
       plan,
       checkoutConfig: plan.checkoutConfig,
@@ -1452,7 +1460,9 @@ export class CheckoutService {
       where: { id: planId },
       include: { product: true },
     });
-    if (!plan) throw new NotFoundException('Plano nao encontrado');
+    if (!plan) {
+      throw new NotFoundException('Plano nao encontrado');
+    }
 
     return this.prisma.checkoutConfig.update({
       where: { planId },
@@ -1879,7 +1889,9 @@ export class CheckoutService {
         upsellOrders: true,
       },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
     return order;
   }
 
@@ -1890,7 +1902,9 @@ export class CheckoutService {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
     const where: Prisma.CheckoutOrderWhereInput = { workspaceId };
-    if (filters?.status) where.status = filters.status as CheckoutOrderStatusValue;
+    if (filters?.status) {
+      where.status = filters.status as CheckoutOrderStatusValue;
+    }
 
     const [orders, total] = await this.prisma.$transaction([
       this.prisma.checkoutOrder.findMany({
@@ -1931,13 +1945,25 @@ export class CheckoutService {
     const data: Prisma.CheckoutOrderUpdateInput = { status };
     const now = new Date();
 
-    if (status === 'PAID') data.paidAt = now;
-    if (status === 'SHIPPED') data.shippedAt = now;
-    if (status === 'DELIVERED') data.deliveredAt = now;
-    if (status === 'CANCELED') data.canceledAt = now;
-    if (status === 'REFUNDED') data.refundedAt = now;
+    if (status === 'PAID') {
+      data.paidAt = now;
+    }
+    if (status === 'SHIPPED') {
+      data.shippedAt = now;
+    }
+    if (status === 'DELIVERED') {
+      data.deliveredAt = now;
+    }
+    if (status === 'CANCELED') {
+      data.canceledAt = now;
+    }
+    if (status === 'REFUNDED') {
+      data.refundedAt = now;
+    }
 
-    if (extra) Object.assign(data, extra);
+    if (extra) {
+      Object.assign(data, extra);
+    }
 
     const existingOrder = await this.prisma.checkoutOrder.findFirst({
       where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
@@ -2005,7 +2031,9 @@ export class CheckoutService {
         upsellOrders: { select: { id: true, upsellId: true } },
       },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
     return order;
   }
 
@@ -2016,12 +2044,16 @@ export class CheckoutService {
       where: { id: orderId },
       select: { id: true, status: true },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
 
     const upsell = await this.prisma.upsell.findUnique({
       where: { id: upsellId },
     });
-    if (!upsell) throw new NotFoundException('Upsell not found');
+    if (!upsell) {
+      throw new NotFoundException('Upsell not found');
+    }
 
     // Create UpsellOrder
     const upsellOrder = await this.prisma.upsellOrder.create({
@@ -2076,7 +2108,9 @@ export class CheckoutService {
       where: { id: orderId },
       select: { id: true },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
 
     this.logger.log(`Upsell ${upsellId} declined for order ${orderId}`);
 

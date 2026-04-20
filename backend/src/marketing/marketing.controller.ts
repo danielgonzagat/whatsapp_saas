@@ -101,8 +101,12 @@ export class MarketingController {
   }
 
   private pickOptionalTrimmedString(value: unknown, fallbackValue?: unknown): string | null {
-    if (typeof value === 'string' && value.trim()) return value.trim();
-    if (typeof fallbackValue === 'string' && fallbackValue.trim()) return fallbackValue.trim();
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+    if (typeof fallbackValue === 'string' && fallbackValue.trim()) {
+      return fallbackValue.trim();
+    }
     return null;
   }
 
@@ -124,7 +128,9 @@ export class MarketingController {
   }
 
   private normalizeWhatsAppSelectedProducts(raw: unknown) {
-    if (!Array.isArray(raw)) return [];
+    if (!Array.isArray(raw)) {
+      return [];
+    }
 
     return raw
       .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
@@ -481,7 +487,9 @@ export class MarketingController {
     const msgsByChannel = new Map<string, number>();
     for (const g of msgGroups) {
       const ch = channelByConvId.get(g.conversationId);
-      if (ch) msgsByChannel.set(ch, (msgsByChannel.get(ch) || 0) + g._count.id);
+      if (ch) {
+        msgsByChannel.set(ch, (msgsByChannel.get(ch) || 0) + g._count.id);
+      }
     }
 
     const channelResults: Record<
@@ -740,8 +748,11 @@ export class MarketingController {
             }),
             signal: AbortSignal.timeout(30000),
           });
-          if (res.ok) sent++;
-          else failed++;
+          if (res.ok) {
+            sent++;
+          } else {
+            failed++;
+          }
         } else if (provider === 'sendgrid') {
           // Not SSRF: hardcoded SendGrid API endpoint
           const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
@@ -758,8 +769,11 @@ export class MarketingController {
             }),
             signal: AbortSignal.timeout(30000),
           });
-          if (res.ok || res.status === 202) sent++;
-          else failed++;
+          if (res.ok || res.status === 202) {
+            sent++;
+          } else {
+            failed++;
+          }
         } else {
           this.logger.log(`[DEV] Would send to ${recipient.email}: ${body.subject}`);
           sent++;

@@ -12,10 +12,14 @@ export class GroupingManager {
 
   group(): Group | null {
     const active = this.canvas.getActiveObject();
-    if (!(active instanceof ActiveSelection)) return null;
+    if (!(active instanceof ActiveSelection)) {
+      return null;
+    }
 
     const objects = active.getObjects();
-    if (objects.length < 2) return null;
+    if (objects.length < 2) {
+      return null;
+    }
 
     this.canvas.discardActiveObject();
     objects.forEach((obj) => {
@@ -32,7 +36,9 @@ export class GroupingManager {
 
   ungroup(): void {
     const active = this.canvas.getActiveObject();
-    if (!(active instanceof Group)) return;
+    if (!(active instanceof Group)) {
+      return;
+    }
 
     const items = active.getObjects();
     this.canvas.remove(active);

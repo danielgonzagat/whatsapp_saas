@@ -49,7 +49,9 @@ export class InboxEventsService implements OnModuleInit, OnModuleDestroy {
   private handleMessage(raw: string) {
     try {
       const event: WsEvent = JSON.parse(raw);
-      if (!event?.workspaceId || !event?.type) return;
+      if (!event?.workspaceId || !event?.type) {
+        return;
+      }
       switch (event.type) {
         case 'message:new':
           this.gateway.emitToWorkspace(event.workspaceId, 'message:new', event.message);

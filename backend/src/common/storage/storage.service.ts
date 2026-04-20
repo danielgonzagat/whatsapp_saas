@@ -557,7 +557,9 @@ export class StorageService implements OnModuleInit {
    * Returns a cached R2 S3-compatible client, or null if not configured.
    */
   private getR2Client(): S3Client | null {
-    if (this.r2Client) return this.r2Client;
+    if (this.r2Client) {
+      return this.r2Client;
+    }
 
     const bucket = this.config.get('R2_BUCKET');
     const accountId = this.config.get('R2_ACCOUNT_ID');
@@ -658,7 +660,9 @@ export class StorageService implements OnModuleInit {
 
   private async deleteFromS3(relativePath: string): Promise<boolean> {
     const bucket = this.config.get('S3_BUCKET');
-    if (!bucket) return this.deleteFromLocal(relativePath);
+    if (!bucket) {
+      return this.deleteFromLocal(relativePath);
+    }
 
     try {
       const client = new S3Client({
@@ -673,7 +677,9 @@ export class StorageService implements OnModuleInit {
 
   private async deleteFromR2(relativePath: string): Promise<boolean> {
     const client = this.getR2Client();
-    if (!client) return this.deleteFromLocal(relativePath);
+    if (!client) {
+      return this.deleteFromLocal(relativePath);
+    }
 
     try {
       const bucket = this.config.get('R2_BUCKET');

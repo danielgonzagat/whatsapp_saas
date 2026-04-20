@@ -196,7 +196,9 @@ export class WebhooksController {
 
   private async assertWorkspaceNotSuspended(pathWorkspaceId?: string) {
     const workspaceId = pathWorkspaceId?.trim();
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -212,7 +214,9 @@ export class WebhooksController {
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
       process.env.DLQ_WEBHOOK_URL;
-    if (!url || !globalThis.fetch) return;
+    if (!url || !globalThis.fetch) {
+      return;
+    }
     try {
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {

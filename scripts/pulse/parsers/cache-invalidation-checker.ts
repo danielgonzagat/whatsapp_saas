@@ -39,8 +39,12 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
   const frontendFiles = walkFiles(config.frontendDir, ['.ts', '.tsx']);
 
   for (const file of frontendFiles) {
-    if (/node_modules|\.next/.test(file)) continue;
-    if (/\.spec\.|\.test\./.test(file)) continue;
+    if (/node_modules|\.next/.test(file)) {
+      continue;
+    }
+    if (/\.spec\.|\.test\./.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -53,8 +57,13 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
     const lines = content.split('\n');
 
     // Detect files that make write API calls
-    const hasWriteCall = /apiFetch\s*\(.*(?:POST|PUT|PATCH|DELETE)|method:\s*['"](?:POST|PUT|PATCH|DELETE)/i.test(content);
-    if (!hasWriteCall) continue;
+    const hasWriteCall =
+      /apiFetch\s*\(.*(?:POST|PUT|PATCH|DELETE)|method:\s*['"](?:POST|PUT|PATCH|DELETE)/i.test(
+        content,
+      );
+    if (!hasWriteCall) {
+      continue;
+    }
 
     // Check if there's a corresponding mutate() call
     const hasMutate = SWR_MUTATE_RE.test(content);
@@ -66,21 +75,28 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
         severity: isFinancial ? 'high' : 'high',
         file: relFile,
         line: 0,
-        description: 'Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation',
-        detail: 'Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys',
+        description:
+          'Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation',
+        detail:
+          'Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys',
       });
     }
 
     // CHECK 4: Financial data specifically — must always invalidate
     if (FINANCIAL_PATH_RE.test(file) && hasWriteCall) {
-      if (!hasMutate && !/router\.refresh\(\)|router\.push\(|window\.location\.reload/i.test(content)) {
+      if (
+        !hasMutate &&
+        !/router\.refresh\(\)|router\.push\(|window\.location\.reload/i.test(content)
+      ) {
         breaks.push({
           type: 'CACHE_STALE_AFTER_WRITE',
           severity: 'high',
           file: relFile,
           line: 0,
-          description: 'Financial write without any cache invalidation strategy — user may see wrong balance',
-          detail: 'After wallet/payment mutations, call mutate() immediately to show updated balance',
+          description:
+            'Financial write without any cache invalidation strategy — user may see wrong balance',
+          detail:
+            'After wallet/payment mutations, call mutate() immediately to show updated balance',
         });
       }
     }
@@ -102,7 +118,8 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
                 severity: 'high',
                 file: relFile,
                 line: i + 1,
-                description: 'SWR cache key is not scoped to workspace — cross-tenant cache leakage risk',
+                description:
+                  'SWR cache key is not scoped to workspace — cross-tenant cache leakage risk',
                 detail: `Key ${key} should include workspaceId: \`/api/resource/\${workspaceId}\``,
               });
             }
@@ -116,8 +133,12 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
 
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) continue;
-    if (!/service/i.test(file)) continue;
+    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+      continue;
+    }
+    if (!/service/i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -139,8 +160,10 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
         severity: 'high',
         file: relFile,
         line: 0,
-        description: 'Service writes to both Redis and DB but never invalidates Redis cache — reads return stale data',
-        detail: 'After DB write, call redis.del(key) or redis.expire(key, 0) to invalidate affected cache entries',
+        description:
+          'Service writes to both Redis and DB but never invalidates Redis cache — reads return stale data',
+        detail:
+          'After DB write, call redis.del(key) or redis.expire(key, 0) to invalidate affected cache entries',
       });
     }
 
@@ -151,21 +174,22 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
         const line = lines[i].trim();
         if (REDIS_WRITE_RE.test(line)) {
           // Check if TTL is set and is not too long
-          const ttlMatch = content.slice(
-            Math.max(0, content.indexOf(line) - 50),
-            content.indexOf(line) + 200
-          ).match(/\bEX\s+(\d+)|ttl[:\s]+(\d+)|expire\s*\(\s*\w+\s*,\s*(\d+)/i);
+          const ttlMatch = content
+            .slice(Math.max(0, content.indexOf(line) - 50), content.indexOf(line) + 200)
+            .match(/\bEX\s+(\d+)|ttl[:\s]+(\d+)|expire\s*\(\s*\w+\s*,\s*(\d+)/i);
 
           if (ttlMatch) {
             const ttl = parseInt(ttlMatch[1] || ttlMatch[2] || ttlMatch[3] || '0', 10);
-            if (ttl > 300) { // 5 minutes
+            if (ttl > 300) {
+              // 5 minutes
               breaks.push({
                 type: 'CACHE_REDIS_STALE',
                 severity: 'high',
                 file: relFile,
                 line: i + 1,
                 description: `Financial data cached in Redis with TTL of ${ttl}s — too long, user may see stale balance`,
-                detail: 'Financial cache TTL should be ≤60s; prefer invalidation-on-write over time-based expiry',
+                detail:
+                  'Financial cache TTL should be ≤60s; prefer invalidation-on-write over time-based expiry',
               });
             }
           } else {
@@ -175,8 +199,10 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
               severity: 'high',
               file: relFile,
               line: i + 1,
-              description: 'Financial data cached in Redis without TTL — cache never expires, will always be stale',
-              detail: 'Set EX (expire) on all Redis cache writes; financial data should use ≤60s TTL',
+              description:
+                'Financial data cached in Redis without TTL — cache never expires, will always be stale',
+              detail:
+                'Set EX (expire) on all Redis cache writes; financial data should use ≤60s TTL',
             });
           }
         }

@@ -41,9 +41,13 @@ function parseErrorPayload(responseBody: unknown): Record<string, unknown> | und
  */
 function extractErrorMessage(obj: Record<string, unknown>): string | null {
   const message = obj?.message;
-  if (typeof message === 'string' && message.trim()) return message;
+  if (typeof message === 'string' && message.trim()) {
+    return message;
+  }
   const error = obj?.error;
-  if (typeof error === 'string' && error.trim()) return error;
+  if (typeof error === 'string' && error.trim()) {
+    return error;
+  }
   return null;
 }
 
@@ -185,14 +189,22 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     path: string,
     workspaceId?: string,
   ): void {
-    if (responseTimeMs <= 3000) return;
+    if (responseTimeMs <= 3000) {
+      return;
+    }
     this.logger.warn('Slow request detected', { method, path, responseTimeMs, workspaceId });
   }
 
   private shouldLog(method: string, path: string, statusCode: number): boolean {
-    if (statusCode >= 400) return true;
-    if (isHealthCheckPath(path)) return false;
-    if (MUTATION_METHODS.has(method)) return true;
+    if (statusCode >= 400) {
+      return true;
+    }
+    if (isHealthCheckPath(path)) {
+      return false;
+    }
+    if (MUTATION_METHODS.has(method)) {
+      return true;
+    }
     return matchesLoggedGetPath(path);
   }
 
@@ -211,14 +223,20 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
   }
 
   private extractError(responseBody: unknown): string | undefined {
-    if (!responseBody) return undefined;
+    if (!responseBody) {
+      return undefined;
+    }
     const parsed = parseErrorPayload(responseBody);
-    if (parsed === undefined) return undefined;
+    if (parsed === undefined) {
+      return undefined;
+    }
     return extractErrorMessage(parsed) ?? 'Unknown error';
   }
 
   private async flushBuffer(): Promise<void> {
-    if (this.logBuffer.length === 0) return;
+    if (this.logBuffer.length === 0) {
+      return;
+    }
 
     const logsToFlush = [...this.logBuffer];
     this.logBuffer = [];

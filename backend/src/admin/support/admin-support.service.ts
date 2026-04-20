@@ -88,7 +88,9 @@ export class AdminSupportService {
         },
       },
     });
-    if (!conversation) throw adminErrors.userNotFound();
+    if (!conversation) {
+      throw adminErrors.userNotFound();
+    }
 
     return {
       ticket: {
@@ -140,7 +142,9 @@ export class AdminSupportService {
       where: { id: conversationId },
       select: { id: true, status: true, workspaceId: true },
     });
-    if (!conversation) throw adminErrors.userNotFound();
+    if (!conversation) {
+      throw adminErrors.userNotFound();
+    }
 
     await this.prisma.conversation.update({
       where: { id: conversationId },
@@ -169,7 +173,9 @@ export class AdminSupportService {
         contactId: true,
       },
     });
-    if (!conversation) throw adminErrors.userNotFound();
+    if (!conversation) {
+      throw adminErrors.userNotFound();
+    }
 
     await this.prisma.message.create({
       data: {

@@ -187,8 +187,12 @@ const DEFAULT_FINAL_READINESS_CRITERIA: PulseManifestFinalReadinessCriteria = {
 };
 
 function getEnvironment(): PulseEnvironment {
-  if (process.env.PULSE_TOTAL === '1') return 'total';
-  if (process.env.PULSE_DEEP === '1') return 'deep';
+  if (process.env.PULSE_TOTAL === '1') {
+    return 'total';
+  }
+  if (process.env.PULSE_DEEP === '1') {
+    return 'deep';
+  }
   return 'scan';
 }
 
@@ -235,7 +239,9 @@ function matchesAny(type: string, patterns: RegExp[]): boolean {
 function getActiveTemporaryAcceptances(
   manifest: PulseManifest | null,
 ): PulseManifest['temporaryAcceptances'] {
-  if (!manifest) return [];
+  if (!manifest) {
+    return [];
+  }
   const now = Date.now();
   return manifest.temporaryAcceptances.filter((entry) => {
     const expiresAt = Date.parse(entry.expiresAt);
@@ -273,9 +279,15 @@ function filterBlockingBreaks(
   manifest?: PulseManifest | null,
 ): Break[] {
   return breaks.filter((item) => {
-    if (!isCriticalBreak(item)) return false;
-    if (CHECKER_GAP_TYPES.has(item.type)) return false;
-    if (manifest && isBreakTypeAccepted(manifest, item.type)) return false;
+    if (!isCriticalBreak(item)) {
+      return false;
+    }
+    if (CHECKER_GAP_TYPES.has(item.type)) {
+      return false;
+    }
+    if (manifest && isBreakTypeAccepted(manifest, item.type)) {
+      return false;
+    }
     return predicate ? predicate(item) : true;
   });
 }
@@ -407,7 +419,9 @@ function normalizeRoutePattern(value: string): string {
 function routeMatches(route: string, pattern: string): boolean {
   const normalizedRoute = normalizeRoutePattern(route);
   const normalizedPattern = normalizeRoutePattern(pattern);
-  if (!normalizedPattern) return false;
+  if (!normalizedPattern) {
+    return false;
+  }
   return normalizedRoute === normalizedPattern || normalizedRoute.startsWith(normalizedPattern);
 }
 
@@ -835,7 +849,9 @@ function mergeExecutionEvidence(
   defaults: PulseExecutionEvidence,
   overrides?: Partial<PulseExecutionEvidence>,
 ): PulseExecutionEvidence {
-  if (!overrides) return defaults;
+  if (!overrides) {
+    return defaults;
+  }
 
   return {
     runtime: {
@@ -1470,8 +1486,12 @@ function evaluateBrowserGate(
 function chooseStructuredFailureClass<
   T extends { failureClass?: PulseGateFailureClass; status: string },
 >(results: T[]): PulseGateFailureClass {
-  if (results.some((item) => item.failureClass === 'product_failure')) return 'product_failure';
-  if (results.some((item) => item.failureClass === 'checker_gap')) return 'checker_gap';
+  if (results.some((item) => item.failureClass === 'product_failure')) {
+    return 'product_failure';
+  }
+  if (results.some((item) => item.failureClass === 'checker_gap')) {
+    return 'checker_gap';
+  }
   return 'missing_evidence';
 }
 
@@ -1706,7 +1726,9 @@ function withTemporaryGateAcceptance(
 function computeScore(rawScore: number, gates: Record<PulseGateName, PulseGateResult>): number {
   const passed = GATE_ORDER.filter((gateName) => gates[gateName].status === 'pass').length;
   const gateScore = Math.round((passed / GATE_ORDER.length) * 100);
-  if (passed === GATE_ORDER.length) return 100;
+  if (passed === GATE_ORDER.length) {
+    return 100;
+  }
   return Math.max(0, Math.min(rawScore, gateScore));
 }
 

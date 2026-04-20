@@ -32,7 +32,9 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
-    if (!selected) return;
+    if (!selected) {
+      return;
+    }
     setLoading(true);
     router.push('/');
   };

@@ -26,7 +26,9 @@ export class AdminKycService {
       where: { id: agentId },
       select: { id: true, workspaceId: true, kycStatus: true },
     });
-    if (!agent) throw adminErrors.userNotFound();
+    if (!agent) {
+      throw adminErrors.userNotFound();
+    }
 
     await this.prisma.$transaction([
       this.prisma.agent.update({
@@ -65,7 +67,9 @@ export class AdminKycService {
       where: { id: agentId },
       select: { id: true, workspaceId: true, kycStatus: true },
     });
-    if (!agent) throw adminErrors.userNotFound();
+    if (!agent) {
+      throw adminErrors.userNotFound();
+    }
 
     await this.prisma.$transaction([
       this.prisma.agent.update({
@@ -104,7 +108,9 @@ export class AdminKycService {
       where: { id: agentId },
       select: { id: true, workspaceId: true, kycStatus: true },
     });
-    if (!agent) throw adminErrors.userNotFound();
+    if (!agent) {
+      throw adminErrors.userNotFound();
+    }
 
     await this.prisma.agent.update({
       where: { id: agentId },

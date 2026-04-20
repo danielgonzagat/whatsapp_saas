@@ -30,7 +30,9 @@ function resolveOptionalModeWorkspace(requested: string | undefined): string {
 }
 
 function extractTokenWorkspaceId(user: TokenUser | undefined | null): string | null {
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
   const { workspaceId } = user;
   return typeof workspaceId === 'string' && workspaceId ? workspaceId : null;
 }
@@ -91,11 +93,15 @@ function pickWorkspaceIdCandidate(
     | undefined,
 ): string | undefined {
   const fromExplicit = asStringOrUndefined(explicit);
-  if (fromExplicit) return fromExplicit;
+  if (fromExplicit) {
+    return fromExplicit;
+  }
   const bags = [source?.params, source?.body, source?.query];
   for (const bag of bags) {
     const candidate = readWorkspaceIdFrom(bag);
-    if (candidate) return candidate;
+    if (candidate) {
+      return candidate;
+    }
   }
   return undefined;
 }

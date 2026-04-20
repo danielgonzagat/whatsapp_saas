@@ -20,15 +20,20 @@ export function checkQueues(config: PulseConfig): Break[] {
   // ---- Collect producers (.add('jobName') in backend) ----
   const producers: JobRef[] = [];
 
-  const backendFiles = walkFiles(config.backendDir, ['.ts']).filter(f => {
-    if (/\.(spec|test|d)\.ts$/.test(f)) return false;
-    if (/node_modules/.test(f)) return false;
+  const backendFiles = walkFiles(config.backendDir, ['.ts']).filter((f) => {
+    if (/\.(spec|test|d)\.ts$/.test(f)) {
+      return false;
+    }
+    if (/node_modules/.test(f)) {
+      return false;
+    }
     return true;
   });
 
   // Pattern: queue.add('jobName', ...) — must be a simple identifier, not a URL path or template
   // Matches: queue.add, Queue.add, this.queue.add, this.someQueue.add, someQueue.add, myQueueRef.add
-  const addPatternSameLine = /(?:\w*[Qq]ueue\w*|this\.\w+)\.add\s*\(\s*['"]([a-zA-Z][a-zA-Z0-9_-]*)['"`]/;
+  const addPatternSameLine =
+    /(?:\w*[Qq]ueue\w*|this\.\w+)\.add\s*\(\s*['"]([a-zA-Z][a-zA-Z0-9_-]*)['"`]/;
   // Pattern for when .add( is on one line and the job name string is on the next line
   const addPatternOpenParen = /(?:\w*[Qq]ueue\w*|this\.\w+)\.add\s*\(\s*$/;
   const jobNameOnlyPattern = /^\s*['"]([a-zA-Z][a-zA-Z0-9_-]*)['"`]\s*,?\s*$/;
@@ -36,11 +41,17 @@ export function checkQueues(config: PulseConfig): Break[] {
   // Also look in worker dir (worker can self-enqueue)
   const allSourceFiles = [...backendFiles];
   if (config.workerDir) {
-    allSourceFiles.push(...walkFiles(config.workerDir, ['.ts']).filter(f => {
-      if (/\.(spec|test|d)\.ts$/.test(f)) return false;
-      if (/node_modules/.test(f)) return false;
-      return true;
-    }));
+    allSourceFiles.push(
+      ...walkFiles(config.workerDir, ['.ts']).filter((f) => {
+        if (/\.(spec|test|d)\.ts$/.test(f)) {
+          return false;
+        }
+        if (/node_modules/.test(f)) {
+          return false;
+        }
+        return true;
+      }),
+    );
   }
 
   for (const file of allSourceFiles) {
@@ -57,13 +68,19 @@ export function checkQueues(config: PulseConfig): Break[] {
       const trimmed = lines[i].trim();
 
       // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
       // Skip imports
-      if (/^import\s/.test(trimmed)) continue;
+      if (/^import\s/.test(trimmed)) {
+        continue;
+      }
 
       // Skip if there's a PULSE:OK annotation on the same line or the preceding line
       const prevLine = i > 0 ? lines[i - 1].trim() : '';
-      if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) continue;
+      if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) {
+        continue;
+      }
 
       let jobName: string | null = null;
 
@@ -80,20 +97,28 @@ export function checkQueues(config: PulseConfig): Break[] {
         }
       }
 
-      if (!jobName) continue;
+      if (!jobName) {
+        continue;
+      }
 
       // Verify this looks like a queue.add() call, not Array.add or Set.add or similar
       const addIdx = trimmed.indexOf('.add(');
       if (addIdx >= 0) {
         const beforeAdd = trimmed.slice(0, addIdx);
         // Heuristic: skip if it looks like a DOM or collection method
-        if (/\b(?:classList|eventListeners|listeners|subscribers|middlewares|routes|providers|imports|exports|controllers|interceptors|pipes|guards|filters|modules)\b/.test(beforeAdd)) {
+        if (
+          /\b(?:classList|eventListeners|listeners|subscribers|middlewares|routes|providers|imports|exports|controllers|interceptors|pipes|guards|filters|modules)\b/.test(
+            beforeAdd,
+          )
+        ) {
           continue;
         }
       }
 
       // Skip if job name is too long or empty
-      if (jobName.length === 0 || jobName.length > 80) continue;
+      if (jobName.length === 0 || jobName.length > 80) {
+        continue;
+      }
 
       producers.push({ file, line: i + 1, jobName });
     }
@@ -102,9 +127,13 @@ export function checkQueues(config: PulseConfig): Break[] {
   // ---- Collect consumers (case 'jobName': or job.name === 'jobName' in worker) ----
   const consumers: JobRef[] = [];
 
-  const workerFiles = walkFiles(config.workerDir, ['.ts']).filter(f => {
-    if (/\.(spec|test|d)\.ts$/.test(f)) return false;
-    if (/node_modules/.test(f)) return false;
+  const workerFiles = walkFiles(config.workerDir, ['.ts']).filter((f) => {
+    if (/\.(spec|test|d)\.ts$/.test(f)) {
+      return false;
+    }
+    if (/node_modules/.test(f)) {
+      return false;
+    }
     return true;
   });
 
@@ -124,7 +153,8 @@ export function checkQueues(config: PulseConfig): Break[] {
   //   - The function is passed as the second arg to new Worker(...)
   // Heuristic: only count case statements as job consumers if the file contains Worker constructor usage
   // OR if a job.name comparison is present (which is unambiguously job processing).
-  const jobProcessorPattern = /new\s+Worker\s*\(|\.process\s*\(|@Process\s*\(|job\.name\s*===|job\.data\b/;
+  const jobProcessorPattern =
+    /new\s+Worker\s*\(|\.process\s*\(|@Process\s*\(|job\.name\s*===|job\.data\b/;
   const isJobProcessorFile = (content: string) => jobProcessorPattern.test(content);
 
   for (const file of workerFiles) {
@@ -144,11 +174,15 @@ export function checkQueues(config: PulseConfig): Break[] {
       const trimmed = lines[i].trim();
 
       // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
       // Skip if PULSE:OK on this or preceding line
       const prevLine2 = i > 0 ? lines[i - 1].trim() : '';
-      if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine2)) continue;
+      if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine2)) {
+        continue;
+      }
 
       let m: RegExpMatchArray | null;
 
@@ -169,10 +203,16 @@ export function checkQueues(config: PulseConfig): Break[] {
       }
 
       m = trimmed.match(jobNameEqPattern);
-      if (m) { consumers.push({ file, line: i + 1, jobName: m[1] }); continue; }
+      if (m) {
+        consumers.push({ file, line: i + 1, jobName: m[1] });
+        continue;
+      }
 
       m = trimmed.match(processDecoratorPattern);
-      if (m) { consumers.push({ file, line: i + 1, jobName: m[1] }); continue; }
+      if (m) {
+        consumers.push({ file, line: i + 1, jobName: m[1] });
+        continue;
+      }
     }
   }
 
@@ -183,13 +223,18 @@ export function checkQueues(config: PulseConfig): Break[] {
   const newWorkerOpenParenPattern = /new\s+Worker\s*\(\s*$/;
   const quoteStringPattern = /^\s*['"]([^'"]+)['"]/;
   // Also collect: new BullQueue("name", ...) or new Queue("name", ...) → variable name mapping
-  const queueDeclPattern = /(?:const|let|var|export\s+(?:const|let))\s+(\w+)\s*=\s*new\s+(?:BullQueue|Queue|Bull)\s*\(\s*['"]([^'"]+)['"]/;
+  const queueDeclPattern =
+    /(?:const|let|var|export\s+(?:const|let))\s+(\w+)\s*=\s*new\s+(?:BullQueue|Queue|Bull)\s*\(\s*['"]([^'"]+)['"]/;
   const queueNameByVar = new Map<string, string>();
 
   const allWorkerAndQueueFiles = [...workerFiles, ...backendFiles];
   for (const file of allWorkerAndQueueFiles) {
     let content: string;
-    try { content = fs.readFileSync(file, 'utf8'); } catch { continue; }
+    try {
+      content = fs.readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
     const lines = content.split('\n');
     for (let j = 0; j < lines.length; j++) {
       const line = lines[j];
@@ -201,10 +246,14 @@ export function checkQueues(config: PulseConfig): Break[] {
         // Multi-line: new Worker(\n  "queue-name",
         const nextLine = j + 1 < lines.length ? lines[j + 1] : '';
         const nm = nextLine.match(quoteStringPattern);
-        if (nm) workerQueueNames.add(nm[1]);
+        if (nm) {
+          workerQueueNames.add(nm[1]);
+        }
       }
       const qm = line.match(queueDeclPattern);
-      if (qm) queueNameByVar.set(qm[1], qm[2]);
+      if (qm) {
+        queueNameByVar.set(qm[1], qm[2]);
+      }
     }
   }
 
@@ -214,7 +263,11 @@ export function checkQueues(config: PulseConfig): Break[] {
   for (const prod of producers) {
     // Extract the queue variable name from the producer line context
     const prodContent = (() => {
-      try { return fs.readFileSync(prod.file, 'utf8'); } catch { return ''; }
+      try {
+        return fs.readFileSync(prod.file, 'utf8');
+      } catch {
+        return '';
+      }
     })();
     const prodLine = prodContent.split('\n')[prod.line - 1] || '';
     // Look for varName.add( in the line
@@ -229,8 +282,8 @@ export function checkQueues(config: PulseConfig): Break[] {
   }
 
   // ---- Cross-reference ----
-  const producerJobNames = new Set(producers.map(p => p.jobName));
-  const consumerJobNames = new Set(consumers.map(c => c.jobName));
+  const producerJobNames = new Set(producers.map((p) => p.jobName));
+  const consumerJobNames = new Set(consumers.map((c) => c.jobName));
 
   // Deduplicate producers by jobName to avoid spamming the same job name from multiple callers
   const reportedProducerMissing = new Set<string>();
@@ -238,10 +291,16 @@ export function checkQueues(config: PulseConfig): Break[] {
 
   // Producer has no consumer
   for (const prod of producers) {
-    if (consumerJobNames.has(prod.jobName)) continue;
+    if (consumerJobNames.has(prod.jobName)) {
+      continue;
+    }
     // Skip if the producer's queue has a generic Worker that handles all jobs
-    if (producersWithWorker.has(prod.jobName)) continue;
-    if (reportedProducerMissing.has(prod.jobName)) continue;
+    if (producersWithWorker.has(prod.jobName)) {
+      continue;
+    }
+    if (reportedProducerMissing.has(prod.jobName)) {
+      continue;
+    }
     reportedProducerMissing.add(prod.jobName);
 
     const relFile = path.relative(config.rootDir, prod.file);
@@ -257,8 +316,12 @@ export function checkQueues(config: PulseConfig): Break[] {
 
   // Consumer has no producer
   for (const cons of consumers) {
-    if (producerJobNames.has(cons.jobName)) continue;
-    if (reportedConsumerMissing.has(cons.jobName)) continue;
+    if (producerJobNames.has(cons.jobName)) {
+      continue;
+    }
+    if (reportedConsumerMissing.has(cons.jobName)) {
+      continue;
+    }
     reportedConsumerMissing.add(cons.jobName);
 
     const relFile = path.relative(config.rootDir, cons.file);

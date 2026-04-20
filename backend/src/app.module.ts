@@ -61,6 +61,7 @@ import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 import { StorageModule } from './common/storage/storage.module';
 import { CookieConsentModule } from './cookie-consent/cookie-consent.module';
+import { ComplianceModule } from './compliance/compliance.module';
 import { CopilotModule } from './copilot/copilot.module';
 import { FollowUpModule } from './followup/followup.module';
 import { GdprModule } from './gdpr/gdpr.module';
@@ -143,7 +144,9 @@ const isProd = process.env.NODE_ENV === 'production';
             appLogger.warn('============================================');
           }
         } else {
-          if (!isTestEnv) appLogger.log('Redis configurado com URL resolvida');
+          if (!isTestEnv) {
+            appLogger.log('Redis configurado com URL resolvida');
+          }
         }
 
         return {
@@ -154,7 +157,9 @@ const isProd = process.env.NODE_ENV === 'production';
             enableReadyCheck: false, // Não verifica conexão na inicialização
             lazyConnect: true, // Conecta apenas quando usado
             retryStrategy: (times: number) => {
-              if (!configured) return null; // Não reconecta se não configurado
+              if (!configured) {
+                return null;
+              } // Não reconecta se não configurado
               return Math.min(times * 50, 2000);
             },
             reconnectOnError: () => configured, // Reconecta apenas se configurado
@@ -208,6 +213,7 @@ const isProd = process.env.NODE_ENV === 'production';
     PipelineModule, // 🧭 Sales pipeline / CRM board
     GdprModule, // LGPD/GDPR data export and deletion
     CookieConsentModule, // Cookie consent management
+    ComplianceModule, // OAuth/Meta/LGPD compliance callbacks and user rights endpoints
     FinancialAlertModule, // Financial alerting (global)
     PulseModule, // PULSE live organism collector
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)

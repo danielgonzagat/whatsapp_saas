@@ -84,7 +84,9 @@ export class AdRulesController {
     const rule = await this.prisma.adRule.findFirst({
       where: { id, workspaceId },
     });
-    if (!rule) throw new NotFoundException('Rule not found');
+    if (!rule) {
+      throw new NotFoundException('Rule not found');
+    }
     return this.prisma.adRule.update({ where: { id }, data: dto });
   }
 
@@ -94,7 +96,9 @@ export class AdRulesController {
     const rule = await this.prisma.adRule.findFirst({
       where: { id, workspaceId },
     });
-    if (!rule) throw new NotFoundException('Rule not found');
+    if (!rule) {
+      throw new NotFoundException('Rule not found');
+    }
     await this.auditService.log({
       workspaceId,
       action: 'DELETE_RECORD',
@@ -112,7 +116,9 @@ export class AdRulesController {
     const rule = await this.prisma.adRule.findFirst({
       where: { id, workspaceId },
     });
-    if (!rule) throw new NotFoundException('Rule not found');
+    if (!rule) {
+      throw new NotFoundException('Rule not found');
+    }
     return this.prisma.adRule.update({
       where: { id },
       data: { active: !rule.active },

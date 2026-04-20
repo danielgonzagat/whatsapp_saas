@@ -20,7 +20,9 @@ export class AdminPermissionsService {
     module: AdminModule,
     action: AdminAction,
   ): Promise<boolean> {
-    if (role === AdminRole.OWNER) return true;
+    if (role === AdminRole.OWNER) {
+      return true;
+    }
 
     const row = await this.prisma.adminPermission.findUnique({
       where: {
@@ -42,7 +44,9 @@ export class AdminPermissionsService {
       action: r.action,
       allowed: r.allowed,
     }));
-    if (rows.length === 0) return;
+    if (rows.length === 0) {
+      return;
+    }
     await this.prisma.adminPermission.createMany({
       data: rows,
       skipDuplicates: true,
@@ -59,7 +63,9 @@ export class AdminPermissionsService {
     role: AdminRole,
     permissions: Array<{ module: AdminModule; action: AdminAction; allowed: boolean }>,
   ): Promise<void> {
-    if (role === AdminRole.OWNER) return;
+    if (role === AdminRole.OWNER) {
+      return;
+    }
     await this.prisma.$transaction([
       this.prisma.adminPermission.deleteMany({ where: { adminUserId } }),
       this.prisma.adminPermission.createMany({

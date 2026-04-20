@@ -33,7 +33,9 @@ export async function saveWorkspaceSettings(
     method: 'POST',
     body: settings,
   });
-  if (res.error) throw new Error(res.error || 'Failed to save settings');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to save settings');
+  }
   invalidateWorkspace();
   return res.data as Record<string, unknown>;
 }
@@ -48,7 +50,9 @@ export interface ApiKey {
 
 export async function listApiKeys(_token?: string): Promise<ApiKey[]> {
   const res = await apiFetch<ApiKey[]>(`/settings/api-keys`);
-  if (res.error) throw new Error(res.error || 'Failed to list API keys');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to list API keys');
+  }
   return res.data ?? [];
 }
 
@@ -57,7 +61,9 @@ export async function createApiKey(name: string, _token?: string): Promise<ApiKe
     method: 'POST',
     body: { name },
   });
-  if (res.error) throw new Error(res.error || 'Failed to create API key');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to create API key');
+  }
   invalidateSettings();
   return res.data as ApiKey;
 }
@@ -66,7 +72,9 @@ export async function deleteApiKey(keyId: string, _token?: string): Promise<void
   const res = await apiFetch<{ ok: boolean }>(`/settings/api-keys/${keyId}`, {
     method: 'DELETE',
   });
-  if (res.error) throw new Error(res.error || 'Failed to delete API key');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to delete API key');
+  }
   invalidateSettings();
 }
 
@@ -87,7 +95,9 @@ export async function createCheckoutSession(
     method: 'POST',
     body: { workspaceId, plan, email },
   });
-  if (res.error) throw new Error(res.error || 'Failed to create checkout session');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to create checkout session');
+  }
   invalidateBilling();
   return res.data as CheckoutResponse;
 }
@@ -100,7 +110,9 @@ export interface SubscriptionStatus {
 
 export async function getSubscriptionStatus(_token?: string): Promise<SubscriptionStatus | null> {
   const res = await apiFetch<SubscriptionStatus>(`/billing/status`);
-  if (res.error) return null;
+  if (res.error) {
+    return null;
+  }
   return res.data ?? null;
 }
 
@@ -108,7 +120,9 @@ export async function activateTrial(): Promise<Record<string, unknown>> {
   const res = await apiFetch<Record<string, unknown>>(`/billing/activate-trial`, {
     method: 'POST',
   });
-  if (res.error) throw new Error(res.error || 'Failed to activate trial');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to activate trial');
+  }
   invalidateBilling();
   return res.data as Record<string, unknown>;
 }
@@ -117,14 +131,18 @@ export async function cancelSubscription(): Promise<Record<string, unknown>> {
   const res = await apiFetch<Record<string, unknown>>(`/billing/cancel`, {
     method: 'POST',
   });
-  if (res.error) throw new Error(res.error || 'Failed to cancel subscription');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to cancel subscription');
+  }
   invalidateBilling();
   return res.data as Record<string, unknown>;
 }
 
 export async function getBillingUsage(): Promise<Record<string, unknown>> {
   const res = await apiFetch<Record<string, unknown>>(`/billing/usage`);
-  if (res.error) throw new Error(res.error || 'Failed to get billing usage');
+  if (res.error) {
+    throw new Error(res.error || 'Failed to get billing usage');
+  }
   return res.data as Record<string, unknown>;
 }
 
@@ -152,7 +170,9 @@ export async function createSetupIntent(_token?: string): Promise<SetupIntentRes
   const res = await apiFetch<SetupIntentResponse>(`/billing/payment-methods/setup-intent`, {
     method: 'POST',
   });
-  if (res.error) throw new Error(res.error || 'Erro ao criar Setup Intent');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao criar Setup Intent');
+  }
   return res.data as SetupIntentResponse;
 }
 
@@ -167,7 +187,9 @@ export async function attachPaymentMethod(
       body: { paymentMethodId },
     },
   );
-  if (res.error) throw new Error(res.error || 'Erro ao anexar método de pagamento');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao anexar método de pagamento');
+  }
   invalidateBilling();
   return res.data as { ok: boolean; paymentMethod: PaymentMethod };
 }
@@ -176,7 +198,9 @@ export async function listPaymentMethods(
   _token?: string,
 ): Promise<{ paymentMethods: PaymentMethod[] }> {
   const res = await apiFetch<{ paymentMethods: PaymentMethod[] }>(`/billing/payment-methods`);
-  if (res.error) return { paymentMethods: [] };
+  if (res.error) {
+    return { paymentMethods: [] };
+  }
   return res.data as { paymentMethods: PaymentMethod[] };
 }
 
@@ -190,7 +214,9 @@ export async function setDefaultPaymentMethod(
       method: 'POST',
     },
   );
-  if (res.error) throw new Error(res.error || 'Erro ao definir método padrão');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao definir método padrão');
+  }
   invalidateBilling();
   return res.data as { ok: boolean };
 }
@@ -202,7 +228,9 @@ export async function removePaymentMethod(
   const res = await apiFetch<{ ok: boolean }>(`/billing/payment-methods/${paymentMethodId}`, {
     method: 'DELETE',
   });
-  if (res.error) throw new Error(res.error || 'Erro ao remover método de pagamento');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao remover método de pagamento');
+  }
   invalidateBilling();
   return res.data as { ok: boolean };
 }
@@ -229,7 +257,9 @@ export interface WorkspaceInfo {
 
 export async function getWorkspace(workspaceId: string, _token?: string): Promise<WorkspaceInfo> {
   const res = await apiFetch<WorkspaceInfo>(`/workspace/${workspaceId}`);
-  if (res.error) throw new Error(res.error || 'Erro ao buscar workspace');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao buscar workspace');
+  }
   return res.data as WorkspaceInfo;
 }
 

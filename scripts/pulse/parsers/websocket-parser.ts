@@ -20,9 +20,13 @@ export function checkWebSockets(config: PulseConfig): Break[] {
   // ---- Collect backend gateway events (@SubscribeMessage) ----
   const backendEvents: GatewayEvent[] = [];
 
-  const gatewayFiles = walkFiles(config.backendDir, ['.ts']).filter(f => {
-    if (!f.endsWith('.gateway.ts')) return false;
-    if (/\.(spec|test)\.ts$/.test(f)) return false;
+  const gatewayFiles = walkFiles(config.backendDir, ['.ts']).filter((f) => {
+    if (!f.endsWith('.gateway.ts')) {
+      return false;
+    }
+    if (/\.(spec|test)\.ts$/.test(f)) {
+      return false;
+    }
     return true;
   });
 
@@ -38,7 +42,9 @@ export function checkWebSockets(config: PulseConfig): Break[] {
 
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
-      if (!/@SubscribeMessage\s*\(/.test(trimmed)) continue;
+      if (!/@SubscribeMessage\s*\(/.test(trimmed)) {
+        continue;
+      }
 
       const eventName = extractQuotedString(trimmed);
       if (eventName) {
@@ -57,9 +63,13 @@ export function checkWebSockets(config: PulseConfig): Break[] {
 
   const frontendEvents: FrontendEvent[] = [];
 
-  const frontendFiles = walkFiles(config.frontendDir, ['.ts', '.tsx']).filter(f => {
-    if (/\.(spec|test|d)\.ts$/.test(f)) return false;
-    if (/node_modules/.test(f)) return false;
+  const frontendFiles = walkFiles(config.frontendDir, ['.ts', '.tsx']).filter((f) => {
+    if (/\.(spec|test|d)\.ts$/.test(f)) {
+      return false;
+    }
+    if (/node_modules/.test(f)) {
+      return false;
+    }
     return true;
   });
 
@@ -85,26 +95,43 @@ export function checkWebSockets(config: PulseConfig): Break[] {
       const trimmed = lines[i].trim();
 
       // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
       // Skip imports
-      if (/^import\s/.test(trimmed)) continue;
+      if (/^import\s/.test(trimmed)) {
+        continue;
+      }
 
       let m: RegExpMatchArray | null;
 
       m = trimmed.match(emitPattern);
-      if (m) { frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'emit' }); continue; }
+      if (m) {
+        frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'emit' });
+        continue;
+      }
 
       m = trimmed.match(onPattern);
-      if (m) { frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'on' }); continue; }
+      if (m) {
+        frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'on' });
+        continue;
+      }
 
       m = trimmed.match(bareEmitPattern);
-      if (m) { frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'emit' }); continue; }
+      if (m) {
+        frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'emit' });
+        continue;
+      }
 
       m = trimmed.match(bareOnPattern);
       if (m) {
         // Exclude common non-socket .on() patterns: EventEmitter in node, DOM events
         const eventName = m[1];
-        if (/^(?:click|change|input|submit|focus|blur|keydown|keyup|keypress|resize|scroll|load|error|message|open|close|connect|disconnect)$/.test(eventName)) {
+        if (
+          /^(?:click|change|input|submit|focus|blur|keydown|keyup|keypress|resize|scroll|load|error|message|open|close|connect|disconnect)$/.test(
+            eventName,
+          )
+        ) {
           // These are likely DOM or socket lifecycle events — still record disconnect/connect/error
           if (/^(?:connect|disconnect|error|reconnect)$/.test(eventName)) {
             frontendEvents.push({ file, line: i + 1, eventName, kind: 'on' });
@@ -117,15 +144,24 @@ export function checkWebSockets(config: PulseConfig): Break[] {
   }
 
   // ---- Cross-reference ----
-  const backendEventNames = new Set(backendEvents.map(e => e.eventName));
-  const frontendEventNames = new Set(frontendEvents.map(e => e.eventName));
+  const backendEventNames = new Set(backendEvents.map((e) => e.eventName));
+  const frontendEventNames = new Set(frontendEvents.map((e) => e.eventName));
 
   // Lifecycle events that don't need @SubscribeMessage on backend
-  const lifecycleEvents = new Set(['connect', 'disconnect', 'error', 'reconnect', 'reconnect_error', 'reconnect_attempt']);
+  const lifecycleEvents = new Set([
+    'connect',
+    'disconnect',
+    'error',
+    'reconnect',
+    'reconnect_error',
+    'reconnect_attempt',
+  ]);
 
   // Backend events with no frontend consumer
   for (const evt of backendEvents) {
-    if (frontendEventNames.has(evt.eventName)) continue;
+    if (frontendEventNames.has(evt.eventName)) {
+      continue;
+    }
     const relFile = path.relative(config.rootDir, evt.file);
     breaks.push({
       type: 'GATEWAY_NO_CONSUMER',
@@ -139,9 +175,15 @@ export function checkWebSockets(config: PulseConfig): Break[] {
 
   // Frontend emits with no backend handler
   for (const evt of frontendEvents) {
-    if (evt.kind !== 'emit') continue;
-    if (lifecycleEvents.has(evt.eventName)) continue;
-    if (backendEventNames.has(evt.eventName)) continue;
+    if (evt.kind !== 'emit') {
+      continue;
+    }
+    if (lifecycleEvents.has(evt.eventName)) {
+      continue;
+    }
+    if (backendEventNames.has(evt.eventName)) {
+      continue;
+    }
     const relFile = path.relative(config.rootDir, evt.file);
     breaks.push({
       type: 'EMIT_NO_HANDLER',

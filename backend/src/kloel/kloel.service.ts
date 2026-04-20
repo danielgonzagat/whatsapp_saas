@@ -347,8 +347,12 @@ function toAssistantCompletionMessage(
 
 /** Safely coerce unknown values to string — avoids no-base-to-string */
 function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
   return fallback;
 }
 
@@ -1223,11 +1227,15 @@ export class KloelService {
       .replace(WHITESPACE_G_RE, ' ')
       .trim();
 
-    if (!cleaned) return 'Nova conversa';
+    if (!cleaned) {
+      return 'Nova conversa';
+    }
 
     const words = cleaned.split(' ').slice(0, 5);
     const title = words.join(' ').slice(0, 60).trim();
-    if (!title) return 'Nova conversa';
+    if (!title) {
+      return 'Nova conversa';
+    }
 
     return title.charAt(0).toUpperCase() + title.slice(1);
   }
@@ -1252,14 +1260,18 @@ export class KloelService {
     summary: string | null;
     summaryUpdatedAt: Date | null;
   } | null> {
-    if (!workspaceId) return null;
+    if (!workspaceId) {
+      return null;
+    }
 
     if (conversationId) {
       const existing = await this.prisma.chatThread.findFirst({
         where: { id: conversationId, workspaceId },
         select: { id: true, title: true, summary: true, summaryUpdatedAt: true },
       });
-      if (existing) return existing;
+      if (existing) {
+        return existing;
+      }
     }
 
     return this.prisma.chatThread.create({
@@ -1281,7 +1293,9 @@ export class KloelService {
     workspaceId?: string,
     limit = this.recentThreadMessageLimit,
   ): Promise<ChatMessage[]> {
-    if (!threadId) return [];
+    if (!threadId) {
+      return [];
+    }
 
     const messages = await this.prisma.chatMessage.findMany({
       where: workspaceId ? { threadId, thread: { workspaceId } } : { threadId },
@@ -1611,7 +1625,9 @@ export class KloelService {
       })
       .filter(Boolean);
 
-    if (lines.length === 0) return null;
+    if (lines.length === 0) {
+      return null;
+    }
     return ['ANEXOS VINCULADOS AO PROMPT:', ...lines].join('\n');
   }
 
@@ -1765,7 +1781,9 @@ export class KloelService {
   }
 
   private async resolveProductOwnerWorkspaceId(productId: string): Promise<string | null> {
-    if (!productId) return null;
+    if (!productId) {
+      return null;
+    }
 
     const product = await this.prisma.product.findFirst({
       where: { id: productId },
@@ -1779,16 +1797,22 @@ export class KloelService {
     workspaceId: string,
     linkedProduct: ComposerLinkedProductMetadata | null | undefined,
   ): Promise<string | null> {
-    if (!linkedProduct) return null;
+    if (!linkedProduct) {
+      return null;
+    }
 
     const linkedSource = linkedProduct.source === 'affiliate' ? 'affiliate' : 'owned';
 
     if (linkedSource === 'owned') {
       const ownedProductId = String(linkedProduct.productId || linkedProduct.id || '').trim();
-      if (!ownedProductId) return null;
+      if (!ownedProductId) {
+        return null;
+      }
 
       const product = await this.fetchWorkspaceProductPromptRecord(workspaceId, ownedProductId);
-      if (!product) return null;
+      if (!product) {
+        return null;
+      }
 
       return [
         'PRODUTO VINCULADO AO PROMPT:',
@@ -1803,7 +1827,9 @@ export class KloelService {
     const affiliateProductId = String(
       linkedProduct.affiliateProductId || linkedProduct.id || '',
     ).trim();
-    if (!affiliateProductId) return null;
+    if (!affiliateProductId) {
+      return null;
+    }
 
     const [request, link] = await Promise.all([
       this.prisma.affiliateRequest.findFirst({
@@ -2060,7 +2086,9 @@ export class KloelService {
   }
 
   private lowercaseLeadingCharacter(value: string): string {
-    if (!value) return value;
+    if (!value) {
+      return value;
+    }
     return value.charAt(0).toLowerCase() + value.slice(1);
   }
 
@@ -2102,7 +2130,9 @@ export class KloelService {
     userMessage: string,
     metadata?: Prisma.InputJsonValue,
   ): Promise<{ id: string } | null> {
-    if (!threadId) return null;
+    if (!threadId) {
+      return null;
+    }
 
     const createdMessage = await this.prisma.chatMessage.create({
       data: {
@@ -2125,7 +2155,9 @@ export class KloelService {
     assistantMessage: string,
     metadata?: Prisma.InputJsonValue,
   ): Promise<{ id: string } | null> {
-    if (!threadId) return null;
+    if (!threadId) {
+      return null;
+    }
 
     const createdMessage = await this.prisma.chatMessage.create({
       data: {
@@ -2244,10 +2276,18 @@ export class KloelService {
 
   private isSubstantiveMessage(message: string): boolean {
     const normalized = String(message || '').trim();
-    if (!normalized) return false;
-    if (normalized.length >= 40) return true;
-    if (NEWLINE_RE.test(normalized)) return true;
-    if (normalized.split(WHITESPACE_RE).length >= 8) return true;
+    if (!normalized) {
+      return false;
+    }
+    if (normalized.length >= 40) {
+      return true;
+    }
+    if (NEWLINE_RE.test(normalized)) {
+      return true;
+    }
+    if (normalized.split(WHITESPACE_RE).length >= 8) {
+      return true;
+    }
     return COMO_ESTRAT_E__GIA_F_RE.test(normalized);
   }
 
@@ -2263,8 +2303,12 @@ export class KloelService {
       .trim()
       .toLowerCase();
 
-    if (!normalized) return false;
-    if (/ideias?/.test(normalized)) return false;
+    if (!normalized) {
+      return false;
+    }
+    if (/ideias?/.test(normalized)) {
+      return false;
+    }
 
     const explicitToolIntent =
       CRIE_CADASTRAR_CADASTRE_RE.test(normalized) && PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized);
@@ -2309,8 +2353,12 @@ export class KloelService {
     const expertScore = expertSignals.filter((signal) => combined.includes(signal)).length;
     const advancedScore = advancedSignals.filter((signal) => combined.includes(signal)).length;
 
-    if (expertScore >= 3) return 'EXPERT';
-    if (expertScore >= 1 || advancedScore >= 5) return 'AVANÇADO';
+    if (expertScore >= 3) {
+      return 'EXPERT';
+    }
+    if (expertScore >= 1 || advancedScore >= 5) {
+      return 'AVANÇADO';
+    }
     if (
       advancedScore >= 2 ||
       String(message || '')
@@ -2325,7 +2373,9 @@ export class KloelService {
 
   private buildThreadSummarySystemMessage(summary?: string): ChatCompletionMessageParam | null {
     const normalized = String(summary || '').trim();
-    if (!normalized) return null;
+    if (!normalized) {
+      return null;
+    }
 
     return {
       role: 'system',
@@ -2452,7 +2502,9 @@ export class KloelService {
     threadId?: string | null,
     workspaceId?: string,
   ): Promise<void> {
-    if (!threadId || !workspaceId) return;
+    if (!threadId || !workspaceId) {
+      return;
+    }
 
     const findThread = this.prisma.chatThread.findFirst({
       where: { id: threadId, workspaceId },
@@ -2495,7 +2547,9 @@ export class KloelService {
       },
     });
 
-    if (!olderMessages.length) return;
+    if (!olderMessages.length) {
+      return;
+    }
 
     const transcript = olderMessages
       .map(
@@ -2594,7 +2648,9 @@ export class KloelService {
       }))
       .filter((source: { title: string; url: string }) => source.url)
       .filter((source: { title: string; url: string }) => {
-        if (seen.has(source.url)) return false;
+        if (seen.has(source.url)) {
+          return false;
+        }
         seen.add(source.url);
         return true;
       })
@@ -3203,7 +3259,9 @@ export class KloelService {
 
           const finalResponseTemperature = usedSearchWeb ? 0.1 : responseTemperature;
 
-          if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+          if (workspaceId) {
+            await this.planLimits.ensureTokenBudget(workspaceId);
+          }
           const streamedFinal = await streamWriterResponse(
             this.buildChatModelMessages({
               systemPrompt,
@@ -3263,7 +3321,9 @@ export class KloelService {
       }
 
       // Chamar OpenAI com streaming para a resposta final
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       safeWrite(createKloelStatusEvent('thinking'));
       const streamedReply = await streamWriterResponse(messages, responseTemperature, {});
       if (!streamedReply) {
@@ -3526,8 +3586,11 @@ export class KloelService {
     const { productId, productName } = args;
 
     const where: Prisma.ProductWhereInput = { workspaceId };
-    if (productId) where.id = productId;
-    else if (productName) where.name = { contains: productName, mode: 'insensitive' };
+    if (productId) {
+      where.id = productId;
+    } else if (productName) {
+      where.name = { contains: productName, mode: 'insensitive' };
+    }
 
     const product = await this.prisma.product.findFirst({ where });
 
@@ -4279,7 +4342,9 @@ export class KloelService {
     const { businessName, description, segment } = args;
 
     const updateData: Prisma.WorkspaceUpdateInput = {};
-    if (businessName) updateData.name = businessName;
+    if (businessName) {
+      updateData.name = businessName;
+    }
 
     if (description || segment) {
       const workspace = await this.prisma.workspace.findUnique({
@@ -5386,11 +5451,15 @@ export class KloelService {
       const affiliateProductIds = new Set<string>();
       for (const request of affiliateRequests || []) {
         const productId = request?.affiliateProduct?.productId;
-        if (productId) affiliateProductIds.add(productId);
+        if (productId) {
+          affiliateProductIds.add(productId);
+        }
       }
       for (const link of affiliateLinks || []) {
         const productId = link?.affiliateProduct?.productId;
-        if (productId) affiliateProductIds.add(productId);
+        if (productId) {
+          affiliateProductIds.add(productId);
+        }
       }
 
       const affiliateCatalogProducts = affiliateProductIds.size
@@ -5616,7 +5685,9 @@ export class KloelService {
    * 📜 Public API to get history
    */
   async getHistory(workspaceId: string): Promise<HistoryItem[]> {
-    if (!workspaceId) return [];
+    if (!workspaceId) {
+      return [];
+    }
     try {
       const messages = await this.prisma.kloelMessage.findMany({
         where: { workspaceId },
@@ -5664,7 +5735,9 @@ Retorne em formato estruturado.
 CONTEÚDO:
 ${pdfContent}`;
 
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -5680,10 +5753,11 @@ ${pdfContent}`;
         },
         resolveBackendOpenAIModel('brain_fallback'),
       );
-      if (workspaceId)
+      if (workspaceId) {
         await this.planLimits
           .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
           .catch(() => {});
+      }
 
       const analysis = response.choices[0]?.message?.content || '';
 
@@ -5796,7 +5870,9 @@ ${pdfContent}`;
         { role: 'user', content: message },
       ];
 
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -5807,10 +5883,11 @@ ${pdfContent}`;
         },
         resolveBackendOpenAIModel('writer_fallback'),
       );
-      if (workspaceId)
+      if (workspaceId) {
         await this.planLimits
           .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
           .catch(() => {});
+      }
 
       const kloelResponse =
         response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
@@ -6130,15 +6207,21 @@ ${pdfContent}`;
     ];
 
     for (const keyword of highIntentKeywords) {
-      if (lowerMessage.includes(keyword)) return 'high';
+      if (lowerMessage.includes(keyword)) {
+        return 'high';
+      }
     }
 
     for (const keyword of mediumIntentKeywords) {
-      if (lowerMessage.includes(keyword)) return 'medium';
+      if (lowerMessage.includes(keyword)) {
+        return 'medium';
+      }
     }
 
     for (const keyword of objectionKeywords) {
-      if (lowerMessage.includes(keyword)) return 'objection';
+      if (lowerMessage.includes(keyword)) {
+        return 'objection';
+      }
     }
 
     return 'low';

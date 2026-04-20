@@ -231,7 +231,9 @@ export class WhatsAppCatchupService {
       where: { id: workspaceId },
       select: { name: true, providerSettings: true },
     });
-    if (!workspace) return null;
+    if (!workspace) {
+      return null;
+    }
 
     const settings = asProviderSettings(workspace.providerSettings);
     const lifecycleBlockReason = this.getLifecycleBlockReason(
@@ -494,7 +496,9 @@ export class WhatsAppCatchupService {
             }
 
             const inbound = this.toInboundMessage(workspaceId, message, providerType);
-            if (!inbound) return;
+            if (!inbound) {
+              return;
+            }
 
             const result = await this.inboundProcessor.process(inbound);
             if (!result.deduped) {
@@ -641,20 +645,28 @@ export class WhatsAppCatchupService {
   private sortChatsByPriority(chats: WahaChatSummary[], since: Date): WahaChatSummary[] {
     return [...chats].sort((a, b) => {
       const unreadDelta = (b.unreadCount || 0) - (a.unreadCount || 0);
-      if (unreadDelta !== 0) return unreadDelta;
+      if (unreadDelta !== 0) {
+        return unreadDelta;
+      }
 
       const activityDelta =
         this.resolveChatActivityTimestamp(b) - this.resolveChatActivityTimestamp(a);
-      if (activityDelta !== 0) return activityDelta;
+      if (activityDelta !== 0) {
+        return activityDelta;
+      }
 
       const replyPendingDelta =
         Number(this.isRemoteChatAwaitingReply(b)) - Number(this.isRemoteChatAwaitingReply(a));
-      if (replyPendingDelta !== 0) return replyPendingDelta;
+      if (replyPendingDelta !== 0) {
+        return replyPendingDelta;
+      }
 
       const recentDelta =
         Number(this.resolveChatActivityTimestamp(b) >= since.getTime()) -
         Number(this.resolveChatActivityTimestamp(a) >= since.getTime());
-      if (recentDelta !== 0) return recentDelta;
+      if (recentDelta !== 0) {
+        return recentDelta;
+      }
 
       return String(a.id).localeCompare(String(b.id));
     });
@@ -775,9 +787,15 @@ export class WhatsAppCatchupService {
     lastMsgDataId: Record<string, unknown> | undefined,
     lastMsgId: Record<string, unknown> | undefined,
   ): boolean | null {
-    if (typeof lastMessage?.fromMe === 'boolean') return lastMessage.fromMe;
-    if (typeof lastMsgDataId?.fromMe === 'boolean') return lastMsgDataId.fromMe;
-    if (typeof lastMsgId?.fromMe === 'boolean') return lastMsgId.fromMe;
+    if (typeof lastMessage?.fromMe === 'boolean') {
+      return lastMessage.fromMe;
+    }
+    if (typeof lastMsgDataId?.fromMe === 'boolean') {
+      return lastMsgDataId.fromMe;
+    }
+    if (typeof lastMsgId?.fromMe === 'boolean') {
+      return lastMsgId.fromMe;
+    }
     return null;
   }
 
@@ -956,12 +974,24 @@ export class WhatsAppCatchupService {
 
   private mapInboundType(type?: string): InboundMessage['type'] {
     const normalized = String(type || '').toLowerCase();
-    if (normalized === 'chat' || normalized === 'text') return 'text';
-    if (normalized === 'audio' || normalized === 'ptt') return 'audio';
-    if (normalized === 'image') return 'image';
-    if (normalized === 'document') return 'document';
-    if (normalized === 'video') return 'video';
-    if (normalized === 'sticker') return 'sticker';
+    if (normalized === 'chat' || normalized === 'text') {
+      return 'text';
+    }
+    if (normalized === 'audio' || normalized === 'ptt') {
+      return 'audio';
+    }
+    if (normalized === 'image') {
+      return 'image';
+    }
+    if (normalized === 'document') {
+      return 'document';
+    }
+    if (normalized === 'video') {
+      return 'video';
+    }
+    if (normalized === 'sticker') {
+      return 'sticker';
+    }
     return 'unknown';
   }
 
@@ -1009,7 +1039,9 @@ export class WhatsAppCatchupService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    if (!workspace) return;
+    if (!workspace) {
+      return;
+    }
 
     const settings = asProviderSettings(workspace.providerSettings);
     const sessionMeta = settings.whatsappApiSession || {};
@@ -1157,7 +1189,9 @@ export class WhatsAppCatchupService {
       }
 
       for (const message of normalizedPage) {
-        if (seenIds.has(message.id)) continue;
+        if (seenIds.has(message.id)) {
+          continue;
+        }
         seenIds.add(message.id);
         collected.push(message);
       }
@@ -1209,7 +1243,9 @@ export class WhatsAppCatchupService {
   }
 
   private normalizeTimestamp(value?: Date | string | number | null): Date | null {
-    if (!value && value !== 0) return null;
+    if (!value && value !== 0) {
+      return null;
+    }
     if (value instanceof Date) {
       return Number.isNaN(value.getTime()) ? null : value;
     }

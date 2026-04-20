@@ -348,7 +348,9 @@ export const Tag = ({ stroke }: { stroke: string }) => (
 
 export function buildAvatar(name?: string) {
   const base = String(name || '').trim();
-  if (!base) return 'KL';
+  if (!base) {
+    return 'KL';
+  }
   const parts = base.split(S_RE);
   return (parts[0]?.[0] || 'K') + (parts[1]?.[0] || parts[0]?.[1] || 'L');
 }
@@ -359,7 +361,9 @@ export function normalizeTestimonials(
   testimonials?: PublicCheckoutTestimonial[],
   enabled?: boolean,
 ) {
-  if (enabled === false) return [];
+  if (enabled === false) {
+    return [];
+  }
   if (Array.isArray(testimonials) && testimonials.length > 0) {
     return testimonials.slice(0, 3).map((item) => ({
       name: item.name || 'Cliente',
@@ -375,7 +379,9 @@ export function formatCnpj(value?: string | null) {
   const digits = String(value || '')
     .replace(D_RE, '')
     .slice(0, 14);
-  if (digits.length !== 14) return value || '';
+  if (digits.length !== 14) {
+    return value || '';
+  }
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
@@ -429,7 +435,9 @@ export function ValidationInput({
           ...style,
         }}
         onFocus={(event) => {
-          if (disabled) return;
+          if (disabled) {
+            return;
+          }
           event.target.style.borderColor = theme.focusBorder;
           event.target.style.boxShadow = theme.focusShadow;
         }}

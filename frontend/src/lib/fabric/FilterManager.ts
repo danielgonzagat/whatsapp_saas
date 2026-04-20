@@ -11,7 +11,9 @@ export class FilterManager {
 
   private _getActiveImage(): FabricImage | null {
     const obj = this.canvas.getActiveObject();
-    if (obj instanceof FabricImage) return obj;
+    if (obj instanceof FabricImage) {
+      return obj;
+    }
     return null;
   }
 
@@ -45,7 +47,9 @@ export class FilterManager {
 
   removeFilters(): void {
     const img = this._getActiveImage();
-    if (!img) return;
+    if (!img) {
+      return;
+    }
     img.filters = [];
     img.applyFilters();
     this.canvas.requestRenderAll();
@@ -53,14 +57,16 @@ export class FilterManager {
 
   private _applyFilter(name: string, opts: Record<string, unknown>): void {
     const img = this._getActiveImage();
-    if (!img) return;
+    if (!img) {
+      return;
+    }
 
     const FilterClass = (filters as Record<string, unknown>)[name] as
-      | (new (
-          opts: Record<string, unknown>,
-        ) => FilterInstance)
+      | (new (opts: Record<string, unknown>) => FilterInstance)
       | undefined;
-    if (!FilterClass) return;
+    if (!FilterClass) {
+      return;
+    }
 
     // Remove existing filter of same type
     img.filters = (img.filters ?? []).filter((f) => f.type !== name);

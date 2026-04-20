@@ -115,8 +115,12 @@ function resolveComparisonWindow(
   from: Date,
   to: Date,
 ): { from: Date; to: Date } | null {
-  if (compare === 'PREVIOUS') return previousWindowOf(from, to);
-  if (compare === 'YOY') return yoyWindowOf(from, to);
+  if (compare === 'PREVIOUS') {
+    return previousWindowOf(from, to);
+  }
+  if (compare === 'YOY') {
+    return yoyWindowOf(from, to);
+  }
   return null;
 }
 

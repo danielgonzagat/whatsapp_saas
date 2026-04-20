@@ -99,14 +99,16 @@ const INJECTION_ENDPOINTS: EndpointTest[] = [
 const SQL_PAYLOADS = [
   "' OR '1'='1",
   "'; DROP TABLE users; --",
-  "' UNION SELECT id, email, password FROM \"User\" --",
+  '\' UNION SELECT id, email, password FROM "User" --',
   "1' AND SLEEP(5) --",
   "\\'; WAITFOR DELAY '0:0:5' --",
 ];
 
 export async function checkSecurityInjection(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
-  if (!isDeepMode()) return [];
+  if (!isDeepMode()) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const jwt = makeTestJwt();
@@ -116,9 +118,10 @@ export async function checkSecurityInjection(config: PulseConfig): Promise<Break
       try {
         const body = endpoint.buildBody(payload);
         const start = Date.now();
-        const res = endpoint.method === 'POST'
-          ? await httpPost(endpoint.path, body, { jwt, timeout: 8000 })
-          : await httpPost(endpoint.path, body, { jwt, timeout: 8000 }); // PATCH not in utils, using POST
+        const res =
+          endpoint.method === 'POST'
+            ? await httpPost(endpoint.path, body, { jwt, timeout: 8000 })
+            : await httpPost(endpoint.path, body, { jwt, timeout: 8000 }); // PATCH not in utils, using POST
 
         const elapsed = Date.now() - start;
 
@@ -158,7 +161,6 @@ export async function checkSecurityInjection(config: PulseConfig): Promise<Break
             detail: `Payload "${payload.substring(0, 60)}" bypassed authentication and returned an access token.`,
           });
         }
-
       } catch (err: any) {
         // Network error / backend not reachable — not a vulnerability, skip
       }
@@ -167,10 +169,7 @@ export async function checkSecurityInjection(config: PulseConfig): Promise<Break
 
   // Path traversal test: GET /products/../../../etc/passwd
   try {
-    const traversalPaths = [
-      '/products/../../../etc/passwd',
-      '/products/%2F..%2F..%2Fetc%2Fpasswd',
-    ];
+    const traversalPaths = ['/products/../../../etc/passwd', '/products/%2F..%2F..%2Fetc%2Fpasswd'];
     for (const tp of traversalPaths) {
       const res = await httpGet(tp, { jwt, timeout: 5000 });
       if (res.status === 200 && typeof res.body === 'string' && res.body.includes('root:')) {

@@ -16,20 +16,30 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
 
   useEffect(
     () => () => {
-      if (timer1.current) clearTimeout(timer1.current);
-      if (timer2.current) clearTimeout(timer2.current);
+      if (timer1.current) {
+        clearTimeout(timer1.current);
+      }
+      if (timer2.current) {
+        clearTimeout(timer2.current);
+      }
     },
     [],
   );
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleSendTest = () => {
     setStatus('sending');
-    if (timer1.current) clearTimeout(timer1.current);
+    if (timer1.current) {
+      clearTimeout(timer1.current);
+    }
     timer1.current = setTimeout(() => {
       setStatus('sent');
-      if (timer2.current) clearTimeout(timer2.current);
+      if (timer2.current) {
+        clearTimeout(timer2.current);
+      }
       timer2.current = setTimeout(() => {
         setStatus('idle');
         onClose();

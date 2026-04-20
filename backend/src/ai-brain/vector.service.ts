@@ -18,7 +18,9 @@ export class VectorService {
   }
 
   async getEmbedding(text: string): Promise<EmbeddingResult> {
-    if (!this.openai) return { embedding: [], tokensUsed: 0 };
+    if (!this.openai) {
+      return { embedding: [], tokensUsed: 0 };
+    }
 
     // Limpar e truncar texto se necessário
     const cleanText = text.replace(N_RE, ' ').slice(0, 8000);

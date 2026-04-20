@@ -31,8 +31,12 @@ export class FontManager {
 
   /** Load all fonts in a single <link> tag */
   loadAllFonts(): void {
-    if (this._loaded) return;
-    if (typeof document === 'undefined') return;
+    if (this._loaded) {
+      return;
+    }
+    if (typeof document === 'undefined') {
+      return;
+    }
 
     const id = 'kloel-google-fonts';
     if (document.getElementById(id)) {

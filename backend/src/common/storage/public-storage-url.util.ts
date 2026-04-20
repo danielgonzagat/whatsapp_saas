@@ -21,14 +21,18 @@ function headerValueToString(value: string | string[] | undefined): string {
 }
 
 function readHeader(req: MinimalRequest, name: string) {
-  if (!req) return '';
+  if (!req) {
+    return '';
+  }
 
   if (typeof req.get === 'function') {
     return String(req.get(name) || '');
   }
 
   const headers = req.headers;
-  if (!headers) return '';
+  if (!headers) {
+    return '';
+  }
 
   return headerValueToString(pickHeaderValue(headers, name));
 }
@@ -63,7 +67,9 @@ function buildOriginFromComponents(parts: OriginComponents): string {
     const protocol = parts.forwardedProto || parts.requestProtocol || 'http';
     return `${protocol}://${parts.directHost}`.replace(PATTERN_RE, '');
   }
-  if (parts.originHeader) return parts.originHeader.replace(PATTERN_RE, '');
+  if (parts.originHeader) {
+    return parts.originHeader.replace(PATTERN_RE, '');
+  }
   return '';
 }
 

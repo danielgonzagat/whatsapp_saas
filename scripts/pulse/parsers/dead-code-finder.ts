@@ -36,7 +36,8 @@ function extractExports(content: string): string[] {
   // Named statement exports: export (async)? (function|class|const|let|var|enum|abstract class) NAME
   // NOTE: Exclude `export interface` and `export type` — these are consumed implicitly
   // by TypeScript's declaration emit and don't need explicit import references.
-  const stmtRe = /^export\s+(?:async\s+)?(?:function|class|const|let|var|enum|abstract\s+class)\s+([A-Za-z_$][A-Za-z0-9_$]*)/gm;
+  const stmtRe =
+    /^export\s+(?:async\s+)?(?:function|class|const|let|var|enum|abstract\s+class)\s+([A-Za-z_$][A-Za-z0-9_$]*)/gm;
   let m: RegExpExecArray | null;
   while ((m = stmtRe.exec(content)) !== null) {
     names.push(m[1]);
@@ -62,17 +63,21 @@ export function checkDeadCode(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   // Only scan backend services and controllers — not frontend (too many re-exports)
-  const targetFiles = walkFiles(config.backendDir, ['.ts']).filter(f => {
-    if (shouldSkipFile(f) || isEntrypointFile(f)) return false;
+  const targetFiles = walkFiles(config.backendDir, ['.ts']).filter((f) => {
+    if (shouldSkipFile(f) || isEntrypointFile(f)) {
+      return false;
+    }
     const rel = path.relative(config.backendDir, f);
     // Only services and controllers
     return rel.includes('.service.ts') || rel.includes('.controller.ts');
   });
 
-  if (targetFiles.length === 0) return breaks;
+  if (targetFiles.length === 0) {
+    return breaks;
+  }
 
   // Build a corpus of all backend .ts files to search for references
-  const allBackendFiles = walkFiles(config.backendDir, ['.ts']).filter(f => !shouldSkipFile(f));
+  const allBackendFiles = walkFiles(config.backendDir, ['.ts']).filter((f) => !shouldSkipFile(f));
 
   // Cache file contents to avoid repeated reads
   const contentCache = new Map<string, string>();
@@ -86,21 +91,29 @@ export function checkDeadCode(config: PulseConfig): Break[] {
 
   for (const file of targetFiles) {
     const content = contentCache.get(file);
-    if (!content) continue;
+    if (!content) {
+      continue;
+    }
 
     const relFile = path.relative(config.rootDir, file);
     const exportedNames = extractExports(content);
 
     for (const name of exportedNames) {
       // Skip very short names and common generic names that will have many false positives
-      if (name.length < 4) continue;
-      if (['default', 'type', 'interface', 'enum'].includes(name)) continue;
+      if (name.length < 4) {
+        continue;
+      }
+      if (['default', 'type', 'interface', 'enum'].includes(name)) {
+        continue;
+      }
 
       let foundReference = false;
 
       // Search all other backend files for any reference to this name
       for (const [otherFile, otherContent] of contentCache) {
-        if (otherFile === file) continue;
+        if (otherFile === file) {
+          continue;
+        }
 
         // Check for import statements referencing this name
         const importRe = new RegExp(`import[^;]*\\b${escapeRegex(name)}\\b[^;]*from`, 'g');

@@ -31,7 +31,9 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
 
   const localMatches = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return recentResults;
+    if (!normalizedQuery) {
+      return recentResults;
+    }
     return recentResults
       .filter(
         (item) =>
@@ -44,7 +46,9 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
   }, [query, recentResults]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     setQuery(initialSearch || '');
     setSelectedIndex(0);
     setRemoteResults([]);
@@ -52,7 +56,9 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
   }, [initialSearch, open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 32);
@@ -63,7 +69,9 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
 
     const normalizedQuery = query.trim();
     if (normalizedQuery.length < 2) {
@@ -79,13 +87,19 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
     const timer = window.setTimeout(async () => {
       try {
         const results = await searchKloelThreads(normalizedQuery, 20);
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setRemoteResults(results.map((result) => mapSearchPayload(result)));
       } catch {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setRemoteResults([]);
       } finally {
-        if (!cancelled) setIsSearching(false);
+        if (!cancelled) {
+          setIsSearching(false);
+        }
       }
     }, 300);
 
@@ -97,7 +111,9 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
 
   const results = useMemo(() => {
     const normalizedQuery = query.trim();
-    if (!normalizedQuery) return recentResults;
+    if (!normalizedQuery) {
+      return recentResults;
+    }
     const primary = remoteResults.length > 0 ? remoteResults : localMatches;
     const seen = new Set(primary.map((item) => item.id));
     const extras = localMatches.filter((item) => !seen.has(item.id));
@@ -106,7 +122,9 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
 
   useEffect(() => {
     setSelectedIndex((current) => {
-      if (results.length === 0) return 0;
+      if (results.length === 0) {
+        return 0;
+      }
       return Math.min(current, results.length - 1);
     });
   }, [results]);

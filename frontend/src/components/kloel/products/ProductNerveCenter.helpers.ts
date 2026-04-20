@@ -51,7 +51,9 @@ export const normalizeZipCodeInput = (value: string) => {
   const digits = String(value || '')
     .replace(D_RE_2, '')
     .slice(0, 8);
-  if (digits.length <= 5) return digits;
+  if (digits.length <= 5) {
+    return digits;
+  }
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 };
 
@@ -66,8 +68,12 @@ export const formatPlanRangeLabel = (plans: Array<{ priceInCents?: number }>) =>
     .filter((value) => value > 0)
     .sort((left, right) => left - right);
 
-  if (values.length === 0) return 'Sem planos';
-  if (values[0] === values[values.length - 1]) return formatBrlCents(values[0]);
+  if (values.length === 0) {
+    return 'Sem planos';
+  }
+  if (values[0] === values[values.length - 1]) {
+    return formatBrlCents(values[0]);
+  }
   return `${formatBrlCents(values[0])} ate ${formatBrlCents(values[values.length - 1])}`;
 };
 

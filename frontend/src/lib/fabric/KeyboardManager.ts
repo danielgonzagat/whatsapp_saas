@@ -39,13 +39,21 @@ function modKey(e: KeyboardEvent): string {
 
 function nudgeActive(canvas: Canvas, key: string, amount: number): boolean {
   const active = canvas.getActiveObject();
-  if (!active) return false;
+  if (!active) {
+    return false;
+  }
 
-  if (key === 'ArrowUp') active.top = (active.top ?? 0) - amount;
-  else if (key === 'ArrowDown') active.top = (active.top ?? 0) + amount;
-  else if (key === 'ArrowLeft') active.left = (active.left ?? 0) - amount;
-  else if (key === 'ArrowRight') active.left = (active.left ?? 0) + amount;
-  else return false;
+  if (key === 'ArrowUp') {
+    active.top = (active.top ?? 0) - amount;
+  } else if (key === 'ArrowDown') {
+    active.top = (active.top ?? 0) + amount;
+  } else if (key === 'ArrowLeft') {
+    active.left = (active.left ?? 0) - amount;
+  } else if (key === 'ArrowRight') {
+    active.left = (active.left ?? 0) + amount;
+  } else {
+    return false;
+  }
 
   active.setCoords();
   canvas.requestRenderAll();
@@ -73,14 +81,18 @@ export class KeyboardManager {
 
   private _handleModAction(e: KeyboardEvent): boolean {
     const action = MOD_ACTIONS.get(modKey(e));
-    if (!action) return false;
+    if (!action) {
+      return false;
+    }
     e.preventDefault();
     action(this.deps);
     return true;
   }
 
   private _handleDelete(e: KeyboardEvent): boolean {
-    if (e.key !== 'Delete' && e.key !== 'Backspace') return false;
+    if (e.key !== 'Delete' && e.key !== 'Backspace') {
+      return false;
+    }
     e.preventDefault();
     this.deps.selection.deleteSelected();
     this.deps.history.saveState();
@@ -88,7 +100,9 @@ export class KeyboardManager {
   }
 
   private _handleArrow(e: KeyboardEvent): boolean {
-    if (!ARROW_KEYS.has(e.key)) return false;
+    if (!ARROW_KEYS.has(e.key)) {
+      return false;
+    }
     const nudge = e.shiftKey ? 10 : 1;
     if (nudgeActive(this.canvas, e.key, nudge)) {
       e.preventDefault();
@@ -98,11 +112,17 @@ export class KeyboardManager {
 
   private _init(): void {
     this._handler = (e: KeyboardEvent) => {
-      if (this._isEditing()) return;
+      if (this._isEditing()) {
+        return;
+      }
 
       const mod = e.metaKey || e.ctrlKey;
-      if (mod && this._handleModAction(e)) return;
-      if (this._handleDelete(e)) return;
+      if (mod && this._handleModAction(e)) {
+        return;
+      }
+      if (this._handleDelete(e)) {
+        return;
+      }
       this._handleArrow(e);
     };
 

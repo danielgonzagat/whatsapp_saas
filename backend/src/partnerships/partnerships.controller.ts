@@ -38,10 +38,16 @@ export class PartnershipsController {
 
   private getWorkspaceId(req: AuthenticatedRequest): string {
     const fromUser = req.user?.workspaceId;
-    if (fromUser) return fromUser;
+    if (fromUser) {
+      return fromUser;
+    }
     const header = req.headers['x-workspace-id'];
-    if (typeof header === 'string') return header;
-    if (Array.isArray(header) && typeof header[0] === 'string') return header[0];
+    if (typeof header === 'string') {
+      return header;
+    }
+    if (Array.isArray(header) && typeof header[0] === 'string') {
+      return header[0];
+    }
     return '';
   }
 

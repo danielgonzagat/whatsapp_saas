@@ -444,7 +444,9 @@ function CheckoutConfigPanel({
   const checkoutForCk = rawCheckouts.find((checkout) => checkout.id === ckEdit);
 
   useEffect(() => {
-    if (ckCfg) setCkLocal(ckCfg as unknown as JsonRecord);
+    if (ckCfg) {
+      setCkLocal(ckCfg as unknown as JsonRecord);
+    }
   }, [ckCfg]);
 
   useEffect(() => {
@@ -519,7 +521,9 @@ function CheckoutConfigPanel({
   const handleBack = async (saveBeforeExit: boolean) => {
     if (saveBeforeExit) {
       const didSave = await handleSave();
-      if (!didSave) return;
+      if (!didSave) {
+        return;
+      }
     }
     setShowExitConfirm(false);
     setCkEdit(null);

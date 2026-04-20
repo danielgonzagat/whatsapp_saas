@@ -6,7 +6,9 @@ function toCamelCase(name: string): string {
 }
 
 export function parseSchema(config: PulseConfig): PrismaModel[] {
-  if (!config.schemaPath || !fs.existsSync(config.schemaPath)) return [];
+  if (!config.schemaPath || !fs.existsSync(config.schemaPath)) {
+    return [];
+  }
 
   const content = fs.readFileSync(config.schemaPath, 'utf8');
   const lines = content.split('\n');
@@ -16,7 +18,9 @@ export function parseSchema(config: PulseConfig): PrismaModel[] {
   // First pass: collect all model names for relation detection
   for (const line of lines) {
     const m = line.match(/^model\s+(\w+)\s*\{/);
-    if (m) modelNames.add(m[1]);
+    if (m) {
+      modelNames.add(m[1]);
+    }
   }
 
   let currentModel: PrismaModel | null = null;
@@ -40,12 +44,18 @@ export function parseSchema(config: PulseConfig): PrismaModel[] {
       continue;
     }
 
-    if (!currentModel) continue;
+    if (!currentModel) {
+      continue;
+    }
 
     // Track braces
     for (const ch of trimmed) {
-      if (ch === '{') braceDepth++;
-      if (ch === '}') braceDepth--;
+      if (ch === '{') {
+        braceDepth++;
+      }
+      if (ch === '}') {
+        braceDepth--;
+      }
     }
 
     // Model end
@@ -56,18 +66,25 @@ export function parseSchema(config: PulseConfig): PrismaModel[] {
     }
 
     // Skip comments and decorators-only lines
-    if (trimmed.startsWith('//') || trimmed.startsWith('@@') || trimmed === '') continue;
+    if (trimmed.startsWith('//') || trimmed.startsWith('@@') || trimmed === '') {
+      continue;
+    }
 
     // Parse field
     const fieldMatch = trimmed.match(/^(\w+)\s+([\w\[\]?]+(?:\(".*?"\))?)\s*(.*)?$/);
-    if (!fieldMatch) continue;
+    if (!fieldMatch) {
+      continue;
+    }
 
     const fieldName = fieldMatch[1];
     const rawType = fieldMatch[2];
     const rest = fieldMatch[3] || '';
 
     // Clean type
-    const cleanType = rawType.replace(/\?$/, '').replace(/\[\]$/, '').replace(/\(.*\)/, '');
+    const cleanType = rawType
+      .replace(/\?$/, '')
+      .replace(/\[\]$/, '')
+      .replace(/\(.*\)/, '');
     const isOptional = rawType.includes('?');
     const isArray = rawType.includes('[]');
     const isId = rest.includes('@id');

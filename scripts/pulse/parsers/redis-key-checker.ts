@@ -22,10 +22,12 @@ export function checkRedisKeys(config: PulseConfig): Break[] {
   const dirs = [config.backendDir, config.workerDir].filter(Boolean);
   const allFiles: string[] = [];
   for (const dir of dirs) {
-    allFiles.push(...walkFiles(dir, ['.ts']).filter(f => !shouldSkipFile(f)));
+    allFiles.push(...walkFiles(dir, ['.ts']).filter((f) => !shouldSkipFile(f)));
   }
 
-  if (allFiles.length === 0) return breaks;
+  if (allFiles.length === 0) {
+    return breaks;
+  }
 
   // Collect producers and consumers
   const producerKeys = new Set<string>();
@@ -40,7 +42,9 @@ export function checkRedisKeys(config: PulseConfig): Break[] {
     }
 
     // Quick pre-check
-    if (!/\bredis\s*\./.test(content)) continue;
+    if (!/\bredis\s*\./.test(content)) {
+      continue;
+    }
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
@@ -50,7 +54,9 @@ export function checkRedisKeys(config: PulseConfig): Break[] {
       const trimmed = line.trim();
 
       // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
       // ---- Check redis.set / hset without TTL ----
       REDIS_SET_RE.lastIndex = 0;
@@ -62,12 +68,12 @@ export function checkRedisKeys(config: PulseConfig): Break[] {
         producerKeys.add(normalizedKey);
 
         // Check if setex is used (has TTL built in)
-        if (/\bredis\s*\.setex\s*\(/.test(line)) continue;
+        if (/\bredis\s*\.setex\s*\(/.test(line)) {
+          continue;
+        }
 
         // Look at current line + next 3 lines for TTL signals
-        const window = lines
-          .slice(i, Math.min(i + 4, lines.length))
-          .join('\n');
+        const window = lines.slice(i, Math.min(i + 4, lines.length)).join('\n');
 
         if (!TTL_SIGNALS_RE.test(window)) {
           breaks.push({

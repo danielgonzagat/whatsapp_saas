@@ -8,11 +8,7 @@ import type {
   PulseRuntimeEvidence,
   PulseRuntimeProbe,
 } from './types';
-import {
-  dbQuery,
-  getRuntimeResolution,
-  httpGet,
-} from './parsers/runtime-utils';
+import { dbQuery, getRuntimeResolution, httpGet } from './parsers/runtime-utils';
 
 const RUNTIME_EVIDENCE_PATH = 'PULSE_RUNTIME_EVIDENCE.json';
 const RUNTIME_PROBES_PATH = 'PULSE_RUNTIME_PROBES.json';
@@ -53,14 +49,22 @@ function shouldTreatAsMissingEvidence(source: string): boolean {
 
 function compactReason(text: string, max: number = 220): string {
   const compact = text.replace(/\s+/g, ' ').trim();
-  if (compact.length <= max) return compact;
+  if (compact.length <= max) {
+    return compact;
+  }
   return `${compact.slice(0, max - 3)}...`;
 }
 
 function summarizeProbeStatus(probe: PulseRuntimeProbe): string {
-  if (probe.status === 'passed') return `${probe.probeId} passed`;
-  if (probe.status === 'failed') return `${probe.probeId} failed`;
-  if (probe.status === 'missing_evidence') return `${probe.probeId} missing evidence`;
+  if (probe.status === 'passed') {
+    return `${probe.probeId} passed`;
+  }
+  if (probe.status === 'failed') {
+    return `${probe.probeId} failed`;
+  }
+  if (probe.status === 'missing_evidence') {
+    return `${probe.probeId} missing evidence`;
+  }
   return `${probe.probeId} skipped`;
 }
 
@@ -74,22 +78,29 @@ function extractWorkspaceId(payload: any, fallback: string): string {
   ];
   for (const candidate of candidates) {
     const normalized = String(candidate || '').trim();
-    if (normalized) return normalized;
+    if (normalized) {
+      return normalized;
+    }
   }
   return '';
 }
 
-function inferReadbackFailureClass(status: number, summary: string): 'missing_evidence' | 'product_failure' {
-  if (status === 0) return 'missing_evidence';
+function inferReadbackFailureClass(
+  status: number,
+  summary: string,
+): 'missing_evidence' | 'product_failure' {
+  if (status === 0) {
+    return 'missing_evidence';
+  }
   const lowered = summary.toLowerCase();
   if (
-    lowered.includes('timed out')
-    || lowered.includes('fetch failed')
-    || lowered.includes('request failed')
-    || lowered.includes('enotfound')
-    || lowered.includes('econnrefused')
-    || lowered.includes('econnreset')
-    || lowered.includes('aborted')
+    lowered.includes('timed out') ||
+    lowered.includes('fetch failed') ||
+    lowered.includes('request failed') ||
+    lowered.includes('enotfound') ||
+    lowered.includes('econnrefused') ||
+    lowered.includes('econnreset') ||
+    lowered.includes('aborted')
   ) {
     return 'missing_evidence';
   }
@@ -158,7 +169,9 @@ async function runDbReadbackFallback(
         status: 'missing_evidence',
         failureClass: 'missing_evidence',
         summary: directProbeFailure
-          ? compactReason(`Backend readback returned no workspace identifier. Direct SQL probe failure: ${directProbeFailure}`)
+          ? compactReason(
+              `Backend readback returned no workspace identifier. Direct SQL probe failure: ${directProbeFailure}`,
+            )
           : 'Backend readback returned no workspace identifier.',
         latencyMs: Date.now() - start,
         artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
@@ -191,13 +204,11 @@ async function runDbReadbackFallback(
     }
 
     const providerSettingsDetected = Boolean(
-      settingsRes.body
-      && typeof settingsRes.body === 'object'
-      && (
-        (settingsRes.body as Record<string, unknown>).providerSettings
-        || (settingsRes.body as Record<string, unknown>).branding
-        || Object.prototype.hasOwnProperty.call(settingsRes.body, 'jitterMin')
-      ),
+      settingsRes.body &&
+      typeof settingsRes.body === 'object' &&
+      ((settingsRes.body as Record<string, unknown>).providerSettings ||
+        (settingsRes.body as Record<string, unknown>).branding ||
+        Object.prototype.hasOwnProperty.call(settingsRes.body, 'jitterMin')),
     );
 
     return {
@@ -207,7 +218,9 @@ async function runDbReadbackFallback(
       executed: true,
       status: 'passed',
       summary: directProbeFailure
-        ? compactReason(`Database connectivity passed via authenticated backend readback on workspace settings. Direct SQL probe failure: ${directProbeFailure}`)
+        ? compactReason(
+            `Database connectivity passed via authenticated backend readback on workspace settings. Direct SQL probe failure: ${directProbeFailure}`,
+          )
         : 'Database connectivity passed via authenticated backend readback on workspace settings.',
       latencyMs: Date.now() - start,
       artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
@@ -228,8 +241,12 @@ async function runDbReadbackFallback(
       status: 'missing_evidence',
       failureClass: 'missing_evidence',
       summary: directProbeFailure
-        ? compactReason(`Database probe fallback could not authenticate or perform backend readback: ${error?.message || 'unknown failure'}. Direct SQL probe failure: ${directProbeFailure}`)
-        : compactReason(`Database probe fallback could not authenticate or perform backend readback: ${error?.message || 'unknown failure'}`),
+        ? compactReason(
+            `Database probe fallback could not authenticate or perform backend readback: ${error?.message || 'unknown failure'}. Direct SQL probe failure: ${directProbeFailure}`,
+          )
+        : compactReason(
+            `Database probe fallback could not authenticate or perform backend readback: ${error?.message || 'unknown failure'}`,
+          ),
       latencyMs: Date.now() - start,
       artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
     };
@@ -274,7 +291,6 @@ async function runBackendHealthProbe(context: RuntimeProbeContext): Promise<Puls
         },
       };
     }
-
   }
 
   const fallbackFailureClass = shouldTreatAsMissingEvidence(context.backendSource)
@@ -327,15 +343,19 @@ async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseRuntimeP
       });
       me = firstAttempt;
 
-      if (firstAttempt.ok) break;
+      if (firstAttempt.ok) {
+        break;
+      }
       if (firstAttempt.status >= 500 && firstAttempt.status < 600) {
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise((resolve) => setTimeout(resolve, 400));
         const retryAttempt = await httpGet(protectedPath, {
           jwt: creds.token,
           timeout: 8000,
         });
         me = retryAttempt;
-        if (retryAttempt.ok) break;
+        if (retryAttempt.ok) {
+          break;
+        }
       }
     }
 
@@ -417,9 +437,10 @@ async function runFrontendProbe(context: RuntimeProbeContext): Promise<PulseRunt
       executed: true,
       status: res.status < 500 ? 'passed' : 'failed',
       failureClass: res.status < 500 ? undefined : 'product_failure',
-      summary: res.status < 500
-        ? `Frontend responded with HTTP ${res.status}.`
-        : `Frontend returned HTTP ${res.status}.`,
+      summary:
+        res.status < 500
+          ? `Frontend responded with HTTP ${res.status}.`
+          : `Frontend returned HTTP ${res.status}.`,
       latencyMs: Date.now() - start,
       artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
       metrics: {
@@ -446,9 +467,16 @@ async function runFrontendProbe(context: RuntimeProbeContext): Promise<PulseRunt
   }
 }
 
-async function runDbProbe(context: RuntimeProbeContext, required: boolean): Promise<PulseRuntimeProbe> {
+async function runDbProbe(
+  context: RuntimeProbeContext,
+  required: boolean,
+): Promise<PulseRuntimeProbe> {
   if (!context.dbConfigured) {
-    return runDbReadbackFallback(context, required, 'No direct DATABASE_URL was resolved for this environment.');
+    return runDbReadbackFallback(
+      context,
+      required,
+      'No direct DATABASE_URL was resolved for this environment.',
+    );
   }
 
   const start = Date.now();
@@ -500,8 +528,10 @@ function buildRuntimeContext(env: PulseEnvironment): RuntimeProbeContext {
 }
 
 function getRequestedProbeIds(probeIds?: string[]): PulseRuntimeProbeId[] {
-  if (!probeIds || probeIds.length === 0) return [...DEFAULT_RUNTIME_PROBE_IDS];
-  return DEFAULT_RUNTIME_PROBE_IDS.filter(probeId => probeIds.includes(probeId));
+  if (!probeIds || probeIds.length === 0) {
+    return [...DEFAULT_RUNTIME_PROBE_IDS];
+  }
+  return DEFAULT_RUNTIME_PROBE_IDS.filter((probeId) => probeIds.includes(probeId));
 }
 
 export function getRuntimeProbeIds(probeIds?: string[]): PulseRuntimeProbeId[] {
@@ -518,13 +548,14 @@ export async function collectRuntimeProbe(
   if (env === 'scan') {
     return {
       probeId,
-      target: probeId === 'backend-health'
-        ? `${context.backendUrl}/health/system`
-        : probeId === 'auth-session'
-          ? `${context.backendUrl}/auth/login`
-          : probeId === 'frontend-reachability'
-            ? context.frontendUrl
-            : context.dbSource || 'database',
+      target:
+        probeId === 'backend-health'
+          ? `${context.backendUrl}/health/system`
+          : probeId === 'auth-session'
+            ? `${context.backendUrl}/auth/login`
+            : probeId === 'frontend-reachability'
+              ? context.frontendUrl
+              : context.dbSource || 'database',
       required: false,
       executed: false,
       status: 'skipped',
@@ -565,21 +596,26 @@ export function summarizeRuntimeEvidence(
     };
   }
 
-  const requiredMissing = probes.filter(probe => probe.required && probe.status === 'missing_evidence');
-  const requiredFailed = probes.filter(probe => probe.required && probe.status === 'failed');
-  const executedChecks = probes.filter(probe => probe.executed).map(probe => probe.probeId);
+  const requiredMissing = probes.filter(
+    (probe) => probe.required && probe.status === 'missing_evidence',
+  );
+  const requiredFailed = probes.filter((probe) => probe.required && probe.status === 'failed');
+  const executedChecks = probes.filter((probe) => probe.executed).map((probe) => probe.probeId);
 
   let summary = 'Runtime probes executed successfully.';
   if (requiredMissing.length > 0) {
     summary = `Runtime evidence is incomplete: ${requiredMissing.map(summarizeProbeStatus).join(', ')}.`;
   } else if (requiredFailed.length > 0) {
     summary = `Runtime probes failed: ${requiredFailed.map(summarizeProbeStatus).join(', ')}.`;
-  } else if (probes.some(probe => probe.status === 'failed')) {
-    summary = `Optional runtime probes failed: ${probes.filter(probe => probe.status === 'failed').map(summarizeProbeStatus).join(', ')}.`;
+  } else if (probes.some((probe) => probe.status === 'failed')) {
+    summary = `Optional runtime probes failed: ${probes
+      .filter((probe) => probe.status === 'failed')
+      .map(summarizeProbeStatus)
+      .join(', ')}.`;
   }
 
   return {
-    executed: probes.some(probe => probe.executed),
+    executed: probes.some((probe) => probe.executed),
     executedChecks,
     blockingBreakTypes: [],
     artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
@@ -597,15 +633,19 @@ export async function collectRuntimeEvidence(
 ): Promise<PulseRuntimeEvidence> {
   const probes: PulseRuntimeProbe[] = [];
   for (const probeId of getRequestedProbeIds(options.probeIds)) {
-    probes.push(await collectRuntimeProbe(env, probeId, {
-      requireDbConnectivity: options.requireDbConnectivity,
-    }));
+    probes.push(
+      await collectRuntimeProbe(env, probeId, {
+        requireDbConnectivity: options.requireDbConnectivity,
+      }),
+    );
   }
   return summarizeRuntimeEvidence(env, probes);
 }
 
 function scanTextIfExists(filePath: string): string {
-  if (!fs.existsSync(filePath)) return '';
+  if (!fs.existsSync(filePath)) {
+    return '';
+  }
   return fs.readFileSync(filePath, 'utf8');
 }
 
@@ -616,34 +656,64 @@ export function collectObservabilityEvidence(
   const backendMain = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'main.ts'));
   const backendSentry = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'sentry.ts'));
   const workerBootstrap = scanTextIfExists(path.join(rootDir, 'worker', 'bootstrap.ts'));
-  const requestIdInterceptor = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'common', 'request-id.interceptor.ts'));
-  const requestLogger = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'common', 'request-logger.interceptor.ts'));
+  const requestIdInterceptor = scanTextIfExists(
+    path.join(rootDir, 'backend', 'src', 'common', 'request-id.interceptor.ts'),
+  );
+  const requestLogger = scanTextIfExists(
+    path.join(rootDir, 'backend', 'src', 'common', 'request-logger.interceptor.ts'),
+  );
   const envSchema = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'lib', 'env.ts'));
-  const auditMiddleware = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'kloel', 'middleware', 'audit-log.middleware.ts'));
-  const systemHealth = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'health', 'system-health.controller.ts'));
+  const auditMiddleware = scanTextIfExists(
+    path.join(rootDir, 'backend', 'src', 'kloel', 'middleware', 'audit-log.middleware.ts'),
+  );
+  const systemHealth = scanTextIfExists(
+    path.join(rootDir, 'backend', 'src', 'health', 'system-health.controller.ts'),
+  );
   const appHealth = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'app.controller.ts'));
 
-  const backendHealthProbe = runtimeEvidence.probes.find(probe => probe.probeId === 'backend-health');
+  const backendHealthProbe = runtimeEvidence.probes.find(
+    (probe) => probe.probeId === 'backend-health',
+  );
   const tracingHeadersDetected = Boolean(backendHealthProbe?.metrics?.traceHeaderDetected);
-  const requestIdMiddlewareDetected = /x-request-id|x-correlation-id|requestId|correlationId/i.test(requestIdInterceptor + requestLogger + backendMain);
-  const structuredLoggingDetected = /logger\.|requestId|context|metadata|structured/i.test(requestLogger + backendMain);
-  const sentryDetected = /@sentry\/node|Sentry\./i.test(backendSentry + workerBootstrap + backendMain);
-  const alertingIntegrationDetected = /OPS_WEBHOOK_URL|AUTOPILOT_ALERT_WEBHOOK_URL|DLQ_WEBHOOK_URL|Sentry|alert/i.test(envSchema + backendSentry + workerBootstrap);
-  const healthEndpointsDetected = /Controller\('health'\)|@Get\('health'\)|@Get\('system'\)/i.test(systemHealth + appHealth);
+  const requestIdMiddlewareDetected = /x-request-id|x-correlation-id|requestId|correlationId/i.test(
+    requestIdInterceptor + requestLogger + backendMain,
+  );
+  const structuredLoggingDetected = /logger\.|requestId|context|metadata|structured/i.test(
+    requestLogger + backendMain,
+  );
+  const sentryDetected = /@sentry\/node|Sentry\./i.test(
+    backendSentry + workerBootstrap + backendMain,
+  );
+  const alertingIntegrationDetected =
+    /OPS_WEBHOOK_URL|AUTOPILOT_ALERT_WEBHOOK_URL|DLQ_WEBHOOK_URL|Sentry|alert/i.test(
+      envSchema + backendSentry + workerBootstrap,
+    );
+  const healthEndpointsDetected = /Controller\('health'\)|@Get\('health'\)|@Get\('system'\)/i.test(
+    systemHealth + appHealth,
+  );
   const auditTrailDetected = /audit/i.test(auditMiddleware);
 
   const missingSignals: string[] = [];
-  if (!tracingHeadersDetected && !requestIdMiddlewareDetected) missingSignals.push('tracing');
-  if (!sentryDetected && !alertingIntegrationDetected) missingSignals.push('alerting');
-  if (!healthEndpointsDetected) missingSignals.push('health-endpoints');
-  if (!auditTrailDetected) missingSignals.push('audit-trail');
+  if (!tracingHeadersDetected && !requestIdMiddlewareDetected) {
+    missingSignals.push('tracing');
+  }
+  if (!sentryDetected && !alertingIntegrationDetected) {
+    missingSignals.push('alerting');
+  }
+  if (!healthEndpointsDetected) {
+    missingSignals.push('health-endpoints');
+  }
+  if (!auditTrailDetected) {
+    missingSignals.push('audit-trail');
+  }
 
   return {
     executed: true,
     artifactPaths: [OBSERVABILITY_EVIDENCE_PATH],
-    summary: missingSignals.length === 0
-      ? 'Observability evidence found tracing, alerting, health endpoints, and audit hooks.'
-      : `Observability evidence is missing: ${missingSignals.join(', ')}.`,
+    summary:
+      missingSignals.length === 0
+        ? 'Observability evidence found tracing, alerting, health endpoints, and audit hooks.'
+        : `Observability evidence is missing: ${missingSignals.join(', ')}.`,
     signals: {
       tracingHeadersDetected,
       requestIdMiddlewareDetected,
@@ -659,34 +729,54 @@ export function collectObservabilityEvidence(
 export function collectRecoveryEvidence(rootDir: string): PulseRecoveryEvidence {
   const backupManifestPresent = fs.existsSync(path.join(rootDir, '.backup-manifest.json'));
   const backupPolicyPresent = fs.existsSync(path.join(rootDir, '.backup-policy.json'));
-  const backupValidationPresent = fs.existsSync(path.join(rootDir, '.backup-validation.log'))
-    || fs.existsSync(path.join(rootDir, 'scripts', 'backup-validation.log'));
-  const restoreRunbookPresent = fs.existsSync(path.join(rootDir, 'docs', 'RESTORE.md'))
-    || fs.existsSync(path.join(rootDir, 'RESTORE.md'))
-    || fs.existsSync(path.join(rootDir, 'scripts', 'restore.sh'))
-    || fs.existsSync(path.join(rootDir, 'scripts', 'db-restore.ts'));
-  const disasterRecoveryRunbookPresent = fs.existsSync(path.join(rootDir, 'docs', 'DISASTER_RECOVERY.md'))
-    || fs.existsSync(path.join(rootDir, 'DISASTER_RECOVERY.md'));
-  const disasterRecoveryTestPresent = fs.existsSync(path.join(rootDir, '.dr-test.log'))
-    || fs.existsSync(path.join(rootDir, 'docs', 'dr-test.log'));
-  const seedScriptPresent = fs.existsSync(path.join(rootDir, 'backend', 'prisma', 'seed.ts'))
-    || fs.existsSync(path.join(rootDir, 'backend', 'prisma', 'seed.js'));
+  const backupValidationPresent =
+    fs.existsSync(path.join(rootDir, '.backup-validation.log')) ||
+    fs.existsSync(path.join(rootDir, 'scripts', 'backup-validation.log'));
+  const restoreRunbookPresent =
+    fs.existsSync(path.join(rootDir, 'docs', 'RESTORE.md')) ||
+    fs.existsSync(path.join(rootDir, 'RESTORE.md')) ||
+    fs.existsSync(path.join(rootDir, 'scripts', 'restore.sh')) ||
+    fs.existsSync(path.join(rootDir, 'scripts', 'db-restore.ts'));
+  const disasterRecoveryRunbookPresent =
+    fs.existsSync(path.join(rootDir, 'docs', 'DISASTER_RECOVERY.md')) ||
+    fs.existsSync(path.join(rootDir, 'DISASTER_RECOVERY.md'));
+  const disasterRecoveryTestPresent =
+    fs.existsSync(path.join(rootDir, '.dr-test.log')) ||
+    fs.existsSync(path.join(rootDir, 'docs', 'dr-test.log'));
+  const seedScriptPresent =
+    fs.existsSync(path.join(rootDir, 'backend', 'prisma', 'seed.ts')) ||
+    fs.existsSync(path.join(rootDir, 'backend', 'prisma', 'seed.js'));
 
   const missingSignals: string[] = [];
-  if (!backupManifestPresent) missingSignals.push('backup-manifest');
-  if (!backupPolicyPresent) missingSignals.push('backup-policy');
-  if (!backupValidationPresent) missingSignals.push('backup-validation');
-  if (!restoreRunbookPresent) missingSignals.push('restore-runbook');
-  if (!disasterRecoveryRunbookPresent) missingSignals.push('dr-runbook');
-  if (!disasterRecoveryTestPresent) missingSignals.push('dr-test');
-  if (!seedScriptPresent) missingSignals.push('seed-script');
+  if (!backupManifestPresent) {
+    missingSignals.push('backup-manifest');
+  }
+  if (!backupPolicyPresent) {
+    missingSignals.push('backup-policy');
+  }
+  if (!backupValidationPresent) {
+    missingSignals.push('backup-validation');
+  }
+  if (!restoreRunbookPresent) {
+    missingSignals.push('restore-runbook');
+  }
+  if (!disasterRecoveryRunbookPresent) {
+    missingSignals.push('dr-runbook');
+  }
+  if (!disasterRecoveryTestPresent) {
+    missingSignals.push('dr-test');
+  }
+  if (!seedScriptPresent) {
+    missingSignals.push('seed-script');
+  }
 
   return {
     executed: true,
     artifactPaths: [RECOVERY_EVIDENCE_PATH],
-    summary: missingSignals.length === 0
-      ? 'Recovery evidence found backup metadata, restore runbooks, DR drill evidence, and a seed script.'
-      : `Recovery evidence is missing: ${missingSignals.join(', ')}.`,
+    summary:
+      missingSignals.length === 0
+        ? 'Recovery evidence found backup metadata, restore runbooks, DR drill evidence, and a seed script.'
+        : `Recovery evidence is missing: ${missingSignals.join(', ')}.`,
     signals: {
       backupManifestPresent,
       backupPolicyPresent,

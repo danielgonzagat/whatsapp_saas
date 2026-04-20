@@ -14,7 +14,9 @@ export default function BoletoPaymentPage() {
 
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
     },
     [],
   );
@@ -24,10 +26,14 @@ export default function BoletoPaymentPage() {
   const expiresAt = data?.payment?.boletoExpiresAt;
 
   const handleCopy = useCallback(() => {
-    if (!barcode) return;
+    if (!barcode) {
+      return;
+    }
     navigator.clipboard.writeText(barcode).then(() => {
       setCopied(true);
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
       copiedTimer.current = setTimeout(() => setCopied(false), 2500);
     });
   }, [barcode]);

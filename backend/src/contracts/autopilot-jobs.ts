@@ -37,7 +37,9 @@ function asObject(value: unknown, label: string): Record<string, unknown> {
 }
 
 function normalizeOptionalString(value: unknown): string | undefined {
-  if (value === null || value === undefined) return undefined;
+  if (value === null || value === undefined) {
+    return undefined;
+  }
   const normalized =
     typeof value === 'string'
       ? value.trim()
@@ -60,7 +62,9 @@ function requireNonEmptyString(
 
 function normalizeLimit(value: unknown): number {
   const parsed = Number(value ?? 500);
-  if (!Number.isFinite(parsed)) return 500;
+  if (!Number.isFinite(parsed)) {
+    return 500;
+  }
   return Math.max(1, Math.min(2000, Math.trunc(parsed)));
 }
 

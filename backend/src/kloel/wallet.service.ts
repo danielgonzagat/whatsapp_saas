@@ -180,8 +180,12 @@ export class WalletService {
           include: { wallet: { select: { id: true, workspaceId: true } } },
         });
 
-        if (!walletTx) return { kind: 'not_found' };
-        if (walletTx.status !== 'pending') return { kind: 'not_pending' };
+        if (!walletTx) {
+          return { kind: 'not_found' };
+        }
+        if (walletTx.status !== 'pending') {
+          return { kind: 'not_pending' };
+        }
 
         // I10 — ownership assertion inside the transaction snapshot.
         if (walletTx.wallet.workspaceId !== workspaceId) {
@@ -194,7 +198,9 @@ export class WalletService {
           where: { id: transactionId, status: 'pending' },
           data: { status: 'completed' },
         });
-        if (statusFlip.count === 0) return { kind: 'race_lost' };
+        if (statusFlip.count === 0) {
+          return { kind: 'race_lost' };
+        }
 
         // DUAL-WRITE during the P6-2 → P6-3 observation window (I11).
         await tx.kloelWallet.update({
@@ -234,7 +240,9 @@ export class WalletService {
       { isolationLevel: 'ReadCommitted' },
     );
 
-    if (outcome.kind === 'ok') return true;
+    if (outcome.kind === 'ok') {
+      return true;
+    }
     // Structured log so ops can tell the three no-op reasons apart.
     this.logger.log(`confirmPayment noop for ${transactionId}: ${outcome.kind}`);
     return false;
@@ -342,7 +350,9 @@ export class WalletService {
   async getTransactionHistory(workspaceId: string, page = 1, limit = 20, type?: string) {
     const wallet = await this.getOrCreateWallet(workspaceId);
     const where: Record<string, unknown> = { walletId: wallet.id };
-    if (type) where.type = type;
+    if (type) {
+      where.type = type;
+    }
 
     const [transactions, total] = await Promise.all([
       this.prisma.kloelWalletTransaction.findMany({
@@ -396,7 +406,9 @@ export class WalletService {
         },
       });
 
-      if (pendingTxs.length === 0) return;
+      if (pendingTxs.length === 0) {
+        return;
+      }
 
       this.logger.log(`Reconciling ${pendingTxs.length} pending transaction(s)...`);
 
@@ -429,7 +441,9 @@ export class WalletService {
       await forEachSequential(pendingTxs, async (tx) => {
         try {
           const wallet = walletsById.get(tx.walletId);
-          if (!wallet) return;
+          if (!wallet) {
+            return;
+          }
 
           // PULSE:OK — each settlement needs atomic $transaction with unique amounts per wallet
           await this.prisma.$transaction(

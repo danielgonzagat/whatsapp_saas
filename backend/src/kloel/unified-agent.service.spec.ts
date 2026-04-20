@@ -54,12 +54,24 @@ describe('UnifiedAgentService', () => {
       prisma,
       {
         get: jest.fn((key: string) => {
-          if (key === 'OPENAI_API_KEY') return undefined;
-          if (key === 'OPENAI_BRAIN_MODEL') return 'gpt-5.4';
-          if (key === 'OPENAI_BRAIN_FALLBACK_MODEL') return 'gpt-4.1';
-          if (key === 'OPENAI_WRITER_MODEL') return 'gpt-5.4-nano-2026-03-17';
-          if (key === 'OPENAI_WRITER_FALLBACK_MODEL') return 'gpt-4.1';
-          if (key === 'FRONTEND_URL') return 'https://app.kloel.test';
+          if (key === 'OPENAI_API_KEY') {
+            return undefined;
+          }
+          if (key === 'OPENAI_BRAIN_MODEL') {
+            return 'gpt-5.4';
+          }
+          if (key === 'OPENAI_BRAIN_FALLBACK_MODEL') {
+            return 'gpt-4.1';
+          }
+          if (key === 'OPENAI_WRITER_MODEL') {
+            return 'gpt-5.4-nano-2026-03-17';
+          }
+          if (key === 'OPENAI_WRITER_FALLBACK_MODEL') {
+            return 'gpt-4.1';
+          }
+          if (key === 'FRONTEND_URL') {
+            return 'https://app.kloel.test';
+          }
           return undefined;
         }),
       } as unknown as ConfigService,

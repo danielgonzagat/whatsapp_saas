@@ -12,9 +12,13 @@ const lastAlert: Record<string, number> = {};
 const ALERT_COOLDOWN = Number(process.env.DLQ_ALERT_COOLDOWN_MS || 10 * 60_000);
 
 async function notify(queue: string, waiting: number, failed: number) {
-  if (!OPS_WEBHOOK || typeof globalThis.fetch !== 'function') return;
+  if (!OPS_WEBHOOK || typeof globalThis.fetch !== 'function') {
+    return;
+  }
   const now = Date.now();
-  if (lastAlert[queue] && now - lastAlert[queue] < ALERT_COOLDOWN) return;
+  if (lastAlert[queue] && now - lastAlert[queue] < ALERT_COOLDOWN) {
+    return;
+  }
 
   try {
     await globalThis.fetch(OPS_WEBHOOK, {
@@ -44,7 +48,9 @@ async function healQueue(dlqName: string, originalQueueName: string) {
   const originalQueue = new Queue(originalQueueName, queueOptions);
 
   const jobs = await dlq.getJobs(['waiting', 'delayed', 'active'], 0, 20);
-  if (jobs.length === 0) return;
+  if (jobs.length === 0) {
+    return;
+  }
 
   const TRANSIENT_ERRORS = [
     'ETIMEDOUT',
@@ -97,7 +103,9 @@ async function healQueue(dlqName: string, originalQueueName: string) {
 }
 
 function toDlqMonitorError(err: unknown): Error {
-  if (err instanceof Error) return err;
+  if (err instanceof Error) {
+    return err;
+  }
   return new Error(typeof err === 'string' ? err : 'unknown error');
 }
 
@@ -106,7 +114,9 @@ async function notifyIfDlqHasBacklog(dlqName: string): Promise<void> {
   const counts = await dlq.getJobCounts();
   const waiting = (counts.waiting || 0) + (counts.delayed || 0);
   const failed = counts.failed || 0;
-  if (waiting <= 0 && failed <= 0) return;
+  if (waiting <= 0 && failed <= 0) {
+    return;
+  }
   await notify(dlqName, waiting, failed);
 }
 

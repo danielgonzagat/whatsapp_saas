@@ -29,7 +29,9 @@ export class CookieConsentService {
 
   parseCookieValue(rawValue?: string | null): CookieConsentRecord | null {
     const value = String(rawValue || '').trim();
-    if (!value) return null;
+    if (!value) {
+      return null;
+    }
 
     try {
       const parsed = JSON.parse(value) as CookieConsentInput & { updatedAt?: string };
@@ -55,7 +57,9 @@ export class CookieConsentService {
       where: { agentId },
     });
 
-    if (!consent) return null;
+    if (!consent) {
+      return null;
+    }
 
     return {
       necessary: consent.necessary,

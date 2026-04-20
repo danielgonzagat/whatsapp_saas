@@ -104,7 +104,9 @@ export function AccountSettingsSection() {
           workspaceApi.getChannels(),
         ]);
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         const payload = buildAccountSettingsPayload(
           workspaceRes.data,
@@ -115,7 +117,9 @@ export function AccountSettingsSection() {
         setPreferences(payload.preferences);
         setChannels(payload.channels);
       } catch (err: unknown) {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         const msg = err instanceof Error ? err.message : undefined;
         setError(msg || 'Não foi possível carregar as configurações da conta.');
       } finally {
@@ -133,9 +137,12 @@ export function AccountSettingsSection() {
   }, []);
 
   const feedbackTone = useMemo(() => {
-    if (error) return 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]';
-    if (feedback)
+    if (error) {
+      return 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]';
+    }
+    if (feedback) {
       return 'border-[var(--app-border-primary)] bg-[var(--app-bg-card)] text-[var(--app-text-primary)]';
+    }
     return '';
   }, [error, feedback]);
 

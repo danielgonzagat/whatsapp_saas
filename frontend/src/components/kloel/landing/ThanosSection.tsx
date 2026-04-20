@@ -245,7 +245,9 @@ function captureParticles(ctx: CanvasRenderingContext2D, layout: LegacyLayout) {
   for (let py = 0; py < layout.pixelHeight; py += 2) {
     for (let px = 0; px < layout.pixelWidth; px += 3) {
       const index = (py * layout.pixelWidth + px) * 4;
-      if (data[index + 3] <= 10) continue;
+      if (data[index + 3] <= 10) {
+        continue;
+      }
 
       const x = px / layout.dpr;
       const y = py / layout.dpr;
@@ -314,14 +316,20 @@ function blendSquare(
   const startY = Math.round(yPx);
   const span = Math.max(1, Math.round(sizePx));
   const srcA = clamp(alpha, 0, 1);
-  if (srcA <= 0) return;
+  if (srcA <= 0) {
+    return;
+  }
 
   for (let py = 0; py < span; py++) {
     const y = startY + py;
-    if (y < 0 || y >= heightPx) continue;
+    if (y < 0 || y >= heightPx) {
+      continue;
+    }
     for (let px = 0; px < span; px++) {
       const x = startX + px;
-      if (x < 0 || x >= widthPx) continue;
+      if (x < 0 || x >= widthPx) {
+        continue;
+      }
       const idx = (y * widthPx + x) * 4;
       const dstA = buffer[idx + 3] / 255;
 
@@ -375,17 +383,25 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
   const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(EMPTY_MESSAGES);
 
   useEffect(() => {
-    if (!runToken) return;
+    if (!runToken) {
+      return;
+    }
     let cancelled = false;
     setMsgs(EMPTY_MESSAGES);
 
     const run = async () => {
       const playMessage = async (index: number): Promise<void> => {
-        if (index >= SALES_FLOW.length || cancelled) return;
+        if (index >= SALES_FLOW.length || cancelled) {
+          return;
+        }
         const msg = SALES_FLOW[index];
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         await wait(msg.f === '$' ? 900 : msg.f === 'a' ? 600 : 400);
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setMsgs((prev) => ({ ...prev, [msg.ch]: [...prev[msg.ch], msg] }));
         await playMessage(index + 1);
       };
@@ -511,7 +527,9 @@ export default function ThanosSection() {
     }
 
     const el = secRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -530,11 +548,17 @@ export default function ThanosSection() {
       return;
     }
 
-    if (!started || !imgsLoaded?.length) return;
+    if (!started || !imgsLoaded?.length) {
+      return;
+    }
     const canvas = cvRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     let alive = true;
     let currentFrame: ImageData | null = null;
@@ -581,12 +605,18 @@ export default function ThanosSection() {
               continue;
             }
 
-            if (particle.life <= 0 || particle.size <= 0.12) continue;
+            if (particle.life <= 0 || particle.size <= 0.12) {
+              continue;
+            }
 
             updateParticleMotion(particle, dtSec, frameScale);
 
-            if (isParticleOffscreen(particle, layout)) continue;
-            if (particle.life <= 0 || particle.size <= 0.12) continue;
+            if (isParticleOffscreen(particle, layout)) {
+              continue;
+            }
+            if (particle.life <= 0 || particle.size <= 0.12) {
+              continue;
+            }
 
             active++;
             blendSquare(
@@ -632,7 +662,9 @@ export default function ThanosSection() {
         drawScene(ctx, layout, imgsLoaded);
 
         await wait(STATIC_HOLD_MS);
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
 
         drawScene(ctx, layout, imgsLoaded);
         const particles = captureParticles(ctx, layout);
@@ -640,20 +672,28 @@ export default function ThanosSection() {
         currentBuffer = currentFrame.data;
 
         await animate(layout, particles);
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
 
         canvas.style.opacity = '0';
         await wait(PRE_REVEAL_MS);
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
 
         setShowReveal(true);
         await wait(SALES_DELAY_MS);
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
 
         setSalesRunToken((value) => value + 1);
         setShowSales(true);
         await wait(REVEAL_HOLD_MS);
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
 
         setShowReveal(false);
         setShowSales(false);

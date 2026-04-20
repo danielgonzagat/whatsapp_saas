@@ -18,7 +18,9 @@ type CookieProviderProps = {
 function normalizeConsent(
   input?: CookieConsentPreferences | null,
 ): CookieConsentPreferences | null {
-  if (!input) return null;
+  if (!input) {
+    return null;
+  }
 
   return {
     necessary: true,
@@ -29,7 +31,9 @@ function normalizeConsent(
 }
 
 export function openCookiePreferences() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   window.dispatchEvent(new CustomEvent(OPEN_COOKIE_PREFERENCES_EVENT));
 }
 
@@ -53,7 +57,9 @@ export function CookieProvider({ children }: CookieProviderProps) {
 
     const loadConsent = async () => {
       const response = await cookieConsentApi.get();
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setConsent(normalizeConsent(response.data?.consent ?? null));
       setIsLoaded(true);
@@ -87,7 +93,9 @@ export function CookieProvider({ children }: CookieProviderProps) {
   );
 
   const goToPolicyPage = useCallback(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     window.location.assign(buildMarketingUrl('/cookies', window.location.host));
   }, []);
 

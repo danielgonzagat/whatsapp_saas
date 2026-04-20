@@ -177,7 +177,9 @@ function readStringField(value: unknown, keys: string[]) {
   }
 
   for (const key of keys) {
-    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+    if (!Object.prototype.hasOwnProperty.call(value, key)) {
+      continue;
+    }
     const candidate = Reflect.get(value, key);
     if (typeof candidate === 'string' && candidate.trim()) {
       return candidate.trim();
@@ -202,10 +204,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function toJsonValue(value: unknown): JsonValue {
-  if (value === null) return null;
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return value;
-  if (typeof value === 'boolean') return value;
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
 
   if (Array.isArray(value)) {
     return value.map((entry) => toJsonValue(entry));

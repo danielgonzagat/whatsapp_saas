@@ -39,7 +39,9 @@ const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
 function applySearchFilter(where: Prisma.WorkspaceWhereInput, search: string | undefined): void {
-  if (!search) return;
+  if (!search) {
+    return;
+  }
   where.OR = [
     { name: { contains: search, mode: 'insensitive' } },
     { customDomain: { contains: search, mode: 'insensitive' } },
@@ -57,7 +59,9 @@ function applySearchFilter(where: Prisma.WorkspaceWhereInput, search: string | u
 }
 
 function applyKycFilter(where: Prisma.WorkspaceWhereInput, kycStatus: string | undefined): void {
-  if (!kycStatus) return;
+  if (!kycStatus) {
+    return;
+  }
   where.agents = {
     some: { role: 'ADMIN', kycStatus },
   };

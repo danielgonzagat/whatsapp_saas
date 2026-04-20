@@ -88,7 +88,9 @@ export function AgentDesktopViewer({
   const refreshStatus = useCallback(
     async (targetWorkspaceId?: string) => {
       const resolvedWorkspaceId = targetWorkspaceId || workspaceId;
-      if (!resolvedWorkspaceId) return;
+      if (!resolvedWorkspaceId) {
+        return;
+      }
 
       setWorking(true);
       try {
@@ -130,7 +132,9 @@ export function AgentDesktopViewer({
   }, [ensureWorkspaceId, refreshStatus, status?.authUrl]);
 
   useEffect(() => {
-    if (!isVisible || !autoConnect) return;
+    if (!isVisible || !autoConnect) {
+      return;
+    }
 
     let cancelled = false;
     void (async () => {

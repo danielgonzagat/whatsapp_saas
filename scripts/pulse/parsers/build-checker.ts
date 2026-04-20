@@ -24,26 +24,30 @@ function parseTscOutput(
   projectDir: string,
   rootDir: string,
   breakType: 'BUILD_FRONTEND_FAILS' | 'BUILD_BACKEND_FAILS' | 'BUILD_WORKER_FAILS',
-  label: string
+  label: string,
 ): Break[] {
   const breaks: Break[] = [];
   const lines = stderr.split('\n');
 
   for (const raw of lines) {
-    if (breaks.length >= MAX_ERRORS_PER_PROJECT) break;
+    if (breaks.length >= MAX_ERRORS_PER_PROJECT) {
+      break;
+    }
 
     const line = raw.trim();
-    if (!line) continue;
+    if (!line) {
+      continue;
+    }
 
     let match = TS_ERROR_RE.exec(line) || TS_ERROR_ALT_RE.exec(line);
-    if (!match) continue;
+    if (!match) {
+      continue;
+    }
 
     const [, filePath, lineNum, code, message] = match;
 
     // Resolve file path relative to root
-    const absFile = path.isAbsolute(filePath)
-      ? filePath
-      : path.resolve(projectDir, filePath);
+    const absFile = path.isAbsolute(filePath) ? filePath : path.resolve(projectDir, filePath);
     const relFile = path.relative(rootDir, absFile);
 
     breaks.push({
@@ -63,7 +67,7 @@ function runTsc(
   projectDir: string,
   rootDir: string,
   breakType: 'BUILD_FRONTEND_FAILS' | 'BUILD_BACKEND_FAILS' | 'BUILD_WORKER_FAILS',
-  label: string
+  label: string,
 ): Break[] {
   try {
     execSync('npx tsc --noEmit', {
@@ -88,14 +92,16 @@ function runTsc(
 
     // If we couldn't parse individual errors but tsc failed, emit one generic break
     if (parsed.length === 0) {
-      return [{
-        type: breakType,
-        severity: 'critical',
-        file: path.relative(rootDir, projectDir),
-        line: 1,
-        description: `${label} TypeScript compilation failed`,
-        detail: output.split('\n').filter(Boolean).slice(0, 3).join(' | ').slice(0, 200),
-      }];
+      return [
+        {
+          type: breakType,
+          severity: 'critical',
+          file: path.relative(rootDir, projectDir),
+          line: 1,
+          description: `${label} TypeScript compilation failed`,
+          detail: output.split('\n').filter(Boolean).slice(0, 3).join(' | ').slice(0, 200),
+        },
+      ];
     }
 
     return parsed;
@@ -103,7 +109,9 @@ function runTsc(
 }
 
 export function checkBuilds(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const targets: ProjectTarget[] = [
     {

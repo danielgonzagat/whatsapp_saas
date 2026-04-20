@@ -116,7 +116,13 @@ export default function OrderBumpCard({
         {/* Text */}
         <span style={{ flex: 1 }}>
           <span
-            style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: borderCol, marginBottom: '2px' }}
+            style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: 700,
+              color: borderCol,
+              marginBottom: '2px',
+            }}
           >
             {bump.checkboxLabel || 'Sim, eu quero!'}
           </span>
@@ -129,7 +135,12 @@ export default function OrderBumpCard({
         <span style={{ textAlign: 'right', flexShrink: 0 }}>
           {bump.compareAtPrice != null && (
             <span
-              style={{ display: 'block', fontSize: '11px', color: mutedColor, textDecoration: 'line-through' }}
+              style={{
+                display: 'block',
+                fontSize: '11px',
+                color: mutedColor,
+                textDecoration: 'line-through',
+              }}
             >
               {formatBRL(bump.compareAtPrice)}
             </span>

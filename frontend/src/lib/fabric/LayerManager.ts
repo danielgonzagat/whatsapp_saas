@@ -13,28 +13,36 @@ export class LayerManager {
 
   bringToFront(obj?: FabricObject): void {
     const target = obj ?? this.canvas.getActiveObject();
-    if (!target) return;
+    if (!target) {
+      return;
+    }
     this.canvas.bringObjectToFront(target);
     this.canvas.requestRenderAll();
   }
 
   sendToBack(obj?: FabricObject): void {
     const target = obj ?? this.canvas.getActiveObject();
-    if (!target) return;
+    if (!target) {
+      return;
+    }
     this.canvas.sendObjectToBack(target);
     this.canvas.requestRenderAll();
   }
 
   bringForward(obj?: FabricObject): void {
     const target = obj ?? this.canvas.getActiveObject();
-    if (!target) return;
+    if (!target) {
+      return;
+    }
     this.canvas.bringObjectForward(target);
     this.canvas.requestRenderAll();
   }
 
   sendBackward(obj?: FabricObject): void {
     const target = obj ?? this.canvas.getActiveObject();
-    if (!target) return;
+    if (!target) {
+      return;
+    }
     this.canvas.sendObjectBackwards(target);
     this.canvas.requestRenderAll();
   }

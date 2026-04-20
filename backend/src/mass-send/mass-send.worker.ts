@@ -37,7 +37,9 @@ function nextDispatchDelay(cumulativeDelay: number): number {
 let _worker: Worker | null = null;
 
 export function startMassSendWorker() {
-  if (_worker) return _worker;
+  if (_worker) {
+    return _worker;
+  }
 
   const redisUrl = getRedisUrl();
   logger.log('Iniciando MassSend Worker...');
@@ -68,7 +70,9 @@ export function startMassSendWorker() {
 
       await forEachSequential(numbers, async (number) => {
         const sanitized = (number || '').replace(D_RE, '');
-        if (!sanitized) return;
+        if (!sanitized) {
+          return;
+        }
         try {
           cumulativeDelay = nextDispatchDelay(cumulativeDelay);
 

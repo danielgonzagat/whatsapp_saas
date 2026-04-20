@@ -49,7 +49,9 @@ export function useCanvasDesigns() {
   const duplicateDesign = async (id: string) => {
     const res = await apiFetch<{ design?: CanvasDesign }>(`/canvas/designs/${id}`);
     const orig = res?.data?.design;
-    if (!orig) return;
+    if (!orig) {
+      return;
+    }
     const dup = await apiFetch<{ design?: CanvasDesign }>('/canvas/designs', {
       method: 'POST',
       body: {

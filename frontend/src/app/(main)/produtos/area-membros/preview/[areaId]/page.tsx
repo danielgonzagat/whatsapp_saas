@@ -103,15 +103,21 @@ function normalizeModule(raw: unknown, moduleIndex: number): Module {
 }
 
 function pickRawModules(raw: Record<string, unknown>): unknown[] {
-  if (Array.isArray(raw.modules)) return raw.modules;
-  if (Array.isArray(raw.modulesList)) return raw.modulesList;
+  if (Array.isArray(raw.modules)) {
+    return raw.modules;
+  }
+  if (Array.isArray(raw.modulesList)) {
+    return raw.modulesList;
+  }
   return [];
 }
 
 function normalizeMemberAreaPayload(payload: unknown): MemberArea | null {
   const payloadRecord = readRecord(payload);
   const raw = readRecord(payloadRecord?.area) ?? payloadRecord;
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
 
   return {
     id: readString(raw.id),
@@ -132,7 +138,9 @@ export default function MemberAreaPreviewPage() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!areaId) return;
+    if (!areaId) {
+      return;
+    }
     apiFetch(`/member-areas/${areaId}`)
       .then((res) => {
         const data = normalizeMemberAreaPayload(res.data ?? null);
@@ -248,7 +256,9 @@ export default function MemberAreaPreviewPage() {
                   type="button"
                   onClick={() => {
                     setActiveModuleId(mod.id);
-                    if (mod.lessons?.[0]) setActiveLessonId(mod.lessons[0].id);
+                    if (mod.lessons?.[0]) {
+                      setActiveLessonId(mod.lessons[0].id);
+                    }
                   }}
                   style={{
                     width: '100%',

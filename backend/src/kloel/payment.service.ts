@@ -140,7 +140,9 @@ export class PaymentService {
       },
     });
 
-    if (!sale) return null;
+    if (!sale) {
+      return null;
+    }
     const metadata = ((sale.metadata as Record<string, unknown> | null) || {}) as KloelSaleMetadata;
 
     const status =
@@ -174,8 +176,12 @@ export class PaymentService {
     event: string,
     payment: PaymentWebhookPayload,
   ): Promise<void> {
-    if (event !== 'PAYMENT_CONFIRMED') return;
-    if (!payment?.id) return;
+    if (event !== 'PAYMENT_CONFIRMED') {
+      return;
+    }
+    if (!payment?.id) {
+      return;
+    }
 
     // Move find inside $transaction to prevent concurrent webhook deliveries
     // from racing between find and update.
@@ -186,10 +192,14 @@ export class PaymentService {
           select: { id: true, status: true },
         });
 
-        if (!sale?.id) return;
+        if (!sale?.id) {
+          return;
+        }
 
         // Idempotency: skip if already paid
-        if (sale.status === 'paid') return;
+        if (sale.status === 'paid') {
+          return;
+        }
 
         await tx.kloelSale.updateMany({
           where: { id: sale.id, workspaceId },

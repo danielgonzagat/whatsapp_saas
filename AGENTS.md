@@ -51,52 +51,15 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-19 9:00pm GMT-3
+# [whatsapp_saas] recent context, 2026-04-19 9:21pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (18,584t read) | 1,471,057t work | 99% savings
+Stats: 50 obs (21,666t read) | 3,182,309t work | 99% savings
 
 ### Apr 19, 2026
-199 5:22p 🔴 TypeScript TS1107 error in stripe-webhook.processor.ts after forEachSequential refactor
-200 5:23p 🔴 Fixed stale response.status references causing TS18048 in 4 frontend proxy routes
-201 " 🔵 Full inventory of 16 remaining legitimate biome-ignore suppressions after cleanup
-205 5:25p 🔄 Eliminated 10 more biome-ignore suppressions via proper code fixes
-206 5:26p 🔄 CommandPaletteItem replaced dangerouslySetInnerHTML+DOMPurify with pure React renderMarkedMarkup
-207 " 🔴 TS2304 "Cannot find name 'i'" in checkout/[planId]/page.tsx after noArrayIndexKey fix
-210 " 🔵 biome-ignore cleanup complete — 6 permanent suppressions remain, all justified
-213 5:27p 🔵 biome-ignore cleanup final state — 5 noBarrelFile suppressions only
-214 " 🔵 biome check reveals 5 noBarrelFile suppressions are unused + 9 new violations in 4 files
-218 5:33p 🔵 openai-wrapper.spec.ts imports chatCompletionWithFallback not exported by implementation
-219 " 🔵 marketing proxy route already uses findFirstSequential from async-sequence utility
-220 " 🔵 Vitest path filtering requires setopt NO_NOMATCH in zsh — bracket paths fail without it
-221 " 🔵 useCheckoutExperienceSocial uses router.push for redirects — Stripe flow stays on page
-222 5:35p 🔴 TypeScript TS2344 in api.test.ts — vi.spyOn generic type narrowed to simpler structural type
-223 " ✅ All three packages typecheck clean — frontend, worker, backend all pass tsc --noEmit
-234 5:38p ✅ Zero suppression comments remain across all three packages — codacy-zero cleanup complete
-235 " ✅ Full test suites pass: frontend 150/150, worker 74/74, backend 747/749 (2 skipped)
-236 " 🔵 Frontend next build enforces NEXT_PUBLIC_API_URL at build time — fails without it
-237 " ✅ Frontend webpack production build succeeds — 65 static pages, full app route manifest confirmed
-238 " ✅ codacy-zero branch committed and pushed to GitHub — PR ready for review
-243 5:39p ✅ Main suppression cleanup committed — "refactor(codacy): remove active-code suppressions" pushed to origin
-244 " 🟣 PR #156 created — "refactor(codacy): remove active-code suppressions" — draft, awaiting review
-246 5:40p 🔵 Automated PR merge blocked — draft state prevents merge; markReadyForReview GraphQL mutation uses wrong field
-247 " 🔵 PR #156 merge blocked by conflicts — codacy-zero branch has non-clean merge into main
-252 5:43p 🔄 PR #156 merged — codacy-zero suppression cleanup lands on main
-253 5:44p 🔵 CI fails on main after PR #156 merge — architecture guardrails: 47 files exceed 600-line limit
-263 8:13p 🔴 Fixed Prisma.JsonObject TypeScript error in ConnectLedgerReconciliationService
-264 " 🟣 Added cron success and failure path tests to ConnectLedgerReconciliationService
-265 " 🔵 Prisma client is stale — 13 test suites blocked by missing generated types
-269 8:51p 🔵 main branch has uncommitted connect-platform-wallet changes
-270 8:52p 🔵 codex-mem service unavailable in sandbox — nohup blocked by nice(5) permission error
-271 " 🔵 connect-platform-wallet uncommitted diff: 1,441 insertions across 15 files
-273 " 🟣 ConnectPayoutApprovalService — two-step admin approval flow for Connect payouts
-274 " 🟣 ConnectLedgerReconciliationService — event-replay ledger drift detection with 15-min cron
-275 " 🟣 ConnectController expanded with 6 new endpoints — account creation, onboarding, ledger, payouts, payout requests, reconcile
-276 " 🟣 AdminCarteiraController — 4 new admin Connect endpoints with APPROVE permission guard
-277 " 🔄 GoogleSignInButton helpers extracted to reduce useEffect cyclomatic complexity
 284 8:54p 🔴 Fixed TS2304 in google-sign-in-button.tsx — missing import for extracted helpers + mode type mismatch
 285 " 🟣 All 6 Connect backend test suites pass — 53 tests green after reconnection recovery
 292 8:57p ⚖️ WAHA/Puppeteer WhatsApp deprecated — full migration to Meta Cloud API
@@ -110,6 +73,43 @@ Stats: 50 obs (18,584t read) | 1,471,057t work | 99% savings
 300 " ⚖️ Environment variables consolidated — comprehensive Railway/Vercel split documented
 301 " ⚖️ Meta webhook endpoint architecture — single unified receiver for all channels and clients
 302 8:59p 🔵 whatsapp_saas working tree has uncommitted connect-platform-wallet changes on main branch
+305 9:01p ⚖️ WAHA/Puppeteer fully deprecated — Kloel migrates exclusively to Meta Cloud API
+306 " ⚖️ Full autonomous execution scope defined — 12-block Kloel production readiness plan
+307 " 🟣 Meta developer tokens and App IDs provided for Kloel CIA integration
+308 " ⚖️ Google Cloud Service Account "kloel-master" with Owner role planned for GCP automation
+309 " ⚖️ Kloel Terminator design system rules locked — all UI components must comply
+310 " 🟣 Checkout autofill audit and fix planned for Velvet Noir and Velvet Blanc
+311 " ⚖️ Kloel Tecnologia LTDA entity details established for legal/compliance documentation
+322 9:03p 🟣 ConnectPayoutApprovalService — two-phase approval workflow for connect payouts landed on main
+323 " 🟣 ConnectLedgerReconciliationService — replay-based balance verification on 15-minute cron
+324 " 🟣 ConnectController expanded with 6 new workspace-scoped endpoints and admin endpoints added to AdminCarteiraController
+325 " 🔄 google-sign-in-button.tsx callback and render config extracted to helpers module
+326 " 🟣 ConnectService gains createOnboardingLink and listBalances methods with Stripe AccountLink type
+327 " ✅ connect-platform-wallet changes committed and pushed to main — 53 tests green, both typechecks clean
+335 9:05p ⚖️ Kloel adopts Stripe Connect Platform model with Custom Accounts and manual payouts
+336 " ⚖️ Kloel split payment priority order formally defined with mathematical contract
+337 " ⚖️ Dual-balance ledger engine architecture defined for Kloel internal balance management
+338 " ⚖️ 13-gate live-readiness checklist defined before Kloel can process real money
+339 " 🔵 Kloel codebase quality metrics from Codacy: 7.95 issues/kLoC but 31% coverage and 19% duplication block production
+340 " ⚖️ Scope boundary enforced: SplitEngine before custom domains, CIA, or marketing skills integration
+341 " 🔵 Kloel competitive positioning clarified: not "first in world" but "first in Brazil" hybrid e-commerce + affiliate + AI
+358 9:08p ⚖️ Kloel Live-Readiness Scope: 13 Formal Gates Defined for Financial Production
+359 " ⚖️ SplitEngine Priority Order and Math Contract Locked
+360 " ⚖️ Internal Ledger Architecture Required — Dual-Balance Pending/Available System
+361 " ⚖️ Kloel Development Execution Order Locked — SplitEngine First, Custom Domains Last
+362 " ⚖️ Stripe Connect Architecture Finalized — Platform Model with Custom Accounts and Manual Payouts
+363 " ⚖️ Prepaid Wallet Architecture for API Usage — Not Stripe Billing/Meters
+364 9:13p 🔵 Staging Deploy Pipeline — Total Failure Across 369 Consecutive Deploys
+369 9:16p 🔵 Staging Deployment Pipeline — 369 Consecutive Failures Detected
+370 " ⚖️ Autonomous Continuous Work Mode Activated — Fix All 369 Staging Failures
+371 9:17p 🔵 Root Cause of All 369 Staging Failures — Architecture Guardrails Check Blocking CI
+372 " 🔵 Architecture Guardrail: `expect.any(Date)` Falsely Flagged as Explicit `any`
+373 " ✅ Worktree `fix/deploy-staging-connect-guardrails` Created to Resolve CI Blocker
+374 9:18p 🔵 Staging Deploy Pipeline Broken — 369 Consecutive Failures Since Yesterday
+375 " 🔵 Scope of Queued-but-Undeployed Work on main and feat/kloel-final-compliance
+376 9:19p 🔴 Fixed False-Positive "any" Matcher in ConnectPayoutApprovalService Spec
+377 9:21p 🔵 Mass Staging Deployment Failure — 369 Consecutive Deploys Failed
+378 " ⚖️ Autonomous Recovery Scope: Fix All 369 Staging Failures and Deploy to Production
 
-Access 1471k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 3182k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

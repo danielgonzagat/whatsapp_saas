@@ -117,7 +117,9 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
 
   useEffect(
     () => () => {
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
     },
     [],
   );
@@ -150,7 +152,9 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
       savedTimer.current = setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       console.error('Erro ao salvar URLs de agradecimento:', e);

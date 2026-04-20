@@ -38,14 +38,16 @@ function makeExpiredJwt(): string {
 function makeAlgNoneJwt(): string {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
   const now = Math.floor(Date.now() / 1000);
-  const payload = Buffer.from(JSON.stringify({
-    sub: 'pulse-attacker',
-    email: 'attack@pulse.kloel.com',
-    workspaceId: 'malicious-workspace',
-    role: 'ADMIN',
-    iat: now,
-    exp: now + 3600,
-  })).toString('base64url');
+  const payload = Buffer.from(
+    JSON.stringify({
+      sub: 'pulse-attacker',
+      email: 'attack@pulse.kloel.com',
+      workspaceId: 'malicious-workspace',
+      role: 'ADMIN',
+      iat: now,
+      exp: now + 3600,
+    }),
+  ).toString('base64url');
   return `${header}.${payload}.`; // no signature
 }
 
@@ -57,17 +59,35 @@ interface TestCase {
 
 export async function checkSecurityAuthBypass(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const baseFile = 'scripts/pulse/parsers/security-auth-bypass.ts';
 
   const testCases: TestCase[] = [
     { label: 'no JWT', jwt: undefined, detail: 'Request sent with no Authorization header' },
-    { label: 'expired JWT', jwt: makeExpiredJwt(), detail: 'JWT with exp set to 1 hour in the past' },
-    { label: 'alg=none JWT', jwt: makeAlgNoneJwt(), detail: 'Unsigned JWT with alg=none (algorithm confusion attack)' },
-    { label: 'malformed JWT "not-a-jwt"', jwt: 'not-a-jwt', detail: 'Plain string passed as Bearer token' },
-    { label: 'malformed JWT "a.b.c"', jwt: 'a.b.c', detail: 'Three-part string with invalid base64 segments' },
+    {
+      label: 'expired JWT',
+      jwt: makeExpiredJwt(),
+      detail: 'JWT with exp set to 1 hour in the past',
+    },
+    {
+      label: 'alg=none JWT',
+      jwt: makeAlgNoneJwt(),
+      detail: 'Unsigned JWT with alg=none (algorithm confusion attack)',
+    },
+    {
+      label: 'malformed JWT "not-a-jwt"',
+      jwt: 'not-a-jwt',
+      detail: 'Plain string passed as Bearer token',
+    },
+    {
+      label: 'malformed JWT "a.b.c"',
+      jwt: 'a.b.c',
+      detail: 'Three-part string with invalid base64 segments',
+    },
   ];
 
   for (const endpoint of PROTECTED_ENDPOINTS) {
@@ -78,7 +98,9 @@ export async function checkSecurityAuthBypass(config: PulseConfig): Promise<Brea
       } catch {
         continue; // backend not running — skip
       }
-      if (res.status === 0) continue; // network error
+      if (res.status === 0) {
+        continue;
+      } // network error
 
       if (res.status === 200) {
         breaks.push({

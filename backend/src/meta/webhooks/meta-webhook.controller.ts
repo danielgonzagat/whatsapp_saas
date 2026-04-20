@@ -234,7 +234,9 @@ export class MetaWebhookController {
   ): Promise<void> {
     const senderPhone = String(msg?.from || '').trim();
     const providerMessageId = String(msg?.id || '').trim();
-    if (!providerMessageId || !senderPhone) return;
+    if (!providerMessageId || !senderPhone) {
+      return;
+    }
 
     const messageType = this.normalizeWhatsAppMessageType(msg?.type);
     const messageText = this.extractWhatsAppMessageText(msg);
@@ -263,7 +265,9 @@ export class MetaWebhookController {
     status: MetaWhatsAppStatus,
   ): Promise<void> {
     const externalId = String(status?.id || '').trim();
-    if (!externalId) return;
+    if (!externalId) {
+      return;
+    }
 
     await this.prisma.message.updateMany({
       where: { workspaceId, externalId },
@@ -307,7 +311,9 @@ export class MetaWebhookController {
 
   private async handleWhatsAppCloud(entry: MetaWebhookEntry) {
     for (const change of entry.changes || []) {
-      if (change.field !== 'messages') continue;
+      if (change.field !== 'messages') {
+        continue;
+      }
       await this.handleWhatsAppMessagesChange(change);
     }
   }

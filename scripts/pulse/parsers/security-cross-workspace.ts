@@ -47,34 +47,56 @@ const WORKSPACE_A = 'pulse-workspace-alpha';
 const WORKSPACE_B = 'pulse-workspace-beta';
 
 /** GET endpoints to test for cross-workspace isolation */
-const READ_ENDPOINTS = [
-  '/products',
-  '/crm/contacts',
-];
+const READ_ENDPOINTS = ['/products', '/crm/contacts'];
 
 /**
  * Checks if the response looks like real workspace data was returned.
  * A 200 with a non-empty array or an object with an `id` field is suspicious.
  */
 function looksLikeRealData(body: any): boolean {
-  if (!body) return false;
-  if (Array.isArray(body) && body.length > 0) return true;
-  if (Array.isArray(body?.data) && body.data.length > 0) return true;
-  if (typeof body === 'object' && body.id) return true;
-  if (typeof body === 'object' && body.items && Array.isArray(body.items) && body.items.length > 0) return true;
+  if (!body) {
+    return false;
+  }
+  if (Array.isArray(body) && body.length > 0) {
+    return true;
+  }
+  if (Array.isArray(body?.data) && body.data.length > 0) {
+    return true;
+  }
+  if (typeof body === 'object' && body.id) {
+    return true;
+  }
+  if (
+    typeof body === 'object' &&
+    body.items &&
+    Array.isArray(body.items) &&
+    body.items.length > 0
+  ) {
+    return true;
+  }
   return false;
 }
 
 export async function checkSecurityCrossWorkspace(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
-  if (!isDeepMode()) return [];
+  if (!isDeepMode()) {
+    return [];
+  }
 
   const breaks: Break[] = [];
 
   // JWT for workspace A (the "owner")
-  const jwtA = makeTestJwt({ workspaceId: WORKSPACE_A, userId: 'user-alpha', email: 'alpha@pulse.test' });
+  const jwtA = makeTestJwt({
+    workspaceId: WORKSPACE_A,
+    userId: 'user-alpha',
+    email: 'alpha@pulse.test',
+  });
   // JWT for workspace B (the "attacker")
-  const jwtB = makeTestJwt({ workspaceId: WORKSPACE_B, userId: 'user-beta', email: 'beta@pulse.test' });
+  const jwtB = makeTestJwt({
+    workspaceId: WORKSPACE_B,
+    userId: 'user-beta',
+    email: 'beta@pulse.test',
+  });
 
   // ── 1. Try to read workspace-A's collection data using workspace-B's JWT ─
   for (const endpoint of READ_ENDPOINTS) {
@@ -84,7 +106,7 @@ export async function checkSecurityCrossWorkspace(config: PulseConfig): Promise<
       const res = await fetch(`${getBackendUrl()}${endpoint}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${jwtB}`,
+          Authorization: `Bearer ${jwtB}`,
           'Content-Type': 'application/json',
           'x-workspace-id': WORKSPACE_A, // attempt to override workspace via header
         },
@@ -92,7 +114,11 @@ export async function checkSecurityCrossWorkspace(config: PulseConfig): Promise<
       });
 
       let body: any;
-      try { body = await res.json(); } catch { body = null; }
+      try {
+        body = await res.json();
+      } catch {
+        body = null;
+      }
 
       if (res.status === 200 && looksLikeRealData(body)) {
         breaks.push({
@@ -117,18 +143,14 @@ export async function checkSecurityCrossWorkspace(config: PulseConfig): Promise<
         endpoint === '/products'
           ? { name: 'PULSE-XWORKSPACE-TEST', type: 'DIGITAL', price: 0 }
           : { name: 'PULSE-XWORKSPACE-TEST', phone: '+5511999999999' },
-        { jwt: jwtA, timeout: 8000 }
+        { jwt: jwtA, timeout: 8000 },
       );
 
-      const resourceId: string | null =
-        createRes.body?.id || createRes.body?.data?.id || null;
+      const resourceId: string | null = createRes.body?.id || createRes.body?.data?.id || null;
 
       if (resourceId && (createRes.status === 200 || createRes.status === 201)) {
         // Now try to access that specific resource ID with workspace B's JWT
-        const getRes = await httpGet(
-          `${endpoint}/${resourceId}`,
-          { jwt: jwtB, timeout: 8000 }
-        );
+        const getRes = await httpGet(`${endpoint}/${resourceId}`, { jwt: jwtB, timeout: 8000 });
 
         if (getRes.status === 200 && looksLikeRealData(getRes.body)) {
           breaks.push({
@@ -149,7 +171,7 @@ export async function checkSecurityCrossWorkspace(config: PulseConfig): Promise<
               method: 'DELETE',
               headers: { Authorization: `Bearer ${jwtA}` },
               signal: AbortSignal.timeout(5000),
-            }
+            },
           );
         } catch {
           // Cleanup failure is non-critical
@@ -163,15 +185,19 @@ export async function checkSecurityCrossWorkspace(config: PulseConfig): Promise<
   // ── 2. JWT signature manipulation — tampered token must be rejected ────────
   try {
     // Build a JWT that claims to belong to workspace A but is signed with a wrong key
-    const tamperedHeader = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-    const tamperedBody = Buffer.from(JSON.stringify({
-      sub: 'attacker-user',
-      email: 'attacker@evil.com',
-      workspaceId: WORKSPACE_A, // claims to be workspace A
-      role: 'ADMIN',
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    })).toString('base64url');
+    const tamperedHeader = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString(
+      'base64url',
+    );
+    const tamperedBody = Buffer.from(
+      JSON.stringify({
+        sub: 'attacker-user',
+        email: 'attacker@evil.com',
+        workspaceId: WORKSPACE_A, // claims to be workspace A
+        role: 'ADMIN',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      }),
+    ).toString('base64url');
     const tamperedSig = Buffer.from('wrong-signature').toString('base64url');
     const tamperedJwt = `${tamperedHeader}.${tamperedBody}.${tamperedSig}`;
 

@@ -241,10 +241,18 @@ export function checkCicd(config: PulseConfig): Break[] {
     // Pattern: env var key followed by a long value that is NOT from ${{ secrets.* }} or step outputs
     // Exclude: GitHub Actions built-ins (uses:, runs-on:), URLs, test values, version pins
     const secretLines = content.split('\n').filter((line) => {
-      if (/^\s*#/.test(line)) return false; // skip comments
-      if (/uses:\s|runs-on:\s|cache-dependency-path:|node-version:/.test(line)) return false; // skip action refs
-      if (/https?:\/\/|@v\d|ubuntu-|windows-|macos-/.test(line)) return false; // skip URLs and version refs
-      if (/test_secret|test-secret|change-me|password|dummy/i.test(line)) return false; // skip obvious test placeholders
+      if (/^\s*#/.test(line)) {
+        return false;
+      } // skip comments
+      if (/uses:\s|runs-on:\s|cache-dependency-path:|node-version:/.test(line)) {
+        return false;
+      } // skip action refs
+      if (/https?:\/\/|@v\d|ubuntu-|windows-|macos-/.test(line)) {
+        return false;
+      } // skip URLs and version refs
+      if (/test_secret|test-secret|change-me|password|dummy/i.test(line)) {
+        return false;
+      } // skip obvious test placeholders
       // Match: KEY: <long-value> that is not wrapped in ${{ }} and not a short value
       return /[A-Z_]{6,}:\s+(?!\$\{\{)[A-Za-z0-9+/=]{40,}/.test(line);
     });

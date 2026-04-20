@@ -185,14 +185,22 @@ function resolveCluster(
   cognitiveState: { stage: string },
   demandState: { lane: string },
 ): CiaCluster {
-  if (isPayment) return 'PAYMENT';
-  if (cognitiveState.stage === 'HOT' || demandState.lane === 'HOT') return 'HOT';
-  if (demandState.lane === 'WARM') return 'WARM';
+  if (isPayment) {
+    return 'PAYMENT';
+  }
+  if (cognitiveState.stage === 'HOT' || demandState.lane === 'HOT') {
+    return 'HOT';
+  }
+  if (demandState.lane === 'WARM') {
+    return 'WARM';
+  }
   return 'COLD';
 }
 
 function computeSilenceMinutes(lastMessageAt: CiaSeedConversation['lastMessageAt']): number {
-  if (!lastMessageAt) return 0;
+  if (!lastMessageAt) {
+    return 0;
+  }
   const elapsedMs = Date.now() - new Date(lastMessageAt).getTime();
   return Math.max(0, Math.round(elapsedMs / 60_000));
 }
@@ -200,7 +208,9 @@ function computeSilenceMinutes(lastMessageAt: CiaSeedConversation['lastMessageAt
 function normalizeLastMessageAt(
   lastMessageAt: CiaSeedConversation['lastMessageAt'],
 ): string | null {
-  if (typeof lastMessageAt === 'string') return lastMessageAt;
+  if (typeof lastMessageAt === 'string') {
+    return lastMessageAt;
+  }
   return lastMessageAt?.toISOString?.() || null;
 }
 

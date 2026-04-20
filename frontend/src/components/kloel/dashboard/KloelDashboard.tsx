@@ -611,7 +611,9 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
                 ? source.title.trim()
                 : `Fonte ${index + 1}`;
             const url = typeof source?.url === 'string' ? source.url : '';
-            if (!url) return null;
+            if (!url) {
+              return null;
+            }
             return (
               <a
                 key={url}
@@ -711,9 +713,7 @@ function MessageBlock({
 
   if (message.role === 'user') {
     return (
-      <div
-        style={{ display: 'flex', justifyContent: 'flex-end' }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <div style={{ width: 'min(78%, 680px)' }}>
           {isEditing ? (
             <div
@@ -1084,7 +1084,9 @@ export default function KloelDashboard() {
 
   const loadConversation = useCallback(
     async (conversationId: string) => {
-      if (!conversationId) return;
+      if (!conversationId) {
+        return;
+      }
 
       try {
         const payload = await loadKloelThreadMessages(conversationId);
@@ -1137,15 +1139,21 @@ export default function KloelDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!draft.trim()) return;
+    if (!draft.trim()) {
+      return;
+    }
     setInput(draft);
   }, [draft]);
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'u') return;
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'u') {
+        return;
+      }
       event.preventDefault();
-      if (isReplyInFlight) return;
+      if (isReplyInFlight) {
+        return;
+      }
       fileInputRef.current?.click();
     };
 
@@ -1255,7 +1263,9 @@ export default function KloelDashboard() {
   const queueFilesForUpload = useCallback(
     async (selectedFiles: FileList | File[] | null) => {
       const files = selectedFiles ? Array.from(selectedFiles) : [];
-      if (files.length === 0) return;
+      if (files.length === 0) {
+        return;
+      }
 
       const occupiedSlots = attachments.length;
       const availableSlots = Math.max(0, MAX_ATTACHMENTS_PER_PROMPT - occupiedSlots);
@@ -1295,7 +1305,9 @@ export default function KloelDashboard() {
       await Promise.all(
         staged.map((attachment, index) => {
           const file = acceptedFiles[index];
-          if (!file) return Promise.resolve();
+          if (!file) {
+            return Promise.resolve();
+          }
           return uploadAttachmentFile(attachment.id, file);
         }),
       );
@@ -1309,7 +1321,9 @@ export default function KloelDashboard() {
   }, []);
 
   const handleDragEnter = useCallback((event: ReactDragEvent<HTMLElement>) => {
-    if (!hasDraggedFiles(event.dataTransfer)) return;
+    if (!hasDraggedFiles(event.dataTransfer)) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     dragDepthRef.current += 1;
@@ -1318,7 +1332,9 @@ export default function KloelDashboard() {
 
   const handleDragOver = useCallback(
     (event: ReactDragEvent<HTMLElement>) => {
-      if (!hasDraggedFiles(event.dataTransfer)) return;
+      if (!hasDraggedFiles(event.dataTransfer)) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       event.dataTransfer.dropEffect = 'copy';
@@ -1330,7 +1346,9 @@ export default function KloelDashboard() {
   );
 
   const handleDragLeave = useCallback((event: ReactDragEvent<HTMLElement>) => {
-    if (!hasDraggedFiles(event.dataTransfer)) return;
+    if (!hasDraggedFiles(event.dataTransfer)) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
@@ -1341,7 +1359,9 @@ export default function KloelDashboard() {
 
   const handleDropFiles = useCallback(
     async (event: ReactDragEvent<HTMLElement>) => {
-      if (!hasDraggedFiles(event.dataTransfer)) return;
+      if (!hasDraggedFiles(event.dataTransfer)) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       clearDragState();
@@ -1359,13 +1379,17 @@ export default function KloelDashboard() {
 
   useEffect(() => {
     const handleWindowDrop = (event: DragEvent) => {
-      if (!hasDraggedFiles(event.dataTransfer)) return;
+      if (!hasDraggedFiles(event.dataTransfer)) {
+        return;
+      }
       event.preventDefault();
       clearDragState();
     };
 
     const handleWindowDragOver = (event: DragEvent) => {
-      if (!hasDraggedFiles(event.dataTransfer)) return;
+      if (!hasDraggedFiles(event.dataTransfer)) {
+        return;
+      }
       event.preventDefault();
     };
 
@@ -1386,7 +1410,9 @@ export default function KloelDashboard() {
   const handleRetryAttachment = useCallback(
     async (attachmentId: string) => {
       const file = attachmentFileMapRef.current.get(attachmentId);
-      if (!file) return;
+      if (!file) {
+        return;
+      }
 
       setAttachments((current) =>
         current.map((attachment) =>
@@ -1424,7 +1450,9 @@ export default function KloelDashboard() {
   const handleSendMessage = useCallback(
     async (rawText: string, requestMetadata?: KloelChatRequestMetadata) => {
       const text = rawText.trim();
-      if (!text || isReplyInFlight) return;
+      if (!text || isReplyInFlight) {
+        return;
+      }
       const clientRequestId = createClientRequestId();
       const normalizedMetadata = {
         ...(requestMetadata || buildCurrentRequestMetadata(clientRequestId)),
@@ -1487,7 +1515,9 @@ export default function KloelDashboard() {
         };
 
         const finalizeStream = () => {
-          if (finalized) return;
+          if (finalized) {
+            return;
+          }
           finalized = true;
           clearPlaybackTimer();
           activeStreamRef.current = null;
@@ -1671,7 +1701,9 @@ export default function KloelDashboard() {
       const sourceMessage = messages.find(
         (message) => message.id === messageId && message.role === 'user',
       );
-      if (!sourceMessage) return;
+      if (!sourceMessage) {
+        return;
+      }
 
       await handleSendMessage(
         sourceMessage.text,
@@ -1725,7 +1757,9 @@ export default function KloelDashboard() {
 
   const handleAssistantRegenerate = useCallback(
     async (messageId: string) => {
-      if (!activeConversationId) return;
+      if (!activeConversationId) {
+        return;
+      }
 
       setStreamingMessageId(messageId);
       setIsThinking(true);
@@ -1910,9 +1944,9 @@ export default function KloelDashboard() {
             justifyContent: 'center',
             paddingTop: hasMessages ? 18 : 32,
             paddingBottom: CHAT_SAFE_BOTTOM,
-        minHeight: 0,
-      }}
-    >
+            minHeight: 0,
+          }}
+        >
           <motion.div
             layout
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}

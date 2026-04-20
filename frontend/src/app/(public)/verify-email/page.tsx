@@ -23,7 +23,9 @@ function VerifyEmailContent() {
   const calledRef = useRef(false);
 
   useEffect(() => {
-    if (calledRef.current) return;
+    if (calledRef.current) {
+      return;
+    }
     calledRef.current = true;
 
     if (!token) {

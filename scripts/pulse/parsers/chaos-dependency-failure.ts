@@ -30,19 +30,19 @@ export function checkChaosDependencyFailure(config: PulseConfig): Break[] {
   // ── CHECK 1: Redis error handling ───────────────────────────────────────────
   // Look for redis.on('error', ...) or try/catch around redis operations
   const backendFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    f => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
+    (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
   );
   const workerFiles = walkFiles(config.workerDir, ['.ts']).filter(
-    f => !/\.(spec|test)\.ts$|__tests__|__mocks__/.test(f),
+    (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__/.test(f),
   );
   const allFiles = [...backendFiles, ...workerFiles];
 
-  const redisFiles = allFiles.filter(f => {
+  const redisFiles = allFiles.filter((f) => {
     const content = readSafe(f);
     return /redis|ioredis|bullmq|createClient/i.test(content);
   });
 
-  const hasRedisErrorHandler = redisFiles.some(f => {
+  const hasRedisErrorHandler = redisFiles.some((f) => {
     const content = readSafe(f);
     // Check for event-based error handling: .on('error', ...) or .on("error", ...)
     return (
@@ -58,7 +58,8 @@ export function checkChaosDependencyFailure(config: PulseConfig): Break[] {
       severity: 'high',
       file: path.relative(config.rootDir, redisFiles[0]),
       line: 1,
-      description: 'No Redis error handler found — application may crash when Redis becomes unavailable',
+      description:
+        'No Redis error handler found — application may crash when Redis becomes unavailable',
       detail:
         'Add .on("error", handler) to Redis client instances, or wrap redis operations in try/catch. ' +
         'Without this, an unhandled "error" event will crash the Node.js process.',
@@ -67,10 +68,12 @@ export function checkChaosDependencyFailure(config: PulseConfig): Break[] {
 
   // ── CHECK 2: Prisma/DB reconnection/error handling ───────────────────────────
   // Look for PrismaClientInitializationError handling or $connect retry logic
-  const hasPrismaErrorHandling = backendFiles.some(f => {
+  const hasPrismaErrorHandling = backendFiles.some((f) => {
     const content = readSafe(f);
     return (
-      /PrismaClientInitializationError|PrismaClientKnownRequestError|PrismaClientUnknownRequestError/.test(content) ||
+      /PrismaClientInitializationError|PrismaClientKnownRequestError|PrismaClientUnknownRequestError/.test(
+        content,
+      ) ||
       /prisma\.\$connect\s*\(/.test(content) ||
       /retryConnect|reconnect.*prisma|prisma.*reconnect/i.test(content)
     );
@@ -91,12 +94,12 @@ export function checkChaosDependencyFailure(config: PulseConfig): Break[] {
 
   // ── CHECK 3: BullMQ job retry configuration ──────────────────────────────────
   // Check backend queue configuration for retry/attempts settings
-  const queueFiles = [...backendFiles, ...workerFiles].filter(f => {
+  const queueFiles = [...backendFiles, ...workerFiles].filter((f) => {
     const content = readSafe(f);
     return /new\s+Queue\s*\(|new\s+Worker\s*\(|defaultJobOptions/i.test(content);
   });
 
-  const hasJobRetry = queueFiles.some(f => {
+  const hasJobRetry = queueFiles.some((f) => {
     const content = readSafe(f);
     return /attempts\s*:|backoff\s*:|removeOnFail\s*:|defaultJobOptions/i.test(content);
   });

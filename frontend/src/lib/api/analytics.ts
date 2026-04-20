@@ -56,13 +56,17 @@ export interface AnalyticsAdvancedResponse {
 
 export async function getAnalyticsDashboard(): Promise<AnalyticsDashboardStats> {
   const res = await apiFetch<AnalyticsDashboardStats>(`/analytics/dashboard`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as AnalyticsDashboardStats;
 }
 
 export async function getAnalyticsDailyActivity(): Promise<AnalyticsDailyActivityItem[]> {
   const res = await apiFetch<AnalyticsDailyActivityItem[]>(`/analytics/activity`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data ?? [];
 }
 
@@ -72,7 +76,9 @@ export async function getAnalyticsAdvanced(params?: {
 }): Promise<AnalyticsAdvancedResponse> {
   const query = buildQuery({ startDate: params?.startDate, endDate: params?.endDate });
   const res = await apiFetch<AnalyticsAdvancedResponse>(`/analytics/advanced${query}`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as AnalyticsAdvancedResponse;
 }
 
@@ -88,7 +94,9 @@ export interface SmartTimeResponse {
 
 export async function getSmartTime(): Promise<SmartTimeResponse> {
   const res = await apiFetch<SmartTimeResponse>(`/analytics/smart-time`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as SmartTimeResponse;
 }
 
@@ -96,7 +104,9 @@ export async function getSmartTime(): Promise<SmartTimeResponse> {
 
 export async function getAnalyticsStats(): Promise<AnalyticsDashboardStats> {
   const res = await apiFetch<AnalyticsDashboardStats>(`/analytics/stats`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as AnalyticsDashboardStats;
 }
 
@@ -115,7 +125,9 @@ export interface FlowAnalyticsResponse {
 
 export async function getFlowAnalytics(flowId: string): Promise<FlowAnalyticsResponse> {
   const res = await apiFetch<FlowAnalyticsResponse>(`/analytics/flow/${flowId}`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as FlowAnalyticsResponse;
 }
 
@@ -141,6 +153,8 @@ export async function getAnalyticsFullReport(params?: {
     endDate: params?.endDate,
   });
   const res = await apiFetch<AnalyticsFullReport>(`/analytics/reports${query}`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as AnalyticsFullReport;
 }

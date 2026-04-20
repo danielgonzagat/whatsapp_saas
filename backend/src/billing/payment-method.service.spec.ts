@@ -248,7 +248,9 @@ describe('PaymentMethodService (P6-10)', () => {
 
     it('uses the configured FRONTEND_URL as base for success/cancel URLs', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'FRONTEND_URL') return 'https://app.example.com/billing';
+        if (key === 'FRONTEND_URL') {
+          return 'https://app.example.com/billing';
+        }
         return undefined;
       });
 

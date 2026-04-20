@@ -4,15 +4,31 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import type { PulseConfig, UIElement, APICall, BackendRoute, ServiceTrace, ProxyRoute, FacadeEntry } from './types';
+import type {
+  PulseConfig,
+  UIElement,
+  APICall,
+  BackendRoute,
+  ServiceTrace,
+  ProxyRoute,
+  FacadeEntry,
+} from './types';
 import type { HookRegistry } from './parsers/hook-registry';
 import type {
-  InteractionStatus, InteractionChain, DataSource,
-  PageFunctionalMap, FunctionalMapResult, PageEntry, CoreParserData,
+  InteractionStatus,
+  InteractionChain,
+  DataSource,
+  PageFunctionalMap,
+  FunctionalMapResult,
+  PageEntry,
+  CoreParserData,
 } from './functional-map-types';
 import {
-  normalizeForMatch, buildRouteLookup, matchApiCallToRoute,
-  buildServiceModelMap, resolveRouteModels,
+  normalizeForMatch,
+  buildRouteLookup,
+  matchApiCallToRoute,
+  buildServiceModelMap,
+  resolveRouteModels,
   type RouteKey,
 } from './graph';
 import { buildApiModuleMap } from './parsers/api-parser';
@@ -22,9 +38,11 @@ import { walkFiles } from './parsers/utils';
 
 export function findAllPages(config: PulseConfig): PageEntry[] {
   const appDir = path.join(config.frontendDir, 'app');
-  if (!fs.existsSync(appDir)) return [];
+  if (!fs.existsSync(appDir)) {
+    return [];
+  }
 
-  const pageFiles = walkFiles(appDir, ['.tsx']).filter(f => f.endsWith('/page.tsx'));
+  const pageFiles = walkFiles(appDir, ['.tsx']).filter((f) => f.endsWith('/page.tsx'));
   const pages: PageEntry[] = [];
 
   for (const absFile of pageFiles) {
@@ -33,25 +51,35 @@ export function findAllPages(config: PulseConfig): PageEntry[] {
 
     // Derive route from directory structure
     const dir = path.dirname(relFromApp);
-    let route = '/' + dir
-      .replace(/\(main\)\/?/g, '')
-      .replace(/\(public\)\/?/g, '')
-      .replace(/\(checkout\)\/?/g, '')
-      .replace(/\(auth\)\/?/g, '')
-      .replace(/\[\.\.\.(\w+)\]/g, ':$1')
-      .replace(/\[(\w+)\]/g, ':$1')
-      .replace(/\/+/g, '/')
-      .replace(/\/$/, '');
+    let route =
+      '/' +
+      dir
+        .replace(/\(main\)\/?/g, '')
+        .replace(/\(public\)\/?/g, '')
+        .replace(/\(checkout\)\/?/g, '')
+        .replace(/\(auth\)\/?/g, '')
+        .replace(/\[\.\.\.(\w+)\]/g, ':$1')
+        .replace(/\[(\w+)\]/g, ':$1')
+        .replace(/\/+/g, '/')
+        .replace(/\/$/, '');
 
-    if (route === '/.' || route === '/') route = '/';
+    if (route === '/.' || route === '/') {
+      route = '/';
+    }
 
     // Detect route group
     let group = 'other';
-    if (relFromApp.startsWith('(main)')) group = 'main';
-    else if (relFromApp.startsWith('(public)')) group = 'public';
-    else if (relFromApp.startsWith('(checkout)')) group = 'checkout';
-    else if (relFromApp.startsWith('e2e')) group = 'e2e';
-    else if (relFromApp.startsWith('api/') || relFromApp.startsWith('auth/')) group = 'api';
+    if (relFromApp.startsWith('(main)')) {
+      group = 'main';
+    } else if (relFromApp.startsWith('(public)')) {
+      group = 'public';
+    } else if (relFromApp.startsWith('(checkout)')) {
+      group = 'checkout';
+    } else if (relFromApp.startsWith('e2e')) {
+      group = 'e2e';
+    } else if (relFromApp.startsWith('api/') || relFromApp.startsWith('auth/')) {
+      group = 'api';
+    }
 
     // Detect redirect pages
     let isRedirect = false;
@@ -63,10 +91,14 @@ export function findAllPages(config: PulseConfig): PageEntry[] {
         isRedirect = true;
         redirectTarget = redirectMatch[1];
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
 
     // Skip API route handlers (they're not pages)
-    if (group === 'api') continue;
+    if (group === 'api') {
+      continue;
+    }
 
     pages.push({ pageFile: absFile, relFile, route, group, isRedirect, redirectTarget });
   }
@@ -90,10 +122,14 @@ function resolveImportPath(importPath: string, frontendDir: string): string | nu
   // Try extensions
   for (const ext of ['.tsx', '.ts', '/index.tsx', '/index.ts']) {
     const candidate = resolved + ext;
-    if (fs.existsSync(candidate)) return candidate;
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
   }
   // Already has extension
-  if (fs.existsSync(resolved)) return resolved;
+  if (fs.existsSync(resolved)) {
+    return resolved;
+  }
 
   return null;
 }
@@ -107,29 +143,40 @@ export function resolveComponentTree(
   const result: string[] = [];
 
   function walk(file: string, depth: number) {
-    if (depth > maxDepth || visited.has(file)) return;
-    if (!fs.existsSync(file)) return;
+    if (depth > maxDepth || visited.has(file)) {
+      return;
+    }
+    if (!fs.existsSync(file)) {
+      return;
+    }
     visited.add(file);
     result.push(file);
 
     let content: string;
     try {
       content = fs.readFileSync(file, 'utf8');
-    } catch { return; }
+    } catch {
+      return;
+    }
 
     // Static imports: import X from '@/components/...'
-    const staticImportRe = /import\s+(?:\w+|\{[^}]+\})\s+from\s+['"](@\/(?:components|hooks|lib)\/[^'"]+)['"]/g;
+    const staticImportRe =
+      /import\s+(?:\w+|\{[^}]+\})\s+from\s+['"](@\/(?:components|hooks|lib)\/[^'"]+)['"]/g;
     let m;
     while ((m = staticImportRe.exec(content)) !== null) {
       const resolved = resolveImportPath(m[1], frontendDir);
-      if (resolved) walk(resolved, depth + 1);
+      if (resolved) {
+        walk(resolved, depth + 1);
+      }
     }
 
     // Dynamic imports: dynamic(() => import('@/components/...'))
     const dynamicImportRe = /import\s*\(\s*['"](@\/(?:components|hooks|lib)\/[^'"]+)['"]\s*\)/g;
     while ((m = dynamicImportRe.exec(content)) !== null) {
       const resolved = resolveImportPath(m[1], frontendDir);
-      if (resolved) walk(resolved, depth + 1);
+      if (resolved) {
+        walk(resolved, depth + 1);
+      }
     }
 
     // Relative imports within component files
@@ -166,7 +213,9 @@ function groupElementsByPage(
     const tree = pageComponentTrees.get(page.route) || [];
     for (const absFile of tree) {
       const relFile = path.relative(rootDir, absFile);
-      if (!fileToPages.has(relFile)) fileToPages.set(relFile, new Set());
+      if (!fileToPages.has(relFile)) {
+        fileToPages.set(relFile, new Set());
+      }
       fileToPages.get(relFile)!.add(page.route);
     }
   }
@@ -191,10 +240,7 @@ function groupElementsByPage(
 
 // ===== Step 4: Trace interaction chain =====
 
-function findApiCallForEndpoint(
-  endpoint: string,
-  apiCalls: APICall[],
-): APICall | null {
+function findApiCallForEndpoint(endpoint: string, apiCalls: APICall[]): APICall | null {
   // Direct match
   for (const call of apiCalls) {
     if (call.endpoint === endpoint || call.normalizedPath === endpoint) {
@@ -223,7 +269,12 @@ function findApiCallForElement(
     for (const ep of element.apiCalls) {
       const call = findApiCallForEndpoint(ep, apiCalls);
       if (call) {
-        return { endpoint: call.normalizedPath, method: call.method, file: call.file, line: call.line };
+        return {
+          endpoint: call.normalizedPath,
+          method: call.method,
+          file: call.file,
+          line: call.line,
+        };
       }
       // Even without match in apiCalls array, the endpoint itself is useful
       return { endpoint: ep, method: 'POST', file: element.file, line: element.line };
@@ -260,19 +311,29 @@ function findApiCallForElement(
       const funcNameMatch = handler.match(/^(\w+)$/);
       if (funcNameMatch) {
         const funcName = funcNameMatch[1];
-        const funcDefRe = new RegExp(`(?:const|let|function|async function)\\s+${funcName}\\s*(?:=|\\()`, 'g');
+        const funcDefRe = new RegExp(
+          `(?:const|let|function|async function)\\s+${funcName}\\s*(?:=|\\()`,
+          'g',
+        );
         const defMatch = funcDefRe.exec(fileContent);
         if (defMatch) {
           const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
           const lines = fileContent.split('\n');
           const bodyText = lines.slice(defIdx, Math.min(defIdx + 40, lines.length)).join('\n');
 
-          const apiMatch = bodyText.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
+          const apiMatch = bodyText.match(
+            /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+          );
           if (apiMatch) {
             let ep = apiMatch[1] || apiMatch[2];
             // Normalize template literals
             ep = ep.replace(/\$\{[^}]+\}/g, ':param');
-            return { endpoint: ep, method: detectMethodFromBody(bodyText), file: element.file, line: element.line };
+            return {
+              endpoint: ep,
+              method: detectMethodFromBody(bodyText),
+              file: element.file,
+              line: element.line,
+            };
           }
 
           // Check for hook-provided function calls in body
@@ -305,11 +366,21 @@ function findApiCallForElement(
 
 function detectMethodFromBody(body: string): string {
   const m = body.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
-  if (m) return m[1].toUpperCase();
-  if (/\.post\s*\(/i.test(body)) return 'POST';
-  if (/\.put\s*\(/i.test(body)) return 'PUT';
-  if (/\.patch\s*\(/i.test(body)) return 'PATCH';
-  if (/\.delete\s*\(/i.test(body)) return 'DELETE';
+  if (m) {
+    return m[1].toUpperCase();
+  }
+  if (/\.post\s*\(/i.test(body)) {
+    return 'POST';
+  }
+  if (/\.put\s*\(/i.test(body)) {
+    return 'PUT';
+  }
+  if (/\.patch\s*\(/i.test(body)) {
+    return 'PATCH';
+  }
+  if (/\.delete\s*\(/i.test(body)) {
+    return 'DELETE';
+  }
   return 'POST';
 }
 
@@ -354,7 +425,8 @@ function traceInteractionChain(
   // AUSENTE: no handler or noop
   if (!element.handler || element.handlerType === 'noop') {
     chain.status = 'AUSENTE';
-    chain.statusReason = element.handlerType === 'noop' ? 'Noop handler (empty function)' : 'No handler attached';
+    chain.statusReason =
+      element.handlerType === 'noop' ? 'Noop handler (empty function)' : 'No handler attached';
     return chain;
   }
 
@@ -372,14 +444,20 @@ function traceInteractionChain(
   const fileContent = fileContentCache.get(element.file) || '';
 
   // Try to find the API call
-  const apiCallInfo = findApiCallForElement(element, apiCalls, hookRegistry, apiModuleMap, fileContent);
+  const apiCallInfo = findApiCallForElement(
+    element,
+    apiCalls,
+    hookRegistry,
+    apiModuleMap,
+    fileContent,
+  );
 
   if (apiCallInfo) {
     chain.apiCall = apiCallInfo;
 
     // Check if it goes through a proxy route
-    const proxy = proxyRoutes.find(p =>
-      normalizeForMatch(p.frontendPath) === normalizeForMatch(apiCallInfo.endpoint)
+    const proxy = proxyRoutes.find(
+      (p) => normalizeForMatch(p.frontendPath) === normalizeForMatch(apiCallInfo.endpoint),
     );
     if (proxy) {
       chain.proxyRoute = { frontendPath: proxy.frontendPath, backendPath: proxy.backendPath };
@@ -438,29 +516,31 @@ function classifyInteraction(
   componentHasSave: boolean,
 ): void {
   // Already classified as navigation/noop/dead
-  if (chain.status !== 'AUSENTE' || chain.handlerType === 'navigation') return;
+  if (chain.status !== 'AUSENTE' || chain.handlerType === 'navigation') {
+    return;
+  }
 
   // AUSENTE: no handler or dead
   if (!chain.handler || chain.handlerType === 'noop' || chain.handlerType === 'dead') {
     chain.status = 'AUSENTE';
-    chain.statusReason = chain.handlerType === 'noop'
-      ? 'Noop handler'
-      : chain.handlerType === 'dead'
-        ? 'Dead handler'
-        : 'No handler';
+    chain.statusReason =
+      chain.handlerType === 'noop'
+        ? 'Noop handler'
+        : chain.handlerType === 'dead'
+          ? 'Dead handler'
+          : 'No handler';
     return;
   }
 
   // Check for facade indicators near this element
-  const nearbyFacades = facades.filter(f =>
-    f.file === chain.componentFile &&
-    Math.abs(f.line - chain.elementLine) < 40
+  const nearbyFacades = facades.filter(
+    (f) => f.file === chain.componentFile && Math.abs(f.line - chain.elementLine) < 40,
   );
 
   if (nearbyFacades.length > 0) {
     chain.status = 'FACHADA';
     chain.statusReason = `Facade detected: ${nearbyFacades[0].type} — ${nearbyFacades[0].description}`;
-    chain.facadeEvidence = nearbyFacades.map(f => `[${f.type}] ${f.evidence}`);
+    chain.facadeEvidence = nearbyFacades.map((f) => `[${f.type}] ${f.evidence}`);
     return;
   }
 
@@ -470,7 +550,9 @@ function classifyInteraction(
     const handler = chain.handler || '';
     const isPureUIHandler =
       // Navigation
-      /router\.back\s*\(|router\.push\s*\(|router\.replace\s*\(|window\.location|window\.open/.test(handler) ||
+      /router\.back\s*\(|router\.push\s*\(|router\.replace\s*\(|window\.location|window\.open/.test(
+        handler,
+      ) ||
       // Clipboard
       /clipboard|handleCopy|copyToClipboard|navigator\.clipboard/.test(handler) ||
       // Download/file
@@ -480,9 +562,13 @@ function classifyInteraction(
       // Scroll
       /scrollTo|scrollIntoView/.test(handler) ||
       // Modal/drawer open/close (UI state that requires no persistence)
-      /^(?:\(\)\s*=>\s*)?(?:set(?:Show|Open|Visible|IsOpen|Modal|Drawer)|open|close|toggle(?:Modal|Drawer|Menu|Sidebar))/.test(handler) ||
+      /^(?:\(\)\s*=>\s*)?(?:set(?:Show|Open|Visible|IsOpen|Modal|Drawer)|open|close|toggle(?:Modal|Drawer|Menu|Sidebar))/.test(
+        handler,
+      ) ||
       // Tab/filter/sort changes (local UI state)
-      /^(?:\(\)\s*=>\s*)?(?:set(?:Active|Selected|Current)(?:Tab|Filter|Sort|View|Section|Page))/.test(handler);
+      /^(?:\(\)\s*=>\s*)?(?:set(?:Active|Selected|Current)(?:Tab|Filter|Sort|View|Section|Page))/.test(
+        handler,
+      );
 
     if (isPureUIHandler) {
       chain.status = 'FUNCIONA';
@@ -528,9 +614,10 @@ function classifyInteraction(
   // Complete chain: API → route → service → Prisma
   if (chain.apiCall && chain.backendRoute) {
     chain.status = 'FUNCIONA';
-    chain.statusReason = chain.prismaModels.length > 0
-      ? `Complete chain → ${chain.prismaModels.join(', ')}`
-      : 'Complete chain (route matched)';
+    chain.statusReason =
+      chain.prismaModels.length > 0
+        ? `Complete chain → ${chain.prismaModels.join(', ')}`
+        : 'Complete chain (route matched)';
     return;
   }
 
@@ -552,13 +639,13 @@ function extractDataSources(
 
   for (const absFile of componentFiles) {
     const relFile = path.relative(rootDir, absFile);
-    const fileSwrCalls = apiCalls.filter(c =>
-      c.file === relFile && c.callPattern === 'useSWR'
-    );
+    const fileSwrCalls = apiCalls.filter((c) => c.file === relFile && c.callPattern === 'useSWR');
 
     for (const call of fileSwrCalls) {
       const key = `${call.normalizedPath}`;
-      if (seen.has(key)) continue;
+      if (seen.has(key)) {
+        continue;
+      }
       seen.add(key);
 
       const mockCall: APICall = { ...call };
@@ -583,10 +670,8 @@ export function buildFunctionalMap(
   config: PulseConfig,
   coreData: CoreParserData,
 ): FunctionalMapResult {
-  const {
-    uiElements, apiCalls, backendRoutes, serviceTraces,
-    proxyRoutes, facades, hookRegistry,
-  } = coreData;
+  const { uiElements, apiCalls, backendRoutes, serviceTraces, proxyRoutes, facades, hookRegistry } =
+    coreData;
 
   // Build lookup structures (reuse graph.ts functions)
   const routeLookup = buildRouteLookup(backendRoutes, config.globalPrefix);
@@ -608,7 +693,12 @@ export function buildFunctionalMap(
   }
 
   // Step 3: Group UI elements by page
-  const elemsByPage = groupElementsByPage(pageEntries, pageComponentTrees, uiElements, config.rootDir);
+  const elemsByPage = groupElementsByPage(
+    pageEntries,
+    pageComponentTrees,
+    uiElements,
+    config.rootDir,
+  );
 
   // Build file content cache for deeper handler analysis
   const fileContentCache = new Map<string, string>();
@@ -617,12 +707,15 @@ export function buildFunctionalMap(
       try {
         const absPath = path.join(config.rootDir, el.file);
         fileContentCache.set(el.file, fs.readFileSync(absPath, 'utf8'));
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
   }
 
   // Detect which components have save handlers
-  const SAVE_HANDLER_RE = /(?:const|function|async function)\s+(?:handleSave|save|handleSubmit|onSubmit|onSave|handleUpdate|handleCreate|submitForm|doSave)\s*(?:=|\()/;
+  const SAVE_HANDLER_RE =
+    /(?:const|function|async function)\s+(?:handleSave|save|handleSubmit|onSubmit|onSave|handleUpdate|handleCreate|submitForm|doSave)\s*(?:=|\()/;
   const componentHasSaveMap = new Map<string, boolean>();
   for (const [relFile, content] of fileContentCache) {
     componentHasSaveMap.set(relFile, SAVE_HANDLER_RE.test(content));
@@ -637,11 +730,20 @@ export function buildFunctionalMap(
 
     for (const el of elements) {
       // Skip navigation-only elements from counting
-      if (el.handlerType === 'navigation') continue;
+      if (el.handlerType === 'navigation') {
+        continue;
+      }
 
       const chain = traceInteractionChain(
-        el, page, apiCalls, routeLookup, proxyRoutes,
-        serviceModelMap, serviceTraces, hookRegistry, apiModuleMap,
+        el,
+        page,
+        apiCalls,
+        routeLookup,
+        proxyRoutes,
+        serviceModelMap,
+        serviceTraces,
+        hookRegistry,
+        apiModuleMap,
         fileContentCache,
       );
 
@@ -652,11 +754,21 @@ export function buildFunctionalMap(
 
     // Step 6: Data sources
     const tree = pageComponentTrees.get(page.route) || [];
-    const dataSources = extractDataSources(tree, apiCalls, routeLookup, proxyRoutes, config.rootDir);
+    const dataSources = extractDataSources(
+      tree,
+      apiCalls,
+      routeLookup,
+      proxyRoutes,
+      config.rootDir,
+    );
 
     // Counts
     const counts: Record<InteractionStatus, number> = {
-      FUNCIONA: 0, FACHADA: 0, QUEBRADO: 0, INCOMPLETO: 0, AUSENTE: 0,
+      FUNCIONA: 0,
+      FACHADA: 0,
+      QUEBRADO: 0,
+      INCOMPLETO: 0,
+      AUSENTE: 0,
     };
     for (const i of interactions) {
       counts[i.status]++;
@@ -668,7 +780,7 @@ export function buildFunctionalMap(
       group: page.group,
       isRedirect: page.isRedirect,
       redirectTarget: page.redirectTarget,
-      componentFiles: tree.map(f => path.relative(config.rootDir, f)),
+      componentFiles: tree.map((f) => path.relative(config.rootDir, f)),
       interactions,
       dataSources,
       counts,
@@ -678,14 +790,20 @@ export function buildFunctionalMap(
 
   // Summary
   const totalByStatus: Record<InteractionStatus, number> = {
-    FUNCIONA: 0, FACHADA: 0, QUEBRADO: 0, INCOMPLETO: 0, AUSENTE: 0,
+    FUNCIONA: 0,
+    FACHADA: 0,
+    QUEBRADO: 0,
+    INCOMPLETO: 0,
+    AUSENTE: 0,
   };
   const byGroup: Record<string, Record<InteractionStatus, number>> = {};
   let totalInteractions = 0;
   let redirectPages = 0;
 
   for (const page of pages) {
-    if (page.isRedirect) redirectPages++;
+    if (page.isRedirect) {
+      redirectPages++;
+    }
     totalInteractions += page.totalInteractions;
 
     for (const [status, count] of Object.entries(page.counts)) {
@@ -703,7 +821,7 @@ export function buildFunctionalMap(
   // Functional score: weighted
   const total = totalInteractions || 1;
   const functionalScore = Math.round(
-    ((totalByStatus.FUNCIONA * 1.0 + totalByStatus.INCOMPLETO * 0.5) / total) * 100
+    ((totalByStatus.FUNCIONA * 1.0 + totalByStatus.INCOMPLETO * 0.5) / total) * 100,
   );
 
   return {

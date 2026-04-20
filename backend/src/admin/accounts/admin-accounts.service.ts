@@ -41,7 +41,9 @@ export class AdminAccountsService {
 
   async detail(workspaceId: string): Promise<AdminAccountDetail> {
     const result = await getAdminAccountDetail(this.prisma, workspaceId);
-    if (!result) throw adminErrors.userNotFound();
+    if (!result) {
+      throw adminErrors.userNotFound();
+    }
     return result;
   }
 
@@ -71,7 +73,9 @@ export class AdminAccountsService {
       where: { id: workspaceId },
       select: { id: true, name: true, providerSettings: true },
     });
-    if (!workspace) throw adminErrors.userNotFound();
+    if (!workspace) {
+      throw adminErrors.userNotFound();
+    }
 
     const currentSettings = asProviderSettings(workspace.providerSettings);
     const currentAccountState =
@@ -179,10 +183,14 @@ export class AdminAccountsService {
         },
       },
     });
-    if (!workspace) throw adminErrors.userNotFound();
+    if (!workspace) {
+      throw adminErrors.userNotFound();
+    }
 
     const owner = workspace.agents[0];
-    if (!owner) throw adminErrors.userNotFound();
+    if (!owner) {
+      throw adminErrors.userNotFound();
+    }
 
     const nextPassword =
       temporaryPassword?.trim() ||
@@ -235,10 +243,14 @@ export class AdminAccountsService {
         },
       },
     });
-    if (!workspace) throw adminErrors.userNotFound();
+    if (!workspace) {
+      throw adminErrors.userNotFound();
+    }
 
     const owner = workspace.agents[0];
-    if (!owner) throw adminErrors.userNotFound();
+    if (!owner) {
+      throw adminErrors.userNotFound();
+    }
 
     const session = await this.auth.issueTokensForAgentId(owner.id);
 

@@ -76,12 +76,14 @@ export function ProductNerveCenterIATab() {
   const [offerDisc, setOfferDisc] = useState(true);
   const [useUrg, setUseUrg] = useState(true);
   useEffect(() => {
-    if (!aiCfg) return;
+    if (!aiCfg) {
+      return;
+    }
     const cp = aiCfg.customerProfile || {};
     setWhobuys(cp.whobuys || cp.idealCustomer || '');
     setPains(cp.pains || cp.painPoints || '');
     setPromise(cp.promise || cp.promisedResult || '');
-    if (Array.isArray(aiCfg.objections) && aiCfg.objections.length)
+    if (Array.isArray(aiCfg.objections) && aiCfg.objections.length) {
       setObjs(
         aiCfg.objections.map((obj, idx) => ({
           id: `obj-loaded-${idx}-${Date.now()}`,
@@ -89,6 +91,7 @@ export function ProductNerveCenterIATab() {
           response: obj.response || obj.a || '',
         })),
       );
+    }
     setTone(aiCfg.tone || 'CONSULTIVE');
     setPersist(String(aiCfg.persistenceLevel ?? 3));
     setMsgLimit(String(aiCfg.messageLimit ?? 10));

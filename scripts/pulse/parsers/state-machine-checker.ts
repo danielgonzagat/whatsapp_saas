@@ -35,12 +35,16 @@ import { walkFiles } from './utils';
 const STATE_FILE_RE = /order|subscription|payment|session|whatsapp/i;
 
 // Direct status assignment patterns (not using a transition function)
-const DIRECT_STATUS_SET_RE = /\.status\s*=\s*['"`](?:PAID|ACTIVE|FULFILLED|AUTHENTICATED|PROCESSING)['"`]/;
-const PRISMA_STATUS_UPDATE_RE = /update\s*\(\s*\{[^}]*status:\s*['"`](?:PAID|ACTIVE|FULFILLED|AUTHENTICATED)['"`]/;
+const DIRECT_STATUS_SET_RE =
+  /\.status\s*=\s*['"`](?:PAID|ACTIVE|FULFILLED|AUTHENTICATED|PROCESSING)['"`]/;
+const PRISMA_STATUS_UPDATE_RE =
+  /update\s*\(\s*\{[^}]*status:\s*['"`](?:PAID|ACTIVE|FULFILLED|AUTHENTICATED)['"`]/;
 
 // Patterns indicating proper transition guard
-const TRANSITION_GUARD_RE = /allowedTransitions|validTransitions|canTransition|stateMachine|fsm|transition\s*\(/i;
-const STATUS_CHECK_RE = /current(Status|State)|fromStatus|fromState|existing\.status|record\.status/i;
+const TRANSITION_GUARD_RE =
+  /allowedTransitions|validTransitions|canTransition|stateMachine|fsm|transition\s*\(/i;
+const STATUS_CHECK_RE =
+  /current(Status|State)|fromStatus|fromState|existing\.status|record\.status/i;
 
 // Payment-specific: setting PAID directly
 const PAYMENT_PAID_RE = /status:\s*['"`]PAID['"`]|\.status\s*=\s*['"`]PAID['"`]/;
@@ -56,9 +60,15 @@ export function checkStateMachine(config: PulseConfig): Break[] {
   const transitionGuardFiles: string[] = [];
 
   for (const file of backendFiles) {
-    if (!/service|controller/i.test(file)) continue;
-    if (/\.spec\.ts$/.test(file)) continue;
-    if (!STATE_FILE_RE.test(path.basename(file))) continue;
+    if (!/service|controller/i.test(file)) {
+      continue;
+    }
+    if (/\.spec\.ts$/.test(file)) {
+      continue;
+    }
+    if (!STATE_FILE_RE.test(path.basename(file))) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -81,7 +91,9 @@ export function checkStateMachine(config: PulseConfig): Break[] {
       const line = lines[i].trim();
 
       // Skip comments
-      if (line.startsWith('//') || line.startsWith('*') || line.startsWith('/*')) continue;
+      if (line.startsWith('//') || line.startsWith('*') || line.startsWith('/*')) {
+        continue;
+      }
 
       // CHECK 1-4: Direct status assignment without transition guard
       if (DIRECT_STATUS_SET_RE.test(line) || PRISMA_STATUS_UPDATE_RE.test(line)) {
@@ -96,7 +108,8 @@ export function checkStateMachine(config: PulseConfig): Break[] {
             severity: 'high',
             file: relFile,
             line: i + 1,
-            description: 'Status set directly without checking current state — invalid transition possible',
+            description:
+              'Status set directly without checking current state — invalid transition possible',
             detail: `${line.slice(0, 120)} — add a transition guard that validates the current status before updating`,
           });
         }
@@ -113,7 +126,8 @@ export function checkStateMachine(config: PulseConfig): Break[] {
             severity: 'critical',
             file: relFile,
             line: i + 1,
-            description: 'Payment status set to PAID without verifying PROCESSING intermediate state',
+            description:
+              'Payment status set to PAID without verifying PROCESSING intermediate state',
             detail: `${line.slice(0, 120)} — payment must transition PENDING → PROCESSING → PAID, never jump directly`,
           });
         }
@@ -122,8 +136,8 @@ export function checkStateMachine(config: PulseConfig): Break[] {
   }
 
   // CHECK 5: State transitions centralized in a state machine module?
-  const stateMachineFiles = walkFiles(config.backendDir, ['.ts']).filter(f =>
-    /state-machine|stateMachine|fsm|transitions/i.test(path.basename(f))
+  const stateMachineFiles = walkFiles(config.backendDir, ['.ts']).filter((f) =>
+    /state-machine|stateMachine|fsm|transitions/i.test(path.basename(f)),
   );
 
   if (stateMachineFiles.length === 0 && directSetFiles.length > 3) {
@@ -133,14 +147,19 @@ export function checkStateMachine(config: PulseConfig): Break[] {
       file: 'backend/src/',
       line: 0,
       description: `State transitions scattered across ${directSetFiles.length} files — no centralized state machine module`,
-      detail: 'Create a state-machine.ts or transitions.ts that defines all valid state transitions and is used everywhere',
+      detail:
+        'Create a state-machine.ts or transitions.ts that defines all valid state transitions and is used everywhere',
     });
   }
 
   // CHECK 6: Invalid transitions explicitly rejected
   for (const file of backendFiles) {
-    if (!STATE_FILE_RE.test(path.basename(file))) continue;
-    if (!/service/i.test(file)) continue;
+    if (!STATE_FILE_RE.test(path.basename(file))) {
+      continue;
+    }
+    if (!/service/i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -153,14 +172,20 @@ export function checkStateMachine(config: PulseConfig): Break[] {
 
     // If file has status assignments but no throw/BadRequest for invalid transitions
     if (DIRECT_STATUS_SET_RE.test(content) || PRISMA_STATUS_UPDATE_RE.test(content)) {
-      if (!/throw.*invalid.*transition|throw.*cannot.*status|BadRequestException.*status/i.test(content)) {
+      if (
+        !/throw.*invalid.*transition|throw.*cannot.*status|BadRequestException.*status/i.test(
+          content,
+        )
+      ) {
         breaks.push({
           type: 'STATE_INVALID_TRANSITION',
           severity: 'high',
           file: relFile,
           line: 0,
-          description: 'State transitions not explicitly rejected — invalid transitions may be silently ignored',
-          detail: 'Add `throw new BadRequestException("Invalid state transition")` for disallowed status changes',
+          description:
+            'State transitions not explicitly rejected — invalid transitions may be silently ignored',
+          detail:
+            'Add `throw new BadRequestException("Invalid state transition")` for disallowed status changes',
         });
       }
     }

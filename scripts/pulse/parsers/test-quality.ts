@@ -30,8 +30,8 @@ export function checkTestQuality(config: PulseConfig): Break[] {
   const allDirs = [config.backendDir, config.frontendDir, config.workerDir];
 
   for (const dir of allDirs) {
-    const testFiles = walkFiles(dir, ['.ts', '.tsx']).filter(f =>
-      /\.(spec|test)\.(ts|tsx)$/.test(f)
+    const testFiles = walkFiles(dir, ['.ts', '.tsx']).filter((f) =>
+      /\.(spec|test)\.(ts|tsx)$/.test(f),
     );
 
     for (const file of testFiles) {
@@ -53,7 +53,8 @@ export function checkTestQuality(config: PulseConfig): Break[] {
           severity: 'medium',
           file: relFile,
           line: 0,
-          description: 'Test file has no expect() assertions — tests pass vacuously and provide no value',
+          description:
+            'Test file has no expect() assertions — tests pass vacuously and provide no value',
           detail: `${relFile} has ${(content.match(/\bit\s*\(|test\s*\(/g) || []).length} test block(s) but zero expect() calls`,
         });
         continue; // No need to check further if no assertions at all
@@ -61,14 +62,17 @@ export function checkTestQuality(config: PulseConfig): Break[] {
 
       // CHECK 2: Files with only skipped tests
       const activeTestCount = (content.match(/\bit\s*\(|test\s*\(/g) || []).length;
-      const skippedCount = (content.match(/\bit\.skip\s*\(|xit\s*\(|xtest\s*\(|it\.todo\s*\(/g) || []).length;
+      const skippedCount = (
+        content.match(/\bit\.skip\s*\(|xit\s*\(|xtest\s*\(|it\.todo\s*\(/g) || []
+      ).length;
       if (activeTestCount > 0 && activeTestCount === skippedCount) {
         breaks.push({
           type: 'TEST_NO_ASSERTION',
           severity: 'medium',
           file: relFile,
           line: 0,
-          description: 'All tests in this file are skipped (it.skip/xit/it.todo) — no coverage provided',
+          description:
+            'All tests in this file are skipped (it.skip/xit/it.todo) — no coverage provided',
           detail: `${skippedCount} skipped test(s), 0 active tests in ${path.basename(file)}`,
         });
       }
@@ -79,28 +83,35 @@ export function checkTestQuality(config: PulseConfig): Break[] {
           /insufficient|reject|fail|error|exception|throw/i,
           /toThrow|rejects|toBe\s*\(\s*false|toBeUndefined|toBeNull/i,
         ];
-        const hasErrorCase = errorCasePatterns.some(re => re.test(content));
+        const hasErrorCase = errorCasePatterns.some((re) => re.test(content));
         if (!hasErrorCase) {
           breaks.push({
             type: 'TEST_NO_ASSERTION',
             severity: 'medium',
             file: relFile,
             line: 0,
-            description: 'Financial test file has no error/rejection case tests — happy path only is insufficient',
-            detail: 'Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes',
+            description:
+              'Financial test file has no error/rejection case tests — happy path only is insufficient',
+            detail:
+              'Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes',
           });
         }
       }
 
       // CHECK 4: jest.mock() without afterEach restore
-      if (/jest\.mock\s*\(/.test(content) && !/afterEach|jest\.restoreAllMocks|jest\.clearAllMocks/i.test(content)) {
+      if (
+        /jest\.mock\s*\(/.test(content) &&
+        !/afterEach|jest\.restoreAllMocks|jest\.clearAllMocks/i.test(content)
+      ) {
         breaks.push({
           type: 'TEST_NO_ASSERTION',
           severity: 'medium',
           file: relFile,
           line: 0,
-          description: 'jest.mock() used without mock restoration — may cause test pollution across suites',
-          detail: 'Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage',
+          description:
+            'jest.mock() used without mock restoration — may cause test pollution across suites',
+          detail:
+            'Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage',
         });
       }
 
@@ -126,14 +137,17 @@ export function checkTestQuality(config: PulseConfig): Break[] {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const emptyDescMatch = line.match(/\bit\s*\(\s*['"]\s*['"]/);
-        const todoDescMatch = line.match(/\bit\s*\(\s*['"](?:todo|test \d+|placeholder|xxx|fixme)['"]/i);
+        const todoDescMatch = line.match(
+          /\bit\s*\(\s*['"](?:todo|test \d+|placeholder|xxx|fixme)['"]/i,
+        );
         if (emptyDescMatch || todoDescMatch) {
           breaks.push({
             type: 'TEST_NO_ASSERTION',
             severity: 'medium',
             file: relFile,
             line: i + 1,
-            description: 'Test has empty or placeholder description — tests must have meaningful names',
+            description:
+              'Test has empty or placeholder description — tests must have meaningful names',
             detail: line.trim().slice(0, 120),
           });
         }
@@ -148,8 +162,10 @@ export function checkTestQuality(config: PulseConfig): Break[] {
             severity: 'medium',
             file: relFile,
             line: i + 1,
-            description: 'Test asserts on Math.random() or Date.now() — non-deterministic, will be flaky',
-            detail: 'Mock these functions with jest.spyOn before testing; never assert on random/time values directly',
+            description:
+              'Test asserts on Math.random() or Date.now() — non-deterministic, will be flaky',
+            detail:
+              'Mock these functions with jest.spyOn before testing; never assert on random/time values directly',
           });
         }
       }

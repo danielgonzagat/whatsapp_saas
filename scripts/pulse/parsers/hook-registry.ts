@@ -22,17 +22,29 @@ function normalizeEndpoint(raw: string): string {
   p = p.split('?')[0];
   p = p.replace(/[\)\}\]]+$/, '');
   p = p.replace(/\/+$/, '');
-  if (!p.startsWith('/')) p = '/' + p;
+  if (!p.startsWith('/')) {
+    p = '/' + p;
+  }
   return p.replace(/\/+/g, '/');
 }
 
 function detectMethod(context: string): string {
   const m = context.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
-  if (m) return m[1].toUpperCase();
-  if (/\.post\s*\(/i.test(context)) return 'POST';
-  if (/\.put\s*\(/i.test(context)) return 'PUT';
-  if (/\.patch\s*\(/i.test(context)) return 'PATCH';
-  if (/\.delete\s*\(/i.test(context)) return 'DELETE';
+  if (m) {
+    return m[1].toUpperCase();
+  }
+  if (/\.post\s*\(/i.test(context)) {
+    return 'POST';
+  }
+  if (/\.put\s*\(/i.test(context)) {
+    return 'PUT';
+  }
+  if (/\.patch\s*\(/i.test(context)) {
+    return 'PATCH';
+  }
+  if (/\.delete\s*\(/i.test(context)) {
+    return 'DELETE';
+  }
   return 'GET';
 }
 
@@ -52,7 +64,9 @@ function detectMethod(context: string): string {
 export function buildHookRegistry(config: PulseConfig): HookRegistry {
   const registry: HookRegistry = new Map();
   const hooksDir = path.join(config.frontendDir, 'hooks');
-  if (!fs.existsSync(hooksDir)) return registry;
+  if (!fs.existsSync(hooksDir)) {
+    return registry;
+  }
 
   const files = walkFiles(hooksDir, ['.ts', '.tsx']);
 
@@ -78,10 +92,14 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         for (let i = hookStartIdx; i < lines.length; i++) {
           for (const ch of lines[i]) {
             if (ch === '{') {
-              if (depth === 0) hookBodyStart = i;
+              if (depth === 0) {
+                hookBodyStart = i;
+              }
               depth++;
             }
-            if (ch === '}') depth--;
+            if (ch === '}') {
+              depth--;
+            }
           }
           if (hookBodyStart !== -1 && depth === 0) {
             hookBodyEnd = i;
@@ -89,14 +107,17 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           }
         }
 
-        if (hookBodyStart === -1 || hookBodyEnd === -1) continue;
+        if (hookBodyStart === -1 || hookBodyEnd === -1) {
+          continue;
+        }
         const hookBody = lines.slice(hookBodyStart, hookBodyEnd + 1).join('\n');
 
         // Find all inner functions that call apiFetch
         // Pattern: const funcName = async (...) => { ... apiFetch('/endpoint', { method: 'POST' }) ... }
         // Pattern: async function funcName(...) { ... apiFetch(...) ... }
         // Pattern: funcName: async (...) => apiFetch(...)
-        const innerFuncRe = /(?:const|let)\s+(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*(?::\s*[\w<>\[\]|,\s]+)?\s*=>\s*\{?/g;
+        const innerFuncRe =
+          /(?:const|let)\s+(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*(?::\s*[\w<>\[\]|,\s]+)?\s*=>\s*\{?/g;
         let innerMatch;
 
         while ((innerMatch = innerFuncRe.exec(hookBody)) !== null) {
@@ -107,7 +128,9 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           const funcBodyText = funcLines.join('\n');
 
           // Look for apiFetch call
-          const apiMatch = funcBodyText.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
+          const apiMatch = funcBodyText.match(
+            /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+          );
           if (apiMatch) {
             const rawEndpoint = apiMatch[1] || apiMatch[2];
             const endpoint = normalizeEndpoint(rawEndpoint);
@@ -116,7 +139,9 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           }
 
           // Also check for api.get/api.post pattern
-          const apiObjMatch = funcBodyText.match(/api\.(get|post|put|patch|delete)\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/i);
+          const apiObjMatch = funcBodyText.match(
+            /api\.(get|post|put|patch|delete)\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/i,
+          );
           if (apiObjMatch && !funcMap.has(funcName)) {
             const rawEndpoint = apiObjMatch[2] || apiObjMatch[3];
             const endpoint = normalizeEndpoint(rawEndpoint);
@@ -127,7 +152,10 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         // Also find return statement to map returned function names
         const returnMatch = hookBody.match(/return\s*\{([^}]+)\}/);
         if (returnMatch) {
-          const returnedNames = returnMatch[1].split(',').map(s => s.trim().split(':')[0].trim()).filter(Boolean);
+          const returnedNames = returnMatch[1]
+            .split(',')
+            .map((s) => s.trim().split(':')[0].trim())
+            .filter(Boolean);
           // Any returned name that matches an inner function is already in funcMap
           // If a returned name references a variable from destructuring (like from the api module),
           // try to trace it
@@ -141,12 +169,16 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
       // Also handle hooks that destructure from API modules and return the functions
       // Pattern: const { create, update, del } = someApi; return { create, update, del }
       // This is less common but handle crmApi, productApi etc.
-      const apiObjectImports = content.matchAll(/import\s*\{([^}]+)\}\s*from\s*['"]@\/lib\/api(?:\/\w+)?['"]/g);
+      const apiObjectImports = content.matchAll(
+        /import\s*\{([^}]+)\}\s*from\s*['"]@\/lib\/api(?:\/\w+)?['"]/g,
+      );
       for (const imp of apiObjectImports) {
-        const imported = imp[1].split(',').map(s => s.trim().split(' as ').pop()!.trim());
+        const imported = imp[1].split(',').map((s) => s.trim().split(' as ').pop()!.trim());
         // Check if any imported API objects are used in hooks
         for (const apiObj of imported) {
-          if (!apiObj.endsWith('Api') && !apiObj.endsWith('api')) continue;
+          if (!apiObj.endsWith('Api') && !apiObj.endsWith('api')) {
+            continue;
+          }
           // Find methods called on this API object within hook bodies
           const methodCallRe = new RegExp(`${apiObj}\\.(\\w+)\\s*\\(`, 'g');
           let mc;
@@ -156,9 +188,10 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           }
         }
       }
-
     } catch (e) {
-      process.stderr.write(`  [warn] Could not build hook registry from ${file}: ${(e as Error).message}\n`);
+      process.stderr.write(
+        `  [warn] Could not build hook registry from ${file}: ${(e as Error).message}\n`,
+      );
     }
   }
 
@@ -187,10 +220,14 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           for (let i = objStartIdx; i < lines.length; i++) {
             for (const ch of lines[i]) {
               if (ch === '{') {
-                if (depth === 0) objStart = i;
+                if (depth === 0) {
+                  objStart = i;
+                }
                 depth++;
               }
-              if (ch === '}') depth--;
+              if (ch === '}') {
+                depth--;
+              }
             }
             if (objStart !== -1 && depth === 0) {
               objEnd = i;
@@ -198,7 +235,9 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
             }
           }
 
-          if (objStart === -1 || objEnd === -1) continue;
+          if (objStart === -1 || objEnd === -1) {
+            continue;
+          }
           const objBody = lines.slice(objStart, objEnd + 1).join('\n');
 
           // Find method definitions
@@ -206,12 +245,21 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           let methodMatch;
           while ((methodMatch = methodRe.exec(objBody)) !== null) {
             const methodName = methodMatch[1];
-            if (['const', 'let', 'var', 'return', 'if', 'else', 'try', 'catch'].includes(methodName)) continue;
+            if (
+              ['const', 'let', 'var', 'return', 'if', 'else', 'try', 'catch'].includes(methodName)
+            ) {
+              continue;
+            }
 
             const methodStartLine = objBody.substring(0, methodMatch.index).split('\n').length - 1;
-            const methodBlock = objBody.split('\n').slice(methodStartLine, methodStartLine + 20).join('\n');
+            const methodBlock = objBody
+              .split('\n')
+              .slice(methodStartLine, methodStartLine + 20)
+              .join('\n');
 
-            const apiMatch = methodBlock.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
+            const apiMatch = methodBlock.match(
+              /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+            );
             if (apiMatch) {
               const rawEndpoint = apiMatch[1] || apiMatch[2];
               const endpoint = normalizeEndpoint(rawEndpoint);
@@ -253,14 +301,19 @@ export function extractHookDestructures(
     const hookName = match[2];
 
     // Parse each destructured name (handle renaming: original: alias)
-    const names = destructuredNames.split(',').map(s => s.trim()).filter(Boolean);
+    const names = destructuredNames
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
     for (const name of names) {
-      const parts = name.split(':').map(s => s.trim());
+      const parts = name.split(':').map((s) => s.trim());
       const originalName = parts[0];
       const localName = parts.length > 1 ? parts[1] : parts[0];
 
       // Skip common SWR returns that aren't API functions
-      if (['data', 'error', 'isLoading', 'mutate', 'isValidating'].includes(originalName)) continue;
+      if (['data', 'error', 'isLoading', 'mutate', 'isValidating'].includes(originalName)) {
+        continue;
+      }
 
       map.set(localName, { hookName, funcName: originalName });
     }

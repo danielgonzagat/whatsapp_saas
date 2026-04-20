@@ -46,13 +46,19 @@ function normalizeDirection(direction?: string | null): 'INBOUND' | 'OUTBOUND' |
   const normalized = String(direction || '')
     .trim()
     .toUpperCase();
-  if (normalized === 'INBOUND') return 'INBOUND';
-  if (normalized === 'OUTBOUND') return 'OUTBOUND';
+  if (normalized === 'INBOUND') {
+    return 'INBOUND';
+  }
+  if (normalized === 'OUTBOUND') {
+    return 'OUTBOUND';
+  }
   return null;
 }
 
 function toIsoTimestamp(value?: Date | string | null): string | null {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   if (typeof value === 'string') {
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
@@ -65,7 +71,9 @@ function firstDirectionalMessage(
 ): 'INBOUND' | 'OUTBOUND' | null {
   for (const message of messages || []) {
     const direction = normalizeDirection(message.direction);
-    if (direction) return direction;
+    if (direction) {
+      return direction;
+    }
   }
   return null;
 }
@@ -76,7 +84,9 @@ function hasUnansweredInbound(messages?: ConversationMessageLike[] | null): bool
 
 function normalizeFallbackUnread(unreadCount?: number | null): number {
   const parsed = Number(unreadCount ?? 0);
-  if (!Number.isFinite(parsed)) return 0;
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
   return Math.max(0, parsed);
 }
 
@@ -84,8 +94,12 @@ function countLeadingInboundMessages(messages: ConversationMessageLike[]): numbe
   let count = 0;
   for (const message of messages) {
     const direction = normalizeDirection(message.direction);
-    if (direction === 'OUTBOUND') break;
-    if (direction === 'INBOUND') count += 1;
+    if (direction === 'OUTBOUND') {
+      break;
+    }
+    if (direction === 'INBOUND') {
+      count += 1;
+    }
   }
   return count;
 }
@@ -154,10 +168,18 @@ function isAlreadyReplied(ctx: BlockedReasonContext): boolean {
 }
 
 function resolveBlockedReason(ctx: BlockedReasonContext): string | null {
-  if (ctx.status === 'CLOSED') return 'conversation_closed';
-  if (ctx.owner === 'HUMAN') return resolveHumanOwnerReason(ctx.mode);
-  if (isConversationEmpty(ctx)) return 'no_messages';
-  if (isAlreadyReplied(ctx)) return 'already_replied';
+  if (ctx.status === 'CLOSED') {
+    return 'conversation_closed';
+  }
+  if (ctx.owner === 'HUMAN') {
+    return resolveHumanOwnerReason(ctx.mode);
+  }
+  if (isConversationEmpty(ctx)) {
+    return 'no_messages';
+  }
+  if (isAlreadyReplied(ctx)) {
+    return 'already_replied';
+  }
   return null;
 }
 
@@ -189,7 +211,9 @@ function computePendingMessages(
   pending: boolean,
   unreadCount: number,
 ): number {
-  if (!pending) return 0;
+  if (!pending) {
+    return 0;
+  }
   return Math.max(1, countPendingInboundMessages(conversation.messages, unreadCount));
 }
 

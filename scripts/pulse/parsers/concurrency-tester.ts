@@ -35,7 +35,8 @@ const FIND_THEN_UPDATE_RE = /findFirst|findUnique/;
 const UPDATE_RE = /\.update\s*\(|\.updateMany\s*\(/;
 
 // Optimistic locking patterns (good)
-const OPTIMISTIC_LOCK_RE = /version|updatedAt.*where|where.*version|prisma\.\$executeRaw|SELECT\s+FOR\s+UPDATE/i;
+const OPTIMISTIC_LOCK_RE =
+  /version|updatedAt.*where|where.*version|prisma\.\$executeRaw|SELECT\s+FOR\s+UPDATE/i;
 const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
 
 export function checkConcurrency(config: PulseConfig): Break[] {
@@ -45,9 +46,15 @@ export function checkConcurrency(config: PulseConfig): Break[] {
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
 
   for (const file of backendFiles) {
-    if (!FINANCIAL_PATH_RE.test(file)) continue;
-    if (/\.spec\.ts$|migration|seed/i.test(file)) continue;
-    if (!/service/i.test(file)) continue;
+    if (!FINANCIAL_PATH_RE.test(file)) {
+      continue;
+    }
+    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+      continue;
+    }
+    if (!/service/i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -88,8 +95,12 @@ export function checkConcurrency(config: PulseConfig): Break[] {
           foundFind = true;
           foundFindLine = i;
         }
-        if (TRANSACTION_RE.test(line)) hasTransaction = true;
-        if (OPTIMISTIC_LOCK_RE.test(line)) hasOptimisticLock = true;
+        if (TRANSACTION_RE.test(line)) {
+          hasTransaction = true;
+        }
+        if (OPTIMISTIC_LOCK_RE.test(line)) {
+          hasOptimisticLock = true;
+        }
 
         if (UPDATE_RE.test(line) && foundFind && !hasTransaction && !hasOptimisticLock) {
           // Found a read-modify-write pattern without protection
@@ -98,7 +109,8 @@ export function checkConcurrency(config: PulseConfig): Break[] {
             severity: 'critical',
             file: relFile,
             line: foundFindLine + 1,
-            description: 'Read-modify-write without transaction or optimistic lock — race condition possible',
+            description:
+              'Read-modify-write without transaction or optimistic lock — race condition possible',
             detail: `findFirst/findUnique at line ${foundFindLine + 1} followed by update at line ${i + 1} without $transaction or version check`,
           });
           foundFind = false; // Reset to avoid duplicate reports per function
@@ -120,8 +132,10 @@ export function checkConcurrency(config: PulseConfig): Break[] {
           severity: 'critical',
           file: relFile,
           line: 0,
-          description: 'Wallet/balance operations without $transaction — double-spend race condition possible',
-          detail: 'All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment',
+          description:
+            'Wallet/balance operations without $transaction — double-spend race condition possible',
+          detail:
+            'All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment',
         });
       }
     }
@@ -138,8 +152,10 @@ export function checkConcurrency(config: PulseConfig): Break[] {
             severity: 'high',
             file: relFile,
             line: 0,
-            description: 'Update without optimistic lock version check — concurrent updates may silently overwrite each other',
-            detail: 'Add a `version` field to the model and use `where: { id, version: current.version }` to detect conflicts',
+            description:
+              'Update without optimistic lock version check — concurrent updates may silently overwrite each other',
+            detail:
+              'Add a `version` field to the model and use `where: { id, version: current.version }` to detect conflicts',
           });
           break; // One report per file
         }

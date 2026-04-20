@@ -92,7 +92,9 @@ function FlowPageContent() {
   );
 
   const fetchExecutions = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setExecLoading(true);
     setExecError(null);
     try {

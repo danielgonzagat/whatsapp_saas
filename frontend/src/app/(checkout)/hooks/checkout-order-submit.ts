@@ -68,16 +68,24 @@ function resolveShippingMethod(
   shippingMode: FinalizeCheckoutOrderArgs['shippingMode'],
   shippingInCents: number,
 ): string {
-  if (shippingMode === 'VARIABLE') return 'kloel-variable';
-  if (shippingInCents > 0) return 'standard';
+  if (shippingMode === 'VARIABLE') {
+    return 'kloel-variable';
+  }
+  if (shippingInCents > 0) {
+    return 'standard';
+  }
   return 'free';
 }
 
 function resolvePaymentMethodCode(
   payMethod: FinalizeCheckoutOrderArgs['payMethod'],
 ): CreateOrderData['paymentMethod'] {
-  if (payMethod === 'card') return 'CREDIT_CARD';
-  if (payMethod === 'pix') return 'PIX';
+  if (payMethod === 'card') {
+    return 'CREDIT_CARD';
+  }
+  if (payMethod === 'pix') {
+    return 'PIX';
+  }
   return 'BOLETO';
 }
 
@@ -193,12 +201,18 @@ function resolveSuccessPath(
   result: unknown,
   orderId: string,
 ) {
-  if (payMethod === 'pix') return `/order/${orderId}/pix`;
-  if (payMethod === 'boleto') return `/order/${orderId}/boleto`;
+  if (payMethod === 'pix') {
+    return `/order/${orderId}/pix`;
+  }
+  if (payMethod === 'boleto') {
+    return `/order/${orderId}/boleto`;
+  }
   const record = asRecord(result);
   const hasUpsells = Array.isArray(readNestedValue(record, ['plan', 'upsells']));
   const approved = readNestedValue(record, ['paymentData', 'approved']) === true;
-  if (approved && hasUpsells) return `/order/${orderId}/upsell`;
+  if (approved && hasUpsells) {
+    return `/order/${orderId}/upsell`;
+  }
   return `/order/${orderId}/success`;
 }
 
@@ -228,9 +242,15 @@ function readNestedValue(value: Record<string, unknown> | null, path: string[]) 
   let current: unknown = value;
   for (const segment of path) {
     const record = asRecord(current);
-    if (!record) return undefined;
-    if (BLOCKED_SEGMENTS.has(segment)) return undefined;
-    if (!Object.prototype.hasOwnProperty.call(record, segment)) return undefined;
+    if (!record) {
+      return undefined;
+    }
+    if (BLOCKED_SEGMENTS.has(segment)) {
+      return undefined;
+    }
+    if (!Object.prototype.hasOwnProperty.call(record, segment)) {
+      return undefined;
+    }
     current = record[segment];
   }
   return current;

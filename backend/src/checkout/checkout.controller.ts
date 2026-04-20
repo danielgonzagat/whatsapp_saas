@@ -158,7 +158,9 @@ export class CheckoutController {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
     });
-    if (!product) throw new NotFoundException('Produto nao encontrado');
+    if (!product) {
+      throw new NotFoundException('Produto nao encontrado');
+    }
     dto.slug = this.buildSlug(
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`,
     );
@@ -203,7 +205,9 @@ export class CheckoutController {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
     });
-    if (!product) throw new NotFoundException('Produto nao encontrado');
+    if (!product) {
+      throw new NotFoundException('Produto nao encontrado');
+    }
     dto.slug = this.buildSlug(
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'layout'}`,
     );

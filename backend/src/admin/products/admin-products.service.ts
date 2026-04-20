@@ -24,7 +24,9 @@ export class AdminProductsService {
 
   async detail(productId: string): Promise<AdminProductDetail> {
     const result = await getAdminProductDetail(this.prisma, productId);
-    if (!result) throw adminErrors.userNotFound();
+    if (!result) {
+      throw adminErrors.userNotFound();
+    }
     return result;
   }
 
@@ -37,7 +39,9 @@ export class AdminProductsService {
       where: { id: productId },
       select: { id: true, workspaceId: true, status: true, name: true },
     });
-    if (!product) throw adminErrors.userNotFound();
+    if (!product) {
+      throw adminErrors.userNotFound();
+    }
 
     await this.prisma.product.update({
       where: { id: productId },
@@ -68,7 +72,9 @@ export class AdminProductsService {
       where: { id: productId },
       select: { id: true, workspaceId: true, status: true, name: true },
     });
-    if (!product) throw adminErrors.userNotFound();
+    if (!product) {
+      throw adminErrors.userNotFound();
+    }
 
     await this.prisma.product.update({
       where: { id: productId },
@@ -100,7 +106,9 @@ export class AdminProductsService {
       where: { id: productId },
       select: { id: true, workspaceId: true, status: true, name: true, active: true },
     });
-    if (!product) throw adminErrors.userNotFound();
+    if (!product) {
+      throw adminErrors.userNotFound();
+    }
 
     const nextData =
       action === AdminProductStateAction.PAUSE

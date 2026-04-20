@@ -105,7 +105,9 @@ function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStub {
       update: jest.fn(
         async ({ where, data }: { where: { id: string }; data: Partial<EntryRow> }) => {
           const idx = entries.findIndex((e) => e.id === where.id);
-          if (idx === -1) throw new Error(`stub: entry not found ${where.id}`);
+          if (idx === -1) {
+            throw new Error(`stub: entry not found ${where.id}`);
+          }
           entries[idx] = { ...entries[idx], ...data } as EntryRow;
           return entries[idx];
         },
@@ -124,7 +126,9 @@ function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStub {
           data: Partial<ConnectAccountBalance>;
         }) => {
           const current = balances.get(where.id);
-          if (!current) throw new Error(`stub: balance not found ${where.id}`);
+          if (!current) {
+            throw new Error(`stub: balance not found ${where.id}`);
+          }
           const next = { ...current, ...data, updatedAt: new Date() } as ConnectAccountBalance;
           balances.set(where.id, next);
           return next;

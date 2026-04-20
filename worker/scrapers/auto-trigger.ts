@@ -11,7 +11,9 @@ async function resolveScraperFlowId(
   workspaceId: string,
   inputFlowId: string | undefined,
 ): Promise<string | undefined> {
-  if (inputFlowId) return inputFlowId;
+  if (inputFlowId) {
+    return inputFlowId;
+  }
   const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const settings = ws?.providerSettings as Record<string, unknown> | null;
   const scraper = settings?.scraper as Record<string, unknown> | undefined;
@@ -31,7 +33,9 @@ async function enqueueScrapedContactFlow(
   contactId: string,
 ): Promise<void> {
   const contact = await prisma.contact.findUnique({ where: { id: contactId } });
-  if (!isContactEligible(contact, workspaceId)) return;
+  if (!isContactEligible(contact, workspaceId)) {
+    return;
+  }
 
   await flowQueue.add('run-flow', {
     flowId,
@@ -49,11 +53,15 @@ export async function triggerFlowForScrapedLeads(
   inputFlowId?: string,
 ) {
   const resolvedFlowId = await resolveScraperFlowId(workspaceId, inputFlowId);
-  if (!resolvedFlowId || !contactIds.length) return;
+  if (!resolvedFlowId || !contactIds.length) {
+    return;
+  }
 
   // Garante que o flow pertence ao workspace
   const flow = await prisma.flow.findFirst({ where: { id: resolvedFlowId, workspaceId } });
-  if (!flow) return;
+  if (!flow) {
+    return;
+  }
 
   await forEachSequential(contactIds, async (contactId) => {
     await enqueueScrapedContactFlow(resolvedFlowId, workspaceId, contactId);

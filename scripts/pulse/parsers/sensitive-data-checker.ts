@@ -21,7 +21,7 @@ function shouldSkipFile(file: string): boolean {
 export function checkSensitiveData(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const files = walkFiles(config.backendDir, ['.ts']).filter(f => !shouldSkipFile(f));
+  const files = walkFiles(config.backendDir, ['.ts']).filter((f) => !shouldSkipFile(f));
 
   for (const file of files) {
     let content: string;
@@ -39,7 +39,9 @@ export function checkSensitiveData(config: PulseConfig): Break[] {
       const trimmed = line.trim();
 
       // Skip comment lines
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
       // Check: logging statement that references a sensitive variable name
       if (LOG_CALL_PATTERN.test(line) && SENSITIVE_VAR_PATTERN.test(line)) {

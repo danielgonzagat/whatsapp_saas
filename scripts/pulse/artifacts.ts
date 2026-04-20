@@ -54,21 +54,35 @@ function healthBar(score: number): string {
 
 function tableCell(value: string, max: number = 220): string {
   const compact = escapeMarkdownTableCell(value);
-  if (compact.length <= max) return compact;
+  if (compact.length <= max) {
+    return compact;
+  }
   return `${compact.slice(0, max - 3)}...`;
 }
 
 function severityIcon(severity: string): string {
-  if (severity === 'critical') return 'CRITICAL';
-  if (severity === 'high') return 'HIGH';
-  if (severity === 'medium') return 'WARNING';
+  if (severity === 'critical') {
+    return 'CRITICAL';
+  }
+  if (severity === 'high') {
+    return 'HIGH';
+  }
+  if (severity === 'medium') {
+    return 'WARNING';
+  }
   return 'INFO';
 }
 
 function formatCertificationTarget(target: PulseCertification['certificationTarget']): string {
-  if (target.profile) return target.profile;
-  if (target.final) return 'FINAL';
-  if (target.tier !== null) return `TIER ${target.tier}`;
+  if (target.profile) {
+    return target.profile;
+  }
+  if (target.final) {
+    return 'FINAL';
+  }
+  if (target.tier !== null) {
+    return `TIER ${target.tier}`;
+  }
   return 'GLOBAL';
 }
 
@@ -76,7 +90,9 @@ function groupBreaks(breaks: Break[]): Map<string, Break[]> {
   const groups = new Map<string, Break[]>();
   for (const item of breaks) {
     const key = item.type;
-    if (!groups.has(key)) groups.set(key, []);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
     groups.get(key)!.push(item);
   }
   return groups;
@@ -96,7 +112,9 @@ function generateCorrectionPrompt(breaks: Break[]): string {
 
   for (const [index, item] of blocking.entries()) {
     lines.push(`${index + 1}. [${item.type}] ${item.file}:${item.line} — ${item.description}`);
-    if (item.detail) lines.push(`   Evidence: ${item.detail}`);
+    if (item.detail) {
+      lines.push(`   Evidence: ${item.detail}`);
+    }
   }
 
   return lines.join('\n');
@@ -284,7 +302,9 @@ function buildReport(
       for (const entry of entries.slice(0, 20)) {
         lines.push(`- ${tableCell(entry, 220)}`);
       }
-      if (entries.length > 20) lines.push(`- ... ${entries.length - 20} more`);
+      if (entries.length > 20) {
+        lines.push(`- ... ${entries.length - 20} more`);
+      }
     }
     lines.push('');
   }

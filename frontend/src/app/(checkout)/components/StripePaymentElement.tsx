@@ -76,7 +76,9 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (!stripe || !elements) return;
+      if (!stripe || !elements) {
+        return;
+      }
 
       setSubmitting(true);
       setInternalError(null);

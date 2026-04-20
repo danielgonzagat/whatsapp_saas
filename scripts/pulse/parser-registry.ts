@@ -21,7 +21,7 @@ const HELPER_PARSERS = new Set([
 function discoverParserFiles(rootDir: string): { checks: string[]; helperFilesSkipped: string[] } {
   const parsersDir = path.join(rootDir, 'scripts', 'pulse', 'parsers');
   const files = fs.existsSync(parsersDir)
-    ? fs.readdirSync(parsersDir).filter(file => file.endsWith('.ts'))
+    ? fs.readdirSync(parsersDir).filter((file) => file.endsWith('.ts'))
     : [];
 
   const checks: string[] = [];

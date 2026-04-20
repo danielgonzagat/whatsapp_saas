@@ -20,7 +20,9 @@ function extractMethodBody(lines: string[], decoratorIdx: number, maxLines = 20)
       break;
     }
   }
-  if (braceIdx === -1) return [];
+  if (braceIdx === -1) {
+    return [];
+  }
 
   return lines.slice(braceIdx + 1, Math.min(braceIdx + 1 + maxLines, lines.length));
 }
@@ -51,13 +53,13 @@ function hasMeaningfulStatement(bodyLines: string[]): boolean {
  * Returns true if the body lines contain a try/catch block.
  */
 function hasTryCatch(bodyLines: string[]): boolean {
-  return bodyLines.some(line => /\btry\s*\{/.test(line));
+  return bodyLines.some((line) => /\btry\s*\{/.test(line));
 }
 
 export function checkCronJobs(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const files = walkFiles(config.backendDir, ['.ts']).filter(f => !shouldSkipFile(f));
+  const files = walkFiles(config.backendDir, ['.ts']).filter((f) => !shouldSkipFile(f));
 
   for (const file of files) {
     let content: string;
@@ -68,7 +70,9 @@ export function checkCronJobs(config: PulseConfig): Break[] {
     }
 
     // Quick pre-check: skip files without cron decorators
-    if (!/@Cron\(|@Interval\(/.test(content)) continue;
+    if (!/@Cron\(|@Interval\(/.test(content)) {
+      continue;
+    }
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
@@ -77,10 +81,14 @@ export function checkCronJobs(config: PulseConfig): Break[] {
       const trimmed = lines[i].trim();
 
       // Detect @Cron( or @Interval( decorator lines
-      if (!/@Cron\s*\(|@Interval\s*\(/.test(trimmed)) continue;
+      if (!/@Cron\s*\(|@Interval\s*\(/.test(trimmed)) {
+        continue;
+      }
 
       // Skip comment lines
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
       const decoratorLine = i + 1; // 1-based
 
@@ -106,7 +114,8 @@ export function checkCronJobs(config: PulseConfig): Break[] {
           severity: 'medium',
           file: relFile,
           line: decoratorLine,
-          description: 'Cron/Interval method has no try/catch — unhandled errors will crash the job silently',
+          description:
+            'Cron/Interval method has no try/catch — unhandled errors will crash the job silently',
           detail: `${trimmed.slice(0, 120)} — wrap the method body in try/catch and log failures.`,
         });
       }

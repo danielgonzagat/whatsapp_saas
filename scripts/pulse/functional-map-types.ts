@@ -1,7 +1,15 @@
 // PULSE — Functional Map Types
 // Traces every page → element → handler → API → backend → service → Prisma
 
-import type { UIElement, APICall, BackendRoute, PrismaModel, ServiceTrace, ProxyRoute, FacadeEntry } from './types';
+import type {
+  UIElement,
+  APICall,
+  BackendRoute,
+  PrismaModel,
+  ServiceTrace,
+  ProxyRoute,
+  FacadeEntry,
+} from './types';
 import type { HookRegistry } from './parsers/hook-registry';
 
 // ===== Classification =====
@@ -95,10 +103,10 @@ export interface FunctionalMapResult {
 
 // ===== Page entry from discovery =====
 export interface PageEntry {
-  pageFile: string;     // absolute path
-  relFile: string;      // relative path
-  route: string;        // derived URL route
-  group: string;        // public | checkout | main | e2e
+  pageFile: string; // absolute path
+  relFile: string; // relative path
+  route: string; // derived URL route
+  group: string; // public | checkout | main | e2e
   isRedirect: boolean;
   redirectTarget: string | null;
 }

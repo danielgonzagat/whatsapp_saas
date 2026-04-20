@@ -15,9 +15,15 @@ export class EmailService {
   }
 
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
-    if (process.env.RESEND_API_KEY) return 'resend';
-    if (process.env.SENDGRID_API_KEY) return 'sendgrid';
-    if (process.env.SMTP_HOST) return 'smtp';
+    if (process.env.RESEND_API_KEY) {
+      return 'resend';
+    }
+    if (process.env.SENDGRID_API_KEY) {
+      return 'sendgrid';
+    }
+    if (process.env.SMTP_HOST) {
+      return 'smtp';
+    }
     return 'log'; // Fallback: apenas loga (dev)
   }
 
@@ -36,6 +42,18 @@ export class EmailService {
   async sendVerificationEmail(email: string, verifyUrl: string): Promise<boolean> {
     const subject = 'Verifique seu email - KLOEL';
     const html = this.getVerificationTemplate(verifyUrl);
+    return this.send(email, subject, html);
+  }
+
+  async sendMagicLinkEmail(email: string, magicLinkUrl: string): Promise<boolean> {
+    const subject = 'Seu link de acesso - KLOEL';
+    const html = this.getMagicLinkTemplate(magicLinkUrl);
+    return this.send(email, subject, html);
+  }
+
+  async sendDataDeletionConfirmationEmail(email: string): Promise<boolean> {
+    const subject = 'Confirmação de exclusão de conta - KLOEL';
+    const html = this.getDataDeletionConfirmationTemplate();
     return this.send(email, subject, html);
   }
 
@@ -220,6 +238,63 @@ export class EmailService {
           <div class="footer">
             <p>KLOEL - Inteligência Comercial Autônoma</p>
           </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private getMagicLinkTemplate(magicLinkUrl: string): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          .logo { font-size: 24px; font-weight: bold; color: #111113; margin-bottom: 20px; }
+          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
+          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
+          .button { display: inline-block; background: #E85D30; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
+          .footer { margin-top: 32px; font-size: 12px; color: #999; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="logo">KLOEL</div>
+          <h1>Entrar com link mágico</h1>
+          <p>Use o botão abaixo para acessar sua conta. Este link expira em 15 minutos e só pode ser usado uma vez.</p>
+          <a href="${escapeHtml(magicLinkUrl)}" class="button">Entrar na Kloel</a>
+          <div class="footer">
+            <p>Se você não solicitou este acesso, ignore este email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private getDataDeletionConfirmationTemplate(): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          .logo { font-size: 24px; font-weight: bold; color: #111113; margin-bottom: 20px; }
+          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
+          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="logo">KLOEL</div>
+          <h1>Conta marcada para exclusão</h1>
+          <p>Recebemos sua solicitação de exclusão. Seus dados operacionais foram anonimizados e os registros obrigatórios serão mantidos apenas pelo prazo legal aplicável.</p>
+          <p>Se esta solicitação não foi feita por você, responda este email imediatamente.</p>
         </div>
       </body>
       </html>

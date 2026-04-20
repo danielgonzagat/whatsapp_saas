@@ -17,7 +17,9 @@ type ToolArgs = Record<string, unknown>;
 type ToolHandler = (args: ToolArgs, ctx: ToolContext) => Promise<string> | string;
 
 function asString(value: unknown): string {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
   return String(value ?? '');
 }
 
@@ -44,7 +46,9 @@ async function handleAddTag(args: ToolArgs, ctx: ToolContext): Promise<string> {
 function handleCheckAvailability(args: ToolArgs): string {
   const dateStr = asString(args.date);
   const day = new Date(dateStr).getDay();
-  if (day === 0 || day === 6) return 'No slots available (Weekend).';
+  if (day === 0 || day === 6) {
+    return 'No slots available (Weekend).';
+  }
   return 'Available slots: 10:00, 14:00, 16:00';
 }
 
@@ -107,7 +111,9 @@ async function resolveDefaultStageId(workspaceId: string): Promise<string | unde
     include: { stages: { orderBy: { order: 'asc' }, take: 1 } },
   });
   const stageId = pipeline?.stages[0]?.id;
-  if (stageId) return stageId;
+  if (stageId) {
+    return stageId;
+  }
 
   const anyStage = await prisma.stage.findFirst({
     where: { pipeline: { workspaceId } },
@@ -119,10 +125,14 @@ async function handleCreateCrmDeal(args: ToolArgs, ctx: ToolContext): Promise<st
   const dealTitle = asString(args.title);
   const dealValue = Number(args.value) || 0;
   const contact = await CRM.getContact(ctx.workspaceId, ctx.user);
-  if (!contact) return 'Contact not found.';
+  if (!contact) {
+    return 'Contact not found.';
+  }
 
   const stageId = await resolveDefaultStageId(ctx.workspaceId);
-  if (!stageId) return 'No CRM pipeline configured.';
+  if (!stageId) {
+    return 'No CRM pipeline configured.';
+  }
 
   await prisma.deal.create({
     data: {
@@ -141,7 +151,9 @@ async function handleUpdateDealStage(args: ToolArgs, ctx: ToolContext): Promise<
   const stageNameArg = asString(args.stageName);
   const stageName = stageNameArg.toLowerCase();
   const contact = await CRM.getContact(ctx.workspaceId, ctx.user);
-  if (!contact) return 'Contact not found.';
+  if (!contact) {
+    return 'Contact not found.';
+  }
 
   const stages = await prisma.stage.findMany({
     where: { pipeline: { workspaceId: ctx.workspaceId } },
@@ -292,7 +304,9 @@ async function execute(
 
   try {
     const handler = TOOL_HANDLERS[name];
-    if (!handler) return 'Tool not found.';
+    if (!handler) {
+      return 'Tool not found.';
+    }
     return await handler(args, context);
   } catch (err: unknown) {
     const errInstanceofError =

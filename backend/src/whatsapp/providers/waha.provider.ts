@@ -64,7 +64,9 @@ const WAHA_SESSION_STATUS_MAP: Record<string, NonNullable<SessionStatus['state']
 };
 
 export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
-  if (!rawStatus) return null;
+  if (!rawStatus) {
+    return null;
+  }
   return WAHA_SESSION_STATUS_MAP[rawStatus] ?? null;
 }
 
@@ -230,7 +232,9 @@ export class WahaProvider {
   private readFirstConfigValue(keys: readonly string[]): string {
     for (const key of keys) {
       const raw = this.configService.get<string>(key);
-      if (raw) return raw;
+      if (raw) {
+        return raw;
+      }
     }
     return '';
   }
@@ -253,7 +257,9 @@ export class WahaProvider {
   }
 
   private resolveUseWorkspaceSessions(sessionIdOverride: string): boolean {
-    if (sessionIdOverride) return false;
+    if (sessionIdOverride) {
+      return false;
+    }
     const explicitWorkspaceMode = this.hasAnyConfigTrue([
       'WAHA_MULTISESSION',
       'WAHA_USE_WORKSPACE_SESSION',
@@ -271,7 +277,9 @@ export class WahaProvider {
   }
 
   private describeSessionMode(): string {
-    if (this.sessionIdOverride) return `override(${this.sessionIdOverride})`;
+    if (this.sessionIdOverride) {
+      return `override(${this.sessionIdOverride})`;
+    }
     return this.useWorkspaceSessions ? 'workspace' : 'default';
   }
 
@@ -406,7 +414,9 @@ export class WahaProvider {
 
   private normalizePublicUrl(rawValue?: string | null): string {
     const raw = String(rawValue || '').trim();
-    if (!raw) return '';
+    if (!raw) {
+      return '';
+    }
     const allowInternalWebhookUrl = this.readBooleanEnv(['WAHA_ALLOW_INTERNAL_WEBHOOK_URL'], false);
 
     const withProtocol =
@@ -490,7 +500,9 @@ export class WahaProvider {
 
   private async parseJsonSafely<T>(res: Response, fallback: T): Promise<T> {
     const text = await res.text().catch(() => '');
-    if (!text) return fallback;
+    if (!text) {
+      return fallback;
+    }
     try {
       return JSON.parse(text) as T;
     } catch {
@@ -616,8 +628,12 @@ export class WahaProvider {
       }
 
       const normalized = rawValue.trim().toLowerCase();
-      if (normalized === 'true') return true;
-      if (normalized === 'false') return false;
+      if (normalized === 'true') {
+        return true;
+      }
+      if (normalized === 'false') {
+        return false;
+      }
     }
 
     return defaultValue;
@@ -1156,7 +1172,9 @@ export class WahaProvider {
     const collected: WahaLidMapping[] = [];
     const seen = new Set<string>();
     const fetchPage = async (page: number): Promise<void> => {
-      if (page >= maxPages) return;
+      if (page >= maxPages) {
+        return;
+      }
       const offset = page * pageSize;
       const payload = await this.tryRequest<Record<string, unknown> | unknown[]>(
         'GET',
@@ -1634,7 +1652,9 @@ export class WahaProvider {
     const cContact = c?.contact as Record<string, unknown> | undefined;
     const candidates = [c?.id, c?.chatId, c?.contactId, c?.phone, cContact?.phone];
     const strMatch = candidates.find((v): v is string => typeof v === 'string' && v.trim() !== '');
-    if (strMatch) return strMatch.trim();
+    if (strMatch) {
+      return strMatch.trim();
+    }
     const numMatch = candidates.find((v): v is number => typeof v === 'number');
     return numMatch !== undefined ? String(numMatch) : '';
   }
@@ -1648,7 +1668,9 @@ export class WahaProvider {
     const collected: unknown[] = [];
     const seen = new Set<string>();
     const fetchPage = async (page: number): Promise<unknown[] | null> => {
-      if (page >= maxPages) return collected;
+      if (page >= maxPages) {
+        return collected;
+      }
       const offset = page * pageSize;
       const payload = await this.tryRequest<Record<string, unknown> | unknown[]>(
         'GET',
@@ -1821,7 +1843,9 @@ export class WahaProvider {
     };
 
     const direct = await this.tryRequest('POST', '/api/startTyping', payload);
-    if (direct) return;
+    if (direct) {
+      return;
+    }
 
     await this.request('POST', `/api/${encodeURIComponent(resolvedSessionId)}/presence`, {
       chatId: this.formatChatId(chatId),
@@ -1839,7 +1863,9 @@ export class WahaProvider {
     };
 
     const direct = await this.tryRequest('POST', '/api/stopTyping', payload);
-    if (direct) return;
+    if (direct) {
+      return;
+    }
 
     await this.request('POST', `/api/${encodeURIComponent(resolvedSessionId)}/presence`, {
       chatId: this.formatChatId(chatId),
@@ -1855,7 +1881,9 @@ export class WahaProvider {
         headers: { Accept: 'image/png, application/json' },
         timeoutMs: 1500,
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        return null;
+      }
       return res;
     } catch {
       return null;

@@ -48,7 +48,9 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
 
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
     },
     [],
   );
@@ -77,7 +79,9 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
   }, [fetchCampaigns]);
 
   const handleCreate = async () => {
-    if (!newName.trim()) return;
+    if (!newName.trim()) {
+      return;
+    }
     setCreating(true);
     try {
       const res = await apiFetch(`/products/${productId}/campaigns`, {
@@ -100,7 +104,9 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
   };
 
   const handleDelete = async (campaignId: string) => {
-    if (!confirm('Excluir campanha?')) return;
+    if (!confirm('Excluir campanha?')) {
+      return;
+    }
     setDeleting(campaignId);
     try {
       const res = await apiFetch(`/products/${productId}/campaigns/${campaignId}`, {
@@ -153,7 +159,9 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
   const cp = (text: string, key: string) => {
     navigator.clipboard?.writeText(text);
     setCopied(key);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    if (copiedTimer.current) {
+      clearTimeout(copiedTimer.current);
+    }
     copiedTimer.current = setTimeout(() => setCopied(null), 2000);
   };
 

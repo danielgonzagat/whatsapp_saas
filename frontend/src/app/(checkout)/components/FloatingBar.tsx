@@ -25,7 +25,9 @@ export default function FloatingBar({
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (!enabled || dismissed) return;
+    if (!enabled || dismissed) {
+      return;
+    }
     const onScroll = () => {
       const scrollPercent =
         window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
@@ -35,7 +37,9 @@ export default function FloatingBar({
     return () => window.removeEventListener('scroll', onScroll);
   }, [enabled, dismissed]);
 
-  if (!enabled || !visible || dismissed) return null;
+  if (!enabled || !visible || dismissed) {
+    return null;
+  }
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 

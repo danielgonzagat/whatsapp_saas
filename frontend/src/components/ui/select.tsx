@@ -68,12 +68,7 @@ function SelectTrigger({
   );
 }
 
-function SelectContent({
-  className,
-  children,
-  position = 'popper',
-  ...props
-}: SelectContentProps) {
+function SelectContent({ className, children, position = 'popper', ...props }: SelectContentProps) {
   return (
     <SelectPortalPrimitive>
       <SelectContentPrimitive
@@ -113,11 +108,7 @@ function SelectLabel({ className, ...props }: SelectLabelProps) {
   );
 }
 
-function SelectItem({
-  className,
-  children,
-  ...props
-}: SelectItemProps) {
+function SelectItem({ className, children, ...props }: SelectItemProps) {
   return (
     <SelectItemPrimitive
       data-slot="select-item"
@@ -137,10 +128,7 @@ function SelectItem({
   );
 }
 
-function SelectSeparator({
-  className,
-  ...props
-}: SelectSeparatorProps) {
+function SelectSeparator({ className, ...props }: SelectSeparatorProps) {
   return (
     <SelectSeparatorPrimitive
       data-slot="select-separator"
@@ -150,10 +138,7 @@ function SelectSeparator({
   );
 }
 
-function SelectScrollUpButton({
-  className,
-  ...props
-}: SelectScrollUpButtonProps) {
+function SelectScrollUpButton({ className, ...props }: SelectScrollUpButtonProps) {
   return (
     <SelectScrollUpButtonPrimitive
       data-slot="select-scroll-up-button"
@@ -165,10 +150,7 @@ function SelectScrollUpButton({
   );
 }
 
-function SelectScrollDownButton({
-  className,
-  ...props
-}: SelectScrollDownButtonProps) {
+function SelectScrollDownButton({ className, ...props }: SelectScrollDownButtonProps) {
   return (
     <SelectScrollDownButtonPrimitive
       data-slot="select-scroll-down-button"

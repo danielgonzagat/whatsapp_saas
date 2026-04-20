@@ -80,7 +80,9 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
     }
   };
   const handleDelete = async (id: string) => {
-    if (!confirm('Excluir comissao?')) return;
+    if (!confirm('Excluir comissao?')) {
+      return;
+    }
     await apiFetch(`/products/${productId}/commissions/${id}`, { method: 'DELETE' });
     fetch_();
   };
@@ -97,7 +99,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
     fontFamily: "'Sora', sans-serif",
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2
@@ -107,6 +109,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
         />
       </div>
     );
+  }
 
   return (
     <div className="space-y-4">

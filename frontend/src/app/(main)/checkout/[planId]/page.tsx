@@ -429,13 +429,17 @@ export default function CheckoutEditorPage() {
 
   useEffect(
     () => () => {
-      if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+      if (saveStatusTimer.current) {
+        clearTimeout(saveStatusTimer.current);
+      }
     },
     [],
   );
 
   useEffect(() => {
-    if (isLoading || !requestedFocus) return;
+    if (isLoading || !requestedFocus) {
+      return;
+    }
     const focusMap: Record<
       string,
       { ref: React.RefObject<HTMLDivElement | null>; highlight: string }
@@ -447,7 +451,9 @@ export default function CheckoutEditorPage() {
       'order-bump': { ref: orderBumpsRef, highlight: 'order-bump' },
     };
     const target = focusMap[requestedFocus];
-    if (!target?.ref.current) return;
+    if (!target?.ref.current) {
+      return;
+    }
     const timer = setTimeout(() => {
       target.ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setHighlightedSection(target.highlight);
@@ -462,7 +468,9 @@ export default function CheckoutEditorPage() {
 
   // ── Refresh preview (debounced) ──
   const refreshPreview = useCallback(() => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    if (refreshTimer.current) {
+      clearTimeout(refreshTimer.current);
+    }
     refreshTimer.current = setTimeout(() => {
       if (iframeRef.current) {
         iframeRef.current.src = iframeRef.current.src;
@@ -476,7 +484,9 @@ export default function CheckoutEditorPage() {
       setSaveStatus('saving');
       updateConfig(p).then(() => {
         setSaveStatus('saved');
-        if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+        if (saveStatusTimer.current) {
+          clearTimeout(saveStatusTimer.current);
+        }
         // PULSE:OK — save indicator returns to idle only after updateConfig() persists the patch.
         saveStatusTimer.current = setTimeout(() => setSaveStatus('idle'), 2000);
       });
@@ -489,7 +499,9 @@ export default function CheckoutEditorPage() {
   const copyLink = useCallback(() => {
     navigator.clipboard.writeText(checkoutPublicUrl);
     setCopied(true);
-    if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+    if (saveStatusTimer.current) {
+      clearTimeout(saveStatusTimer.current);
+    }
     saveStatusTimer.current = setTimeout(() => setCopied(false), 2000);
   }, [checkoutPublicUrl]);
 
@@ -505,14 +517,18 @@ export default function CheckoutEditorPage() {
     ].join('\n');
     navigator.clipboard.writeText(embedCode);
     setEmbedCopied(true);
-    if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+    if (saveStatusTimer.current) {
+      clearTimeout(saveStatusTimer.current);
+    }
     saveStatusTimer.current = setTimeout(() => setEmbedCopied(false), 2000);
   }, [checkoutPublicUrl]);
 
   // ── Cleanup timers ──
   useEffect(() => {
     return () => {
-      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      if (refreshTimer.current) {
+        clearTimeout(refreshTimer.current);
+      }
     };
   }, []);
 

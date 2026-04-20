@@ -48,7 +48,9 @@ const CACHE_KEY_ACTIVE_CONV = 'kloel:activeConv';
 function readCache<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
-    if (raw === null) return fallback;
+    if (raw === null) {
+      return fallback;
+    }
     return JSON.parse(raw) as T;
   } catch {
     return fallback;
@@ -130,7 +132,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   // Sync from backend on mount — backend is the source of truth
   useEffect(() => {
-    if (didSyncRef.current) return;
+    if (didSyncRef.current) {
+      return;
+    }
     didSyncRef.current = true;
 
     void refreshConversations();
@@ -138,7 +142,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   useEffect(() => {
     const handleVisibilityRefresh = () => {
-      if (document.visibilityState !== 'visible') return;
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
       void refreshConversations();
     };
     const handleWindowFocus = () => {
@@ -156,12 +162,16 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   // Update cache whenever conversations change (write-through cache)
   useEffect(() => {
-    if (!cacheHydrated) return;
+    if (!cacheHydrated) {
+      return;
+    }
     writeCache(CACHE_KEY_CONVERSATIONS, conversations);
   }, [cacheHydrated, conversations]);
 
   useEffect(() => {
-    if (!cacheHydrated) return;
+    if (!cacheHydrated) {
+      return;
+    }
     writeCache(CACHE_KEY_ACTIVE_CONV, activeConv);
   }, [activeConv, cacheHydrated]);
 

@@ -105,7 +105,9 @@ function uniqueStrings(values: Array<string | null | undefined>): string[] {
 
 function compactText(value: string, max: number = 260): string {
   const compact = value.replace(/\s+/g, ' ').trim();
-  if (compact.length <= max) return compact;
+  if (compact.length <= max) {
+    return compact;
+  }
   return `${compact.slice(0, max - 3)}...`;
 }
 
@@ -189,7 +191,9 @@ function findRelatedBreaks(
   flowIds: string[],
 ): Break[] {
   const terms = buildSearchTerms(scenarioId, moduleKeys, routePatterns, flowIds);
-  if (terms.length === 0) return [];
+  if (terms.length === 0) {
+    return [];
+  }
 
   return breaks.filter((item) => {
     const haystack = normalizeSearchToken(
@@ -205,9 +209,15 @@ function determineFailureClass(
   hasPendingAsync: boolean,
 ): PulseConvergenceUnit['failureClass'] {
   const uniqueClasses = uniqueStrings(classes);
-  if (uniqueClasses.length === 1) return uniqueClasses[0] as PulseGateFailureClass;
-  if (uniqueClasses.length > 1) return 'mixed';
-  if (hasPendingAsync) return 'product_failure';
+  if (uniqueClasses.length === 1) {
+    return uniqueClasses[0] as PulseGateFailureClass;
+  }
+  if (uniqueClasses.length > 1) {
+    return 'mixed';
+  }
+  if (hasPendingAsync) {
+    return 'product_failure';
+  }
   return 'unknown';
 }
 
@@ -218,16 +228,28 @@ function determineUnitStatus(
 }
 
 function determineScenarioPriority(actorKinds: string[]): PulseConvergenceUnitPriority {
-  if (actorKinds.includes('customer') || actorKinds.includes('system')) return 'P0';
-  if (actorKinds.includes('operator') || actorKinds.includes('admin')) return 'P1';
-  if (actorKinds.includes('soak')) return 'P3';
+  if (actorKinds.includes('customer') || actorKinds.includes('system')) {
+    return 'P0';
+  }
+  if (actorKinds.includes('operator') || actorKinds.includes('admin')) {
+    return 'P1';
+  }
+  if (actorKinds.includes('soak')) {
+    return 'P3';
+  }
   return 'P2';
 }
 
 function determineScenarioLane(actorKinds: string[]): PulseConvergenceOwnerLane {
-  if (actorKinds.includes('customer') || actorKinds.includes('system')) return 'customer';
-  if (actorKinds.includes('operator') || actorKinds.includes('admin')) return 'operator-admin';
-  if (actorKinds.includes('soak')) return 'reliability';
+  if (actorKinds.includes('customer') || actorKinds.includes('system')) {
+    return 'customer';
+  }
+  if (actorKinds.includes('operator') || actorKinds.includes('admin')) {
+    return 'operator-admin';
+  }
+  if (actorKinds.includes('soak')) {
+    return 'reliability';
+  }
   return 'platform';
 }
 
@@ -263,10 +285,18 @@ function buildValidationArtifacts(
   artifactPaths: string[],
 ): string[] {
   const actorArtifacts = actorKinds.flatMap((actorKind) => {
-    if (actorKind === 'customer') return ['PULSE_CUSTOMER_EVIDENCE.json'];
-    if (actorKind === 'operator') return ['PULSE_OPERATOR_EVIDENCE.json'];
-    if (actorKind === 'admin') return ['PULSE_ADMIN_EVIDENCE.json'];
-    if (actorKind === 'soak') return ['PULSE_SOAK_EVIDENCE.json'];
+    if (actorKind === 'customer') {
+      return ['PULSE_CUSTOMER_EVIDENCE.json'];
+    }
+    if (actorKind === 'operator') {
+      return ['PULSE_OPERATOR_EVIDENCE.json'];
+    }
+    if (actorKind === 'admin') {
+      return ['PULSE_ADMIN_EVIDENCE.json'];
+    }
+    if (actorKind === 'soak') {
+      return ['PULSE_SOAK_EVIDENCE.json'];
+    }
     return [];
   });
 
@@ -324,11 +354,15 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
     accumulator.gateNames.add(actorGateMap[result.actorKind]);
     const requiresBrowser =
       Boolean(result.metrics?.requiresBrowser) || Boolean(accumulator.spec?.requiresBrowser);
-    if (requiresBrowser) accumulator.gateNames.add('browserPass');
+    if (requiresBrowser) {
+      accumulator.gateNames.add('browserPass');
+    }
   }
 
   for (const entry of input.certification.evidenceSummary.worldState.asyncExpectationsStatus) {
-    if (entry.status === 'satisfied') continue;
+    if (entry.status === 'satisfied') {
+      continue;
+    }
     const accumulator = ensureAccumulator(entry.scenarioId);
     accumulator.asyncEntries.push(entry);
     if (accumulator.spec?.actorKind) {
@@ -341,11 +375,15 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
     const spec = accumulator.spec;
     const isCritical =
       Boolean(spec?.critical) || accumulator.results.some((result) => result.critical);
-    if (!isCritical) continue;
+    if (!isCritical) {
+      continue;
+    }
 
     const hasNonPassingResult = accumulator.results.some((result) => result.status !== 'passed');
     const hasPendingAsync = accumulator.asyncEntries.some((entry) => entry.status !== 'satisfied');
-    if (!hasNonPassingResult && !hasPendingAsync) continue;
+    if (!hasNonPassingResult && !hasPendingAsync) {
+      continue;
+    }
 
     const moduleKeys = uniqueStrings([
       ...(spec?.moduleKeys || []),
@@ -427,7 +465,9 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
 }
 
 function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
-  if (input.certification.gates.securityPass.status !== 'fail') return [];
+  if (input.certification.gates.securityPass.status !== 'fail') {
+    return [];
+  }
 
   const securityBreaks = input.health.breaks.filter(
     (item) => isBlockingBreak(item) && isSecurityBreak(item),
@@ -480,12 +520,16 @@ function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseConverge
 }
 
 function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
-  if (input.certification.gates.staticPass.status !== 'fail') return [];
+  if (input.certification.gates.staticPass.status !== 'fail') {
+    return [];
+  }
 
   const blockingBreaks = input.health.breaks.filter(
     (item) => isBlockingBreak(item) && !isSecurityBreak(item),
   );
-  if (blockingBreaks.length === 0) return [];
+  if (blockingBreaks.length === 0) {
+    return [];
+  }
 
   const gate = input.certification.gates.staticPass;
   const failureClass = gate.failureClass || 'product_failure';
@@ -560,7 +604,9 @@ function summarizeGateFocus(gateName: PulseGateName, certification: PulseCertifi
 }
 
 function determineGateLane(gateName: PulseGateName): PulseConvergenceOwnerLane {
-  if (gateName === 'runtimePass' || gateName === 'flowPass') return 'customer';
+  if (gateName === 'runtimePass' || gateName === 'flowPass') {
+    return 'customer';
+  }
   if (
     gateName === 'invariantPass' ||
     gateName === 'recoveryPass' ||
@@ -569,7 +615,9 @@ function determineGateLane(gateName: PulseGateName): PulseConvergenceOwnerLane {
   ) {
     return 'reliability';
   }
-  if (gateName === 'isolationPass') return 'security';
+  if (gateName === 'isolationPass') {
+    return 'security';
+  }
   return 'platform';
 }
 
@@ -578,7 +626,9 @@ function buildGenericGateUnits(input: BuildPulseConvergencePlanInput): PulseConv
 
   for (const gateName of Object.keys(input.certification.gates) as PulseGateName[]) {
     const gate = input.certification.gates[gateName];
-    if (gate.status !== 'fail' || EXCLUDED_GATE_UNITS.has(gateName)) continue;
+    if (gate.status !== 'fail' || EXCLUDED_GATE_UNITS.has(gateName)) {
+      continue;
+    }
 
     const focusList = summarizeGateFocus(gateName, input.certification);
     const artifactPaths = uniqueStrings([
@@ -642,9 +692,13 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
   ]
     .sort((left, right) => {
       const priorityDelta = PRIORITY_RANK[left.priority] - PRIORITY_RANK[right.priority];
-      if (priorityDelta !== 0) return priorityDelta;
+      if (priorityDelta !== 0) {
+        return priorityDelta;
+      }
       const kindDelta = KIND_RANK[left.kind] - KIND_RANK[right.kind];
-      if (kindDelta !== 0) return kindDelta;
+      if (kindDelta !== 0) {
+        return kindDelta;
+      }
       return left.title.localeCompare(right.title);
     })
     .map((unit, index) => ({

@@ -78,11 +78,17 @@ function applyOutcomeScore(
   revenue?: number,
 ): MessageVariant {
   let delta = 0;
-  if (outcome === 'SOLD') delta = 10;
-  else if (outcome === 'REPLIED') delta = 2;
-  else if (outcome === 'SENT' || outcome === 'DISPATCHED') delta = 1;
-  else if (outcome === 'SKIPPED') delta = -0.5;
-  else if (outcome === 'FAILED') delta = -2;
+  if (outcome === 'SOLD') {
+    delta = 10;
+  } else if (outcome === 'REPLIED') {
+    delta = 2;
+  } else if (outcome === 'SENT' || outcome === 'DISPATCHED') {
+    delta = 1;
+  } else if (outcome === 'SKIPPED') {
+    delta = -0.5;
+  } else if (outcome === 'FAILED') {
+    delta = -2;
+  }
 
   const revenueBoost = revenue && revenue > 0 ? Math.min(revenue / 500, 10) : 0;
 
@@ -94,8 +100,12 @@ function applyOutcomeScore(
 }
 
 function toLengthBucket(length: number): 'short' | 'medium' | 'long' {
-  if (length <= 90) return 'short';
-  if (length <= 220) return 'medium';
+  if (length <= 90) {
+    return 'short';
+  }
+  if (length <= 220) {
+    return 'medium';
+  }
   return 'long';
 }
 
@@ -108,7 +118,9 @@ async function loadStoredVariants(
   workspaceId: string,
   keyPrefix: string,
 ): Promise<Array<{ value: unknown; content?: string | null }>> {
-  if (!prisma?.kloelMemory?.findMany) return [];
+  if (!prisma?.kloelMemory?.findMany) {
+    return [];
+  }
   const rows = await prisma.kloelMemory
     .findMany({
       where: {
@@ -129,7 +141,9 @@ function buildStoredVariantMap(
   const storedMap = new Map<string, MessageVariant>();
   for (const item of rows) {
     const value = (item?.value || {}) as Partial<MessageVariant>;
-    if (!value?.key) continue;
+    if (!value?.key) {
+      continue;
+    }
     storedMap.set(String(value.key), {
       key: String(value.key),
       family,
@@ -159,8 +173,12 @@ function computeFamilyBonus(
   strategy: VariantSelectionStrategy | null | undefined,
   family: VariantFamily,
 ): number {
-  if (!strategy?.preferredVariantFamily) return 0;
-  if (strategy.preferredVariantFamily === family) return 0.15;
+  if (!strategy?.preferredVariantFamily) {
+    return 0;
+  }
+  if (strategy.preferredVariantFamily === family) {
+    return 0.15;
+  }
   return -0.05;
 }
 
@@ -213,13 +231,17 @@ export async function pickVariant(
   const ordered = [...pool].sort((a, b) => {
     const left = rank(a);
     const right = rank(b);
-    if (right !== left) return right - left;
+    if (right !== left) {
+      return right - left;
+    }
     return a.uses - b.uses;
   });
 
   if (ordered.length > 1 && Math.random() < epsilon) {
     const sampled = weightedSamplePick(ordered, rank);
-    if (sampled) return sampled;
+    if (sampled) {
+      return sampled;
+    }
   }
 
   return ordered[0];
@@ -263,7 +285,9 @@ function buildDecisionLogMetadata(input: DecisionLogInput): Prisma.InputJsonObje
 }
 
 export async function recordDecisionLog(prisma: PrismaClient, input: DecisionLogInput) {
-  if (!prisma?.kloelMemory?.create) return null;
+  if (!prisma?.kloelMemory?.create) {
+    return null;
+  }
 
   return prisma.kloelMemory.create({
     data: {
@@ -288,7 +312,9 @@ export async function updateVariantOutcome(
     revenue?: number;
   },
 ) {
-  if (!prisma?.kloelMemory?.upsert) return null;
+  if (!prisma?.kloelMemory?.upsert) {
+    return null;
+  }
 
   const key = `cia_variant:${input.family}:${input.variant.key}`;
   const existing = prisma?.kloelMemory?.findUnique
@@ -352,7 +378,9 @@ async function loadRecentDecisionLogs(
   prisma: PrismaClient,
   workspaceId: string,
 ): Promise<Array<{ value: unknown; metadata?: unknown }>> {
-  if (!prisma?.kloelMemory?.findMany) return [];
+  if (!prisma?.kloelMemory?.findMany) {
+    return [];
+  }
   const rows = await prisma.kloelMemory
     .findMany({
       where: {
@@ -367,10 +395,18 @@ async function loadRecentDecisionLogs(
 }
 
 const outcomeToVariantScore = (outcome: string): number => {
-  if (outcome === 'SOLD') return 10;
-  if (outcome === 'REPLIED') return 2;
-  if (outcome === 'SENT') return 1;
-  if (outcome === 'FAILED') return -2;
+  if (outcome === 'SOLD') {
+    return 10;
+  }
+  if (outcome === 'REPLIED') {
+    return 2;
+  }
+  if (outcome === 'SENT') {
+    return 1;
+  }
+  if (outcome === 'FAILED') {
+    return -2;
+  }
   return 0;
 };
 
@@ -408,7 +444,9 @@ const accumulateVariantScore = (
   variantKey: string,
   outcome: string,
 ): void => {
-  if (!variantKey) return;
+  if (!variantKey) {
+    return;
+  }
   const score = outcomeToVariantScore(outcome);
   variantScores.set(variantKey, (variantScores.get(variantKey) || 0) + score);
 };
@@ -422,9 +460,15 @@ function aggregateDecisionOutcomes(logs: Array<DecisionLogItem>): OutcomeAggrega
   for (const item of logs) {
     const { outcome, variantKey } = extractOutcomeFromLog(item);
 
-    if (outcome === 'SOLD') soldCount += 1;
-    if (isSoldOrSentOrReplied(outcome)) sentCount += 1;
-    if (outcome === 'FAILED') failedCount += 1;
+    if (outcome === 'SOLD') {
+      soldCount += 1;
+    }
+    if (isSoldOrSentOrReplied(outcome)) {
+      sentCount += 1;
+    }
+    if (outcome === 'FAILED') {
+      failedCount += 1;
+    }
 
     accumulateVariantScore(variantScores, variantKey, outcome);
   }

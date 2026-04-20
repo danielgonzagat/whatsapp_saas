@@ -402,7 +402,9 @@ function WhatsAppConsoleInner({
       return;
     }
 
-    if (autoConnectTriggeredRef.current) return;
+    if (autoConnectTriggeredRef.current) {
+      return;
+    }
     autoConnectTriggeredRef.current = true;
     void connect();
   }, [autoConnect, connect, connected, connecting, isOpen, loading]);
@@ -414,13 +416,17 @@ function WhatsAppConsoleInner({
   }, [messages.length, activities.length]);
 
   useEffect(() => {
-    if (!isOpen || !connected) return;
+    if (!isOpen || !connected) {
+      return;
+    }
 
     let cancelled = false;
     const loadChats = async () => {
       try {
         const response = await whatsappApi.getChats();
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         const nextChats = normalizeChats(response.data);
         setChats(nextChats);
         setSelectedChatId((current) => {
@@ -446,7 +452,9 @@ function WhatsAppConsoleInner({
   }, [connected, isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !connected || !selectedChatId) return;
+    if (!isOpen || !connected || !selectedChatId) {
+      return;
+    }
 
     let cancelled = false;
     const loadMessages = async () => {
@@ -454,7 +462,9 @@ function WhatsAppConsoleInner({
         const response = await whatsappApi.getChatMessages(selectedChatId, {
           limit: 24,
         });
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setMessages(normalizeMessages(response.data));
       } catch (err) {
         console.error('Failed to load messages for console:', err);
@@ -473,12 +483,16 @@ function WhatsAppConsoleInner({
   }, [connected, isOpen, selectedChatId]);
 
   useEffect(() => {
-    if (!selectedChatId || chats.length === 0) return;
+    if (!selectedChatId || chats.length === 0) {
+      return;
+    }
     const latestActivity = activities[activities.length - 1];
     const hint = String(
       latestActivity?.metadata?.contactName || latestActivity?.metadata?.contactPhone || '',
     ).toLowerCase();
-    if (!hint) return;
+    if (!hint) {
+      return;
+    }
 
     const nextChat = chats.find((chat) => {
       return (

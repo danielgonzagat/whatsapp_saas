@@ -66,7 +66,9 @@ export class SnapManager {
     otherCenter: number,
     axis: 'x' | 'y',
   ): void {
-    if (Math.abs(currentCenter - otherCenter) >= THRESHOLD) return;
+    if (Math.abs(currentCenter - otherCenter) >= THRESHOLD) {
+      return;
+    }
     const delta = otherCenter - currentCenter;
     if (axis === 'x') {
       target.left = (target.left ?? 0) + delta;
@@ -90,7 +92,9 @@ export class SnapManager {
 
   private _handleObjectMoving(target: FabricObject | undefined): void {
     this._clearGuidelines();
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
     const cw = this.canvas.width;
     const ch = this.canvas.height;
@@ -145,7 +149,9 @@ export class SnapManager {
   private _clearGuidelines(): void {
     for (const g of this.guidelines) {
       const idx = this.canvas._objects.indexOf(g);
-      if (idx !== -1) this.canvas._objects.splice(idx, 1);
+      if (idx !== -1) {
+        this.canvas._objects.splice(idx, 1);
+      }
     }
     this.guidelines = [];
     this.canvas.requestRenderAll();

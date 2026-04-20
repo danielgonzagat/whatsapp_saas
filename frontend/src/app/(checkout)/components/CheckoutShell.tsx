@@ -37,7 +37,9 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
     fetch(endpoint, { signal: controller.signal })
       .then((res) => {
-        if (!res.ok) throw new Error(`Checkout nao encontrado (${res.status})`);
+        if (!res.ok) {
+          throw new Error(`Checkout nao encontrado (${res.status})`);
+        }
         return res.json();
       })
       .then((json: unknown) => {
@@ -45,7 +47,9 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
         setLoading(false);
       })
       .catch((err: Error) => {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) {
+          return;
+        }
         setError(err.message);
         setLoading(false);
       });

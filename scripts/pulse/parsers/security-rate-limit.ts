@@ -70,7 +70,9 @@ async function fireRequests(
 
 export async function checkSecurityRateLimit(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
-  if (!isDeepMode()) return [];
+  if (!isDeepMode()) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const jwt = makeTestJwt();

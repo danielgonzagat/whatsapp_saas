@@ -31,12 +31,14 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
-const LLM_CALL_RE = /openai\.|anthropic\.|llm\.|completions\.create|chat\.completions|generateText|streamText/i;
+const LLM_CALL_RE =
+  /openai\.|anthropic\.|llm\.|completions\.create|chat\.completions|generateText|streamText/i;
 const LLM_LIMIT_RE = /tokenBudget|tokenLimit|maxTokensPerWorkspace|llmBudget|costLimit|usageLimit/i;
 const USAGE_TRACKING_RE = /usageLog|trackUsage|llmUsage|tokenUsed|tokensConsumed|recordUsage/i;
 const STORAGE_QUOTA_RE = /storageQuota|storageLimitBytes|maxStorageBytes|storageUsed/i;
 const FILE_UPLOAD_RE = /multer|@UploadedFile|FileInterceptor|S3|putObject|upload/i;
-const WORKSPACE_THROTTLE_RE = /ThrottlerGuard|WorkspaceThrottle|throttle.*workspace|workspace.*throttle/i;
+const WORKSPACE_THROTTLE_RE =
+  /ThrottlerGuard|WorkspaceThrottle|throttle.*workspace|workspace.*throttle/i;
 
 export function checkCostLimits(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -52,7 +54,9 @@ export function checkCostLimits(config: PulseConfig): Break[] {
   let hasCostAlerting = false;
 
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) continue;
+    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -78,7 +82,8 @@ export function checkCostLimits(config: PulseConfig): Break[] {
               severity: 'high',
               file: relFile,
               line: i + 1,
-              description: 'LLM API call without per-workspace token budget check — runaway costs possible',
+              description:
+                'LLM API call without per-workspace token budget check — runaway costs possible',
               detail: `${line.trim().slice(0, 120)} — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling`,
             });
           }
@@ -86,12 +91,24 @@ export function checkCostLimits(config: PulseConfig): Break[] {
       }
     }
 
-    if (LLM_LIMIT_RE.test(content)) hasLLMLimit = true;
-    if (USAGE_TRACKING_RE.test(content)) hasUsageTracking = true;
-    if (FILE_UPLOAD_RE.test(content)) hasFileUploads = true;
-    if (STORAGE_QUOTA_RE.test(content)) hasStorageQuota = true;
-    if (WORKSPACE_THROTTLE_RE.test(content)) hasWorkspaceThrottle = true;
-    if (/costAlert|budgetAlert|limitReached.*notify|approachingLimit/i.test(content)) hasCostAlerting = true;
+    if (LLM_LIMIT_RE.test(content)) {
+      hasLLMLimit = true;
+    }
+    if (USAGE_TRACKING_RE.test(content)) {
+      hasUsageTracking = true;
+    }
+    if (FILE_UPLOAD_RE.test(content)) {
+      hasFileUploads = true;
+    }
+    if (STORAGE_QUOTA_RE.test(content)) {
+      hasStorageQuota = true;
+    }
+    if (WORKSPACE_THROTTLE_RE.test(content)) {
+      hasWorkspaceThrottle = true;
+    }
+    if (/costAlert|budgetAlert|limitReached.*notify|approachingLimit/i.test(content)) {
+      hasCostAlerting = true;
+    }
   }
 
   // CHECK 5: LLM usage tracking
@@ -101,8 +118,10 @@ export function checkCostLimits(config: PulseConfig): Break[] {
       severity: 'high',
       file: 'backend/src/',
       line: 0,
-      description: 'LLM API calls made without recording token usage per workspace — cannot bill or limit costs',
-      detail: 'After each LLM call, record: workspaceId, model, promptTokens, completionTokens, totalTokens, cost, timestamp',
+      description:
+        'LLM API calls made without recording token usage per workspace — cannot bill or limit costs',
+      detail:
+        'After each LLM call, record: workspaceId, model, promptTokens, completionTokens, totalTokens, cost, timestamp',
     });
   }
 
@@ -113,8 +132,10 @@ export function checkCostLimits(config: PulseConfig): Break[] {
       severity: 'high',
       file: 'backend/src/',
       line: 0,
-      description: 'No per-workspace LLM token budget enforcement found — one workspace can exhaust entire monthly budget',
-      detail: 'Add workspace.llmTokensRemaining check before LLM calls; set plan-based limits in workspace settings',
+      description:
+        'No per-workspace LLM token budget enforcement found — one workspace can exhaust entire monthly budget',
+      detail:
+        'Add workspace.llmTokensRemaining check before LLM calls; set plan-based limits in workspace settings',
     });
   }
 
@@ -126,7 +147,8 @@ export function checkCostLimits(config: PulseConfig): Break[] {
       file: 'backend/src/',
       line: 0,
       description: 'File uploads accepted without per-workspace storage quota check',
-      detail: 'Track bytes stored per workspace; reject uploads when quota exceeded; set plan-based limits (e.g., 1GB free)',
+      detail:
+        'Track bytes stored per workspace; reject uploads when quota exceeded; set plan-based limits (e.g., 1GB free)',
     });
   }
 
@@ -137,8 +159,10 @@ export function checkCostLimits(config: PulseConfig): Break[] {
       severity: 'high',
       file: 'backend/src/',
       line: 0,
-      description: 'No per-workspace API rate limiting — one workspace can monopolize resources and affect all others',
-      detail: 'Add workspace-scoped throttling alongside IP throttling; check NestJS Throttler workspace guard',
+      description:
+        'No per-workspace API rate limiting — one workspace can monopolize resources and affect all others',
+      detail:
+        'Add workspace-scoped throttling alongside IP throttling; check NestJS Throttler workspace guard',
     });
   }
 
@@ -149,8 +173,10 @@ export function checkCostLimits(config: PulseConfig): Break[] {
       severity: 'high',
       file: 'backend/src/',
       line: 0,
-      description: 'No cost alerting for LLM usage — workspace owner not notified when approaching monthly limit',
-      detail: 'Trigger notification at 80% and 95% of monthly LLM budget; send email/WhatsApp alert to workspace owner',
+      description:
+        'No cost alerting for LLM usage — workspace owner not notified when approaching monthly limit',
+      detail:
+        'Trigger notification at 80% and 95% of monthly LLM budget; send email/WhatsApp alert to workspace owner',
     });
   }
 
@@ -158,23 +184,33 @@ export function checkCostLimits(config: PulseConfig): Break[] {
   if (hasLLMCalls && hasLLMLimit) {
     // Verify it's a hard stop, not just a warning
     const allContent = backendFiles.reduce((acc, file) => {
-      try { return acc + fs.readFileSync(file, 'utf8'); } catch { return acc; }
+      try {
+        return acc + fs.readFileSync(file, 'utf8');
+      } catch {
+        return acc;
+      }
     }, '');
 
-    if (!/throw.*limit.*exceeded|limitExceeded.*throw|ForbiddenException.*limit|TooManyRequests.*token/i.test(allContent)) {
+    if (
+      !/throw.*limit.*exceeded|limitExceeded.*throw|ForbiddenException.*limit|TooManyRequests.*token/i.test(
+        allContent,
+      )
+    ) {
       breaks.push({
         type: 'COST_LLM_NO_LIMIT',
         severity: 'high',
         file: 'backend/src/',
         line: 0,
-        description: 'LLM limit check may not enforce a hard stop — warning without rejection still allows overspend',
-        detail: 'Ensure limit check throws ForbiddenException or 429 when limit exceeded, not just logs a warning',
+        description:
+          'LLM limit check may not enforce a hard stop — warning without rejection still allows overspend',
+        detail:
+          'Ensure limit check throws ForbiddenException or 429 when limit exceeded, not just logs a warning',
       });
     }
   }
 
   // CHECK: WhatsApp message rate limit per workspace
-  const whatsappFiles = backendFiles.filter(f => /whatsapp|autopilot/i.test(f));
+  const whatsappFiles = backendFiles.filter((f) => /whatsapp|autopilot/i.test(f));
   for (const file of whatsappFiles) {
     let content: string;
     try {
@@ -184,15 +220,19 @@ export function checkCostLimits(config: PulseConfig): Break[] {
     }
     const relFile = path.relative(config.rootDir, file);
 
-    if (/sendMessage|send.*message/i.test(content) &&
-        !/messageLimit|dailyLimit|rateLimit|messagesPerDay/i.test(content)) {
+    if (
+      /sendMessage|send.*message/i.test(content) &&
+      !/messageLimit|dailyLimit|rateLimit|messagesPerDay/i.test(content)
+    ) {
       breaks.push({
         type: 'COST_LLM_NO_LIMIT',
         severity: 'high',
         file: relFile,
         line: 0,
-        description: 'WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages',
-        detail: 'Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)',
+        description:
+          'WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages',
+        detail:
+          'Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)',
       });
     }
   }

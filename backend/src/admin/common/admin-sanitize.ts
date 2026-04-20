@@ -45,10 +45,18 @@ function sanitizeObjectForAudit(
 }
 
 export function sanitizeForAudit(value: unknown, depth = 0): unknown {
-  if (depth > 6) return '[[depth]]';
-  if (value === null || value === undefined) return value;
-  if (isScalarValue(value)) return value;
-  if (Array.isArray(value)) return sanitizeArrayForAudit(value, depth);
+  if (depth > 6) {
+    return '[[depth]]';
+  }
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (isScalarValue(value)) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return sanitizeArrayForAudit(value, depth);
+  }
   if (typeof value === 'object') {
     return sanitizeObjectForAudit(value as Record<string, unknown>, depth);
   }

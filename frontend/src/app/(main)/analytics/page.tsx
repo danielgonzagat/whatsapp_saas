@@ -168,7 +168,9 @@ interface TooltipPayloadEntry {
 function buildUrl(ep: string, f: RF = {}) {
   const p = new URLSearchParams();
   Object.entries(f).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') p.set(k, String(v));
+    if (v !== undefined && v !== null && v !== '') {
+      p.set(k, String(v));
+    }
   });
   const qs = p.toString();
   return `/reports/${ep}${qs ? `?${qs}` : ''}`;
@@ -559,9 +561,13 @@ function NP({ color = V.em, w = 120, h = 24 }: { color?: string; w?: number; h?:
   const cv = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = cv.current;
-    if (!c) return;
+    if (!c) {
+      return;
+    }
     const ctx = c.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
     c.width = w * 2;
     c.height = h * 2;
     ctx.scale(2, 2);
@@ -579,7 +585,9 @@ function NP({ color = V.em, w = 120, h = 24 }: { color?: string; w?: number; h?:
     );
     obs.observe(c);
     const draw = () => {
-      if (!visible) return;
+      if (!visible) {
+        return;
+      }
       ctx.clearRect(0, 0, w, h);
       for (let layer = 0; layer < 2; layer++) {
         ctx.beginPath();
@@ -704,12 +712,13 @@ function MetricCard({
   trend?: number;
   loading?: boolean;
 }) {
-  if (loading)
+  if (loading) {
     return (
       <div style={{ ...cs, padding: '20px 22px', flex: 1, minWidth: 180 }}>
         <NP w={160} h={28} color={color} />
       </div>
     );
+  }
   return (
     <div
       style={{
@@ -801,7 +810,9 @@ function Pagination({
   setPage: (p: number) => void;
 }) {
   const pages = Math.ceil(total / perPage);
-  if (pages <= 1) return null;
+  if (pages <= 1) {
+    return null;
+  }
   return (
     <div
       style={{
@@ -851,7 +862,9 @@ function CTooltip({
   payload?: TooltipPayloadEntry[];
   label?: string;
 }) {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length) {
+    return null;
+  }
   return (
     <div
       style={{
@@ -928,7 +941,9 @@ function FilterDrawer({
   filters: RF;
   setFilters: (f: RF | ((prev: RF) => RF)) => void;
 }) {
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
   return (
     <div
       style={{
@@ -1842,7 +1857,9 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
   const [result, setResult] = useState<{ ok?: boolean; message: string } | null>(null);
 
   const handleSendReport = async () => {
-    if (!email.trim()) return;
+    if (!email.trim()) {
+      return;
+    }
     setSending(true);
     setResult(null);
     try {
@@ -1858,7 +1875,9 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
         filters: reportFilters,
       });
       const resObj = res as unknown as Record<string, unknown>;
-      if (resObj?.error) throw new Error(String(resObj.error));
+      if (resObj?.error) {
+        throw new Error(String(resObj.error));
+      }
       setResult({ ok: true, message: `Relatório enviado para ${email.trim()}` });
     } catch (error: unknown) {
       setResult({
@@ -3389,7 +3408,9 @@ export default function KloelRelatorio() {
   const exportReport = useCallback(
     (tabKey: string, fileLabel?: string) => {
       const ep = resolveExportEndpoint(tabKey);
-      if (!ep) return;
+      if (!ep) {
+        return;
+      }
       const url = buildUrl(ep, { ...filters, perPage: 1000 });
       swrFetcher(url)
         .then((data: unknown) => {
@@ -3408,7 +3429,9 @@ export default function KloelRelatorio() {
               headers
                 .map((h) => {
                   const val = row[h];
-                  if (val === null || val === undefined) return '';
+                  if (val === null || val === undefined) {
+                    return '';
+                  }
                   const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
                   return str.includes(',') || str.includes('"')
                     ? `"${str.replace(PATTERN_RE, '""')}"`

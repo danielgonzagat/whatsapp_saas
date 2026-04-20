@@ -55,8 +55,12 @@ export function useCollaboratorStats() {
 
 export function useAffiliates(params?: { type?: string; search?: string }) {
   const qs = new URLSearchParams();
-  if (params?.type && params.type !== 'todos') qs.set('type', params.type);
-  if (params?.search) qs.set('search', params.search);
+  if (params?.type && params.type !== 'todos') {
+    qs.set('type', params.type);
+  }
+  if (params?.search) {
+    qs.set('search', params.search);
+  }
   const q = qs.toString();
   const { data, isLoading, mutate } = useSWR(
     `/partnerships/affiliates${q ? `?${q}` : ''}`,

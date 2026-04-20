@@ -103,10 +103,14 @@ const readOptionalString = (data: FlowNodeData | undefined, key: string): string
 
 const readNumber = (data: FlowNodeData | undefined, key: string, fallback = 0): number => {
   const v = data?.[key];
-  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    return v;
+  }
   if (typeof v === 'string' && v.trim() !== '') {
     const parsed = Number(v);
-    if (Number.isFinite(parsed)) return parsed;
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
   }
   return fallback;
 };
@@ -128,8 +132,12 @@ const readObject = (
 
 // Narrow a FlowVariables value to a string for APIs that require string input.
 const varAsString = (v: unknown, fallback = ''): string => {
-  if (typeof v === 'string') return v;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (typeof v === 'string') {
+    return v;
+  }
+  if (typeof v === 'number' || typeof v === 'boolean') {
+    return String(v);
+  }
   return fallback;
 };
 
@@ -137,7 +145,9 @@ const varAsString = (v: unknown, fallback = ''): string => {
 const nestedString = (obj: unknown, ...keys: string[]): string | undefined => {
   let current: unknown = obj;
   for (const k of keys) {
-    if (!current || typeof current !== 'object') return undefined;
+    if (!current || typeof current !== 'object') {
+      return undefined;
+    }
     current = (current as Record<string, unknown>)[k];
   }
   return typeof current === 'string' ? current : undefined;
@@ -319,7 +329,9 @@ export class FlowEngineGlobal {
     }
     // -------------------------
 
-    if (!state) return;
+    if (!state) {
+      return;
+    }
 
     // Remove timeout
     await this.context.zrem('timeouts', this.timeoutMember(normalizedUser, state.workspaceId));
@@ -343,10 +355,14 @@ export class FlowEngineGlobal {
       // Fallback compat (chave antiga sem workspace)
       state = await this.context.get<ExecutionState>(this.key(job.user));
     }
-    if (!state) return;
+    if (!state) {
+      return;
+    }
 
     const flow = await this.loadFlow(state.flowId, state.workspaceId);
-    if (!flow) return;
+    if (!flow) {
+      return;
+    }
 
     const MAX_ITERATIONS = 1000;
     let iterations = 0;
@@ -621,7 +637,9 @@ export class FlowEngineGlobal {
 
       case 'return': {
         const ctx = state.stack?.pop();
-        if (!ctx) return 'END';
+        if (!ctx) {
+          return 'END';
+        }
         state.flowId = ctx.flowId;
         return ctx.nodeId;
       }
@@ -706,7 +724,9 @@ export class FlowEngineGlobal {
       case 'tagNode': {
         const action = readString(node.data, 'action');
         const tag = readString(node.data, 'tag');
-        if (!tag) return node.next ?? 'END';
+        if (!tag) {
+          return node.next ?? 'END';
+        }
         if (action === 'remove') {
           await CRM.removeTag(state.workspaceId, state.user, tag);
         } else {
@@ -906,7 +926,9 @@ export class FlowEngineGlobal {
             this.log.info('ai_tool_call', { count: responseMessage.tool_calls.length });
 
             await forEachSequential(responseMessage.tool_calls, async (toolCall) => {
-              if (!('function' in toolCall) || !toolCall.function) return;
+              if (!('function' in toolCall) || !toolCall.function) {
+                return;
+              }
               const functionName = toolCall.function.name;
               let args: Record<string, unknown> = {};
               try {
@@ -1003,7 +1025,9 @@ export class FlowEngineGlobal {
             )
           : [];
         const match = cases.find((c) => String(c.value) === String(value)); // coerce to string for flow semantics
-        if (match) return match.target;
+        if (match) {
+          return match.target;
+        }
 
         return defaultCase || node.next || 'END';
       }
@@ -1036,18 +1060,19 @@ export class FlowEngineGlobal {
         let emotion = 'neutral';
         if (
           has('raiva', 'irrit', 'p*to', 'p...to', 'odio', 'odiei', 'horrivel', 'péssimo', 'pessimo')
-        )
+        ) {
           emotion = 'angry';
-        else if (has('não entendi', 'nao entendi', 'confuso', 'confusão', 'como assim', '??'))
+        } else if (has('não entendi', 'nao entendi', 'confuso', 'confusão', 'como assim', '??')) {
           emotion = 'confused';
-        else if (has('ansioso', 'ansiosa', 'preocup', 'urgente', 'agora', 'imediato'))
+        } else if (has('ansioso', 'ansiosa', 'preocup', 'urgente', 'agora', 'imediato')) {
           emotion = 'anxious';
-        else if (has('ótimo', 'otimo', 'perfeito', 'gostei', 'massa', 'legal', 'show'))
+        } else if (has('ótimo', 'otimo', 'perfeito', 'gostei', 'massa', 'legal', 'show')) {
           emotion = 'happy';
-        else if (
+        } else if (
           has('comprar', 'quanto custa', 'fechar', 'preço', 'preco', 'quero', 'vamos fechar')
-        )
+        ) {
           emotion = 'buying';
+        }
 
         state.variables.emotion = emotion;
 
@@ -1157,8 +1182,7 @@ export class FlowEngineGlobal {
               prisma.voiceJob.findFirst({
                 where: { id: job.id, workspaceId: state.workspaceId },
               }),
-            stop: (updated) =>
-              updated?.status === 'COMPLETED' || updated?.status === 'FAILED',
+            stop: (updated) => updated?.status === 'COMPLETED' || updated?.status === 'FAILED',
             sleep: (ms) => this.sleep(ms),
           });
           const audioUrl = voiceJob?.status === 'COMPLETED' ? voiceJob.outputUrl : null;
@@ -1275,7 +1299,9 @@ export class FlowEngineGlobal {
    */
   private async sendMessage(user: string, text: string, workspaceId?: string) {
     const provider = await ProviderRegistry.getProviderForUser(user, workspaceId);
-    if (!provider) throw new Error('Nenhum provider para este usuário');
+    if (!provider) {
+      throw new Error('Nenhum provider para este usuário');
+    }
 
     // Workspace já vem injetado pelo Registry
     const workspace = ((provider as unknown as Record<string, unknown>).workspace as {
@@ -1284,22 +1310,30 @@ export class FlowEngineGlobal {
     let contactId: string | null = null;
     let conversationId: string | null = null;
     const readIdFromObject = (value: unknown): string | null => {
-      if (!value || typeof value !== 'object') return null;
+      if (!value || typeof value !== 'object') {
+        return null;
+      }
       const id = (value as Record<string, unknown>).id;
       return typeof id === 'string' ? id : null;
     };
     const extractIdFromMessages = (messages: unknown): string | null => {
-      if (!Array.isArray(messages)) return null;
+      if (!Array.isArray(messages)) {
+        return null;
+      }
       return readIdFromObject(messages[0]);
     };
     const extractFirstStringCandidate = (r: Record<string, unknown>): string | null => {
       for (const c of [r.id, r.messageId, r.sid]) {
-        if (typeof c === 'string') return c;
+        if (typeof c === 'string') {
+          return c;
+        }
       }
       return null;
     };
     const extractExternalId = (res: unknown): string | null => {
-      if (!res || typeof res !== 'object') return null;
+      if (!res || typeof res !== 'object') {
+        return null;
+      }
       const r = res as Record<string, unknown>;
       return (
         extractIdFromMessages(r.messages) ||
@@ -1520,7 +1554,9 @@ export class FlowEngineGlobal {
       const contact = await prisma.contact.findUnique({
         where: { workspaceId_phone: { workspaceId, phone: contactPhone } },
       });
-      if (!contact) return [];
+      if (!contact) {
+        return [];
+      }
 
       // 2. Fetch Messages
       const messages = await prisma.message.findMany({
@@ -1570,17 +1606,21 @@ export class FlowEngineGlobal {
     // Second pass: Connect edges
     for (const e of edgesArr) {
       const source = nodesMap[e.source];
-      if (!source) continue;
+      if (!source) {
+        continue;
+      }
 
-      if (e.sourceHandle === 'yes' || e.sourceHandle === 'true' || e.sourceHandle === 'replied')
+      if (e.sourceHandle === 'yes' || e.sourceHandle === 'true' || e.sourceHandle === 'replied') {
         source.yes = e.target;
-      else if (
+      } else if (
         e.sourceHandle === 'no' ||
         e.sourceHandle === 'false' ||
         e.sourceHandle === 'timeout'
-      )
+      ) {
         source.no = e.target;
-      else source.next = e.target;
+      } else {
+        source.next = e.target;
+      }
     }
 
     return {
@@ -1601,7 +1641,9 @@ export class FlowEngineGlobal {
           ...(workspaceId ? { workspaceId } : {}),
         },
       });
-      if (!flow) return null;
+      if (!flow) {
+        return null;
+      }
 
       if (workspaceId && flow.workspaceId !== workspaceId) {
         this.log.warn('flow_workspace_mismatch', {
@@ -1681,7 +1723,9 @@ export class FlowEngineGlobal {
       if (!state && !workspaceId) {
         state = await this.context.get<ExecutionState>(this.key(user));
       }
-      if (!state) return;
+      if (!state) {
+        return;
+      }
 
       state.waitingForResponse = false;
       state.timeoutAt = undefined;
@@ -1696,7 +1740,9 @@ export class FlowEngineGlobal {
   }
 
   private async appendLog(state: ExecutionState, logEntry: FlowLogEntry) {
-    if (!state.executionId) return;
+    if (!state.executionId) {
+      return;
+    }
     const entry = {
       id: uuid(),
       ts: Date.now(),
@@ -1745,7 +1791,9 @@ export class FlowEngineGlobal {
   }
 
   private async markStatus(state: ExecutionState, status: string) {
-    if (!state.executionId) return;
+    if (!state.executionId) {
+      return;
+    }
     await prisma.flowExecution.updateMany({
       where: { id: state.executionId, workspaceId: state.workspaceId },
       data: {
@@ -1775,7 +1823,9 @@ export class FlowEngineGlobal {
   }
 
   private async failExecution(state: ExecutionState, message: string) {
-    if (!state.executionId) return;
+    if (!state.executionId) {
+      return;
+    }
     await this.appendLog(state, { event: 'failed', message });
     await prisma.flowExecution.updateMany({
       where: { id: state.executionId, workspaceId: state.workspaceId },

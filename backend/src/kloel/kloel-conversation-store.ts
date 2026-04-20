@@ -18,7 +18,9 @@ export class KloelConversationStore {
   ) {}
 
   async getConversationHistory(workspaceId?: string): Promise<ChatMessage[]> {
-    if (!workspaceId) return [];
+    if (!workspaceId) {
+      return [];
+    }
 
     try {
       const messages = await this.prisma.kloelMessage.findMany({

@@ -34,7 +34,9 @@ function resolveFrontendAppDir(frontendDir: string): string {
   ];
 
   for (const candidate of candidates) {
-    if (path.basename(candidate) !== 'app') continue;
+    if (path.basename(candidate) !== 'app') {
+      continue;
+    }
     if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
       return candidate;
     }
@@ -49,7 +51,9 @@ function collectAppRoutes(appDir: string): Set<string> {
 
   for (const file of files) {
     const relative = path.relative(appDir, file);
-    if (!/[/\\]page\.(tsx|ts|jsx|js)$/i.test(relative)) continue;
+    if (!/[/\\]page\.(tsx|ts|jsx|js)$/i.test(relative)) {
+      continue;
+    }
 
     const normalized = relative.split(path.sep);
     const routeSegments = normalized
@@ -102,8 +106,12 @@ export function checkCompliance(config: PulseConfig): Break[] {
   let hasDeleteEndpoint = false;
 
   for (const file of backendFiles) {
-    if (!/controller/i.test(file)) continue;
-    if (/\.spec\.ts$/.test(file)) continue;
+    if (!/controller/i.test(file)) {
+      continue;
+    }
+    if (/\.spec\.ts$/.test(file)) {
+      continue;
+    }
     let content: string;
     try {
       content = fs.readFileSync(file, 'utf8');
@@ -152,7 +160,9 @@ export function checkCompliance(config: PulseConfig): Break[] {
   let hasCookieConsent = false;
 
   for (const file of frontendFiles) {
-    if (/node_modules|\.next/.test(file)) continue;
+    if (/node_modules|\.next/.test(file)) {
+      continue;
+    }
     let content: string;
     try {
       content = fs.readFileSync(file, 'utf8');

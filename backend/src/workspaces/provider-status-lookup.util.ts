@@ -26,7 +26,9 @@ export function extractPhoneNumberId(
   providerType: WhatsAppProviderType,
   session: ProviderSessionSnapshot,
 ): string | null {
-  if (providerType !== 'meta-cloud') return null;
+  if (providerType !== 'meta-cloud') {
+    return null;
+  }
   const trimmed = String(session.phoneNumberId || '').trim();
   return trimmed || null;
 }
@@ -53,7 +55,9 @@ export function resolveMetaStatus(
   rawStatus: string,
   phoneNumberId: string | null,
 ): NormalizedConnectionStatus {
-  if (rawStatus === 'CONNECTED' || rawStatus === 'WORKING') return 'connected';
+  if (rawStatus === 'CONNECTED' || rawStatus === 'WORKING') {
+    return 'connected';
+  }
   return phoneNumberId ? 'connection_incomplete' : 'disconnected';
 }
 
@@ -62,7 +66,9 @@ export function computeNormalizedStatus(
   rawStatus: string,
   phoneNumberId: string | null,
 ): NormalizedConnectionStatus {
-  if (providerType === 'whatsapp-api') return resolveWahaStatus(rawStatus);
+  if (providerType === 'whatsapp-api') {
+    return resolveWahaStatus(rawStatus);
+  }
   return resolveMetaStatus(rawStatus, phoneNumberId);
 }
 
@@ -71,8 +77,12 @@ export function metaDisconnectReason(phoneNumberId: string | null): string {
 }
 
 export function wahaDisconnectReason(status: NormalizedConnectionStatus): string {
-  if (status === 'connecting') return 'waha_qr_pending';
-  if (status === 'failed') return 'waha_session_failed';
+  if (status === 'connecting') {
+    return 'waha_qr_pending';
+  }
+  if (status === 'failed') {
+    return 'waha_session_failed';
+  }
   return 'waha_session_disconnected';
 }
 

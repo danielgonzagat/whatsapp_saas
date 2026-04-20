@@ -94,8 +94,12 @@ export class AdminAuthService {
       throw adminErrors.invalidCredentials();
     }
 
-    if (user.status === AdminUserStatus.SUSPENDED) throw adminErrors.userSuspended();
-    if (user.status === AdminUserStatus.DEACTIVATED) throw adminErrors.userDeactivated();
+    if (user.status === AdminUserStatus.SUSPENDED) {
+      throw adminErrors.userSuspended();
+    }
+    if (user.status === AdminUserStatus.DEACTIVATED) {
+      throw adminErrors.userDeactivated();
+    }
 
     await this.attempts.record(normalizedEmail, ip, true);
     await this.prisma.adminUser.update({
@@ -165,7 +169,9 @@ export class AdminAuthService {
     ip: string,
     userAgent: string,
   ): Promise<LoginStateResponse> {
-    if (admin.scope !== 'password_change') throw adminErrors.invalidToken();
+    if (admin.scope !== 'password_change') {
+      throw adminErrors.invalidToken();
+    }
 
     const hash = await bcryptHash(newPassword, BCRYPT_WORK_FACTOR);
     const user = await this.prisma.adminUser.update({
@@ -188,7 +194,9 @@ export class AdminAuthService {
   // ──────────────────────────────────────────────────────────
 
   async setupMfa(admin: AuthenticatedAdmin): Promise<MfaSetupPayload> {
-    if (admin.scope !== 'mfa_setup') throw adminErrors.invalidToken();
+    if (admin.scope !== 'mfa_setup') {
+      throw adminErrors.invalidToken();
+    }
 
     // If the user already has a pending MFA secret (from a previous
     // setup call that they're still in the middle of), reuse it.
@@ -233,9 +241,13 @@ export class AdminAuthService {
     ip: string,
     userAgent: string,
   ): Promise<AuthenticatedSession> {
-    if (admin.scope !== 'mfa_setup') throw adminErrors.invalidToken();
+    if (admin.scope !== 'mfa_setup') {
+      throw adminErrors.invalidToken();
+    }
     const user = await this.prisma.adminUser.findUnique({ where: { id: admin.id } });
-    if (!user) throw adminErrors.invalidToken();
+    if (!user) {
+      throw adminErrors.invalidToken();
+    }
     this.mfa.verifyCode(user.mfaSecret, code);
 
     const updated = await this.prisma.adminUser.update({
@@ -257,9 +269,13 @@ export class AdminAuthService {
     ip: string,
     userAgent: string,
   ): Promise<AuthenticatedSession> {
-    if (admin.scope !== 'mfa_verify') throw adminErrors.invalidToken();
+    if (admin.scope !== 'mfa_verify') {
+      throw adminErrors.invalidToken();
+    }
     const user = await this.prisma.adminUser.findUnique({ where: { id: admin.id } });
-    if (!user) throw adminErrors.invalidToken();
+    if (!user) {
+      throw adminErrors.invalidToken();
+    }
     this.mfa.verifyCode(user.mfaSecret, code);
 
     const updated = await this.prisma.adminUser.update({
@@ -289,8 +305,12 @@ export class AdminAuthService {
       where: { tokenHash },
       include: { adminUser: true },
     });
-    if (!session || session.revokedAt) throw adminErrors.invalidToken();
-    if (session.expiresAt.getTime() < Date.now()) throw adminErrors.tokenExpired();
+    if (!session || session.revokedAt) {
+      throw adminErrors.invalidToken();
+    }
+    if (session.expiresAt.getTime() < Date.now()) {
+      throw adminErrors.tokenExpired();
+    }
     if (session.adminUser.status !== AdminUserStatus.ACTIVE) {
       throw adminErrors.userSuspended();
     }
@@ -320,7 +340,9 @@ export class AdminAuthService {
   }
 
   async logout(admin: AuthenticatedAdmin, ip: string, userAgent: string): Promise<void> {
-    if (!admin.sessionId) return;
+    if (!admin.sessionId) {
+      return;
+    }
     await this.prisma.adminSession.updateMany({
       where: { id: admin.sessionId, revokedAt: null },
       data: { revokedAt: new Date() },

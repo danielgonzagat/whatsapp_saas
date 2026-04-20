@@ -457,7 +457,9 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
             type="button"
             onClick={() => {
               const url = prompt('URL do link:');
-              if (url) document.execCommand('createLink', false, url);
+              if (url) {
+                document.execCommand('createLink', false, url);
+              }
             }}
             style={{
               width: 28,
@@ -577,7 +579,9 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
             type="button"
             onClick={() => {
               const url = prompt('URL do link:');
-              if (url) document.execCommand('createLink', false, url);
+              if (url) {
+                document.execCommand('createLink', false, url);
+              }
             }}
             style={{
               width: 28,
@@ -695,7 +699,9 @@ function CoprodSubTab({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Excluir coprodutor?')) return;
+    if (!confirm('Excluir coprodutor?')) {
+      return;
+    }
     try {
       await apiFetch(`/products/${productId}/commissions/${id}`, { method: 'DELETE' });
       fetchCommissions();
@@ -1015,7 +1021,9 @@ export function ProductNerveCenterComissaoTab() {
 
   /* ── load affiliate summary on mount ── */
   const loadAffiliateSummary = useCallback(() => {
-    if (!productId) return;
+    if (!productId) {
+      return;
+    }
     setAffiliateLoading(true);
     apiFetch(`/products/${productId}/affiliates`)
       .then((res: unknown) => {

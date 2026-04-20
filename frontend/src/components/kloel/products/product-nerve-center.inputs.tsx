@@ -100,10 +100,14 @@ function normalizePercentInput(raw: string, min: number, max: number) {
           .slice(firstCommaIndex + 1)
           .replace(PATTERN_RE_3, '')}`;
 
-  if (!normalized) return `${min}`;
+  if (!normalized) {
+    return `${min}`;
+  }
 
   const parsed = Number(normalized.replace(',', '.'));
-  if (!Number.isFinite(parsed)) return `${min}`;
+  if (!Number.isFinite(parsed)) {
+    return `${min}`;
+  }
   return String(clamp(parsed, min, max)).replace('.', ',');
 }
 

@@ -26,7 +26,9 @@ function makeFakeRedis() {
     },
     async set(key: string, value: string, mode?: string, ttl?: number, nx?: string) {
       setCalls.push({ key, value, mode, ttl });
-      if (nx === 'NX' && store.has(key)) return null; // SET NX loser
+      if (nx === 'NX' && store.has(key)) {
+        return null;
+      } // SET NX loser
       store.set(key, value);
       return 'OK';
     },
@@ -60,7 +62,9 @@ function makeContext(options: {
       sub: options.actorId ?? 'user-42',
     },
   };
-  if (options.headerKey) request.headers['x-idempotency-key'] = options.headerKey;
+  if (options.headerKey) {
+    request.headers['x-idempotency-key'] = options.headerKey;
+  }
 
   const response: any = { _status: 200, _body: undefined };
   response.status = jest.fn((code: number) => {
@@ -106,13 +110,19 @@ describe('IdempotencyGuard — v2 (I13) scoped key + body fingerprint', () => {
     featureFlags = new FeatureFlagService();
     // idempotency.v2 defaults to true; explicit here for readability.
     jest.spyOn(featureFlags, 'isEnabled').mockImplementation((flag: string) => {
-      if (flag === 'idempotency.v2') return true;
+      if (flag === 'idempotency.v2') {
+        return true;
+      }
       return true;
     });
     guard = new IdempotencyGuard(reflector, redis as any, featureFlags);
     jest.spyOn(reflector, 'get').mockImplementation((metadataKey: any) => {
-      if (metadataKey === IDEMPOTENCY_KEY) return true;
-      if (metadataKey === IDEMPOTENCY_TTL_KEY) return 86400;
+      if (metadataKey === IDEMPOTENCY_KEY) {
+        return true;
+      }
+      if (metadataKey === IDEMPOTENCY_TTL_KEY) {
+        return 86400;
+      }
       return undefined;
     });
   });
@@ -260,13 +270,19 @@ describe('IdempotencyGuard — v1 (rollback lever, legacy header-only key)', () 
     redis = makeFakeRedis();
     featureFlags = new FeatureFlagService();
     jest.spyOn(featureFlags, 'isEnabled').mockImplementation((flag: string) => {
-      if (flag === 'idempotency.v2') return false; // rollback path
+      if (flag === 'idempotency.v2') {
+        return false;
+      } // rollback path
       return true;
     });
     guard = new IdempotencyGuard(reflector, redis as any, featureFlags);
     jest.spyOn(reflector, 'get').mockImplementation((metadataKey: any) => {
-      if (metadataKey === IDEMPOTENCY_KEY) return true;
-      if (metadataKey === IDEMPOTENCY_TTL_KEY) return 86400;
+      if (metadataKey === IDEMPOTENCY_KEY) {
+        return true;
+      }
+      if (metadataKey === IDEMPOTENCY_TTL_KEY) {
+        return 86400;
+      }
       return undefined;
     });
   });

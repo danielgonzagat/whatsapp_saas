@@ -85,7 +85,9 @@ function findManifestModule(
   const normalizedCandidates = candidates.map(normalizeText).filter(Boolean);
   for (const entry of entries) {
     const normalizedEntry = normalizeText(entry.name);
-    if (normalizedCandidates.includes(normalizedEntry)) return entry;
+    if (normalizedCandidates.includes(normalizedEntry)) {
+      return entry;
+    }
   }
   return null;
 }
@@ -205,20 +207,44 @@ function getHaystack(flow: PulseDiscoveredFlowCandidate): string {
 
 function inferAction(flow: PulseDiscoveredFlowCandidate): string {
   const haystack = getHaystack(flow);
-  if (haystack.includes('reply')) return 'reply';
-  if (haystack.includes('send')) return 'send';
-  if (haystack.includes('toggle')) return 'toggle';
-  if (haystack.includes('connect')) return 'connect';
-  if (haystack.includes('default')) return 'default';
-  if (haystack.includes('approve')) return 'approve';
-  if (haystack.includes('start')) return 'start';
-  if (haystack.includes('sync')) return 'sync';
-  if (haystack.includes('generate')) return 'generate';
-  if (haystack.includes('save')) return 'save';
+  if (haystack.includes('reply')) {
+    return 'reply';
+  }
+  if (haystack.includes('send')) {
+    return 'send';
+  }
+  if (haystack.includes('toggle')) {
+    return 'toggle';
+  }
+  if (haystack.includes('connect')) {
+    return 'connect';
+  }
+  if (haystack.includes('default')) {
+    return 'default';
+  }
+  if (haystack.includes('approve')) {
+    return 'approve';
+  }
+  if (haystack.includes('start')) {
+    return 'start';
+  }
+  if (haystack.includes('sync')) {
+    return 'sync';
+  }
+  if (haystack.includes('generate')) {
+    return 'generate';
+  }
+  if (haystack.includes('save')) {
+    return 'save';
+  }
 
   const method = flow.httpMethod.toUpperCase();
-  if (method === 'DELETE') return 'delete';
-  if (method === 'PUT' || method === 'PATCH') return 'update';
+  if (method === 'DELETE') {
+    return 'delete';
+  }
+  if (method === 'PUT' || method === 'PATCH') {
+    return 'update';
+  }
   return 'create';
 }
 
@@ -606,12 +632,17 @@ function inferFlowSpecMatch(
   manifest: PulseManifest | null,
   group: PulseResolvedFlowGroup,
 ): string | null {
-  if (!manifest) return null;
+  if (!manifest) {
+    return null;
+  }
 
   const overrides = manifest.overrides || {};
-  if (overrides.flowAliases?.[group.id]) return overrides.flowAliases[group.id];
-  if (overrides.flowAliases?.[group.canonicalName])
+  if (overrides.flowAliases?.[group.id]) {
+    return overrides.flowAliases[group.id];
+  }
+  if (overrides.flowAliases?.[group.canonicalName]) {
     return overrides.flowAliases[group.canonicalName];
+  }
 
   const haystack = normalizeText(
     [
@@ -737,10 +768,15 @@ function buildFlowGroups(
         Boolean(matchedFlowSpec);
 
       let resolution: PulseResolvedFlowGroup['resolution'];
-      if (excluded) resolution = 'excluded';
-      else if (accepted) resolution = 'accepted';
-      else if (matchedFlowSpec) resolution = 'matched';
-      else resolution = 'grouped';
+      if (excluded) {
+        resolution = 'excluded';
+      } else if (accepted) {
+        resolution = 'accepted';
+      } else if (matchedFlowSpec) {
+        resolution = 'matched';
+      } else {
+        resolution = 'grouped';
+      }
 
       return {
         id,

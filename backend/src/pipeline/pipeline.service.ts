@@ -67,8 +67,12 @@ export class PipelineService {
       }),
     ]);
 
-    if (!deal) throw new NotFoundException('Deal não encontrado');
-    if (!stage) throw new NotFoundException('Etapa não encontrada');
+    if (!deal) {
+      throw new NotFoundException('Deal não encontrado');
+    }
+    if (!stage) {
+      throw new NotFoundException('Etapa não encontrada');
+    }
 
     const dealWorkspace = deal.stage?.pipeline.workspaceId;
     const stageWorkspace = stage.pipeline.workspaceId;

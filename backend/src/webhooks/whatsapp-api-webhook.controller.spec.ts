@@ -21,7 +21,9 @@ describe('WhatsAppApiWebhookController', () => {
     prisma = {
       workspace: {
         findUnique: jest.fn(async ({ where }: any) => {
-          if (where.id === 'default') return null;
+          if (where.id === 'default') {
+            return null;
+          }
           if (where.id === 'ws-1') {
             return {
               id: 'ws-1',
@@ -250,7 +252,9 @@ describe('WhatsAppApiWebhookController', () => {
 
   it('allows fromMe processing only when includeFromMe is enabled for the workspace', async () => {
     prisma.workspace.findUnique.mockImplementation(async ({ where }: any) => {
-      if (where.id === 'default') return null;
+      if (where.id === 'default') {
+        return null;
+      }
       if (where.id === 'ws-1') {
         return {
           id: 'ws-1',
@@ -297,7 +301,9 @@ describe('WhatsAppApiWebhookController', () => {
 
   it('does not re-trigger catchup/bootstrap from live traffic when autonomy is already active', async () => {
     prisma.workspace.findUnique.mockImplementation(async ({ where }: any) => {
-      if (where.id === 'default') return null;
+      if (where.id === 'default') {
+        return null;
+      }
       if (where.id === 'ws-1') {
         return {
           id: 'ws-1',

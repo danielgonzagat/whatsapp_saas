@@ -34,7 +34,7 @@ const baseInput = (overrides: Partial<CreateSaleChargeInput> = {}): CreateSaleCh
 });
 
 describe('StripeChargeService.createSaleCharge', () => {
-  it('creates a Direct Charge PaymentIntent with on_behalf_of seller and Kloel application_fee', async () => {
+  it('creates a destination charge PaymentIntent with seller settlement merchant and direct seller residue transfer', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
       id: 'pi_sale_1',
@@ -50,8 +50,7 @@ describe('StripeChargeService.createSaleCharge', () => {
         currency: 'brl',
         payment_method_types: ['card', 'boleto'],
         on_behalf_of: 'acct_seller',
-        application_fee_amount: 4_980,
-        transfer_data: { destination: 'acct_seller' },
+        transfer_data: { destination: 'acct_seller', amount: 9_010 },
         transfer_group: 'sale:order_123',
         receipt_email: 'buyer@example.com',
         metadata: expect.objectContaining({
@@ -91,6 +90,11 @@ describe('StripeChargeService.createSaleCharge', () => {
 
     const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
     const splitLines = JSON.parse(callArgs.metadata.split_lines);
+    expect(callArgs.transfer_data).toEqual({
+      destination: 'acct_seller',
+      amount: 656,
+    });
+    expect(callArgs.application_fee_amount).toBeUndefined();
     expect(splitLines).toEqual([
       { role: 'supplier', accountId: 'acct_supplier', amountCents: '4210' },
       { role: 'affiliate', accountId: 'acct_affiliate', amountCents: '3604' },

@@ -249,7 +249,9 @@ export function CodeSnippet({ code, label }: { code: string; label?: string }) {
 
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
     },
     [],
   );
@@ -257,7 +259,9 @@ export function CodeSnippet({ code, label }: { code: string; label?: string }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
     setCopied(true);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    if (copiedTimer.current) {
+      clearTimeout(copiedTimer.current);
+    }
     copiedTimer.current = setTimeout(() => setCopied(false), 2000);
   };
 

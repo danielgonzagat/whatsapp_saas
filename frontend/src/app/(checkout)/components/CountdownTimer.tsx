@@ -23,12 +23,16 @@ const STORAGE_KEY = 'ck_countdown_end';
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
 
 function formatTime(totalSeconds: number): string {
-  if (totalSeconds <= 0) return '00:00';
+  if (totalSeconds <= 0) {
+    return '00:00';
+  }
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
   const pad = (n: number) => String(n).padStart(2, '0');
-  if (h > 0) return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  if (h > 0) {
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
   return `${pad(m)}:${pad(s)}`;
 }
 
@@ -48,7 +52,9 @@ export default function CountdownTimer({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     let endTime: number;
 
@@ -82,11 +88,15 @@ export default function CountdownTimer({
     intervalRef.current = setInterval(tick, 1000);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     };
   }, [enabled, type, minutes]);
 
-  if (!enabled || secondsLeft === null) return null;
+  if (!enabled || secondsLeft === null) {
+    return null;
+  }
 
   const expired = secondsLeft <= 0;
 

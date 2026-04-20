@@ -40,7 +40,9 @@ export function checkIdempotency(config: PulseConfig): Break[] {
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
 
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) continue;
+    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {

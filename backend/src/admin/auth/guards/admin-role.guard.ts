@@ -15,10 +15,14 @@ export class AdminRoleGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (!required || required.length === 0) return true;
+    if (!required || required.length === 0) {
+      return true;
+    }
 
     const req = context.switchToHttp().getRequest<Request & { admin?: AuthenticatedAdmin }>();
-    if (!req.admin) throw adminErrors.invalidToken();
+    if (!req.admin) {
+      throw adminErrors.invalidToken();
+    }
     if (!required.includes(req.admin.role)) {
       if (required.length === 1 && required[0] === 'OWNER') {
         throw adminErrors.ownerRequired();

@@ -97,18 +97,26 @@ export function checkAntiHardcode(config: PulseConfig): Break[] {
 
   for (const file of sourceFiles) {
     const relFile = path.relative(config.rootDir, file);
-    if (isSkippable(relFile)) continue;
+    if (isSkippable(relFile)) {
+      continue;
+    }
 
     const content = readFileSafe(file);
-    if (!content) continue;
+    if (!content) {
+      continue;
+    }
 
     const lines = content.split('\n');
     for (let index = 0; index < lines.length; index += 1) {
       const line = lines[index];
-      if (!looksLikeUserFacingLiteral(line)) continue;
+      if (!looksLikeUserFacingLiteral(line)) {
+        continue;
+      }
 
       for (const rule of FORBIDDEN_PSEUDO_THINKING) {
-        if (!rule.pattern.test(line)) continue;
+        if (!rule.pattern.test(line)) {
+          continue;
+        }
         breaks.push({
           type: 'AI_PSEUDO_THINKING_HARDCODED',
           severity: 'critical',

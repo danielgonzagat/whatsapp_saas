@@ -332,7 +332,9 @@ function SmartPaymentModal({
   const [error, setError] = useState('');
 
   const handleCreate = async () => {
-    if (!workspaceId || !form.amount || !form.customerName || !form.customerPhone) return;
+    if (!workspaceId || !form.amount || !form.customerName || !form.customerPhone) {
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -345,7 +347,9 @@ function SmartPaymentModal({
         method: form.method,
         dueDate: form.dueDate || undefined,
       });
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setResult(res.data ?? null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erro ao criar cobranca');
@@ -480,7 +484,9 @@ function SmartPaymentModal({
                       <button
                         type="button"
                         onClick={() => {
-                          if (result.paymentLink) copyToClipboard(result.paymentLink);
+                          if (result.paymentLink) {
+                            copyToClipboard(result.paymentLink);
+                          }
                         }}
                         style={{
                           padding: '8px 12px',
@@ -532,7 +538,9 @@ function SmartPaymentModal({
                       <button
                         type="button"
                         onClick={() => {
-                          if (result.pixCode) copyToClipboard(result.pixCode);
+                          if (result.pixCode) {
+                            copyToClipboard(result.pixCode);
+                          }
                         }}
                         style={{
                           padding: '8px 12px',
@@ -840,7 +848,9 @@ function DetailModal({
   // Fetch fresh sale detail from GET /sales/:id when viewing a sale
   const { sale: freshSale } = useSaleDetail(detailId && detailType === 'sale' ? detailId : null);
 
-  if (!detailId) return null;
+  if (!detailId) {
+    return null;
+  }
   const cached: DetailItemData | undefined =
     detailType === 'sale'
       ? sales.find((s) => s.id === detailId)
@@ -850,7 +860,9 @@ function DetailModal({
   // For sales, prefer fresh server data; fall back to cached list entry
   const item: DetailItemData | undefined =
     detailType === 'sale' && freshSale ? (freshSale as DetailItemData) : cached;
-  if (!item) return null;
+  if (!item) {
+    return null;
+  }
 
   return (
     <div
@@ -1246,7 +1258,9 @@ function ShipModal({
   actionLoading: boolean;
 }) {
   const fid = useId();
-  if (!showShipModal) return null;
+  if (!showShipModal) {
+    return null;
+  }
   return (
     <div
       style={{
@@ -2241,7 +2255,9 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     }
   }, [defaultTab]);
   useEffect(() => {
-    if (requestedTab && requestedTab !== tab) setTab(requestedTab);
+    if (requestedTab && requestedTab !== tab) {
+      setTab(requestedTab);
+    }
   }, [requestedTab, tab]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
@@ -2283,7 +2299,9 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     };
     const nextRoute = routes[newTab] || '/vendas';
     const currentRoute = `${pathname}${searchParams?.toString() ? `?${searchParams.toString()}` : ''}`;
-    if (currentRoute === nextRoute) return;
+    if (currentRoute === nextRoute) {
+      return;
+    }
     startTransition(() => {
       router.push(nextRoute);
     });
@@ -2330,7 +2348,9 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     setDetailId(null);
   };
   const handleShipOrder = async (id: string) => {
-    if (!shipTrackingCode.trim()) return;
+    if (!shipTrackingCode.trim()) {
+      return;
+    }
     setActionLoading(true);
     await apiFetch(`/sales/orders/${id}/ship`, {
       method: 'PUT',
@@ -2352,9 +2372,13 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   };
   const handleChangePlan = async (id: string) => {
     const planName = prompt('Nome do novo plano:');
-    if (!planName) return;
+    if (!planName) {
+      return;
+    }
     const amount = prompt('Valor do novo plano (ex: 97.00):');
-    if (!amount) return;
+    if (!amount) {
+      return;
+    }
     setActionLoading(true);
     await apiFetch(`/sales/subscriptions/${id}/change-plan`, {
       method: 'PUT',

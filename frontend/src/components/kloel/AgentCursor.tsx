@@ -170,7 +170,9 @@ export function AgentCursor({
     recenterTimerRef.current = setTimeout(() => {
       const currentSurface = imageRef?.current || containerRef.current;
       const currentRect = currentSurface?.getBoundingClientRect();
-      if (!currentRect?.width || !currentRect?.height) return;
+      if (!currentRect?.width || !currentRect?.height) {
+        return;
+      }
       const center = { x: currentRect.width / 2, y: currentRect.height / 2 };
       lastAppliedTargetRef.current = Date.now();
       setDisplayPoint(center);

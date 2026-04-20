@@ -167,7 +167,9 @@ export class KloelController {
     const seen = new Set<string>();
     const contentMatches = messages
       .filter((message) => {
-        if (seen.has(message.threadId)) return false;
+        if (seen.has(message.threadId)) {
+          return false;
+        }
         seen.add(message.threadId);
         return true;
       })

@@ -18,31 +18,31 @@ import type { Break, PulseConfig } from '../types';
 import { httpGet, makeTestJwt } from './runtime-utils';
 
 // These endpoints must be protected (require auth)
-const PROTECTED_ENDPOINTS = [
-  '/autopilot/status',
-  '/products',
-  '/billing/status',
-];
+const PROTECTED_ENDPOINTS = ['/autopilot/status', '/products', '/billing/status'];
 
 /** Build an alg=none JWT (unsigned — must be rejected by server) */
 function makeAlgNoneJwt(): string {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
   const now = Math.floor(Date.now() / 1000);
-  const payload = Buffer.from(JSON.stringify({
-    sub: 'pulse-attacker',
-    email: 'attack@test.kloel.com',
-    workspaceId: 'fake-workspace',
-    role: 'ADMIN',
-    iat: now,
-    exp: now + 3600,
-  })).toString('base64url');
+  const payload = Buffer.from(
+    JSON.stringify({
+      sub: 'pulse-attacker',
+      email: 'attack@test.kloel.com',
+      workspaceId: 'fake-workspace',
+      role: 'ADMIN',
+      iat: now,
+      exp: now + 3600,
+    }),
+  ).toString('base64url');
   // No signature — alg=none means empty sig
   return `${header}.${payload}.`;
 }
 
 export async function checkAuthFlow(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const baseFile = 'scripts/pulse/parsers/auth-flow-tester.ts';
@@ -58,7 +58,9 @@ export async function checkAuthFlow(config: PulseConfig): Promise<Break[]> {
     } catch {
       continue; // backend not running
     }
-    if (resNoJwt.status === 0) continue; // network error
+    if (resNoJwt.status === 0) {
+      continue;
+    } // network error
 
     if (resNoJwt.status === 200) {
       breaks.push({
@@ -78,7 +80,9 @@ export async function checkAuthFlow(config: PulseConfig): Promise<Break[]> {
     } catch {
       continue;
     }
-    if (resBadJwt.status === 0) continue;
+    if (resBadJwt.status === 0) {
+      continue;
+    }
 
     if (resBadJwt.status === 200) {
       breaks.push({
@@ -98,7 +102,9 @@ export async function checkAuthFlow(config: PulseConfig): Promise<Break[]> {
     } catch {
       continue;
     }
-    if (resAlgNone.status === 0) continue;
+    if (resAlgNone.status === 0) {
+      continue;
+    }
 
     if (resAlgNone.status === 200) {
       breaks.push({
@@ -118,7 +124,9 @@ export async function checkAuthFlow(config: PulseConfig): Promise<Break[]> {
     } catch {
       continue;
     }
-    if (resValidJwt.status === 0) continue;
+    if (resValidJwt.status === 0) {
+      continue;
+    }
 
     if (resValidJwt.status >= 500) {
       breaks.push({

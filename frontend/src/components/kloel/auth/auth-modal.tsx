@@ -70,9 +70,15 @@ export function AuthModal({
   };
 
   const getPasswordStrength = (pwd: string): { level: number; label: string; color: string } => {
-    if (pwd.length === 0) return { level: 0, label: '', color: 'bg-gray-200' };
-    if (pwd.length < 6) return { level: 1, label: 'Fraca', color: 'bg-red-500' };
-    if (pwd.length < 8) return { level: 2, label: 'Media', color: 'bg-yellow-500' };
+    if (pwd.length === 0) {
+      return { level: 0, label: '', color: 'bg-gray-200' };
+    }
+    if (pwd.length < 6) {
+      return { level: 1, label: 'Fraca', color: 'bg-red-500' };
+    }
+    if (pwd.length < 8) {
+      return { level: 2, label: 'Media', color: 'bg-yellow-500' };
+    }
     if (pwd.length >= 8 && A_Z_RE.test(pwd) && RX_0_9_RE.test(pwd)) {
       return { level: 4, label: 'Forte', color: 'bg-green-500' };
     }
@@ -93,10 +99,18 @@ export function AuthModal({
     setErrors({});
     const newErrors: Record<string, string> = {};
 
-    if (!name.trim()) newErrors.name = 'Nome e obrigatorio';
-    if (password.length < 8) newErrors.password = 'Senha deve ter pelo menos 8 caracteres';
-    if (password !== confirmPassword) newErrors.confirmPassword = 'As senhas nao coincidem';
-    if (!acceptedTerms) newErrors.terms = 'Voce deve aceitar os termos';
+    if (!name.trim()) {
+      newErrors.name = 'Nome e obrigatorio';
+    }
+    if (password.length < 8) {
+      newErrors.password = 'Senha deve ter pelo menos 8 caracteres';
+    }
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'As senhas nao coincidem';
+    }
+    if (!acceptedTerms) {
+      newErrors.terms = 'Voce deve aceitar os termos';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -210,7 +224,9 @@ export function AuthModal({
 
   const passwordStrength = getPasswordStrength(password);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">

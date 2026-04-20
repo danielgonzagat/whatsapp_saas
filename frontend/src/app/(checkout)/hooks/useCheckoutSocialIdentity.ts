@@ -103,14 +103,18 @@ export function useCheckoutSocialIdentity({
   const [deviceFingerprint, setDeviceFingerprint] = useState('');
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     const nextFingerprint = ensureDeviceFingerprint();
     setDeviceFingerprint(nextFingerprint);
     setSnapshot(readStoredIdentity());
   }, []);
 
   useEffect(() => {
-    if (!enabled || !clientId) return;
+    if (!enabled || !clientId) {
+      return;
+    }
     if (window.google?.accounts?.id) {
       setSdkReady(true);
       return;
@@ -190,7 +194,9 @@ export function useCheckoutSocialIdentity({
 
   const hydrateGooglePeopleProfile = useCallback(
     async (baseSnapshot: CheckoutSocialIdentitySnapshot) => {
-      if (!googlePeopleScopesEnabled || !baseSnapshot.leadId) return;
+      if (!googlePeopleScopesEnabled || !baseSnapshot.leadId) {
+        return;
+      }
       if (profileHydrationLeadRef.current === baseSnapshot.leadId) {
         return;
       }
@@ -293,7 +299,9 @@ export function useCheckoutSocialIdentity({
 
     const accounts = window.google?.accounts?.id;
     const oauth2 = window.google?.accounts?.oauth2;
-    if (!accounts) return;
+    if (!accounts) {
+      return;
+    }
 
     accounts.initialize({
       client_id: clientId,
@@ -344,7 +352,9 @@ export function useCheckoutSocialIdentity({
       complement?: string;
       stepReached?: number;
     }) => {
-      if (!snapshot?.leadId) return;
+      if (!snapshot?.leadId) {
+        return;
+      }
 
       await fetch(`${API_BASE}/checkout/public/social-capture/${snapshot.leadId}`, {
         method: 'PATCH',
@@ -372,7 +382,9 @@ async function requestGoogleAccessToken(tokenClient: GoogleTokenClient, hint?: s
     const previousCallback = tokenClient.callback;
 
     const finish = (value: string | null) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       tokenClient.callback = previousCallback;
       window.clearTimeout(timeout);
@@ -417,7 +429,9 @@ function fallbackDeviceFingerprint(): string {
 
 function ensureDeviceFingerprint() {
   const existing = readFromStorage(DEVICE_STORAGE_SLOT);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
 
   const generated = globalThis.crypto?.randomUUID?.() || fallbackDeviceFingerprint();
   writeToStorage(DEVICE_STORAGE_SLOT, generated);
@@ -426,7 +440,9 @@ function ensureDeviceFingerprint() {
 
 function readStoredIdentity() {
   const raw = readFromStorage(IDENTITY_STORAGE_SLOT);
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
 
   try {
     const parsed = JSON.parse(raw) as CheckoutSocialIdentitySnapshot;
@@ -563,7 +579,9 @@ function normalizeQueryValue(value: string | null) {
 }
 
 function readFromStorage(key: string) {
-  if (typeof window === 'undefined') return '';
+  if (typeof window === 'undefined') {
+    return '';
+  }
   try {
     return window.localStorage.getItem(key) || '';
   } catch {
@@ -572,7 +590,9 @@ function readFromStorage(key: string) {
 }
 
 function writeToStorage(key: string, value: string) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     window.localStorage.setItem(key, value);
   } catch {

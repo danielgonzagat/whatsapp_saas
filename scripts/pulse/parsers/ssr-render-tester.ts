@@ -79,7 +79,9 @@ export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
       continue; // frontend not running
     }
 
-    if (result.status === 0) continue; // network error — frontend not up
+    if (result.status === 0) {
+      continue;
+    } // network error — frontend not up
 
     if (result.status >= 500) {
       breaks.push({
@@ -146,7 +148,9 @@ export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
     } catch {
       continue;
     }
-    if (result.status === 0) continue;
+    if (result.status === 0) {
+      continue;
+    }
 
     if (result.status >= 500) {
       breaks.push({

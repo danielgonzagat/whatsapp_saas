@@ -106,8 +106,12 @@ function resolveShippingModeDerived(
   config: DerivedStateArgs['config'],
   plan: DerivedStateArgs['plan'],
 ): DerivedShippingMode {
-  if (config?.shippingMode) return config.shippingMode;
-  if (plan?.freeShipping) return 'FREE';
+  if (config?.shippingMode) {
+    return config.shippingMode;
+  }
+  if (plan?.freeShipping) {
+    return 'FREE';
+  }
   return Number(plan?.shippingPrice || 0) > 0 ? 'FIXED' : 'FREE';
 }
 
@@ -120,7 +124,9 @@ function computeShippingInCentsDerived(
   if (shippingMode === 'VARIABLE') {
     return dynamicShippingInCents ?? variableShippingFloorInCents;
   }
-  if (shippingMode === 'FIXED') return fixedShippingInCents;
+  if (shippingMode === 'FIXED') {
+    return fixedShippingInCents;
+  }
   return 0;
 }
 
@@ -148,8 +154,12 @@ function resolveDerivedProductImage(
   config: DerivedStateArgs['config'],
   product: DerivedStateArgs['product'],
 ): string {
-  if (config?.productImage) return config.productImage;
-  if (product?.imageUrl) return product.imageUrl;
+  if (config?.productImage) {
+    return config.productImage;
+  }
+  if (product?.imageUrl) {
+    return product.imageUrl;
+  }
   if (Array.isArray(product?.images)) {
     return product.images.find((entry) => typeof entry === 'string' && entry.trim()) || '';
   }
@@ -159,7 +169,9 @@ function resolveDerivedProductImage(
 function resolveDerivedUnavailableReason(
   paymentProvider: DerivedStateArgs['paymentProvider'],
 ): string {
-  if (paymentProvider?.checkoutEnabled !== false) return '';
+  if (paymentProvider?.checkoutEnabled !== false) {
+    return '';
+  }
   return paymentProvider.unavailableReason || 'Conecte sua conta Stripe para começar a vender.';
 }
 
@@ -209,7 +221,9 @@ function buildDerivedFooterLegal(
   brandName: string,
   formatCnpj: (value?: string | null) => string,
 ): string {
-  if (config?.footerText) return config.footerText;
+  if (config?.footerText) {
+    return config.footerText;
+  }
   const companyName = merchant?.companyName || brandName;
   const cnpjSuffix = merchant?.cnpj ? ` - CNPJ: ${formatCnpj(merchant.cnpj)}` : '';
   return `Copyright ${new Date().getFullYear()} ${companyName}${cnpjSuffix}`;
@@ -420,21 +434,31 @@ const PRECHECK_BOLETO_CPF_ERROR: PrecheckError = {
 
 function isPayMethodUnsupported(input: FinalizeOrderPrecheckInput): boolean {
   const method = input.payMethod;
-  if (method === 'card') return !input.supportsCard;
-  if (method === 'pix') return !input.supportsPix;
+  if (method === 'card') {
+    return !input.supportsCard;
+  }
+  if (method === 'pix') {
+    return !input.supportsPix;
+  }
   return !input.supportsBoleto;
 }
 
-function findFinalizePrecheckError(
-  input: FinalizeOrderPrecheckInput,
-): PrecheckError | null {
-  if (!input.identityValid) return PRECHECK_IDENTITY_ERROR;
-  if (!input.addressValid) return PRECHECK_ADDRESS_ERROR;
-  if (!input.hasWorkspaceAndPlan) return PRECHECK_NO_WORKSPACE_ERROR;
+function findFinalizePrecheckError(input: FinalizeOrderPrecheckInput): PrecheckError | null {
+  if (!input.identityValid) {
+    return PRECHECK_IDENTITY_ERROR;
+  }
+  if (!input.addressValid) {
+    return PRECHECK_ADDRESS_ERROR;
+  }
+  if (!input.hasWorkspaceAndPlan) {
+    return PRECHECK_NO_WORKSPACE_ERROR;
+  }
   if (input.checkoutUnavailableReason) {
     return { message: input.checkoutUnavailableReason };
   }
-  if (isPayMethodUnsupported(input)) return PRECHECK_METHOD_ERROR;
+  if (isPayMethodUnsupported(input)) {
+    return PRECHECK_METHOD_ERROR;
+  }
   if (input.payMethod === 'boleto' && input.cpfDigits < 11) {
     return PRECHECK_BOLETO_CPF_ERROR;
   }

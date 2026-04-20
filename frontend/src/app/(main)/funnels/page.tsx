@@ -11,9 +11,13 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 function formatTime(value?: string) {
-  if (!value) return '';
+  if (!value) {
+    return '';
+  }
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
   return date.toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -41,7 +45,9 @@ export default function FunnelsPage() {
   const [executions, setExecutions] = useState<FlowExecutionSummary[]>([]);
 
   const refresh = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -68,12 +74,20 @@ export default function FunnelsPage() {
     const q = search.trim().toLowerCase();
     return (conversations || [])
       .filter((c) => {
-        if (statusFilter !== 'ALL' && (c.status || '').toUpperCase() !== statusFilter) return false;
+        if (statusFilter !== 'ALL' && (c.status || '').toUpperCase() !== statusFilter) {
+          return false;
+        }
         const hasAgent = Boolean(c.assignedAgent?.id);
-        if (assignedFilter === 'UNASSIGNED' && hasAgent) return false;
-        if (assignedFilter === 'ASSIGNED' && !hasAgent) return false;
+        if (assignedFilter === 'UNASSIGNED' && hasAgent) {
+          return false;
+        }
+        if (assignedFilter === 'ASSIGNED' && !hasAgent) {
+          return false;
+        }
 
-        if (!q) return true;
+        if (!q) {
+          return true;
+        }
         const name = (c.contact?.name || '').toLowerCase();
         const phone = (c.contact?.phone || '').toLowerCase();
         return name.includes(q) || phone.includes(q);

@@ -55,7 +55,9 @@ function readErrorMessage(error: unknown, fallback: string): string {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
   return date.toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -137,12 +139,16 @@ export default function WebinariosPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const fetchWebinars = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
       const res = await apiFetch<WebinarListResponse>('/webinars');
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setWebinars(Array.isArray(res.data?.webinars) ? res.data.webinars : []);
     } catch (error: unknown) {
       setError(readErrorMessage(error, 'Falha ao carregar webinarios'));
@@ -152,11 +158,15 @@ export default function WebinariosPage() {
   }, [workspaceId]);
 
   useEffect(() => {
-    if (isAuthenticated && workspaceId) void fetchWebinars();
+    if (isAuthenticated && workspaceId) {
+      void fetchWebinars();
+    }
   }, [fetchWebinars, isAuthenticated, workspaceId]);
 
   const handleCreate = async () => {
-    if (!formTitle.trim() || !formUrl.trim() || !formDate) return;
+    if (!formTitle.trim() || !formUrl.trim() || !formDate) {
+      return;
+    }
     setSaving(true);
     try {
       const res = await apiFetch<{ id: string }>('/webinars', {
@@ -168,7 +178,9 @@ export default function WebinariosPage() {
           description: formDescription.trim() || undefined,
         },
       });
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setShowModal(false);
       setFormTitle('');
       setFormUrl('');
@@ -198,7 +210,9 @@ export default function WebinariosPage() {
   };
 
   const handleEdit = async () => {
-    if (!editingWebinar || !editTitle.trim() || !editUrl.trim() || !editDate) return;
+    if (!editingWebinar || !editTitle.trim() || !editUrl.trim() || !editDate) {
+      return;
+    }
     setEditSaving(true);
     try {
       const res = await webinarApi.update(editingWebinar.id, {
@@ -207,7 +221,9 @@ export default function WebinariosPage() {
         date: editDate,
         description: editDescription.trim() || undefined,
       });
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setEditingWebinar(null);
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
       fetchWebinars();
@@ -222,7 +238,9 @@ export default function WebinariosPage() {
     setDeletingId(id);
     try {
       const res = await webinarApi.remove(id);
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setConfirmDeleteId(null);
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
       fetchWebinars();

@@ -20,9 +20,15 @@ export interface AlertStyleTokens {
 }
 
 export function resolveNoticeTone(type: AlertType): 'danger' | 'warning' | 'info' | 'neutral' {
-  if (type === 'error') return 'danger';
-  if (type === 'warning') return 'warning';
-  if (type === 'info') return 'info';
+  if (type === 'error') {
+    return 'danger';
+  }
+  if (type === 'warning') {
+    return 'warning';
+  }
+  if (type === 'info') {
+    return 'info';
+  }
   return 'neutral';
 }
 

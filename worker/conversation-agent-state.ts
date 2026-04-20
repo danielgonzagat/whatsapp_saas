@@ -16,8 +16,12 @@ function normalizeDirection(direction?: string | null): 'INBOUND' | 'OUTBOUND' |
   const normalized = String(direction || '')
     .trim()
     .toUpperCase();
-  if (normalized === 'INBOUND') return 'INBOUND';
-  if (normalized === 'OUTBOUND') return 'OUTBOUND';
+  if (normalized === 'INBOUND') {
+    return 'INBOUND';
+  }
+  if (normalized === 'OUTBOUND') {
+    return 'OUTBOUND';
+  }
   return null;
 }
 
@@ -53,10 +57,16 @@ export function isConversationPendingForAgent(conversation: ConversationLike): b
   const status = String(conversation.status || '')
     .trim()
     .toUpperCase();
-  if (status === 'CLOSED') return false;
-  if (resolveConversationOwner(conversation) !== 'AGENT') return false;
+  if (status === 'CLOSED') {
+    return false;
+  }
+  if (resolveConversationOwner(conversation) !== 'AGENT') {
+    return false;
+  }
   const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
-  if (unreadCount > 0) return true;
+  if (unreadCount > 0) {
+    return true;
+  }
   return hasUnansweredInbound(conversation.messages);
 }
 

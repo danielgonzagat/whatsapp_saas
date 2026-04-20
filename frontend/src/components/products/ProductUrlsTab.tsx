@@ -90,7 +90,9 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
 
   useEffect(
     () => () => {
-      if (codeCopiedTimer.current) clearTimeout(codeCopiedTimer.current);
+      if (codeCopiedTimer.current) {
+        clearTimeout(codeCopiedTimer.current);
+      }
     },
     [],
   );
@@ -136,7 +138,9 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
     }
   };
   const handleDelete = async (id: string) => {
-    if (!confirm('Excluir URL?')) return;
+    if (!confirm('Excluir URL?')) {
+      return;
+    }
     await apiFetch(`/products/${productId}/urls/${id}`, { method: 'DELETE' });
     fetch_();
   };
@@ -190,11 +194,13 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   const handleCopyCode = () => {
     navigator.clipboard.writeText(widgetCode);
     setCodeCopied(true);
-    if (codeCopiedTimer.current) clearTimeout(codeCopiedTimer.current);
+    if (codeCopiedTimer.current) {
+      clearTimeout(codeCopiedTimer.current);
+    }
     codeCopiedTimer.current = setTimeout(() => setCodeCopied(false), 2000);
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2
@@ -204,6 +210,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
         />
       </div>
     );
+  }
 
   return (
     <div className="space-y-6">

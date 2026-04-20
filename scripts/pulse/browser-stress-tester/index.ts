@@ -70,9 +70,13 @@ const PAGE_PRIORITY: Record<string, number> = {
 const BROWSER_EVIDENCE_ARTIFACT = 'PULSE_BROWSER_EVIDENCE.json';
 
 function getPagePriority(route: string): number {
-  if (PAGE_PRIORITY[route] !== undefined) return PAGE_PRIORITY[route];
+  if (PAGE_PRIORITY[route] !== undefined) {
+    return PAGE_PRIORITY[route];
+  }
   for (const [prefix, priority] of Object.entries(PAGE_PRIORITY)) {
-    if (route.startsWith(prefix + '/')) return priority + 1;
+    if (route.startsWith(prefix + '/')) {
+      return priority + 1;
+    }
   }
   return 100;
 }
@@ -116,7 +120,10 @@ function writeBrowserArtifact(rootDir: string, result: BrowserStressRunResult): 
   return artifactPath;
 }
 
-function finalizeResult(rootDir: string, result: Omit<BrowserStressRunResult, 'artifactPath'>): BrowserStressRunResult {
+function finalizeResult(
+  rootDir: string,
+  result: Omit<BrowserStressRunResult, 'artifactPath'>,
+): BrowserStressRunResult {
   const artifactPath = writeBrowserArtifact(rootDir, {
     ...result,
     artifactPath: null,
@@ -127,7 +134,10 @@ function finalizeResult(rootDir: string, result: Omit<BrowserStressRunResult, 'a
   };
 }
 
-async function probeUrl(url: string, timeoutMs: number = 5000): Promise<{ reachable: boolean; detail: string }> {
+async function probeUrl(
+  url: string,
+  timeoutMs: number = 5000,
+): Promise<{ reachable: boolean; detail: string }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -156,19 +166,31 @@ function normalizeErrorDetail(error: unknown, max: number = 400): string {
   const text = String((error as Error)?.message || error || 'Unknown browser failure')
     .replace(/\s+/g, ' ')
     .trim();
-  if (text.length <= max) return text;
+  if (text.length <= max) {
+    return text;
+  }
   return `${text.slice(0, max - 3)}...`;
 }
 
 function buildSummaryForPreflight(status: BrowserPreflightStatus): string {
-  if (status === 'playwright_missing') return 'Browser preflight failed: playwright_missing.';
-  if (status === 'frontend_unreachable') return 'Browser preflight failed: frontend_unreachable.';
-  if (status === 'backend_auth_unreachable') return 'Browser preflight failed: backend_auth_unreachable.';
-  if (status === 'chromium_launch_blocked') return 'Browser preflight failed: chromium_launch_blocked.';
+  if (status === 'playwright_missing') {
+    return 'Browser preflight failed: playwright_missing.';
+  }
+  if (status === 'frontend_unreachable') {
+    return 'Browser preflight failed: frontend_unreachable.';
+  }
+  if (status === 'backend_auth_unreachable') {
+    return 'Browser preflight failed: backend_auth_unreachable.';
+  }
+  if (status === 'chromium_launch_blocked') {
+    return 'Browser preflight failed: chromium_launch_blocked.';
+  }
   return 'Browser preflight passed.';
 }
 
-export async function runBrowserStressTest(options: BrowserStressRunOptions = {}): Promise<BrowserStressRunResult> {
+export async function runBrowserStressTest(
+  options: BrowserStressRunOptions = {},
+): Promise<BrowserStressRunResult> {
   const flags: Required<BrowserStressRunOptions> = {
     headed: options.headed ?? false,
     fast: options.fast ?? false,
@@ -178,7 +200,9 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
     log: options.log ?? true,
   };
   const log = (...args: Array<string | number>) => {
-    if (flags.log) console.log(...args);
+    if (flags.log) {
+      console.log(...args);
+    }
   };
 
   const config = detectConfig(process.cwd());
@@ -201,7 +225,9 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
     log('  Building functional map...');
     const scanResult = await fullScan(config);
     const fmapResult = buildFunctionalMap(config, scanResult.coreData);
-    log(`  Functional map: ${fmapResult.summary.totalPages} pages, ${fmapResult.summary.totalInteractions} static interactions`);
+    log(
+      `  Functional map: ${fmapResult.summary.totalPages} pages, ${fmapResult.summary.totalInteractions} static interactions`,
+    );
 
     const stressConfig: StressTestConfig = {
       frontendUrl,
@@ -225,9 +251,14 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
       chromium = require('playwright').chromium;
     } catch {
       try {
-        chromium = require(require.resolve('playwright', { paths: [path.join(config.rootDir, 'node_modules')] })).chromium;
+        chromium = require(
+          require.resolve('playwright', { paths: [path.join(config.rootDir, 'node_modules')] }),
+        ).chromium;
       } catch {
-        const preflight = buildPreflight('playwright_missing', 'Playwright is not installed in the current environment.');
+        const preflight = buildPreflight(
+          'playwright_missing',
+          'Playwright is not installed in the current environment.',
+        );
         return finalizeResult(config.rootDir, {
           attempted: true,
           executed: false,
@@ -239,7 +270,8 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
           preflight,
           summary: buildSummaryForPreflight(preflight.status),
           stressResult: null,
-          error: 'Playwright not installed. Run: npm install -D playwright && npx playwright install chromium',
+          error:
+            'Playwright not installed. Run: npm install -D playwright && npx playwright install chromium',
         });
       }
     }
@@ -328,7 +360,10 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
         backendUrl,
         screenshotDir,
         reportPath: null,
-        preflight: buildPreflight('frontend_unreachable', 'Frontend did not hold an authenticated browser session after auth injection.'),
+        preflight: buildPreflight(
+          'frontend_unreachable',
+          'Frontend did not hold an authenticated browser session after auth injection.',
+        ),
         summary: buildSummaryForPreflight('frontend_unreachable'),
         stressResult: null,
         error: `Auth injection failed. Make sure the frontend is running at ${frontendUrl}`,
@@ -337,22 +372,34 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
     log('  Auth verified — dashboard loaded');
     log('');
 
-    let pagesToTest = fmapResult.pages.filter(item => !item.isRedirect);
-    pagesToTest = pagesToTest.filter(item => {
-      if (item.route.includes(':') && !item.route.startsWith('/products/')) return false;
+    let pagesToTest = fmapResult.pages.filter((item) => !item.isRedirect);
+    pagesToTest = pagesToTest.filter((item) => {
+      if (item.route.includes(':') && !item.route.startsWith('/products/')) {
+        return false;
+      }
       return true;
     });
 
     if (flags.pageFilter) {
-      pagesToTest = pagesToTest.filter(item => item.route === flags.pageFilter || item.route.startsWith(flags.pageFilter + '/'));
+      pagesToTest = pagesToTest.filter(
+        (item) => item.route === flags.pageFilter || item.route.startsWith(flags.pageFilter + '/'),
+      );
     }
     if (flags.groupFilter) {
-      pagesToTest = pagesToTest.filter(item => item.group === flags.groupFilter);
+      pagesToTest = pagesToTest.filter((item) => item.group === flags.groupFilter);
     }
 
     pagesToTest.sort((a, b) => getPagePriority(a.route) - getPagePriority(b.route));
 
-    const publicSkip = new Set(['/', '/login', '/register', '/terms', '/privacy', '/onboarding', '/onboarding-chat']);
+    const publicSkip = new Set([
+      '/',
+      '/login',
+      '/register',
+      '/terms',
+      '/privacy',
+      '/onboarding',
+      '/onboarding-chat',
+    ]);
     log(`  Testing ${pagesToTest.length} pages...`);
     log(`  ${'─'.repeat(60)}`);
 
@@ -389,11 +436,13 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
         const result = await testPage(page, route, fmapPage, stressConfig, createdData);
         pageResults.push(result);
 
-        const ok = result.results.filter(item => item.browserStatus === 'FUNCIONA').length;
-        const broken = result.results.filter(item => item.browserStatus === 'QUEBRADO').length;
-        const facade = result.results.filter(item => item.browserStatus === 'FACHADA').length;
+        const ok = result.results.filter((item) => item.browserStatus === 'FUNCIONA').length;
+        const broken = result.results.filter((item) => item.browserStatus === 'QUEBRADO').length;
+        const facade = result.results.filter((item) => item.browserStatus === 'FACHADA').length;
 
-        log(` ${result.loadTimeMs}ms | ${result.elementsFound} found | ${ok} ok, ${broken} broken, ${facade} facade`);
+        log(
+          ` ${result.loadTimeMs}ms | ${result.elementsFound} found | ${ok} ok, ${broken} broken, ${facade} facade`,
+        );
 
         if (result.loadStatus === 'redirect' || page.url().includes('/login')) {
           log('  ↳ Re-injecting auth...');
@@ -424,7 +473,7 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
     }
 
     const totalDurationMs = Date.now() - startTime;
-    const allResults = pageResults.flatMap(item => item.results);
+    const allResults = pageResults.flatMap((item) => item.results);
     const byStatus: Record<BrowserTestStatus, number> = {
       FUNCIONA: 0,
       QUEBRADO: 0,
@@ -433,12 +482,19 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
       CRASH: 0,
       NAO_TESTAVEL: 0,
     };
-    for (const result of allResults) byStatus[result.browserStatus]++;
+    for (const result of allResults) {
+      byStatus[result.browserStatus]++;
+    }
 
     const totalElements = pageResults.reduce((sum, item) => sum + item.elementsFound, 0);
-    const loadTimes = pageResults.filter(item => item.loadTimeMs > 0).map(item => item.loadTimeMs);
-    const avgLoad = loadTimes.length > 0 ? loadTimes.reduce((a, b) => a + b, 0) / loadTimes.length : 0;
-    const crashes = pageResults.filter(item => item.loadStatus === 'error').map(item => item.route);
+    const loadTimes = pageResults
+      .filter((item) => item.loadTimeMs > 0)
+      .map((item) => item.loadTimeMs);
+    const avgLoad =
+      loadTimes.length > 0 ? loadTimes.reduce((a, b) => a + b, 0) / loadTimes.length : 0;
+    const crashes = pageResults
+      .filter((item) => item.loadStatus === 'error')
+      .map((item) => item.route);
 
     const stressResult: StressTestResult = {
       config: stressConfig,
@@ -477,9 +533,10 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
       screenshotDir,
       reportPath,
       preflight,
-      summary: blockingInteractions > 0
-        ? `Browser evidence executed with ${blockingInteractions} blocking interaction(s).`
-        : 'Browser evidence executed without blocking interactions.',
+      summary:
+        blockingInteractions > 0
+          ? `Browser evidence executed with ${blockingInteractions} blocking interaction(s).`
+          : 'Browser evidence executed without blocking interactions.',
       stressResult,
     });
   } catch (error: any) {
@@ -516,7 +573,7 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error('PULSE Stress Tester error:', error.message || error);
     process.exit(2);
   });

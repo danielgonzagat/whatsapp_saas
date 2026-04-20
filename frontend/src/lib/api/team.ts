@@ -30,7 +30,9 @@ export interface TeamListResponse {
 
 export async function listTeam(): Promise<TeamListResponse> {
   const res = await apiFetch<TeamListResponse>('/team');
-  if (res.error) throw new Error(res.error || 'Erro ao listar equipe');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao listar equipe');
+  }
   return res.data ?? { members: [], invites: [] };
 }
 
@@ -39,19 +41,25 @@ export async function inviteTeamMember(email: string, role: string): Promise<Tea
     method: 'POST',
     body: { email, role },
   });
-  if (res.error) throw new Error(res.error || 'Erro ao enviar convite');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao enviar convite');
+  }
   invalidateTeam();
   return res.data as TeamInvite;
 }
 
 export async function revokeTeamInvite(id: string): Promise<void> {
   const res = await apiFetch<void>(`/team/invite/${id}`, { method: 'DELETE' });
-  if (res.error) throw new Error(res.error || 'Erro ao cancelar convite');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao cancelar convite');
+  }
   invalidateTeam();
 }
 
 export async function removeTeamMember(id: string): Promise<void> {
   const res = await apiFetch<void>(`/team/member/${id}`, { method: 'DELETE' });
-  if (res.error) throw new Error(res.error || 'Erro ao remover membro');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao remover membro');
+  }
   invalidateTeam();
 }

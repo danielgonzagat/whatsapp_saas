@@ -47,9 +47,13 @@ export class AdminAuditInterceptor implements NestInterceptor {
   }
 
   private shouldAudit(context: ExecutionContext, req: Request | undefined): boolean {
-    if (!req || SAFE_METHODS.has(req.method)) return false;
+    if (!req || SAFE_METHODS.has(req.method)) {
+      return false;
+    }
     const path = req.path ?? req.url ?? '';
-    if (!path.startsWith('/admin/')) return false;
+    if (!path.startsWith('/admin/')) {
+      return false;
+    }
     const noAudit = this.reflector.getAllAndOverride<boolean>(NO_AUDIT_KEY, [
       context.getHandler(),
       context.getClass(),

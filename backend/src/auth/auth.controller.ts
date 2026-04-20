@@ -5,12 +5,15 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { AuthService } from './auth.service';
 import { AppleOAuthDto } from './dto/apple-oauth.dto';
 import { CheckEmailDto } from './dto/check-email.dto';
+import { FacebookOAuthDto } from './dto/facebook-oauth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { GoogleOAuthDto } from './dto/google-oauth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { SendWhatsAppCodeDto, VerifyWhatsAppCodeDto } from './dto/whatsapp-auth.dto';
 import { Public } from './public.decorator';
@@ -30,7 +33,9 @@ export class AuthController {
   @Get('check-email')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async checkEmailQuery(@Query('email') email?: string) {
-    if (!email) return { exists: false };
+    if (!email) {
+      return { exists: false };
+    }
     return this.auth.checkEmail(email);
   }
 
@@ -120,6 +125,17 @@ export class AuthController {
     });
   }
 
+  @Public()
+  @Post('oauth/facebook')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async facebookOAuthLogin(@Req() req: Request, @Body() body: FacebookOAuthDto) {
+    return this.auth.loginWithFacebookAccessToken({
+      accessToken: body.accessToken,
+      userId: body.userId,
+      ip: req.ip,
+    });
+  }
+
   /**
    * Apple Sign-In: recebe o identityToken emitido pelo Sign in with Apple,
    * valida e cria/loga o usuario.
@@ -133,6 +149,24 @@ export class AuthController {
       user: body.user,
       ip: req.ip,
     });
+  }
+
+  @Public()
+  @Post('magic-link/request')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  requestMagicLink(@Req() req: Request, @Body() body: RequestMagicLinkDto) {
+    return this.auth.requestMagicLink({
+      email: body.email,
+      redirectTo: body.redirectTo,
+      ip: req.ip,
+    });
+  }
+
+  @Public()
+  @Post('magic-link/verify')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  verifyMagicLink(@Req() req: Request, @Body() body: VerifyMagicLinkDto) {
+    return this.auth.verifyMagicLink(body.token, req.ip);
   }
 
   /**

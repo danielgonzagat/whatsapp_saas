@@ -88,12 +88,16 @@ export class PartnershipsService {
     const existing = await this.prisma.agent.findFirst({
       where: { email, workspaceId },
     });
-    if (existing) throw new ConflictException('Colaborador já existe neste workspace');
+    if (existing) {
+      throw new ConflictException('Colaborador já existe neste workspace');
+    }
 
     const existingInvite = await this.prisma.collaboratorInvite.findFirst({
       where: { email, workspaceId, status: 'PENDING' },
     });
-    if (existingInvite) throw new ConflictException('Convite já enviado para este email');
+    if (existingInvite) {
+      throw new ConflictException('Convite já enviado para este email');
+    }
 
     const invite = await this.prisma.collaboratorInvite.create({
       data: {
@@ -126,8 +130,12 @@ export class PartnershipsService {
     const agent = await this.prisma.agent.findFirst({
       where: { id: agentId, workspaceId },
     });
-    if (!agent) throw new NotFoundException('Colaborador não encontrado');
-    if (agent.role === 'ADMIN') throw new ConflictException('Não é possível remover o admin');
+    if (!agent) {
+      throw new NotFoundException('Colaborador não encontrado');
+    }
+    if (agent.role === 'ADMIN') {
+      throw new ConflictException('Não é possível remover o admin');
+    }
     await this.auditService.log({
       workspaceId,
       action: 'DELETE_RECORD',
@@ -145,9 +153,15 @@ export class PartnershipsService {
     params?: { type?: string; status?: string; search?: string },
   ) {
     const where: Record<string, unknown> = { workspaceId };
-    if (params?.type && params.type !== 'todos') where.type = params.type;
-    if (params?.status) where.status = params.status;
-    if (params?.search) where.partnerName = { contains: params.search, mode: 'insensitive' };
+    if (params?.type && params.type !== 'todos') {
+      where.type = params.type;
+    }
+    if (params?.status) {
+      where.status = params.status;
+    }
+    if (params?.search) {
+      where.partnerName = { contains: params.search, mode: 'insensitive' };
+    }
 
     const affiliates = await this.prisma.affiliatePartner.findMany({
       where,
@@ -204,7 +218,9 @@ export class PartnershipsService {
     const affiliate = await this.prisma.affiliatePartner.findFirst({
       where: { id, workspaceId },
     });
-    if (!affiliate) throw new NotFoundException('Parceiro não encontrado');
+    if (!affiliate) {
+      throw new NotFoundException('Parceiro não encontrado');
+    }
     return { affiliate };
   }
 
@@ -255,7 +271,9 @@ export class PartnershipsService {
     const partner = await this.prisma.affiliatePartner.findFirst({
       where: { id, workspaceId },
     });
-    if (!partner) throw new NotFoundException('Parceiro não encontrado');
+    if (!partner) {
+      throw new NotFoundException('Parceiro não encontrado');
+    }
     // Generate daily performance data from creation date
     const days = Math.min(30, Math.ceil((Date.now() - partner.createdAt.getTime()) / 86400000));
     const dailySales = Array.from({ length: days }, (_, i) => ({
@@ -330,9 +348,15 @@ export class PartnershipsService {
     });
 
     contacts.sort((a, b) => {
-      if (!a.lastMessageTime && !b.lastMessageTime) return 0;
-      if (!a.lastMessageTime) return 1;
-      if (!b.lastMessageTime) return -1;
+      if (!a.lastMessageTime && !b.lastMessageTime) {
+        return 0;
+      }
+      if (!a.lastMessageTime) {
+        return 1;
+      }
+      if (!b.lastMessageTime) {
+        return -1;
+      }
       return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
     });
 

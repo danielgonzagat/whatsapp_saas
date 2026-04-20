@@ -16,7 +16,9 @@ function isRecord(value: unknown): value is JsonRecord {
 
 export async function getKloelHealth(): Promise<KloelHealth> {
   const res = await apiFetch<unknown>(`/kloel/health`);
-  if (res.error) throw new Error('KLOEL offline');
+  if (res.error) {
+    throw new Error('KLOEL offline');
+  }
   const data = isRecord(res.data) ? res.data : null;
   return {
     status: data?.status === 'online' ? 'online' : 'offline',
@@ -35,7 +37,9 @@ export async function uploadPdf(workspaceId: string, file: File): Promise<JsonRe
       body: formData,
     }),
   );
-  if (!res.ok) throw new Error('Failed to upload PDF');
+  if (!res.ok) {
+    throw new Error('Failed to upload PDF');
+  }
   const payload = await res.json();
   return isRecord(payload) ? payload : {};
 }
@@ -61,7 +65,9 @@ export async function uploadChatFile(file: File): Promise<{
       'x-workspace-id': tokenStorage.getWorkspaceId() || '',
     },
   });
-  if (!res.ok) throw new Error('Failed to upload chat file');
+  if (!res.ok) {
+    throw new Error('Failed to upload chat file');
+  }
   return res.json();
 }
 
@@ -99,7 +105,9 @@ export async function createPaymentLink(
       },
     },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/payments'));
   return res.data as PaymentLinkResponse;
 }

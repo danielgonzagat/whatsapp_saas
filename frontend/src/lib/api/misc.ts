@@ -103,8 +103,12 @@ export const checkoutPublicApi = {
 
 export async function getAdSpendReport(params?: { startDate?: string; endDate?: string }) {
   const qs = new URLSearchParams();
-  if (params?.startDate) qs.set('startDate', params.startDate);
-  if (params?.endDate) qs.set('endDate', params.endDate);
+  if (params?.startDate) {
+    qs.set('startDate', params.startDate);
+  }
+  if (params?.endDate) {
+    qs.set('endDate', params.endDate);
+  }
   const q = qs.toString();
   return apiFetch<{ spend: number; impressions: number; clicks: number; cpa: number }>(
     `/reports/ad-spend${q ? `?${q}` : ''}`,
@@ -133,7 +137,9 @@ export async function registerNotificationDevice(
     method: 'POST',
     body: { token, platform },
   });
-  if (res.error) throw new Error('Failed to register device');
+  if (res.error) {
+    throw new Error('Failed to register device');
+  }
   return res.data as { deviceId: string };
 }
 
@@ -141,9 +147,13 @@ export async function registerNotificationDevice(
 
 export async function getMetrics(token?: string): Promise<string> {
   const headers: Record<string, string> = {};
-  if (token) headers.authorization = `Bearer ${token}`;
+  if (token) {
+    headers.authorization = `Bearer ${token}`;
+  }
   const res = await fetch(`${API_BASE}/metrics`, { headers });
-  if (!res.ok) throw new Error('Failed to fetch metrics');
+  if (!res.ok) {
+    throw new Error('Failed to fetch metrics');
+  }
   return res.text();
 }
 
@@ -154,7 +164,9 @@ export async function getQueueMetrics(
     await apiFetch<
       Record<string, { waiting: number; active: number; completed: number; failed: number }>
     >(`/metrics/queues`);
-  if (res.error) throw new Error('Failed to fetch queue metrics');
+  if (res.error) {
+    throw new Error('Failed to fetch queue metrics');
+  }
   return res.data as Record<
     string,
     { waiting: number; active: number; completed: number; failed: number }
@@ -180,11 +192,17 @@ export async function listCalendarEvents(
   _token?: string,
 ): Promise<CalendarEvent[]> {
   const params = new URLSearchParams();
-  if (startDate) params.append('startDate', startDate);
-  if (endDate) params.append('endDate', endDate);
+  if (startDate) {
+    params.append('startDate', startDate);
+  }
+  if (endDate) {
+    params.append('endDate', endDate);
+  }
 
   const res = await apiFetch<CalendarEvent[]>(`/calendar/events?${params.toString()}`);
-  if (res.error) return [];
+  if (res.error) {
+    return [];
+  }
   return res.data ?? [];
 }
 
@@ -196,7 +214,9 @@ export async function createCalendarEvent(
     method: 'POST',
     body: event,
   });
-  if (res.error) throw new Error(res.error || 'Erro ao criar evento');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao criar evento');
+  }
   mutate((key: string) => typeof key === 'string' && key.startsWith('/calendar'));
   return res.data as CalendarEvent;
 }
@@ -208,7 +228,9 @@ export async function cancelCalendarEvent(
   const res = await apiFetch<{ success: boolean }>(`/calendar/events/${eventId}`, {
     method: 'DELETE',
   });
-  if (res.error) throw new Error(res.error || 'Erro ao cancelar evento');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao cancelar evento');
+  }
   mutate((key: string) => typeof key === 'string' && key.startsWith('/calendar'));
   return res.data as { success: boolean };
 }
@@ -365,7 +387,9 @@ export async function scheduleFollowUp(
     method: 'POST',
     body: { workspaceId, ...config },
   });
-  if (res.error) throw new Error(res.error || 'Erro ao agendar follow-up');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao agendar follow-up');
+  }
   mutate((key: string) => typeof key === 'string' && key.startsWith('/followups'));
   return res.data as { success: boolean; jobId?: string; message?: string };
 }
@@ -385,7 +409,9 @@ export async function listScheduledFollowUps(
       status: string;
     }>;
   }>(`/followups?workspaceId=${encodeURIComponent(workspaceId)}`);
-  if (res.error) return [];
+  if (res.error) {
+    return [];
+  }
   return res.data?.followups || [];
 }
 
@@ -412,7 +438,9 @@ export async function uploadDocument(
   formData.append('type', type);
 
   const headers: HeadersInit = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   const res = await fetch(`${API_BASE}/media/documents/upload`, {
     method: 'POST',
@@ -433,7 +461,9 @@ export async function listDocuments(
   _token?: string,
 ): Promise<DocumentUpload[]> {
   const res = await apiFetch<{ documents: DocumentUpload[] }>(`/media/documents`);
-  if (res.error) return [];
+  if (res.error) {
+    return [];
+  }
   return res.data?.documents || [];
 }
 
@@ -466,7 +496,9 @@ export async function listObjectionScripts(
   const res = await apiFetch<{ memories: ObjectionMemory[] }>(
     `/kloel/memory/${workspaceId}/list?category=objection_script`,
   );
-  if (res.error) return [];
+  if (res.error) {
+    return [];
+  }
   return (res.data?.memories || []).map((m) => ({
     id: m.id,
     objection: m.value?.objection || '',
@@ -663,7 +695,9 @@ export async function patchFollowup(
     method: 'PATCH',
     body: data,
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   mutate((k: string) => typeof k === 'string' && k.startsWith('/followups'));
   return res.data;
 }
@@ -684,7 +718,9 @@ export async function getKloelFollowups(contactId?: string): Promise<KloelFollow
         `/kloel/followups/${encodeURIComponent(contactId)}`,
       )
     : await apiFetch<KloelFollowup[] | { followups: KloelFollowup[] }>('/kloel/followups');
-  if (res.error) return [];
+  if (res.error) {
+    return [];
+  }
   const data = res.data;
   return Array.isArray(data) ? data : ((data as { followups: KloelFollowup[] })?.followups ?? []);
 }
@@ -714,9 +750,15 @@ export async function listMarketplaceTemplates(params?: {
   limit?: number;
 }): Promise<Array<Record<string, unknown>>> {
   const qs = new URLSearchParams();
-  if (params?.category) qs.set('category', params.category);
-  if (params?.search) qs.set('search', params.search);
-  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.category) {
+    qs.set('category', params.category);
+  }
+  if (params?.search) {
+    qs.set('search', params.search);
+  }
+  if (params?.limit) {
+    qs.set('limit', String(params.limit));
+  }
   const query = qs.toString();
   interface TemplateListResponse {
     templates?: Array<Record<string, unknown>>;
@@ -724,7 +766,9 @@ export async function listMarketplaceTemplates(params?: {
   const res = await apiFetch<Array<Record<string, unknown>> | TemplateListResponse>(
     `/marketplace/templates${query ? `?${query}` : ''}`,
   );
-  if (res.error) return [];
+  if (res.error) {
+    return [];
+  }
   const data = res.data;
   return Array.isArray(data) ? data : ((data as TemplateListResponse)?.templates ?? []);
 }
@@ -747,7 +791,9 @@ export async function importProducts(data: {
       body: data,
     },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return {
     imported: Number(res.data?.imported || 0),
     errors: Array.isArray(res.data?.errors) ? res.data.errors : [],
@@ -929,10 +975,14 @@ export async function uploadKnowledgeBase(
 
   const formData = new FormData();
   formData.append('file', file);
-  if (kbId) formData.append('kbId', kbId);
+  if (kbId) {
+    formData.append('kbId', kbId);
+  }
 
   const headers: HeadersInit = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   const res = await fetch(`${API_BASE}/ai/kb/upload`, {
     method: 'POST',
@@ -1198,7 +1248,9 @@ async function kycMutation<T = unknown>(
   options?: Parameters<typeof apiFetch>[1],
 ): Promise<T> {
   const res = await apiFetch<T>(`/api${endpoint}`, options);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as T;
 }
 

@@ -43,15 +43,33 @@ export class ReportsService {
    * Mutates the `where` object in place for efficiency.
    */
   private applyCommonOrderFilters(where: Prisma.CheckoutOrderWhereInput, f: ReportFiltersDto) {
-    if (f.orderCode) where.orderNumber = { contains: f.orderCode, mode: 'insensitive' };
-    if (f.buyerName) where.customerName = { contains: f.buyerName, mode: 'insensitive' };
-    if (f.buyerEmail) where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
-    if (f.cpfCnpj) where.customerCPF = { contains: f.cpfCnpj };
-    if (f.utmSource) where.utmSource = { contains: f.utmSource, mode: 'insensitive' };
-    if (f.utmMedium) where.utmMedium = { contains: f.utmMedium, mode: 'insensitive' };
-    if (f.planName) where.plan = { name: { contains: f.planName, mode: 'insensitive' } };
-    if (f.isUpsell === 'true') where.upsellOrders = { some: {} };
-    if (f.isRecovery === 'true') where.couponCode = { contains: 'RECOVERY', mode: 'insensitive' };
+    if (f.orderCode) {
+      where.orderNumber = { contains: f.orderCode, mode: 'insensitive' };
+    }
+    if (f.buyerName) {
+      where.customerName = { contains: f.buyerName, mode: 'insensitive' };
+    }
+    if (f.buyerEmail) {
+      where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
+    }
+    if (f.cpfCnpj) {
+      where.customerCPF = { contains: f.cpfCnpj };
+    }
+    if (f.utmSource) {
+      where.utmSource = { contains: f.utmSource, mode: 'insensitive' };
+    }
+    if (f.utmMedium) {
+      where.utmMedium = { contains: f.utmMedium, mode: 'insensitive' };
+    }
+    if (f.planName) {
+      where.plan = { name: { contains: f.planName, mode: 'insensitive' } };
+    }
+    if (f.isUpsell === 'true') {
+      where.upsellOrders = { some: {} };
+    }
+    if (f.isRecovery === 'true') {
+      where.couponCode = { contains: 'RECOVERY', mode: 'insensitive' };
+    }
     if (f.affiliateEmail) {
       // affiliateId on CheckoutOrder stores the AffiliatePartner id.
       // We resolve it via a nested filter on AffiliatePartner by email.
@@ -87,9 +105,13 @@ export class ReportsService {
       createdAt: { gte: start, lte: end },
     };
     const status = toOrderStatus(f.status);
-    if (status) where.status = status;
+    if (status) {
+      where.status = status;
+    }
     const paymentMethod = toPaymentMethod(f.paymentMethod);
-    if (paymentMethod) where.paymentMethod = paymentMethod;
+    if (paymentMethod) {
+      where.paymentMethod = paymentMethod;
+    }
     this.applyCommonOrderFilters(where, f);
 
     // Resolve affiliateEmail → affiliateId filter
@@ -192,8 +214,12 @@ export class ReportsService {
       workspaceId,
       paymentMethod: 'CREDIT_CARD',
     };
-    if (f.status === 'PAID') where.status = 'PAID';
-    if (f.status === 'PENDING') where.status = 'PENDING';
+    if (f.status === 'PAID') {
+      where.status = 'PAID';
+    }
+    if (f.status === 'PENDING') {
+      where.status = 'PENDING';
+    }
     this.applyCommonOrderFilters(where, f);
 
     const { skip, take } = this.paginate(f);
@@ -217,7 +243,9 @@ export class ReportsService {
       workspaceId,
       status: 'CANCELLED',
     };
-    if (f.startDate) where.cancelledAt = { gte: start, lte: end };
+    if (f.startDate) {
+      where.cancelledAt = { gte: start, lte: end };
+    }
 
     const [total, data] = await Promise.all([
       this.prisma.customerSubscription.count({ where }),
@@ -323,7 +351,9 @@ export class ReportsService {
   // ── ASSINATURAS ──
   async getAssinaturas(workspaceId: string, f: ReportFiltersDto) {
     const where: Prisma.CustomerSubscriptionWhereInput = { workspaceId };
-    if (f.status) where.status = f.status;
+    if (f.status) {
+      where.status = f.status;
+    }
 
     const [data, total, summary] = await Promise.all([
       this.prisma.customerSubscription.findMany({

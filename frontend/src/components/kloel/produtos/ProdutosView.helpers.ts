@@ -172,9 +172,15 @@ export interface PriceSummary {
 
 function resolveProductStatus(rawStatus: string, active?: boolean): NormalizedProduct['status'] {
   const backendStatus = rawStatus.toUpperCase();
-  if (backendStatus === 'APPROVED') return 'active';
-  if (!backendStatus && active !== false) return 'active';
-  if (backendStatus === 'PENDING') return 'pending';
+  if (backendStatus === 'APPROVED') {
+    return 'active';
+  }
+  if (!backendStatus && active !== false) {
+    return 'active';
+  }
+  if (backendStatus === 'PENDING') {
+    return 'pending';
+  }
   return 'draft';
 }
 

@@ -21,7 +21,9 @@ import {
 } from './runtime-utils';
 
 export async function checkCrud(config: PulseConfig): Promise<Break[]> {
-  if (!isDeepMode()) return [];
+  if (!isDeepMode()) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const jwt = makeTestJwt();

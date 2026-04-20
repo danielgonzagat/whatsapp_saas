@@ -34,7 +34,9 @@ export class MarketingSkillService {
     const selectedSkills: MarketingSkillSelection[] = hits
       .map((hit) => {
         const catalogEntry = MARKETING_SKILL_CATALOG.find((entry) => entry.id === hit.id);
-        if (!catalogEntry) return null;
+        if (!catalogEntry) {
+          return null;
+        }
 
         return {
           ...hit,

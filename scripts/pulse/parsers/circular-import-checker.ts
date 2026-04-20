@@ -19,7 +19,9 @@ function extractModuleImports(content: string): string[] {
 
   // Find the imports: [ ... ] block inside @Module
   const moduleStart = content.indexOf('@Module(');
-  if (moduleStart === -1) return imports;
+  if (moduleStart === -1) {
+    return imports;
+  }
 
   // Collect the full @Module(...) call body
   let depth = 0;
@@ -27,18 +29,28 @@ function extractModuleImports(content: string): string[] {
   let moduleBody = '';
   for (let i = moduleStart; i < content.length; i++) {
     const ch = content[i];
-    if (ch === '(') { depth++; inModule = true; }
+    if (ch === '(') {
+      depth++;
+      inModule = true;
+    }
     if (inModule && ch === ')') {
       depth--;
-      if (depth === 0) { moduleBody = content.slice(moduleStart, i + 1); break; }
+      if (depth === 0) {
+        moduleBody = content.slice(moduleStart, i + 1);
+        break;
+      }
     }
   }
 
-  if (!moduleBody) return imports;
+  if (!moduleBody) {
+    return imports;
+  }
 
   // Find `imports:` key within moduleBody
   const importKeyIdx = moduleBody.indexOf('imports:');
-  if (importKeyIdx === -1) return imports;
+  if (importKeyIdx === -1) {
+    return imports;
+  }
 
   // Collect the array after `imports:`
   let arrStart = -1;
@@ -46,7 +58,9 @@ function extractModuleImports(content: string): string[] {
   let arrBody = '';
   for (let i = importKeyIdx; i < moduleBody.length; i++) {
     if (moduleBody[i] === '[') {
-      if (arrDepth === 0) arrStart = i;
+      if (arrDepth === 0) {
+        arrStart = i;
+      }
       arrDepth++;
     } else if (moduleBody[i] === ']') {
       arrDepth--;
@@ -57,7 +71,9 @@ function extractModuleImports(content: string): string[] {
     }
   }
 
-  if (!arrBody) return imports;
+  if (!arrBody) {
+    return imports;
+  }
 
   // Remove forwardRef(…) entries entirely so we don't process them
   const noForwardRef = arrBody.replace(/forwardRef\s*\(\s*\(\s*\)\s*=>\s*\w+\s*\)/g, '');
@@ -76,7 +92,7 @@ export function checkCircularImports(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const moduleFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    f => f.endsWith('.module.ts') && !/\.(spec|test)\.ts$/.test(f),
+    (f) => f.endsWith('.module.ts') && !/\.(spec|test)\.ts$/.test(f),
   );
 
   const nodes: ModuleNode[] = [];
@@ -91,7 +107,9 @@ export function checkCircularImports(config: PulseConfig): Break[] {
     }
 
     const nameMatch = content.match(/export\s+class\s+([A-Z][A-Za-z0-9_]*Module)\b/);
-    if (!nameMatch) continue;
+    if (!nameMatch) {
+      continue;
+    }
 
     const name = nameMatch[1];
     const imports = extractModuleImports(content);
@@ -101,7 +119,9 @@ export function checkCircularImports(config: PulseConfig): Break[] {
   }
 
   // DFS cycle detection
-  const WHITE = 0, GRAY = 1, BLACK = 2;
+  const WHITE = 0,
+    GRAY = 1,
+    BLACK = 2;
   const color = new Map<string, number>();
   const cycleFiles = new Set<string>();
 
@@ -115,7 +135,9 @@ export function checkCircularImports(config: PulseConfig): Break[] {
 
     for (const importedName of current.imports) {
       const imported = nameToNode.get(importedName);
-      if (!imported) continue;
+      if (!imported) {
+        continue;
+      }
 
       const c = color.get(importedName) ?? WHITE;
 

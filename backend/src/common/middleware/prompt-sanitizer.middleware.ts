@@ -96,7 +96,9 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
   private static readonly BLOCKED_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
 
   private isSanitizableKey(obj: Record<string, unknown>, key: string): boolean {
-    if (PromptSanitizerMiddleware.BLOCKED_PROPS.has(key)) return false;
+    if (PromptSanitizerMiddleware.BLOCKED_PROPS.has(key)) {
+      return false;
+    }
     return Object.prototype.hasOwnProperty.call(obj, key);
   }
 
@@ -107,7 +109,9 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     path: string,
   ): void {
     const sanitized = this.sanitizeString(value);
-    if (sanitized === value) return;
+    if (sanitized === value) {
+      return;
+    }
     this.logger.warn(`Prompt injection detectado em ${path}.${key}`);
     obj[key] = sanitized;
   }
@@ -124,12 +128,16 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
   }
 
   private sanitizeObject(obj: Record<string, unknown>, path: string): void {
-    if (!obj || typeof obj !== 'object') return;
+    if (!obj || typeof obj !== 'object') {
+      return;
+    }
 
     // Object.keys() returns own enumerable properties only — safe from prototype chain.
     // The BLOCKED_PROPS guard adds defense-in-depth against prototype pollution.
     for (const key of Object.keys(obj)) {
-      if (!this.isSanitizableKey(obj, key)) continue;
+      if (!this.isSanitizableKey(obj, key)) {
+        continue;
+      }
       this.sanitizeEntry(obj, key, path);
     }
   }

@@ -65,13 +65,17 @@ function mockReducedMotion(matches = true) {
     }),
     addListener: vi.fn(
       (listener: ((this: MediaQueryList, ev: MediaQueryListEvent) => void) | null) => {
-        if (!listener) return;
+        if (!listener) {
+          return;
+        }
         listeners.add(listener as unknown as EventListener);
       },
     ),
     removeListener: vi.fn(
       (listener: ((this: MediaQueryList, ev: MediaQueryListEvent) => void) | null) => {
-        if (!listener) return;
+        if (!listener) {
+          return;
+        }
         listeners.delete(listener as unknown as EventListener);
       },
     ),

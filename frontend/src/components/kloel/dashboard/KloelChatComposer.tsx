@@ -97,7 +97,9 @@ export function KloelChatComposer({
 
   useEffect(() => {
     const textarea = inputRef.current;
-    if (!textarea) return;
+    if (!textarea) {
+      return;
+    }
 
     textarea.style.height = `${MIN_HEIGHT}px`;
     const nextHeight = Math.min(textarea.scrollHeight, MAX_HEIGHT);
@@ -106,19 +108,29 @@ export function KloelChatComposer({
   }, [input, inputRef]);
 
   useEffect(() => {
-    if (!isPopoverOpen) return;
+    if (!isPopoverOpen) {
+      return;
+    }
 
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as Node | null;
-      if (!target) return;
-      if (popoverRef.current?.contains(target)) return;
-      if (composerRef.current?.contains(target)) return;
+      if (!target) {
+        return;
+      }
+      if (popoverRef.current?.contains(target)) {
+        return;
+      }
+      if (composerRef.current?.contains(target)) {
+        return;
+      }
       setIsPopoverOpen(false);
       setIsProductMenuOpen(false);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
+      if (event.key !== 'Escape') {
+        return;
+      }
       setIsPopoverOpen(false);
       setIsProductMenuOpen(false);
     };

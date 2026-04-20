@@ -213,7 +213,9 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
       chat: '/parcerias/chat',
     };
     const nextRoute = routes[t] || '/parcerias';
-    if (pathname === nextRoute) return;
+    if (pathname === nextRoute) {
+      return;
+    }
     startTransition(() => {
       router.push(nextRoute);
     });
@@ -385,7 +387,9 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   const inviteRoles = ROLES.filter((r) => r.value !== 'admin');
 
   const handleSubmit = async () => {
-    if (!email.trim()) return;
+    if (!email.trim()) {
+      return;
+    }
     setSending(true);
     try {
       await inviteCollaborator({ email, role });
@@ -611,12 +615,16 @@ function AffiliateDetailModal({
   const [perfLoading, setPerfLoading] = useState(false);
 
   useEffect(() => {
-    if (!a.id) return;
+    if (!a.id) {
+      return;
+    }
     setPerfLoading(true);
     partnershipsApi
       .affiliatePerformance(a.id)
       .then((res) => {
-        if (!res.error && res.data) setPerfData(res.data);
+        if (!res.error && res.data) {
+          setPerfData(res.data);
+        }
       })
       .catch(() => {})
       .finally(() => setPerfLoading(false));
@@ -1145,7 +1153,9 @@ function TabColaboradores({
   const rolesUsed = [...new Set(displayAgents.map((a) => a.role))].length;
 
   const filtered = displayAgents.filter((c) => {
-    if (!search) return true;
+    if (!search) {
+      return true;
+    }
     const term = search.toLowerCase();
     return (
       (c.name || '').toLowerCase().includes(term) || (c.email || '').toLowerCase().includes(term)
@@ -1661,7 +1671,9 @@ function TabAfiliados({
     null;
 
   const filtered = displayAffiliates.filter((a) => {
-    if (filterType !== 'todos' && a.type !== filterType) return false;
+    if (filterType !== 'todos' && a.type !== filterType) {
+      return false;
+    }
     if (search) {
       const term = search.toLowerCase();
       return (
@@ -2346,7 +2358,9 @@ function MyAffiliateLinks() {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      return;
+    }
     setSearchLoading(true);
     try {
       const res = await affiliateApi.aiSearch(searchQuery.trim());
@@ -2669,7 +2683,9 @@ function MyAffiliateLinks() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSearch();
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
               }}
               placeholder="Buscar por categoria ou tag..."
               style={{
@@ -2827,7 +2843,9 @@ function TabChat({
   };
 
   const handleSend = async () => {
-    if (!chatInput.trim() || !selectedChat) return;
+    if (!chatInput.trim() || !selectedChat) {
+      return;
+    }
     const content = chatInput.trim();
     setChatInput('');
     try {
@@ -2855,7 +2873,9 @@ function TabChat({
   };
 
   const filteredContacts = displayContacts.filter((c) => {
-    if (!search) return true;
+    if (!search) {
+      return true;
+    }
     return (c.name || '').toLowerCase().includes(search.toLowerCase());
   });
 
@@ -2968,11 +2988,14 @@ function TabChat({
                   transition: 'background 150ms ease',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isSelected) (e.currentTarget as HTMLElement).style.background = C.elevated;
+                  if (!isSelected) {
+                    (e.currentTarget as HTMLElement).style.background = C.elevated;
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  if (!isSelected)
+                  if (!isSelected) {
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {

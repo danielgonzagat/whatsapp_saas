@@ -49,7 +49,9 @@ function toDetail(
   commerce: AdminProductDetail['commerce'],
   moderationHistory: AdminProductDetail['moderationHistory'],
 ): AdminProductDetail | null {
-  if (!product) return null;
+  if (!product) {
+    return null;
+  }
   return {
     id: product.id,
     workspaceId: product.workspaceId,
@@ -90,7 +92,9 @@ export async function getAdminProductDetail(
   const product = await prisma.product.findUnique({
     where: { id: productId },
   });
-  if (!product) return null;
+  if (!product) {
+    return null;
+  }
 
   const workspace = await prisma.workspace.findUnique({
     where: { id: product.workspaceId },

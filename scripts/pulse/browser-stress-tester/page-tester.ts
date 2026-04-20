@@ -36,7 +36,9 @@ export async function testPage(
 
   // Console error collector for page-level
   const consoleHandler = (msg: any) => {
-    if (msg.type() === 'error') pageConsoleErrors.push(msg.text().slice(0, 200));
+    if (msg.type() === 'error') {
+      pageConsoleErrors.push(msg.text().slice(0, 200));
+    }
   };
   page.on('console', consoleHandler);
 
@@ -334,14 +336,20 @@ async function discoverInteractiveElements(page: Page): Promise<DiscoveredElemen
       try {
         const loc = locators.nth(i);
         const isVisible = await loc.isVisible({ timeout: 500 }).catch(() => false);
-        if (!isVisible) continue;
+        if (!isVisible) {
+          continue;
+        }
 
         const box = await loc.boundingBox().catch(() => null);
-        if (!box || box.width < 5 || box.height < 5) continue;
+        if (!box || box.width < 5 || box.height < 5) {
+          continue;
+        }
 
         // Dedup by bounding box
         const boxKey = `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)}`;
-        if (seenBoxes.has(boxKey)) continue;
+        if (seenBoxes.has(boxKey)) {
+          continue;
+        }
         seenBoxes.add(boxKey);
 
         const label = await extractLabel(loc);
@@ -399,23 +407,35 @@ async function discoverInteractiveElements(page: Page): Promise<DiscoveredElemen
 async function extractLabel(locator: Locator): Promise<string> {
   // Try multiple strategies to get a human-readable label
   const ariaLabel = await locator.getAttribute('aria-label').catch(() => null);
-  if (ariaLabel) return ariaLabel.trim();
+  if (ariaLabel) {
+    return ariaLabel.trim();
+  }
 
   const title = await locator.getAttribute('title').catch(() => null);
-  if (title) return title.trim();
+  if (title) {
+    return title.trim();
+  }
 
   const text = await locator.textContent().catch(() => null);
   if (text) {
     const clean = text.replace(/\s+/g, ' ').trim();
-    if (clean.length > 0 && clean.length < 80) return clean;
-    if (clean.length >= 80) return clean.slice(0, 77) + '...';
+    if (clean.length > 0 && clean.length < 80) {
+      return clean;
+    }
+    if (clean.length >= 80) {
+      return clean.slice(0, 77) + '...';
+    }
   }
 
   const placeholder = await locator.getAttribute('placeholder').catch(() => null);
-  if (placeholder) return `[${placeholder}]`;
+  if (placeholder) {
+    return `[${placeholder}]`;
+  }
 
   const name = await locator.getAttribute('name').catch(() => null);
-  if (name) return `[name=${name}]`;
+  if (name) {
+    return `[name=${name}]`;
+  }
 
   return '(no label)';
 }

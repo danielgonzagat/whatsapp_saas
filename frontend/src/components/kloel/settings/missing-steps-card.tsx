@@ -44,7 +44,9 @@ export function MissingStepsCard({
   const completedCount = steps.filter((s) => s.done).length;
   const allCompleted = completedCount === steps.length;
 
-  if (allCompleted) return null;
+  if (allCompleted) {
+    return null;
+  }
 
   return (
     <SettingsCard className="p-6">

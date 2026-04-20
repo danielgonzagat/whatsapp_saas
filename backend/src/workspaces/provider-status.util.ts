@@ -15,8 +15,12 @@ export type { NormalizedConnectionStatus, WhatsAppProviderType };
 export type { BuildSnapshotParams };
 
 export function pickWahaQrCode(providerType: WhatsAppProviderType, qrCode: unknown): string | null {
-  if (providerType !== 'whatsapp-api') return null;
-  if (typeof qrCode !== 'string') return null;
+  if (providerType !== 'whatsapp-api') {
+    return null;
+  }
+  if (typeof qrCode !== 'string') {
+    return null;
+  }
   const trimmed = qrCode.trim();
   return trimmed ? qrCode : null;
 }
@@ -25,8 +29,12 @@ export function pickMetaAuthUrl(
   providerType: WhatsAppProviderType,
   authUrl: unknown,
 ): string | null {
-  if (providerType !== 'meta-cloud') return null;
-  if (typeof authUrl !== 'string') return null;
+  if (providerType !== 'meta-cloud') {
+    return null;
+  }
+  if (typeof authUrl !== 'string') {
+    return null;
+  }
   const trimmed = authUrl.trim();
   return trimmed ? authUrl : null;
 }
@@ -45,8 +53,12 @@ export function resolveRawStatusFallback(
   normalizedStatus: NormalizedConnectionStatus,
   phoneNumberId: string | null,
 ): string {
-  if (rawStatus) return rawStatus;
-  if (normalizedStatus === 'connected') return 'CONNECTED';
+  if (rawStatus) {
+    return rawStatus;
+  }
+  if (normalizedStatus === 'connected') {
+    return 'CONNECTED';
+  }
   return providerType === 'meta-cloud'
     ? metaRawStatusFallback(phoneNumberId)
     : wahaRawStatusFallback(normalizedStatus);
@@ -68,7 +80,9 @@ export function resolveWhatsappBusinessId(
   providerType: WhatsAppProviderType,
   whatsappBusinessId: string | null | undefined,
 ): string | null {
-  if (providerType !== 'meta-cloud') return null;
+  if (providerType !== 'meta-cloud') {
+    return null;
+  }
   return whatsappBusinessId || null;
 }
 

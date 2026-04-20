@@ -10,7 +10,8 @@ import { walkFiles } from './utils';
 // 4. prismaAny.modelName.operation() (local alias)
 // 5. tx.modelName.operation() (inside $transaction callbacks)
 // 6. prisma.modelName.operation() (parameter in functions)
-const PRISMA_OPS = 'create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany';
+const PRISMA_OPS =
+  'create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany';
 const PRISMA_ACCESS_PATTERNS = [
   new RegExp(`this\\.(?:prisma|prismaAny)\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
   new RegExp(`\\(this\\.prisma\\s+as\\s+any\\)\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
@@ -21,8 +22,8 @@ const PRISMA_ACCESS_PATTERNS = [
 export function traceServices(config: PulseConfig): ServiceTrace[] {
   const traces: ServiceTrace[] = [];
   // Scan BOTH services AND controllers for Prisma model access
-  const files = walkFiles(config.backendDir, ['.ts']).filter(f =>
-    f.endsWith('.service.ts') || f.endsWith('.controller.ts')
+  const files = walkFiles(config.backendDir, ['.ts']).filter(
+    (f) => f.endsWith('.service.ts') || f.endsWith('.controller.ts'),
   );
 
   for (const file of files) {
@@ -33,7 +34,9 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
 
       // Check if file uses Prisma in any form
       const hasPrisma = /prisma|PrismaService/i.test(content);
-      if (!hasPrisma) continue;
+      if (!hasPrisma) {
+        continue;
+      }
 
       // Extract class name
       const classMatch = content.match(/export\s+class\s+(\w+)/);
@@ -54,8 +57,28 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
         // Relaxed regex: NestJS methods have decorators in params like @Req() req: any
         // So we match "async methodName(" without requiring the closing paren on same line
         if (!inMethod) {
-          const methodMatch = trimmed.match(/(?:async\s+)?(\w+)\s*\(/) ;
-          if (methodMatch && !['constructor', 'onModuleInit', 'onModuleDestroy', 'if', 'for', 'while', 'return', 'catch', 'switch', 'import', 'export', 'throw', 'new', 'await', 'super'].includes(methodMatch[1]) && /\{$/.test(trimmed)) {
+          const methodMatch = trimmed.match(/(?:async\s+)?(\w+)\s*\(/);
+          if (
+            methodMatch &&
+            ![
+              'constructor',
+              'onModuleInit',
+              'onModuleDestroy',
+              'if',
+              'for',
+              'while',
+              'return',
+              'catch',
+              'switch',
+              'import',
+              'export',
+              'throw',
+              'new',
+              'await',
+              'super',
+            ].includes(methodMatch[1]) &&
+            /\{$/.test(trimmed)
+          ) {
             currentMethod = methodMatch[1];
             methodLine = i + 1;
             braceDepth = 0;
@@ -67,8 +90,12 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
         if (inMethod) {
           // Track braces
           for (const ch of line) {
-            if (ch === '{') braceDepth++;
-            if (ch === '}') braceDepth--;
+            if (ch === '{') {
+              braceDepth++;
+            }
+            if (ch === '}') {
+              braceDepth--;
+            }
           }
 
           // Find prisma model accesses using ALL patterns

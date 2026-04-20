@@ -231,7 +231,9 @@ export class WebhooksService {
       if (c && typeof c === 'string') {
         // Clean string
         const cleaned = c.replace(D_RE, '');
-        if (cleaned.length >= 10) return cleaned; // Basic validation
+        if (cleaned.length >= 10) {
+          return cleaned;
+        } // Basic validation
       }
     }
 
@@ -248,7 +250,9 @@ export class WebhooksService {
       where: { workspaceId, externalId },
       data: { status, errorCode },
     });
-    if (res.count === 0) return { count: 0, msgs: [] };
+    if (res.count === 0) {
+      return { count: 0, msgs: [] };
+    }
 
     const msgs = await this.prisma.message.findMany({
       take: 20,
@@ -278,7 +282,9 @@ export class WebhooksService {
       orderBy: { createdAt: 'desc' },
       select: { id: true },
     });
-    if (!msg?.id) return null;
+    if (!msg?.id) {
+      return null;
+    }
 
     // Re-read then update scoped by workspaceId so multi-tenant guard is
     // explicit at the call site (msg was already scoped by the findFirst

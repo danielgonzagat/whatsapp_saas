@@ -90,14 +90,18 @@ export function CrmSettingsSection() {
   );
 
   const stageDeals = useMemo(() => {
-    if (!selectedPipeline) return [];
+    if (!selectedPipeline) {
+      return [];
+    }
     const stageIds = new Set(selectedPipeline.stages.map((stage) => stage.id));
     return deals.filter((deal) => stageIds.has(deal.stageId));
   }, [deals, selectedPipeline]);
 
   const stageDealMap = useMemo(() => {
     const map = new Map<string, CrmDeal[]>();
-    if (!selectedPipeline) return map;
+    if (!selectedPipeline) {
+      return map;
+    }
     for (const stage of selectedPipeline.stages) {
       map.set(
         stage.id,
@@ -171,7 +175,9 @@ export function CrmSettingsSection() {
   }, [contacts, dealForm.contactId]);
 
   useEffect(() => {
-    if (!selectedPreset) return;
+    if (!selectedPreset) {
+      return;
+    }
 
     let active = true;
     setError(null);
@@ -179,7 +185,9 @@ export function CrmSettingsSection() {
     void segmentationApi
       .getPresetSegment(selectedPreset, 20)
       .then((response) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setPresetContacts(
           (response.data?.contacts || []).map((contact) => ({
             id: contact.id,
@@ -190,7 +198,9 @@ export function CrmSettingsSection() {
         setPresetTotal(response.data?.total || 0);
       })
       .catch((presetError: unknown) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setError(errorMessage(presetError, 'Nao foi possivel carregar o segmento selecionado.'));
       });
 
@@ -280,10 +290,14 @@ export function CrmSettingsSection() {
   };
 
   const handleMoveDeal = async (deal: CrmDeal, direction: -1 | 1) => {
-    if (!selectedPipeline) return;
+    if (!selectedPipeline) {
+      return;
+    }
     const currentIndex = selectedPipeline.stages.findIndex((stage) => stage.id === deal.stageId);
     const nextStage = selectedPipeline.stages[currentIndex + direction];
-    if (!nextStage) return;
+    if (!nextStage) {
+      return;
+    }
 
     setSaving(true);
     setError(null);

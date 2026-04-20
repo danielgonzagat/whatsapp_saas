@@ -175,7 +175,9 @@ export function MissionCards({
 }: MissionCardsProps) {
   const visibleMissions = missions.slice(0, maxVisible);
 
-  if (visibleMissions.length === 0) return null;
+  if (visibleMissions.length === 0) {
+    return null;
+  }
 
   return (
     <div className={className}>

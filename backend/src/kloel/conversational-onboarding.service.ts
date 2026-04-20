@@ -399,7 +399,9 @@ export class ConversationalOnboardingService {
     toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[],
   ): Promise<void> {
     for (const toolCall of toolCalls) {
-      if (!('function' in toolCall)) continue;
+      if (!('function' in toolCall)) {
+        continue;
+      }
       const functionName = toolCall.function.name;
       const args = JSON.parse(toolCall.function.arguments);
 
@@ -421,9 +423,13 @@ export class ConversationalOnboardingService {
     workspaceId: string,
     toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] | null | undefined,
   ): Promise<void> {
-    if (!toolCalls) return;
+    if (!toolCalls) {
+      return;
+    }
     for (const toolCall of toolCalls) {
-      if (!('function' in toolCall)) continue;
+      if (!('function' in toolCall)) {
+        continue;
+      }
       const functionName: string = toolCall.function.name;
       const args: Record<string, unknown> = JSON.parse(toolCall.function.arguments);
       await this.executeToolCall(workspaceId, functionName, args);
@@ -553,10 +559,15 @@ export class ConversationalOnboardingService {
         const description = this.readText(args.description).trim();
 
         await this.saveMemory(workspaceId, 'businessName', businessName, 'business');
-        if (args.ownerName) await this.saveMemory(workspaceId, 'ownerName', ownerName, 'business');
-        if (args.segment) await this.saveMemory(workspaceId, 'segment', segment, 'business');
-        if (args.description)
+        if (args.ownerName) {
+          await this.saveMemory(workspaceId, 'ownerName', ownerName, 'business');
+        }
+        if (args.segment) {
+          await this.saveMemory(workspaceId, 'segment', segment, 'business');
+        }
+        if (args.description) {
           await this.saveMemory(workspaceId, 'description', description, 'business');
+        }
 
         // Atualizar nome do workspace (wrapped in $transaction to prevent race conditions)
         await this.prisma.$transaction(async (tx) => {
@@ -573,12 +584,18 @@ export class ConversationalOnboardingService {
       }
 
       case 'save_contact_info':
-        if (args.whatsappNumber)
+        if (args.whatsappNumber) {
           await this.saveMemory(workspaceId, 'whatsappNumber', args.whatsappNumber, 'contact');
-        if (args.email) await this.saveMemory(workspaceId, 'email', args.email, 'contact');
-        if (args.instagram)
+        }
+        if (args.email) {
+          await this.saveMemory(workspaceId, 'email', args.email, 'contact');
+        }
+        if (args.instagram) {
           await this.saveMemory(workspaceId, 'instagram', args.instagram, 'contact');
-        if (args.website) await this.saveMemory(workspaceId, 'website', args.website, 'contact');
+        }
+        if (args.website) {
+          await this.saveMemory(workspaceId, 'website', args.website, 'contact');
+        }
         return { success: true, message: 'Informações de contato salvas!' };
 
       case 'add_product': {
@@ -629,10 +646,12 @@ export class ConversationalOnboardingService {
 
       case 'set_main_goal':
         await this.saveMemory(workspaceId, 'mainGoal', args.goal, 'business');
-        if (args.targetAudience)
+        if (args.targetAudience) {
           await this.saveMemory(workspaceId, 'targetAudience', args.targetAudience, 'business');
-        if (args.painPoints)
+        }
+        if (args.painPoints) {
           await this.saveMemory(workspaceId, 'painPoints', args.painPoints, 'business');
+        }
         return {
           success: true,
           message: `Objetivo principal definido: ${this.readText(args.goal)}`,
@@ -680,8 +699,9 @@ export class ConversationalOnboardingService {
 
         await this.saveMemory(workspaceId, 'onboarding_completed', true, 'system');
         await this.saveMemory(workspaceId, 'onboarding_summary', args.summary, 'system');
-        if (args.nextSteps)
+        if (args.nextSteps) {
           await this.saveMemory(workspaceId, 'onboarding_next_steps', args.nextSteps, 'system');
+        }
         return {
           success: true,
           message: 'Onboarding concluído com sucesso! Fluxos iniciais criados automaticamente.',

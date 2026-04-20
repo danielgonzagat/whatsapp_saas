@@ -41,7 +41,9 @@ export class AdRulesEngineService {
         },
       });
 
-      if (rules.length === 0) return;
+      if (rules.length === 0) {
+        return;
+      }
       this.logger.log(`Evaluating ${rules.length} active ad rule(s)...`);
 
       await forEachSequential(rules, async (rule) => {

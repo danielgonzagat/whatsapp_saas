@@ -27,9 +27,13 @@ export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
   const res = await apiFetch<Campaign[] | { campaigns: Campaign[] }>(
     `/campaigns?workspaceId=${encodeURIComponent(workspaceId)}`,
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   const data = res.data;
-  if (Array.isArray(data)) return data;
+  if (Array.isArray(data)) {
+    return data;
+  }
   return (data as { campaigns: Campaign[] } | undefined)?.campaigns || [];
 }
 
@@ -41,7 +45,9 @@ export async function createCampaign(
     method: 'POST',
     body: { workspaceId, ...payload },
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateCampaigns();
   return res.data as Campaign;
 }
@@ -58,7 +64,9 @@ export async function launchCampaign(
       body: { workspaceId, smartTime: Boolean(opts?.smartTime) },
     },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateCampaigns();
   return res.data;
 }
@@ -75,7 +83,9 @@ export async function createCampaignVariants(
       body: { workspaceId, variants },
     },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateCampaigns();
   return res.data as { created: number; variantIds: string[] };
 }
@@ -91,7 +101,9 @@ export async function evaluateCampaignDarwin(
       body: { workspaceId },
     },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateCampaigns();
   return res.data;
 }

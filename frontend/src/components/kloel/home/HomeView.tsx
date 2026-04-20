@@ -61,17 +61,27 @@ const HOME_HEADER_ACTION_BUTTON_STYLE = {
 };
 
 function getGreeting(referenceDate?: Date | null) {
-  if (!referenceDate) return 'Olá';
+  if (!referenceDate) {
+    return 'Olá';
+  }
 
   const hour = referenceDate.getHours();
-  if (hour >= 5 && hour < 12) return 'Bom dia';
-  if (hour >= 12 && hour < 18) return 'Boa tarde';
-  if (hour >= 18) return 'Boa noite';
+  if (hour >= 5 && hour < 12) {
+    return 'Bom dia';
+  }
+  if (hour >= 12 && hour < 18) {
+    return 'Boa tarde';
+  }
+  if (hour >= 18) {
+    return 'Boa noite';
+  }
   return 'Boa madrugada';
 }
 
 function parseReferenceDate(value?: string | null) {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
 
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
@@ -85,17 +95,27 @@ const HOME_REFERENCE_DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
 });
 
 function formatRelativeTime(value?: string | null) {
-  if (!value) return 'Agora';
+  if (!value) {
+    return 'Agora';
+  }
 
   const diffMs = Date.now() - new Date(value).getTime();
-  if (!Number.isFinite(diffMs) || diffMs < 0) return 'Agora';
+  if (!Number.isFinite(diffMs) || diffMs < 0) {
+    return 'Agora';
+  }
 
   const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return 'Agora';
-  if (minutes < 60) return `há ${minutes} min`;
+  if (minutes < 1) {
+    return 'Agora';
+  }
+  if (minutes < 60) {
+    return `há ${minutes} min`;
+  }
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `há ${hours} h`;
+  if (hours < 24) {
+    return `há ${hours} h`;
+  }
 
   const days = Math.floor(hours / 24);
   return `há ${days} d`;
@@ -113,7 +133,9 @@ function Sparkline({
   height?: number;
 }) {
   const points = useMemo(() => {
-    if (!data.length) return '';
+    if (!data.length) {
+      return '';
+    }
     const max = Math.max(...data);
     const min = Math.min(...data);
     const range = max - min || 1;

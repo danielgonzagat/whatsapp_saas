@@ -249,7 +249,9 @@ export class AdvancedAnalyticsService {
 
     // Compila resultados
     const stats = messages.map((m) => {
-      if (!m.agentId) return { agentId: null, messageCount: m._count.id, avgResponseTime: 0 };
+      if (!m.agentId) {
+        return { agentId: null, messageCount: m._count.id, avgResponseTime: 0 };
+      }
 
       const s = agentStats.get(m.agentId);
       const realAvg = s && s.count > 0 ? Math.round(s.totalTime / s.count) : 0;

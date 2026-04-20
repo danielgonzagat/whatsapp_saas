@@ -70,7 +70,9 @@ export class LLMBudgetService {
     try {
       const raw = await this.redis.get(key);
       spent = raw ? Number(raw) : 0;
-      if (!Number.isFinite(spent)) spent = 0;
+      if (!Number.isFinite(spent)) {
+        spent = 0;
+      }
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
@@ -105,7 +107,9 @@ export class LLMBudgetService {
    * stale total).
    */
   async recordSpend(workspaceId: string, actualCostCents: number): Promise<void> {
-    if (!Number.isFinite(actualCostCents) || actualCostCents < 0) return;
+    if (!Number.isFinite(actualCostCents) || actualCostCents < 0) {
+      return;
+    }
     const key = this.currentWindowKey(workspaceId);
     try {
       await this.redis.incrby(key, Math.round(actualCostCents));
@@ -143,7 +147,9 @@ export class LLMBudgetService {
     const raw = process.env.LLM_BUDGET_DEFAULT_CENTS;
     if (raw) {
       const parsed = Number(raw);
-      if (Number.isFinite(parsed) && parsed > 0) return Math.round(parsed);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return Math.round(parsed);
+      }
     }
     // Safe default: R$ 100.00 / month (= 10000 cents). Operators should
     // configure `LLM_BUDGET_DEFAULT_CENTS` explicitly for real workloads.

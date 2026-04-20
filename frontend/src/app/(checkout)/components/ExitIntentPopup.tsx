@@ -32,9 +32,13 @@ export default function ExitIntentPopup({
   const [visible, setVisible] = useState(false);
 
   const show = useCallback(() => {
-    if (!enabled || !couponCode) return;
+    if (!enabled || !couponCode) {
+      return;
+    }
     try {
-      if (sessionStorage.getItem(STORAGE_KEY)) return;
+      if (sessionStorage.getItem(STORAGE_KEY)) {
+        return;
+      }
       sessionStorage.setItem(STORAGE_KEY, '1');
     } catch {
       /* private browsing */
@@ -44,9 +48,13 @@ export default function ExitIntentPopup({
 
   /* Desktop: cursor leaves viewport from the top */
   useEffect(() => {
-    if (!enabled || !couponCode) return;
+    if (!enabled || !couponCode) {
+      return;
+    }
     const handler = (e: MouseEvent) => {
-      if (e.clientY <= 0) show();
+      if (e.clientY <= 0) {
+        show();
+      }
     };
     document.addEventListener('mouseout', handler);
     return () => document.removeEventListener('mouseout', handler);
@@ -54,7 +62,9 @@ export default function ExitIntentPopup({
 
   /* Mobile: show after 60s + scroll up */
   useEffect(() => {
-    if (!enabled || !couponCode) return;
+    if (!enabled || !couponCode) {
+      return;
+    }
     let scrollY = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -71,12 +81,16 @@ export default function ExitIntentPopup({
     }, 60000);
 
     return () => {
-      if (timer) clearTimeout(timer);
+      if (timer) {
+        clearTimeout(timer);
+      }
       window.removeEventListener('scroll', onScroll);
     };
   }, [enabled, couponCode, show]);
 
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
 
   return (
     <div
@@ -135,7 +149,9 @@ export default function ExitIntentPopup({
         <button
           type="button"
           onClick={() => {
-            if (couponCode) onApplyCoupon?.(couponCode);
+            if (couponCode) {
+              onApplyCoupon?.(couponCode);
+            }
             setVisible(false);
           }}
           style={{

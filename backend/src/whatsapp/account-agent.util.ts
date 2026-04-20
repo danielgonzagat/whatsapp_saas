@@ -144,7 +144,9 @@ export function slugifyCatalogKey(value: string): string {
 
 export function findProductMatches(messageContent: string, productNames: string[]): string[] {
   const normalizedMessage = normalizeCatalogText(messageContent);
-  if (!normalizedMessage) return [];
+  if (!normalizedMessage) {
+    return [];
+  }
 
   return Array.from(
     new Set(
@@ -171,11 +173,15 @@ function collectCandidateAfterCueWord(rawTokens: readonly string[], startIndex: 
     const token = rawTokens[cursor];
     const normalized = normalizeCatalogText(token);
     if (!normalized || STOPWORDS.has(normalized)) {
-      if (candidate.length > 0) break;
+      if (candidate.length > 0) {
+        break;
+      }
       continue;
     }
     candidate.push(token);
-    if (candidate.length >= 3) break;
+    if (candidate.length >= 3) {
+      break;
+    }
   }
   return candidate;
 }
@@ -183,7 +189,9 @@ function collectCandidateAfterCueWord(rawTokens: readonly string[], startIndex: 
 function findCandidateFromCueWord(rawTokens: readonly string[]): string | null {
   const normalizedTokens = rawTokens.map((token) => normalizeCatalogText(token));
   for (let index = 0; index < normalizedTokens.length; index += 1) {
-    if (!PRODUCT_CUE_WORDS.has(normalizedTokens[index])) continue;
+    if (!PRODUCT_CUE_WORDS.has(normalizedTokens[index])) {
+      continue;
+    }
     const candidate = collectCandidateAfterCueWord(rawTokens, index + 1);
     if (candidate.length > 0) {
       return candidate.join(' ').trim();
@@ -204,19 +212,27 @@ function fallbackFromRawTokens(rawTokens: readonly string[]): string | null {
 function tokenizeCandidateMessage(messageContent: string): string[] {
   const raw = String(messageContent ?? '');
   const matches = raw.match(A_ZA_Z___0_9_RE);
-  if (!matches) return [];
+  if (!matches) {
+    return [];
+  }
   return matches.filter(Boolean);
 }
 
 export function extractMissingProductCandidate(messageContent: string): string | null {
   const rawTokens = tokenizeCandidateMessage(messageContent);
-  if (!rawTokens.length) return null;
+  if (!rawTokens.length) {
+    return null;
+  }
 
   const upperHit = findUppercaseProductToken(rawTokens);
-  if (upperHit) return upperHit;
+  if (upperHit) {
+    return upperHit;
+  }
 
   const cueHit = findCandidateFromCueWord(rawTokens);
-  if (cueHit) return cueHit;
+  if (cueHit) {
+    return cueHit;
+  }
 
   return fallbackFromRawTokens(rawTokens);
 }

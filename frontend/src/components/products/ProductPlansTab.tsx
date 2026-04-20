@@ -38,7 +38,9 @@ export function ProductPlansTab({ productId }: { productId: string }) {
 
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
     },
     [],
   );
@@ -46,7 +48,9 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   const copyUrl = (url: string, key: string) => {
     navigator.clipboard?.writeText(url);
     setCopied(key);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    if (copiedTimer.current) {
+      clearTimeout(copiedTimer.current);
+    }
     copiedTimer.current = setTimeout(() => setCopied(null), 2000);
   };
 
@@ -91,7 +95,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
     fontFamily: "'Sora', sans-serif",
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2
@@ -101,6 +105,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
         />
       </div>
     );
+  }
 
   return (
     <div className="space-y-4">

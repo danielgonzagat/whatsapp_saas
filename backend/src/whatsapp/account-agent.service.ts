@@ -1160,7 +1160,7 @@ export class AccountAgentService {
     await forEachSequential(
       offers.filter((item) => item.url && !existingUrls.has(String(item.url))),
       async (offer) => {
-      // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
+        // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
         await this.prisma.externalPaymentLink.create({
           data: {
             workspaceId,
@@ -1217,7 +1217,9 @@ export class AccountAgentService {
   }
 
   private async enqueueContactResumption(workspaceId: string, session: AccountInputSessionPayload) {
-    if (!session.contactId && !session.phone) return;
+    if (!session.contactId && !session.phone) {
+      return;
+    }
 
     try {
       await autopilotQueue.add(
@@ -1649,12 +1651,24 @@ export class AccountAgentService {
     } | null,
     input: WorkItemUpsertInput,
   ): boolean {
-    if (!previous) return true;
-    if (previous.state !== input.state) return true;
-    if (previous.title !== input.title) return true;
-    if (String(previous.summary || '') !== String(input.summary || '')) return true;
-    if (Number(previous.priority || 0) !== Number(input.priority || 0)) return true;
-    if (Number(previous.utility || 0) !== Number(input.utility || 0)) return true;
+    if (!previous) {
+      return true;
+    }
+    if (previous.state !== input.state) {
+      return true;
+    }
+    if (previous.title !== input.title) {
+      return true;
+    }
+    if (String(previous.summary || '') !== String(input.summary || '')) {
+      return true;
+    }
+    if (Number(previous.priority || 0) !== Number(input.priority || 0)) {
+      return true;
+    }
+    if (Number(previous.utility || 0) !== Number(input.utility || 0)) {
+      return true;
+    }
     return false;
   }
 

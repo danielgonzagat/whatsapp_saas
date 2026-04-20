@@ -136,32 +136,52 @@ function detectProductionHost(hostname: string): KloelHostKind | null {
   if (hostname === PROD_ROOT_DOMAIN || hostname === `www.${PROD_ROOT_DOMAIN}`) {
     return 'marketing';
   }
-  if (hostname === `auth.${PROD_ROOT_DOMAIN}`) return 'auth';
-  if (hostname === `app.${PROD_ROOT_DOMAIN}`) return 'app';
-  if (hostname === `pay.${PROD_ROOT_DOMAIN}`) return 'pay';
+  if (hostname === `auth.${PROD_ROOT_DOMAIN}`) {
+    return 'auth';
+  }
+  if (hostname === `app.${PROD_ROOT_DOMAIN}`) {
+    return 'app';
+  }
+  if (hostname === `pay.${PROD_ROOT_DOMAIN}`) {
+    return 'pay';
+  }
   return null;
 }
 
 function detectLocalHost(hostname: string): KloelHostKind | null {
-  if (!isLocalHostname(hostname)) return null;
+  if (!isLocalHostname(hostname)) {
+    return null;
+  }
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'kloel.localhost') {
     return 'marketing';
   }
-  if (hostname.startsWith('auth.')) return 'auth';
-  if (hostname.startsWith('app.')) return 'app';
-  if (hostname.startsWith('pay.')) return 'pay';
+  if (hostname.startsWith('auth.')) {
+    return 'auth';
+  }
+  if (hostname.startsWith('app.')) {
+    return 'app';
+  }
+  if (hostname.startsWith('pay.')) {
+    return 'pay';
+  }
   return null;
 }
 
 export function detectKloelHost(host?: string | null): KloelHostKind {
   const { hostname } = parseHost(host);
-  if (!hostname) return 'unknown';
+  if (!hostname) {
+    return 'unknown';
+  }
 
   const production = detectProductionHost(hostname);
-  if (production) return production;
+  if (production) {
+    return production;
+  }
 
   const local = detectLocalHost(hostname);
-  if (local) return local;
+  if (local) {
+    return local;
+  }
 
   return 'unknown';
 }
@@ -255,8 +275,12 @@ const STATIC_EXACT_PATHS = new Set<string>(['/favicon.ico', '/robots.txt', '/sit
 const STATIC_PREFIX_PATHS = ['/_next', '/api', '/e2e', '/icon'];
 
 export function isStaticOrApiPath(pathname: string): boolean {
-  if (STATIC_EXACT_PATHS.has(pathname)) return true;
-  if (STATIC_PREFIX_PATHS.some((prefix) => pathname.startsWith(prefix))) return true;
+  if (STATIC_EXACT_PATHS.has(pathname)) {
+    return true;
+  }
+  if (STATIC_PREFIX_PATHS.some((prefix) => pathname.startsWith(prefix))) {
+    return true;
+  }
   return STATIC_FILE_PATTERN.test(pathname);
 }
 

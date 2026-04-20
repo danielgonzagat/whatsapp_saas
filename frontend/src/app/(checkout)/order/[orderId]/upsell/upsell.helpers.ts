@@ -29,7 +29,9 @@ export function formatTime(seconds: number): string {
 }
 
 export function parseUpsellsQuery(raw: string | null): UpsellData[] | null {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   try {
     return JSON.parse(decodeURIComponent(raw)) as UpsellData[];
   } catch {

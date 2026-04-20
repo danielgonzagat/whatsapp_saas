@@ -35,7 +35,9 @@ function persistAuthPayload(res: AuthResponse): void {
   const payload = res.data ?? null;
   const token = payload?.access_token || payload?.accessToken;
   const refresh = payload?.refresh_token || payload?.refreshToken;
-  if (!token) return;
+  if (!token) {
+    return;
+  }
 
   tokenStorage.setToken(token);
   if (refresh) {

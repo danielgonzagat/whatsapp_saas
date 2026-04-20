@@ -79,7 +79,7 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
     path.join(config.frontendDir, 'cypress'),
   ];
 
-  const e2eDir = e2eCandidates.find(d => fs.existsSync(d));
+  const e2eDir = e2eCandidates.find((d) => fs.existsSync(d));
 
   if (!e2eDir) {
     // No E2E directory at all — flag all core flows as missing
@@ -90,7 +90,8 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
         file: 'e2e/',
         line: 0,
         description: `No E2E test directory found — "${flow.name}" flow is untested end-to-end`,
-        detail: 'Create an e2e/ directory with Playwright or Cypress and add tests for all critical flows',
+        detail:
+          'Create an e2e/ directory with Playwright or Cypress and add tests for all critical flows',
       });
     }
     return breaks;
@@ -108,8 +109,8 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
     path.join(config.frontendDir, 'cypress.config.ts'),
   ];
 
-  const hasPlaywright = playwrightConfig.some(p => fs.existsSync(p));
-  const hasCypress = cypressConfig.some(p => fs.existsSync(p));
+  const hasPlaywright = playwrightConfig.some((p) => fs.existsSync(p));
+  const hasCypress = cypressConfig.some((p) => fs.existsSync(p));
 
   if (!hasPlaywright && !hasCypress) {
     breaks.push({
@@ -117,8 +118,10 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
       severity: 'high',
       file: e2eDir,
       line: 0,
-      description: 'E2E directory exists but no Playwright or Cypress config found — tests cannot run',
-      detail: 'Create playwright.config.ts or cypress.config.ts at the root to enable E2E test execution',
+      description:
+        'E2E directory exists but no Playwright or Cypress config found — tests cannot run',
+      detail:
+        'Create playwright.config.ts or cypress.config.ts at the root to enable E2E test execution',
     });
   }
 
@@ -151,8 +154,10 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
       continue;
     }
     allE2EContent += '\n' + content;
-    if (/test\s*\(|it\s*\(|describe\s*\(|page\.|cy\./i.test(content) &&
-        !/test\.skip|xit\s*\(/.test(content)) {
+    if (
+      /test\s*\(|it\s*\(|describe\s*\(|page\.|cy\./i.test(content) &&
+      !/test\.skip|xit\s*\(/.test(content)
+    ) {
       hasActiveTests = true;
     }
   }
@@ -171,7 +176,7 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
 
   // CHECK 5: Core flow coverage
   for (const flow of CORE_FLOWS) {
-    const covered = flow.patterns.some(re => re.test(allE2EContent));
+    const covered = flow.patterns.some((re) => re.test(allE2EContent));
     if (!covered) {
       breaks.push({
         type: 'E2E_FLOW_NOT_TESTED',
@@ -186,7 +191,9 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
 
   // CHECK 6: Checkout failure scenario
   const hasCheckoutSuccess = /checkout|payment|pagamento/i.test(allE2EContent);
-  const hasCheckoutFailure = /fail|decline|reject|error|invalid.card|cartao.*invalido/i.test(allE2EContent);
+  const hasCheckoutFailure = /fail|decline|reject|error|invalid.card|cartao.*invalido/i.test(
+    allE2EContent,
+  );
   if (hasCheckoutSuccess && !hasCheckoutFailure) {
     breaks.push({
       type: 'E2E_FLOW_NOT_TESTED',
@@ -206,10 +213,13 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
   ];
   let e2eInCI = false;
   for (const ciPath of ciFiles) {
-    if (!fs.existsSync(ciPath)) continue;
-    const ciContent = fs.existsSync(ciPath) && !fs.statSync(ciPath).isDirectory()
-      ? fs.readFileSync(ciPath, 'utf8')
-      : '';
+    if (!fs.existsSync(ciPath)) {
+      continue;
+    }
+    const ciContent =
+      fs.existsSync(ciPath) && !fs.statSync(ciPath).isDirectory()
+        ? fs.readFileSync(ciPath, 'utf8')
+        : '';
     if (/e2e|playwright|cypress/i.test(ciContent)) {
       e2eInCI = true;
       break;
@@ -221,7 +231,8 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
       severity: 'high',
       file: '.github/workflows/',
       line: 0,
-      description: 'E2E tests exist but are not included in CI pipeline — they will never catch regressions',
+      description:
+        'E2E tests exist but are not included in CI pipeline — they will never catch regressions',
       detail: 'Add an E2E test step to your GitHub Actions / CI workflow that runs on every PR',
     });
   }

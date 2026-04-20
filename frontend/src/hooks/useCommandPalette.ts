@@ -120,23 +120,24 @@ export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
 
   // Handler de teclado global (Ctrl/⌘+K)
   useEffect(() => {
-    if (disableShortcut) return;
+    if (disableShortcut) {
+      return;
+    }
 
     const isTogglePaletteEvent = (e: KeyboardEvent): boolean =>
       (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k';
 
     const isTextInputElement = (target: HTMLElement): boolean =>
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.isContentEditable;
+      target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
     const isSlashOpenEvent = (e: KeyboardEvent): boolean => {
-      if (e.key !== '/' || state.isOpen) return false;
+      if (e.key !== '/' || state.isOpen) {
+        return false;
+      }
       return !isTextInputElement(e.target as HTMLElement);
     };
 
-    const isEscapeCloseEvent = (e: KeyboardEvent): boolean =>
-      e.key === 'Escape' && state.isOpen;
+    const isEscapeCloseEvent = (e: KeyboardEvent): boolean => e.key === 'Escape' && state.isOpen;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isTogglePaletteEvent(e)) {

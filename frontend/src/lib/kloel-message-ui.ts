@@ -272,6 +272,8 @@ function formatTraceToolLabel(toolName?: string | null) {
 }
 
 function lowercaseLeadingCharacter(value: string) {
-  if (!value) return value;
+  if (!value) {
+    return value;
+  }
   return value.charAt(0).toLowerCase() + value.slice(1);
 }

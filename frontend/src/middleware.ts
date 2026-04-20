@@ -156,7 +156,9 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
 
   if (forceAuth) {
     const forced = handleForceAuth(request, host);
-    if (forced) return forced;
+    if (forced) {
+      return forced;
+    }
   }
 
   if (isAuthenticated) {

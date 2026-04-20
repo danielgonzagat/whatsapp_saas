@@ -30,8 +30,12 @@ export function RealtimeUsageCard({
   const creditsPercent = (creditsBalance / maxCredits) * 100;
 
   const getBarColor = () => {
-    if (creditsPercent >= 70) return 'bg-[#E85D30]';
-    if (creditsPercent >= 30) return 'bg-[#F59E0B]';
+    if (creditsPercent >= 70) {
+      return 'bg-[#E85D30]';
+    }
+    if (creditsPercent >= 30) {
+      return 'bg-[#F59E0B]';
+    }
     return 'bg-[#E05252]';
   };
 

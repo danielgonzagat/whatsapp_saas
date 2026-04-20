@@ -322,7 +322,9 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
   const [editForm, setEditForm] = useState({ type: 'META', pixelId: '', accessToken: '' });
 
   const loadPixels = useCallback(async () => {
-    if (!planId) return;
+    if (!planId) {
+      return;
+    }
     setLoading(true);
     try {
       const res = await apiFetch(`/checkout/plans/${planId}/config`);
@@ -379,12 +381,13 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
     await loadPixels();
   };
 
-  if (!configId)
+  if (!configId) {
     return (
       <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: SECONDARY }}>
         Salve o plano primeiro para configurar pixels.
       </p>
     );
+  }
 
   return (
     <div>

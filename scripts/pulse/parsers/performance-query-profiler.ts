@@ -32,24 +32,28 @@ export function checkPerformanceQueryProfiler(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const serviceFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    f =>
-      /\.service\.ts$/.test(f) &&
-      !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
+    (f) => /\.service\.ts$/.test(f) && !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
   );
 
   for (const file of serviceFiles) {
     const content = readSafe(file);
-    if (!content) continue;
+    if (!content) {
+      continue;
+    }
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (isCommentLine(line)) continue;
+      if (isCommentLine(line)) {
+        continue;
+      }
 
       // Detect .findMany( call
-      if (!/\.findMany\s*\(/.test(line)) continue;
+      if (!/\.findMany\s*\(/.test(line)) {
+        continue;
+      }
 
       // Collect the findMany call block — scan forward up to 20 lines for the closing )
       const blockLines = lines.slice(i, Math.min(i + 20, lines.length));

@@ -16,11 +16,15 @@ export class KycApprovedGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!kycRequired) return true;
+    if (!kycRequired) {
+      return true;
+    }
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    if (!user?.sub) return true;
+    if (!user?.sub) {
+      return true;
+    }
 
     const agent = await this.prisma.agent.findUnique({
       where: { id: user.sub },

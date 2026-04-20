@@ -20,7 +20,9 @@ export function ProductNerveCenterLinksModal({
   onClose,
 }: ProductNerveCenterLinksModalProps) {
   const plan = plans.find((entry) => entry.id === planId);
-  if (!plan) return null;
+  if (!plan) {
+    return null;
+  }
 
   const checkoutLinks = buildCheckoutLinksForPlan(plan);
 

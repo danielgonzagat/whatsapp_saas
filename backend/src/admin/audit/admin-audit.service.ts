@@ -70,14 +70,26 @@ export class AdminAuditService {
     total: number;
   }> {
     const where: Prisma.AdminAuditLogWhereInput = {};
-    if (filters.adminUserId) where.adminUserId = filters.adminUserId;
-    if (filters.action) where.action = { contains: filters.action };
-    if (filters.entityType) where.entityType = filters.entityType;
-    if (filters.entityId) where.entityId = filters.entityId;
+    if (filters.adminUserId) {
+      where.adminUserId = filters.adminUserId;
+    }
+    if (filters.action) {
+      where.action = { contains: filters.action };
+    }
+    if (filters.entityType) {
+      where.entityType = filters.entityType;
+    }
+    if (filters.entityId) {
+      where.entityId = filters.entityId;
+    }
     if (filters.from || filters.to) {
       where.createdAt = {};
-      if (filters.from) where.createdAt.gte = filters.from;
-      if (filters.to) where.createdAt.lte = filters.to;
+      if (filters.from) {
+        where.createdAt.gte = filters.from;
+      }
+      if (filters.to) {
+        where.createdAt.lte = filters.to;
+      }
     }
 
     const skip = Math.max(0, filters.skip ?? 0);

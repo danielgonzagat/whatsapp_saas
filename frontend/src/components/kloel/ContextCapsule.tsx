@@ -123,7 +123,9 @@ export function ContextCapsule({
   // Add custom items
   contextItems.push(...items);
 
-  if (contextItems.length === 0) return null;
+  if (contextItems.length === 0) {
+    return null;
+  }
 
   const PageIcon = page ? PAGE_ICONS[page] : null;
 

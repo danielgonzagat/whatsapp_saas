@@ -32,12 +32,16 @@ function healthBar(score: number): string {
 }
 
 function pct(count: number, total: number): string {
-  if (total === 0) return '0%';
+  if (total === 0) {
+    return '0%';
+  }
   return Math.round((count / total) * 100) + '%';
 }
 
 function truncate(s: string, max: number): string {
-  if (s.length <= max) return s;
+  if (s.length <= max) {
+    return s;
+  }
   return s.slice(0, max - 3) + '...';
 }
 
@@ -97,7 +101,9 @@ export function generateFunctionalMapReport(result: FunctionalMapResult, rootDir
   // Per-page tables — organized by group
   for (const group of ['main', 'public', 'checkout', 'e2e', 'other']) {
     const groupPages = pages.filter((p) => p.group === group);
-    if (groupPages.length === 0) continue;
+    if (groupPages.length === 0) {
+      continue;
+    }
 
     lines.push(`## ${group.toUpperCase()} Pages`);
     lines.push('');
@@ -186,7 +192,9 @@ export function generateFunctionalMapReport(result: FunctionalMapResult, rootDir
     // Group by status
     for (const status of ['QUEBRADO', 'FACHADA', 'AUSENTE'] as InteractionStatus[]) {
       const items = fixable.filter((i) => i.status === status);
-      if (items.length === 0) continue;
+      if (items.length === 0) {
+        continue;
+      }
 
       lines.push(`## ${status} (${items.length})`);
       let idx = 1;

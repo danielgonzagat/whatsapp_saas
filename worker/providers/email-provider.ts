@@ -26,7 +26,9 @@ function resolveEmailConfig(): EmailConfig | null {
   const user = process.env.MAIL_USER;
   const pass = process.env.MAIL_PASS;
   const from = process.env.MAIL_FROM || 'autopilot@localhost';
-  if (!host) return null;
+  if (!host) {
+    return null;
+  }
   return {
     host,
     port,
@@ -92,10 +94,14 @@ export const emailProvider = {
   ) {
     void workspace;
     void type;
-    if (!to.includes('@')) return { error: 'invalid_email_target' };
+    if (!to.includes('@')) {
+      return { error: 'invalid_email_target' };
+    }
 
     const cfg = resolveEmailConfig();
-    if (!cfg) return { error: 'email_not_configured' };
+    if (!cfg) {
+      return { error: 'email_not_configured' };
+    }
 
     try {
       const transporter = nodemailer.createTransport({

@@ -74,8 +74,12 @@ function normalizePhase(raw: unknown): KloelStreamPhase | null {
 
 function tryAppendThread(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
   const hasConversationId = typeof event.conversationId === 'string';
-  if (!hasConversationId) return;
-  if (event.type !== 'thread' && !hasConversationId) return;
+  if (!hasConversationId) {
+    return;
+  }
+  if (event.type !== 'thread' && !hasConversationId) {
+    return;
+  }
   events.push({
     type: 'thread',
     conversationId: event.conversationId as string,
@@ -85,7 +89,9 @@ function tryAppendThread(event: Record<string, unknown>, events: KloelStreamEven
 
 function tryAppendStatus(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
   const normalizedPhase = normalizePhase(event.phase);
-  if (event.type !== 'status' || !normalizedPhase) return;
+  if (event.type !== 'status' || !normalizedPhase) {
+    return;
+  }
   events.push({
     type: 'status',
     phase: normalizedPhase,
@@ -95,7 +101,9 @@ function tryAppendStatus(event: Record<string, unknown>, events: KloelStreamEven
 }
 
 function tryAppendToolCall(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
-  if (event.type !== 'tool_call' || typeof event.tool !== 'string') return;
+  if (event.type !== 'tool_call' || typeof event.tool !== 'string') {
+    return;
+  }
   events.push({
     type: 'tool_call',
     callId: typeof event.callId === 'string' ? event.callId : undefined,
@@ -105,7 +113,9 @@ function tryAppendToolCall(event: Record<string, unknown>, events: KloelStreamEv
 }
 
 function tryAppendToolResult(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
-  if (event.type !== 'tool_result' || typeof event.tool !== 'string') return;
+  if (event.type !== 'tool_result' || typeof event.tool !== 'string') {
+    return;
+  }
   events.push({
     type: 'tool_result',
     callId: typeof event.callId === 'string' ? event.callId : undefined,
@@ -117,7 +127,9 @@ function tryAppendToolResult(event: Record<string, unknown>, events: KloelStream
 }
 
 function tryAppendContent(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
-  if (typeof event.content !== 'string' || event.content.length === 0) return;
+  if (typeof event.content !== 'string' || event.content.length === 0) {
+    return;
+  }
   events.push({
     type: 'content',
     content: event.content,
@@ -125,7 +137,9 @@ function tryAppendContent(event: Record<string, unknown>, events: KloelStreamEve
 }
 
 function tryAppendError(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
-  if (typeof event.error !== 'string' || event.error.length === 0) return;
+  if (typeof event.error !== 'string' || event.error.length === 0) {
+    return;
+  }
   events.push({
     type: 'error',
     error: event.error,
@@ -137,9 +151,15 @@ function tryAppendError(event: Record<string, unknown>, events: KloelStreamEvent
 
 function shouldAppendDone(event: Record<string, unknown>, events: KloelStreamEvent[]): boolean {
   const isDoneSignal = event.type === 'done' || event.done === true;
-  if (!isDoneSignal) return false;
-  if (events.some((entry) => entry.type === 'done')) return false;
-  if (events.some((entry) => entry.type === 'error')) return false;
+  if (!isDoneSignal) {
+    return false;
+  }
+  if (events.some((entry) => entry.type === 'done')) {
+    return false;
+  }
+  if (events.some((entry) => entry.type === 'error')) {
+    return false;
+  }
   return true;
 }
 

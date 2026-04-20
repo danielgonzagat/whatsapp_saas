@@ -114,7 +114,9 @@ export function RemoveIconButton({
 }
 
 export function OverlayStatus({ attachment }: { attachment: KloelChatAttachment }) {
-  if (attachment.status === 'ready') return null;
+  if (attachment.status === 'ready') {
+    return null;
+  }
 
   return (
     <div
@@ -141,7 +143,9 @@ export function OverlayStatus({ attachment }: { attachment: KloelChatAttachment 
 }
 
 export function InlineStatus({ attachment }: { attachment: KloelChatAttachment }) {
-  if (attachment.status === 'ready') return null;
+  if (attachment.status === 'ready') {
+    return null;
+  }
 
   return (
     <div

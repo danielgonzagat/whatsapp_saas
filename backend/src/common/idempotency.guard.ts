@@ -75,11 +75,15 @@ export class IdempotencyGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isIdempotent = this.reflector.get<boolean>(IDEMPOTENCY_KEY, context.getHandler());
-    if (!isIdempotent) return true;
+    if (!isIdempotent) {
+      return true;
+    }
 
     const request = context.switchToHttp().getRequest();
     const idempotencyKey = request.headers['x-idempotency-key'];
-    if (!idempotencyKey) return true;
+    if (!idempotencyKey) {
+      return true;
+    }
 
     const ttl = this.reflector.get<number>(IDEMPOTENCY_TTL_KEY, context.getHandler()) || 86400;
     const v2Enabled = this.featureFlags?.isEnabled('idempotency.v2') ?? true;
@@ -122,7 +126,9 @@ export class IdempotencyGuard implements CanActivate {
    */
   private async claimScopeOrThrow(scopeKey: string, bodyFp: string, ttl: number): Promise<void> {
     const claimed = await this.redis.set(scopeKey, bodyFp, 'EX', ttl, 'NX');
-    if (claimed === 'OK') return;
+    if (claimed === 'OK') {
+      return;
+    }
 
     const existingFp = await this.redis.get(scopeKey);
     if (existingFp !== null && existingFp !== bodyFp) {
@@ -170,7 +176,9 @@ export class IdempotencyGuard implements CanActivate {
       const existing = await this.redis.get(cacheKey);
       if (existing) {
         const decision = await this.handleExistingEntry(cacheKey, existing, context);
-        if (decision.kind === 'responded') return false;
+        if (decision.kind === 'responded') {
+          return false;
+        }
       }
 
       await this.redis.set(
@@ -186,7 +194,9 @@ export class IdempotencyGuard implements CanActivate {
     } catch (err: unknown) {
       // Re-throw ConflictException (our 409) — do NOT degrade to "no dedup"
       // when the error is deliberate.
-      if (err instanceof ConflictException) throw err;
+      if (err instanceof ConflictException) {
+        throw err;
+      }
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Redis failure degrades to "no dedup", same as v1. Log loudly.
@@ -211,7 +221,9 @@ export class IdempotencyGuard implements CanActivate {
 
       if (existing) {
         const decision = await this.handleExistingEntry(cacheKey, existing, context);
-        if (decision.kind === 'responded') return false;
+        if (decision.kind === 'responded') {
+          return false;
+        }
       }
 
       await this.redis.set(

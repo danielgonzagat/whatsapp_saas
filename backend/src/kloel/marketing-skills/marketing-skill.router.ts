@@ -54,13 +54,17 @@ const MARKETING_INTENT_KEYWORDS: readonly string[] = [
 export class MarketingSkillRouter {
   isMarketingRequest(message: string): boolean {
     const normalized = normalizeText(message);
-    if (!normalized) return false;
+    if (!normalized) {
+      return false;
+    }
     return containsAny(normalized, [...MARKETING_INTENT_KEYWORDS]);
   }
 
   route(message: string): MarketingSkillRouteHit[] {
     const normalized = normalizeText(message);
-    if (!normalized) return [];
+    if (!normalized) {
+      return [];
+    }
 
     const hits = MARKETING_SKILL_CATALOG.map((entry) => this.scoreEntry(normalized, entry)).filter(
       (entry): entry is MarketingSkillRouteHit => entry !== null,
@@ -84,8 +88,12 @@ export class MarketingSkillRouter {
 
     for (const keyword of entry.keywords) {
       const normalizedKeyword = normalizeText(keyword);
-      if (!normalizedKeyword || normalizedKeyword.length < 2) continue;
-      if (!text.includes(normalizedKeyword)) continue;
+      if (!normalizedKeyword || normalizedKeyword.length < 2) {
+        continue;
+      }
+      if (!text.includes(normalizedKeyword)) {
+        continue;
+      }
 
       score += normalizedKeyword.includes(' ') ? 3 : 2;
       reasons.push(keyword);

@@ -64,7 +64,9 @@ interface ClusterPoint {
 // @typescript-eslint/no-base-to-string. Returns '' for objects/arrays/null
 // rather than the misleading "[object Object]" default.
 function coerceToString(value: unknown): string {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value);
   }
@@ -99,7 +101,9 @@ export class NeuroCrmService {
         messages: { take: 3, orderBy: { createdAt: 'desc' } },
       },
     });
-    if (!contact) throw new NotFoundException('Contato não encontrado');
+    if (!contact) {
+      throw new NotFoundException('Contato não encontrado');
+    }
 
     const lastMsg = contact.messages[0];
     const hoursSince = lastMsg ? (Date.now() - lastMsg.createdAt.getTime()) / 3600000 : 999;
@@ -163,7 +167,9 @@ export class NeuroCrmService {
         buckets[best].push(p);
       }
       centroids = buckets.map((bucket, idx) => {
-        if (!bucket.length) return centroids[idx];
+        if (!bucket.length) {
+          return centroids[idx];
+        }
         return {
           x: bucket.reduce((a: number, b: ClusterPoint) => a + b.x, 0) / bucket.length,
           y: bucket.reduce((a: number, b: ClusterPoint) => a + b.y, 0) / bucket.length,
@@ -211,15 +217,18 @@ Cenário: ${input.scenario}
 Objetivo: ${input.goal}
 Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
 
-    if (input.workspaceId) await this.planLimits.ensureTokenBudget(input.workspaceId);
+    if (input.workspaceId) {
+      await this.planLimits.ensureTokenBudget(input.workspaceId);
+    }
     const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });
-    if (input.workspaceId)
+    if (input.workspaceId) {
       await this.planLimits
         .trackAiUsage(input.workspaceId, completion?.usage?.total_tokens ?? 500)
         .catch(() => {});
+    }
     const transcript = completion.choices[0]?.message?.content || '';
     return { transcript };
   }
@@ -233,7 +242,9 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       },
     });
 
-    if (!contact) return;
+    if (!contact) {
+      return;
+    }
 
     const history = contact.messages
       .reverse()
@@ -358,9 +369,15 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
     }
 
-    if (bucket === 'VERY_HIGH') return 0.95;
-    if (bucket === 'HIGH') return Math.max(0.75, Number((leadScore / 100).toFixed(3)));
-    if (bucket === 'MEDIUM') return Math.max(0.35, Number((leadScore / 100).toFixed(3)));
+    if (bucket === 'VERY_HIGH') {
+      return 0.95;
+    }
+    if (bucket === 'HIGH') {
+      return Math.max(0.75, Number((leadScore / 100).toFixed(3)));
+    }
+    if (bucket === 'MEDIUM') {
+      return Math.max(0.35, Number((leadScore / 100).toFixed(3)));
+    }
     return Math.min(0.2, Number((leadScore / 100).toFixed(3)));
   }
 

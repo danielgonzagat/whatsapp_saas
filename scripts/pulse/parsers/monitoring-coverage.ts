@@ -74,7 +74,8 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
       file: config.backendDir,
       line: 0,
       description: 'No health endpoint found',
-      detail: 'Backend has no @Get("health") endpoint. Load balancers and uptime monitors cannot check service health.',
+      detail:
+        'Backend has no @Get("health") endpoint. Load balancers and uptime monitors cannot check service health.',
     });
   }
 
@@ -85,7 +86,11 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
 
   for (const file of backendFiles) {
     const content = readFileSafe(file);
-    if (/from ['"]@sentry\/|import.*Sentry|captureException|SentryExceptionFilter|initSentry/i.test(content)) {
+    if (
+      /from ['"]@sentry\/|import.*Sentry|captureException|SentryExceptionFilter|initSentry/i.test(
+        content,
+      )
+    ) {
       hasSentryBackend = true;
       sentryBackendFile = file;
       break;
@@ -99,7 +104,8 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
       file: backendSrc,
       line: 0,
       description: 'No error tracking (Sentry) in backend',
-      detail: 'Backend has no Sentry integration. Unhandled exceptions will not be captured for alerting.',
+      detail:
+        'Backend has no Sentry integration. Unhandled exceptions will not be captured for alerting.',
     });
   }
 
@@ -122,7 +128,8 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
       file: config.frontendDir,
       line: 0,
       description: 'No error tracking (Sentry) in frontend',
-      detail: 'Frontend has no Sentry.init() call. Client-side errors are not captured or reported.',
+      detail:
+        'Frontend has no Sentry.init() call. Client-side errors are not captured or reported.',
     });
   }
 
@@ -133,7 +140,9 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
   for (const file of backendFiles) {
     const content = readFileSafe(file);
     // Skip test files and generated files
-    if (file.includes('.spec.') || file.includes('.test.') || file.includes('dist/')) continue;
+    if (file.includes('.spec.') || file.includes('.test.') || file.includes('dist/')) {
+      continue;
+    }
     if (/console\.(log|error|warn)\(/m.test(content)) {
       consoleLogFiles++;
     }
@@ -173,14 +182,16 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
       file: config.workerDir,
       line: 0,
       description: 'No queue monitoring (BullMQ events)',
-      detail: 'No QueueEvents listener or failed-job handler found. Failed jobs will not trigger alerts or be tracked.',
+      detail:
+        'No QueueEvents listener or failed-job handler found. Failed jobs will not trigger alerts or be tracked.',
     });
   }
 
   // --- Check 6: Financial operations have logging ---
-  const financialServiceFiles = backendFiles.filter(f =>
-    /wallet|payment|checkout|billing|transaction/i.test(path.basename(f)) &&
-    f.endsWith('.service.ts')
+  const financialServiceFiles = backendFiles.filter(
+    (f) =>
+      /wallet|payment|checkout|billing|transaction/i.test(path.basename(f)) &&
+      f.endsWith('.service.ts'),
   );
 
   for (const file of financialServiceFiles) {

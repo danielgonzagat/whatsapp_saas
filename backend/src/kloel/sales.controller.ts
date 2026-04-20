@@ -57,10 +57,16 @@ export class SalesController {
     @Query('method') method?: string,
   ) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { sales: [], count: 0 };
+    if (!workspaceId) {
+      return { sales: [], count: 0 };
+    }
     const where: Record<string, unknown> = { workspaceId };
-    if (status && status !== 'todos') where.status = status;
-    if (method) where.paymentMethod = method;
+    if (status && status !== 'todos') {
+      where.status = status;
+    }
+    if (method) {
+      where.paymentMethod = method;
+    }
     if (search) {
       where.OR = [
         { productName: { contains: search, mode: 'insensitive' } },
@@ -78,7 +84,7 @@ export class SalesController {
   @Get('stats')
   async getSalesStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId)
+    if (!workspaceId) {
       return {
         totalRevenue: 0,
         totalTransactions: 0,
@@ -87,6 +93,7 @@ export class SalesController {
         avgTicket: 0,
         revenueTrend: 0,
       };
+    }
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
 
@@ -126,7 +133,9 @@ export class SalesController {
   @Get('chart')
   async getSalesChart(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { chart: [] };
+    if (!workspaceId) {
+      return { chart: [] };
+    }
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const sales = await this.prisma.kloelSale.findMany({
       where: { workspaceId, status: 'paid', createdAt: { gte: thirtyDaysAgo } },
@@ -156,9 +165,13 @@ export class SalesController {
   @Get('subscriptions')
   async listSubscriptions(@Request() req: AuthenticatedRequest, @Query('status') status?: string) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { subscriptions: [], count: 0 };
+    if (!workspaceId) {
+      return { subscriptions: [], count: 0 };
+    }
     const where: Record<string, unknown> = { workspaceId };
-    if (status && status !== 'todos') where.status = status;
+    if (status && status !== 'todos') {
+      where.status = status;
+    }
     const subscriptions = await this.prisma.customerSubscription.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -169,7 +182,7 @@ export class SalesController {
   @Get('subscriptions/stats')
   async getSubscriptionStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId)
+    if (!workspaceId) {
       return {
         mrr: 0,
         arr: 0,
@@ -179,6 +192,7 @@ export class SalesController {
         avgLtv: 0,
         lifecycle: {},
       };
+    }
     const subs = await this.prisma.customerSubscription.findMany({
       where: { workspaceId },
     });
@@ -212,7 +226,9 @@ export class SalesController {
     const sub = await this.prisma.customerSubscription.findFirst({
       where: { id, workspaceId },
     });
-    if (!sub) throw new NotFoundException('Subscription not found');
+    if (!sub) {
+      throw new NotFoundException('Subscription not found');
+    }
 
     await this.prisma.customerSubscription.updateMany({
       where: { id, workspaceId },
@@ -244,7 +260,9 @@ export class SalesController {
     const sub = await this.prisma.customerSubscription.findFirst({
       where: { id, workspaceId },
     });
-    if (!sub) throw new NotFoundException('Subscription not found');
+    if (!sub) {
+      throw new NotFoundException('Subscription not found');
+    }
 
     await this.prisma.customerSubscription.updateMany({
       where: { id, workspaceId },
@@ -276,7 +294,9 @@ export class SalesController {
     const sub = await this.prisma.customerSubscription.findFirst({
       where: { id, workspaceId },
     });
-    if (!sub) throw new NotFoundException('Subscription not found');
+    if (!sub) {
+      throw new NotFoundException('Subscription not found');
+    }
 
     await this.prisma.customerSubscription.updateMany({
       where: { id, workspaceId },
@@ -314,13 +334,18 @@ export class SalesController {
     const sub = await this.prisma.customerSubscription.findFirst({
       where: { id, workspaceId },
     });
-    if (!sub) throw new NotFoundException('Subscription not found');
-    if (sub.status === 'CANCELLED')
+    if (!sub) {
+      throw new NotFoundException('Subscription not found');
+    }
+    if (sub.status === 'CANCELLED') {
       throw new BadRequestException('Cannot change plan of cancelled subscription');
+    }
     const newPlan = await this.prisma.productPlan.findUnique({
       where: { id: dto.newPlanId },
     });
-    if (!newPlan) throw new NotFoundException('Plan not found');
+    if (!newPlan) {
+      throw new NotFoundException('Plan not found');
+    }
     const planChangedAt = new Date();
     const previousPlanId = this.readText(sub.planId);
     const metadata = this.readJsonRecord(sub.metadata);
@@ -357,9 +382,13 @@ export class SalesController {
   @Get('orders')
   async listOrders(@Request() req: AuthenticatedRequest, @Query('status') status?: string) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { orders: [], count: 0 };
+    if (!workspaceId) {
+      return { orders: [], count: 0 };
+    }
     const where: Record<string, unknown> = { workspaceId };
-    if (status && status !== 'todos') where.status = status;
+    if (status && status !== 'todos') {
+      where.status = status;
+    }
     const orders = await this.prisma.physicalOrder.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -370,7 +399,9 @@ export class SalesController {
   @Get('orders/stats')
   async getOrderStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { total: 0, processing: 0, shipped: 0, delivered: 0 };
+    if (!workspaceId) {
+      return { total: 0, processing: 0, shipped: 0, delivered: 0 };
+    }
     const orders = await this.prisma.physicalOrder.findMany({
       where: { workspaceId },
     });
@@ -385,7 +416,7 @@ export class SalesController {
   @Get('orders/pipeline')
   async getOrderPipeline(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId)
+    if (!workspaceId) {
       return {
         processing: 0,
         shipped: 0,
@@ -393,6 +424,7 @@ export class SalesController {
         returned: 0,
         cancelled: 0,
       };
+    }
     const orders = await this.prisma.physicalOrder.findMany({
       where: { workspaceId },
     });
@@ -415,7 +447,9 @@ export class SalesController {
     const order = await this.prisma.physicalOrder.findFirst({
       where: { id, workspaceId },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
 
     // Sanitize tracking code — only alphanumeric, dashes, and dots allowed
     const sanitizedCode = dto.trackingCode.replace(A_Z_A_Z0_9_RE, '');
@@ -461,7 +495,9 @@ export class SalesController {
     const order = await this.prisma.physicalOrder.findFirst({
       where: { id, workspaceId },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
     await this.prisma.physicalOrder.updateMany({
       where: { id, workspaceId },
       data: { status: 'DELIVERED', deliveredAt: new Date() },
@@ -475,7 +511,9 @@ export class SalesController {
     const order = await this.prisma.physicalOrder.findFirst({
       where: { id, workspaceId },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
     await this.prisma.physicalOrder.updateMany({
       where: { id, workspaceId },
       data: { status: 'RETURNED' },
@@ -490,7 +528,9 @@ export class SalesController {
   @Get('orders/alerts')
   async getOrderAlerts(@Request() req: AuthenticatedRequest, @Query('resolved') resolved?: string) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { alerts: [], counts: {} };
+    if (!workspaceId) {
+      return { alerts: [], counts: {} };
+    }
     const resolvedFilter = resolved === 'true' ? true : resolved === 'false' ? false : undefined;
     return this.orderAlertsService.getAlerts(workspaceId, resolvedFilter);
   }
@@ -498,14 +538,18 @@ export class SalesController {
   @Post('orders/alerts/generate')
   async generateOrderAlerts(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { created: 0 };
+    if (!workspaceId) {
+      return { created: 0 };
+    }
     return this.orderAlertsService.generateAlerts(workspaceId);
   }
 
   @Post('orders/alerts/:id/resolve')
   async resolveOrderAlert(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) throw new NotFoundException('Workspace not found');
+    if (!workspaceId) {
+      throw new NotFoundException('Workspace not found');
+    }
     return this.orderAlertsService.resolveAlert(id, workspaceId);
   }
 
@@ -532,7 +576,9 @@ export class SalesController {
     const sale = await this.prisma.kloelSale.findFirst({
       where: { id, workspaceId },
     });
-    if (!sale) throw new NotFoundException('Sale not found');
+    if (!sale) {
+      throw new NotFoundException('Sale not found');
+    }
 
     // Idempotency: if the sale is already refunded/requested and caller sent an idempotency key,
     // return the existing record to avoid duplicate refund attempts.
@@ -540,7 +586,9 @@ export class SalesController {
       return { sale, success: true, idempotent: true };
     }
 
-    if (sale.status !== 'paid') throw new BadRequestException('Only paid sales can be refunded');
+    if (sale.status !== 'paid') {
+      throw new BadRequestException('Only paid sales can be refunded');
+    }
 
     if (sale.externalPaymentId) {
       try {

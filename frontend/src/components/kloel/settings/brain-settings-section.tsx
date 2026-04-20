@@ -279,7 +279,9 @@ export function BrainSettingsSection() {
         emergencyMode: EmergencyModeProfile;
       }>,
     ) => {
-      if (!workspaceId) return;
+      if (!workspaceId) {
+        return;
+      }
 
       setProfileSaving(true);
       setProfileError('');
@@ -353,7 +355,9 @@ export function BrainSettingsSection() {
 
   const handleToggleAutopilot = useCallback(
     async (enabled: boolean) => {
-      if (!workspaceId) return;
+      if (!workspaceId) {
+        return;
+      }
       setAutopilotSaving(true);
       setAutopilotError('');
       setAutopilotSuccess('');
@@ -373,7 +377,9 @@ export function BrainSettingsSection() {
   );
 
   const handleSaveAutopilotConfig = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setAutopilotSaving(true);
     setAutopilotError('');
     setAutopilotSuccess('');
@@ -432,7 +438,9 @@ export function BrainSettingsSection() {
   }, [selectedKnowledgeBaseId, workspaceId]);
 
   const handleCreateKnowledgeBase = useCallback(async () => {
-    if (!workspaceId || !newKnowledgeBaseName.trim()) return;
+    if (!workspaceId || !newKnowledgeBaseName.trim()) {
+      return;
+    }
     setKnowledgeLoading(true);
     setKnowledgeError('');
     setKnowledgeSuccess('');
@@ -450,7 +458,9 @@ export function BrainSettingsSection() {
   }, [hydrateKnowledgeBase, newKnowledgeBaseName, workspaceId]);
 
   const handleAddKnowledgeSource = useCallback(async () => {
-    if (!workspaceId || !selectedKnowledgeBaseId || !knowledgeSourceContent.trim()) return;
+    if (!workspaceId || !selectedKnowledgeBaseId || !knowledgeSourceContent.trim()) {
+      return;
+    }
     setKnowledgeLoading(true);
     setKnowledgeError('');
     setKnowledgeSuccess('');
@@ -586,7 +596,9 @@ export function BrainSettingsSection() {
 
   const handleDeleteProduct = async (productId: string) => {
     const product = products.find((item) => item.id === productId);
-    if (!product) return;
+    if (!product) {
+      return;
+    }
 
     setCatalogLoading(true);
     setCatalogError('');
@@ -635,13 +647,17 @@ export function BrainSettingsSection() {
   };
 
   const runAiTool = async (tool: AiToolKind, label: string) => {
-    if (!aiToolInput.trim()) return;
+    if (!aiToolInput.trim()) {
+      return;
+    }
     setAiToolLoading(true);
     setAiToolError('');
     setAiToolResult('');
     try {
       const { data, error } = await invokeAiTool(tool, aiToolInput.trim(), workspaceId || '');
-      if (error) throw new Error(error);
+      if (error) {
+        throw new Error(error);
+      }
       setAiToolResult(`[${label}]\n${formatAiToolOutput(data)}`);
     } catch (e: unknown) {
       setAiToolError(e instanceof Error ? e.message : `Erro ao executar ${label}`);
@@ -1405,7 +1421,9 @@ export function BrainSettingsSection() {
                 accept=".pdf,.txt,.docx"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) setKbUploadFile(f);
+                  if (f) {
+                    setKbUploadFile(f);
+                  }
                 }}
               />
             </label>

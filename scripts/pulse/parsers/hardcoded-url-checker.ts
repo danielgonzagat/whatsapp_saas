@@ -106,8 +106,12 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
     const files = walkFiles(dir, ['.ts', '.tsx']);
 
     for (const file of files) {
-      if (shouldSkipFile(file)) continue;
-      if (isConfigDocLine(file)) continue;
+      if (shouldSkipFile(file)) {
+        continue;
+      }
+      if (isConfigDocLine(file)) {
+        continue;
+      }
 
       let content: string;
       try {
@@ -123,9 +127,15 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
         const raw = lines[i];
         const trimmed = raw.trim();
 
-        if (isCommentLine(trimmed)) continue;
-        if (isImportLine(trimmed)) continue;
-        if (!trimmed.includes('http')) continue;
+        if (isCommentLine(trimmed)) {
+          continue;
+        }
+        if (isImportLine(trimmed)) {
+          continue;
+        }
+        if (!trimmed.includes('http')) {
+          continue;
+        }
 
         URL_RE.lastIndex = 0;
         let m: RegExpExecArray | null;
@@ -135,7 +145,9 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
           const domain = m[1];
 
           // Skip well-known external services
-          if (ALLOWED_EXTERNAL_RE.test(domain)) continue;
+          if (ALLOWED_EXTERNAL_RE.test(domain)) {
+            continue;
+          }
 
           // Skip localhost in fallback/default patterns: `|| 'http://localhost'` or env var defaults
           if (/localhost|127\.0\.0\.1|0\.0\.0\.0/.test(domain)) {
@@ -169,8 +181,9 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
               ) ||
               // Return statement inside a getServerApiBase-style function (check prev lines for function name)
               /getServerApiBase|getApiBase|getBackendBase/i.test(prevLines)
-            )
+            ) {
               continue;
+            }
           }
 
           // Skip vercel.app / railway.app deployment URLs in CORS configuration context
@@ -179,8 +192,9 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
             if (
               /cors|allowedOrigins|Set\s*\(\[/i.test(prevLines4) ||
               /cors|origin|allowedOrigins/i.test(raw)
-            )
+            ) {
               continue;
+            }
           }
 
           if (INTERNAL_DOMAIN_RE.test(domain)) {
@@ -209,8 +223,9 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
               // CORS / gateway allowed origins
               /cors|origin|gateway|allowedOrigins|Set\s*\(/i.test(raw) ||
               /cors|allowedOrigins|Set\s*\(\[/i.test(prevLinesProd)
-            )
+            ) {
               continue;
+            }
 
             breaks.push({
               type: 'HARDCODED_PROD_URL',

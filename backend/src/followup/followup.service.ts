@@ -152,9 +152,15 @@ export class FollowUpService {
       data.scheduledFor =
         typeof dto.scheduledFor === 'string' ? new Date(dto.scheduledFor) : dto.scheduledFor;
     }
-    if (dto.message !== undefined) data.message = dto.message;
-    if (dto.status) data.status = dto.status;
-    if (dto.reason !== undefined) data.reason = dto.reason;
+    if (dto.message !== undefined) {
+      data.message = dto.message;
+    }
+    if (dto.status) {
+      data.status = dto.status;
+    }
+    if (dto.reason !== undefined) {
+      data.reason = dto.reason;
+    }
 
     await this.prisma.followUp.updateMany({
       where: { id, workspaceId },

@@ -26,28 +26,25 @@ type StubEntry = {
   createdAt: Date;
 };
 
-function makePrisma({
-  balances,
-  entries,
-}: {
-  balances: StubBalance[];
-  entries: StubEntry[];
-}) {
+function makePrisma({ balances, entries }: { balances: StubBalance[]; entries: StubEntry[] }) {
   return {
     connectAccountBalance: {
-      findMany: jest.fn().mockImplementation(async ({ where }: { where?: { workspaceId?: string } }) =>
-        where?.workspaceId
-          ? balances.filter((balance) => balance.workspaceId === where.workspaceId)
-          : balances,
-      ),
+      findMany: jest
+        .fn()
+        .mockImplementation(async ({ where }: { where?: { workspaceId?: string } }) =>
+          where?.workspaceId
+            ? balances.filter((balance) => balance.workspaceId === where.workspaceId)
+            : balances,
+        ),
     },
     connectLedgerEntry: {
-      findMany: jest.fn().mockImplementation(
-        async ({ where }: { where: { accountBalanceId: string } }) =>
+      findMany: jest
+        .fn()
+        .mockImplementation(async ({ where }: { where: { accountBalanceId: string } }) =>
           entries
             .filter((entry) => entry.accountBalanceId === where.accountBalanceId)
             .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime()),
-      ),
+        ),
     },
     adminAuditLog: {
       create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
@@ -61,7 +58,10 @@ describe('ConnectLedgerReconciliationService', () => {
     const financialAlert = {
       reconciliationAlert: jest.fn(),
     };
-    const service = new ConnectLedgerReconciliationService(prisma as never, financialAlert as never);
+    const service = new ConnectLedgerReconciliationService(
+      prisma as never,
+      financialAlert as never,
+    );
     const reconcileSpy = jest.spyOn(service, 'reconcile').mockResolvedValue({
       scannedAccounts: 0,
       drifts: [],
@@ -79,7 +79,10 @@ describe('ConnectLedgerReconciliationService', () => {
     const financialAlert = {
       reconciliationAlert: jest.fn(),
     };
-    const service = new ConnectLedgerReconciliationService(prisma as never, financialAlert as never);
+    const service = new ConnectLedgerReconciliationService(
+      prisma as never,
+      financialAlert as never,
+    );
     jest.spyOn(service, 'reconcile').mockRejectedValue(new Error('connect cron boom'));
 
     await service.runCron();
@@ -180,7 +183,10 @@ describe('ConnectLedgerReconciliationService', () => {
       reconciliationAlert: jest.fn(),
     };
 
-    const service = new ConnectLedgerReconciliationService(prisma as never, financialAlert as never);
+    const service = new ConnectLedgerReconciliationService(
+      prisma as never,
+      financialAlert as never,
+    );
     const result = await service.reconcile();
 
     expect(result.scannedAccounts).toBe(1);
@@ -248,7 +254,10 @@ describe('ConnectLedgerReconciliationService', () => {
       reconciliationAlert: jest.fn(),
     };
 
-    const service = new ConnectLedgerReconciliationService(prisma as never, financialAlert as never);
+    const service = new ConnectLedgerReconciliationService(
+      prisma as never,
+      financialAlert as never,
+    );
     const result = await service.reconcile();
 
     expect(result.scannedAccounts).toBe(1);
@@ -389,7 +398,10 @@ describe('ConnectLedgerReconciliationService', () => {
       reconciliationAlert: jest.fn(),
     };
 
-    const service = new ConnectLedgerReconciliationService(prisma as never, financialAlert as never);
+    const service = new ConnectLedgerReconciliationService(
+      prisma as never,
+      financialAlert as never,
+    );
     const result = await service.reconcile({ workspaceId: 'ws_1' });
 
     expect(result.scannedAccounts).toBe(1);
@@ -407,7 +419,10 @@ describe('ConnectLedgerReconciliationService', () => {
       reconciliationAlert: jest.fn(),
     };
 
-    const service = new ConnectLedgerReconciliationService(prisma as never, financialAlert as never);
+    const service = new ConnectLedgerReconciliationService(
+      prisma as never,
+      financialAlert as never,
+    );
     const result = await service.reconcile();
 
     expect(result.scannedAccounts).toBe(0);

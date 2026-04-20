@@ -38,7 +38,9 @@ export class AgentAssistService {
   }
 
   async analyzeSentiment(text: string, workspaceId?: string) {
-    if (!this.openai) return { sentiment: 'neutral', score: 0 };
+    if (!this.openai) {
+      return { sentiment: 'neutral', score: 0 };
+    }
     await this.ensureBudget(workspaceId);
     const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('brain'),
@@ -67,7 +69,9 @@ export class AgentAssistService {
         messages: { orderBy: { createdAt: 'asc' }, take: 30 },
       },
     });
-    if (!convo) return { summary: '' };
+    if (!convo) {
+      return { summary: '' };
+    }
     const effectiveWorkspaceId =
       this.readWorkspaceId(workspaceId) || this.readWorkspaceId(convo.workspaceId);
 

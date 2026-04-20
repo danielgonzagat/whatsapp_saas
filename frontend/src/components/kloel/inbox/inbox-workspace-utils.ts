@@ -19,9 +19,7 @@ export interface ParsedInboxMessage {
   newMsg: Record<string, unknown>;
 }
 
-function extractNestedMessage(
-  payload: Record<string, unknown>,
-): Record<string, unknown> | null {
+function extractNestedMessage(payload: Record<string, unknown>): Record<string, unknown> | null {
   const candidate = payload.message;
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
     return null;
@@ -33,8 +31,12 @@ function pickConversationId(
   payload: Record<string, unknown>,
   newMsg: Record<string, unknown>,
 ): string | undefined {
-  if (typeof payload.conversationId === 'string') return payload.conversationId;
-  if (typeof newMsg.conversationId === 'string') return newMsg.conversationId;
+  if (typeof payload.conversationId === 'string') {
+    return payload.conversationId;
+  }
+  if (typeof newMsg.conversationId === 'string') {
+    return newMsg.conversationId;
+  }
   return undefined;
 }
 
@@ -58,9 +60,13 @@ export function extractErrorMessage(err: unknown, fallback: string) {
 }
 
 export function formatInboxTime(value?: string) {
-  if (!value) return '';
+  if (!value) {
+    return '';
+  }
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
   return date.toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',

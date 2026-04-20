@@ -11,12 +11,7 @@ import type {
 } from '../types';
 import { obtainAuthToken } from '../browser-stress-tester/auth';
 import type { AuthCredentials } from '../browser-stress-tester/types';
-import {
-  getRuntimeResolution,
-  httpGet,
-  httpPost,
-  httpPut,
-} from '../parsers/runtime-utils';
+import { getRuntimeResolution, httpGet, httpPost, httpPut } from '../parsers/runtime-utils';
 
 interface RunDeclaredFlowsInput {
   environment: PulseEnvironment;
@@ -32,22 +27,10 @@ const FLOW_DETAIL_PREFIX = 'PULSE_FLOW_';
 const DEFAULT_REPLAY_TEST_PHONE = '5511999990000';
 
 const FLOW_BREAK_PATTERNS: Record<string, RegExp[]> = {
-  'auth-login': [
-    /^AUTH_BYPASS_VULNERABLE$/,
-    /^AUTH_FLOW_BROKEN$/,
-    /^E2E_REGISTRATION_BROKEN$/,
-  ],
-  'product-create': [
-    /^E2E_PRODUCT_BROKEN$/,
-  ],
-  'checkout-payment': [
-    /^E2E_PAYMENT_BROKEN$/,
-    /^ORDERING_WEBHOOK_OOO$/,
-  ],
-  'wallet-withdrawal': [
-    /^E2E_RACE_CONDITION_WITHDRAWAL$/,
-    /^RACE_CONDITION_FINANCIAL$/,
-  ],
+  'auth-login': [/^AUTH_BYPASS_VULNERABLE$/, /^AUTH_FLOW_BROKEN$/, /^E2E_REGISTRATION_BROKEN$/],
+  'product-create': [/^E2E_PRODUCT_BROKEN$/],
+  'checkout-payment': [/^E2E_PAYMENT_BROKEN$/, /^ORDERING_WEBHOOK_OOO$/],
+  'wallet-withdrawal': [/^E2E_RACE_CONDITION_WITHDRAWAL$/, /^RACE_CONDITION_FINANCIAL$/],
   'whatsapp-message-send': [],
 };
 
@@ -56,26 +39,39 @@ function isBlockingBreak(item: Break): boolean {
 }
 
 function getActiveFlowAcceptance(manifest: PulseManifest | null, flowId: string) {
-  if (!manifest) return null;
+  if (!manifest) {
+    return null;
+  }
   const now = Date.now();
-  return manifest.temporaryAcceptances.find(entry => {
-    if (entry.targetType !== 'flow' || entry.target !== flowId) return false;
-    const expiresAt = Date.parse(entry.expiresAt);
-    return Number.isFinite(expiresAt) && expiresAt >= now;
-  }) || null;
+  return (
+    manifest.temporaryAcceptances.find((entry) => {
+      if (entry.targetType !== 'flow' || entry.target !== flowId) {
+        return false;
+      }
+      const expiresAt = Date.parse(entry.expiresAt);
+      return Number.isFinite(expiresAt) && expiresAt >= now;
+    }) || null
+  );
 }
 
 function getLoadedCheckNames(parserInventory: PulseParserInventory): Set<string> {
-  return new Set(parserInventory.loadedChecks.map(check => check.name));
+  return new Set(parserInventory.loadedChecks.map((check) => check.name));
 }
 
-function getApplicableSpecs(environment: PulseEnvironment, manifest: PulseManifest | null): PulseManifestFlowSpec[] {
-  if (!manifest) return [];
-  return manifest.flowSpecs.filter(spec => spec.environments.includes(environment));
+function getApplicableSpecs(
+  environment: PulseEnvironment,
+  manifest: PulseManifest | null,
+): PulseManifestFlowSpec[] {
+  if (!manifest) {
+    return [];
+  }
+  return manifest.flowSpecs.filter((spec) => spec.environments.includes(environment));
 }
 
 function collectMatchingBreaks(health: PulseHealth, patterns: RegExp[]): Break[] {
-  return health.breaks.filter(item => isBlockingBreak(item) && patterns.some(pattern => pattern.test(item.type)));
+  return health.breaks.filter(
+    (item) => isBlockingBreak(item) && patterns.some((pattern) => pattern.test(item.type)),
+  );
 }
 
 interface FlowRuntimeContext {
@@ -101,7 +97,9 @@ function replayEnabled(spec: PulseManifestFlowSpec): boolean {
 }
 
 function smokeEnabled(spec: PulseManifestFlowSpec): boolean {
-  if (!spec.smokeRequired) return false;
+  if (!spec.smokeRequired) {
+    return false;
+  }
   return spec.providerMode === 'real_smoke' || spec.providerMode === 'hybrid';
 }
 
@@ -111,7 +109,9 @@ function getArtifactPaths(flowId: string): string[] {
 
 function getManifestAdapterValue<T>(manifest: PulseManifest | null, key: string): T | undefined {
   const config = manifest?.adapterConfig;
-  if (!config || typeof config !== 'object') return undefined;
+  if (!config || typeof config !== 'object') {
+    return undefined;
+  }
   return (config as Record<string, unknown>)[key] as T | undefined;
 }
 
@@ -133,7 +133,10 @@ function getReplayPhone(manifest: PulseManifest | null): string {
 
 function getConfiguredWithdrawalAmount(manifest: PulseManifest | null): number {
   const envAmount = process.env.PULSE_WALLET_WITHDRAWAL_AMOUNT;
-  const manifestAmount = getManifestAdapterValue<number | string>(manifest, 'pulseWalletWithdrawalAmount');
+  const manifestAmount = getManifestAdapterValue<number | string>(
+    manifest,
+    'pulseWalletWithdrawalAmount',
+  );
   const parsed = Number(envAmount || manifestAmount || 1);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
@@ -147,15 +150,24 @@ function round2(value: number): number {
 }
 
 function compactSummary(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'string') {
+    return value.trim();
+  }
   if (Array.isArray(value)) {
-    return value.map(item => compactSummary(item)).filter(Boolean).join('; ');
+    return value
+      .map((item) => compactSummary(item))
+      .filter(Boolean)
+      .join('; ');
   }
   if (value && typeof value === 'object') {
     const maybeMessage = (value as Record<string, unknown>).message;
-    if (typeof maybeMessage === 'string') return maybeMessage.trim();
+    if (typeof maybeMessage === 'string') {
+      return maybeMessage.trim();
+    }
     const maybeError = (value as Record<string, unknown>).error;
-    if (typeof maybeError === 'string') return maybeError.trim();
+    if (typeof maybeError === 'string') {
+      return maybeError.trim();
+    }
   }
   return '';
 }
@@ -177,7 +189,7 @@ function isProvisioningGap(summary: string): boolean {
     'provider',
     'phone not configured',
     'disabled for safety',
-  ].some(token => lowered.includes(token));
+  ].some((token) => lowered.includes(token));
 }
 
 function buildPulseSuffix(prefix: string): string {
@@ -195,15 +207,17 @@ function buildProductSlug(seed: string): string {
 
 function isTransportGap(status: number, summary: string): boolean {
   const lowered = summary.toLowerCase();
-  return status === 0
-    || lowered.includes('timed out')
-    || lowered.includes('fetch failed')
-    || lowered.includes('request failed')
-    || lowered.includes('enotfound')
-    || lowered.includes('econnrefused')
-    || lowered.includes('econnreset')
-    || lowered.includes('socket hang up')
-    || lowered.includes('aborted');
+  return (
+    status === 0 ||
+    lowered.includes('timed out') ||
+    lowered.includes('fetch failed') ||
+    lowered.includes('request failed') ||
+    lowered.includes('enotfound') ||
+    lowered.includes('econnrefused') ||
+    lowered.includes('econnreset') ||
+    lowered.includes('socket hang up') ||
+    lowered.includes('aborted')
+  );
 }
 
 function buildHttpBackedResult(
@@ -241,7 +255,9 @@ function extractWorkspaceId(payload: any, fallback: string): string {
 
   for (const candidate of candidates) {
     const normalized = String(candidate || '').trim();
-    if (normalized) return normalized;
+    if (normalized) {
+      return normalized;
+    }
   }
 
   return '';
@@ -430,7 +446,11 @@ async function runWalletWithdrawalFlow(
       }
     }
 
-    const balanceRes = await fetchJsonWithAuth('GET', `/kloel/wallet/${auth.workspaceId}/balance`, auth.token);
+    const balanceRes = await fetchJsonWithAuth(
+      'GET',
+      `/kloel/wallet/${auth.workspaceId}/balance`,
+      auth.token,
+    );
 
     if (!balanceRes.ok) {
       return buildMissingEvidenceResult(
@@ -484,7 +504,11 @@ async function runWalletWithdrawalFlow(
       }
 
       seededReplayCredit = true;
-      const replayBalanceRes = await fetchJsonWithAuth('GET', `/kloel/wallet/${auth.workspaceId}/balance`, auth.token);
+      const replayBalanceRes = await fetchJsonWithAuth(
+        'GET',
+        `/kloel/wallet/${auth.workspaceId}/balance`,
+        auth.token,
+      );
       if (!replayBalanceRes.ok) {
         return buildFailureResult(
           spec,
@@ -508,7 +532,11 @@ async function runWalletWithdrawalFlow(
       );
     }
 
-    const accountsRes = await fetchJsonWithAuth('GET', `/kloel/wallet/${auth.workspaceId}/bank-accounts`, auth.token);
+    const accountsRes = await fetchJsonWithAuth(
+      'GET',
+      `/kloel/wallet/${auth.workspaceId}/bank-accounts`,
+      auth.token,
+    );
     if (!accountsRes.ok) {
       return buildMissingEvidenceResult(
         spec,
@@ -517,7 +545,9 @@ async function runWalletWithdrawalFlow(
       );
     }
 
-    const bankAccounts = Array.isArray(accountsRes.body?.accounts) ? accountsRes.body.accounts as Array<Record<string, unknown>> : [];
+    const bankAccounts = Array.isArray(accountsRes.body?.accounts)
+      ? (accountsRes.body.accounts as Array<Record<string, unknown>>)
+      : [];
     let createdBankAccount = false;
 
     if (bankAccounts.length === 0) {
@@ -539,8 +569,18 @@ async function runWalletWithdrawalFlow(
       if (!addAccountRes.ok || addAccountRes.body?.success === false) {
         const summary = compactSummary(addAccountRes.body) || `HTTP ${addAccountRes.status}`;
         return isProvisioningGap(summary)
-          ? buildMissingEvidenceResult(spec, `wallet-withdrawal could not provision a bank account: ${summary}.`, { httpStatus: addAccountRes.status }, { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) })
-          : buildFailureResult(spec, `wallet-withdrawal failed while provisioning a bank account: ${summary}.`, { httpStatus: addAccountRes.status }, { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) });
+          ? buildMissingEvidenceResult(
+              spec,
+              `wallet-withdrawal could not provision a bank account: ${summary}.`,
+              { httpStatus: addAccountRes.status },
+              { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+            )
+          : buildFailureResult(
+              spec,
+              `wallet-withdrawal failed while provisioning a bank account: ${summary}.`,
+              { httpStatus: addAccountRes.status },
+              { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+            );
       }
 
       createdBankAccount = true;
@@ -552,7 +592,7 @@ async function runWalletWithdrawalFlow(
       auth.token,
     );
     const beforeTransactions = Array.isArray(beforeTransactionsRes.body?.transactions)
-      ? beforeTransactionsRes.body.transactions as Array<Record<string, unknown>>
+      ? (beforeTransactionsRes.body.transactions as Array<Record<string, unknown>>)
       : [];
 
     const withdrawRes = await fetchJsonWithAuth(
@@ -565,18 +605,32 @@ async function runWalletWithdrawalFlow(
     if (!withdrawRes.ok || withdrawRes.body?.success === false) {
       const summary = compactSummary(withdrawRes.body) || `HTTP ${withdrawRes.status}`;
       return isProvisioningGap(summary)
-        ? buildMissingEvidenceResult(spec, `wallet-withdrawal could not execute in the current workspace: ${summary}.`, {
-            httpStatus: withdrawRes.status,
-            requestedAmount: amount,
-          }, { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) })
-        : buildFailureResult(spec, `wallet-withdrawal request failed: ${summary}.`, {
-            httpStatus: withdrawRes.status,
-            requestedAmount: amount,
-          }, { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) });
+        ? buildMissingEvidenceResult(
+            spec,
+            `wallet-withdrawal could not execute in the current workspace: ${summary}.`,
+            {
+              httpStatus: withdrawRes.status,
+              requestedAmount: amount,
+            },
+            { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+          )
+        : buildFailureResult(
+            spec,
+            `wallet-withdrawal request failed: ${summary}.`,
+            {
+              httpStatus: withdrawRes.status,
+              requestedAmount: amount,
+            },
+            { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+          );
     }
 
     const transactionId = String(withdrawRes.body?.transactionId || '').trim();
-    const afterBalanceRes = await fetchJsonWithAuth('GET', `/kloel/wallet/${auth.workspaceId}/balance`, auth.token);
+    const afterBalanceRes = await fetchJsonWithAuth(
+      'GET',
+      `/kloel/wallet/${auth.workspaceId}/balance`,
+      auth.token,
+    );
     const afterTransactionsRes = await fetchJsonWithAuth(
       'GET',
       `/kloel/wallet/${auth.workspaceId}/transactions?page=1&type=withdrawal`,
@@ -599,11 +653,16 @@ async function runWalletWithdrawalFlow(
     const availableAfter = Number(afterBalanceRes.body?.available);
     const availableDelta = round2(availableAfter - availableBefore);
     const afterTransactions = Array.isArray(afterTransactionsRes.body?.transactions)
-      ? afterTransactionsRes.body.transactions as Array<Record<string, unknown>>
+      ? (afterTransactionsRes.body.transactions as Array<Record<string, unknown>>)
       : [];
-    const matchedTransaction = afterTransactions.find(item => String(item.id || '') === transactionId);
-    const duplicateCount = afterTransactions.filter(item => String(item.id || '') === transactionId).length;
-    const deltaMatches = Number.isFinite(availableAfter) && Math.abs(availableDelta + amount) <= 0.02;
+    const matchedTransaction = afterTransactions.find(
+      (item) => String(item.id || '') === transactionId,
+    );
+    const duplicateCount = afterTransactions.filter(
+      (item) => String(item.id || '') === transactionId,
+    ).length;
+    const deltaMatches =
+      Number.isFinite(availableAfter) && Math.abs(availableDelta + amount) <= 0.02;
 
     if (!transactionId || !matchedTransaction || duplicateCount !== 1 || !deltaMatches) {
       return buildFailureResult(
@@ -658,7 +717,7 @@ async function runWalletWithdrawalFlow(
 }
 
 async function wait(ms: number): Promise<void> {
-  await new Promise(resolve => setTimeout(resolve, ms));
+  await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function runWhatsappMessageFlow(
@@ -684,12 +743,9 @@ async function runWhatsappMessageFlow(
     const inboundMarker = `PULSE:IN:${Date.now().toString(36)}`;
     const outboundMarker = `PULSE:OUT:${Date.now().toString(36)}`;
 
-    await fetchJsonWithAuth(
-      'POST',
-      `/whatsapp/${auth.workspaceId}/opt-in/bulk`,
-      auth.token,
-      { phones: [testPhone] },
-    );
+    await fetchJsonWithAuth('POST', `/whatsapp/${auth.workspaceId}/opt-in/bulk`, auth.token, {
+      phones: [testPhone],
+    });
 
     const incomingRes = await fetchJsonWithAuth(
       'POST',
@@ -732,8 +788,10 @@ async function runWhatsappMessageFlow(
         continue;
       }
 
-      const conversations = Array.isArray(conversationsRes.body) ? conversationsRes.body as Array<Record<string, unknown>> : [];
-      const matchedConversation = conversations.find(item => {
+      const conversations = Array.isArray(conversationsRes.body)
+        ? (conversationsRes.body as Array<Record<string, unknown>>)
+        : [];
+      const matchedConversation = conversations.find((item) => {
         const contact = item.contact as Record<string, unknown> | undefined;
         return normalizePhone(String(contact?.phone || '')) === testPhone;
       });
@@ -755,9 +813,13 @@ async function runWhatsappMessageFlow(
         continue;
       }
 
-      const messages = Array.isArray(messagesRes.body) ? messagesRes.body as Array<Record<string, unknown>> : [];
+      const messages = Array.isArray(messagesRes.body)
+        ? (messagesRes.body as Array<Record<string, unknown>>)
+        : [];
       readbackCount = messages.length;
-      const matchedInbound = messages.find(item => String(item.content || '').includes(inboundMarker));
+      const matchedInbound = messages.find((item) =>
+        String(item.content || '').includes(inboundMarker),
+      );
       if (matchedInbound) {
         inboundMessageId = String(matchedInbound.id || '');
         break;
@@ -791,13 +853,23 @@ async function runWhatsappMessageFlow(
       if (!sendRes.ok || sendRes.body?.error) {
         const summary = compactSummary(sendRes.body) || `HTTP ${sendRes.status}`;
         return isProvisioningGap(summary)
-          ? buildMissingEvidenceResult(spec, `whatsapp-message-send could not execute in the current runtime: ${summary}.`, {
-              httpStatus: sendRes.status,
-              failureCode: inferWhatsappFailureCode(summary),
-            }, { smokeExecuted: false, replayExecuted: true })
-          : buildFailureResult(spec, `whatsapp-message-send request failed: ${summary}.`, {
-              httpStatus: sendRes.status,
-            }, { smokeExecuted: true, replayExecuted: true });
+          ? buildMissingEvidenceResult(
+              spec,
+              `whatsapp-message-send could not execute in the current runtime: ${summary}.`,
+              {
+                httpStatus: sendRes.status,
+                failureCode: inferWhatsappFailureCode(summary),
+              },
+              { smokeExecuted: false, replayExecuted: true },
+            )
+          : buildFailureResult(
+              spec,
+              `whatsapp-message-send request failed: ${summary}.`,
+              {
+                httpStatus: sendRes.status,
+              },
+              { smokeExecuted: true, replayExecuted: true },
+            );
       }
 
       for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -811,9 +883,11 @@ async function runWhatsappMessageFlow(
           continue;
         }
 
-        const messages = Array.isArray(messagesRes.body) ? messagesRes.body as Array<Record<string, unknown>> : [];
+        const messages = Array.isArray(messagesRes.body)
+          ? (messagesRes.body as Array<Record<string, unknown>>)
+          : [];
         readbackCount = messages.length;
-        const matchedOutbound = messages.find(item => {
+        const matchedOutbound = messages.find((item) => {
           const content = String(item.content || '');
           const externalId = String(item.externalId || '');
           return content.includes(outboundMarker) || externalId === outboundMarker;
@@ -881,7 +955,10 @@ async function runWhatsappMessageFlow(
   }
 }
 
-function buildCheckerGapResult(spec: PulseManifestFlowSpec, missingChecks: string[]): PulseFlowResult {
+function buildCheckerGapResult(
+  spec: PulseManifestFlowSpec,
+  missingChecks: string[],
+): PulseFlowResult {
   return {
     flowId: spec.id,
     status: 'failed',
@@ -903,7 +980,9 @@ function annotateIgnoredMissingChecks(
   result: PulseFlowResult,
   missingChecks: string[],
 ): PulseFlowResult {
-  if (missingChecks.length === 0) return result;
+  if (missingChecks.length === 0) {
+    return result;
+  }
   return {
     ...result,
     metrics: {
@@ -937,58 +1016,70 @@ async function evaluateFlowSpec(
     };
   }
 
-  const missingChecks = spec.preconditions.filter(name => !loadedChecks.has(name));
+  const missingChecks = spec.preconditions.filter((name) => !loadedChecks.has(name));
   const enforceDiagnosticPreconditions = input.enforceDiagnosticPreconditions !== false;
   if (missingChecks.length > 0 && enforceDiagnosticPreconditions) {
     return buildCheckerGapResult(spec, missingChecks);
   }
 
   if (spec.id === 'wallet-withdrawal') {
-    return annotateIgnoredMissingChecks(await runWalletWithdrawalFlow(spec, runtimeContext), missingChecks);
+    return annotateIgnoredMissingChecks(
+      await runWalletWithdrawalFlow(spec, runtimeContext),
+      missingChecks,
+    );
   }
 
   if (spec.id === 'whatsapp-message-send') {
-    return annotateIgnoredMissingChecks(await runWhatsappMessageFlow(spec, runtimeContext), missingChecks);
+    return annotateIgnoredMissingChecks(
+      await runWhatsappMessageFlow(spec, runtimeContext),
+      missingChecks,
+    );
   }
 
   const patterns = FLOW_BREAK_PATTERNS[spec.id] || [];
   const matchingBreaks = collectMatchingBreaks(input.health, patterns);
 
   if (matchingBreaks.length > 0) {
-    return annotateIgnoredMissingChecks({
+    return annotateIgnoredMissingChecks(
+      {
+        flowId: spec.id,
+        status: 'failed',
+        executed: true,
+        accepted: false,
+        providerModeUsed: spec.providerMode,
+        smokeExecuted: smokeEnabled(spec),
+        replayExecuted: replayEnabled(spec),
+        failureClass: 'product_failure',
+        summary: `Blocking findings for ${spec.id}: ${[...new Set(matchingBreaks.map((item) => item.type))].join(', ')}.`,
+        artifactPaths: getArtifactPaths(spec.id),
+        metrics: {
+          breakCount: matchingBreaks.length,
+        },
+      },
+      missingChecks,
+    );
+  }
+
+  return annotateIgnoredMissingChecks(
+    {
       flowId: spec.id,
-      status: 'failed',
+      status: 'passed',
       executed: true,
       accepted: false,
       providerModeUsed: spec.providerMode,
       smokeExecuted: smokeEnabled(spec),
       replayExecuted: replayEnabled(spec),
-      failureClass: 'product_failure',
-      summary: `Blocking findings for ${spec.id}: ${[...new Set(matchingBreaks.map(item => item.type))].join(', ')}.`,
+      summary: `${spec.id} passed its declared oracle (${spec.oracle}) in ${input.environment} mode.`,
       artifactPaths: getArtifactPaths(spec.id),
       metrics: {
-        breakCount: matchingBreaks.length,
+        oracle: spec.oracle,
+        runner: spec.runner,
+        smokeRequired: spec.smokeRequired,
+        providerMode: spec.providerMode,
       },
-    }, missingChecks);
-  }
-
-  return annotateIgnoredMissingChecks({
-    flowId: spec.id,
-    status: 'passed',
-    executed: true,
-    accepted: false,
-    providerModeUsed: spec.providerMode,
-    smokeExecuted: smokeEnabled(spec),
-    replayExecuted: replayEnabled(spec),
-    summary: `${spec.id} passed its declared oracle (${spec.oracle}) in ${input.environment} mode.`,
-    artifactPaths: getArtifactPaths(spec.id),
-    metrics: {
-      oracle: spec.oracle,
-      runner: spec.runner,
-      smokeRequired: spec.smokeRequired,
-      providerMode: spec.providerMode,
     },
-  }, missingChecks);
+    missingChecks,
+  );
 }
 
 function buildSummary(results: PulseFlowResult[]): string {
@@ -996,18 +1087,18 @@ function buildSummary(results: PulseFlowResult[]): string {
     return 'No flow specs are required in the current environment.';
   }
 
-  const passed = results.filter(item => item.status === 'passed').length;
-  const failed = results.filter(item => item.status === 'failed').length;
-  const accepted = results.filter(item => item.status === 'accepted').length;
-  const missing = results.filter(item => item.status === 'missing_evidence').length;
+  const passed = results.filter((item) => item.status === 'passed').length;
+  const failed = results.filter((item) => item.status === 'failed').length;
+  const accepted = results.filter((item) => item.status === 'accepted').length;
+  const missing = results.filter((item) => item.status === 'missing_evidence').length;
 
   return `Flow evidence summary: ${passed} passed, ${failed} failed, ${accepted} accepted, ${missing} missing evidence.`;
 }
 
 export async function runDeclaredFlows(input: RunDeclaredFlowsInput): Promise<PulseFlowEvidence> {
   const allowedFlowIds = new Set(input.flowIds || []);
-  const specs = getApplicableSpecs(input.environment, input.manifest).filter(spec =>
-    allowedFlowIds.size === 0 || allowedFlowIds.has(spec.id),
+  const specs = getApplicableSpecs(input.environment, input.manifest).filter(
+    (spec) => allowedFlowIds.size === 0 || allowedFlowIds.has(spec.id),
   );
   const loadedChecks = getLoadedCheckNames(input.parserInventory);
   const results: PulseFlowResult[] = [];
@@ -1023,15 +1114,18 @@ export async function runDeclaredFlows(input: RunDeclaredFlowsInput): Promise<Pu
   }
 
   return {
-    declared: specs.map(spec => spec.id),
-    executed: results.filter(item => item.executed).map(item => item.flowId),
-    missing: results.filter(item => item.status === 'missing_evidence').map(item => item.flowId),
-    passed: results.filter(item => item.status === 'passed').map(item => item.flowId),
-    failed: results.filter(item => item.status === 'failed').map(item => item.flowId),
-    accepted: results.filter(item => item.accepted).map(item => item.flowId),
-    artifactPaths: specs.length > 0
-      ? [...new Set([FLOW_ARTIFACT, ...results.flatMap(item => item.artifactPaths)])]
-      : [],
+    declared: specs.map((spec) => spec.id),
+    executed: results.filter((item) => item.executed).map((item) => item.flowId),
+    missing: results
+      .filter((item) => item.status === 'missing_evidence')
+      .map((item) => item.flowId),
+    passed: results.filter((item) => item.status === 'passed').map((item) => item.flowId),
+    failed: results.filter((item) => item.status === 'failed').map((item) => item.flowId),
+    accepted: results.filter((item) => item.accepted).map((item) => item.flowId),
+    artifactPaths:
+      specs.length > 0
+        ? [...new Set([FLOW_ARTIFACT, ...results.flatMap((item) => item.artifactPaths)])]
+        : [],
     summary: buildSummary(results),
     results,
   };

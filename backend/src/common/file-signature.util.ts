@@ -22,7 +22,9 @@ function isWebpContainer(buffer: Buffer): boolean {
 }
 
 function isGifMarker(buffer: Buffer): boolean {
-  if (buffer.length < 6) return false;
+  if (buffer.length < 6) {
+    return false;
+  }
   return bufferSliceEquals(buffer, 0, 6, 'GIF87a') || bufferSliceEquals(buffer, 0, 6, 'GIF89a');
 }
 
@@ -37,7 +39,9 @@ const IMAGE_SIGNATURE_CHAIN: ReadonlyArray<readonly [ImageSignatureProbe, string
 
 function detectImageMime(buffer: Buffer): string | null {
   for (const [probe, mime] of IMAGE_SIGNATURE_CHAIN) {
-    if (probe(buffer)) return mime;
+    if (probe(buffer)) {
+      return mime;
+    }
   }
   return null;
 }
@@ -56,16 +60,22 @@ function detectOfficeMime(buffer: Buffer, name: string): string | null {
 }
 
 function isMp3Signature(buffer: Buffer): boolean {
-  if (buffer.length >= 3 && bufferSliceEquals(buffer, 0, 3, 'ID3')) return true;
+  if (buffer.length >= 3 && bufferSliceEquals(buffer, 0, 3, 'ID3')) {
+    return true;
+  }
   return buffer.length >= 2 && buffer[0] === 0xff && [0xf2, 0xf3, 0xfb].includes(buffer[1]);
 }
 
 function detectBasicAudioMime(buffer: Buffer): string | null {
-  if (isMp3Signature(buffer)) return 'audio/mpeg';
+  if (isMp3Signature(buffer)) {
+    return 'audio/mpeg';
+  }
   if (bufferSliceEquals(buffer, 0, 4, 'RIFF') && bufferSliceEquals(buffer, 8, 12, 'WAVE')) {
     return 'audio/wav';
   }
-  if (bufferSliceEquals(buffer, 0, 4, 'OggS')) return 'audio/ogg';
+  if (bufferSliceEquals(buffer, 0, 4, 'OggS')) {
+    return 'audio/ogg';
+  }
   return null;
 }
 
@@ -83,22 +93,34 @@ function isMp4Container(name: string, declaredMime: string): boolean {
 }
 
 function detectMatroskaMime(buffer: Buffer, name: string, declaredMime: string): string | null {
-  if (!bufferStartsWith(buffer, MATROSKA_SIG)) return null;
-  if (!isWebmExtension(name, declaredMime)) return null;
+  if (!bufferStartsWith(buffer, MATROSKA_SIG)) {
+    return null;
+  }
+  if (!isWebmExtension(name, declaredMime)) {
+    return null;
+  }
   return declaredMime.startsWith('video/') ? 'video/webm' : 'audio/webm';
 }
 
 function detectFtypMime(buffer: Buffer, name: string, declaredMime: string): string | null {
-  if (!bufferSliceEquals(buffer, 4, 8, 'ftyp')) return null;
-  if (!isMp4Container(name, declaredMime)) return null;
+  if (!bufferSliceEquals(buffer, 4, 8, 'ftyp')) {
+    return null;
+  }
+  if (!isMp4Container(name, declaredMime)) {
+    return null;
+  }
   return name.endsWith('.m4a') || declaredMime.includes('m4a') ? 'audio/x-m4a' : 'audio/mp4';
 }
 
 function detectTextMime(buffer: Buffer, name: string, declaredMime: string): string | null {
   const hasTextIndicator =
     name.endsWith('.txt') || name.endsWith('.csv') || declaredMime.includes('text');
-  if (!hasTextIndicator || !looksLikeUtf8Text(buffer)) return null;
-  if (name.endsWith('.csv') || declaredMime.includes('csv')) return 'text/csv';
+  if (!hasTextIndicator || !looksLikeUtf8Text(buffer)) {
+    return null;
+  }
+  if (name.endsWith('.csv') || declaredMime.includes('csv')) {
+    return 'text/csv';
+  }
   return 'text/plain';
 }
 
@@ -121,7 +143,9 @@ export function detectUploadedMime(file: UploadedFileLike): string | null {
 
   for (const detect of MIME_DETECTION_CHAIN) {
     const resolved = detect(buffer, name, declaredMime);
-    if (resolved) return resolved;
+    if (resolved) {
+      return resolved;
+    }
   }
   return null;
 }

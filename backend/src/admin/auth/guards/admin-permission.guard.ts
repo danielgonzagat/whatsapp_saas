@@ -22,13 +22,19 @@ export class AdminPermissionGuard implements CanActivate {
       ADMIN_PERMISSION_KEY,
       [context.getHandler(), context.getClass()],
     );
-    if (!required) return true;
+    if (!required) {
+      return true;
+    }
 
     const req = context.switchToHttp().getRequest<Request & { admin?: AuthenticatedAdmin }>();
-    if (!req.admin) throw adminErrors.invalidToken();
+    if (!req.admin) {
+      throw adminErrors.invalidToken();
+    }
 
     // OWNER bypass (I-ADMIN-7).
-    if (req.admin.role === AdminRole.OWNER) return true;
+    if (req.admin.role === AdminRole.OWNER) {
+      return true;
+    }
 
     const allowed = await this.permissions.allows(
       req.admin.id,

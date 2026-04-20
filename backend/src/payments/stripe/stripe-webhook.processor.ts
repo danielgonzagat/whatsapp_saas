@@ -38,7 +38,9 @@ export interface ProcessSaleSucceededResult {
 function parseLines(json: string): PersistedSplitLine[] {
   try {
     const parsed: unknown = JSON.parse(json);
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
     return parsed
       .filter(
         (line): line is PersistedSplitLine =>
@@ -58,6 +60,17 @@ function parseLines(json: string): PersistedSplitLine[] {
   }
 }
 
+function asId(value: unknown): string | null {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  if (value && typeof value === 'object' && 'id' in value) {
+    const nested = (value as { id?: unknown }).id;
+    return typeof nested === 'string' && nested.length > 0 ? nested : null;
+  }
+  return null;
+}
+
 /**
  * Webhook-side counterpart to StripeChargeService. When a sale-side
  * `payment_intent.succeeded` event arrives, this processor:
@@ -65,9 +78,9 @@ function parseLines(json: string): PersistedSplitLine[] {
  *   1. Reads the split breakdown from PaymentIntent.metadata.split_lines
  *      (serialized at charge-creation time).
  *   2. For every non-seller line, dispatches a separate
- *      `stripe.transfers.create()` from the seller's connected account to
- *      the stakeholder's connected account, using the same transfer_group
- *      as the original PaymentIntent.
+ *      `stripe.transfers.create()` from the platform balance to the
+ *      stakeholder's connected account, tying each transfer to the original
+ *      charge via `source_transaction`.
  *   3. For every line that maps to a known ConnectAccountBalance, credits
  *      the local ledger as PENDING with maturation date taken from the
  *      caller-supplied helper. The seller line is also credited so the
@@ -135,10 +148,10 @@ export class StripeWebhookProcessor {
       };
     }
 
-    const sellerStripeAccountId = paymentIntent.on_behalf_of;
-    if (!sellerStripeAccountId || typeof sellerStripeAccountId !== 'string') {
+    const sourceChargeId = asId(paymentIntent.latest_charge);
+    if (!sourceChargeId) {
       this.logger.error(
-        `processSaleSucceeded missing on_behalf_of: pi=${paymentIntent.id} — cannot dispatch transfers`,
+        `processSaleSucceeded missing latest_charge: pi=${paymentIntent.id} — cannot dispatch platform fan-out transfers`,
       );
       return {
         paymentIntentId: paymentIntent.id,
@@ -153,17 +166,32 @@ export class StripeWebhookProcessor {
     const transferGroup = paymentIntent.transfer_group ?? `sale:${paymentIntent.id}`;
     const transfers: PersistedTransferSnapshot[] = [];
     let sellerDestinationAmountCents = 0n;
+    const sellerStripeAccountId =
+      lines.find((line) => line.role === 'seller')?.accountId ?? asId(paymentIntent.on_behalf_of);
+    if (!sellerStripeAccountId) {
+      this.logger.error(
+        `processSaleSucceeded missing seller account context: pi=${paymentIntent.id} — cannot persist reversal snapshot`,
+      );
+      return {
+        paymentIntentId: paymentIntent.id,
+        transfersDispatched: 0,
+        ledgerEntriesCreated: 0,
+        skippedReason: 'no_metadata',
+      };
+    }
 
     await forEachSequential(lines, async (line) => {
       const amountCents = BigInt(line.amountCents);
-      if (amountCents <= 0n) return;
+      if (amountCents <= 0n) {
+        return;
+      }
 
-      // Seller already received the funds via the Direct Charge — no
-      // separate transfer needed. Other roles need one.
+      // Seller already received the residue via transfer_data.amount on the
+      // destination charge. Other roles need explicit platform-side fan-out.
       if (line.role !== 'seller') {
         const stripeTransferId = await this.dispatchTransfer({
           paymentIntentId: paymentIntent.id,
-          sellerStripeAccountId,
+          sourceChargeId,
           line,
           amountCents,
           currency: paymentIntent.currency,
@@ -221,14 +249,13 @@ export class StripeWebhookProcessor {
 
   private async dispatchTransfer(args: {
     paymentIntentId: string;
-    sellerStripeAccountId: string;
+    sourceChargeId: string;
     line: PersistedSplitLine;
     amountCents: bigint;
     currency: string;
     transferGroup: string;
   }): Promise<string> {
-    const { paymentIntentId, sellerStripeAccountId, line, amountCents, currency, transferGroup } =
-      args;
+    const { paymentIntentId, sourceChargeId, line, amountCents, currency, transferGroup } = args;
 
     try {
       const transfer = await this.stripeService.stripe.transfers.create(
@@ -236,6 +263,7 @@ export class StripeWebhookProcessor {
           amount: Number(amountCents),
           currency,
           destination: line.accountId,
+          source_transaction: sourceChargeId,
           transfer_group: transferGroup,
           metadata: {
             paymentIntentId,
@@ -243,7 +271,6 @@ export class StripeWebhookProcessor {
           },
         },
         {
-          stripeAccount: sellerStripeAccountId,
           idempotencyKey: `${paymentIntentId}:${line.role}`,
         },
       );

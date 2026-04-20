@@ -20,7 +20,9 @@ import { dbQuery } from './runtime-utils';
 
 export async function checkDataIntegrity(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires DB access
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const baseFile = 'scripts/pulse/parsers/data-integrity.ts';

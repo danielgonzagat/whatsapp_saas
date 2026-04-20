@@ -41,12 +41,14 @@ const STACK_TRACE_PATTERNS = [
 
 function containsStackTrace(body: any): boolean {
   const str = typeof body === 'string' ? body : JSON.stringify(body ?? '');
-  return STACK_TRACE_PATTERNS.some(p => str.includes(p));
+  return STACK_TRACE_PATTERNS.some((p) => str.includes(p));
 }
 
 export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
   const jwt = makeTestJwt();
@@ -62,10 +64,14 @@ export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
     }
 
     // status 0 means network error (backend not running) — skip
-    if (res.status === 0) continue;
+    if (res.status === 0) {
+      continue;
+    }
 
     // 401/403/404 are acceptable — endpoint exists and is protected or not found
-    if (res.status === 401 || res.status === 403 || res.status === 404) continue;
+    if (res.status === 401 || res.status === 403 || res.status === 404) {
+      continue;
+    }
 
     // 500 is always a break
     if (res.status >= 500) {
@@ -112,8 +118,7 @@ export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
         const hasField =
           body !== null &&
           typeof body === 'object' &&
-          (ep.expectedField in body ||
-            (Array.isArray(body.data) && ep.expectedField === 'data'));
+          (ep.expectedField in body || (Array.isArray(body.data) && ep.expectedField === 'data'));
         if (!hasField) {
           breaks.push({
             type: 'API_CONTRACT_VIOLATION',

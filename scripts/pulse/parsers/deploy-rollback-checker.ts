@@ -29,7 +29,8 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
 // Destructive migration operations
-const DESTRUCTIVE_MIGRATION_RE = /DROP\s+TABLE|DROP\s+COLUMN|ALTER\s+COLUMN|TRUNCATE|NOT NULL|DROP\s+INDEX/i;
+const DESTRUCTIVE_MIGRATION_RE =
+  /DROP\s+TABLE|DROP\s+COLUMN|ALTER\s+COLUMN|TRUNCATE|NOT NULL|DROP\s+INDEX/i;
 // Additive-only (safe) patterns
 const ADDITIVE_ONLY_RE = /CREATE\s+TABLE|ADD\s+COLUMN|CREATE\s+INDEX/i;
 
@@ -46,7 +47,9 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
 
   let hasRollbackConfig = false;
   for (const loc of rollbackIndicators) {
-    if (!fs.existsSync(loc)) continue;
+    if (!fs.existsSync(loc)) {
+      continue;
+    }
     const isDir = fs.statSync(loc).isDirectory();
     if (isDir) {
       const files = walkFiles(loc, ['.yml', '.yaml', '.json']);
@@ -71,7 +74,9 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
         continue;
       }
     }
-    if (hasRollbackConfig) break;
+    if (hasRollbackConfig) {
+      break;
+    }
   }
 
   if (!hasRollbackConfig) {
@@ -80,8 +85,10 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
       severity: 'high',
       file: '.github/workflows/',
       line: 0,
-      description: 'No deployment rollback mechanism configured — bad deploy cannot be reverted quickly',
-      detail: 'Configure Railway instant rollback or Docker image versioning with a CI step to revert to previous image tag',
+      description:
+        'No deployment rollback mechanism configured — bad deploy cannot be reverted quickly',
+      detail:
+        'Configure Railway instant rollback or Docker image versioning with a CI step to revert to previous image tag',
     });
   }
 
@@ -109,8 +116,9 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
         if (!hasDownMigration) {
           // Check if the migration is in a folder with a down.sql
           const migDir2 = path.dirname(migFile);
-          const hasDownInDir = fs.existsSync(path.join(migDir2, 'down.sql')) ||
-                               fs.existsSync(path.join(migDir2, 'migration.down.sql'));
+          const hasDownInDir =
+            fs.existsSync(path.join(migDir2, 'down.sql')) ||
+            fs.existsSync(path.join(migDir2, 'migration.down.sql'));
 
           if (!hasDownInDir) {
             breaks.push({
@@ -118,7 +126,8 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
               severity: 'high',
               file: relFile,
               line: 0,
-              description: 'Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback',
+              description:
+                'Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback',
               detail: `Detected destructive SQL in ${path.basename(migFile)}; create a .down.sql that reverses these changes`,
             });
           }
@@ -135,14 +144,20 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
 
   let hasFeatureFlags = false;
   for (const file of allFiles) {
-    if (/node_modules|\.next/.test(file)) continue;
+    if (/node_modules|\.next/.test(file)) {
+      continue;
+    }
     let content: string;
     try {
       content = fs.readFileSync(file, 'utf8');
     } catch {
       continue;
     }
-    if (/LaunchDarkly|Unleash|flagsmith|featureFlag|isFeatureEnabled|useFeatureFlag|FEATURE_/i.test(content)) {
+    if (
+      /LaunchDarkly|Unleash|flagsmith|featureFlag|isFeatureEnabled|useFeatureFlag|FEATURE_/i.test(
+        content,
+      )
+    ) {
       hasFeatureFlags = true;
       break;
     }
@@ -154,8 +169,10 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
       severity: 'medium',
       file: 'backend/src/',
       line: 0,
-      description: 'No feature flag system detected — risky features deployed to all users simultaneously',
-      detail: 'Implement feature flags (LaunchDarkly, Unleash, or custom FEATURE_* env vars) for gradual rollout',
+      description:
+        'No feature flag system detected — risky features deployed to all users simultaneously',
+      detail:
+        'Implement feature flags (LaunchDarkly, Unleash, or custom FEATURE_* env vars) for gradual rollout',
     });
   }
 
@@ -166,7 +183,9 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
   ];
 
   for (const mainFile of mainFiles) {
-    if (!fs.existsSync(mainFile)) continue;
+    if (!fs.existsSync(mainFile)) {
+      continue;
+    }
     let content: string;
     try {
       content = fs.readFileSync(mainFile, 'utf8');
@@ -175,14 +194,18 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
     }
     const relFile = path.relative(config.rootDir, mainFile);
 
-    if (!/SIGTERM|enableShutdownHooks|beforeApplicationShutdown|onApplicationShutdown/i.test(content)) {
+    if (
+      !/SIGTERM|enableShutdownHooks|beforeApplicationShutdown|onApplicationShutdown/i.test(content)
+    ) {
       breaks.push({
         type: 'DEPLOY_NO_ROLLBACK',
         severity: 'high',
         file: relFile,
         line: 0,
-        description: 'No graceful shutdown (SIGTERM) handling — in-flight requests may be interrupted on deploy',
-        detail: 'Add app.enableShutdownHooks() in main.ts and implement OnApplicationShutdown in critical services',
+        description:
+          'No graceful shutdown (SIGTERM) handling — in-flight requests may be interrupted on deploy',
+        detail:
+          'Add app.enableShutdownHooks() in main.ts and implement OnApplicationShutdown in critical services',
       });
     }
   }
@@ -199,16 +222,21 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
       } catch {
         continue;
       }
-      if (/prisma.*migrate|migrate.*prisma/i.test(content) && /backup|dump|pg_dump/i.test(content)) {
+      if (
+        /prisma.*migrate|migrate.*prisma/i.test(content) &&
+        /backup|dump|pg_dump/i.test(content)
+      ) {
         hasMigrationBackup = true;
         break;
       }
     }
     if (!hasMigrationBackup) {
-      const hasMigrationInCI = ciFiles.some(f => {
+      const hasMigrationInCI = ciFiles.some((f) => {
         try {
           return /prisma.*migrate|migrate.*prisma/i.test(fs.readFileSync(f, 'utf8'));
-        } catch { return false; }
+        } catch {
+          return false;
+        }
       });
       if (hasMigrationInCI) {
         breaks.push({
@@ -217,7 +245,8 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
           file: '.github/workflows/',
           line: 0,
           description: 'CI runs Prisma migrations without taking a DB backup first',
-          detail: 'Add a pg_dump step before prisma migrate deploy in CI/CD to enable point-in-time restore if migration fails',
+          detail:
+            'Add a pg_dump step before prisma migrate deploy in CI/CD to enable point-in-time restore if migration fails',
         });
       }
     }

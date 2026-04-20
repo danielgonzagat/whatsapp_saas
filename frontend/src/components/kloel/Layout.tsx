@@ -134,7 +134,9 @@ interface ModalSurfaceProps {
 }
 
 export function ModalSurface({ children, className, open = true, onClose }: ModalSurfaceProps) {
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <div

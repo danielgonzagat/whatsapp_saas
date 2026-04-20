@@ -81,7 +81,9 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
 
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
     },
     [],
   );
@@ -105,11 +107,15 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
   const handleCopy = useCallback((url: string, index: number) => {
     navigator.clipboard.writeText(url);
     setCopiedIndex(index);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    if (copiedTimer.current) {
+      clearTimeout(copiedTimer.current);
+    }
     copiedTimer.current = setTimeout(() => setCopiedIndex(null), 2000);
   }, []);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div
@@ -129,7 +135,9 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
         padding: 16,
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
       }}
     >
       <div

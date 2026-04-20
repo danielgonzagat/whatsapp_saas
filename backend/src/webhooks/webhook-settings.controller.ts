@@ -46,7 +46,9 @@ export class WebhookSettingsController {
           where: { workspaceId: req.user.workspaceId, url: body.url },
         })
       : null;
-    if (existingRecord) return existingRecord;
+    if (existingRecord) {
+      return existingRecord;
+    }
 
     return this.prisma.webhookSubscription.create({
       data: {

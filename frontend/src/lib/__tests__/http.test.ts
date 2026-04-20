@@ -49,10 +49,18 @@ describe('http.ts — I19 fail-fast in production', () => {
     } else {
       (process.env as Record<string, string>).NODE_ENV = ORIGINAL_NODE_ENV;
     }
-    if (ORIGINAL_API_URL !== undefined) process.env.NEXT_PUBLIC_API_URL = ORIGINAL_API_URL;
-    if (ORIGINAL_LEGACY !== undefined) process.env.NEXT_PUBLIC_SERVICE_BASE_URL = ORIGINAL_LEGACY;
-    if (ORIGINAL_BACKEND !== undefined) process.env.BACKEND_URL = ORIGINAL_BACKEND;
-    if (ORIGINAL_SERVICE !== undefined) process.env.SERVICE_BASE_URL = ORIGINAL_SERVICE;
+    if (ORIGINAL_API_URL !== undefined) {
+      process.env.NEXT_PUBLIC_API_URL = ORIGINAL_API_URL;
+    }
+    if (ORIGINAL_LEGACY !== undefined) {
+      process.env.NEXT_PUBLIC_SERVICE_BASE_URL = ORIGINAL_LEGACY;
+    }
+    if (ORIGINAL_BACKEND !== undefined) {
+      process.env.BACKEND_URL = ORIGINAL_BACKEND;
+    }
+    if (ORIGINAL_SERVICE !== undefined) {
+      process.env.SERVICE_BASE_URL = ORIGINAL_SERVICE;
+    }
   });
 
   it('throws at module load when NODE_ENV=production and no API URL is set', async () => {

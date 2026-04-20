@@ -58,9 +58,15 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function toBigInt(value: unknown): bigint {
-  if (typeof value === 'bigint') return value;
-  if (typeof value === 'number' && Number.isInteger(value)) return BigInt(value);
-  if (typeof value === 'string' && /^-?\d+$/.test(value)) return BigInt(value);
+  if (typeof value === 'bigint') {
+    return value;
+  }
+  if (typeof value === 'number' && Number.isInteger(value)) {
+    return BigInt(value);
+  }
+  if (typeof value === 'string' && /^-?\d+$/.test(value)) {
+    return BigInt(value);
+  }
   return 0n;
 }
 
@@ -132,7 +138,9 @@ export class ConnectLedgerReconciliationService {
         derived,
         entryCount: entries.length,
       });
-      if (drift) drifts.push(drift);
+      if (drift) {
+        drifts.push(drift);
+      }
     }
 
     const result: ConnectLedgerReconciliationResult = {
@@ -215,7 +223,9 @@ export class ConnectLedgerReconciliationService {
               : 0n;
           break;
         default:
-          this.logger.warn(`connect_ledger_reconcile_unknown_entry_type id=${entry.id} type=${entry.type}`);
+          this.logger.warn(
+            `connect_ledger_reconcile_unknown_entry_type id=${entry.id} type=${entry.type}`,
+          );
       }
     }
 
@@ -246,7 +256,9 @@ export class ConnectLedgerReconciliationService {
       balance.lifetimePaidOutCents === derived.lifetimePaidOutCents &&
       balance.lifetimeChargebacksCents === derived.lifetimeChargebacksCents;
 
-    if (same) return null;
+    if (same) {
+      return null;
+    }
 
     return {
       accountBalanceId: balance.id,

@@ -15,11 +15,15 @@ async function httpJson(url: string, opts: RequestInit = {}): Promise<any> {
     const res = await fetch(url, {
       ...opts,
       signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', ...opts.headers as any },
+      headers: { 'Content-Type': 'application/json', ...(opts.headers as any) },
     });
     const text = await res.text();
     let json: any;
-    try { json = JSON.parse(text); } catch { json = { raw: text }; }
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = { raw: text };
+    }
     return { status: res.status, json };
   } catch (error: any) {
     return {
@@ -47,7 +51,9 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
     const { access_token, user } = loginRes.json;
     const workspaceId = user?.workspaceId || user?.workspace_id || loginRes.json.workspaceId;
     if (!access_token || !workspaceId) {
-      throw new Error(`Auth response missing fields: ${JSON.stringify(loginRes.json).slice(0, 200)}`);
+      throw new Error(
+        `Auth response missing fields: ${JSON.stringify(loginRes.json).slice(0, 200)}`,
+      );
     }
     return { token: access_token, workspaceId, email };
   }
@@ -68,7 +74,9 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
     const { access_token, user } = registerRes.json;
     const workspaceId = user?.workspaceId || user?.workspace_id || registerRes.json.workspaceId;
     if (!access_token || !workspaceId) {
-      throw new Error(`Register response missing fields: ${JSON.stringify(registerRes.json).slice(0, 200)}`);
+      throw new Error(
+        `Register response missing fields: ${JSON.stringify(registerRes.json).slice(0, 200)}`,
+      );
     }
     return { token: access_token, workspaceId, email };
   }
@@ -76,7 +84,7 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
   // Register returned 409 (email exists) — retry login
   if (registerRes.status === 400 || registerRes.status === 409) {
     console.log('  Email already exists, retrying login...');
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 1000));
     const retryRes = await httpJson(`${backendUrl}/auth/login`, {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -90,21 +98,27 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
 
   throw new Error(
     `Auth failed. Login: ${loginRes.status} ${JSON.stringify(loginRes.json).slice(0, 100)}. ` +
-    `Register: ${registerRes.status} ${JSON.stringify(registerRes.json).slice(0, 100)}`
+      `Register: ${registerRes.status} ${JSON.stringify(registerRes.json).slice(0, 100)}`,
   );
 }
 
-export async function injectAuth(page: Page, creds: AuthCredentials, frontendUrl: string): Promise<void> {
+export async function injectAuth(
+  page: Page,
+  creds: AuthCredentials,
+  frontendUrl: string,
+): Promise<void> {
   const url = new URL(frontendUrl);
 
   // Set cookie FIRST via Playwright API (works before navigation)
-  await page.context().addCookies([{
-    name: 'kloel_auth',
-    value: '1',
-    domain: url.hostname,
-    path: '/',
-    sameSite: 'Lax' as const,
-  }]);
+  await page.context().addCookies([
+    {
+      name: 'kloel_auth',
+      value: '1',
+      domain: url.hostname,
+      path: '/',
+      sameSite: 'Lax' as const,
+    },
+  ]);
 
   // Use addInitScript to inject localStorage BEFORE page loads
   // This runs before every page navigation in this context
@@ -114,7 +128,9 @@ export async function injectAuth(page: Page, creds: AuthCredentials, frontendUrl
       localStorage.setItem('kloel_workspace_id', workspaceId);
       localStorage.setItem('kloel_onboarding_completed', 'true');
       document.cookie = 'kloel_auth=1; path=/; SameSite=Lax';
-    } catch { /* ignore if not available yet */ }
+    } catch {
+      /* ignore if not available yet */
+    }
   }, creds);
 
   // Navigate to root to trigger the init script

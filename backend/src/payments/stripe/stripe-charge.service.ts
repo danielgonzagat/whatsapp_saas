@@ -10,18 +10,18 @@ import type { CreateSaleChargeInput, CreateSaleChargeResult } from './stripe-cha
 /**
  * Single canonical entry point for creating a sale-side charge in Stripe.
  *
- * Per ADR 0003: KLOEL operates as a Connect Platform with Direct Charges.
- * The buyer is technically buying from the seller — the PaymentIntent is
- * created with `on_behalf_of: sellerStripeAccountId` so the merchant of
- * record on the buyer's statement is the seller. Kloel takes its cut via
- * `application_fee_amount` (platform fee + interest). Splits to other
- * stakeholders (affiliate, supplier, coproducer, manager) are dispatched
- * AFTER `payment_intent.succeeded` via separate `stripe.transfers.create()`
- * calls — that fan-out lives in the webhook processor (added in a follow-up
- * commit).
+ * KLOEL currently runs the sale as a destination charge on the platform,
+ * while setting `on_behalf_of` to the seller so the connected account remains
+ * the settlement merchant on the buyer-facing statement.
+ *
+ * The seller only receives their residue immediately via `transfer_data.amount`.
+ * The platform keeps the remaining funds long enough to fan out the other
+ * stakeholder shares (supplier, affiliate, coproducer, manager) after
+ * `payment_intent.succeeded`, using `source_transaction` on the original charge.
+ * Kloel's own fee + installment interest stays on the platform balance.
  *
  * SplitEngine runs synchronously here so we can:
- *   1. Compute the application_fee_amount = kloelTotalCents.
+ *   1. Compute the seller residue that must be auto-transferred on capture.
  *   2. Snapshot the split breakdown into PaymentIntent metadata for audit.
  *   3. Hand the SplitOutput back to the caller — the webhook processor
  *      will use it (re-derived from metadata) when the charge succeeds.
@@ -58,7 +58,12 @@ export class StripeChargeService {
     const transferGroup = `sale:${input.idempotencyKey}`;
     const paymentMethodTypes = input.paymentMethodTypes ?? ['card', 'boleto'];
     const amount = Number(input.buyerPaidCents);
-    const applicationFee = Number(split.kloelTotalCents);
+    const sellerLine = split.splits.find((line) => line.role === 'seller');
+    if (!sellerLine) {
+      throw new Error(
+        `SplitEngine did not return a seller residue line for ${input.idempotencyKey}`,
+      );
+    }
 
     const intent = (await this.stripeService.stripe.paymentIntents.create(
       {
@@ -71,8 +76,10 @@ export class StripeChargeService {
           ? { payment_method_options: input.paymentMethodOptions }
           : {}),
         on_behalf_of: input.sellerStripeAccountId,
-        application_fee_amount: applicationFee,
-        transfer_data: { destination: input.sellerStripeAccountId },
+        transfer_data: {
+          destination: input.sellerStripeAccountId,
+          amount: Number(sellerLine.amountCents),
+        },
         transfer_group: transferGroup,
         receipt_email: input.buyerEmail,
         metadata: {
@@ -81,6 +88,7 @@ export class StripeChargeService {
           workspace_id: input.workspaceId,
           kloel_order_id: input.idempotencyKey,
           split_kloel_cents: split.kloelTotalCents.toString(),
+          split_seller_cents: sellerLine.amountCents.toString(),
           split_residue_cents: split.residueCents.toString(),
           split_lines: JSON.stringify(
             split.splits.map((line) => ({

@@ -167,7 +167,9 @@ export class WorkspaceService {
     const settings = asProviderSettings(ws.providerSettings);
 
     const data: Record<string, unknown> = {};
-    if (payload.name !== undefined) data.name = payload.name;
+    if (payload.name !== undefined) {
+      data.name = payload.name;
+    }
 
     const nextSettings = {
       ...settings,

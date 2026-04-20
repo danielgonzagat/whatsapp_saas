@@ -58,7 +58,9 @@ export class KycService {
 
   async updateProfile(agentId: string, dto: UpdateProfileDto) {
     const data: Prisma.AgentUpdateInput = { ...dto };
-    if (dto.birthDate) data.birthDate = new Date(dto.birthDate);
+    if (dto.birthDate) {
+      data.birthDate = new Date(dto.birthDate);
+    }
 
     // If agent was rejected, reset to pending so they can re-submit
     const agent = await this.prisma.agent.findUnique({
@@ -74,8 +76,12 @@ export class KycService {
   }
 
   async uploadAvatar(agentId: string, file: UploadedFile) {
-    if (!file) throw new BadRequestException('No file provided');
-    if (file.size > 5 * 1024 * 1024) throw new BadRequestException('File too large (max 5MB)');
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new BadRequestException('File too large (max 5MB)');
+    }
 
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedMimes.includes(file.mimetype)) {
@@ -142,8 +148,12 @@ export class KycService {
       throw new BadRequestException(`Invalid document type. Allowed: ${allowedTypes.join(', ')}`);
     }
 
-    if (!file) throw new BadRequestException('No file provided');
-    if (file.size > 10 * 1024 * 1024) throw new BadRequestException('File too large (max 10MB)');
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('File too large (max 10MB)');
+    }
 
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowedMimes.includes(file.mimetype)) {
@@ -175,12 +185,17 @@ export class KycService {
     const doc = await this.prisma.kycDocument.findUnique({
       where: { id: documentId },
     });
-    if (!doc) throw new NotFoundException('Document not found');
-    if (doc.agentId !== agentId) throw new BadRequestException('Not your document');
-    if (doc.status !== 'pending')
+    if (!doc) {
+      throw new NotFoundException('Document not found');
+    }
+    if (doc.agentId !== agentId) {
+      throw new BadRequestException('Not your document');
+    }
+    if (doc.status !== 'pending') {
       throw new BadRequestException(
         'Cannot delete a document that is already under review or approved',
       );
+    }
 
     await this.auditService.log({
       workspaceId: doc.workspaceId,
@@ -237,13 +252,17 @@ export class KycService {
       select: { password: true, provider: true },
     });
 
-    if (!agent) throw new NotFoundException('Agent not found');
+    if (!agent) {
+      throw new NotFoundException('Agent not found');
+    }
     if (agent.provider && !agent.password) {
       throw new BadRequestException('OAuth users cannot change password here');
     }
 
     const valid = await bcryptCompare(dto.currentPassword, agent.password);
-    if (!valid) throw new UnauthorizedException('Current password is incorrect');
+    if (!valid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
 
     const hashedPassword = await bcryptHash(dto.newPassword, BCRYPT_ROUNDS);
     await this.prisma.agent.update({
@@ -395,7 +414,9 @@ export class KycService {
       select: { id: true, kycStatus: true },
     });
 
-    if (!agent) throw new NotFoundException('Agent not found');
+    if (!agent) {
+      throw new NotFoundException('Agent not found');
+    }
     if (agent.kycStatus === 'approved') {
       throw new BadRequestException('KYC already approved');
     }

@@ -43,9 +43,7 @@ export function extractAccountProfile(
   };
 }
 
-export function extractAccountPreferences(
-  settings: Record<string, unknown>,
-): AccountPreferences {
+export function extractAccountPreferences(settings: Record<string, unknown>): AccountPreferences {
   const notifications = settings.notifications as Record<string, boolean> | undefined;
   return {
     language: (settings.language as string) || 'pt-BR',

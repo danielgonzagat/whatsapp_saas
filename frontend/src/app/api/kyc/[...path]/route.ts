@@ -10,9 +10,7 @@ import { getBackendCandidateUrls } from '../../_lib/backend-url';
  */
 
 function resolveWorkspaceIdHeader(request: NextRequest): string {
-  return (
-    request.headers.get('x-workspace-id') || request.headers.get('x-kloel-workspace-id') || ''
-  );
+  return request.headers.get('x-workspace-id') || request.headers.get('x-kloel-workspace-id') || '';
 }
 
 function buildKycHeaders(request: NextRequest, isFormData: boolean, contentType: string) {
@@ -75,7 +73,9 @@ async function callUpstreamKyc(
     return null;
   });
 
-  if (!attempt) return null;
+  if (!attempt) {
+    return null;
+  }
   if (attempt.status === 404 || attempt.status === 405) {
     recordError(new Error(`upstream ${attempt.status} at ${url}`));
     return null;

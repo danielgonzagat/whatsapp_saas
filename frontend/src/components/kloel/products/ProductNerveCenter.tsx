@@ -336,7 +336,9 @@ export default function ProductNerveCenter({
 
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
     },
     [],
   );
@@ -370,7 +372,9 @@ export default function ProductNerveCenter({
 
   /* ── Sync form from product data ── */
   useEffect(() => {
-    if (!p?.name) return;
+    if (!p?.name) {
+      return;
+    }
     applyProductSync(p, {
       setEditName,
       setEditDesc,
@@ -411,7 +415,9 @@ export default function ProductNerveCenter({
   ]);
 
   useEffect(() => {
-    if (!productId) return;
+    if (!productId) {
+      return;
+    }
     setWorkspaceCheckoutProductsLoading(true);
     apiFetch('/checkout/products')
       .then((response: unknown) => {
@@ -443,7 +449,9 @@ export default function ProductNerveCenter({
   }, [tab, productId]);
 
   const loadCoupons = useCallback(() => {
-    if (!productId) return Promise.resolve([]);
+    if (!productId) {
+      return Promise.resolve([]);
+    }
     setCouponsLoading(true);
     return apiFetch(`/products/${productId}/coupons`)
       .then((res: unknown) => {
@@ -460,7 +468,9 @@ export default function ProductNerveCenter({
   }, [productId]);
 
   useEffect(() => {
-    if (tab !== 'cupons' || !productId) return;
+    if (tab !== 'cupons' || !productId) {
+      return;
+    }
     void loadCoupons();
   }, [tab, productId, loadCoupons]);
 
@@ -489,7 +499,9 @@ export default function ProductNerveCenter({
   useEffect(() => {
     const needsPlanContext =
       initialTab === 'planos' && (!!initialPlanSub || initialModal === 'newBump');
-    if (!needsPlanContext || selPlan || PLANS.length === 0) return;
+    if (!needsPlanContext || selPlan || PLANS.length === 0) {
+      return;
+    }
     setSelPlan(PLANS[0].id);
   }, [initialTab, initialPlanSub, initialModal, selPlan, PLANS]);
 
@@ -500,7 +512,9 @@ export default function ProductNerveCenter({
     : ({} as PlanData);
 
   useEffect(() => {
-    if (!selectedPlanObj) return;
+    if (!selectedPlanObj) {
+      return;
+    }
     setPlanName(selectedPlanObj.name);
     setPlanPriceCents(selectedPlanObj.price);
     setPlanQty(Math.max(1, selectedPlanObj.qty));
@@ -524,8 +538,12 @@ export default function ProductNerveCenter({
   ]);
 
   useEffect(() => {
-    if (!planCheckoutConfig) return;
-    if (planConfigInitRef.current) return;
+    if (!planCheckoutConfig) {
+      return;
+    }
+    if (planConfigInitRef.current) {
+      return;
+    }
     planConfigInitRef.current = true;
     setPlanPaymentConfig(buildPlanPaymentConfig(planCheckoutConfig));
     setPlanImageUrl(
@@ -563,7 +581,9 @@ export default function ProductNerveCenter({
   ]);
 
   useEffect(() => {
-    if (planSub !== 'pagamento' || !productId) return;
+    if (planSub !== 'pagamento' || !productId) {
+      return;
+    }
     void loadCoupons();
   }, [planSub, productId, loadCoupons]);
 
@@ -622,13 +642,17 @@ export default function ProductNerveCenter({
   const cp = (t: string, id: string) => {
     navigator.clipboard?.writeText(t);
     setCopied(id);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    if (copiedTimer.current) {
+      clearTimeout(copiedTimer.current);
+    }
     copiedTimer.current = setTimeout(() => setCopied(null), 2000);
   };
 
   const flashActionFeedback = useCallback((id: string) => {
     setCopied(id);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    if (copiedTimer.current) {
+      clearTimeout(copiedTimer.current);
+    }
     copiedTimer.current = setTimeout(() => setCopied(null), 2000);
   }, []);
 
@@ -637,7 +661,9 @@ export default function ProductNerveCenter({
       const sourcePlan = ((rawPlans || []) as PlanData[]).find(
         (candidate) => candidate.id === planId,
       );
-      if (!sourcePlan?.name) return;
+      if (!sourcePlan?.name) {
+        return;
+      }
 
       try {
         await duplicatePlan({
@@ -665,11 +691,15 @@ export default function ProductNerveCenter({
   );
 
   useEffect(() => {
-    if (initialTab) setTab(initialTab);
+    if (initialTab) {
+      setTab(initialTab);
+    }
   }, [initialTab]);
 
   useEffect(() => {
-    if (initialPlanSub) setPlanSub(initialPlanSub);
+    if (initialPlanSub) {
+      setPlanSub(initialPlanSub);
+    }
   }, [initialPlanSub]);
 
   useEffect(() => {
@@ -682,8 +712,9 @@ export default function ProductNerveCenter({
       tab !== 'checkouts' ||
       ckEdit ||
       !PLANS[0]?.id
-    )
+    ) {
       return;
+    }
     setCkEdit(PLANS[0].id);
   }, [initialFocus, tab, ckEdit, PLANS]);
 
@@ -786,7 +817,9 @@ export default function ProductNerveCenter({
 
   /* ── Create plan handler ── */
   const handleCreatePlan = async () => {
-    if (!newPlanName) return;
+    if (!newPlanName) {
+      return;
+    }
     const parsedPriceInCents = Math.max(0, Math.round(newPlanPriceCents));
     const quantity = Math.max(1, Math.round(Number(newPlanQty || 1)));
     const maxInstallments = Math.min(12, Math.max(1, Math.round(Number(newPlanInst || 12))));
@@ -811,7 +844,9 @@ export default function ProductNerveCenter({
 
   /* ── Create coupon handler ── */
   const handleCreateCoupon = async () => {
-    if (!newCouponCode) return;
+    if (!newCouponCode) {
+      return;
+    }
     try {
       await unwrapApiPayload(
         await apiFetch(`/products/${productId}/coupons`, {
@@ -840,7 +875,9 @@ export default function ProductNerveCenter({
   };
 
   const handleDeleteCoupon = async (couponId: string) => {
-    if (!confirm('Excluir cupom deste produto?')) return;
+    if (!confirm('Excluir cupom deste produto?')) {
+      return;
+    }
     await unwrapApiPayload(
       await apiFetch(`/products/${productId}/coupons/${couponId}`, {
         method: 'DELETE',
@@ -857,7 +894,9 @@ export default function ProductNerveCenter({
     const selectedBumpPlan = (selectedCheckoutProduct?.plans || []).find(
       (plan) => plan.id === newBumpPlanId,
     );
-    if (!selectedCheckoutProduct || !selectedBumpPlan) return;
+    if (!selectedCheckoutProduct || !selectedBumpPlan) {
+      return;
+    }
     try {
       await createBump({ ...buildBumpPayload(selectedCheckoutProduct, selectedBumpPlan) });
       setNewBumpProductId('');
@@ -872,10 +911,14 @@ export default function ProductNerveCenter({
 
   const getFallbackPlanPriceInCents = useCallback(() => {
     const productPrice = Math.round(Number(p.price || 0) * 100);
-    if (productPrice > 0) return productPrice;
+    if (productPrice > 0) {
+      return productPrice;
+    }
 
     const existingPlanPrice = Number(rawPlans?.[0]?.priceInCents || 0);
-    if (existingPlanPrice > 0) return existingPlanPrice;
+    if (existingPlanPrice > 0) {
+      return existingPlanPrice;
+    }
 
     return 100;
   }, [p.price, rawPlans]);
@@ -955,7 +998,9 @@ export default function ProductNerveCenter({
     [orderBumpProductOptions, newBumpProductId],
   );
   const orderBumpPlanOptions = useMemo(() => {
-    if (!selectedBumpProduct) return [];
+    if (!selectedBumpProduct) {
+      return [];
+    }
     return (selectedBumpProduct.plans || []).filter((plan) => plan.id !== selPlan);
   }, [selectedBumpProduct, selPlan]);
 
@@ -1127,7 +1172,9 @@ export default function ProductNerveCenter({
             style={{ display: 'none' }}
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) void handleImageUpload(f);
+              if (f) {
+                void handleImageUpload(f);
+              }
               e.target.value = '';
             }}
           />
@@ -1407,7 +1454,9 @@ export default function ProductNerveCenter({
                 label="Disponível para venda?"
                 checked={plan.active}
                 onChange={async (v: boolean) => {
-                  if (!selPlan) return;
+                  if (!selPlan) {
+                    return;
+                  }
                   try {
                     await updatePlan(selPlan, { isActive: v });
                   } catch (e) {
@@ -2451,7 +2500,9 @@ export default function ProductNerveCenter({
         brandName: editName || p.name || checkoutName,
       })) as { id?: string; data?: { id?: string } } | null;
       const createdPlanId = res?.id || res?.data?.id || null;
-      if (!createdPlanId) throw new Error('Nenhum checkout foi criado');
+      if (!createdPlanId) {
+        throw new Error('Nenhum checkout foi criado');
+      }
       setTab('checkouts');
       setCkEdit(createdPlanId);
     } catch (error) {

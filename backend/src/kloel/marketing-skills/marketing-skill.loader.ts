@@ -20,7 +20,9 @@ export class MarketingSkillLoader {
 
   listInstalledSkillIds(): string[] {
     const root = this.resolveSkillsRoot();
-    if (!root) return [];
+    if (!root) {
+      return [];
+    }
 
     return readdirSync(root, { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && existsSync(`${root}/${entry.name}/SKILL.md`))
@@ -30,7 +32,9 @@ export class MarketingSkillLoader {
 
   loadSkillMarkdown(id: string): string | null {
     const root = this.resolveSkillsRoot();
-    if (!root) return null;
+    if (!root) {
+      return null;
+    }
 
     const skillPath = `${root}/${id}/SKILL.md`;
     if (!existsSync(skillPath)) {

@@ -104,14 +104,18 @@ export class OmnichannelService {
     workspaceId: string,
     attachment: MessageAttachment,
   ): Promise<ProcessedAttachment | null> {
-    if (!attachment.base64) return null;
+    if (!attachment.base64) {
+      return null;
+    }
     const uploadedUrl = await this.uploadBase64ToStorage(
       workspaceId,
       attachment.base64,
       attachment.mimeType || 'application/octet-stream',
       attachment.name || `file_${Date.now()}`,
     );
-    if (!uploadedUrl) return null;
+    if (!uploadedUrl) {
+      return null;
+    }
     return this.buildProcessed(uploadedUrl, attachment);
   }
 
@@ -143,7 +147,9 @@ export class OmnichannelService {
     await forEachSequential(attachments, async (attachment) => {
       try {
         const result = await this.processSingleAttachment(workspaceId, attachment);
-        if (result) processed.push(result);
+        if (result) {
+          processed.push(result);
+        }
       } catch (error: unknown) {
         this.logAttachmentError(error);
       }
@@ -236,10 +242,18 @@ export class OmnichannelService {
     const firstAttachment = msg.attachments[0];
     const mimeType = firstAttachment.mimeType?.toLowerCase() || '';
 
-    if (mimeType.startsWith('image/')) return 'IMAGE';
-    if (mimeType.startsWith('video/')) return 'VIDEO';
-    if (mimeType.startsWith('audio/')) return 'AUDIO';
-    if (mimeType.includes('pdf') || mimeType.includes('document')) return 'DOCUMENT';
+    if (mimeType.startsWith('image/')) {
+      return 'IMAGE';
+    }
+    if (mimeType.startsWith('video/')) {
+      return 'VIDEO';
+    }
+    if (mimeType.startsWith('audio/')) {
+      return 'AUDIO';
+    }
+    if (mimeType.includes('pdf') || mimeType.includes('document')) {
+      return 'DOCUMENT';
+    }
 
     return 'TEXT';
   }
@@ -286,9 +300,13 @@ export class OmnichannelService {
 
           if (url) {
             let mimeType = 'application/octet-stream';
-            if (attType === 'image') mimeType = 'image/jpeg';
-            else if (attType === 'video') mimeType = 'video/mp4';
-            else if (attType === 'audio') mimeType = 'audio/mp4';
+            if (attType === 'image') {
+              mimeType = 'image/jpeg';
+            } else if (attType === 'video') {
+              mimeType = 'video/mp4';
+            } else if (attType === 'audio') {
+              mimeType = 'audio/mp4';
+            }
 
             attachments.push({
               url,

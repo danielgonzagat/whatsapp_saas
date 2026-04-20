@@ -15,7 +15,8 @@ const ARITHMETIC_RE = /(?:^\s*[\w.[\]'"]+\s*[-+*/]|[-+*/]\s*[\w.[\]'"]+\s*$)/;
 const DIVISION_BY_VAR_RE = /\b(?:[\w.[\]]+)\s*\/\s*(?!\/|=|\*)[a-zA-Z_]\w*\s*[;,)\]]/;
 
 // Zero-guard patterns — what a responsible dev would write before dividing
-const ZERO_GUARD_RE = /(?:=== 0|!== 0|\|\|\s*1\b|Math\.max\s*\(|if\s*\(.*=== 0|if\s*\(!|divisor|denominator)/i;
+const ZERO_GUARD_RE =
+  /(?:=== 0|!== 0|\|\|\s*1\b|Math\.max\s*\(|if\s*\(.*=== 0|if\s*\(!|divisor|denominator)/i;
 
 export function checkFinancialArithmetic(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -23,10 +24,14 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
 
   for (const file of files) {
     // Only scan financial paths
-    if (!FINANCIAL_PATH.test(file)) continue;
+    if (!FINANCIAL_PATH.test(file)) {
+      continue;
+    }
 
     // Skip test/spec/seed/migration/mock files
-    if (/\.(test|spec|d)\.ts$|seed|migration|fixture|mock\./i.test(file)) continue;
+    if (/\.(test|spec|d)\.ts$|seed|migration|fixture|mock\./i.test(file)) {
+      continue;
+    }
 
     let content: string;
     try {
@@ -43,7 +48,9 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
       const trimmed = line.trim();
 
       // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
       // ── CHECK 1: .toFixed(2) in financial files ─────────────────────────────
       // Any .toFixed( in a financial file is flagged conservatively.
@@ -52,7 +59,9 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
         // Skip if it's clearly just for display formatting in a template string/log
         // Conservative: only skip if it's inside a string literal being returned or assigned to a label var
         const isDisplayOnly =
-          /console\.|logger\.|res\.json\(.*label|res\.json\(.*message|\.toString\s*\(/.test(trimmed);
+          /console\.|logger\.|res\.json\(.*label|res\.json\(.*message|\.toString\s*\(/.test(
+            trimmed,
+          );
 
         // Skip if .toFixed() is already wrapped with Number() — this is the correct safe usage pattern
         // e.g. Number(x.toFixed(2)) or Number((expr).toFixed(2)) converts back to number after rounding
@@ -64,7 +73,8 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
             severity: 'high',
             file: relFile,
             line: i + 1,
-            description: '.toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat',
+            description:
+              '.toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat',
             detail: trimmed.slice(0, 120),
           });
         }
@@ -75,17 +85,35 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
       // Must look like arithmetic: ident / ident with surrounding expression context
       if (DIVISION_BY_VAR_RE.test(trimmed)) {
         // Hard excludes: comments, imports, decorators, URL strings, type casts
-        if (/^\/\/|\/\*|^\s*\*/.test(trimmed)) continue;
-        if (/require\s*\(|^import\s+|from\s+['"`]/.test(trimmed)) continue;
-        if (/https?:\/\/|['"`][^'"`]*\/[^'"`]*['"`]/.test(trimmed)) continue;
+        if (/^\/\/|\/\*|^\s*\*/.test(trimmed)) {
+          continue;
+        }
+        if (/require\s*\(|^import\s+|from\s+['"`]/.test(trimmed)) {
+          continue;
+        }
+        if (/https?:\/\/|['"`][^'"`]*\/[^'"`]*['"`]/.test(trimmed)) {
+          continue;
+        }
         // Exclude: .replace(/regex/) and similar regex literals
-        if (/\.replace\s*\(\/|\.match\s*\(\/|\.split\s*\(\/|\.search\s*\(\/|\.test\s*\(\//.test(trimmed)) continue;
+        if (
+          /\.replace\s*\(\/|\.match\s*\(\/|\.split\s*\(\/|\.search\s*\(\/|\.test\s*\(\//.test(
+            trimmed,
+          )
+        ) {
+          continue;
+        }
         // Exclude decorator lines (@Controller, @Get, etc.)
-        if (/^\s*@\w+/.test(trimmed)) continue;
+        if (/^\s*@\w+/.test(trimmed)) {
+          continue;
+        }
         // Exclude: line is just a string or template literal
-        if (/^\s*['"`]|^\s*`/.test(trimmed)) continue;
+        if (/^\s*['"`]|^\s*`/.test(trimmed)) {
+          continue;
+        }
         // Exclude: ternary path-like strings
-        if (/\?\s*['"`][^'"`]*\/|:\s*['"`][^'"`]*\//.test(trimmed)) continue;
+        if (/\?\s*['"`][^'"`]*\/|:\s*['"`][^'"`]*\//.test(trimmed)) {
+          continue;
+        }
 
         // Check that there's no zero-guard within the previous 10 lines or same line.
         // Also treat variable names containing 'safe', 'non_zero', 'nonzero', 'clamped'
@@ -105,7 +133,8 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
             severity: 'high',
             file: relFile,
             line: i + 1,
-            description: 'Division by variable without zero-check — potential division by zero in financial code',
+            description:
+              'Division by variable without zero-check — potential division by zero in financial code',
             detail: trimmed.slice(0, 120),
           });
         }

@@ -261,8 +261,11 @@ describe('AuthService', () => {
           serviceWithRedis.login({ email: 'nonexistent@test.com', password: 'x', ip }),
         ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
       } finally {
-        if (previousDisabled !== undefined) process.env.RATE_LIMIT_DISABLED = previousDisabled;
-        else process.env.RATE_LIMIT_DISABLED = 'true';
+        if (previousDisabled !== undefined) {
+          process.env.RATE_LIMIT_DISABLED = previousDisabled;
+        } else {
+          process.env.RATE_LIMIT_DISABLED = 'true';
+        }
       }
     });
 
@@ -296,8 +299,11 @@ describe('AuthService', () => {
           }),
         ).rejects.toMatchObject({ status: HttpStatus.SERVICE_UNAVAILABLE });
       } finally {
-        if (previousDisabled !== undefined) process.env.RATE_LIMIT_DISABLED = previousDisabled;
-        else process.env.RATE_LIMIT_DISABLED = 'true';
+        if (previousDisabled !== undefined) {
+          process.env.RATE_LIMIT_DISABLED = previousDisabled;
+        } else {
+          process.env.RATE_LIMIT_DISABLED = 'true';
+        }
       }
     });
   });

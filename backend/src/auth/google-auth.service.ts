@@ -13,8 +13,12 @@ const AUDIENCE_ISSUER_TOKEN_US_RE =
   /audience|issuer|token used too late|wrong number of segments|invalid token|No pem found|Token used too early|Wrong recipient/i;
 
 function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message || 'unknown_error';
-  if (typeof error === 'string') return error;
+  if (error instanceof Error) {
+    return error.message || 'unknown_error';
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
   return 'unknown_error';
 }
 
@@ -27,12 +31,16 @@ function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T
 }
 
 export interface GoogleVerifiedProfile {
-  provider: 'google' | 'apple';
+  provider: 'google' | 'apple' | 'facebook';
   providerId: string;
   email: string;
   name: string;
   image?: string | null;
   emailVerified: boolean;
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  tokenExpiresAt?: Date | null;
+  profileData?: Record<string, unknown> | null;
 }
 
 export interface GooglePeopleProfile {

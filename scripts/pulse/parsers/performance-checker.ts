@@ -30,7 +30,7 @@ export function checkPerformance(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   // ---- N+1 Query Detection (backend) ----
-  const backendFiles = walkFiles(config.backendDir, ['.ts']).filter(f => !isTestFile(f));
+  const backendFiles = walkFiles(config.backendDir, ['.ts']).filter((f) => !isTestFile(f));
 
   for (const file of backendFiles) {
     let content: string;
@@ -53,15 +53,23 @@ export function checkPerformance(config: PulseConfig): Break[] {
       const trimmed = lines[i].trim();
 
       // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
       // Skip PULSE:OK annotated lines
-      if (/PULSE:OK/.test(trimmed)) continue;
+      if (/PULSE:OK/.test(trimmed)) {
+        continue;
+      }
 
       // Update brace depth from this line
       for (const ch of lines[i]) {
-        if (ch === '{') braceDepth++;
-        if (ch === '}') braceDepth--;
+        if (ch === '{') {
+          braceDepth++;
+        }
+        if (ch === '}') {
+          braceDepth--;
+        }
       }
 
       // Detect real loop starts (for/forEach or async .map/.flatMap)
@@ -72,14 +80,18 @@ export function checkPerformance(config: PulseConfig): Break[] {
       if (PRISMA_QUERY_RE.test(trimmed)) {
         // Check if PULSE:OK is on the previous line
         const prevLine = i > 0 ? lines[i - 1].trim() : '';
-        if (/PULSE:OK/.test(prevLine)) continue;
+        if (/PULSE:OK/.test(prevLine)) {
+          continue;
+        }
 
         // Check if the query already uses { in: ... } batch pattern (look ahead 5 lines)
         const lookAhead = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
-        if (BATCH_IN_RE.test(lookAhead)) continue;
+        if (BATCH_IN_RE.test(lookAhead)) {
+          continue;
+        }
 
         // Check if we're inside any recorded loop
-        const insideLoop = loopEntries.some(entry => {
+        const insideLoop = loopEntries.some((entry) => {
           const dist = i - entry.line;
           return dist >= 1 && dist <= 15 && braceDepth > entry.depth;
         });
@@ -99,9 +111,9 @@ export function checkPerformance(config: PulseConfig): Break[] {
       // Prune loop entries that are too far back to matter (> 20 lines) or loops we've exited
       loopEntries.splice(
         0,
-        loopEntries.findIndex(e => (i - e.line) <= 20 && braceDepth >= e.depth) === -1
+        loopEntries.findIndex((e) => i - e.line <= 20 && braceDepth >= e.depth) === -1
           ? loopEntries.length
-          : loopEntries.findIndex(e => (i - e.line) <= 20 && braceDepth >= e.depth)
+          : loopEntries.findIndex((e) => i - e.line <= 20 && braceDepth >= e.depth),
       );
     }
   }

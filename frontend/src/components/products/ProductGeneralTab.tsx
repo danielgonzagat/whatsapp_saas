@@ -49,7 +49,9 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
   useEffect(
     () => () => {
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
     },
     [],
   );
@@ -62,13 +64,17 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   }, [productId]);
 
   const handleSave = async () => {
-    if (!data) return;
+    if (!data) {
+      return;
+    }
     setSaving(true);
     try {
       await apiFetch(`/products/${productId}`, { method: 'PUT', body: data });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
       savedTimer.current = setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       console.error('Erro ao salvar', e);
@@ -78,10 +84,12 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   };
 
   const update = (field: keyof ProductData, value: ProductData[keyof ProductData]) => {
-    if (data) setData({ ...data, [field]: value });
+    if (data) {
+      setData({ ...data, [field]: value });
+    }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2
@@ -91,12 +99,14 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
         />
       </div>
     );
-  if (!data)
+  }
+  if (!data) {
     return (
       <p className="py-8 text-center text-sm" style={{ color: colors.text.muted }}>
         Produto nao encontrado.
       </p>
     );
+  }
 
   const inputClass = 'w-full rounded-md px-4 py-2.5 text-sm outline-none';
   const inputStyle: React.CSSProperties = {

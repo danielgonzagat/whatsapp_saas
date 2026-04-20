@@ -51,8 +51,12 @@ function resolveShippingMode(
   config: UseCheckoutExperienceOptions['config'],
   plan: UseCheckoutExperienceOptions['plan'],
 ): ShippingMode {
-  if (config?.shippingMode) return config.shippingMode;
-  if (plan?.freeShipping) return 'FREE';
+  if (config?.shippingMode) {
+    return config.shippingMode;
+  }
+  if (plan?.freeShipping) {
+    return 'FREE';
+  }
   return Number(plan?.shippingPrice || 0) > 0 ? 'FIXED' : 'FREE';
 }
 
@@ -65,7 +69,9 @@ function computeShippingInCents(
   if (shippingMode === 'VARIABLE') {
     return dynamicShippingInCents ?? variableShippingFloorInCents;
   }
-  if (shippingMode === 'FIXED') return fixedShippingInCents;
+  if (shippingMode === 'FIXED') {
+    return fixedShippingInCents;
+  }
   return 0;
 }
 
@@ -73,8 +79,12 @@ function resolveProductImage(
   config: UseCheckoutExperienceOptions['config'],
   product: UseCheckoutExperienceOptions['product'],
 ): string {
-  if (config?.productImage) return config.productImage;
-  if (product?.imageUrl) return product.imageUrl;
+  if (config?.productImage) {
+    return config.productImage;
+  }
+  if (product?.imageUrl) {
+    return product.imageUrl;
+  }
   if (Array.isArray(product?.images)) {
     return product.images.find((entry) => typeof entry === 'string' && entry.trim()) || '';
   }
@@ -84,29 +94,47 @@ function resolveProductImage(
 function resolveCheckoutUnavailableReason(
   paymentProvider: UseCheckoutExperienceOptions['paymentProvider'],
 ): string {
-  if (paymentProvider?.checkoutEnabled !== false) return '';
+  if (paymentProvider?.checkoutEnabled !== false) {
+    return '';
+  }
   return paymentProvider.unavailableReason || 'Conecte sua conta Stripe para começar a vender.';
 }
 
 function applyFieldFormatter(field: string, raw: string, fmt: Formatters): string {
-  if (field === 'cpf' || field === 'cardCpf') return fmt.cpf(raw);
-  if (field === 'phone') return fmt.phone(raw);
-  if (field === 'cep') return fmt.cep(raw);
-  if (field === 'cardNumber') return fmt.card(raw);
-  if (field === 'cardExp') return fmt.exp(raw);
-  if (field === 'cardCvv') return raw.replace(D_RE, '').slice(0, 4);
+  if (field === 'cpf' || field === 'cardCpf') {
+    return fmt.cpf(raw);
+  }
+  if (field === 'phone') {
+    return fmt.phone(raw);
+  }
+  if (field === 'cep') {
+    return fmt.cep(raw);
+  }
+  if (field === 'cardNumber') {
+    return fmt.card(raw);
+  }
+  if (field === 'cardExp') {
+    return fmt.exp(raw);
+  }
+  if (field === 'cardCvv') {
+    return raw.replace(D_RE, '').slice(0, 4);
+  }
   return raw;
 }
 
 function resolvePaymentMethodCode(
   method: 'card' | 'pix' | 'boleto',
 ): 'CREDIT_CARD' | 'PIX' | 'BOLETO' {
-  if (method === 'card') return 'CREDIT_CARD';
+  if (method === 'card') {
+    return 'CREDIT_CARD';
+  }
   return method === 'pix' ? 'PIX' : 'BOLETO';
 }
 
 function resolveShippingMethodLabel(shippingMode: ShippingMode, shippingInCents: number): string {
-  if (shippingMode === 'VARIABLE') return 'kloel-variable';
+  if (shippingMode === 'VARIABLE') {
+    return 'kloel-variable';
+  }
   return shippingInCents > 0 ? 'standard' : 'free';
 }
 
@@ -146,7 +174,9 @@ function useAutoSelectAvailablePayMethod(
 function useRedirectTimerCleanup(redirectTimer: { current: number | null }): void {
   useEffect(
     () => () => {
-      if (redirectTimer.current) clearTimeout(redirectTimer.current);
+      if (redirectTimer.current) {
+        clearTimeout(redirectTimer.current);
+      }
     },
     [redirectTimer],
   );
@@ -165,7 +195,9 @@ function useResetCouponOnQtyChange(
   }, [couponApplied]);
 
   useEffect(() => {
-    if (!couponAppliedRef.current) return;
+    if (!couponAppliedRef.current) {
+      return;
+    }
     setCouponApplied(false);
     setDiscount(0);
   }, [qty, setCouponApplied, setDiscount]);
@@ -210,7 +242,9 @@ function useVariableShippingCalculation(params: VariableShippingParams): void {
     checkoutPublicApi
       .calculateShipping({ slug, cep: cepDigits })
       .then((response) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         const options = response?.data?.options || [];
         const nextPrice = Math.max(
           0,
@@ -219,11 +253,15 @@ function useVariableShippingCalculation(params: VariableShippingParams): void {
         setDynamicShippingInCents(nextPrice);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setDynamicShippingInCents(variableShippingFloorInCents);
       })
       .finally(() => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setDynamicShippingLoading(false);
       });
 
@@ -269,7 +307,9 @@ function useCouponPopupTimer(params: CouponPopupTimerParams): void {
   const setShowCouponPopup = params.setShowCouponPopup;
 
   const scheduleCouponPopup = () => {
-    if (!eligible || couponApplied || couponPopupHandled) return undefined;
+    if (!eligible || couponApplied || couponPopupHandled) {
+      return undefined;
+    }
     const timer = window.setTimeout(() => {
       setCouponCode(popupCouponCode);
       setCouponError('');
@@ -325,7 +365,9 @@ const PREFLIGHT_RULES: Array<(ctx: PreflightContext) => PreflightOutcome> = [
 function preflightFinalizeOrder(ctx: PreflightContext): PreflightOutcome {
   for (const rule of PREFLIGHT_RULES) {
     const outcome = rule(ctx);
-    if (outcome) return outcome;
+    if (outcome) {
+      return outcome;
+    }
   }
   return null;
 }
@@ -520,9 +562,15 @@ export function useCheckoutExperience({
   );
 
   const validateStep1 = useCallback(() => {
-    if (!form.name.trim() || !form.email.trim()) return false;
-    if ((config?.requireCPF ?? true) && form.cpf.replace(D_RE, '').length < 11) return false;
-    if ((config?.requirePhone ?? true) && form.phone.replace(D_RE, '').length < 10) return false;
+    if (!form.name.trim() || !form.email.trim()) {
+      return false;
+    }
+    if ((config?.requireCPF ?? true) && form.cpf.replace(D_RE, '').length < 11) {
+      return false;
+    }
+    if ((config?.requirePhone ?? true) && form.phone.replace(D_RE, '').length < 10) {
+      return false;
+    }
     return true;
   }, [config?.requireCPF, config?.requirePhone, form.cpf, form.email, form.name, form.phone]);
 
@@ -604,8 +652,12 @@ export function useCheckoutExperience({
 
   const validateCouponPrerequisites = useCallback(
     (nextCode: string): string | null => {
-      if (!nextCode) return 'Digite um cupom.';
-      if (!workspaceId || !plan?.id) return 'Checkout sem contexto para validar cupom.';
+      if (!nextCode) {
+        return 'Digite um cupom.';
+      }
+      if (!workspaceId || !plan?.id) {
+        return 'Checkout sem contexto para validar cupom.';
+      }
       return null;
     },
     [plan?.id, workspaceId],
@@ -637,7 +689,9 @@ export function useCheckoutExperience({
   const applyCoupon = useCallback(
     async (explicitCode?: string) => {
       setCouponError('');
-      if (config?.enableCoupon === false) return false;
+      if (config?.enableCoupon === false) {
+        return false;
+      }
       const nextCode = resolveCouponCodeForSubmission(explicitCode);
       const prerequisiteError = validateCouponPrerequisites(nextCode);
       if (prerequisiteError) {
@@ -658,9 +712,15 @@ export function useCheckoutExperience({
     (result: Record<string, unknown>) => {
       const data = result?.data as Record<string, unknown> | undefined;
       const orderId = result?.id || data?.id;
-      if (!orderId) return null;
-      if (payMethod === 'pix') return `/order/${orderId}/pix`;
-      if (payMethod === 'boleto') return `/order/${orderId}/boleto`;
+      if (!orderId) {
+        return null;
+      }
+      if (payMethod === 'pix') {
+        return `/order/${orderId}/pix`;
+      }
+      if (payMethod === 'boleto') {
+        return `/order/${orderId}/boleto`;
+      }
       const paymentData = result?.paymentData as Record<string, unknown> | undefined;
       const planData = result?.plan as Record<string, unknown> | undefined;
       if (
@@ -792,7 +852,9 @@ export function useCheckoutExperience({
     const preflight = runPreflightForFinalize();
     if (preflight) {
       setSubmitError(preflight.error);
-      if (preflight.step) setStep(preflight.step);
+      if (preflight.step) {
+        setStep(preflight.step);
+      }
       return;
     }
 

@@ -20,17 +20,27 @@ function classifyReturn(returnLine: string): 'wrapped' | 'raw' | 'unknown' {
   const trimmed = returnLine.trim();
 
   // Skip return; (void returns)
-  if (/^return\s*;$/.test(trimmed) || trimmed === 'return') return 'unknown';
+  if (/^return\s*;$/.test(trimmed) || trimmed === 'return') {
+    return 'unknown';
+  }
 
   // Skip throw statements on the same line (some parsers combine them)
-  if (/^throw\b/.test(trimmed)) return 'unknown';
+  if (/^throw\b/.test(trimmed)) {
+    return 'unknown';
+  }
 
   // Wrapped: return { data:
-  if (/return\s+\{[^}]*\bdata\s*:/.test(trimmed)) return 'wrapped';
-  if (/\.json\s*\(\s*\{[^}]*\bdata\s*:/.test(trimmed)) return 'wrapped';
+  if (/return\s+\{[^}]*\bdata\s*:/.test(trimmed)) {
+    return 'wrapped';
+  }
+  if (/\.json\s*\(\s*\{[^}]*\bdata\s*:/.test(trimmed)) {
+    return 'wrapped';
+  }
 
   // Raw: any other return with a value
-  if (/^return\s+/.test(trimmed)) return 'raw';
+  if (/^return\s+/.test(trimmed)) {
+    return 'raw';
+  }
 
   return 'unknown';
 }
@@ -63,7 +73,7 @@ export function checkApiResponseConsistency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const controllerFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    f => f.endsWith('.controller.ts') && !/\.(spec|test)\.ts$/.test(f),
+    (f) => f.endsWith('.controller.ts') && !/\.(spec|test)\.ts$/.test(f),
   );
 
   for (const file of controllerFiles) {
@@ -91,10 +101,14 @@ export function checkApiResponseConsistency(config: PulseConfig): Break[] {
       const cls = classifyReturn(trimmed);
       if (cls === 'wrapped') {
         wrappedCount++;
-        if (firstWrappedLine === -1) firstWrappedLine = i + 1;
+        if (firstWrappedLine === -1) {
+          firstWrappedLine = i + 1;
+        }
       } else if (cls === 'raw') {
         rawCount++;
-        if (firstRawLine === -1) firstRawLine = i + 1;
+        if (firstRawLine === -1) {
+          firstRawLine = i + 1;
+        }
       }
 
       // ── WRONG_STATUS_CODE check ────────────────────────────────────────────

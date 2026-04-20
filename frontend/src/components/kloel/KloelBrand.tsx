@@ -189,7 +189,9 @@ function MushroomStyles() {
 }
 
 function renderSpores(mode: MushroomVisualProps['spores']) {
-  if (mode === 'none') return null;
+  if (mode === 'none') {
+    return null;
+  }
 
   return spores.map((spore) => {
     if (mode === 'static') {

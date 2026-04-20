@@ -286,7 +286,9 @@ const workspaceSelfIdentityCache = new Map<
 >();
 
 async function notifyBillingSuspended(workspaceId?: string) {
-  if (!OPS_WEBHOOK || !(global as unknown as { fetch: typeof fetch }).fetch) return;
+  if (!OPS_WEBHOOK || !(global as unknown as { fetch: typeof fetch }).fetch) {
+    return;
+  }
   try {
     await (global as unknown as { fetch: typeof fetch }).fetch(OPS_WEBHOOK, {
       method: 'POST',
@@ -323,7 +325,9 @@ type QuotedCustomerMessage = {
 };
 
 async function reportSmokeTest(smokeTestId: string | undefined, payload: Record<string, unknown>) {
-  if (!smokeTestId) return;
+  if (!smokeTestId) {
+    return;
+  }
   await redis.set(
     `autopilot:smoke:${smokeTestId}`,
     JSON.stringify({
@@ -765,10 +769,18 @@ function normalizeAction(raw: string): string {
     'GHOST_CLOSER',
     'LEAD_UNLOCKER',
   ]);
-  if (allowed.has(val)) return val;
-  if (val === 'OFFER') return 'SEND_OFFER';
-  if (val === 'OBJECTION') return 'HANDLE_OBJECTION';
-  if (val === 'UPSELL') return 'FOLLOW_UP';
+  if (allowed.has(val)) {
+    return val;
+  }
+  if (val === 'OFFER') {
+    return 'SEND_OFFER';
+  }
+  if (val === 'OBJECTION') {
+    return 'HANDLE_OBJECTION';
+  }
+  if (val === 'UPSELL') {
+    return 'FOLLOW_UP';
+  }
   return 'FOLLOW_UP';
 }
 
@@ -890,7 +902,9 @@ async function findWorkspaceProductMatches(
   messageContent: string,
 ): Promise<string[]> {
   const normalizedMessage = normalizeMatchableText(messageContent);
-  if (!normalizedMessage) return [];
+  if (!normalizedMessage) {
+    return [];
+  }
 
   const [products, memoryProducts] = await Promise.all([
     prisma.product.findMany({
@@ -1580,10 +1594,18 @@ function isIndividualWahaChatId(chatId: string): boolean {
   const normalized = String(chatId || '')
     .trim()
     .toLowerCase();
-  if (!normalized) return false;
-  if (normalized.includes('@g.us')) return false;
-  if (normalized.includes('@newsletter')) return false;
-  if (normalized === 'status@broadcast') return false;
+  if (!normalized) {
+    return false;
+  }
+  if (normalized.includes('@g.us')) {
+    return false;
+  }
+  if (normalized.includes('@newsletter')) {
+    return false;
+  }
+  if (normalized === 'status@broadcast') {
+    return false;
+  }
   return true;
 }
 
@@ -2131,9 +2153,15 @@ async function ensureTrustedContactProfile(input: {
 }
 
 function scoreToProbabilityBucket(score: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH' {
-  if (score >= 85) return 'VERY_HIGH';
-  if (score >= 65) return 'HIGH';
-  if (score >= 40) return 'MEDIUM';
+  if (score >= 85) {
+    return 'VERY_HIGH';
+  }
+  if (score >= 65) {
+    return 'HIGH';
+  }
+  if (score >= 40) {
+    return 'MEDIUM';
+  }
   return 'LOW';
 }
 
@@ -2146,13 +2174,17 @@ function normalizeJsonObject(value: unknown): UnknownRecord {
 
 function extractFirstJsonObject(raw: string): UnknownRecord | null {
   const text = String(raw || '').trim();
-  if (!text) return null;
+  if (!text) {
+    return null;
+  }
 
   try {
     return JSON.parse(text);
   } catch {
     const match = text.match(S_S_RE);
-    if (!match) return null;
+    if (!match) {
+      return null;
+    }
     try {
       return JSON.parse(match[0]);
     } catch {
@@ -2820,7 +2852,9 @@ function getSharedReplyLockKey(
 
 export async function runScanContact(data: UnknownRecord) {
   const { workspaceId } = data || {};
-  if (!workspaceId) return;
+  if (!workspaceId) {
+    return;
+  }
   const smokeTestId = data?.smokeTestId as string | undefined;
   const smokeMode = data?.smokeMode === 'live' ? 'live' : 'dry-run';
   const runId = data?.runId as string | undefined;
@@ -3913,7 +3947,9 @@ async function fetchConversationHistory(
   phone?: string,
   limit = CONVERSATION_HISTORY_LIMIT,
 ) {
-  if (!workspaceId) return [];
+  if (!workspaceId) {
+    return [];
+  }
   let contact = contactId
     ? await prisma.contact.findFirst({
         where: { id: contactId, workspaceId },
@@ -3926,7 +3962,9 @@ async function fetchConversationHistory(
       select: { id: true, phone: true },
     });
   }
-  if (!contact) return [];
+  if (!contact) {
+    return [];
+  }
 
   const messages = await prisma.message.findMany({
     where: { workspaceId, contactId: contact.id },
@@ -3942,7 +3980,9 @@ async function fetchCompressedContactContext(
   contactId?: string,
   phone?: string,
 ) {
-  if (!workspaceId) return '';
+  if (!workspaceId) {
+    return '';
+  }
 
   const normalizedPhone = String(phone || '').trim();
   const keys = [
@@ -3950,7 +3990,9 @@ async function fetchCompressedContactContext(
     normalizedPhone ? `compressed_context:${normalizedPhone}` : '',
   ].filter(Boolean);
 
-  if (!keys.length) return '';
+  if (!keys.length) {
+    return '';
+  }
 
   const memory = await prisma.kloelMemory.findFirst({
     where: {
@@ -3975,7 +4017,9 @@ async function fetchCompressedContactContext(
 }
 
 async function getKbContext(workspaceId?: string, text?: string, apiKey?: string) {
-  if (!workspaceId || !text || !apiKey) return '';
+  if (!workspaceId || !text || !apiKey) {
+    return '';
+  }
   try {
     const openai = new OpenAI({ apiKey });
     const cleaned = text.slice(0, 2000);
@@ -3993,7 +4037,9 @@ async function getKbContext(workspaceId?: string, text?: string, apiKey?: string
       ORDER BY distance ASC
       LIMIT 3
     `;
-    if (!rows || rows.length === 0) return '';
+    if (!rows || rows.length === 0) {
+      return '';
+    }
     return rows
       .map((r: UnknownRecord) => r.content)
       .join('\n---\n')
@@ -4205,7 +4251,9 @@ function computeCognitiveRewardSignal(
   action: CognitiveActionType,
   state?: CustomerCognitiveState | null,
 ) {
-  if (!state) return 0;
+  if (!state) {
+    return 0;
+  }
   const stageBoost = state.stage === 'CHECKOUT' ? 1.2 : state.stage === 'HOT' ? 0.85 : 0.4;
   const trustBoost = state.trustScore * 0.6;
   const urgencyBoost = state.urgencyScore * 0.9;
@@ -4454,10 +4502,14 @@ async function finishAutonomyExecution(
     error?: string | null;
   },
 ) {
-  if (!recordId) return;
+  if (!recordId) {
+    return;
+  }
 
   const client = prisma as unknown as UnknownRecord;
-  if (!client.autonomyExecution) return;
+  if (!client.autonomyExecution) {
+    return;
+  }
 
   await client.autonomyExecution.update({
     where: { id: recordId },
@@ -4624,7 +4676,9 @@ async function executeAction(
     customerMessages?: QuotedCustomerMessage[];
   },
 ) {
-  if (!action || action === 'NONE') return 'skipped';
+  if (!action || action === 'NONE') {
+    return 'skipped';
+  }
 
   let contactEmail: string | undefined;
   let contactRecord: UnknownRecord | undefined;
@@ -4650,7 +4704,9 @@ async function executeAction(
     contactEmail = contact?.email || undefined;
   }
 
-  if (!targetPhone) return 'skipped';
+  if (!targetPhone) {
+    return 'skipped';
+  }
   const selfIdentity = await resolveWorkspaceSelfIdentity(
     input.workspaceId,
     input.settings || input.workspaceRecord?.providerSettings,
@@ -4830,7 +4886,9 @@ async function executeAction(
   }
 
   const msg = await buildMessage(action, input.messageContent || '', input.settings);
-  if (!msg) return 'skipped';
+  if (!msg) {
+    return 'skipped';
+  }
 
   const idempotencyKey = buildAutonomyExecutionKey({
     workspaceId: input.workspaceId,
@@ -5269,7 +5327,9 @@ async function sendDirectAutopilotText(input: {
 }) {
   const action = input.actionLabel || 'UNIFIED_AGENT_TEXT';
   const message = String(input.text || '').trim();
-  if (!message) return 'skipped';
+  if (!message) {
+    return 'skipped';
+  }
 
   let targetPhone = input.phone;
   let contactRecord: UnknownRecord | null = null;
@@ -5306,7 +5366,9 @@ async function sendDirectAutopilotText(input: {
   }
 
   const displayName = input.contactName || contactRecord?.name || targetPhone || 'contato';
-  if (!targetPhone) return 'skipped';
+  if (!targetPhone) {
+    return 'skipped';
+  }
   const selfIdentity = await resolveWorkspaceSelfIdentity(
     input.workspaceId,
     input.settings || input.workspaceRecord?.providerSettings,
@@ -5756,7 +5818,9 @@ async function persistFallbackMessage(params: {
   content: string;
 }) {
   const { workspaceId, contactId, channel, content } = params;
-  if (!contactId) return;
+  if (!contactId) {
+    return;
+  }
 
   // Encontra ou cria conversa específica do canal
   let conversation = await prisma.conversation.findFirst({
@@ -6023,7 +6087,9 @@ async function ensureCompliance(
 
 async function runFollowupContact(data: UnknownRecord) {
   const workspaceId = data?.workspaceId;
-  if (!workspaceId) return;
+  if (!workspaceId) {
+    return;
+  }
 
   const contactId = data?.contactId;
   const phone = data?.phone;
@@ -6144,7 +6210,9 @@ async function runFollowupContact(data: UnknownRecord) {
       messages: { orderBy: { createdAt: 'desc' }, take: 1 },
     },
   });
-  if (!conv || !conv.contact?.phone) return 'skipped';
+  if (!conv || !conv.contact?.phone) {
+    return 'skipped';
+  }
   if (conv.mode && conv.mode !== 'AI') {
     await logAutopilotAction({
       workspaceId,
@@ -6164,7 +6232,9 @@ async function runFollowupContact(data: UnknownRecord) {
   }
 
   const lastMsg = conv.messages[0];
-  if (!lastMsg) return 'skipped';
+  if (!lastMsg) {
+    return 'skipped';
+  }
 
   // Se houve resposta INBOUND após o agendamento, não enviar follow-up
   if (scheduledAt && lastMsg.direction === 'INBOUND' && lastMsg.createdAt > scheduledAt) {
@@ -6288,10 +6358,14 @@ async function checkRateLimits(
   const wsKey = `autopilot:ws:${workspaceId}:day:${day}`;
 
   const contactCount = await connection.incr(contactKey);
-  if (contactCount === 1) await connection.expire(contactKey, 86400);
+  if (contactCount === 1) {
+    await connection.expire(contactKey, 86400);
+  }
 
   const wsCount = await connection.incr(wsKey);
-  if (wsCount === 1) await connection.expire(wsKey, 86400);
+  if (wsCount === 1) {
+    await connection.expire(wsKey, 86400);
+  }
 
   if (contactCount > CONTACT_DAILY_LIMIT) {
     return { allowed: false, reason: 'contact_daily_limit' as const };
@@ -6361,7 +6435,9 @@ async function logAutopilotAction(input: {
 
 async function acquireCiaContactLock(contactId?: string, phone?: string) {
   const keyBase = contactId || phone;
-  if (!keyBase) return null;
+  if (!keyBase) {
+    return null;
+  }
 
   const key = `cia:lock:${keyBase}`;
   try {
@@ -6386,7 +6462,9 @@ async function acquireCiaContactLock(contactId?: string, phone?: string) {
 }
 
 async function releaseCiaContactLock(lockKey: string | null) {
-  if (!lockKey) return;
+  if (!lockKey) {
+    return;
+  }
   try {
     await redis.del(lockKey);
   } catch {
@@ -6395,8 +6473,12 @@ async function releaseCiaContactLock(lockKey: string | null) {
 }
 
 function mapOpportunityBucket(score: number): 'LOW' | 'MEDIUM' | 'HIGH' {
-  if (score >= 75) return 'HIGH';
-  if (score >= 45) return 'MEDIUM';
+  if (score >= 75) {
+    return 'HIGH';
+  }
+  if (score >= 45) {
+    return 'MEDIUM';
+  }
   return 'LOW';
 }
 
@@ -6986,20 +7068,32 @@ function inferHeuristicDemographics(text: string): {
   let ageRange = 'UNKNOWN';
   if (explicitAge) {
     const age = Number(explicitAge[1]);
-    if (age >= 18 && age <= 24) ageRange = '18-24';
-    else if (age <= 34) ageRange = '25-34';
-    else if (age <= 44) ageRange = '35-44';
-    else if (age <= 54) ageRange = '45-54';
-    else if (age > 54) ageRange = '55+';
+    if (age >= 18 && age <= 24) {
+      ageRange = '18-24';
+    } else if (age <= 34) {
+      ageRange = '25-34';
+    } else if (age <= 44) {
+      ageRange = '35-44';
+    } else if (age <= 54) {
+      ageRange = '45-54';
+    } else if (age > 54) {
+      ageRange = '55+';
+    }
   }
 
   const locationMatch = normalized.match(B___SOU_DE_MORO_EM_AQUI_RE) || null;
   const location = locationMatch?.[1] ? String(locationMatch[1]).trim() : 'UNKNOWN';
 
   let confidence = 0;
-  if (gender !== 'UNKNOWN') confidence = Math.max(confidence, 0.35);
-  if (ageRange !== 'UNKNOWN') confidence = Math.max(confidence, 0.55);
-  if (location !== 'UNKNOWN') confidence = Math.max(confidence, 0.45);
+  if (gender !== 'UNKNOWN') {
+    confidence = Math.max(confidence, 0.35);
+  }
+  if (ageRange !== 'UNKNOWN') {
+    confidence = Math.max(confidence, 0.55);
+  }
+  if (location !== 'UNKNOWN') {
+    confidence = Math.max(confidence, 0.45);
+  }
 
   return {
     gender,
@@ -7872,7 +7966,9 @@ async function persistCiaCycleProof(input: {
   guaranteeReport: Record<string, unknown>;
   exhaustionReport: Record<string, unknown>;
 }) {
-  if (!prisma?.kloelMemory?.upsert) return null;
+  if (!prisma?.kloelMemory?.upsert) {
+    return null;
+  }
 
   const payload = {
     cycleProofId: input.cycleProofId,
@@ -8049,7 +8145,9 @@ async function finalizeConversationProofSnapshot(
     metadata?: Record<string, unknown> | null;
   },
 ) {
-  if (!recordId) return null;
+  if (!recordId) {
+    return null;
+  }
   const client = prisma as unknown as UnknownRecord;
   if (!client?.conversationProofSnapshot?.update) {
     return null;
@@ -8077,7 +8175,9 @@ async function runCiaCycleAll() {
     if (settings?.billingSuspended === true) {
       return;
     }
-    if (!isCiaAutonomyMode(settings)) return;
+    if (!isCiaAutonomyMode(settings)) {
+      return;
+    }
     await runCiaCycleWorkspace(workspace.id, settings);
   });
 }
@@ -8424,7 +8524,9 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
 
 async function runCiaAction(data: UnknownRecord) {
   const workspaceId = data?.workspaceId;
-  if (!workspaceId) return { outcome: 'SKIPPED', reason: 'missing_workspace' };
+  if (!workspaceId) {
+    return { outcome: 'SKIPPED', reason: 'missing_workspace' };
+  }
 
   const lockKey = await acquireCiaContactLock(data?.contactId, data?.phone);
   if (!lockKey) {
@@ -8796,7 +8898,9 @@ async function runCiaSelfImproveAll() {
 
   await forEachSequential(workspaces, async (workspace) => {
     const settings = (workspace.providerSettings ?? {}) as UnknownRecord;
-    if (!isAutonomousEnabled(settings)) return;
+    if (!isAutonomousEnabled(settings)) {
+      return;
+    }
     await runCiaSelfImproveWorkspace(workspace.id);
   });
 }
@@ -8852,7 +8956,9 @@ async function runCiaGlobalLearningAll() {
         domain,
         log,
       });
-      if (signal) signals.push(signal);
+      if (signal) {
+        signals.push(signal);
+      }
     }
   });
 
@@ -8864,7 +8970,9 @@ async function runCiaGlobalLearningAll() {
       (workspace.providerSettings || {}) as Record<string, unknown>,
     );
     const topPattern = patterns.find((pattern) => pattern.domain === domain);
-    if (!topPattern) return;
+    if (!topPattern) {
+      return;
+    }
 
     const strategy = buildGlobalStrategy({
       patterns,
@@ -8911,7 +9019,9 @@ async function runCycleAll() {
       log.info('autopilot_cycle_skip_cia_primary', { workspaceId: ws.id });
       return;
     }
-    if (!isAutonomousEnabled(settings)) return;
+    if (!isAutonomousEnabled(settings)) {
+      return;
+    }
     if (!isExplicitProactiveOutreachAllowed(settings)) {
       log.info('autopilot_cycle_skip_proactive_disabled', {
         workspaceId: ws.id,

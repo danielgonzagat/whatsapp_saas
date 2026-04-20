@@ -27,13 +27,17 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    if (!user?.sub) return false;
+    if (!user?.sub) {
+      return false;
+    }
 
     const agent = await this.prisma.agent.findUnique({
       where: { id: user.sub },
       select: { role: true, permissions: true },
     });
-    if (!agent) return false;
+    if (!agent) {
+      return false;
+    }
 
     const userPermissions = mergeAgentPermissions(agent.role, agent.permissions);
     const hasPermission = requiredPermissions.every((p) => userPermissions.includes(p));

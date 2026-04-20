@@ -20,8 +20,10 @@ const HAS_TIMEOUT_IN_CALL = /\btimeout\s*:/;
 // Matches actual BullMQ queue.add() calls — must be prefixed by a queue-like variable name.
 // Excludes Set.add(), Map.set(), Array.push(), DOM operations, etc.
 // Pattern: <queueVar>.add('jobName', data, opts?) where queueVar ends in Queue or is a known queue name
-const BULLMQ_ADD_RE = /\b(\w*[Qq]ueue|this\.\w*[Qq]ueue|flowQueue|autopilotQueue|memoryQueue|voiceQueue|campaignQueue|scraperQueue|mediaQueue|crmQueue|webhookQueue|dlq)\s*\.\s*add\s*\(/;
-const BULLMQ_ADD_BULK_RE = /\b(\w*[Qq]ueue|this\.\w*[Qq]ueue|flowQueue|autopilotQueue|memoryQueue|voiceQueue|campaignQueue|scraperQueue|mediaQueue|crmQueue|webhookQueue)\s*\.\s*addBulk\s*\(/;
+const BULLMQ_ADD_RE =
+  /\b(\w*[Qq]ueue|this\.\w*[Qq]ueue|flowQueue|autopilotQueue|memoryQueue|voiceQueue|campaignQueue|scraperQueue|mediaQueue|crmQueue|webhookQueue|dlq)\s*\.\s*add\s*\(/;
+const BULLMQ_ADD_BULK_RE =
+  /\b(\w*[Qq]ueue|this\.\w*[Qq]ueue|flowQueue|autopilotQueue|memoryQueue|voiceQueue|campaignQueue|scraperQueue|mediaQueue|crmQueue|webhookQueue)\s*\.\s*addBulk\s*\(/;
 const HAS_ATTEMPTS = /\battempts\s*:/;
 const HAS_BACKOFF = /\bbackoff\s*:/;
 
@@ -40,9 +42,11 @@ function isCommentLine(trimmed: string): boolean {
 export function checkWorkerResilience(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  if (!config.workerDir) return breaks;
+  if (!config.workerDir) {
+    return breaks;
+  }
 
-  const files = walkFiles(config.workerDir, ['.ts']).filter(f => !shouldSkipFile(f));
+  const files = walkFiles(config.workerDir, ['.ts']).filter((f) => !shouldSkipFile(f));
 
   // Check if queue.ts defines queues with defaultJobOptions retry — if so, per-job retry is inherited
   const queueTsPath = path.join(config.workerDir, 'queue.ts');
@@ -66,7 +70,8 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
 
     // ===== File-level: Puppeteer page leak check =====
-    const hasNewPage = content.includes('browser.newPage()') || content.includes('browser?.newPage()');
+    const hasNewPage =
+      content.includes('browser.newPage()') || content.includes('browser?.newPage()');
     const hasPageGoto = content.includes('page.goto(') || content.includes('page?.goto(');
     const hasPageClose =
       content.includes('page.close()') ||
@@ -89,11 +94,15 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
       const raw = lines[i];
       const trimmed = raw.trim();
 
-      if (isCommentLine(trimmed)) continue;
+      if (isCommentLine(trimmed)) {
+        continue;
+      }
 
       // --- Puppeteer timeout check ---
       for (const callRe of PUPPETEER_TIMEOUT_CALLS) {
-        if (!callRe.test(raw)) continue;
+        if (!callRe.test(raw)) {
+          continue;
+        }
 
         // Check same line and next 4 lines for `timeout:` (larger window for multi-line option objects)
         const window = lines.slice(i, Math.min(i + 5, lines.length)).join(' ');
@@ -104,7 +113,8 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
             file: relFile,
             line: i + 1,
             description: `Puppeteer call without explicit timeout: ${trimmed.slice(0, 80)}`,
-            detail: 'Add { timeout: <ms> } option to prevent infinite hangs on network/selector issues.',
+            detail:
+              'Add { timeout: <ms> } option to prevent infinite hangs on network/selector issues.',
           });
         }
         // Only flag once per line even if multiple patterns match
@@ -116,10 +126,14 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
       if (BULLMQ_ADD_RE.test(raw) || BULLMQ_ADD_BULK_RE.test(raw)) {
         // Skip if PULSE:OK annotation is present
         const prevLine = i > 0 ? lines[i - 1].trim() : '';
-        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) continue;
+        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) {
+          continue;
+        }
 
         // If queue.ts defines defaultJobOptions with retry, skip — all queues inherit it
-        if (queueHasDefaultRetry) continue;
+        if (queueHasDefaultRetry) {
+          continue;
+        }
 
         // Collect the call context: current line + next 6 lines
         const callWindow = lines.slice(i, Math.min(i + 7, lines.length)).join('\n');
@@ -132,7 +146,8 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
             file: relFile,
             line: i + 1,
             description: `BullMQ job added without retry config: ${trimmed.slice(0, 80)}`,
-            detail: 'Pass { attempts: N, backoff: { type: "exponential", delay: ms } } as the third argument to .add().',
+            detail:
+              'Pass { attempts: N, backoff: { type: "exponential", delay: ms } } as the third argument to .add().',
           });
         }
       }

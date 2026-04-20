@@ -15,10 +15,14 @@ export function safeCompareStrings(a: string, b: string): boolean {
   const bufB = Buffer.from(String(b || ''));
 
   // Short-circuit on empty — nothing to leak via timing.
-  if (bufA.length === 0 || bufB.length === 0) return false;
+  if (bufA.length === 0 || bufB.length === 0) {
+    return false;
+  }
 
   // timingSafeEqual requires equal-length buffers.
-  if (bufA.length !== bufB.length) return false;
+  if (bufA.length !== bufB.length) {
+    return false;
+  }
 
   return timingSafeEqual(bufA, bufB);
 }

@@ -104,7 +104,9 @@ export interface FlowOptimizeResult {
 
 export async function getFlowTemplates(): Promise<FlowTemplate[]> {
   const res = await apiFetch<FlowTemplate[]>(`/flows/templates`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data ?? [];
 }
 
@@ -119,7 +121,9 @@ export async function runFlow(body: {
     method: 'POST',
     body: body,
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateFlows();
   return res.data;
 }
@@ -133,7 +137,9 @@ export async function runSavedFlow(
     method: 'POST',
     body: body,
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data;
 }
 
@@ -146,7 +152,9 @@ export async function saveFlow(
     method: 'POST',
     body: flow,
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateFlows();
   return res.data;
 }
@@ -160,7 +168,9 @@ export async function updateFlow(
     method: 'PUT',
     body: flow,
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateFlows();
   return res.data;
 }
@@ -174,7 +184,9 @@ export async function createFlowVersion(
     method: 'POST',
     body: payload,
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateFlows();
   return res.data;
 }
@@ -189,7 +201,9 @@ export async function logFlowExecution(
     method: 'POST',
     body: { logs, user },
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data;
 }
 
@@ -198,19 +212,25 @@ export async function getFlowLogs(
   flowId: string,
 ): Promise<FlowExecutionLog[]> {
   const res = await apiFetch<FlowExecutionLog[]>(`/flows/log/${workspaceId}/${flowId}`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data ?? [];
 }
 
 export async function listFlows(workspaceId: string): Promise<Flow[]> {
   const res = await apiFetch<Flow[]>(`/flows/${workspaceId}`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data ?? [];
 }
 
 export async function getFlow(workspaceId: string, flowId: string): Promise<Flow> {
   const res = await apiFetch<Flow>(`/flows/${workspaceId}/${flowId}`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as Flow;
 }
 
@@ -221,7 +241,9 @@ export async function listFlowExecutions(
   const res = await apiFetch<FlowExecutionSummary[]>(
     `/flows/${workspaceId}/executions${buildQuery({ limit })}`,
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data ?? [];
 }
 
@@ -229,7 +251,9 @@ export async function getFlowExecution(
   executionId: string,
 ): Promise<FlowExecutionSummary | undefined> {
   const res = await apiFetch<FlowExecutionSummary>(`/flows/execution/${executionId}`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data;
 }
 
@@ -239,7 +263,9 @@ export async function retryFlowExecution(
   const res = await apiFetch<FlowExecutionSummary>(`/flows/execution/${executionId}/retry`, {
     method: 'POST',
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateFlows();
   return res.data;
 }
@@ -249,7 +275,9 @@ export async function listFlowVersions(
   flowId: string,
 ): Promise<FlowVersion[]> {
   const res = await apiFetch<FlowVersion[]>(`/flows/${workspaceId}/${flowId}/versions`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data ?? [];
 }
 
@@ -259,7 +287,9 @@ export async function getFlowVersion(
   versionId: string,
 ): Promise<FlowVersion | undefined> {
   const res = await apiFetch<FlowVersion>(`/flows/${workspaceId}/${flowId}/versions/${versionId}`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data;
 }
 
@@ -272,7 +302,9 @@ export async function createFlowFromTemplate(
     method: 'POST',
     body: payload,
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateFlows();
   return res.data;
 }
@@ -298,7 +330,9 @@ export interface FlowTemplate {
  */
 export async function listPublicFlowTemplates(): Promise<FlowTemplate[]> {
   const res = await apiFetch<FlowTemplate[]>('/flow-templates/public');
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return Array.isArray(res.data) ? res.data : [];
 }
 
@@ -307,7 +341,9 @@ export async function listPublicFlowTemplates(): Promise<FlowTemplate[]> {
  */
 export async function listAllFlowTemplates(): Promise<FlowTemplate[]> {
   const res = await apiFetch<FlowTemplate[]>('/flow-templates');
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return Array.isArray(res.data) ? res.data : [];
 }
 
@@ -316,7 +352,9 @@ export async function listAllFlowTemplates(): Promise<FlowTemplate[]> {
  */
 export async function getFlowTemplate(id: string): Promise<FlowTemplate> {
   const res = await apiFetch<FlowTemplate>(`/flow-templates/${encodeURIComponent(id)}`);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as FlowTemplate;
 }
 
@@ -335,7 +373,9 @@ export async function createFlowTemplate(payload: {
     method: 'POST',
     body: payload,
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateFlows();
   return res.data as FlowTemplate;
 }
@@ -347,7 +387,9 @@ export async function downloadFlowTemplate(id: string): Promise<FlowTemplate> {
   const res = await apiFetch<FlowTemplate>(`/flow-templates/${encodeURIComponent(id)}/download`, {
     method: 'POST',
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as FlowTemplate;
 }
 
@@ -365,7 +407,9 @@ export async function optimizeFlow(flowId: string): Promise<FlowOptimizeResult |
       method: 'POST',
     },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   invalidateFlows();
   return res.data;
 }

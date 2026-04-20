@@ -217,7 +217,9 @@ export async function validateUrl(urlString: string): Promise<UrlValidation> {
   }
 
   const basic = validateBasicRules(parsed.url);
-  if (basic) return basic;
+  if (basic) {
+    return basic;
+  }
 
   const hostname = normalizeHost(parsed.url.hostname);
   if (isIP(hostname)) {
@@ -253,7 +255,9 @@ async function handleRedirect(
   currentUrl: string,
   maxRedirects: number,
 ): Promise<Response | null> {
-  if (!REDIRECT_STATUSES.has(response.status)) return null;
+  if (!REDIRECT_STATUSES.has(response.status)) {
+    return null;
+  }
 
   const location = response.headers.get('location');
   if (location && maxRedirects > 0) {
@@ -306,7 +310,9 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
     });
 
     const redirected = await handleRedirect(response, options, url, maxRedirects);
-    if (redirected) return redirected;
+    if (redirected) {
+      return redirected;
+    }
 
     return response;
   } finally {
@@ -318,6 +324,8 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
  * Verifica se uma URL está em uma allowlist
  */
 export function isUrlAllowed(url: string, allowlist: string[]): boolean {
-  if (allowlist.length === 0) return true;
+  if (allowlist.length === 0) {
+    return true;
+  }
   return allowlist.some((prefix) => url.startsWith(prefix));
 }

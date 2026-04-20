@@ -29,9 +29,7 @@ function resolveExecutionTraceWritePath(rootDir: string): string {
   const configuredPath = process.env.PULSE_EXECUTION_TRACE_PATH?.trim();
 
   if (configuredPath) {
-    return path.isAbsolute(configuredPath)
-      ? configuredPath
-      : path.join(rootDir, configuredPath);
+    return path.isAbsolute(configuredPath) ? configuredPath : path.join(rootDir, configuredPath);
   }
 
   if (process.env.CI === 'true') {
@@ -42,10 +40,10 @@ function resolveExecutionTraceWritePath(rootDir: string): string {
 }
 
 function buildDefaultSummary(trace: PulseExecutionTrace): string {
-  const running = trace.phases.filter(phase => phase.phaseStatus === 'running').length;
-  const failed = trace.phases.filter(phase => phase.phaseStatus === 'failed').length;
-  const timedOut = trace.phases.filter(phase => phase.phaseStatus === 'timed_out').length;
-  const passed = trace.phases.filter(phase => phase.phaseStatus === 'passed').length;
+  const running = trace.phases.filter((phase) => phase.phaseStatus === 'running').length;
+  const failed = trace.phases.filter((phase) => phase.phaseStatus === 'failed').length;
+  const timedOut = trace.phases.filter((phase) => phase.phaseStatus === 'timed_out').length;
+  const passed = trace.phases.filter((phase) => phase.phaseStatus === 'passed').length;
 
   if (running > 0) {
     return `Execution in progress: ${passed} passed, ${failed} failed, ${timedOut} timed out, ${running} running.`;
@@ -60,11 +58,7 @@ export class PulseExecutionTracer {
   private readonly artifactPath: string;
   private readonly trace: PulseExecutionTrace;
 
-  constructor(
-    rootDir: string,
-    target?: PulseCertificationTarget,
-    environment?: PulseEnvironment,
-  ) {
+  constructor(rootDir: string, target?: PulseCertificationTarget, environment?: PulseEnvironment) {
     const timestamp = Date.now();
     const runId = `pulse-${timestamp}`;
     this.artifactPath = resolveExecutionTraceWritePath(rootDir);
@@ -82,8 +76,12 @@ export class PulseExecutionTracer {
   }
 
   setContext(target?: PulseCertificationTarget, environment?: PulseEnvironment): void {
-    if (target) this.trace.certificationTarget = target;
-    if (environment) this.trace.environment = environment;
+    if (target) {
+      this.trace.certificationTarget = target;
+    }
+    if (environment) {
+      this.trace.environment = environment;
+    }
     this.trace.updatedAt = nowIso();
     this.trace.summary = buildDefaultSummary(this.trace);
     this.flush();
@@ -110,7 +108,9 @@ export class PulseExecutionTracer {
       metadata?: Record<string, string | number | boolean>;
     } = {},
   ): void {
-    const entry = [...this.trace.phases].reverse().find(item => item.phase === phase && item.phaseStatus === 'running');
+    const entry = [...this.trace.phases]
+      .reverse()
+      .find((item) => item.phase === phase && item.phaseStatus === 'running');
     const finishedAt = nowIso();
 
     if (!entry) {
@@ -127,7 +127,9 @@ export class PulseExecutionTracer {
       entry.phaseStatus = status;
       entry.finishedAt = finishedAt;
       entry.durationMs = Math.max(0, Date.parse(finishedAt) - Date.parse(entry.startedAt));
-      if (extra.errorSummary) entry.errorSummary = extra.errorSummary;
+      if (extra.errorSummary) {
+        entry.errorSummary = extra.errorSummary;
+      }
       if (extra.metadata) {
         entry.metadata = {
           ...(entry.metadata || {}),
@@ -205,7 +207,9 @@ export async function runPhaseWithTrace<T>(
     }
     throw error;
   } finally {
-    if (timeoutHandle) clearTimeout(timeoutHandle);
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
   }
 }
 

@@ -102,7 +102,9 @@ export function ProductIATab({ productId }: { productId: string }) {
 
   useEffect(
     () => () => {
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
     },
     [],
   );
@@ -121,7 +123,9 @@ export function ProductIATab({ productId }: { productId: string }) {
     apiFetch<AIConfigPayload>(`/products/${productId}/ai-config`)
       .then((res) => {
         const d = res?.data;
-        if (d) setConfig((prev) => mergeAIConfigPayload(prev, d));
+        if (d) {
+          setConfig((prev) => mergeAIConfigPayload(prev, d));
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -140,7 +144,9 @@ export function ProductIATab({ productId }: { productId: string }) {
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
       savedTimer.current = setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       console.error('Erro ao salvar config IA:', e);
@@ -149,12 +155,13 @@ export function ProductIATab({ productId }: { productId: string }) {
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: V.t2, fontFamily: SORA }}>
         Carregando...
       </div>
     );
+  }
 
   const objections = config.objections || [];
 

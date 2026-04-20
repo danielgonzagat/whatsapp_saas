@@ -3,9 +3,15 @@ import * as path from 'path';
 import type { PulseHealth, Break } from './types';
 
 function severityIcon(s: string): string {
-  if (s === 'critical') return 'CRITICAL';
-  if (s === 'high') return 'HIGH';
-  if (s === 'medium') return 'WARNING';
+  if (s === 'critical') {
+    return 'CRITICAL';
+  }
+  if (s === 'high') {
+    return 'HIGH';
+  }
+  if (s === 'medium') {
+    return 'WARNING';
+  }
   return 'INFO';
 }
 
@@ -19,7 +25,9 @@ function groupBreaks(breaks: Break[]): Map<string, Break[]> {
   const groups = new Map<string, Break[]>();
   for (const b of breaks) {
     const key = b.type;
-    if (!groups.has(key)) groups.set(key, []);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
     groups.get(key)!.push(b);
   }
   return groups;
@@ -30,7 +38,7 @@ function generateCorrectionPrompt(breaks: Break[]): string {
   lines.push('Fix the following codebase connectivity issues found by PULSE:');
   lines.push('');
 
-  const grouped = groupBreaks(breaks.filter(b => b.severity !== 'low'));
+  const grouped = groupBreaks(breaks.filter((b) => b.severity !== 'low'));
   let idx = 1;
 
   const apiNoRoute = grouped.get('API_NO_ROUTE') || [];
@@ -50,7 +58,9 @@ function generateCorrectionPrompt(breaks: Break[]): string {
     lines.push('Replace fake/stub code with real implementations:');
     for (const b of facades) {
       lines.push(`${idx}. **${b.file}:${b.line}** — ${b.description}`);
-      if (b.detail) lines.push(`   Evidence: \`${b.detail}\``);
+      if (b.detail) {
+        lines.push(`   Evidence: \`${b.detail}\``);
+      }
       idx++;
     }
     lines.push('');
@@ -105,13 +115,27 @@ export function generateReport(health: PulseHealth, rootDir: string): string {
   lines.push('');
   lines.push('| Metric | Total | Issues |');
   lines.push('|--------|-------|--------|');
-  lines.push(`| UI Elements | ${health.stats.uiElements} | ${health.stats.uiDeadHandlers} dead handlers |`);
+  lines.push(
+    `| UI Elements | ${health.stats.uiElements} | ${health.stats.uiDeadHandlers} dead handlers |`,
+  );
   lines.push(`| API Calls | ${health.stats.apiCalls} | ${health.stats.apiNoRoute} no backend |`);
-  lines.push(`| Backend Routes | ${health.stats.backendRoutes} | ${health.stats.backendEmpty} empty |`);
-  lines.push(`| Prisma Models | ${health.stats.prismaModels} | ${health.stats.modelOrphans} orphaned |`);
-  lines.push(`| Facades | ${health.stats.facades} | ${health.stats.facadesBySeverity.high} critical, ${health.stats.facadesBySeverity.medium} warning |`);
-  lines.push(`| Proxy Routes | ${health.stats.proxyRoutes} | ${health.stats.proxyNoUpstream} no upstream |`);
-  if (health.stats.securityIssues > 0 || health.stats.dataSafetyIssues > 0 || health.stats.qualityIssues > 0) {
+  lines.push(
+    `| Backend Routes | ${health.stats.backendRoutes} | ${health.stats.backendEmpty} empty |`,
+  );
+  lines.push(
+    `| Prisma Models | ${health.stats.prismaModels} | ${health.stats.modelOrphans} orphaned |`,
+  );
+  lines.push(
+    `| Facades | ${health.stats.facades} | ${health.stats.facadesBySeverity.high} critical, ${health.stats.facadesBySeverity.medium} warning |`,
+  );
+  lines.push(
+    `| Proxy Routes | ${health.stats.proxyRoutes} | ${health.stats.proxyNoUpstream} no upstream |`,
+  );
+  if (
+    health.stats.securityIssues > 0 ||
+    health.stats.dataSafetyIssues > 0 ||
+    health.stats.qualityIssues > 0
+  ) {
     lines.push(`| Security | - | ${health.stats.securityIssues} issues |`);
     lines.push(`| Data Safety | - | ${health.stats.dataSafetyIssues} issues |`);
     lines.push(`| Quality | - | ${health.stats.qualityIssues} issues |`);
@@ -170,7 +194,9 @@ export function generateReport(health: PulseHealth, rootDir: string): string {
 
   for (const [type, title] of typeOrder) {
     const group = grouped.get(type);
-    if (!group || group.length === 0) continue;
+    if (!group || group.length === 0) {
+      continue;
+    }
 
     lines.push(`### ${title} (${group.length})`);
     lines.push('');
@@ -187,7 +213,9 @@ export function generateReport(health: PulseHealth, rootDir: string): string {
   lines.push('');
   lines.push('## CORRECTION PROMPT');
   lines.push('');
-  lines.push('Copy and paste the following into Claude Code to fix all critical and warning issues:');
+  lines.push(
+    'Copy and paste the following into Claude Code to fix all critical and warning issues:',
+  );
   lines.push('');
   lines.push('```');
   lines.push(generateCorrectionPrompt(health.breaks));

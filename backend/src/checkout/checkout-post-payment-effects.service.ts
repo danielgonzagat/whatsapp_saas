@@ -40,7 +40,9 @@ export class CheckoutPostPaymentEffectsService {
   ) {}
 
   async markLeadConverted(order: CheckoutOrderForEffects, workspaceId?: string) {
-    if (!workspaceId || !order.id) return;
+    if (!workspaceId || !order.id) {
+      return;
+    }
 
     const orderMetadata = this.readOrderMetadata(order.metadata);
     const capturedLeadId =
@@ -84,7 +86,9 @@ export class CheckoutPostPaymentEffectsService {
       );
 
       await forEachSequential(fbPixels, async (pixel) => {
-        if (!pixel.pixelId || !pixel.accessToken) return;
+        if (!pixel.pixelId || !pixel.accessToken) {
+          return;
+        }
         await this.facebookCAPI.sendEvent({
           pixelId: pixel.pixelId,
           accessToken: pixel.accessToken,

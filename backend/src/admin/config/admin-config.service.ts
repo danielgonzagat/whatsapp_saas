@@ -143,7 +143,9 @@ export class AdminConfigService {
         _count: { select: { apiKeys: true, webhookSubscriptions: true } },
       },
     });
-    if (!workspace) throw adminErrors.userNotFound();
+    if (!workspace) {
+      throw adminErrors.userNotFound();
+    }
 
     const currentSettings = asProviderSettings(workspace.providerSettings);
     const currentAutopilot =

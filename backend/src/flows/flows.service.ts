@@ -278,7 +278,9 @@ export class FlowsService {
           });
         }
       }
-      if (contact) contactId = contact.id;
+      if (contact) {
+        contactId = contact.id;
+      }
     }
 
     return this.prisma.flowExecution.create({
@@ -504,8 +506,12 @@ export class FlowsService {
 
     await forEachSequential(candidates, async (execution) => {
       const state = (execution.state as WaitState) || ({} as WaitState);
-      if (!state.waitExpiresAt) return;
-      if (now <= new Date(state.waitExpiresAt)) return;
+      if (!state.waitExpiresAt) {
+        return;
+      }
+      if (now <= new Date(state.waitExpiresAt)) {
+        return;
+      }
 
       // Expired — transition to Timeout
       const updatedState: Record<string, unknown> = {

@@ -10,8 +10,12 @@
  * when NODE_ENV=production and REDIS_MODE is not explicitly disabled.
  */
 export function resolveRedisMode(raw: unknown): string {
-  if (typeof raw === 'string') return raw.toLowerCase();
-  if (typeof raw === 'number' || typeof raw === 'boolean') return String(raw).toLowerCase();
+  if (typeof raw === 'string') {
+    return raw.toLowerCase();
+  }
+  if (typeof raw === 'number' || typeof raw === 'boolean') {
+    return String(raw).toLowerCase();
+  }
   return '';
 }
 
@@ -43,7 +47,9 @@ export function includesRailwayPublicProxy(candidate: string): boolean {
 }
 
 export function assertRedisConfigured(value: Record<string, unknown>): void {
-  if (hasRedisUrlConfigured(value) || hasRedisComponentAuth(value)) return;
+  if (hasRedisUrlConfigured(value) || hasRedisComponentAuth(value)) {
+    return;
+  }
   throw new Error(
     'Redis is required in production but no Redis URL could be resolved from env. ' +
       'Set REDIS_URL, REDIS_FALLBACK_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
@@ -53,7 +59,9 @@ export function assertRedisConfigured(value: Record<string, unknown>): void {
 
 export function assertNoPublicProxyHost(value: Record<string, unknown>): void {
   const candidates = collectRedisUrlCandidates(value);
-  if (!candidates.some(includesRailwayPublicProxy)) return;
+  if (!candidates.some(includesRailwayPublicProxy)) {
+    return;
+  }
   throw new Error(
     'Redis must use Railway internal networking in production. ' +
       'Configure REDIS_URL from the Redis service (for example redis://default:***@redis.railway.internal:6379) ' +
@@ -65,10 +73,14 @@ export function redisInProductionValidator(
   value: Record<string, unknown>,
 ): Record<string, unknown> {
   const isProd = value.NODE_ENV === 'production';
-  if (!isProd) return value;
+  if (!isProd) {
+    return value;
+  }
 
   const mode = resolveRedisMode(value.REDIS_MODE);
-  if (mode === 'disabled') return value;
+  if (mode === 'disabled') {
+    return value;
+  }
 
   assertRedisConfigured(value);
   assertNoPublicProxyHost(value);

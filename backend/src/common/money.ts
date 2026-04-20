@@ -98,10 +98,16 @@ export function applyBasisPoints(amount: Cents, basisPoints: number): Cents {
   const product = amount * basisPoints;
   const quotient = Math.trunc(product / 10_000);
   const remainder = product - quotient * 10_000;
-  if (remainder === 0) return cents(quotient);
+  if (remainder === 0) {
+    return cents(quotient);
+  }
   const halfAway = Math.abs(remainder) * 2;
-  if (halfAway < 10_000) return cents(quotient);
-  if (halfAway > 10_000) return cents(quotient + Math.sign(product));
+  if (halfAway < 10_000) {
+    return cents(quotient);
+  }
+  if (halfAway > 10_000) {
+    return cents(quotient + Math.sign(product));
+  }
   // Exactly half — banker's rounding
   return cents(quotient % 2 === 0 ? quotient : quotient + Math.sign(product));
 }
@@ -113,7 +119,9 @@ export function applyBasisPoints(amount: Cents, basisPoints: number): Cents {
  */
 export function parseBRL(input: string): Cents {
   const trimmed = String(input || '').trim();
-  if (!trimmed) throw new TypeError('Empty BRL string');
+  if (!trimmed) {
+    throw new TypeError('Empty BRL string');
+  }
   // Strip currency symbol and thousand separators, normalize decimal comma.
   const cleaned = trimmed.replace(R__S_RE, '').replace(PATTERN_RE, '').replace(',', '.');
   const parsed = Number.parseFloat(cleaned);

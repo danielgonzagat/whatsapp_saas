@@ -23,7 +23,9 @@ export class HistoryManager {
   }
 
   saveState(): void {
-    if (this._loading) return;
+    if (this._loading) {
+      return;
+    }
     const json = JSON.stringify(this.canvas.toJSON());
     this.undoStack.push(json);
     if (this.undoStack.length > MAX_STATES) {
@@ -34,7 +36,9 @@ export class HistoryManager {
 
   async undo(): Promise<void> {
     const state = this.undoStack.pop();
-    if (!state) return;
+    if (!state) {
+      return;
+    }
     const current = JSON.stringify(this.canvas.toJSON());
     this.redoStack.push(current);
     await this._loadState(state);
@@ -42,7 +46,9 @@ export class HistoryManager {
 
   async redo(): Promise<void> {
     const state = this.redoStack.pop();
-    if (!state) return;
+    if (!state) {
+      return;
+    }
     const current = JSON.stringify(this.canvas.toJSON());
     this.undoStack.push(current);
     await this._loadState(state);

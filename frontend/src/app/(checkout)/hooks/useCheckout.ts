@@ -86,14 +86,18 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
   }, []);
 
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId) {
+      return;
+    }
 
     const fetchStatus = async () => {
       try {
         const res = await fetch(
           createCheckoutApiRequest(`/checkout/public/order/${orderId}/status`),
         );
-        if (!res.ok) throw new Error('Erro ao buscar status do pedido');
+        if (!res.ok) {
+          throw new Error('Erro ao buscar status do pedido');
+        }
         const json: OrderStatusData = await res.json();
         setData(json);
         setLoading(false);

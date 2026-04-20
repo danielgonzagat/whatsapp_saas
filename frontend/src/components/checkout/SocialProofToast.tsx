@@ -26,7 +26,9 @@ export function SocialProofToast({ enabled }: SocialProofToastProps) {
 
   // Fetch real data once
   useEffect(() => {
-    if (!enabled || fetchedRef.current) return;
+    if (!enabled || fetchedRef.current) {
+      return;
+    }
     fetchedRef.current = true;
 
     fetch(`${API_BASE}/checkout/public/recent-sales?limit=5`)
@@ -44,7 +46,9 @@ export function SocialProofToast({ enabled }: SocialProofToastProps) {
 
   const showNext = useCallback(() => {
     const sales = salesRef.current;
-    if (sales.length === 0) return;
+    if (sales.length === 0) {
+      return;
+    }
     const entry = sales[indexRef.current % sales.length];
     indexRef.current++;
     setCurrent(entry);
@@ -53,7 +57,9 @@ export function SocialProofToast({ enabled }: SocialProofToastProps) {
   }, []);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     // First toast after 5s
     const initial = setTimeout(showNext, 5000);
@@ -74,7 +80,9 @@ export function SocialProofToast({ enabled }: SocialProofToastProps) {
     return null;
   }
 
-  if (!enabled || !visible || !current) return null;
+  if (!enabled || !visible || !current) {
+    return null;
+  }
 
   return (
     <div

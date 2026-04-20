@@ -8,7 +8,9 @@ const PATTERN_RE = /\/+$/;
 function getServerApiBase(): string {
   const envUrl =
     process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || process.env.SERVICE_BASE_URL;
-  if (envUrl) return envUrl.replace(PATTERN_RE, '');
+  if (envUrl) {
+    return envUrl.replace(PATTERN_RE, '');
+  }
   return 'http://localhost:3001';
 }
 
@@ -25,7 +27,9 @@ export async function generateMetadata({
     const res = await fetch(`${getServerApiBase()}/checkout/public/${slug}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return { title: 'Checkout' };
+    if (!res.ok) {
+      return { title: 'Checkout' };
+    }
 
     const data = await res.json();
     const config = data.checkoutConfig;

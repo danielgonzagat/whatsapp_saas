@@ -14,9 +14,7 @@ const DATE_NO_LOCALE_RE = /\.to(?:LocaleDate|Locale|LocaleTime)String\s*\(\s*\)/
 export function checkLocaleConsistency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const files = walkFiles(config.frontendDir, ['.tsx', '.ts']).filter(
-    f => !shouldSkipFile(f),
-  );
+  const files = walkFiles(config.frontendDir, ['.tsx', '.ts']).filter((f) => !shouldSkipFile(f));
 
   for (const file of files) {
     let content: string;
@@ -27,7 +25,9 @@ export function checkLocaleConsistency(config: PulseConfig): Break[] {
     }
 
     // Quick pre-check
-    if (!/\.toLocale(?:Date|Time)?String\s*\(/.test(content)) continue;
+    if (!/\.toLocale(?:Date|Time)?String\s*\(/.test(content)) {
+      continue;
+    }
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
@@ -37,7 +37,9 @@ export function checkLocaleConsistency(config: PulseConfig): Break[] {
       const trimmed = line.trim();
 
       // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
       DATE_NO_LOCALE_RE.lastIndex = 0;
       let m: RegExpExecArray | null;

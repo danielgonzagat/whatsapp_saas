@@ -36,10 +36,16 @@ let _railwayVars: Record<string, string> | null = null;
 let _railwayVarsSource: RailwayVarsSource = 'none';
 
 function normalizeUrl(value: string | undefined | null): string | null {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   const trimmed = value.trim();
-  if (!trimmed) return null;
-  if (/^https?:\/\//i.test(trimmed)) return trimmed.replace(/\/$/, '');
+  if (!trimmed) {
+    return null;
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed.replace(/\/$/, '');
+  }
   if (/^[\w.-]+\.vercel\.app$/i.test(trimmed) || /^[\w.-]+\.up\.railway\.app$/i.test(trimmed)) {
     return `https://${trimmed.replace(/\/$/, '')}`;
   }
@@ -49,7 +55,9 @@ function normalizeUrl(value: string | undefined | null): string | null {
 function parseRailwayVars(raw: string): Record<string, string> | null {
   try {
     const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return null;
+    }
     return Object.fromEntries(
       Object.entries(parsed as Record<string, unknown>).filter(
         ([, value]) => typeof value === 'string',
@@ -86,7 +94,9 @@ function tryRailwayVariablesCli(token?: string): Record<string, string> | null {
         },
       });
       const parsed = parseRailwayVars(out);
-      if (parsed) return parsed;
+      if (parsed) {
+        return parsed;
+      }
     } catch {
       continue;
     }
@@ -96,7 +106,9 @@ function tryRailwayVariablesCli(token?: string): Record<string, string> | null {
 }
 
 export function getRailwayVars(): Record<string, string> {
-  if (_railwayVars) return _railwayVars;
+  if (_railwayVars) {
+    return _railwayVars;
+  }
 
   const explicitJson = process.env.PULSE_RAILWAY_VARS_JSON;
   const parsedExplicit = explicitJson ? parseRailwayVars(explicitJson) : null;
@@ -212,13 +224,17 @@ export function getFrontendUrl(): string {
 }
 
 export function getDbUrl(): string {
-  if (process.env.PULSE_DATABASE_URL) return process.env.PULSE_DATABASE_URL;
+  if (process.env.PULSE_DATABASE_URL) {
+    return process.env.PULSE_DATABASE_URL;
+  }
   const vars = getRailwayVars();
   return vars.DATABASE_URL || '';
 }
 
 export function getJwtSecret(): string {
-  if (process.env.PULSE_JWT_SECRET) return process.env.PULSE_JWT_SECRET;
+  if (process.env.PULSE_JWT_SECRET) {
+    return process.env.PULSE_JWT_SECRET;
+  }
   const vars = getRailwayVars();
   return vars.JWT_SECRET || 'pulse-test-secret';
 }
@@ -317,7 +333,9 @@ async function httpRequest(
     'Content-Type': 'application/json',
     ...(opts.headers || {}),
   };
-  if (opts.jwt) headers['Authorization'] = `Bearer ${opts.jwt}`;
+  if (opts.jwt) {
+    headers['Authorization'] = `Bearer ${opts.jwt}`;
+  }
 
   const start = Date.now();
   try {
@@ -356,7 +374,9 @@ async function httpRequest(
 
 export async function dbQuery(sql: string, params: any[] = []): Promise<any[]> {
   const dbUrl = getDbUrl();
-  if (!dbUrl) throw new Error('No DATABASE_URL available for PULSE DB queries');
+  if (!dbUrl) {
+    throw new Error('No DATABASE_URL available for PULSE DB queries');
+  }
 
   // Dynamic import pg to avoid requiring it when not in DEEP mode
   let pg: any;
@@ -385,7 +405,9 @@ export async function dbQuery(sql: string, params: any[] = []): Promise<any[]> {
     ]);
     return result.rows;
   } finally {
-    if (queryTimeout) clearTimeout(queryTimeout);
+    if (queryTimeout) {
+      clearTimeout(queryTimeout);
+    }
     await client.end().catch(() => {});
   }
 }

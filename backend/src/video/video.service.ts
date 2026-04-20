@@ -32,7 +32,9 @@ export class VideoService {
         updatedAt: true,
       },
     });
-    if (!job) throw new NotFoundException('Job não encontrado');
+    if (!job) {
+      throw new NotFoundException('Job não encontrado');
+    }
     if (job.workspaceId !== workspaceId) {
       throw new ForbiddenException('Job não pertence a este workspace');
     }

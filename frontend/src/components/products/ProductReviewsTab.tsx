@@ -46,13 +46,15 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
     fetch_();
   }, [fetch_]);
   const handleDelete = async (id: string) => {
-    if (!confirm('Excluir avaliacao?')) return;
+    if (!confirm('Excluir avaliacao?')) {
+      return;
+    }
     await apiFetch(`/products/${productId}/reviews/${id}`, { method: 'DELETE' });
     mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
     fetch_();
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2
@@ -62,6 +64,7 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
         />
       </div>
     );
+  }
 
   const avgRating = items.length
     ? (items.reduce((s, r) => s + r.rating, 0) / items.length).toFixed(1)

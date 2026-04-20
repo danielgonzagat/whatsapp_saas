@@ -46,13 +46,19 @@ export class AdminSessionsService {
     const session = await this.prisma.adminSession.findUnique({
       where: { id: sessionId },
     });
-    if (!session) throw adminErrors.sessionNotFound();
+    if (!session) {
+      throw adminErrors.sessionNotFound();
+    }
 
     const isOwnSession = session.adminUserId === actorId;
     const isOwner = actorRole === AdminRole.OWNER;
-    if (!isOwnSession && !isOwner) throw adminErrors.cannotRevokeOther();
+    if (!isOwnSession && !isOwner) {
+      throw adminErrors.cannotRevokeOther();
+    }
 
-    if (session.revokedAt) return;
+    if (session.revokedAt) {
+      return;
+    }
 
     await this.prisma.adminSession.update({
       where: { id: sessionId },

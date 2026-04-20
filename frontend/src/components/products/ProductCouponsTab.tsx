@@ -62,7 +62,9 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
     }
   };
   const handleDelete = async (id: string) => {
-    if (!confirm('Excluir cupom?')) return;
+    if (!confirm('Excluir cupom?')) {
+      return;
+    }
     await apiFetch(`/products/${productId}/coupons/${id}`, { method: 'DELETE' });
     fetch_();
   };
@@ -79,7 +81,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
     fontFamily: "'Sora', sans-serif",
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center py-12">
         <Loader2
@@ -89,6 +91,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
         />
       </div>
     );
+  }
 
   return (
     <div className="space-y-4">

@@ -35,7 +35,9 @@ export async function getAutopilotStatus(
   _token?: string,
 ): Promise<AutopilotStatus> {
   const res = await apiFetch<AutopilotStatus>(`/autopilot/status${buildQuery({ workspaceId })}`);
-  if (res.error) throw new Error('Failed to fetch autopilot status');
+  if (res.error) {
+    throw new Error('Failed to fetch autopilot status');
+  }
   return res.data as AutopilotStatus;
 }
 
@@ -48,7 +50,9 @@ export async function toggleAutopilot(
     method: 'POST',
     body: { workspaceId, enabled },
   });
-  if (res.error) throw new Error('Failed to toggle autopilot');
+  if (res.error) {
+    throw new Error('Failed to toggle autopilot');
+  }
   invalidateAutopilot();
   return res.data as AutopilotStatus;
 }
@@ -58,7 +62,9 @@ export async function getAutopilotConfig(
   _token?: string,
 ): Promise<AutopilotConfig> {
   const res = await apiFetch<AutopilotConfig>(`/autopilot/config${buildQuery({ workspaceId })}`);
-  if (res.error) throw new Error('Failed to fetch autopilot config');
+  if (res.error) {
+    throw new Error('Failed to fetch autopilot config');
+  }
   return res.data as AutopilotConfig;
 }
 
@@ -71,7 +77,9 @@ export async function updateAutopilotConfig(
     method: 'POST',
     body: { workspaceId, ...config },
   });
-  if (res.error) throw new Error('Failed to update autopilot config');
+  if (res.error) {
+    throw new Error('Failed to update autopilot config');
+  }
   invalidateAutopilot();
   return res.data as AutopilotConfig;
 }
@@ -81,7 +89,9 @@ export async function getAutopilotStats(
   _token?: string,
 ): Promise<AutopilotStats> {
   const res = await apiFetch<AutopilotStats>(`/autopilot/stats${buildQuery({ workspaceId })}`);
-  if (res.error) throw new Error('Failed to fetch autopilot stats');
+  if (res.error) {
+    throw new Error('Failed to fetch autopilot stats');
+  }
   return res.data as AutopilotStats;
 }
 
@@ -90,7 +100,9 @@ export async function getAutopilotImpact(
   _token?: string,
 ): Promise<AutopilotImpact> {
   const res = await apiFetch<AutopilotImpact>(`/autopilot/impact${buildQuery({ workspaceId })}`);
-  if (res.error) throw new Error('Failed to fetch autopilot impact');
+  if (res.error) {
+    throw new Error('Failed to fetch autopilot impact');
+  }
   return res.data as AutopilotImpact;
 }
 
@@ -101,7 +113,9 @@ export async function getAutopilotPipeline(
   const res = await apiFetch<AutopilotPipeline>(
     `/autopilot/pipeline${buildQuery({ workspaceId })}`,
   );
-  if (res.error) throw new Error('Failed to fetch autopilot pipeline');
+  if (res.error) {
+    throw new Error('Failed to fetch autopilot pipeline');
+  }
   return res.data as AutopilotPipeline;
 }
 
@@ -123,13 +137,17 @@ export async function runAutopilotSmokeTest(params: {
       liveSend: params.liveSend,
     },
   });
-  if (res.error) throw new Error('Failed to run autopilot smoke test');
+  if (res.error) {
+    throw new Error('Failed to run autopilot smoke test');
+  }
   return res.data as AutopilotSmokeTest;
 }
 
 export async function getSystemHealth(): Promise<SystemHealth> {
   const res = await apiFetch<SystemHealth>(`/health/system`);
-  if (res.error) throw new Error('Failed to fetch system health');
+  if (res.error) {
+    throw new Error('Failed to fetch system health');
+  }
   return res.data as SystemHealth;
 }
 
@@ -144,7 +162,9 @@ export async function getAutopilotActions(
       status: options?.status,
     })}`,
   );
-  if (res.error) throw new Error('Failed to fetch autopilot actions');
+  if (res.error) {
+    throw new Error('Failed to fetch autopilot actions');
+  }
   return res.data ?? [];
 }
 
@@ -158,7 +178,9 @@ export async function exportAutopilotActions(
       headers: authHeaders(token),
     }),
   );
-  if (!res.ok) throw new Error('Failed to export autopilot actions');
+  if (!res.ok) {
+    throw new Error('Failed to export autopilot actions');
+  }
   return res.text();
 }
 
@@ -171,7 +193,9 @@ export async function retryAutopilotContact(
     method: 'POST',
     body: { workspaceId, contactId },
   });
-  if (res.error) throw new Error('Failed to retry autopilot contact');
+  if (res.error) {
+    throw new Error('Failed to retry autopilot contact');
+  }
   invalidateAutopilot();
   return res.data as Record<string, unknown>;
 }
@@ -194,7 +218,9 @@ export async function markAutopilotConversion(params: {
       meta: params.meta,
     },
   });
-  if (res.error) throw new Error('Failed to mark conversion');
+  if (res.error) {
+    throw new Error('Failed to mark conversion');
+  }
   invalidateAutopilot();
   return res.data as Record<string, unknown>;
 }
@@ -217,7 +243,9 @@ export async function runAutopilot(params: {
       forceLocal: params.forceLocal,
     },
   });
-  if (res.error) throw new Error('Failed to run autopilot');
+  if (res.error) {
+    throw new Error('Failed to run autopilot');
+  }
   invalidateAutopilot();
   return res.data as Record<string, unknown>;
 }
@@ -264,7 +292,9 @@ export async function activateMoneyMachine(params: {
       smartTime: params.smartTime ?? false,
     },
   });
-  if (res.error) throw new Error((res.error as string) || 'Failed to activate money machine');
+  if (res.error) {
+    throw new Error((res.error as string) || 'Failed to activate money machine');
+  }
   invalidateAutopilot();
   return res.data as MoneyMachineResult;
 }
@@ -283,7 +313,9 @@ export async function askAutopilotInsights(
     method: 'POST',
     body: { workspaceId, question },
   });
-  if (res.error) throw new Error((res.error as string) || 'Failed to ask insights');
+  if (res.error) {
+    throw new Error((res.error as string) || 'Failed to ask insights');
+  }
   return res.data as AskInsightsResult;
 }
 
@@ -306,7 +338,9 @@ export async function sendAutopilotDirectMessage(params: {
       message: params.message,
     },
   });
-  if (res.error) throw new Error((res.error as string) || 'Failed to send direct message');
+  if (res.error) {
+    throw new Error((res.error as string) || 'Failed to send direct message');
+  }
   return res.data as SendDirectResult;
 }
 
@@ -320,6 +354,8 @@ export interface RuntimeConfig {
 
 export async function getAutopilotRuntimeConfig(): Promise<RuntimeConfig> {
   const res = await apiFetch<RuntimeConfig>(`/autopilot/runtime-config`);
-  if (res.error) throw new Error((res.error as string) || 'Failed to fetch runtime config');
+  if (res.error) {
+    throw new Error((res.error as string) || 'Failed to fetch runtime config');
+  }
   return res.data as RuntimeConfig;
 }

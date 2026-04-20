@@ -33,8 +33,12 @@ import { createHash } from 'node:crypto';
  * caller should pre-serialize them into primitives.
  */
 export function canonicalize(value: unknown): string {
-  if (value === null || value === undefined) return 'null';
-  if (typeof value !== 'object') return JSON.stringify(value);
+  if (value === null || value === undefined) {
+    return 'null';
+  }
+  if (typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
   if (Array.isArray(value)) {
     return `[${value.map(canonicalize).join(',')}]`;
   }

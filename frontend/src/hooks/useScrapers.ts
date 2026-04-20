@@ -41,7 +41,9 @@ export async function createScraperJob(data: {
 }): Promise<ScrapingJob> {
   const workspaceId = tokenStorage.getWorkspaceId() || '';
   const res = await scrapersApi.createJob({ workspaceId, ...data });
-  if (res.error) throw new Error(res.error || 'Erro ao criar job');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao criar job');
+  }
   return res.data as ScrapingJob;
 }
 
@@ -50,6 +52,8 @@ export async function importScraperResults(
 ): Promise<{ imported: number; errors?: unknown[] }> {
   const workspaceId = tokenStorage.getWorkspaceId() || '';
   const res = await scrapersApi.importResults(jobId, workspaceId);
-  if (res.error) throw new Error(res.error || 'Erro ao importar resultados');
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao importar resultados');
+  }
   return res.data as { imported: number; errors?: unknown[] };
 }

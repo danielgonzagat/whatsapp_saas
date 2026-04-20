@@ -117,8 +117,12 @@ interface OptionBaseline {
 }
 
 function resolveStageRewardBonus(stage: CustomerCognitiveState['stage']): number {
-  if (stage === 'CHECKOUT') return 0.35;
-  if (stage === 'HOT') return 0.2;
+  if (stage === 'CHECKOUT') {
+    return 0.35;
+  }
+  if (stage === 'HOT') {
+    return 0.2;
+  }
   return 0;
 }
 
@@ -350,8 +354,12 @@ function resolveVariantFamily(
   type: CiaActionType,
   selectedVariantFamily: ActionOption['variantFamily'],
 ): CiaActionDecision['variantFamily'] {
-  if (type === 'PAYMENT_RECOVERY') return 'payment_recovery';
-  if (type === 'FOLLOWUP_SOFT' || type === 'FOLLOWUP_URGENT') return 'followup';
+  if (type === 'PAYMENT_RECOVERY') {
+    return 'payment_recovery';
+  }
+  if (type === 'FOLLOWUP_SOFT' || type === 'FOLLOWUP_URGENT') {
+    return 'followup';
+  }
   return selectedVariantFamily;
 }
 
@@ -489,7 +497,9 @@ function takeBest(
 ): CiaActionDecision | null {
   for (const candidate of source) {
     const key = candidate.contactId || candidate.phone || candidate.conversationId;
-    if (chosen.has(key)) continue;
+    if (chosen.has(key)) {
+      continue;
+    }
     const decision = toDecision(candidate, strategy);
     if (decision.type === 'WAIT') {
       continue;
@@ -521,8 +531,11 @@ function resolveMaxActions(
 ): number {
   const base = Number(maxActionsPerCycle || 5) || 5;
   let adjusted = base;
-  if (strategy?.aggressiveness === 'HIGH') adjusted = base + 1;
-  else if (strategy?.aggressiveness === 'LOW') adjusted = base - 1;
+  if (strategy?.aggressiveness === 'HIGH') {
+    adjusted = base + 1;
+  } else if (strategy?.aggressiveness === 'LOW') {
+    adjusted = base - 1;
+  }
   return Math.max(1, Math.min(10, adjusted));
 }
 
@@ -539,9 +552,13 @@ function collectPriorityActions(
     .sort((left, right) => right.priority - left.priority);
 
   for (const decision of ordered) {
-    if (actions.length >= maxActions) break;
+    if (actions.length >= maxActions) {
+      break;
+    }
     const key = decision.contactId || decision.phone || decision.conversationId;
-    if (chosen.has(key)) continue;
+    if (chosen.has(key)) {
+      continue;
+    }
     chosen.set(key, decision);
     actions.push(decision);
   }
@@ -581,10 +598,14 @@ export function planCiaActions(
   const actions: CiaActionDecision[] = [];
 
   const hot = takeBest(state.clusters.HOT, chosen, strategy);
-  if (hot) actions.push(hot);
+  if (hot) {
+    actions.push(hot);
+  }
 
   const payment = takeBest(state.clusters.PAYMENT, chosen, strategy);
-  if (payment) actions.push(payment);
+  if (payment) {
+    actions.push(payment);
+  }
 
   collectPriorityActions(state, strategy, chosen, actions, maxActions);
 

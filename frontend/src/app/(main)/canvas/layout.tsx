@@ -20,7 +20,9 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
 
   /* Hide tabs on editor page */
   const isEditor = pathname?.startsWith('/canvas/editor');
-  if (isEditor) return <>{children}</>;
+  if (isEditor) {
+    return <>{children}</>;
+  }
 
   const activeTab = TABS.find((t) => pathname?.startsWith(t.path))?.id || 'inicio';
 

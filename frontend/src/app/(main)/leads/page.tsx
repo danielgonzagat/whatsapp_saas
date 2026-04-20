@@ -21,20 +21,32 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function safeDate(value?: string | null) {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
   return date;
 }
 
 function formatTimeAgo(date: Date | null) {
-  if (!date) return '—';
+  if (!date) {
+    return '—';
+  }
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return 'agora';
+  if (seconds < 60) {
+    return 'agora';
+  }
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}min`;
+  if (minutes < 60) {
+    return `${minutes}min`;
+  }
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) {
+    return `${hours}h`;
+  }
   const days = Math.floor(hours / 24);
   return `${days}d`;
 }
@@ -78,33 +90,40 @@ export default function LeadsPage() {
     [leads, selectedLeadId],
   );
 
-  const refreshLeads = useCallback(async (opts?: { keepSelection?: boolean }) => {
-    if (!workspaceId) return;
-    setError(null);
-    setLoadingLeads(true);
-    try {
-      const data = await getLeads(workspaceId, {
-        status: status || undefined,
-        search: searchTerm || undefined,
-        limit: 200,
-      });
-      const normalized = (Array.isArray(data) ? data : []).map((l) => ({
-        ...l,
-        status: l.status || 'new',
-      }));
-
-      setLeads(normalized);
-
-      if (opts?.keepSelection) return;
-      if (!selectedLeadId && normalized[0]?.id) {
-        setSelectedLeadId(normalized[0].id);
+  const refreshLeads = useCallback(
+    async (opts?: { keepSelection?: boolean }) => {
+      if (!workspaceId) {
+        return;
       }
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Falha ao carregar leads');
-    } finally {
-      setLoadingLeads(false);
-    }
-  }, [searchTerm, selectedLeadId, status, workspaceId]);
+      setError(null);
+      setLoadingLeads(true);
+      try {
+        const data = await getLeads(workspaceId, {
+          status: status || undefined,
+          search: searchTerm || undefined,
+          limit: 200,
+        });
+        const normalized = (Array.isArray(data) ? data : []).map((l) => ({
+          ...l,
+          status: l.status || 'new',
+        }));
+
+        setLeads(normalized);
+
+        if (opts?.keepSelection) {
+          return;
+        }
+        if (!selectedLeadId && normalized[0]?.id) {
+          setSelectedLeadId(normalized[0].id);
+        }
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Falha ao carregar leads');
+      } finally {
+        setLoadingLeads(false);
+      }
+    },
+    [searchTerm, selectedLeadId, status, workspaceId],
+  );
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && workspaceId) {
@@ -113,7 +132,9 @@ export default function LeadsPage() {
   }, [isAuthenticated, isLoading, refreshLeads, workspaceId]);
 
   useEffect(() => {
-    if (!isAuthenticated || !workspaceId) return;
+    if (!isAuthenticated || !workspaceId) {
+      return;
+    }
     const handle = setTimeout(() => {
       void refreshLeads({ keepSelection: true });
     }, 350);
@@ -121,7 +142,9 @@ export default function LeadsPage() {
   }, [isAuthenticated, refreshLeads, searchTerm, status, workspaceId]);
 
   useEffect(() => {
-    if (!leads.length) return;
+    if (!leads.length) {
+      return;
+    }
     const normalize = (value?: string | null) => (value || '').replace(D_RE, '');
     const matchedLead =
       (requestedLeadId ? leads.find((lead) => lead.id === requestedLeadId) : null) ||
@@ -141,7 +164,9 @@ export default function LeadsPage() {
     const q = searchTerm.trim().toLowerCase();
     return leads.filter((l) => {
       const matchesStatus = !status || l.status === status;
-      if (!q) return matchesStatus;
+      if (!q) {
+        return matchesStatus;
+      }
       const hay = `${l.name || ''} ${l.phone || ''} ${l.email || ''}`.toLowerCase();
       return matchesStatus && hay.includes(q);
     });
@@ -418,7 +443,9 @@ export default function LeadsPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        if (!selectedLead.phone) return;
+                        if (!selectedLead.phone) {
+                          return;
+                        }
                         try {
                           await navigator.clipboard.writeText(selectedLead.phone);
                           setCopiedLeadId(selectedLead.id);

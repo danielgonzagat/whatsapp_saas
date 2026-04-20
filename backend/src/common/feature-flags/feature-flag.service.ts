@@ -96,8 +96,12 @@ export class FeatureFlagService {
     const raw = process.env[envName];
     if (raw !== undefined) {
       const normalized = raw.trim().toLowerCase();
-      if (normalized === 'true') return true;
-      if (normalized === 'false') return false;
+      if (normalized === 'true') {
+        return true;
+      }
+      if (normalized === 'false') {
+        return false;
+      }
       // Unrecognized value falls through to default
       this.logger.warn(`Feature flag ${envName}="${raw}" is not 'true'/'false'; using default`);
     }

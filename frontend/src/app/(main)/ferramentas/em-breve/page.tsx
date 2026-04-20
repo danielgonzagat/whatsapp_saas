@@ -243,7 +243,9 @@ function EmBreveContent() {
                   key={item.title}
                   onClick={() => {
                     const href = getCapabilityHref(item);
-                    if (href) router.push(href);
+                    if (href) {
+                      router.push(href);
+                    }
                   }}
                   style={{
                     textAlign: 'left',

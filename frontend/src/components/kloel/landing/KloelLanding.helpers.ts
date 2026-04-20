@@ -18,19 +18,37 @@ type TypewriterContext = {
 };
 
 function deleteDelay(ctx: TypewriterContext): number {
-  if (ctx.isLastIndex) return 190 + Math.random() * 90;
-  if (ctx.isPauseMark) return 150 + Math.random() * 70;
-  if (ctx.character === ' ') return 105 + Math.random() * 55;
-  if (ctx.next === ' ') return 88 + Math.random() * 42;
+  if (ctx.isLastIndex) {
+    return 190 + Math.random() * 90;
+  }
+  if (ctx.isPauseMark) {
+    return 150 + Math.random() * 70;
+  }
+  if (ctx.character === ' ') {
+    return 105 + Math.random() * 55;
+  }
+  if (ctx.next === ' ') {
+    return 88 + Math.random() * 42;
+  }
   return 68 + Math.random() * 54;
 }
 
 function typeDelay(ctx: TypewriterContext): number {
-  if (ctx.index === 0) return 150 + Math.random() * 90;
-  if (ctx.isPauseMark) return 240 + Math.random() * 150;
-  if (ctx.character === ' ') return 118 + Math.random() * 78;
-  if (ctx.prev === ' ') return 102 + Math.random() * 74;
-  if (ctx.next === ' ') return 88 + Math.random() * 54;
+  if (ctx.index === 0) {
+    return 150 + Math.random() * 90;
+  }
+  if (ctx.isPauseMark) {
+    return 240 + Math.random() * 150;
+  }
+  if (ctx.character === ' ') {
+    return 118 + Math.random() * 78;
+  }
+  if (ctx.prev === ' ') {
+    return 102 + Math.random() * 74;
+  }
+  if (ctx.next === ' ') {
+    return 88 + Math.random() * 54;
+  }
   return 72 + Math.random() * 72;
 }
 

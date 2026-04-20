@@ -134,7 +134,9 @@ export function MachineRail({
                 type="button"
                 key={capability.title}
                 onClick={() => {
-                  if (href) router.push(href);
+                  if (href) {
+                    router.push(href);
+                  }
                 }}
                 disabled={!href}
                 style={{

@@ -182,14 +182,22 @@ function buildCommissionPayload(body: LooseObject, current?: LooseObject) {
 
 function findSingleAtIndex(email: string): number {
   const atIndex = email.indexOf('@');
-  if (atIndex <= 0) return -1;
-  if (atIndex !== email.lastIndexOf('@')) return -1;
-  if (atIndex === email.length - 1) return -1;
+  if (atIndex <= 0) {
+    return -1;
+  }
+  if (atIndex !== email.lastIndexOf('@')) {
+    return -1;
+  }
+  if (atIndex === email.length - 1) {
+    return -1;
+  }
   return atIndex;
 }
 
 function isValidEmailDomain(domain: string): boolean {
-  if (!domain || domain.startsWith('.') || domain.endsWith('.')) return false;
+  if (!domain || domain.startsWith('.') || domain.endsWith('.')) {
+    return false;
+  }
   const dotIndex = domain.lastIndexOf('.');
   return dotIndex > 0 && dotIndex < domain.length - 1;
 }
@@ -198,13 +206,19 @@ function isValidEmail(value: string): boolean {
   const email = String(value || '')
     .trim()
     .toLowerCase();
-  if (!email || email.includes(' ')) return false;
+  if (!email || email.includes(' ')) {
+    return false;
+  }
 
   const atIndex = findSingleAtIndex(email);
-  if (atIndex < 0) return false;
+  if (atIndex < 0) {
+    return false;
+  }
 
   const local = email.slice(0, atIndex);
-  if (!local) return false;
+  if (!local) {
+    return false;
+  }
 
   return isValidEmailDomain(email.slice(atIndex + 1));
 }
@@ -297,7 +311,9 @@ function buildPlanExtraConfig(body: LooseObject, current: LooseObject) {
   };
 
   for (const [key, entry] of Object.entries(patches)) {
-    if (entry !== undefined) next[key] = entry;
+    if (entry !== undefined) {
+      next[key] = entry;
+    }
   }
 
   return next;
@@ -322,22 +338,32 @@ function buildPackagingConfig(body: LooseObject, current: LooseObject) {
   };
 
   for (const [key, entry] of Object.entries(patches)) {
-    if (entry !== undefined) next[key] = entry;
+    if (entry !== undefined) {
+      next[key] = entry;
+    }
   }
 
   return next;
 }
 
 function pickRequestedFreightType(body: LooseObject): string | undefined {
-  if (typeof body.freightType === 'string') return body.freightType;
-  if (typeof body.shippingCost === 'string') return body.shippingCost;
+  if (typeof body.freightType === 'string') {
+    return body.freightType;
+  }
+  if (typeof body.shippingCost === 'string') {
+    return body.shippingCost;
+  }
   return undefined;
 }
 
 function resolveFreightType(body: LooseObject, current: LooseObject): string | undefined {
-  if (body.freeShipping === true) return 'free';
+  if (body.freeShipping === true) {
+    return 'free';
+  }
   const requested = pickRequestedFreightType(body);
-  if (requested !== undefined) return requested;
+  if (requested !== undefined) {
+    return requested;
+  }
   if (body.freeShipping === false) {
     return current.freightType === 'free' ? 'calculated' : safeStr(current.freightType);
   }
@@ -377,7 +403,9 @@ function buildShippingConfig(body: LooseObject, current: LooseObject) {
   const patches = buildShippingPatches(body, freightType, shippingCostNumber);
 
   for (const [key, entry] of Object.entries(patches)) {
-    if (entry !== undefined) next[key] = entry;
+    if (entry !== undefined) {
+      next[key] = entry;
+    }
   }
 
   return next;
@@ -385,15 +413,23 @@ function buildShippingConfig(body: LooseObject, current: LooseObject) {
 
 function resolvePlanPrice(body: LooseObject): number | undefined {
   const direct = parseNumber(body.price);
-  if (direct !== undefined) return direct;
+  if (direct !== undefined) {
+    return direct;
+  }
   const cents = parseNumber(body.priceInCents);
-  if (cents === undefined) return undefined;
+  if (cents === undefined) {
+    return undefined;
+  }
   return Number(cents / 100);
 }
 
 function resolveVisibleToAffiliates(body: LooseObject): unknown {
-  if (body.visibleToAffiliates !== undefined) return body.visibleToAffiliates;
-  if (body.hideAffiliates === undefined) return undefined;
+  if (body.visibleToAffiliates !== undefined) {
+    return body.visibleToAffiliates;
+  }
+  if (body.hideAffiliates === undefined) {
+    return undefined;
+  }
   return !body.hideAffiliates;
 }
 
@@ -634,7 +670,9 @@ function serializeAffiliateProductForResponse(
   req: AuthenticatedRequest,
   product: LooseObject | null,
 ) {
-  if (!product) return product;
+  if (!product) {
+    return product;
+  }
 
   return {
     ...product,
@@ -874,7 +912,9 @@ function serializeProductCampaignRecord(
 
 function normalizeAiTone(value: unknown): string | undefined {
   const normalized = safeStr(value).trim();
-  if (!normalized) return undefined;
+  if (!normalized) {
+    return undefined;
+  }
 
   const map: Record<string, string> = {
     consultive: 'CONSULTIVE',
@@ -1067,9 +1107,15 @@ function buildFollowUpPatch(body: LooseObject, current: LooseObject, input: Loos
     ...input,
     ...pickDefined(body, SALES_ARGUMENT_SHARED_KEYS),
   };
-  if (body.followUp !== undefined) patch.schedule = body.followUp;
-  if (body.followUpHours !== undefined) patch.hours = parseNumber(body.followUpHours);
-  if (body.followUpMax !== undefined) patch.maxFollowUps = parseNumber(body.followUpMax);
+  if (body.followUp !== undefined) {
+    patch.schedule = body.followUp;
+  }
+  if (body.followUpHours !== undefined) {
+    patch.hours = parseNumber(body.followUpHours);
+  }
+  if (body.followUpMax !== undefined) {
+    patch.maxFollowUps = parseNumber(body.followUpMax);
+  }
   return removeUndefined(patch);
 }
 
@@ -1116,7 +1162,9 @@ function normalizeProductAiConfigInput(body: LooseObject, current?: LooseObject 
 function pickFirstDefined(source: LooseObject, keys: readonly string[], fallback: unknown) {
   for (const key of keys) {
     const value = source[key];
-    if (value !== undefined && value !== null) return value;
+    if (value !== undefined && value !== null) {
+      return value;
+    }
   }
   return fallback;
 }
@@ -1350,7 +1398,9 @@ export class ProductPlanController {
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, productId },
     });
-    if (!plan) throw new NotFoundException('Plano não encontrado');
+    if (!plan) {
+      throw new NotFoundException('Plano não encontrado');
+    }
 
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
@@ -1371,7 +1421,9 @@ export class ProductPlanController {
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, productId },
     });
-    if (!plan) throw new NotFoundException('Plano não encontrado');
+    if (!plan) {
+      throw new NotFoundException('Plano não encontrado');
+    }
 
     await this.auditService.log({
       workspaceId: getWorkspaceId(req),
@@ -1438,7 +1490,9 @@ export class ProductCheckoutController {
     const checkout = await this.prisma.productCheckout.findFirst({
       where: { id: checkoutId, productId },
     });
-    if (!checkout) throw new NotFoundException('Checkout não encontrado');
+    if (!checkout) {
+      throw new NotFoundException('Checkout não encontrado');
+    }
 
     const updated = await this.prisma.productCheckout.update({
       where: { id: checkoutId },
@@ -1459,7 +1513,9 @@ export class ProductCheckoutController {
     const checkout = await this.prisma.productCheckout.findFirst({
       where: { id: checkoutId, productId },
     });
-    if (!checkout) throw new NotFoundException('Checkout não encontrado');
+    if (!checkout) {
+      throw new NotFoundException('Checkout não encontrado');
+    }
 
     await this.auditService.log({
       workspaceId: getWorkspaceId(req),
@@ -1542,7 +1598,9 @@ export class ProductCouponController {
     const coupon = await this.prisma.productCoupon.findFirst({
       where: { id: couponId, productId },
     });
-    if (!coupon) throw new NotFoundException('Cupom não encontrado');
+    if (!coupon) {
+      throw new NotFoundException('Cupom não encontrado');
+    }
 
     const payload = buildCouponData({ ...coupon, ...body });
     const conflict = await findConflictingProductCouponInWorkspace(
@@ -1591,11 +1649,15 @@ export class ProductCouponController {
       },
     });
 
-    if (!coupon || !coupon.active) return { valid: false, reason: 'not_found' };
-    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses)
+    if (!coupon || !coupon.active) {
+      return { valid: false, reason: 'not_found' };
+    }
+    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
       return { valid: false, reason: 'max_uses' };
-    if (coupon.expiresAt && coupon.expiresAt < new Date())
+    }
+    if (coupon.expiresAt && coupon.expiresAt < new Date()) {
       return { valid: false, reason: 'expired' };
+    }
 
     return { valid: true, coupon: serializeCoupon(coupon) };
   }
@@ -1611,7 +1673,9 @@ export class ProductCouponController {
     const coupon = await this.prisma.productCoupon.findFirst({
       where: { id: couponId, productId },
     });
-    if (!coupon) throw new NotFoundException('Cupom não encontrado');
+    if (!coupon) {
+      throw new NotFoundException('Cupom não encontrado');
+    }
 
     await this.auditService.log({
       workspaceId: getWorkspaceId(req),
@@ -1693,7 +1757,9 @@ export class ProductUrlController {
     const url = await this.prisma.productUrl.findFirst({
       where: { id: urlId, productId },
     });
-    if (!url) throw new NotFoundException('URL não encontrada');
+    if (!url) {
+      throw new NotFoundException('URL não encontrada');
+    }
 
     return this.prisma.productUrl.update({
       where: { id: urlId },
@@ -1723,7 +1789,9 @@ export class ProductUrlController {
     const url = await this.prisma.productUrl.findFirst({
       where: { id: urlId, productId },
     });
-    if (!url) throw new NotFoundException('URL não encontrada');
+    if (!url) {
+      throw new NotFoundException('URL não encontrada');
+    }
 
     await this.auditService.log({
       workspaceId: getWorkspaceId(req),
@@ -1883,7 +1951,9 @@ export class ProductCampaignController {
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
     });
-    if (!productCampaign) throw new NotFoundException('Campanha não encontrada');
+    if (!productCampaign) {
+      throw new NotFoundException('Campanha não encontrada');
+    }
 
     const updatedProductCampaign = await this.prisma.productCampaign.update({
       where: { id: campaignId },
@@ -1915,7 +1985,9 @@ export class ProductCampaignController {
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
     });
-    if (!productCampaign) throw new NotFoundException('Campanha não encontrada');
+    if (!productCampaign) {
+      throw new NotFoundException('Campanha não encontrada');
+    }
 
     const linkedCampaign = await this.ensureLinkedCampaign(
       getWorkspaceId(req),
@@ -1942,7 +2014,9 @@ export class ProductCampaignController {
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
     });
-    if (!productCampaign) throw new NotFoundException('Campanha não encontrada');
+    if (!productCampaign) {
+      throw new NotFoundException('Campanha não encontrada');
+    }
 
     const linkedCampaign = findLinkedCampaignForProductCampaign(
       await this.listWorkspaceCampaigns(getWorkspaceId(req)),
@@ -1966,7 +2040,9 @@ export class ProductCampaignController {
     const campaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
     });
-    if (!campaign) throw new NotFoundException('Campanha não encontrada');
+    if (!campaign) {
+      throw new NotFoundException('Campanha não encontrada');
+    }
 
     const linkedCampaign = findLinkedCampaignForProductCampaign(
       await this.listWorkspaceCampaigns(getWorkspaceId(req)),
@@ -2095,7 +2171,9 @@ export class ProductReviewController {
     const review = await this.prisma.productReview.findFirst({
       where: { id: reviewId, productId },
     });
-    if (!review) throw new NotFoundException('Avaliação não encontrada');
+    if (!review) {
+      throw new NotFoundException('Avaliação não encontrada');
+    }
 
     await this.auditService.log({
       workspaceId: getWorkspaceId(req),
@@ -2158,7 +2236,9 @@ export class ProductCommissionController {
     const commission = await this.prisma.productCommission.findFirst({
       where: { id: commissionId, productId },
     });
-    if (!commission) throw new NotFoundException('Comissão não encontrada');
+    if (!commission) {
+      throw new NotFoundException('Comissão não encontrada');
+    }
 
     const payload = buildCommissionPayload(body, commission as LooseObject);
     await ensureNoDuplicateCommission(this.prisma, productId, payload, commissionId);
@@ -2180,7 +2260,9 @@ export class ProductCommissionController {
     const commission = await this.prisma.productCommission.findFirst({
       where: { id: commissionId, productId },
     });
-    if (!commission) throw new NotFoundException('Comissão não encontrada');
+    if (!commission) {
+      throw new NotFoundException('Comissão não encontrada');
+    }
 
     await this.auditService.log({
       workspaceId: getWorkspaceId(req),

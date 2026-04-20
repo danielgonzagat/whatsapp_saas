@@ -26,7 +26,9 @@ function applyIfPresent<T>(
   transform: (raw: unknown) => T,
 ): void {
   const raw = payload[key];
-  if (raw != null) setter(transform(raw));
+  if (raw != null) {
+    setter(transform(raw));
+  }
 }
 
 const asString = (raw: unknown) => String(raw);
@@ -40,9 +42,15 @@ export function applyPlanShippingPayload(
 ): void {
   const dims = payload.dimensions as Record<string, unknown> | undefined;
   applyIfPresent(payload, 'packageType', setters.setPackageType, asString);
-  if (dims?.width != null) setters.setWidth(String(dims.width));
-  if (dims?.height != null) setters.setHeight(String(dims.height));
-  if (dims?.length != null) setters.setLength(String(dims.length));
+  if (dims?.width != null) {
+    setters.setWidth(String(dims.width));
+  }
+  if (dims?.height != null) {
+    setters.setHeight(String(dims.height));
+  }
+  if (dims?.length != null) {
+    setters.setLength(String(dims.length));
+  }
   applyIfPresent(payload, 'weight', setters.setWeight, asString);
   applyIfPresent(payload, 'whoShips', setters.setWhoShips, asString);
   applyIfPresent(payload, 'shipFrom', setters.setShipFrom, asString);

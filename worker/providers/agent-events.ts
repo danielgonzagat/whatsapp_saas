@@ -125,7 +125,9 @@ export async function createBacklogRunState(input: {
 export async function getBacklogRunState(workspaceId: string): Promise<BacklogRunState | null> {
   try {
     const raw = await redis.get(runStateKey(workspaceId));
-    if (!raw) return null;
+    if (!raw) {
+      return null;
+    }
     return JSON.parse(raw) as BacklogRunState;
   } catch {
     return null;
@@ -141,7 +143,9 @@ export async function finishBacklogRunTask(input: {
   status: 'sent' | 'failed' | 'skipped';
   summary: string;
 }) {
-  if (!input.runId) return null;
+  if (!input.runId) {
+    return null;
+  }
 
   const state = await getBacklogRunState(input.workspaceId);
   if (!state || state.runId !== input.runId) {

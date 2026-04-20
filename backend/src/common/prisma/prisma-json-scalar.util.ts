@@ -5,10 +5,18 @@ export function isPrimitiveJson(value: unknown): value is string | number | bool
 }
 
 export function coerceScalarJson(value: unknown): Prisma.InputJsonValue | undefined {
-  if (value === null) return null;
-  if (isPrimitiveJson(value)) return value;
-  if (typeof value === 'bigint') return value.toString();
-  if (value instanceof Date) return value.toISOString();
+  if (value === null) {
+    return null;
+  }
+  if (isPrimitiveJson(value)) {
+    return value;
+  }
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
   return undefined;
 }
 

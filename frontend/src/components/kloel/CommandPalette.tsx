@@ -96,7 +96,9 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
     [onClose, openConversation, results, selectedIndex, setSelectedIndex],
   );
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   const hasQuery = query.trim().length > 0;
   const footerLabel = hasQuery
@@ -440,10 +442,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
         }
       `}</style>
 
-      <div
-        className="kloel-search-shell"
-        onClick={onClose}
-      >
+      <div className="kloel-search-shell" onClick={onClose}>
         <div
           className={cn('kloel-search-modal', className)}
           onClick={(event) => event.stopPropagation()}

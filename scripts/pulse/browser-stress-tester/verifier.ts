@@ -31,8 +31,8 @@ export function classifyResult(observations: {
   }
 
   // Check for uncaught exceptions in console
-  const criticalErrors = consoleErrors.filter(e =>
-    /uncaught|TypeError|ReferenceError|RangeError|SyntaxError|Cannot read/i.test(e)
+  const criticalErrors = consoleErrors.filter((e) =>
+    /uncaught|TypeError|ReferenceError|RangeError|SyntaxError|Cannot read/i.test(e),
   );
   if (criticalErrors.length > 0) {
     return { status: 'QUEBRADO', reason: `Console error: ${criticalErrors[0].slice(0, 150)}` };
@@ -40,13 +40,13 @@ export function classifyResult(observations: {
 
   // Check API responses
   if (apiCalls.length > 0) {
-    const serverErrors = apiCalls.filter(c => c.status >= 500);
+    const serverErrors = apiCalls.filter((c) => c.status >= 500);
     if (serverErrors.length > 0) {
       const e = serverErrors[0];
       return { status: 'QUEBRADO', reason: `Server error: ${e.status} on ${e.method} ${e.url}` };
     }
 
-    const clientErrors = apiCalls.filter(c => c.status >= 400 && c.status < 500);
+    const clientErrors = apiCalls.filter((c) => c.status >= 400 && c.status < 500);
     if (clientErrors.length > 0) {
       const e = clientErrors[0];
       if (e.status === 401 || e.status === 403) {
@@ -60,9 +60,12 @@ export function classifyResult(observations: {
     }
 
     // All API calls succeeded (2xx/3xx)
-    const ok = apiCalls.filter(c => c.status >= 200 && c.status < 400);
+    const ok = apiCalls.filter((c) => c.status >= 200 && c.status < 400);
     if (ok.length > 0) {
-      return { status: 'FUNCIONA', reason: `API OK: ${ok[0].method} ${ok[0].url} → ${ok[0].status}` };
+      return {
+        status: 'FUNCIONA',
+        reason: `API OK: ${ok[0].method} ${ok[0].url} → ${ok[0].status}`,
+      };
     }
   }
 
@@ -105,21 +108,30 @@ export function matchToFmapEntry(
   domType: string,
   fmapInteractions: InteractionChain[],
 ): InteractionChain | null {
-  if (!fmapInteractions || fmapInteractions.length === 0) return null;
+  if (!fmapInteractions || fmapInteractions.length === 0) {
+    return null;
+  }
 
   const normalizedLabel = domLabel.replace(/\s+/g, ' ').trim().toLowerCase();
-  if (!normalizedLabel || normalizedLabel === '(sem texto)') return null;
+  if (!normalizedLabel || normalizedLabel === '(sem texto)') {
+    return null;
+  }
 
   // Exact match
   for (const chain of fmapInteractions) {
     const fmapLabel = chain.elementLabel.replace(/\s+/g, ' ').trim().toLowerCase();
-    if (fmapLabel === normalizedLabel) return chain;
+    if (fmapLabel === normalizedLabel) {
+      return chain;
+    }
   }
 
   // Partial match (DOM label contains fmap label or vice versa)
   for (const chain of fmapInteractions) {
     const fmapLabel = chain.elementLabel.replace(/\s+/g, ' ').trim().toLowerCase();
-    if (fmapLabel.length > 3 && (normalizedLabel.includes(fmapLabel) || fmapLabel.includes(normalizedLabel))) {
+    if (
+      fmapLabel.length > 3 &&
+      (normalizedLabel.includes(fmapLabel) || fmapLabel.includes(normalizedLabel))
+    ) {
       return chain;
     }
   }

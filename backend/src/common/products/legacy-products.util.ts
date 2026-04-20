@@ -16,7 +16,9 @@ const LEGACY_PRODUCT_NAME_KEYS = new Set(
 
 export function isLegacyProductName(value: string | null | undefined) {
   const normalized = normalizeProductName(value);
-  if (!normalized) return false;
+  if (!normalized) {
+    return false;
+  }
   return LEGACY_PRODUCT_NAME_KEYS.has(normalized);
 }
 

@@ -18,7 +18,9 @@ function resolveEmailConfig(): EmailConfig | null {
   const user = process.env.MAIL_USER;
   const pass = process.env.MAIL_PASS;
   const from = process.env.MAIL_FROM || 'autopilot@localhost';
-  if (!host) return null;
+  if (!host) {
+    return null;
+  }
   return {
     host,
     port,
@@ -31,7 +33,9 @@ function resolveEmailConfig(): EmailConfig | null {
 
 export async function sendEmail(to: string, subject: string, text: string) {
   const cfg = resolveEmailConfig();
-  if (!cfg) throw new Error('email_not_configured');
+  if (!cfg) {
+    throw new Error('email_not_configured');
+  }
 
   const transporter = nodemailer.createTransport({
     host: cfg.host,
@@ -59,8 +63,9 @@ export function channelEnabled(
     cfg !== null &&
     'enabled' in cfg &&
     typeof (cfg as Record<string, unknown>).enabled === 'boolean'
-  )
+  ) {
     return (cfg as Record<string, unknown>).enabled as boolean;
+  }
   return false;
 }
 

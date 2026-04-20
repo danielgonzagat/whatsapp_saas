@@ -33,7 +33,9 @@ export class CheckoutPublicController {
 
   private maskName(name: string): string {
     const parts = name.trim().split(' ');
-    if (parts.length === 0) return 'C***';
+    if (parts.length === 0) {
+      return 'C***';
+    }
     const first = parts[0];
     const masked = `${first[0]}***${first.length > 3 ? first.slice(-1) : ''}`;
     return parts.length > 1 ? `${masked} ${parts[parts.length - 1][0]}.` : masked;
@@ -42,8 +44,12 @@ export class CheckoutPublicController {
   // All dates stored as UTC via Prisma DateTime (toISOString)
   private timeAgo(date: Date): string {
     const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
-    if (mins < 60) return `${mins}min`;
-    if (mins < 1440) return `${Math.floor(mins / 60)}h`;
+    if (mins < 60) {
+      return `${mins}min`;
+    }
+    if (mins < 1440) {
+      return `${Math.floor(mins / 60)}h`;
+    }
     return `${Math.floor(mins / 1440)}d`;
   }
 

@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import { ConnectService } from '../payments/connect/connect.service';
+import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -72,10 +73,51 @@ export class CheckoutPaymentService {
     private readonly prisma: PrismaService,
     private readonly stripeCharge: StripeChargeService,
     private readonly connectService: ConnectService,
+    private readonly fraudEngine: FraudEngine,
     private readonly financialAlert: FinancialAlertService,
     private readonly auditService: AuditService,
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
   ) {}
+
+  private async logFraudDecision(params: {
+    workspaceId: string;
+    orderId: string;
+    paymentMethod: CheckoutPaymentMethod;
+    chargedTotalInCents: number;
+    decision: {
+      action: 'allow' | 'review' | 'require_3ds' | 'block';
+      score: number;
+      reasons: Array<{ signal: string; detail: string }>;
+    };
+  }) {
+    if (params.decision.action === 'allow') {
+      return;
+    }
+
+    const actionMap = {
+      block: 'CHECKOUT_PAYMENT_BLOCKED_BY_FRAUD',
+      review: 'CHECKOUT_PAYMENT_REVIEW_REQUIRED',
+      require_3ds: 'CHECKOUT_PAYMENT_3DS_REQUIRED',
+    } as const;
+
+    await this.auditService.log({
+      workspaceId: params.workspaceId,
+      action: actionMap[params.decision.action],
+      resource: 'CheckoutOrder',
+      resourceId: params.orderId,
+      details: {
+        orderId: params.orderId,
+        paymentMethod: params.paymentMethod,
+        chargedTotalInCents: params.chargedTotalInCents,
+        fraudDecision: {
+          action: params.decision.action,
+          score: params.decision.score,
+          reasonSignals: params.decision.reasons.map((reason) => reason.signal),
+          reasons: params.decision.reasons,
+        },
+      },
+    });
+  }
 
   private buildChargeInput(
     params: {
@@ -94,6 +136,7 @@ export class CheckoutPaymentService {
       chargedTotalInCents: number;
       platformFeeInCents: number;
       interestInCents: number;
+      forceThreeDS?: boolean;
     },
   ) {
     const isPix = params.paymentMethod === 'PIX';
@@ -125,7 +168,13 @@ export class CheckoutPaymentService {
               expires_after_seconds: 30 * 60,
             },
           }
-        : undefined,
+        : opts.forceThreeDS
+          ? {
+              card: {
+                request_three_d_secure: 'any' as const,
+              },
+            }
+          : undefined,
       metadata: {
         kloel_order_id: params.orderId,
         workspace_id: params.workspaceId,
@@ -238,6 +287,44 @@ export class CheckoutPaymentService {
     );
     const platformFeeInCents = Number(orderMetadata.platformFeeInCents || 0);
     const interestInCents = Number(orderMetadata.installmentInterestInCents || 0);
+    const fraudDecision = await this.fraudEngine.evaluate({
+      workspaceId: params.workspaceId,
+      buyerEmail: params.customerEmail,
+      buyerCpf: params.customerCPF || null,
+      buyerCnpj: null,
+      buyerIp: order.ipAddress || null,
+      deviceFingerprint:
+        typeof orderMetadata.deviceFingerprint === 'string'
+          ? orderMetadata.deviceFingerprint
+          : null,
+      cardBin: null,
+      amountCents: BigInt(chargedTotalInCents),
+    });
+
+    await this.logFraudDecision({
+      workspaceId: params.workspaceId,
+      orderId: params.orderId,
+      paymentMethod: params.paymentMethod,
+      chargedTotalInCents,
+      decision: fraudDecision,
+    });
+
+    if (fraudDecision.action === 'block') {
+      this.logger.warn(
+        `Checkout antifraud blocked order=${params.orderId} workspace=${params.workspaceId} reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
+      );
+      throw new BadRequestException('Pagamento bloqueado pela política antifraude.');
+    }
+
+    if (fraudDecision.action === 'review') {
+      this.logger.warn(
+        `Checkout antifraud routed order=${params.orderId} workspace=${params.workspaceId} to manual review reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
+      );
+      throw new BadRequestException('Pagamento retido para revisão manual.');
+    }
+
+    const forceThreeDS =
+      params.paymentMethod === 'CREDIT_CARD' && fraudDecision.action === 'require_3ds';
     const sellerStripeAccountId = await this.ensureSellerStripeAccountId(params.workspaceId);
     const amount = chargedTotalInCents / 100;
 
@@ -250,6 +337,7 @@ export class CheckoutPaymentService {
           chargedTotalInCents,
           platformFeeInCents,
           interestInCents,
+          forceThreeDS,
         }),
       );
 
@@ -386,7 +474,9 @@ export class CheckoutPaymentService {
         'PROCESSING',
         transitionContext,
       );
-      if (!canEnterProcessing) return;
+      if (!canEnterProcessing) {
+        return;
+      }
 
       await tx.checkoutOrder.updateMany({
         where: { id: orderId, workspaceId },
@@ -396,7 +486,9 @@ export class CheckoutPaymentService {
     }
 
     const canApprove = validatePaymentTransition(currentStatus, 'APPROVED', transitionContext);
-    if (!canApprove) return;
+    if (!canApprove) {
+      return;
+    }
 
     await tx.checkoutOrder.updateMany({
       where: { id: orderId, workspaceId },

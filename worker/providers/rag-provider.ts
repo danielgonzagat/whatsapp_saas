@@ -6,10 +6,14 @@ import { prisma } from '../db';
  * Se falhar (sem chave ou sem dados), retorna string vazia para não quebrar fluxo.
  */
 async function getContext(workspaceId: string, query: string, topK = 3): Promise<string> {
-  if (!workspaceId || !query) return '';
+  if (!workspaceId || !query) {
+    return '';
+  }
 
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return '';
+  if (!apiKey) {
+    return '';
+  }
 
   const client = new OpenAI({ apiKey });
 
@@ -20,7 +24,9 @@ async function getContext(workspaceId: string, query: string, topK = 3): Promise
       input: query.slice(0, 2000),
     });
     const vector = embeddingRes.data[0]?.embedding;
-    if (!vector || vector.length === 0) return '';
+    if (!vector || vector.length === 0) {
+      return '';
+    }
 
     const vectorString = `[${vector.join(',')}]`;
     const safeLimit = Math.max(1, Math.min(topK, 10));
@@ -36,7 +42,9 @@ async function getContext(workspaceId: string, query: string, topK = 3): Promise
         LIMIT ${safeLimit}
       `;
 
-    if (!rows || rows.length === 0) return '';
+    if (!rows || rows.length === 0) {
+      return '';
+    }
 
     // 3) Concatena contexto
     return rows

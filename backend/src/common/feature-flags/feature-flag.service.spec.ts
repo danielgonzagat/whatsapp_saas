@@ -11,7 +11,9 @@ describe('FeatureFlagService — invariant: rollback levers always reachable (P5
   afterEach(() => {
     // Restore env var state so tests don't pollute each other
     for (const key of Object.keys(process.env)) {
-      if (key.startsWith('FF_')) delete process.env[key];
+      if (key.startsWith('FF_')) {
+        delete process.env[key];
+      }
     }
     Object.assign(process.env, originalEnv);
   });

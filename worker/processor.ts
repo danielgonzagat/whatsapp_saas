@@ -97,7 +97,9 @@ async function trySendFallbackEmailViaResend(args: {
   subject: string;
   html: string;
 }): Promise<boolean> {
-  if (!process.env.RESEND_API_KEY) return false;
+  if (!process.env.RESEND_API_KEY) {
+    return false;
+  }
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -131,7 +133,9 @@ async function trySendFallbackEmailViaSendGrid(args: {
   subject: string;
   html: string;
 }): Promise<boolean> {
-  if (!process.env.SENDGRID_API_KEY) return false;
+  if (!process.env.SENDGRID_API_KEY) {
+    return false;
+  }
   try {
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
@@ -169,8 +173,12 @@ async function sendFallbackEmail(
   const subject = `Mensagem de ${workspaceName || 'sua empresa'}`;
   const html = buildFallbackEmailHtml(contactName, message, workspaceName);
 
-  if (await trySendFallbackEmailViaResend({ to, fromEmail, subject, html })) return true;
-  if (await trySendFallbackEmailViaSendGrid({ to, fromEmail, subject, html })) return true;
+  if (await trySendFallbackEmailViaResend({ to, fromEmail, subject, html })) {
+    return true;
+  }
+  if (await trySendFallbackEmailViaSendGrid({ to, fromEmail, subject, html })) {
+    return true;
+  }
 
   if (!process.env.RESEND_API_KEY && !process.env.SENDGRID_API_KEY) {
     log.warn('fallback_email_no_provider', { to });
@@ -233,7 +241,9 @@ const ALERT_WEBHOOK =
 let lastQueueAlert = 0;
 
 async function sendOpsAlert(message: string, meta: Record<string, unknown> = {}): Promise<void> {
-  if (!ALERT_WEBHOOK || typeof globalThis.fetch !== 'function') return;
+  if (!ALERT_WEBHOOK || typeof globalThis.fetch !== 'function') {
+    return;
+  }
   try {
     await globalThis.fetch(ALERT_WEBHOOK, {
       method: 'POST',
@@ -257,14 +267,18 @@ async function sendOpsAlert(message: string, meta: Record<string, unknown> = {})
 const QUEUE_ALERT_COOLDOWN_MS = 5 * 60_000;
 
 async function maybeAlertHighQueue(waiting: number, failed: number, now: number): Promise<void> {
-  if (waiting <= QUEUE_THRESHOLD || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) return;
+  if (waiting <= QUEUE_THRESHOLD || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
+    return;
+  }
   lastQueueAlert = now;
   log.warn('autopilot_queue_high', { waiting, failed, threshold: QUEUE_THRESHOLD });
   await sendOpsAlert('Autopilot queue high', { waiting, failed, threshold: QUEUE_THRESHOLD });
 }
 
 async function maybeAlertFailedJobs(failed: number, waiting: number, now: number): Promise<void> {
-  if (failed <= 0 || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) return;
+  if (failed <= 0 || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
+    return;
+  }
   lastQueueAlert = now;
   log.warn('autopilot_queue_failed', { failed, waiting });
   await sendOpsAlert('Autopilot queue has failed jobs', { failed, waiting });
@@ -316,7 +330,9 @@ async function checkFlowSubscription(
   workspaceId: string,
 ): Promise<SkippedFlowResult | null> {
   const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(workspaceId);
-  if (subStatus.active) return null;
+  if (subStatus.active) {
+    return null;
+  }
   log.warn('flow_blocked_subscription', { jobId, workspaceId, reason: subStatus.reason });
   return { ok: false, skipped: true, reason: subStatus.reason };
 }
@@ -326,7 +342,9 @@ async function checkFlowRateLimit(
   workspaceId: string,
 ): Promise<SkippedFlowResult | null> {
   const rate = await PlanLimitsProvider.checkFlowRunRate(workspaceId);
-  if (rate.allowed) return null;
+  if (rate.allowed) {
+    return null;
+  }
   log.warn('flow_blocked_rate', { jobId, workspaceId, reason: rate.reason });
   return { ok: false, skipped: true, reason: rate.reason };
 }
@@ -347,7 +365,9 @@ async function resolveFlowDefinition(
     job.data.flow.edges,
     job.data.workspace?.id || 'default',
   );
-  if (job.data.startNode) flowDef.startNode = job.data.startNode;
+  if (job.data.startNode) {
+    flowDef.startNode = job.data.startNode;
+  }
   return flowDef;
 }
 
@@ -356,10 +376,16 @@ async function checkIdempotentCompletion(
   executionId: string | undefined,
   workspaceId: string | undefined,
 ): Promise<{ ok: true; skipped: true; reason: 'already_completed' } | null> {
-  if (!executionId) return null;
+  if (!executionId) {
+    return null;
+  }
   const existingExec = await engine.getExecution(executionId, workspaceId);
-  if (!existingExec) return null;
-  if (existingExec.status !== 'COMPLETED' && existingExec.status !== 'FAILED') return null;
+  if (!existingExec) {
+    return null;
+  }
+  if (existingExec.status !== 'COMPLETED' && existingExec.status !== 'FAILED') {
+    return null;
+  }
   log.warn('flow_already_completed', { jobId, executionId, status: existingExec.status });
   return { ok: true, skipped: true, reason: 'already_completed' };
 }
@@ -371,12 +397,16 @@ async function runSubscriptionAndRateGuards(
 ): Promise<SkippedFlowResult | null> {
   if (!subscriptionChecked && workspaceId) {
     const blocked = await checkFlowSubscription(jobId, workspaceId);
-    if (blocked) return blocked;
+    if (blocked) {
+      return blocked;
+    }
   }
 
   if (workspaceId) {
     const blocked = await checkFlowRateLimit(jobId, workspaceId);
-    if (blocked) return blocked;
+    if (blocked) {
+      return blocked;
+    }
   }
   return null;
 }
@@ -409,12 +439,16 @@ async function handleRunFlow(job: Job) {
   if (workspace?.id) {
     const blocked = await checkFlowSubscription(job.id, workspace.id);
     subscriptionChecked = true;
-    if (blocked) return blocked;
+    if (blocked) {
+      return blocked;
+    }
   }
 
   // Idempotency Check
   const alreadyCompleted = await checkIdempotentCompletion(job.id, executionId, workspaceId);
-  if (alreadyCompleted) return alreadyCompleted;
+  if (alreadyCompleted) {
+    return alreadyCompleted;
+  }
 
   const flowDef = await resolveFlowDefinition(job, flowId, workspaceId);
 
@@ -424,7 +458,9 @@ async function handleRunFlow(job: Job) {
   }
 
   const guarded = await runSubscriptionAndRateGuards(job.id, workspaceId, subscriptionChecked);
-  if (guarded) return guarded;
+  if (guarded) {
+    return guarded;
+  }
 
   await executeResolvedFlow(job, flowDef, user, flowId, initialVars, executionId);
 
@@ -948,9 +984,13 @@ flowWorker?.on('failed', (job: Job | undefined, err: Error) => {
     const ws = d?.workspace;
     if (ws && typeof ws === 'object' && !Array.isArray(ws)) {
       const wsId = (ws as Record<string, unknown>).id;
-      if (typeof wsId === 'string') return wsId;
+      if (typeof wsId === 'string') {
+        return wsId;
+      }
     }
-    if (typeof d?.workspaceId === 'string') return d.workspaceId;
+    if (typeof d?.workspaceId === 'string') {
+      return d.workspaceId;
+    }
     return 'global';
   })();
   const payload = {
@@ -1039,7 +1079,9 @@ const BEST_HOUR_CACHE_MAX = 500; // bounded by workspace count
 
 async function computeBestHour(workspaceId: string): Promise<number> {
   const cache = bestHourCache.get(workspaceId);
-  if (cache && Date.now() - cache.ts < 10 * 60 * 1000) return cache.hour;
+  if (cache && Date.now() - cache.ts < 10 * 60 * 1000) {
+    return cache.hour;
+  }
 
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const msgs = await prisma.message.findMany({
@@ -1062,7 +1104,9 @@ async function computeBestHour(workspaceId: string): Promise<number> {
   // Evict oldest entry if cache exceeds max size to prevent unbounded growth
   if (bestHourCache.size >= BEST_HOUR_CACHE_MAX) {
     const oldestKey = bestHourCache.keys().next().value;
-    if (oldestKey) bestHourCache.delete(oldestKey);
+    if (oldestKey) {
+      bestHourCache.delete(oldestKey);
+    }
   }
   bestHourCache.set(workspaceId, { hour: best, ts: Date.now() });
   return best;
@@ -1115,7 +1159,9 @@ const KEYWORD_RULES: readonly KeywordRule[] = [
 
 function classifyByKeywords(text: string): AutopilotDecision | null {
   for (const rule of KEYWORD_RULES) {
-    if (hasKeyword(text, ...rule.keywords)) return rule.decision;
+    if (hasKeyword(text, ...rule.keywords)) {
+      return rule.decision;
+    }
   }
   return null;
 }
@@ -1149,13 +1195,17 @@ async function decideAction(
   const text = messageContent || '';
 
   const keywordDecision = classifyByKeywords(text);
-  if (keywordDecision) return keywordDecision;
+  if (keywordDecision) {
+    return keywordDecision;
+  }
 
   // If AI key available, try richer intent
   const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
   if (apiKey) {
     const aiDecision = await classifyWithAi(text, apiKey);
-    if (aiDecision) return aiDecision;
+    if (aiDecision) {
+      return aiDecision;
+    }
   }
 
   return { intent: 'IDLE', action: 'FOLLOW_UP', reason: 'default_follow_up' };
@@ -1203,7 +1253,9 @@ async function ensureOptInAllowed(
   contact: AutopilotContact | null | undefined,
 ): Promise<void> {
   const enforce = process.env.ENFORCE_OPTIN === 'true';
-  if (!enforce) return;
+  if (!enforce) {
+    return;
+  }
 
   const tags = contact?.tags ?? [];
   const hasOptIn = tags.some((t) => t.name === 'optin_whatsapp');
@@ -1231,7 +1283,9 @@ async function autopilotScanner() {
 
     await forEachSequential(workspaces, async (workspace) => {
       const settings = parseAutopilotSettings(workspace.providerSettings);
-      if (!isAutonomyActive(settings)) return;
+      if (!isAutonomyActive(settings)) {
+        return;
+      }
 
       const convs = await prisma.conversation.findMany({
         where: { workspaceId: workspace.id, status: 'OPEN' },
@@ -1245,7 +1299,9 @@ async function autopilotScanner() {
 
       await forEachSequential(convs, async (conv) => {
         const lastMsg = conv.messages[0];
-        if (!lastMsg) return;
+        if (!lastMsg) {
+          return;
+        }
 
         const cf = asJsonObject(conv.contact?.customFields);
         const lastActionAt = jsonDateMillis(cf.autopilotLastActionAt);
@@ -1266,7 +1322,9 @@ async function autopilotScanner() {
           (ageHours >= 12 && lastMsg.direction === 'OUTBOUND') || (ageHours >= 24 && isInbound);
         const antiChurn = ageHours >= 72;
 
-        if (!isInbound && !shouldFollowUp && !antiChurn) return;
+        if (!isInbound && !shouldFollowUp && !antiChurn) {
+          return;
+        }
 
         const hour = new Date().getHours();
         const isNight = hour >= 22 || hour < 7;
@@ -1287,7 +1345,9 @@ async function autopilotScanner() {
             lastMsg.content || '',
             settings,
           );
-          if (!messageToSend) return;
+          if (!messageToSend) {
+            return;
+          }
 
           const subscription = await PlanLimitsProvider.checkSubscriptionStatus(conv.workspaceId);
           if (!subscription.active) {
@@ -1304,7 +1364,9 @@ async function autopilotScanner() {
           const currentHour = new Date().getHours();
           const withinPrime = Math.abs(currentHour - bestHour) <= 2;
           const isHotAction = action === 'SEND_OFFER' || action === 'SEND_PRICE';
-          if (!withinPrime && !isHotAction) return;
+          if (!withinPrime && !isHotAction) {
+            return;
+          }
 
           let status: 'executed' | 'error' = 'executed';
           let errorMsg: string | undefined;

@@ -193,10 +193,7 @@ export class ConnectPayoutApprovalService {
     });
   }
 
-  async approveRequest(input: {
-    approvalRequestId: string;
-    adminUserId: string;
-  }): Promise<{
+  async approveRequest(input: { approvalRequestId: string; adminUserId: string }): Promise<{
     approvalRequestId: string;
     state: string;
     payoutId: string;
@@ -469,11 +466,15 @@ export class ConnectPayoutApprovalService {
 
   private parseDecision(value: unknown): ConnectPayoutApprovalDecision | null {
     const record = this.asRecord(value);
-    if (!record) return null;
+    if (!record) {
+      return null;
+    }
 
     const amountCents = typeof record.amountCents === 'string' ? record.amountCents : null;
     const currency = typeof record.currency === 'string' ? record.currency : null;
-    if (!amountCents || !currency) return null;
+    if (!amountCents || !currency) {
+      return null;
+    }
 
     return {
       payoutId: typeof record.payoutId === 'string' ? record.payoutId : null,

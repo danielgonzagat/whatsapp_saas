@@ -43,8 +43,12 @@ function isPendingQrStatus(status?: string | null): boolean {
 }
 
 function resolveStatusMessage(data: { connected: boolean; status?: string | null }): string {
-  if (data.connected) return 'Sessão ativa e sincronizada.';
-  if (isPendingQrStatus(data.status)) return 'Aguardando leitura do QR Code no aparelho.';
+  if (data.connected) {
+    return 'Sessão ativa e sincronizada.';
+  }
+  if (isPendingQrStatus(data.status)) {
+    return 'Aguardando leitura do QR Code no aparelho.';
+  }
   return 'WhatsApp desconectado.';
 }
 
@@ -89,7 +93,9 @@ export function useWhatsAppSession({
 
   useEffect(
     () => () => {
-      if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
+      if (connectTimerRef.current) {
+        clearTimeout(connectTimerRef.current);
+      }
     },
     [],
   );
@@ -151,7 +157,9 @@ export function useWhatsAppSession({
 
     if (current.authToken && !current.workspaceId) {
       const recovered = await tryRecoverAuthenticatedWorkspaceCredentials(current.authToken);
-      if (recovered) return recovered;
+      if (recovered) {
+        return recovered;
+      }
     }
 
     return fallbackToAnonymousCredentials();
@@ -170,7 +178,9 @@ export function useWhatsAppSession({
   }, [ensureSessionCredentials]);
 
   useEffect(() => {
-    if (!enabled || !authToken || workspaceId) return;
+    if (!enabled || !authToken || workspaceId) {
+      return;
+    }
 
     let cancelled = false;
 
@@ -198,9 +208,13 @@ export function useWhatsAppSession({
   }, [authToken, enabled, workspaceId]);
 
   const loadStatus = useCallback(async () => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
     const current = refreshCredentials();
-    if (!current.workspaceId || !current.authToken) return;
+    if (!current.workspaceId || !current.authToken) {
+      return;
+    }
 
     try {
       const data = await getWhatsAppStatus(current.workspaceId);
@@ -223,9 +237,13 @@ export function useWhatsAppSession({
   }, [enabled, refreshCredentials]);
 
   const loadQR = useCallback(async () => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
     const current = refreshCredentials();
-    if (!current.workspaceId || !current.authToken) return;
+    if (!current.workspaceId || !current.authToken) {
+      return;
+    }
 
     try {
       const data = await getWhatsAppQR(current.workspaceId);
@@ -267,7 +285,9 @@ export function useWhatsAppSession({
         setStatus(currentStatus);
         setQrCode(currentStatus.qrCode || null);
         setStatusMessage(currentStatus.message || 'Escaneie o QR Code para conectar.');
-        if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
+        if (connectTimerRef.current) {
+          clearTimeout(connectTimerRef.current);
+        }
         connectTimerRef.current = setTimeout(() => {
           void loadQR();
         }, 500);
@@ -380,8 +400,12 @@ export function useWhatsAppSession({
   }, [requireSessionCredentials]);
 
   const shouldSkipCiaRuntimeSync = useCallback((): boolean => {
-    if (!enabled || !workspaceId || !authToken || !status?.connected) return true;
-    if (bootstrapGuardRef.current === workspaceId) return true;
+    if (!enabled || !workspaceId || !authToken || !status?.connected) {
+      return true;
+    }
+    if (bootstrapGuardRef.current === workspaceId) {
+      return true;
+    }
     return false;
   }, [authToken, enabled, status?.connected, workspaceId]);
 
@@ -404,7 +428,9 @@ export function useWhatsAppSession({
   }, []);
 
   const syncConnectedSessionRuntime = useCallback(async () => {
-    if (shouldSkipCiaRuntimeSync()) return;
+    if (shouldSkipCiaRuntimeSync()) {
+      return;
+    }
 
     bootstrapGuardRef.current = workspaceId;
 
@@ -435,12 +461,16 @@ export function useWhatsAppSession({
   }, [refreshCredentials]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId || !authToken) return;
+    if (!enabled || !workspaceId || !authToken) {
+      return;
+    }
     void loadStatus();
   }, [authToken, enabled, loadStatus, workspaceId]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId || !authToken) return;
+    if (!enabled || !workspaceId || !authToken) {
+      return;
+    }
     const interval = setInterval(() => {
       void loadStatus();
     }, 12000);
@@ -448,7 +478,9 @@ export function useWhatsAppSession({
   }, [authToken, enabled, loadStatus, workspaceId]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId || !authToken || !connecting || status?.connected) return;
+    if (!enabled || !workspaceId || !authToken || !connecting || status?.connected) {
+      return;
+    }
     const interval = setInterval(() => {
       void loadQR();
     }, 3000);
@@ -470,7 +502,9 @@ export function useWhatsAppSession({
 
   useEffect(() => {
     const connected = !!status?.connected;
-    if (connected === previousConnectedRef.current) return;
+    if (connected === previousConnectedRef.current) {
+      return;
+    }
     previousConnectedRef.current = connected;
     onConnectionChange?.(connected);
   }, [onConnectionChange, status?.connected]);

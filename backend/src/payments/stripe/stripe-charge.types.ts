@@ -11,7 +11,7 @@ type StripePaymentIntentCreateParams = Parameters<StripeClient['paymentIntents']
 export interface CreateSaleChargeInput {
   /** Workspace owning the sale (used for audit + idempotency). */
   workspaceId: string;
-  /** Stripe Connected Account id of the seller — receives the Direct Charge. */
+  /** Stripe Connected Account id of the seller — receives the seller residue transfer. */
   sellerStripeAccountId: string;
   /** Buyer-facing amount (cents). What the buyer is charged. */
   buyerPaidCents: bigint;
@@ -19,7 +19,7 @@ export interface CreateSaleChargeInput {
   saleValueCents: bigint;
   /** Interest portion (cents) attributable to installments. Goes to Kloel. */
   interestCents: bigint;
-  /** Platform fee (cents). Goes to Kloel via application_fee_amount. */
+  /** Platform fee (cents). Kloel retains this on the platform balance. */
   platformFeeCents: bigint;
   /** Currency code (lowercase iso 4217, e.g. 'brl'). */
   currency: string;
@@ -54,7 +54,7 @@ export interface CreateSaleChargeResult {
   clientSecret: string | null;
   /** Amount actually sent to Stripe. */
   amountCents: bigint;
-  /** application_fee_amount sent to Stripe (Kloel cut). */
+  /** Kloel contractual fee + interest retained on the platform balance. */
   applicationFeeCents: bigint;
   /** transfer_group set on the PaymentIntent — used to associate downstream transfers. */
   transferGroup: string;

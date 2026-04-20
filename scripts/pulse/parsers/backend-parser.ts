@@ -16,7 +16,9 @@ function buildFullPath(controllerPath: string, methodPath: string): string {
  * Find all @Controller declarations in a file with their line positions.
  * Handles files with MULTIPLE controller classes (like product-sub-resources.controller.ts).
  */
-function findControllerBlocks(lines: string[]): Array<{ path: string; startLine: number; endLine: number }> {
+function findControllerBlocks(
+  lines: string[],
+): Array<{ path: string; startLine: number; endLine: number }> {
   const blocks: Array<{ path: string; startLine: number; endLine: number }> = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -36,7 +38,7 @@ function findControllerBlocks(lines: string[]): Array<{ path: string; startLine:
 
 export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
   const routes: BackendRoute[] = [];
-  const files = walkFiles(config.backendDir, ['.ts']).filter(f => f.endsWith('.controller.ts'));
+  const files = walkFiles(config.backendDir, ['.ts']).filter((f) => f.endsWith('.controller.ts'));
 
   for (const file of files) {
     try {
@@ -46,7 +48,9 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
 
       // Find ALL controller blocks in the file
       const controllerBlocks = findControllerBlocks(lines);
-      if (controllerBlocks.length === 0) continue;
+      if (controllerBlocks.length === 0) {
+        continue;
+      }
 
       for (const block of controllerBlocks) {
         const controllerPath = block.path;
@@ -56,14 +60,14 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
         for (let j = block.startLine; j < Math.min(block.startLine + 5, block.endLine); j++) {
           const guardMatch = lines[j]?.match(/@UseGuards\(([^)]+)\)/);
           if (guardMatch) {
-            classGuards.push(...guardMatch[1].split(',').map(g => g.trim()));
+            classGuards.push(...guardMatch[1].split(',').map((g) => g.trim()));
           }
         }
         // Also check lines ABOVE @Controller for guards
         for (let j = Math.max(0, block.startLine - 3); j < block.startLine; j++) {
           const guardMatch = lines[j]?.match(/@UseGuards\(([^)]+)\)/);
           if (guardMatch) {
-            classGuards.push(...guardMatch[1].split(',').map(g => g.trim()));
+            classGuards.push(...guardMatch[1].split(',').map((g) => g.trim()));
           }
         }
 
@@ -74,7 +78,9 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
           for (const method of HTTP_METHODS) {
             const decoratorRe = new RegExp(`@${method}\\(\\s*(?:['"\`]([^'"\`]*)['"\`])?\\s*\\)`);
             const match = line.match(decoratorRe);
-            if (!match) continue;
+            if (!match) {
+              continue;
+            }
 
             const methodPath = match[1] || '';
             const fullPath = buildFullPath(controllerPath, methodPath);
@@ -84,10 +90,12 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
             const guards = [...classGuards];
             for (let j = Math.max(block.startLine, i - 5); j < i; j++) {
               const above = lines[j].trim();
-              if (/@Public\(\)/.test(above)) isPublic = true;
+              if (/@Public\(\)/.test(above)) {
+                isPublic = true;
+              }
               const guardMatch = above.match(/@UseGuards\(([^)]+)\)/);
               if (guardMatch) {
-                guards.push(...guardMatch[1].split(',').map(g => g.trim()));
+                guards.push(...guardMatch[1].split(',').map((g) => g.trim()));
               }
             }
 
@@ -96,7 +104,11 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
             for (let j = i; j < Math.min(i + 5, lines.length); j++) {
               const below = lines[j];
               const nameMatch = below.match(/(?:async\s+)?(\w+)\s*\(/);
-              if (nameMatch && !HTTP_METHODS.some(m => nameMatch[1] === m) && nameMatch[1] !== 'async') {
+              if (
+                nameMatch &&
+                !HTTP_METHODS.some((m) => nameMatch[1] === m) &&
+                nameMatch[1] !== 'async'
+              ) {
                 methodName = nameMatch[1];
                 break;
               }
@@ -111,10 +123,14 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
               const bodyLine = lines[j];
               for (const ch of bodyLine) {
                 if (ch === '{') {
-                  if (depth === 0 && bodyStart === -1) bodyStart = j;
+                  if (depth === 0 && bodyStart === -1) {
+                    bodyStart = j;
+                  }
                   depth++;
                 }
-                if (ch === '}') depth--;
+                if (ch === '}') {
+                  depth--;
+                }
               }
               if (bodyStart !== -1 && depth === 0) {
                 const bodyText = lines.slice(bodyStart, j + 1).join('\n');
@@ -123,7 +139,9 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
                 while ((svcMatch = svcRe.exec(bodyText)) !== null) {
                   const svcName = svcMatch[1];
                   const svcMethod = svcMatch[2];
-                  if (svcName === 'prisma' || svcName === 'prismaAny') continue;
+                  if (svcName === 'prisma' || svcName === 'prismaAny') {
+                    continue;
+                  }
                   serviceCalls.push(`${svcName}.${svcMethod}`);
                 }
                 break;

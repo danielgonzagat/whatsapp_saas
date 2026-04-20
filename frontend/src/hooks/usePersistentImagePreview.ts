@@ -12,10 +12,14 @@ export function usePersistentImagePreview(options: UsePersistentImagePreviewOpti
   const [hasLocalPreview, setHasLocalPreview] = useState(false);
 
   useEffect(() => {
-    if (!storageKey || typeof window === 'undefined') return;
+    if (!storageKey || typeof window === 'undefined') {
+      return;
+    }
 
     const storedPreview = window.sessionStorage.getItem(storageKey);
-    if (!storedPreview) return;
+    if (!storedPreview) {
+      return;
+    }
 
     setPreviewUrlState(storedPreview);
     setHasLocalPreview(true);
@@ -28,7 +32,9 @@ export function usePersistentImagePreview(options: UsePersistentImagePreviewOpti
     setPreviewUrlState(normalizedPreviewUrl);
     setHasLocalPreview(nextHasLocalPreview);
 
-    if (!storageKey || typeof window === 'undefined') return;
+    if (!storageKey || typeof window === 'undefined') {
+      return;
+    }
 
     if (nextHasLocalPreview) {
       window.sessionStorage.setItem(storageKey, normalizedPreviewUrl);

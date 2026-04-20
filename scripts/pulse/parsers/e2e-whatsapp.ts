@@ -32,16 +32,15 @@ import {
 
 export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB + LLM mock
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
 
   // ── Static: Verify unified-agent.service.ts loads ProductAIConfig ─────────
   try {
-    const agentServicePath = path.join(
-      config.backendDir,
-      'kloel/unified-agent.service.ts',
-    );
+    const agentServicePath = path.join(config.backendDir, 'kloel/unified-agent.service.ts');
     if (!fs.existsSync(agentServicePath)) {
       breaks.push({
         type: 'E2E_AI_CONFIG_MISSING',
@@ -60,7 +59,8 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
           severity: 'critical',
           file: 'backend/src/kloel/unified-agent.service.ts',
           line: 1,
-          description: 'unified-agent.service.ts does not reference ProductAIConfig — AI config never loaded into prompts',
+          description:
+            'unified-agent.service.ts does not reference ProductAIConfig — AI config never loaded into prompts',
           detail: 'Search for "productAIConfig" returned 0 matches in unified-agent.service.ts',
         });
       }
@@ -72,7 +72,8 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
           severity: 'critical',
           file: 'backend/src/kloel/unified-agent.service.ts',
           line: 1,
-          description: 'AI config context is not being passed to buildSystemPrompt — product AI settings ignored by LLM',
+          description:
+            'AI config context is not being passed to buildSystemPrompt — product AI settings ignored by LLM',
           detail: 'buildSystemPrompt must receive aiConfigs parameter for product-aware AI',
         });
       }
@@ -90,9 +91,7 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
 
   // ── DB: COUNT ProductAIConfig records ─────────────────────────────────────
   try {
-    const countRows = await dbQuery(
-      `SELECT COUNT(*) as count FROM "ProductAIConfig"`,
-    );
+    const countRows = await dbQuery(`SELECT COUNT(*) as count FROM "ProductAIConfig"`);
     const aiConfigCount = parseInt(countRows[0]?.count || '0', 10);
 
     // Not a break if 0 (no configs yet is valid), but useful for audit
@@ -137,7 +136,10 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
         file: 'backend/src/kloel/product-sub-resources.controller.ts',
         line: 293,
         description: `${orphanRows.length} ProductAIConfig records reference non-existent products — orphaned AI configs`,
-        detail: `Sample orphan AIConfig IDs: ${orphanRows.slice(0, 3).map((r: any) => r.id).join(', ')}`,
+        detail: `Sample orphan AIConfig IDs: ${orphanRows
+          .slice(0, 3)
+          .map((r: any) => r.id)
+          .join(', ')}`,
       });
     }
   } catch {
@@ -162,7 +164,10 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
         file: 'backend/src/kloel/product-sub-resources.controller.ts',
         line: 37,
         description: `${unreadyRows.length} AI-configured non-draft products have no payment plan — AI will offer products that can't be purchased`,
-        detail: `Products: ${unreadyRows.slice(0, 3).map((r: any) => `${r.name}(${r.id})`).join(', ')}`,
+        detail: `Products: ${unreadyRows
+          .slice(0, 3)
+          .map((r: any) => `${r.name}(${r.id})`)
+          .join(', ')}`,
       });
     }
   } catch {

@@ -43,7 +43,9 @@ function baseMessageText(event: NormalizableAgentEvent): string {
   const primary = String(event.message || '')
     .replace(S_RE, ' ')
     .trim();
-  if (primary) return primary;
+  if (primary) {
+    return primary;
+  }
   if (event.streaming && event.token) {
     return String(event.token || '').trim();
   }
@@ -52,13 +54,19 @@ function baseMessageText(event: NormalizableAgentEvent): string {
 
 function stripProvaRegistradaPrefix(message: string): string {
   const prefix = 'Prova registrada:';
-  if (!message.startsWith(prefix)) return message;
+  if (!message.startsWith(prefix)) {
+    return message;
+  }
   return message.slice(prefix.length).trim();
 }
 
 function rewriteComposeReplyPhrase(message: string, phase?: string): string {
-  if (phase !== 'compose_reply') return message;
-  if (!PENSANDO_NA_MELHOR_RESP_RE.test(message)) return message;
+  if (phase !== 'compose_reply') {
+    return message;
+  }
+  if (!PENSANDO_NA_MELHOR_RESP_RE.test(message)) {
+    return message;
+  }
   return message.replace(PENSANDO_NA_MELHOR_RESP_RE, 'Preparando resposta para ');
 }
 
@@ -86,7 +94,9 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     await this.subscriber.subscribe('ws:agent');
 
     this.subscriber.on('message', (channel, raw) => {
-      if (channel !== 'ws:agent') return;
+      if (channel !== 'ws:agent') {
+        return;
+      }
       this.handleIncoming(raw);
     });
 
@@ -191,7 +201,9 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     this.history.set(workspaceId, nextHistory);
 
     const listeners = this.listeners.get(workspaceId);
-    if (!listeners?.size) return;
+    if (!listeners?.size) {
+      return;
+    }
 
     for (const listener of listeners) {
       try {

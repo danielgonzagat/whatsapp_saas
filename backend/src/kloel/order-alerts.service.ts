@@ -222,7 +222,9 @@ export class OrderAlertsService {
       const alert = await tx.orderAlert.findFirst({
         where: { id, workspaceId },
       });
-      if (!alert) throw new NotFoundException('Alert not found');
+      if (!alert) {
+        throw new NotFoundException('Alert not found');
+      }
 
       await tx.orderAlert.updateMany({
         where: { id, workspaceId },

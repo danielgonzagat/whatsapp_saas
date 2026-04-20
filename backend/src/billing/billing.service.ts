@@ -463,17 +463,27 @@ export class BillingService {
   }
 
   private mapStripeStatus(status: string | null | undefined): string {
-    if (!status) return 'ACTIVE';
+    if (!status) {
+      return 'ACTIVE';
+    }
     const normalized = status.toLowerCase();
-    if (['canceled', 'cancelled'].includes(normalized)) return 'CANCELED';
-    if (['past_due', 'incomplete', 'unpaid'].includes(normalized)) return 'PAST_DUE';
-    if (['trialing'].includes(normalized)) return 'TRIALING';
+    if (['canceled', 'cancelled'].includes(normalized)) {
+      return 'CANCELED';
+    }
+    if (['past_due', 'incomplete', 'unpaid'].includes(normalized)) {
+      return 'PAST_DUE';
+    }
+    if (['trialing'].includes(normalized)) {
+      return 'TRIALING';
+    }
     return 'ACTIVE';
   }
 
   private async syncSubscriptionStatus(subscription: StripeSubscription) {
     const workspaceId = await this.resolveWorkspaceId(subscription);
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     const status = this.mapStripeStatus(subscription.status);
     const currentPeriodEndRaw = (subscription as StripeSubscriptionWithPeriodEnd)
       .current_period_end;
@@ -499,10 +509,14 @@ export class BillingService {
 
   private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
     const metaWs = (subscription.metadata as Record<string, string> | null)?.workspaceId;
-    if (metaWs) return metaWs;
+    if (metaWs) {
+      return metaWs;
+    }
 
     const customerId = subscription.customer as string;
-    if (!customerId) return null;
+    if (!customerId) {
+      return null;
+    }
 
     const ws = await this.prisma.workspace.findFirst({
       where: { stripeCustomerId: customerId },
@@ -531,7 +545,9 @@ export class BillingService {
       workspaceId = subRecord?.workspaceId || null;
     }
 
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
 
     if (['PAST_DUE', 'CANCELED'].includes(status)) {
       const ws = await this.prisma.workspace.findUnique({
@@ -693,7 +709,9 @@ export class BillingService {
     const globalFetch = (globalThis as Record<string, unknown>).fetch as
       | ((url: string, init?: Record<string, unknown>) => Promise<unknown>)
       | undefined;
-    if (!webhook || !globalFetch) return;
+    if (!webhook || !globalFetch) {
+      return;
+    }
     try {
       await globalFetch(webhook, {
         method: 'POST',

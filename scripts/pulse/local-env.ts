@@ -6,14 +6,23 @@ function parseEnvFile(content: string): Array<[string, string]> {
 
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
+    if (!line || line.startsWith('#')) {
+      continue;
+    }
 
     const separatorIndex = line.indexOf('=');
-    if (separatorIndex <= 0) continue;
+    if (separatorIndex <= 0) {
+      continue;
+    }
 
     const key = line.slice(0, separatorIndex).trim();
-    const value = line.slice(separatorIndex + 1).trim().replace(/^['"]|['"]$/g, '');
-    if (!key) continue;
+    const value = line
+      .slice(separatorIndex + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, '');
+    if (!key) {
+      continue;
+    }
     pairs.push([key, value]);
   }
 
@@ -21,15 +30,15 @@ function parseEnvFile(content: string): Array<[string, string]> {
 }
 
 export function loadPulseLocalEnv(rootDir: string): string[] {
-  const candidateFiles = [
-    '.env.pulse.local',
-  ];
+  const candidateFiles = ['.env.pulse.local'];
 
   const loaded: string[] = [];
 
   for (const relativePath of candidateFiles) {
     const fullPath = path.join(rootDir, relativePath);
-    if (!fs.existsSync(fullPath)) continue;
+    if (!fs.existsSync(fullPath)) {
+      continue;
+    }
 
     if (typeof process.loadEnvFile === 'function') {
       process.loadEnvFile(fullPath);

@@ -133,7 +133,9 @@ export class WhatsAppProviderRegistry {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    if (!workspace) return;
+    if (!workspace) {
+      return;
+    }
 
     const settings = asProviderSettings(workspace.providerSettings);
     const currentSession = settings.whatsappApiSession || {};
@@ -161,7 +163,9 @@ export class WhatsAppProviderRegistry {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    if (!workspace) throw new Error('workspace_not_found');
+    if (!workspace) {
+      throw new Error('workspace_not_found');
+    }
 
     const settings = asProviderSettings(workspace.providerSettings);
     const current = String(settings.whatsappProvider || '').trim();
@@ -469,17 +473,23 @@ export class WhatsAppProviderRegistry {
     presence: 'available' | 'offline',
     chatId?: string,
   ): Promise<void> {
-    if (this.isWahaMode()) return; // WAHA does not support presence API
+    if (this.isWahaMode()) {
+      return;
+    } // WAHA does not support presence API
     return this.metaCloudProvider.setPresence(workspaceId, presence, chatId);
   }
 
   async sendTyping(workspaceId: string, chatId: string): Promise<void> {
-    if (this.isWahaMode()) return;
+    if (this.isWahaMode()) {
+      return;
+    }
     return this.metaCloudProvider.sendTyping(workspaceId, chatId);
   }
 
   async stopTyping(workspaceId: string, chatId: string): Promise<void> {
-    if (this.isWahaMode()) return;
+    if (this.isWahaMode()) {
+      return;
+    }
     return this.metaCloudProvider.stopTyping(workspaceId, chatId);
   }
 

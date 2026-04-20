@@ -12,12 +12,16 @@ import type { FunctionalMapResult } from '../functional-map-types';
 import { escapeMarkdownTableCell } from '../markdown-utils';
 
 function pct(n: number, total: number): string {
-  if (total === 0) return '0%';
+  if (total === 0) {
+    return '0%';
+  }
   return Math.round((n / total) * 100) + '%';
 }
 
 function truncate(s: string, max: number): string {
-  if (s.length <= max) return s;
+  if (s.length <= max) {
+    return s;
+  }
   return s.slice(0, max - 3) + '...';
 }
 
@@ -155,7 +159,9 @@ export function generateStressTestReport(
 
     if (page.loadStatus !== 'ok') {
       lines.push(`*Page load issue: ${page.loadStatus}*`);
-      if (page.screenshotPath) lines.push(`Screenshot: ${page.screenshotPath}`);
+      if (page.screenshotPath) {
+        lines.push(`Screenshot: ${page.screenshotPath}`);
+      }
       lines.push('');
       continue;
     }
@@ -197,7 +203,9 @@ export function generateStressTestReport(
     const reasonGroups = new Map<string, ElementTestResult[]>();
     for (const r of brokenResults) {
       const key = r.reason.slice(0, 50);
-      if (!reasonGroups.has(key)) reasonGroups.set(key, []);
+      if (!reasonGroups.has(key)) {
+        reasonGroups.set(key, []);
+      }
       reasonGroups.get(key)!.push(r);
     }
 
@@ -207,7 +215,9 @@ export function generateStressTestReport(
       for (const item of items.slice(0, 5)) {
         lines.push(`  - ${item.pageRoute} → "${item.elementLabel}"`);
       }
-      if (items.length > 5) lines.push(`  - ... and ${items.length - 5} more`);
+      if (items.length > 5) {
+        lines.push(`  - ... and ${items.length - 5} more`);
+      }
       lines.push('');
     }
   }

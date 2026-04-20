@@ -25,7 +25,9 @@ export default function GestaoVendasPage() {
   const [activeContact, setActiveContact] = useState<string | null>(null);
 
   const handleAddTag = async (phone: string) => {
-    if (!tagInput.trim()) return;
+    if (!tagInput.trim()) {
+      return;
+    }
     try {
       await addTag(phone, tagInput.trim());
       setTagInput('');

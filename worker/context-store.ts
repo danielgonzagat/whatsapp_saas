@@ -73,7 +73,9 @@ export class ContextStore {
 
   async get<T>(key: string): Promise<T | null> {
     const data = await redis.get(this.k(key));
-    if (!data) return null;
+    if (!data) {
+      return null;
+    }
     try {
       return JSON.parse(data) as T;
     } catch {

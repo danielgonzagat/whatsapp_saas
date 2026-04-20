@@ -30,7 +30,9 @@ export class WebinarController {
   @Get()
   async list(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { webinars: [], count: 0 };
+    if (!workspaceId) {
+      return { webinars: [], count: 0 };
+    }
     const webinars = await this.prisma.webinar.findMany({
       where: { workspaceId },
       orderBy: { date: 'desc' },
@@ -52,7 +54,9 @@ export class WebinarController {
     },
   ) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) throw new NotFoundException('Workspace not found');
+    if (!workspaceId) {
+      throw new NotFoundException('Workspace not found');
+    }
     const webinar = await this.prisma.webinar.create({
       data: {
         workspaceId,
@@ -77,7 +81,9 @@ export class WebinarController {
     const existing = await this.prisma.webinar.findFirst({
       where: { id, workspaceId },
     });
-    if (!existing) throw new NotFoundException('Webinar not found');
+    if (!existing) {
+      throw new NotFoundException('Webinar not found');
+    }
     const data: Record<string, unknown> = { ...body };
     if (data.date && typeof data.date === 'string') {
       data.date = new Date(data.date);
@@ -92,7 +98,9 @@ export class WebinarController {
     const existing = await this.prisma.webinar.findFirst({
       where: { id, workspaceId },
     });
-    if (!existing) throw new NotFoundException('Webinar not found');
+    if (!existing) {
+      throw new NotFoundException('Webinar not found');
+    }
     await this.auditService.log({
       workspaceId: req.user?.workspaceId || 'unknown',
       action: 'DELETE_RECORD',

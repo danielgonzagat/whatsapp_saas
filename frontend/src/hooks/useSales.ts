@@ -39,9 +39,15 @@ type OrderPipelineResponse = Record<string, unknown>;
 
 export function useSales(params?: { status?: string; search?: string; method?: string }) {
   const qs = new URLSearchParams();
-  if (params?.status && params.status !== 'todos') qs.set('status', params.status);
-  if (params?.search) qs.set('search', params.search);
-  if (params?.method) qs.set('method', params.method);
+  if (params?.status && params.status !== 'todos') {
+    qs.set('status', params.status);
+  }
+  if (params?.search) {
+    qs.set('search', params.search);
+  }
+  if (params?.method) {
+    qs.set('method', params.method);
+  }
   const q = qs.toString();
   const { data, isLoading, error, mutate } = useSWR(`/sales${q ? `?${q}` : ''}`, swrFetcher);
   const d = data as SalesResponse | undefined;

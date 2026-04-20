@@ -107,12 +107,20 @@ export class PlatformWalletService {
     total: number;
   }> {
     const where: Prisma.PlatformWalletLedgerWhereInput = {};
-    if (filters.currency) where.currency = filters.currency;
-    if (filters.kind) where.kind = filters.kind;
+    if (filters.currency) {
+      where.currency = filters.currency;
+    }
+    if (filters.kind) {
+      where.kind = filters.kind;
+    }
     if (filters.from || filters.to) {
       where.createdAt = {};
-      if (filters.from) where.createdAt.gte = filters.from;
-      if (filters.to) where.createdAt.lte = filters.to;
+      if (filters.from) {
+        where.createdAt.gte = filters.from;
+      }
+      if (filters.to) {
+        where.createdAt.lte = filters.to;
+      }
     }
 
     const skip = Math.max(0, filters.skip ?? 0);

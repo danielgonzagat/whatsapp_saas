@@ -17,7 +17,9 @@ function resolveCookieDomain(host?: string | null): string | undefined {
     .toLowerCase()
     .split(':')[0];
 
-  if (!hostname) return undefined;
+  if (!hostname) {
+    return undefined;
+  }
   if (hostname === 'kloel.com' || hostname.endsWith('.kloel.com')) {
     return '.kloel.com';
   }
@@ -44,7 +46,9 @@ export class CookieConsentController {
     const authHeader = request.headers.authorization;
     if (authHeader) {
       const [scheme, token] = authHeader.split(' ');
-      if (scheme === 'Bearer' && token) return token;
+      if (scheme === 'Bearer' && token) {
+        return token;
+      }
     }
 
     return request.cookies?.kloel_access_token || request.cookies?.kloel_token || null;
@@ -52,7 +56,9 @@ export class CookieConsentController {
 
   private async resolveAgentId(request: Request): Promise<string | null> {
     const token = this.getTokenFromRequest(request);
-    if (!token) return null;
+    if (!token) {
+      return null;
+    }
 
     try {
       const payload = await this.jwtService.verifyAsync<JwtLikePayload>(token);

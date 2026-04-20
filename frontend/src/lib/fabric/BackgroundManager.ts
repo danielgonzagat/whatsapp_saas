@@ -30,7 +30,9 @@ export class BackgroundManager {
       const reader = new FileReader();
       reader.onload = (e) => {
         const url = e.target?.result as string;
-        if (!url) return reject(new Error('Failed to read file'));
+        if (!url) {
+          return reject(new Error('Failed to read file'));
+        }
         this.setImage(url).then(resolve).catch(reject);
       };
       reader.onerror = () => reject(new Error('FileReader error'));

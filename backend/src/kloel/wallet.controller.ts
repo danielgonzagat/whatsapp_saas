@@ -177,7 +177,9 @@ export class WalletController {
     const wallet = await this.prisma.kloelWallet.findUnique({
       where: { workspaceId },
     });
-    if (!wallet) return { income: 0, expense: 0, balance: 0, daily: [] };
+    if (!wallet) {
+      return { income: 0, expense: 0, balance: 0, daily: [] };
+    }
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -201,8 +203,11 @@ export class WalletController {
     transactions.forEach((t) => {
       const day = new Date(t.createdAt).getDate() - 1;
       if (day >= 0 && day < daysInMonth) {
-        if (t.amount > 0) daily[day].income += t.amount;
-        else daily[day].expense += Math.abs(t.amount);
+        if (t.amount > 0) {
+          daily[day].income += t.amount;
+        } else {
+          daily[day].expense += Math.abs(t.amount);
+        }
       }
     });
     return { income, expense, balance: income - expense, daily };
@@ -217,7 +222,9 @@ export class WalletController {
     const wallet = await this.prisma.kloelWallet.findUnique({
       where: { workspaceId },
     });
-    if (!wallet) return { chart: Array(7).fill(0) };
+    if (!wallet) {
+      return { chart: Array(7).fill(0) };
+    }
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const transactions = await this.prisma.kloelWalletTransaction.findMany({
       where: {
@@ -232,7 +239,9 @@ export class WalletController {
     transactions.forEach((t) => {
       const daysAgo = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000);
       const idx = 6 - daysAgo;
-      if (idx >= 0 && idx < 7) result[idx] += t.amount;
+      if (idx >= 0 && idx < 7) {
+        result[idx] += t.amount;
+      }
     });
     return { chart: result };
   }
@@ -246,7 +255,9 @@ export class WalletController {
     const wallet = await this.prisma.kloelWallet.findUnique({
       where: { workspaceId },
     });
-    if (!wallet) return { withdrawals: [] };
+    if (!wallet) {
+      return { withdrawals: [] };
+    }
     const withdrawals = await this.prisma.kloelWalletTransaction.findMany({
       where: { walletId: wallet.id, type: 'withdrawal' },
       orderBy: { createdAt: 'desc' },

@@ -25,7 +25,9 @@ function extractCatchBody(lines: string[], catchLineIdx: number, maxLines = 20):
     }
   }
 
-  if (!braceFound) return [];
+  if (!braceFound) {
+    return [];
+  }
 
   // Collect lines until we find the closing `}` or hit maxLines
   const body: string[] = [];
@@ -35,11 +37,17 @@ function extractCatchBody(lines: string[], catchLineIdx: number, maxLines = 20):
     const t = lines[i].trim();
     // Count braces to detect nested blocks
     for (const ch of lines[i]) {
-      if (ch === '{') depth++;
-      if (ch === '}') depth--;
+      if (ch === '{') {
+        depth++;
+      }
+      if (ch === '}') {
+        depth--;
+      }
     }
     // If depth drops below 0, we've hit the closing `}` of the catch
-    if (depth < 0) break;
+    if (depth < 0) {
+      break;
+    }
     body.push(t);
   }
 
@@ -52,8 +60,10 @@ function extractCatchBody(lines: string[], catchLineIdx: number, maxLines = 20):
  * - All lines are empty/whitespace/comments
  */
 function isCatchBodyEmpty(bodyLines: string[]): boolean {
-  if (bodyLines.length === 0) return true;
-  return bodyLines.every(l => {
+  if (bodyLines.length === 0) {
+    return true;
+  }
+  return bodyLines.every((l) => {
     const t = l.trim();
     return t === '' || t.startsWith('//') || t.startsWith('*') || t.startsWith('/*');
   });
@@ -64,20 +74,26 @@ function isCatchBodyEmpty(bodyLines: string[]): boolean {
  * This means it swallows the error silently after logging.
  */
 function isCatchBodyLogOnly(bodyLines: string[]): boolean {
-  if (bodyLines.length === 0) return false;
-  const meaningful = bodyLines.filter(l => {
+  if (bodyLines.length === 0) {
+    return false;
+  }
+  const meaningful = bodyLines.filter((l) => {
     const t = l.trim();
     return t !== '' && !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*');
   });
-  if (meaningful.length === 0) return false;
+  if (meaningful.length === 0) {
+    return false;
+  }
 
   // All meaningful lines are console.log/console.error/console.warn/logger.log etc.
   // AND there's no throw or return
-  const hasThrowOrReturn = meaningful.some(l => /\b(?:throw|return)\b/.test(l));
-  if (hasThrowOrReturn) return false;
+  const hasThrowOrReturn = meaningful.some((l) => /\b(?:throw|return)\b/.test(l));
+  if (hasThrowOrReturn) {
+    return false;
+  }
 
-  const allLogging = meaningful.every(l =>
-    /\bconsole\.\w+\s*\(|\bthis\.logger\.\w+|\bLogger\.\w+|\bthis\.log\b/.test(l)
+  const allLogging = meaningful.every((l) =>
+    /\bconsole\.\w+\s*\(|\bthis\.logger\.\w+|\bLogger\.\w+|\bthis\.log\b/.test(l),
   );
 
   return allLogging;
@@ -87,7 +103,7 @@ function isCatchBodyLogOnly(bodyLines: string[]): boolean {
  * Check if a catch body re-throws (has `throw` statement).
  */
 function catchBodyRethrows(bodyLines: string[]): boolean {
-  return bodyLines.some(l => /\bthrow\b/.test(l.trim()));
+  return bodyLines.some((l) => /\bthrow\b/.test(l.trim()));
 }
 
 export function checkErrorHandlers(config: PulseConfig): Break[] {
@@ -96,13 +112,17 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
   const dirs = [config.backendDir, config.workerDir];
 
   for (const dir of dirs) {
-    if (!dir) continue;
+    if (!dir) {
+      continue;
+    }
 
     const files = walkFiles(dir, ['.ts']);
 
     for (const file of files) {
       // Skip test/spec/seed/migration/mock files
-      if (/\.(test|spec|d)\.ts$|seed|migration|fixture|mock\./i.test(file)) continue;
+      if (/\.(test|spec|d)\.ts$|seed|migration|fixture|mock\./i.test(file)) {
+        continue;
+      }
 
       let content: string;
       try {
@@ -121,7 +141,9 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
         const trimmed = line.trim();
 
         // Skip comment lines
-        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+          continue;
+        }
 
         // ── CHECK 1: catch block analysis ─────────────────────────────────────
         // Use word boundary to avoid matching 'catchupEnabled', 'catchAll', etc.
@@ -129,11 +151,15 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
           // Skip if a PULSE:OK annotation is on the preceding line(s) — intentional suppression
           const prevLine = i > 0 ? lines[i - 1].trim() : '';
           const prevPrevLine = i > 1 ? lines[i - 2].trim() : '';
-          if (/PULSE:OK/.test(prevLine) || /PULSE:OK/.test(prevPrevLine)) continue;
+          if (/PULSE:OK/.test(prevLine) || /PULSE:OK/.test(prevPrevLine)) {
+            continue;
+          }
 
           const bodyLines = extractCatchBody(lines, i);
           // Also skip if the catch body itself contains a PULSE:OK annotation
-          if (bodyLines.some(l => /PULSE:OK/.test(l))) continue;
+          if (bodyLines.some((l) => /PULSE:OK/.test(l))) {
+            continue;
+          }
 
           if (isCatchBodyEmpty(bodyLines)) {
             // Empty catch — swallows error completely
@@ -164,7 +190,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 severity: 'critical',
                 file: relFile,
                 line: i + 1,
-                description: 'catch block in financial code only logs — error swallowed without throw',
+                description:
+                  'catch block in financial code only logs — error swallowed without throw',
                 detail: trimmed.slice(0, 120),
               });
             } else {
@@ -173,7 +200,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 severity: 'medium',
                 file: relFile,
                 line: i + 1,
-                description: 'catch block only logs without throw/return — error effectively swallowed',
+                description:
+                  'catch block only logs without throw/return — error effectively swallowed',
                 detail: trimmed.slice(0, 120),
               });
             }
@@ -181,10 +209,14 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
             // Financial catch that does something but doesn't rethrow
             // Downgrade to high if catch has a return (intentional error handling)
             // or calls an error reporting function
-            const meaningful = bodyLines.filter(l => l.trim() && !l.trim().startsWith('//'));
-            const hasReturn = meaningful.some(l => /\breturn\b/.test(l));
-            const hasErrorReport = meaningful.some(l => /\b(report|sentry|notify|alert|emit|dispatch|rollback)\b/i.test(l));
-            const hasNullReturn = meaningful.some(l => /return\s*(null|undefined|false|\[\]|\{\}|0|''|"")\s*;?/.test(l));
+            const meaningful = bodyLines.filter((l) => l.trim() && !l.trim().startsWith('//'));
+            const hasReturn = meaningful.some((l) => /\breturn\b/.test(l));
+            const hasErrorReport = meaningful.some((l) =>
+              /\b(report|sentry|notify|alert|emit|dispatch|rollback)\b/i.test(l),
+            );
+            const hasNullReturn = meaningful.some((l) =>
+              /return\s*(null|undefined|false|\[\]|\{\}|0|''|"")\s*;?/.test(l),
+            );
             if (hasReturn || hasErrorReport) {
               // Intentional error handling — not swallowed, downgrade
               breaks.push({
@@ -203,7 +235,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 severity: 'critical',
                 file: relFile,
                 line: i + 1,
-                description: 'catch block in financial code does not rethrow — caller unaware of failure',
+                description:
+                  'catch block in financial code does not rethrow — caller unaware of failure',
                 detail: trimmed.slice(0, 120),
               });
             }
@@ -214,17 +247,23 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
         // Look for .then( that is NOT followed by .catch( on same line or next 2 lines
         if (/\.then\s*\(/.test(trimmed)) {
           // Skip if this line already has .catch(
-          if (/\.catch\s*\(/.test(trimmed)) continue;
+          if (/\.catch\s*\(/.test(trimmed)) {
+            continue;
+          }
 
           // Skip if it's inside a chain that has await (then is on a thenable, not a Promise chain)
-          if (/\bawait\b/.test(trimmed)) continue;
+          if (/\bawait\b/.test(trimmed)) {
+            continue;
+          }
 
           // Check the next 5 lines for .catch( (chain may span multiple lines)
           const nextLines = lines.slice(i + 1, Math.min(lines.length, i + 6)).join('\n');
           if (!/\.catch\s*\(/.test(nextLines)) {
             // Additional filter: skip if it's a test assertion chain (.then().expect())
             // or a type guard (.then(res => res.json()))
-            if (/\.(expect|toBe|toEqual|toMatch|finally)\s*\(/.test(trimmed + nextLines)) continue;
+            if (/\.(expect|toBe|toEqual|toMatch|finally)\s*\(/.test(trimmed + nextLines)) {
+              continue;
+            }
 
             breaks.push({
               type: 'UNHANDLED_PROMISE',

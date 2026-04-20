@@ -54,28 +54,48 @@ export function createClientRequestId() {
 }
 
 export function hasDraggedFiles(dataTransfer: DataTransfer | null | undefined) {
-  if (!dataTransfer) return false;
-  if (dataTransfer.files && dataTransfer.files.length > 0) return true;
+  if (!dataTransfer) {
+    return false;
+  }
+  if (dataTransfer.files && dataTransfer.files.length > 0) {
+    return true;
+  }
   return Array.from(dataTransfer.items || []).some((item) => item.kind === 'file');
 }
 
 export function getGreeting() {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'Bom dia';
-  if (hour >= 12 && hour < 18) return 'Boa tarde';
-  if (hour >= 18) return 'Boa noite';
+  if (hour >= 5 && hour < 12) {
+    return 'Bom dia';
+  }
+  if (hour >= 12 && hour < 18) {
+    return 'Boa tarde';
+  }
+  if (hour >= 18) {
+    return 'Boa noite';
+  }
   return 'Boa madrugada';
 }
 
 export function computeAttachmentKind(file: File): KloelChatAttachment['kind'] {
-  if (file.type.startsWith('image/')) return 'image';
-  if (file.type.startsWith('audio/')) return 'audio';
+  if (file.type.startsWith('image/')) {
+    return 'image';
+  }
+  if (file.type.startsWith('audio/')) {
+    return 'audio';
+  }
   return 'document';
 }
 
 export function computeDrainStep(bufferLength: number) {
-  if (bufferLength > 280) return 28;
-  if (bufferLength > 120) return 18;
-  if (bufferLength > 48) return 10;
+  if (bufferLength > 280) {
+    return 28;
+  }
+  if (bufferLength > 120) {
+    return 18;
+  }
+  if (bufferLength > 48) {
+    return 10;
+  }
   return 5;
 }

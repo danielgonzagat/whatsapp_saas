@@ -54,7 +54,9 @@ function matchesWildcardPattern(value: string, pattern: string): boolean {
 
 function normalizeCorsOriginPattern(raw: string): string | null {
   const trimmed = raw.trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    return null;
+  }
   if (trimmed.length > MAX_ORIGIN_PATTERN_LENGTH) {
     console.warn('[CORS] Origin pattern too long, ignored (%d chars)', trimmed.length);
     return null;
@@ -77,7 +79,9 @@ function normalizeCorsOriginPattern(raw: string): string | null {
 
 function compileCorsOriginMatcher(raw: string): ((origin: string) => boolean) | null {
   const normalized = normalizeCorsOriginPattern(raw);
-  if (!normalized) return null;
+  if (!normalized) {
+    return null;
+  }
   return (origin: string) => matchesWildcardPattern(origin, normalized);
 }
 
@@ -280,7 +284,9 @@ async function bootstrap() {
   if (extraOrigins) {
     for (const o of extraOrigins.split(',')) {
       const trimmed = o.trim();
-      if (trimmed) allowedOriginsExact.add(trimmed);
+      if (trimmed) {
+        allowedOriginsExact.add(trimmed);
+      }
     }
   }
 
@@ -296,7 +302,9 @@ async function bootstrap() {
   if (extraRegex) {
     for (const r of extraRegex.split(',')) {
       const matcher = compileCorsOriginMatcher(r);
-      if (matcher) allowedOriginMatchers.push(matcher);
+      if (matcher) {
+        allowedOriginMatchers.push(matcher);
+      }
     }
   }
 
@@ -308,13 +316,21 @@ async function bootstrap() {
   function matchAllowedOrigin(origin: string | undefined): string | null {
     // Requests without Origin header are not browser CORS requests.
     // This includes webhooks, health checks, internal polling, and server-to-server traffic.
-    if (!origin) return null;
-    if (allowedOriginsExact.has(origin)) return origin;
+    if (!origin) {
+      return null;
+    }
+    if (allowedOriginsExact.has(origin)) {
+      return origin;
+    }
     for (const matcher of allowedOriginMatchers) {
-      if (matcher(origin)) return origin;
+      if (matcher(origin)) {
+        return origin;
+      }
     }
     // In dev, accept any origin
-    if (process.env.NODE_ENV !== 'production') return origin;
+    if (process.env.NODE_ENV !== 'production') {
+      return origin;
+    }
     return null;
   }
 
@@ -322,7 +338,9 @@ async function bootstrap() {
   // NestJS enableCors does not cover routes that use @Res().
   const applyCorsOriginHeader = (req: Request, res: Response): boolean => {
     const rawOrigin = req.headers.origin;
-    if (!rawOrigin) return true;
+    if (!rawOrigin) {
+      return true;
+    }
     const matched = matchAllowedOrigin(rawOrigin);
     if (matched) {
       res.setHeader('Access-Control-Allow-Origin', matched);

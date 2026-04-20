@@ -16,7 +16,9 @@ export function TrialPaywallModal({
   onActivateTrial,
   variant = 'activate',
 }: TrialPaywallModalProps) {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const isRenew = variant === 'renew';
 

@@ -133,7 +133,9 @@ function normalizeBranding(workspace: WorkspaceSnapshot): Record<string, unknown
 }
 
 function buildAddressLine(fiscal: FiscalSnapshot): string | null {
-  if (!fiscal) return null;
+  if (!fiscal) {
+    return null;
+  }
   const line = [
     [fiscal.street, fiscal.number].filter(Boolean).join(', '),
     fiscal.neighborhood,
@@ -176,13 +178,17 @@ function resolveBrandLogo(
   checkoutConfig: Record<string, unknown> | null | undefined,
 ): string | null {
   const logoUrl = branding?.logoUrl;
-  if (typeof logoUrl === 'string' && logoUrl.trim()) return logoUrl;
+  if (typeof logoUrl === 'string' && logoUrl.trim()) {
+    return logoUrl;
+  }
   const fallback = checkoutConfig?.brandLogo;
   return typeof fallback === 'string' && fallback ? fallback : null;
 }
 
 function buildAffiliateContext(affiliateLink: Record<string, unknown> | null) {
-  if (!affiliateLink) return null;
+  if (!affiliateLink) {
+    return null;
+  }
   const affiliateProduct = affiliateLink.affiliateProduct as Record<string, unknown> | undefined;
   return {
     affiliateLinkId: affiliateLink.id,

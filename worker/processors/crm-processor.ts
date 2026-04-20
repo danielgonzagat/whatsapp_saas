@@ -48,7 +48,9 @@ async function checkInactivity(workspaceId: string) {
 
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
   const limitCheck = await PlanLimitsProvider.checkMessageLimit(workspaceId);
-  if (!limitCheck.allowed) return;
+  if (!limitCheck.allowed) {
+    return;
+  }
 
   const leads = await prisma.contact.findMany({
     where: {
@@ -67,7 +69,9 @@ async function checkInactivity(workspaceId: string) {
   await forEachSequential(leads, async (lead) => {
     // Check if we already nudged recently (custom field or tag)
     const hasNudged = (lead.customFields as Record<string, unknown> | null)?.last_nudge_at;
-    if (hasNudged && new Date(String(hasNudged)) > twoHoursAgo) return;
+    if (hasNudged && new Date(String(hasNudged)) > twoHoursAgo) {
+      return;
+    }
 
     log.info('ghost_closer_trigger', { phone: lead.phone });
 

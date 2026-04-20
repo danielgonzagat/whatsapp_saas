@@ -87,7 +87,9 @@ export class KnowledgeBaseService {
         const errorMessage =
           err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown_error';
         this.logger.warn(`Falha ao buscar URL ou timeout: ${errorMessage}`);
-        if (err instanceof BadRequestException) throw err;
+        if (err instanceof BadRequestException) {
+          throw err;
+        }
         // Se falhar o fetch, não adianta enfileirar.
         throw new BadRequestException(`Erro ao acessar URL: ${errorMessage}`);
       }
@@ -158,7 +160,9 @@ export class KnowledgeBaseService {
   async getContext(workspaceId: string, query: string): Promise<string> {
     try {
       const { embedding } = await this.vectorService.getEmbedding(query);
-      if (!embedding.length) return '';
+      if (!embedding.length) {
+        return '';
+      }
 
       const vectorString = `[${embedding.join(',')}]`;
 
@@ -174,7 +178,9 @@ export class KnowledgeBaseService {
         LIMIT 3
       `;
 
-      if (!results || results.length === 0) return '';
+      if (!results || results.length === 0) {
+        return '';
+      }
 
       return results.map((r) => r.content).join('\n\n');
     } catch (err) {
@@ -184,7 +190,9 @@ export class KnowledgeBaseService {
   }
 
   private htmlToText(html: string): string {
-    if (!html) return '';
+    if (!html) {
+      return '';
+    }
 
     const blockTags = new Set([
       'p',

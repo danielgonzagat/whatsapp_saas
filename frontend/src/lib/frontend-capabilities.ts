@@ -582,19 +582,29 @@ export function getCategoryCounts(category: CapabilityCategory) {
 }
 
 export function getCapabilityBadge(capability: FrontendCapability) {
-  if (capability.status === 'planned') return 'Planejado';
-  if (capability.badge) return capability.badge;
-  if (capability.status === 'partial') return 'Parcial';
+  if (capability.status === 'planned') {
+    return 'Planejado';
+  }
+  if (capability.badge) {
+    return capability.badge;
+  }
+  if (capability.status === 'partial') {
+    return 'Parcial';
+  }
   return undefined;
 }
 
 export function findCapabilityByTitle(title?: string | null) {
-  if (!title) return undefined;
+  if (!title) {
+    return undefined;
+  }
   return FRONTEND_CAPABILITIES.find((capability) => capability.title === title);
 }
 
 export function getCapabilityHref(capability: FrontendCapability) {
-  if (capability.route) return capability.route;
+  if (capability.route) {
+    return capability.route;
+  }
   if (capability.status === 'planned') {
     return `${PLANNED_CAPABILITY_ROUTE}?tool=${encodeURIComponent(capability.title)}`;
   }
@@ -603,9 +613,15 @@ export function getCapabilityHref(capability: FrontendCapability) {
 
 export function getRelatedActiveCapabilities(capability: FrontendCapability, limit = 3) {
   return FRONTEND_CAPABILITIES.filter((item) => {
-    if (item.title === capability.title) return false;
-    if (item.status !== 'active') return false;
-    if (item.category !== capability.category) return false;
+    if (item.title === capability.title) {
+      return false;
+    }
+    if (item.status !== 'active') {
+      return false;
+    }
+    if (item.category !== capability.category) {
+      return false;
+    }
     return item.roles.some((role) => capability.roles.includes(role));
   }).slice(0, limit);
 }

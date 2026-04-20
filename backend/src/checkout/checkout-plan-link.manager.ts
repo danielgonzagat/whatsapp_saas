@@ -34,7 +34,9 @@ export class CheckoutPlanLinkManager {
 
   async isPublicSlugTaken(slug: string, ignore?: PublicIdentifierIgnore) {
     const normalizedSlug = this.normalizeCheckoutSlug(slug);
-    if (!normalizedSlug) return true;
+    if (!normalizedSlug) {
+      return true;
+    }
 
     const [plan, link] = await Promise.all([
       this.prisma.checkoutProductPlan.findFirst({
@@ -83,7 +85,9 @@ export class CheckoutPlanLinkManager {
 
   async isPublicCodeTaken(code: string, ignore?: PublicIdentifierIgnore) {
     const normalizedCode = normalizePublicCheckoutCode(code);
-    if (!normalizedCode) return true;
+    if (!normalizedCode) {
+      return true;
+    }
 
     const [plan, link, affiliateLink] = await Promise.all([
       this.prisma.checkoutProductPlan.findFirst({
@@ -222,7 +226,9 @@ export class CheckoutPlanLinkManager {
       }
 
       await forEachSequential(plans, async (plan) => {
-        if (existingPlanIds.has(plan.id)) return;
+        if (existingPlanIds.has(plan.id)) {
+          return;
+        }
 
         const existingPlanLinkCount = await tx.checkoutPlanLink.count({
           where: { planId: plan.id },
@@ -251,10 +257,14 @@ export class CheckoutPlanLinkManager {
           select: { id: true, slug: true, isPrimary: true },
         });
 
-        if (!remainingLinks.length) return;
+        if (!remainingLinks.length) {
+          return;
+        }
 
         const currentPrimary = remainingLinks.find((link) => link.isPrimary);
-        if (currentPrimary) return;
+        if (currentPrimary) {
+          return;
+        }
 
         const planRecord = await tx.checkoutProductPlan.findUnique({
           where: { id: planId },

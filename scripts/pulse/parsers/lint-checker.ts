@@ -32,13 +32,15 @@ interface ESLintFileResult {
 function hasESLint(dir: string): boolean {
   // Check package.json for eslint dependency
   const pkgPath = path.join(dir, 'package.json');
-  if (!fs.existsSync(pkgPath)) return false;
+  if (!fs.existsSync(pkgPath)) {
+    return false;
+  }
   try {
     const raw = fs.readFileSync(pkgPath, 'utf8');
     const pkg = JSON.parse(raw) as Record<string, unknown>;
     const allDeps: Record<string, unknown> = {
-      ...(pkg.dependencies as Record<string, unknown> || {}),
-      ...(pkg.devDependencies as Record<string, unknown> || {}),
+      ...((pkg.dependencies as Record<string, unknown>) || {}),
+      ...((pkg.devDependencies as Record<string, unknown>) || {}),
     };
     return 'eslint' in allDeps;
   } catch {
@@ -50,13 +52,13 @@ function hasSrcDir(dir: string): boolean {
   return fs.existsSync(path.join(dir, 'src'));
 }
 
-function runESLint(
-  projectDir: string,
-  rootDir: string,
-  label: string
-): Break[] {
-  if (!hasESLint(projectDir)) return [];
-  if (!hasSrcDir(projectDir)) return [];
+function runESLint(projectDir: string, rootDir: string, label: string): Break[] {
+  if (!hasESLint(projectDir)) {
+    return [];
+  }
+  if (!hasSrcDir(projectDir)) {
+    return [];
+  }
 
   let output: string;
   try {
@@ -84,20 +86,26 @@ function runESLint(
     return [];
   }
 
-  if (!Array.isArray(results)) return [];
+  if (!Array.isArray(results)) {
+    return [];
+  }
 
   const breaks: Break[] = [];
 
   for (const fileResult of results) {
-    if (breaks.length >= MAX_ERRORS_PER_PROJECT) break;
+    if (breaks.length >= MAX_ERRORS_PER_PROJECT) {
+      break;
+    }
 
     const relFile = path.relative(rootDir, fileResult.filePath);
 
     // Only emit breaks for severity=2 (errors), not warnings
-    const errors = fileResult.messages.filter(m => m.severity === ESLINT_ERROR_SEVERITY);
+    const errors = fileResult.messages.filter((m) => m.severity === ESLINT_ERROR_SEVERITY);
 
     for (const msg of errors) {
-      if (breaks.length >= MAX_ERRORS_PER_PROJECT) break;
+      if (breaks.length >= MAX_ERRORS_PER_PROJECT) {
+        break;
+      }
 
       const ruleLabel = msg.ruleId ? ` (${msg.ruleId})` : '';
       breaks.push({
@@ -115,7 +123,9 @@ function runESLint(
 }
 
 export function checkLint(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
 

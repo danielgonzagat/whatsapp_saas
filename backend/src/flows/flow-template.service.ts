@@ -171,7 +171,9 @@ export class FlowTemplateService {
     const tpl = await this.prisma.flowTemplate.findUnique({
       where: { id },
     });
-    if (!tpl) throw new NotFoundException('Template não encontrado');
+    if (!tpl) {
+      throw new NotFoundException('Template não encontrado');
+    }
     return tpl;
   }
 

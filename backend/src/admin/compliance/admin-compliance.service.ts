@@ -26,7 +26,9 @@ function ensureGatewayRow(
   gatewayKey: string,
 ): GatewayRiskRow {
   const existing = gatewayRisk.get(gatewayKey);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   const created: GatewayRiskRow = { gateway: gatewayKey, count: 0, totalInCents: 0 };
   gatewayRisk.set(gatewayKey, created);
   return created;
@@ -37,7 +39,9 @@ function ensureWorkspaceRow(
   item: TransactionItem,
 ): WorkspaceRiskRow {
   const existing = workspaceRisk.get(item.workspaceId);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   const created: WorkspaceRiskRow = {
     workspaceId: item.workspaceId,
     workspaceName: item.workspaceName,

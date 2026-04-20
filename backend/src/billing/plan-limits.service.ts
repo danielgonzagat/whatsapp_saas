@@ -72,7 +72,9 @@ export class PlanLimitsService {
     });
 
     const normalizedStatus = this.normalizeSubscriptionStatus(subscription?.status);
-    if (!subscription || normalizedStatus !== 'ACTIVE') return 'FREE';
+    if (!subscription || normalizedStatus !== 'ACTIVE') {
+      return 'FREE';
+    }
     const plan = subscription.plan?.toUpperCase() as Plan;
     return planConfig[plan] ? plan : 'FREE';
   }
@@ -83,7 +85,9 @@ export class PlanLimitsService {
   async ensureFlowLimit(workspaceId: string) {
     const plan = await this.getPlan(workspaceId);
     const cfg = planConfig[plan];
-    if (!cfg.flowLimit) return;
+    if (!cfg.flowLimit) {
+      return;
+    }
 
     const count = await this.prisma.flow.count({ where: { workspaceId } });
     if (count >= cfg.flowLimit) {
@@ -99,7 +103,9 @@ export class PlanLimitsService {
   async ensureCampaignLimit(workspaceId: string) {
     const plan = await this.getPlan(workspaceId);
     const cfg = planConfig[plan];
-    if (!cfg.campaignLimit) return;
+    if (!cfg.campaignLimit) {
+      return;
+    }
 
     const count = await this.prisma.campaign.count({ where: { workspaceId } });
     if (count >= cfg.campaignLimit) {
@@ -145,7 +151,9 @@ export class PlanLimitsService {
   async trackMessageSend(workspaceId: string) {
     const plan = await this.getPlan(workspaceId);
     const cfg = planConfig[plan];
-    if (!cfg.messagesPerMonth) return;
+    if (!cfg.messagesPerMonth) {
+      return;
+    }
 
     const now = new Date();
     const ym = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
@@ -177,7 +185,9 @@ export class PlanLimitsService {
   async ensureFlowRunRate(workspaceId: string) {
     const plan = await this.getPlan(workspaceId);
     const cfg = planConfig[plan];
-    if (!cfg.flowRunsPerMinute) return;
+    if (!cfg.flowRunsPerMinute) {
+      return;
+    }
 
     const key = `plan:flow_runs:${workspaceId}:${Math.floor(Date.now() / 60000)}`;
     try {
@@ -206,7 +216,9 @@ export class PlanLimitsService {
   async ensureTokenBudget(workspaceId: string) {
     const plan = await this.getPlan(workspaceId);
     const cfg = planConfig[plan];
-    if (!cfg.aiTokensPerMonth) return; // ENTERPRISE = unlimited
+    if (!cfg.aiTokensPerMonth) {
+      return;
+    } // ENTERPRISE = unlimited
 
     const now = new Date();
     const ym = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
@@ -221,7 +233,9 @@ export class PlanLimitsService {
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      if (err instanceof ForbiddenException) throw err;
+      if (err instanceof ForbiddenException) {
+        throw err;
+      }
       this.logger.warn(`Redis indisponível para ensureTokenBudget: ${errInstanceofError?.message}`);
     }
   }
@@ -232,7 +246,9 @@ export class PlanLimitsService {
   async trackAiUsage(workspaceId: string, tokens: number) {
     const plan = await this.getPlan(workspaceId);
     const cfg = planConfig[plan];
-    if (!cfg.aiTokensPerMonth) return;
+    if (!cfg.aiTokensPerMonth) {
+      return;
+    }
 
     const now = new Date();
     const ym = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;

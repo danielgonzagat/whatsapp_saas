@@ -16,7 +16,9 @@ export class ClipboardManager {
 
   async copy(): Promise<void> {
     const objs = this.canvas.getActiveObjects();
-    if (objs.length === 0) return;
+    if (objs.length === 0) {
+      return;
+    }
     // Fabric clone() is independent per object — parallelize and preserve
     // selection order by mapping rather than pushing inside a for-await loop.
     this._clipboard = await Promise.all(objs.map((obj) => obj.clone()));
@@ -34,7 +36,9 @@ export class ClipboardManager {
   }
 
   async paste(): Promise<void> {
-    if (this._clipboard.length === 0) return;
+    if (this._clipboard.length === 0) {
+      return;
+    }
     this.canvas.discardActiveObject();
     const cloned: FabricObject[] = [];
     await forEachSequential(this._clipboard, async (obj) => {

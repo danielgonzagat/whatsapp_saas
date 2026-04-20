@@ -47,7 +47,9 @@ describe('useCheckoutSocialIdentity', () => {
     window.localStorage.clear();
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response('', { status: 404, headers: { 'Content-Type': 'text/plain' } })),
+      vi.fn(
+        async () => new Response('', { status: 404, headers: { 'Content-Type': 'text/plain' } }),
+      ),
     );
   });
 

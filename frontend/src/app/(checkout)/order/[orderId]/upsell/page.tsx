@@ -68,7 +68,9 @@ export default function UpsellPage() {
   }, [currentUpsell]);
 
   useEffect(() => {
-    if (countdown === null || countdown <= 0) return;
+    if (countdown === null || countdown <= 0) {
+      return;
+    }
     const t = setInterval(
       () => setCountdown((prev) => (prev !== null ? Math.max(prev - 1, 0) : null)),
       1000,
@@ -86,7 +88,9 @@ export default function UpsellPage() {
   }, [currentIndex, upsells.length, orderId, router]);
 
   const handleAccept = useCallback(async () => {
-    if (!currentUpsell || submitting) return;
+    if (!currentUpsell || submitting) {
+      return;
+    }
     setSubmitting(true);
     try {
       await acceptUpsell(orderId, currentUpsell.id);
@@ -97,7 +101,9 @@ export default function UpsellPage() {
   }, [currentUpsell, orderId, submitting, goNext]);
 
   const handleDecline = useCallback(async () => {
-    if (!currentUpsell || submitting) return;
+    if (!currentUpsell || submitting) {
+      return;
+    }
     setSubmitting(true);
     try {
       await declineUpsell(orderId, currentUpsell.id);

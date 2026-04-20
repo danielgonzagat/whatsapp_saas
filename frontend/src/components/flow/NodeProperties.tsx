@@ -12,7 +12,9 @@ interface NodePropertiesProps {
 
 export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps) {
   const id = useId();
-  if (!node) return null;
+  if (!node) {
+    return null;
+  }
 
   const handleChange = (field: string, value: unknown) => {
     onUpdate(node.id, { ...node.data, [field]: value });

@@ -25,7 +25,9 @@ export class WebhookDispatcherService {
       take: 50,
     });
 
-    if (subscriptions.length === 0) return;
+    if (subscriptions.length === 0) {
+      return;
+    }
 
     this.logger.log(`Dispatching event ${event} to ${subscriptions.length} hooks`);
 

@@ -64,7 +64,9 @@ const EMOTIONAL_TONE_RULES: Array<{
 
 function inferEmotionalTone(text: string): ActiveListeningSignals['emotionalTone'] {
   for (const rule of EMOTIONAL_TONE_RULES) {
-    if (rule.pattern.test(text)) return rule.tone;
+    if (rule.pattern.test(text)) {
+      return rule.tone;
+    }
   }
   return 'neutral';
 }
@@ -201,10 +203,18 @@ function needsValidation(
 }
 
 function inferNeed(normalized: string, personalDetailShared: boolean): string | null {
-  if (PRECO_VALOR_PARCELA_RE.test(normalized)) return 'seguranca sobre investimento';
-  if (PRAZO_URGENTE_HOJE_AGOR_RE.test(normalized)) return 'agilidade';
-  if (FUNCIONA_GARANTIA_RESUL_RE.test(normalized)) return 'confianca';
-  if (personalDetailShared) return 'ser compreendido';
+  if (PRECO_VALOR_PARCELA_RE.test(normalized)) {
+    return 'seguranca sobre investimento';
+  }
+  if (PRAZO_URGENTE_HOJE_AGOR_RE.test(normalized)) {
+    return 'agilidade';
+  }
+  if (FUNCIONA_GARANTIA_RESUL_RE.test(normalized)) {
+    return 'confianca';
+  }
+  if (personalDetailShared) {
+    return 'ser compreendido';
+  }
   return null;
 }
 
@@ -219,9 +229,15 @@ function buildDeepeningQuestion(
   personalDetailShared: boolean,
 ): string | null {
   const toneMatch = DEEPENING_TONE_QUESTIONS[emotionalTone];
-  if (toneMatch) return toneMatch;
-  if (inferredNeed === 'agilidade') return 'O que voce precisa resolver primeiro?';
-  if (personalDetailShared) return 'Quando isso acontece, o que pesa mais no seu dia a dia?';
+  if (toneMatch) {
+    return toneMatch;
+  }
+  if (inferredNeed === 'agilidade') {
+    return 'O que voce precisa resolver primeiro?';
+  }
+  if (personalDetailShared) {
+    return 'Quando isso acontece, o que pesa mais no seu dia a dia?';
+  }
   return null;
 }
 

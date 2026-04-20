@@ -130,7 +130,9 @@ export function UniversalComposer({
 
   const handleSend = () => {
     const trimmed = message.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isLoading) {
+      return;
+    }
     onSend(trimmed);
     setMessage('');
   };

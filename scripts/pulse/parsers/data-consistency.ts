@@ -95,10 +95,14 @@ function extractFunctionBodies(
             braceDepth++;
             started = true;
           }
-          if (ch === '}') braceDepth--;
+          if (ch === '}') {
+            braceDepth--;
+          }
         }
         body += l + '\n';
-        if (started && braceDepth === 0) break;
+        if (started && braceDepth === 0) {
+          break;
+        }
         j++;
       }
       if (body.length > 20) {
@@ -122,7 +126,9 @@ function hasWriteWithoutValidation(
   readKeywords: string[],
 ): boolean {
   const hasWrite = writePatterns.some((pattern) => new RegExp(pattern).test(body));
-  if (!hasWrite) return false;
+  if (!hasWrite) {
+    return false;
+  }
 
   // Determine the index of the first write operation in the body
   const firstWriteIdx = Math.min(
@@ -133,7 +139,9 @@ function hasWriteWithoutValidation(
       })
       .filter((idx) => idx !== Infinity),
   );
-  if (firstWriteIdx === Infinity) return false;
+  if (firstWriteIdx === Infinity) {
+    return false;
+  }
 
   // Check for validation reads that happen before the first write
   const hasValidation = readKeywords.some((kw) => {
@@ -157,7 +165,9 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
 
   for (const file of financialFiles) {
     const content = readFileSafe(file);
-    if (!content) continue;
+    if (!content) {
+      continue;
+    }
 
     const fileName = path.basename(file);
     const functions = extractFunctionBodies(content);

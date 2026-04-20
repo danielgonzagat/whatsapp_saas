@@ -35,10 +35,7 @@ function appendUserThenAssistant(prev: ChatMessage[], payload: PrepareSendPayloa
   return next;
 }
 
-function replaceAssistantInPlace(
-  prev: ChatMessage[],
-  payload: PrepareSendPayload,
-): ChatMessage[] {
+function replaceAssistantInPlace(prev: ChatMessage[], payload: PrepareSendPayload): ChatMessage[] {
   const next = [...prev];
   if (payload.appendUserMessage) {
     next.push({ id: payload.sourceUserId, role: 'user', content: payload.text });
@@ -92,7 +89,9 @@ export interface GuestSsePayload {
 }
 
 export function parseGuestSseLine(line: string): GuestSsePayload | null {
-  if (!line.startsWith('data: ')) return null;
+  if (!line.startsWith('data: ')) {
+    return null;
+  }
   try {
     return JSON.parse(line.slice(6)) as GuestSsePayload;
   } catch {

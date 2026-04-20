@@ -88,18 +88,26 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
 }
 
 export function rememberGuestWorkspaceClaimCandidate(workspaceId?: string | null) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   const normalized = String(workspaceId || '').trim();
-  if (!normalized) return;
+  if (!normalized) {
+    return;
+  }
   localStorage.setItem(GUEST_WORKSPACE_CLAIM_KEY, normalized);
 }
 
 export function getGuestWorkspaceClaimCandidate(): string {
-  if (typeof window === 'undefined') return '';
+  if (typeof window === 'undefined') {
+    return '';
+  }
   return String(localStorage.getItem(GUEST_WORKSPACE_CLAIM_KEY) || '').trim();
 }
 
 export function clearGuestWorkspaceClaimCandidate() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   localStorage.removeItem(GUEST_WORKSPACE_CLAIM_KEY);
 }

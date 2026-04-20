@@ -91,7 +91,9 @@ function extractTableMappings(schemaPath: string): Map<string, string> {
   const blocks = content.split(/^model\s+/m).slice(1);
   for (const block of blocks) {
     const nameMatch = block.match(/^(\w+)\s*\{/);
-    if (!nameMatch) continue;
+    if (!nameMatch) {
+      continue;
+    }
     const modelName = nameMatch[1];
 
     // Check for @@map("tableName")
@@ -104,7 +106,9 @@ function extractTableMappings(schemaPath: string): Map<string, string> {
 
 export async function checkSchemaDrift(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires DB access
-  if (!isDeepMode()) return [];
+  if (!isDeepMode()) {
+    return [];
+  }
 
   const breaks: Break[] = [];
 
@@ -120,7 +124,7 @@ export async function checkSchemaDrift(config: PulseConfig): Promise<Break[]> {
     let dbTables: string[];
     try {
       const rows = await dbQuery(
-        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
+        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'",
       );
       dbTables = rows.map((r: any) => r.table_name as string);
     } catch (dbErr: any) {
@@ -149,7 +153,7 @@ export async function checkSchemaDrift(config: PulseConfig): Promise<Break[]> {
     // Check _prisma_migrations for any failed migrations
     try {
       const failedMigrations = await dbQuery(
-        "SELECT migration_name, started_at, finished_at FROM _prisma_migrations WHERE finished_at IS NULL OR logs LIKE '%ERROR%' LIMIT 20"
+        "SELECT migration_name, started_at, finished_at FROM _prisma_migrations WHERE finished_at IS NULL OR logs LIKE '%ERROR%' LIMIT 20",
       );
       for (const row of failedMigrations) {
         breaks.push({
@@ -164,7 +168,6 @@ export async function checkSchemaDrift(config: PulseConfig): Promise<Break[]> {
     } catch {
       // _prisma_migrations table may not exist in test DBs — skip
     }
-
   } catch (err: any) {
     breaks.push({
       type: 'SCHEMA_TABLE_MISSING',

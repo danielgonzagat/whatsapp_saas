@@ -61,7 +61,9 @@ export function validatePaymentTransition(
   newStatus: string,
   context: { paymentId?: string; provider?: string; externalId?: string },
 ): boolean {
-  if (isValidTransition(currentStatus, newStatus)) return true;
+  if (isValidTransition(currentStatus, newStatus)) {
+    return true;
+  }
 
   logger.warn(
     `Rejected out-of-order webhook: ${currentStatus} -> ${newStatus} ` +

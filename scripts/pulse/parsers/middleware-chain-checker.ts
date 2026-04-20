@@ -23,14 +23,16 @@ export function checkMiddleware(config: PulseConfig): Break[] {
   //   { provide: APP_PIPE, useClass: ValidationPipe }
   //   import { ValidationPipe } used anywhere with useGlobalPipes
   const hasValidationPipe =
-    /ValidationPipe/.test(content) &&
-    (/useGlobalPipes/.test(content) || /APP_PIPE/.test(content));
+    /ValidationPipe/.test(content) && (/useGlobalPipes/.test(content) || /APP_PIPE/.test(content));
 
   if (!hasValidationPipe) {
     // Find the line of `bootstrap` function or first line as best anchor
     let anchorLine = 1;
     for (let i = 0; i < lines.length; i++) {
-      if (/async\s+function\s+bootstrap/.test(lines[i])) { anchorLine = i + 1; break; }
+      if (/async\s+function\s+bootstrap/.test(lines[i])) {
+        anchorLine = i + 1;
+        break;
+      }
     }
 
     breaks.push({
@@ -39,7 +41,8 @@ export function checkMiddleware(config: PulseConfig): Break[] {
       file: relFile,
       line: anchorLine,
       description: 'ValidationPipe is not registered globally in main.ts',
-      detail: 'Add `app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }))` in bootstrap(). Without it, incoming DTOs are never validated.',
+      detail:
+        'Add `app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }))` in bootstrap(). Without it, incoming DTOs are never validated.',
     });
   }
 
@@ -51,7 +54,9 @@ export function checkMiddleware(config: PulseConfig): Break[] {
   // context for a NODE_ENV guard. If none found → permissive.
 
   for (let i = 0; i < lines.length; i++) {
-    if (!/origin\s*:\s*true\b/.test(lines[i])) continue;
+    if (!/origin\s*:\s*true\b/.test(lines[i])) {
+      continue;
+    }
 
     // Check a window of ±15 lines for NODE_ENV references
     const windowStart = Math.max(0, i - 15);

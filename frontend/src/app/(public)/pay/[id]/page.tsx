@@ -83,7 +83,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
 
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
     },
     [],
   );
@@ -116,7 +118,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
     if (payment?.pixCopyPaste) {
       navigator.clipboard.writeText(payment.pixCopyPaste);
       setCopied(true);
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
       copiedTimer.current = setTimeout(() => setCopied(false), 2000);
     }
   };

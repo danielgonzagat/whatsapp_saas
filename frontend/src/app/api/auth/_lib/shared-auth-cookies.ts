@@ -25,10 +25,14 @@ function resolveWorkspaceId(payload: unknown): string | null {
   const firstWorkspace = readRecord(workspaces[0]);
 
   const explicitWorkspace = readString(workspaceRecord?.id);
-  if (explicitWorkspace) return explicitWorkspace;
+  if (explicitWorkspace) {
+    return explicitWorkspace;
+  }
 
   const userWorkspace = readString(userRecord?.workspaceId);
-  if (userWorkspace) return userWorkspace;
+  if (userWorkspace) {
+    return userWorkspace;
+  }
 
   const firstWorkspaceId = readString(firstWorkspace?.id);
   return firstWorkspaceId || null;

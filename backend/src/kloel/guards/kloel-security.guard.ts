@@ -81,10 +81,14 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) return true;
+    if (isPublic) {
+      return true;
+    }
 
     // 2. API Key interna (worker <-> backend)
-    if (this.isInternalApiRequest(request)) return true;
+    if (this.isInternalApiRequest(request)) {
+      return true;
+    }
 
     // 3. Extrair workspaceId
     const workspaceId = request.params.workspaceId || request.body?.workspaceId;
@@ -171,11 +175,15 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     workspaceId: string,
     path: string,
   ): void {
-    if (settings?.billingSuspended !== true) return;
+    if (settings?.billingSuspended !== true) {
+      return;
+    }
 
     const allowedPaths = ['/health', '/diag', '/status', '/billing'];
     const isAllowed = allowedPaths.some((p) => path.includes(p));
-    if (isAllowed) return;
+    if (isAllowed) {
+      return;
+    }
 
     this.logger.warn('Billing suspended, blocking request', { workspaceId, path });
     throw new ForbiddenException({
@@ -196,8 +204,12 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
         ? settings.planLimits.aiRequestsPerDay
         : null;
 
-    if (aiRequestsPerDay === null) return;
-    if (!path.includes('/agent/process')) return;
+    if (aiRequestsPerDay === null) {
+      return;
+    }
+    if (!path.includes('/agent/process')) {
+      return;
+    }
 
     const dailyUsage = await this.getDailyAIUsage(workspaceId);
     if (dailyUsage >= aiRequestsPerDay) {
@@ -216,7 +228,9 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     path: string,
   ): void {
     const user = request.user;
-    if (user || !workspaceId) return;
+    if (user || !workspaceId) {
+      return;
+    }
 
     const requiresAuth = !path.includes('/webhook') && !path.includes('/public');
     if (requiresAuth && process.env.AUTH_REQUIRED === 'true') {

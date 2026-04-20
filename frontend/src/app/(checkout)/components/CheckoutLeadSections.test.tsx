@@ -6,8 +6,8 @@ import { buildBlancTheme } from './checkout-theme-tokens';
 
 describe('CheckoutLeadSections', () => {
   it('keeps name and email editable after quick social identification', () => {
-    const updateField = vi.fn(
-      () => vi.fn((event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => event),
+    const updateField = vi.fn(() =>
+      vi.fn((event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => event),
     );
 
     render(

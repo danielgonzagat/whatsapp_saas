@@ -65,7 +65,9 @@ export class LedgerService {
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
       });
-      if (!balance) throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      if (!balance) {
+        throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      }
 
       const newPending = balance.pendingBalanceCents + input.amountCents;
       const newLifetime = balance.lifetimeReceivedCents + input.amountCents;
@@ -121,7 +123,9 @@ export class LedgerService {
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: entry.accountBalanceId },
       });
-      if (!balance) throw new AccountBalanceNotFoundError(entry.accountBalanceId);
+      if (!balance) {
+        throw new AccountBalanceNotFoundError(entry.accountBalanceId);
+      }
 
       const newPending = balance.pendingBalanceCents - entry.amountCents;
       const newAvailable = balance.availableBalanceCents + entry.amountCents;
@@ -184,7 +188,9 @@ export class LedgerService {
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
       });
-      if (!balance) throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      if (!balance) {
+        throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      }
 
       if (balance.availableBalanceCents < input.amountCents) {
         throw new InsufficientAvailableBalanceError(
@@ -253,7 +259,9 @@ export class LedgerService {
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
       });
-      if (!balance) throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      if (!balance) {
+        throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      }
 
       const fromPending =
         balance.pendingBalanceCents >= input.amountCents
@@ -324,7 +332,9 @@ export class LedgerService {
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
       });
-      if (!balance) throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      if (!balance) {
+        throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      }
 
       const fromPending =
         balance.pendingBalanceCents >= input.amountCents
@@ -394,7 +404,9 @@ export class LedgerService {
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
       });
-      if (!balance) throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      if (!balance) {
+        throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      }
 
       const newAvailable = balance.availableBalanceCents + input.amountCents;
       const newLifetimePaidOut =
@@ -429,7 +441,9 @@ export class LedgerService {
     const balance = await this.prisma.connectAccountBalance.findUnique({
       where: { id: accountBalanceId },
     });
-    if (!balance) throw new AccountBalanceNotFoundError(accountBalanceId);
+    if (!balance) {
+      throw new AccountBalanceNotFoundError(accountBalanceId);
+    }
     return {
       accountBalanceId: balance.id,
       stripeAccountId: balance.stripeAccountId,

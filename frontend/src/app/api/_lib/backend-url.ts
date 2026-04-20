@@ -23,7 +23,9 @@ function isLocalHostLike(value: string) {
 
 export function normalizeBackendUrl(value?: string | null) {
   const raw = value?.trim();
-  if (!raw) return '';
+  if (!raw) {
+    return '';
+  }
 
   const normalizedInput = hasProtocol(raw)
     ? raw

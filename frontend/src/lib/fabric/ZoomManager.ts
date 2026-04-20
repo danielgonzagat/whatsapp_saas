@@ -73,8 +73,12 @@ export class ZoomManager {
 
   dispose(): void {
     if (typeof document !== 'undefined') {
-      if (this._keyDownHandler) document.removeEventListener('keydown', this._keyDownHandler);
-      if (this._keyUpHandler) document.removeEventListener('keyup', this._keyUpHandler);
+      if (this._keyDownHandler) {
+        document.removeEventListener('keydown', this._keyDownHandler);
+      }
+      if (this._keyUpHandler) {
+        document.removeEventListener('keyup', this._keyUpHandler);
+      }
     }
   }
 
@@ -124,7 +128,9 @@ export class ZoomManager {
     });
 
     this.canvas.on('mouse:move', (opt) => {
-      if (!this._panning) return;
+      if (!this._panning) {
+        return;
+      }
       const e = opt.e as MouseEvent;
       const dx = e.clientX - this._lastPointer.x;
       const dy = e.clientY - this._lastPointer.y;

@@ -31,14 +31,16 @@ interface JestJsonOutput {
 
 function hasJest(dir: string): boolean {
   const pkgPath = path.join(dir, 'package.json');
-  if (!fs.existsSync(pkgPath)) return false;
+  if (!fs.existsSync(pkgPath)) {
+    return false;
+  }
   try {
     const raw = fs.readFileSync(pkgPath, 'utf8');
     const pkg = JSON.parse(raw) as Record<string, unknown>;
     // Check devDependencies and dependencies for jest
     const allDeps: Record<string, unknown> = {
-      ...(pkg.dependencies as Record<string, unknown> || {}),
-      ...(pkg.devDependencies as Record<string, unknown> || {}),
+      ...((pkg.dependencies as Record<string, unknown>) || {}),
+      ...((pkg.devDependencies as Record<string, unknown>) || {}),
     };
     return 'jest' in allDeps;
   } catch {
@@ -51,11 +53,17 @@ function hasTestFiles(dir: string): boolean {
   const testSrc = path.join(dir, 'src');
   const testDir = path.join(dir, 'test');
   const srcExists = fs.existsSync(testSrc) || fs.existsSync(testDir);
-  if (!srcExists) return false;
+  if (!srcExists) {
+    return false;
+  }
 
   function checkDir(d: string, depth = 0): boolean {
-    if (depth > 5) return false;
-    if (!fs.existsSync(d)) return false;
+    if (depth > 5) {
+      return false;
+    }
+    if (!fs.existsSync(d)) {
+      return false;
+    }
     let entries: fs.Dirent[];
     try {
       entries = fs.readdirSync(d, { withFileTypes: true });
@@ -63,9 +71,15 @@ function hasTestFiles(dir: string): boolean {
       return false;
     }
     for (const entry of entries) {
-      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.next') continue;
-      if (entry.isFile() && /\.(spec|test)\.(ts|js)$/.test(entry.name)) return true;
-      if (entry.isDirectory() && checkDir(path.join(d, entry.name), depth + 1)) return true;
+      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.next') {
+        continue;
+      }
+      if (entry.isFile() && /\.(spec|test)\.(ts|js)$/.test(entry.name)) {
+        return true;
+      }
+      if (entry.isDirectory() && checkDir(path.join(d, entry.name), depth + 1)) {
+        return true;
+      }
     }
     return false;
   }
@@ -74,8 +88,12 @@ function hasTestFiles(dir: string): boolean {
 }
 
 function runJest(projectDir: string, rootDir: string, label: string): Break[] {
-  if (!hasJest(projectDir)) return [];
-  if (!hasTestFiles(projectDir)) return [];
+  if (!hasJest(projectDir)) {
+    return [];
+  }
+  if (!hasTestFiles(projectDir)) {
+    return [];
+  }
 
   let output: string;
   try {
@@ -104,7 +122,9 @@ function runJest(projectDir: string, rootDir: string, label: string): Break[] {
     return [];
   }
 
-  if (!result || !Array.isArray(result.testResults)) return [];
+  if (!result || !Array.isArray(result.testResults)) {
+    return [];
+  }
 
   const breaks: Break[] = [];
 
@@ -112,22 +132,21 @@ function runJest(projectDir: string, rootDir: string, label: string): Break[] {
     const relFile = path.relative(rootDir, suite.testFilePath);
 
     for (const test of suite.testResults) {
-      if (test.status !== 'failed') continue;
+      if (test.status !== 'failed') {
+        continue;
+      }
 
       // Extract a short error message from failureMessages
       const rawFailure = (test.failureMessages || []).join('\n');
       // Take first non-empty line that isn't a stack trace line
       const firstMeaningfulLine = rawFailure
         .split('\n')
-        .map(l => l.trim())
-        .filter(l => l && !l.startsWith('at ') && !l.startsWith('●'))
+        .map((l) => l.trim())
+        .filter((l) => l && !l.startsWith('at ') && !l.startsWith('●'))
         .slice(0, 1)
         .join('');
 
-      const testName = [
-        ...test.ancestorTitles,
-        test.title,
-      ].filter(Boolean).join(' > ');
+      const testName = [...test.ancestorTitles, test.title].filter(Boolean).join(' > ');
 
       breaks.push({
         type: 'TEST_FAILURE',
@@ -141,7 +160,7 @@ function runJest(projectDir: string, rootDir: string, label: string): Break[] {
 
     // Handle suite-level failures (e.g. compilation error in test file)
     if (suite.status === 'failed' && suite.testResults.length === 0 && suite.failureMessage) {
-      const firstLine = suite.failureMessage.split('\n').find(l => l.trim()) || '';
+      const firstLine = suite.failureMessage.split('\n').find((l) => l.trim()) || '';
       breaks.push({
         type: 'TEST_FAILURE',
         severity: 'critical',
@@ -157,7 +176,9 @@ function runJest(projectDir: string, rootDir: string, label: string): Break[] {
 }
 
 export function checkTests(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
 
   const breaks: Break[] = [];
 

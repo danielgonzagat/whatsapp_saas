@@ -30,7 +30,9 @@ const isLocalHostLike = (value: string) => {
 
 const normalizeApiBase = (value: string | undefined): string => {
   const raw = value?.trim();
-  if (!raw) return '';
+  if (!raw) {
+    return '';
+  }
 
   const normalizedInput = hasProtocol(raw)
     ? raw

@@ -155,9 +155,15 @@ export function useCheckoutExperienceSocial({
     (field: keyof CheckoutExperienceForm) =>
       (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         let value = event.target.value;
-        if (field === 'cpf' || field === 'cardCpf') value = fmt.cpf(value);
-        if (field === 'phone') value = fmt.phone(value);
-        if (field === 'cep') value = fmt.cep(value);
+        if (field === 'cpf' || field === 'cardCpf') {
+          value = fmt.cpf(value);
+        }
+        if (field === 'phone') {
+          value = fmt.phone(value);
+        }
+        if (field === 'cep') {
+          value = fmt.cep(value);
+        }
         setForm((prev) => ({ ...prev, [field]: value }));
       },
     [fmt],
@@ -247,7 +253,9 @@ export function useCheckoutExperienceSocial({
           await advanceToStep2();
           return;
         }
-        if (mobileCanOpenStep2) setStep(2);
+        if (mobileCanOpenStep2) {
+          setStep(2);
+        }
         return;
       }
 
@@ -278,7 +286,9 @@ export function useCheckoutExperienceSocial({
   const applyCoupon = useCallback(
     async (explicitCode?: string) => {
       setCouponError('');
-      if (config?.enableCoupon === false || !workspaceId || !plan?.id) return false;
+      if (config?.enableCoupon === false || !workspaceId || !plan?.id) {
+        return false;
+      }
 
       const nextCode = resolveCheckoutCouponCode(couponCode, explicitCode);
       if (!nextCode) {
@@ -288,7 +298,9 @@ export function useCheckoutExperienceSocial({
 
       try {
         const result = await validateCoupon(workspaceId, nextCode, plan.id, subtotal);
-        if (!result.valid) return rejectCoupon(result.message || 'Cupom inválido ou expirado.');
+        if (!result.valid) {
+          return rejectCoupon(result.message || 'Cupom inválido ou expirado.');
+        }
         return acceptCoupon(result, nextCode);
       } catch (error) {
         return rejectCoupon(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
@@ -411,10 +423,14 @@ export function useCheckoutExperienceSocial({
     const precheckError = runFinalizeOrderPrecheck(planId);
     if (precheckError) {
       setSubmitError(precheckError.message);
-      if (precheckError.targetStep) setStep(precheckError.targetStep);
+      if (precheckError.targetStep) {
+        setStep(precheckError.targetStep);
+      }
       return;
     }
-    if (!workspaceId || !planId) return;
+    if (!workspaceId || !planId) {
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError('');

@@ -72,7 +72,9 @@ export default function CanvasInicio() {
   }, []);
 
   const handleAiSubmit = async () => {
-    if (!ai.trim()) return;
+    if (!ai.trim()) {
+      return;
+    }
     try {
       const res = await apiFetch<{ imageUrl?: string; data?: { imageUrl?: string } }>(
         '/canvas/generate',
@@ -222,7 +224,9 @@ export default function CanvasInicio() {
                 design={d}
                 onClick={() => router.push(`/canvas/editor?id=${d.id}`)}
                 onDelete={() => {
-                  if (confirm(`Excluir "${d.name}"?`)) deleteDesign(d.id);
+                  if (confirm(`Excluir "${d.name}"?`)) {
+                    deleteDesign(d.id);
+                  }
                 }}
               />
             ))}

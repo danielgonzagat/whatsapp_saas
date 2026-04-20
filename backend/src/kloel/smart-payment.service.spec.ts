@@ -41,8 +41,12 @@ describe('SmartPaymentService — Stripe-only payment kernel', () => {
       prisma,
       {
         get: jest.fn((key: string) => {
-          if (key === 'OPENAI_API_KEY') return undefined;
-          if (key === 'FRONTEND_URL') return 'https://app.kloel.test';
+          if (key === 'OPENAI_API_KEY') {
+            return undefined;
+          }
+          if (key === 'FRONTEND_URL') {
+            return 'https://app.kloel.test';
+          }
           return undefined;
         }),
       } as unknown as ConfigService,

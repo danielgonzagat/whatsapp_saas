@@ -209,7 +209,9 @@ export function runCiaMissionHarness(input: {
           (!!action.contactId && contact.contactId === action.contactId) ||
           (!!action.phone && contact.phone === action.phone),
       );
-      if (!target) continue;
+      if (!target) {
+        continue;
+      }
 
       if (target.failuresBeforeSuccess > 0) {
         target.failuresBeforeSuccess -= 1;

@@ -42,7 +42,9 @@ export interface EmergencyModeProfile {
 }
 
 export function formatCurrency(value?: number | null) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return '';
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '';
+  }
   return value.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -85,7 +87,9 @@ export function normalizeVoiceToneProfile(value: unknown): VoiceToneProfile {
 }
 
 export function normalizeFaqs(value: unknown): FaqItem[] {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
   return value
     .map((entry: unknown, index: number) => {
       const faq = (typeof entry === 'object' && entry !== null ? entry : {}) as Record<

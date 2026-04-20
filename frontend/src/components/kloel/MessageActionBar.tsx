@@ -48,7 +48,9 @@ export function MessageActionBar({
 
   useEffect(() => {
     return () => {
-      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      if (copiedTimerRef.current) {
+        clearTimeout(copiedTimerRef.current);
+      }
     };
   }, []);
 

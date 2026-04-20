@@ -205,9 +205,13 @@ Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 
       // Determinar contexto da conversa
       const lastMessage = msgs[0]?.content || '';
       let context = 'geral';
-      if (lastMessage.match(PRE_O_VALOR_QUANTO_CUSTA_RE)) context = 'preço';
-      else if (lastMessage.match(PAGO_PAGUEI_COMPRO_QUERO_RE)) context = 'compra';
-      else if (lastMessage.match(DUVIDA_COMO_FUNCIONA_RE)) context = 'dúvida';
+      if (lastMessage.match(PRE_O_VALOR_QUANTO_CUSTA_RE)) {
+        context = 'preço';
+      } else if (lastMessage.match(PAGO_PAGUEI_COMPRO_QUERO_RE)) {
+        context = 'compra';
+      } else if (lastMessage.match(DUVIDA_COMO_FUNCIONA_RE)) {
+        context = 'dúvida';
+      }
 
       return {
         suggestions: parsed.suggestions || [],

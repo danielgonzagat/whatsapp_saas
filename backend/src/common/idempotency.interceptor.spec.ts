@@ -9,8 +9,12 @@ function makeFakeRedis(opts: { setDelayMs?: number; setShouldThrow?: boolean } =
     setCalls,
     delCalls,
     async set(key: string, value: string) {
-      if (opts.setDelayMs) await new Promise((r) => setTimeout(r, opts.setDelayMs));
-      if (opts.setShouldThrow) throw new Error('redis_down');
+      if (opts.setDelayMs) {
+        await new Promise((r) => setTimeout(r, opts.setDelayMs));
+      }
+      if (opts.setShouldThrow) {
+        throw new Error('redis_down');
+      }
       setCalls.push({ key, value });
       store.set(key, value);
       return 'OK';

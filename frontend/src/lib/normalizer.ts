@@ -17,13 +17,19 @@ export interface NormalizedList<T> {
  * - A paginated response: { data: [...], meta: { total, page } }
  */
 export function unwrapArray<T>(data: unknown, key?: string): T[] {
-  if (!data) return [];
-  if (Array.isArray(data)) return data as T[];
+  if (!data) {
+    return [];
+  }
+  if (Array.isArray(data)) {
+    return data as T[];
+  }
 
   const obj = data as Record<string, unknown>;
 
   // Try explicit key first
-  if (key && Array.isArray(obj[key])) return obj[key] as T[];
+  if (key && Array.isArray(obj[key])) {
+    return obj[key] as T[];
+  }
 
   // Try common keys
   for (const k of [
@@ -39,7 +45,9 @@ export function unwrapArray<T>(data: unknown, key?: string): T[] {
     'templates',
     'actions',
   ]) {
-    if (Array.isArray(obj[k])) return obj[k] as T[];
+    if (Array.isArray(obj[k])) {
+      return obj[k] as T[];
+    }
   }
 
   return [];
@@ -54,7 +62,9 @@ function firstDefinedNumber(
   fallback: number,
 ): number {
   for (const candidate of candidates) {
-    if (typeof candidate === 'number' && Number.isFinite(candidate)) return candidate;
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return candidate;
+    }
   }
   return fallback;
 }
@@ -63,7 +73,9 @@ function firstDefinedBoolean(
   candidates: Array<boolean | undefined | null | unknown>,
 ): boolean | undefined {
   for (const candidate of candidates) {
-    if (typeof candidate === 'boolean') return candidate;
+    if (typeof candidate === 'boolean') {
+      return candidate;
+    }
   }
   return undefined;
 }
@@ -87,7 +99,9 @@ function extractHasMore(obj: Record<string, unknown>): boolean | undefined {
  * Extracts a paginated result with { items, total, page, hasMore }
  */
 export function unwrapPaginated<T>(data: unknown, key?: string): NormalizedList<T> {
-  if (!data) return { items: [], total: 0 };
+  if (!data) {
+    return { items: [], total: 0 };
+  }
 
   const obj = data as Record<string, unknown>;
   const items = unwrapArray<T>(data, key);
@@ -104,8 +118,12 @@ export function unwrapPaginated<T>(data: unknown, key?: string): NormalizedList<
  * Ensures consistent Date handling from ISO strings
  */
 export function normalizeTimestamp(value: string | Date | undefined | null): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
+  if (!value) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value;
+  }
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }

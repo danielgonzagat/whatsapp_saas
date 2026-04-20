@@ -38,7 +38,9 @@ export class CampaignsController {
       const existingRecord = await this.campaignsService
         .findOne(effectiveWorkspaceId, idempotencyKey)
         .catch(() => null);
-      if (existingRecord) return existingRecord;
+      if (existingRecord) {
+        return existingRecord;
+      }
     }
 
     await this.planLimits.ensureCampaignLimit(effectiveWorkspaceId);

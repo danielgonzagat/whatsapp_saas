@@ -15,7 +15,9 @@ async function analyze(_workspaceId: string, contactId: string) {
     },
   });
 
-  if (!contact) return { leadScore: 0, sentiment: 'NEUTRAL' };
+  if (!contact) {
+    return { leadScore: 0, sentiment: 'NEUTRAL' };
+  }
 
   // Heuristic: recent inbound messages increase score
   const now = Date.now();
@@ -23,8 +25,11 @@ async function analyze(_workspaceId: string, contactId: string) {
   for (const msg of contact.messages.filter((m) => m.direction === 'INBOUND')) {
     score += 5;
     const daysAgo = (now - msg.createdAt.getTime()) / (1000 * 3600 * 24);
-    if (daysAgo < 1) score += 10;
-    else if (daysAgo < 7) score += 5;
+    if (daysAgo < 1) {
+      score += 10;
+    } else if (daysAgo < 7) {
+      score += 5;
+    }
   }
 
   const leadScore = Math.max(0, Math.min(100, Math.round(score)));

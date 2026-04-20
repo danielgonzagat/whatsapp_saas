@@ -24,7 +24,9 @@ export class SmartTimeService {
       take: 1000, // Sample size
     });
 
-    if (messages.length === 0) return { hour: 10, reason: 'Default (No data)' }; // Default 10 AM
+    if (messages.length === 0) {
+      return { hour: 10, reason: 'Default (No data)' };
+    } // Default 10 AM
 
     const hourCounts = new Array(24).fill(0);
     messages.forEach((m) => {

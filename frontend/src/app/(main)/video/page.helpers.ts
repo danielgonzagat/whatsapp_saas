@@ -20,7 +20,9 @@ export function readStringField(
 ): string | null {
   if (data && typeof data === 'object' && field in data) {
     const value = (data as Record<string, unknown>)[field];
-    if (typeof value === 'string') return value;
+    if (typeof value === 'string') {
+      return value;
+    }
   }
   return fallback;
 }

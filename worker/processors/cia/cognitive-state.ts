@@ -152,9 +152,15 @@ const uniqueTokens = (values: Array<string | null | undefined>): string[] => [
 ];
 
 const inferPaymentState = (text: string): CustomerCognitiveState['paymentState'] => {
-  if (RX.PAGO_PAGUEI_COMPENSADO_RE.test(text)) return 'PAID' as const;
-  if (RX.PIX_BOLETO_LINK_PAGAMEN_RE.test(text)) return 'PENDING' as const;
-  if (RX.QUERO_FECHAR_QUERO_PAGA_RE.test(text)) return 'READY_TO_PAY' as const;
+  if (RX.PAGO_PAGUEI_COMPENSADO_RE.test(text)) {
+    return 'PAID' as const;
+  }
+  if (RX.PIX_BOLETO_LINK_PAGAMEN_RE.test(text)) {
+    return 'PENDING' as const;
+  }
+  if (RX.QUERO_FECHAR_QUERO_PAGA_RE.test(text)) {
+    return 'READY_TO_PAY' as const;
+  }
   return 'NONE' as const;
 };
 
@@ -173,11 +179,21 @@ const isCuriousByScore = (leadScore: number | null | undefined, unreadCount: num
 
 const inferIntent = (params: InferIntentParams): CustomerIntent => {
   const { text, unreadCount, paymentState } = params;
-  if (isPaymentIntent(paymentState)) return 'PAYMENT' as const;
-  if (includesAny(text, SUPPORT_HINTS)) return 'SUPPORT' as const;
-  if (includesAny(text, BUYING_HINTS)) return 'BUYING' as const;
-  if (includesAny(text, TRUST_OBJECTION_HINTS)) return 'OBJECTION' as const;
-  if (isCuriousByScore(params.leadScore, unreadCount)) return 'CURIOUS' as const;
+  if (isPaymentIntent(paymentState)) {
+    return 'PAYMENT' as const;
+  }
+  if (includesAny(text, SUPPORT_HINTS)) {
+    return 'SUPPORT' as const;
+  }
+  if (includesAny(text, BUYING_HINTS)) {
+    return 'BUYING' as const;
+  }
+  if (includesAny(text, TRUST_OBJECTION_HINTS)) {
+    return 'OBJECTION' as const;
+  }
+  if (isCuriousByScore(params.leadScore, unreadCount)) {
+    return 'CURIOUS' as const;
+  }
   return 'UNKNOWN' as const;
 };
 
@@ -195,11 +211,21 @@ const isWarmByIntent = (intent: CustomerIntent): boolean =>
   intent === 'BUYING' || intent === 'CURIOUS' || intent === 'OBJECTION';
 
 const inferStage = (params: InferStageParams): CustomerStage => {
-  if (params.intent === 'SUPPORT') return 'SUPPORT' as const;
-  if (params.paymentState === 'PAID') return 'POST_SALE' as const;
-  if (isPaymentIntent(params.paymentState)) return 'CHECKOUT' as const;
-  if (isHotByIntent(params)) return 'HOT' as const;
-  if (isWarmByIntent(params.intent)) return 'WARM' as const;
+  if (params.intent === 'SUPPORT') {
+    return 'SUPPORT' as const;
+  }
+  if (params.paymentState === 'PAID') {
+    return 'POST_SALE' as const;
+  }
+  if (isPaymentIntent(params.paymentState)) {
+    return 'CHECKOUT' as const;
+  }
+  if (isHotByIntent(params)) {
+    return 'HOT' as const;
+  }
+  if (isWarmByIntent(params.intent)) {
+    return 'WARM' as const;
+  }
   return 'COLD' as const;
 };
 
@@ -285,11 +311,21 @@ function inferDisclosureLevel(text: string) {
 }
 
 function inferCorePain(text: string, objections: string[], desires: string[]) {
-  if (objections.includes('price')) return 'receio de investir sem retorno';
-  if (objections.includes('trust')) return 'medo de errar ou ser enganado';
-  if (objections.includes('timing')) return 'urgencia com receio de demora';
-  if (desires.includes('resultado_rapido')) return 'quer resultado perceptivel rapido';
-  if (desires.includes('seguranca')) return 'busca seguranca para decidir';
+  if (objections.includes('price')) {
+    return 'receio de investir sem retorno';
+  }
+  if (objections.includes('trust')) {
+    return 'medo de errar ou ser enganado';
+  }
+  if (objections.includes('timing')) {
+    return 'urgencia com receio de demora';
+  }
+  if (desires.includes('resultado_rapido')) {
+    return 'quer resultado perceptivel rapido';
+  }
+  if (desires.includes('seguranca')) {
+    return 'busca seguranca para decidir';
+  }
   if (includesAny(text, FAILED_RESOLUTION_HINTS)) {
     return 'frustracao por tentativas anteriores sem resultado';
   }
@@ -343,11 +379,21 @@ function inferConfidence(input: {
   unreadCount: number;
 }) {
   let confidence = 0.58;
-  if (input.intent === 'BUYING' || input.intent === 'PAYMENT') confidence += 0.18;
-  if (input.intent === 'SUPPORT') confidence -= 0.12;
-  if (input.objections.length > 0) confidence += 0.04;
-  if (input.riskFlags.length > 0) confidence -= 0.18;
-  if (input.unreadCount > 1) confidence += 0.05;
+  if (input.intent === 'BUYING' || input.intent === 'PAYMENT') {
+    confidence += 0.18;
+  }
+  if (input.intent === 'SUPPORT') {
+    confidence -= 0.12;
+  }
+  if (input.objections.length > 0) {
+    confidence += 0.04;
+  }
+  if (input.riskFlags.length > 0) {
+    confidence -= 0.18;
+  }
+  if (input.unreadCount > 1) {
+    confidence += 0.05;
+  }
   return Number(clamp(confidence, 0.1, 0.98).toFixed(3));
 }
 
@@ -375,9 +421,15 @@ const hasPaymentRecoverySignal = (input: NextActionInput): boolean =>
   input.intent === 'PAYMENT';
 
 const nextActionForEscalation = (input: NextActionInput): CognitiveActionType | null => {
-  if (input.riskFlags.length > 0) return 'ESCALATE_HUMAN';
-  if (needsLowConfidenceClarification(input)) return 'ASK_CLARIFYING';
-  if (hasPaymentRecoverySignal(input)) return 'PAYMENT_RECOVERY';
+  if (input.riskFlags.length > 0) {
+    return 'ESCALATE_HUMAN';
+  }
+  if (needsLowConfidenceClarification(input)) {
+    return 'ASK_CLARIFYING';
+  }
+  if (hasPaymentRecoverySignal(input)) {
+    return 'PAYMENT_RECOVERY';
+  }
   return null;
 };
 
@@ -388,9 +440,15 @@ const shouldOfferOnUnread = (input: NextActionInput): boolean =>
   input.desires.includes('resultado_rapido');
 
 const nextActionForUnread = (input: NextActionInput): CognitiveActionType | null => {
-  if (input.unreadCount <= 0) return null;
-  if (input.objections.includes('price') && input.trustScore < 0.62) return 'SOCIAL_PROOF';
-  if (shouldOfferOnUnread(input)) return 'OFFER';
+  if (input.unreadCount <= 0) {
+    return null;
+  }
+  if (input.objections.includes('price') && input.trustScore < 0.62) {
+    return 'SOCIAL_PROOF';
+  }
+  if (shouldOfferOnUnread(input)) {
+    return 'OFFER';
+  }
   return 'RESPOND';
 };
 
@@ -401,8 +459,12 @@ const isSoftSilence = (input: NextActionInput): boolean =>
   input.silenceMinutes >= 6 * 60 || input.stage === 'WARM';
 
 const nextActionForSilence = (input: NextActionInput): CognitiveActionType => {
-  if (isUrgentSilence(input)) return 'FOLLOWUP_URGENT';
-  if (isSoftSilence(input)) return 'FOLLOWUP_SOFT';
+  if (isUrgentSilence(input)) {
+    return 'FOLLOWUP_URGENT';
+  }
+  if (isSoftSilence(input)) {
+    return 'FOLLOWUP_SOFT';
+  }
   return 'WAIT';
 };
 
@@ -426,11 +488,17 @@ const summarizeState = (input: SummarizeStateInput): string => {
     `estágio ${input.stage.toLowerCase()}`,
     `próxima ação ${input.nextBestAction.toLowerCase()}`,
   ];
-  if (input.paymentState !== 'NONE') parts.push(`pagamento ${input.paymentState.toLowerCase()}`);
-  if (input.objections.length > 0) parts.push(`objeções ${input.objections.join(', ')}`);
+  if (input.paymentState !== 'NONE') {
+    parts.push(`pagamento ${input.paymentState.toLowerCase()}`);
+  }
+  if (input.objections.length > 0) {
+    parts.push(`objeções ${input.objections.join(', ')}`);
+  }
   parts.push(`confiança ${Math.round(input.trustScore * 100)}%`);
   parts.push(`urgência ${Math.round(input.urgencyScore * 100)}%`);
-  if (input.riskFlags.length > 0) parts.push(`riscos ${input.riskFlags.join(', ')}`);
+  if (input.riskFlags.length > 0) {
+    parts.push(`riscos ${input.riskFlags.join(', ')}`);
+  }
   return parts.join(' • ');
 };
 
@@ -450,7 +518,9 @@ interface SeedCognitiveStateInput {
 }
 
 const computeSilenceMinutes = (lastMessageAt?: Date | string | null): number => {
-  if (!lastMessageAt) return 0;
+  if (!lastMessageAt) {
+    return 0;
+  }
   return Math.max(0, Math.round((Date.now() - new Date(lastMessageAt).getTime()) / 60_000));
 };
 
@@ -514,8 +584,12 @@ interface ComputeLtvEstimateParams {
 }
 
 const stageBonusFor = (stage: CustomerStage): number => {
-  if (stage === 'CHECKOUT') return 140;
-  if (stage === 'HOT') return 90;
+  if (stage === 'CHECKOUT') {
+    return 140;
+  }
+  if (stage === 'HOT') {
+    return 90;
+  }
   return 30;
 };
 
@@ -765,7 +839,9 @@ export async function loadCustomerCognitiveState(
     phone?: string | null;
   },
 ): Promise<CustomerCognitiveState | null> {
-  if (!prisma?.kloelMemory?.findUnique) return null;
+  if (!prisma?.kloelMemory?.findUnique) {
+    return null;
+  }
   const key = buildStateKey(input);
   const record = await prisma.kloelMemory
     .findUnique({
@@ -815,7 +891,9 @@ function buildPersistMetadata(normalizedState: CustomerCognitiveState, source: s
 }
 
 async function fetchPreviousMemory(prisma: PrismaClient, workspaceId: string, key: string) {
-  if (!prisma?.kloelMemory?.findUnique) return null;
+  if (!prisma?.kloelMemory?.findUnique) {
+    return null;
+  }
   return prisma.kloelMemory
     .findUnique({ where: { workspaceId_key: { workspaceId, key } } })
     .catch(() => null /* not found */);
@@ -860,8 +938,12 @@ async function writeCognitiveDelta(
     source: string;
   },
 ) {
-  if (!prisma?.kloelMemory?.create) return;
-  if (JSON.stringify(args.previousValue || null) === JSON.stringify(args.normalizedState)) return;
+  if (!prisma?.kloelMemory?.create) {
+    return;
+  }
+  if (JSON.stringify(args.previousValue || null) === JSON.stringify(args.normalizedState)) {
+    return;
+  }
 
   const { normalizedState } = args;
   const deltaKey = `cognitive_delta:${normalizedState.contactId || normalizedState.phone || 'workspace'}:${Date.now()}:${randomUUID()}`;
@@ -900,7 +982,9 @@ async function projectStateToContact(
   prisma: PrismaClient,
   normalizedState: CustomerCognitiveState,
 ) {
-  if (!normalizedState.contactId || !prisma?.contact?.update) return;
+  if (!normalizedState.contactId || !prisma?.contact?.update) {
+    return;
+  }
   const leadScore = Math.max(
     0,
     Math.min(100, Math.round(normalizedState.trustScore * 55 + normalizedState.urgencyScore * 45)),
@@ -922,7 +1006,9 @@ export async function persistCustomerCognitiveState(
   prisma: PrismaClient,
   input: PersistCognitiveStateInput,
 ) {
-  if (!prisma?.kloelMemory?.upsert) return input.state;
+  if (!prisma?.kloelMemory?.upsert) {
+    return input.state;
+  }
 
   const key = buildStateKey(input);
   const source = input.source || 'autonomy';
@@ -972,7 +1058,9 @@ export async function recordDecisionOutcome(
   prisma: PrismaClient,
   input: RecordDecisionOutcomeInput,
 ) {
-  if (!prisma?.kloelMemory?.create) return null;
+  if (!prisma?.kloelMemory?.create) {
+    return null;
+  }
   const action = String(input.action || 'UNKNOWN');
   return prisma.kloelMemory.create({
     data: {

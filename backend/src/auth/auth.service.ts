@@ -1,4 +1,4 @@
-import { randomInt, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
@@ -19,8 +19,10 @@ import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
+import { encryptString } from '../lib/crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
+import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { getJwtExpiresIn } from './jwt-config';
 
@@ -38,6 +40,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
     private readonly googleAuthService: GoogleAuthService,
+    private readonly facebookAuthService: FacebookAuthService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
   ) {}
@@ -120,12 +123,16 @@ export class AuthService {
       if (total === 1) {
         await this.redis.expire(key, ttlSeconds);
       }
-      if (total > limit) throwTooMany();
+      if (total > limit) {
+        throwTooMany();
+      }
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Distinguish "rate limit exceeded" (rethrow) from Redis errors (fail closed).
-      if (err instanceof HttpException) throw err;
+      if (err instanceof HttpException) {
+        throw err;
+      }
       this.logger.error(
         `Rate limiting Redis failure: ${errInstanceofError?.message || 'unknown'}. Rejecting login attempt.`,
       );
@@ -135,6 +142,112 @@ export class AuthService {
     }
   }
 
+  private normalizeEmail(email: string) {
+    return String(email || '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private getEncryptionKey(): string {
+    const configured =
+      this.config.get<string>('ENCRYPTION_KEY') ||
+      this.config.get<string>('PROVIDER_SECRET_KEY') ||
+      this.config.get<string>('JWT_SECRET');
+
+    if (!configured) {
+      throw new ServiceUnavailableException(
+        'Serviço indisponível. Chave de criptografia ausente no servidor.',
+      );
+    }
+
+    return configured;
+  }
+
+  private hashOpaqueToken(token: string) {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private generateOpaqueToken(size = 32) {
+    return randomBytes(size).toString('base64url');
+  }
+
+  private assertAgentCanAuthenticate(agent: { disabledAt?: Date | null; deletedAt?: Date | null }) {
+    if (agent.deletedAt) {
+      throw new UnauthorizedException('Esta conta foi excluída.');
+    }
+
+    if (agent.disabledAt) {
+      throw new UnauthorizedException('Esta conta está temporariamente desativada.');
+    }
+  }
+
+  private buildDeletedEmail(agentId: string) {
+    return `deleted-${agentId}@removed.local`;
+  }
+
+  private async upsertSocialAccount(
+    agentId: string,
+    profile: GoogleVerifiedProfile,
+    options?: { overwriteTokens?: boolean },
+  ) {
+    const encryptionKey = this.getEncryptionKey();
+    const encryptedAccessToken = profile.accessToken
+      ? encryptString(profile.accessToken, encryptionKey)
+      : undefined;
+    const encryptedRefreshToken = profile.refreshToken
+      ? encryptString(profile.refreshToken, encryptionKey)
+      : undefined;
+
+    const current = await this.prisma.socialAccount.findUnique({
+      where: {
+        agentId_provider: {
+          agentId,
+          provider: profile.provider,
+        },
+      },
+      select: {
+        id: true,
+        accessToken: true,
+        refreshToken: true,
+      },
+    });
+
+    const data: Prisma.SocialAccountUncheckedCreateInput = {
+      agentId,
+      provider: profile.provider,
+      providerUserId: profile.providerId,
+      email: this.normalizeEmail(profile.email),
+      accessToken:
+        encryptedAccessToken || (options?.overwriteTokens ? null : current?.accessToken) || null,
+      refreshToken:
+        encryptedRefreshToken || (options?.overwriteTokens ? null : current?.refreshToken) || null,
+      tokenExpiresAt: profile.tokenExpiresAt || null,
+      profileData: (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined,
+      revokedAt: null,
+      lastUsedAt: new Date(),
+    };
+
+    return this.prisma.socialAccount.upsert({
+      where: {
+        agentId_provider: {
+          agentId,
+          provider: profile.provider,
+        },
+      },
+      create: data,
+      update: {
+        providerUserId: data.providerUserId,
+        email: data.email,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        tokenExpiresAt: data.tokenExpiresAt,
+        profileData: data.profileData,
+        revokedAt: null,
+        lastUsedAt: new Date(),
+      },
+    });
+  }
+
   private async issueTokens(
     agent: {
       id: string;
@@ -142,10 +255,14 @@ export class AuthService {
       workspaceId: string;
       name?: string | null;
       role?: string | null;
+      disabledAt?: Date | null;
+      deletedAt?: Date | null;
     },
     extra?: { isNewUser?: boolean },
   ) {
     try {
+      this.assertAgentCanAuthenticate(agent);
+
       // Hardening multi-tenant: não emitir tokens com workspace inválido.
       if (!agent?.workspaceId) {
         const errorId = randomUUID();
@@ -247,6 +364,8 @@ export class AuthService {
         workspaceId: true,
         name: true,
         role: true,
+        disabledAt: true,
+        deletedAt: true,
       },
     });
 
@@ -404,9 +523,14 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
+    this.assertAgentCanAuthenticate(agent);
+
     if (!agent.password) {
       if (agent.provider === 'google') {
         throw new UnauthorizedException('Esta conta usa Google. Entre com o Google.');
+      }
+      if (agent.provider === 'facebook') {
+        throw new UnauthorizedException('Esta conta usa Facebook. Entre com o Facebook.');
       }
 
       throw new UnauthorizedException('Esta conta não possui senha cadastrada.');
@@ -473,6 +597,8 @@ export class AuthService {
       data: { revoked: true },
     });
 
+    this.assertAgentCanAuthenticate(stored.agent);
+
     return this.issueTokens(stored.agent);
   }
 
@@ -504,6 +630,12 @@ export class AuthService {
   async loginWithGoogleCredential(data: { credential: string; ip?: string }) {
     await this.checkRateLimit(`oauth:google:${data.ip || 'ip-unknown'}`);
     const profile = await this.googleAuthService.verifyCredential(data.credential);
+    return this.completeTrustedOAuthLogin(profile);
+  }
+
+  async loginWithFacebookAccessToken(data: { accessToken: string; userId?: string; ip?: string }) {
+    await this.checkRateLimit(`oauth:facebook:${data.ip || 'ip-unknown'}`);
+    const profile = await this.facebookAuthService.verifyAccessToken(data.accessToken, data.userId);
     return this.completeTrustedOAuthLogin(profile);
   }
 
@@ -559,7 +691,7 @@ export class AuthService {
     };
 
     const normalizedProvider = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
-    if (!['google', 'apple'].includes(normalizedProvider)) {
+    if (!['google', 'apple', 'facebook'].includes(normalizedProvider)) {
       throw new BadRequestException({
         error: 'invalid_provider',
         message: 'Provedor OAuth inválido ou não suportado.',
@@ -595,15 +727,61 @@ export class AuthService {
         providerId?: string | null;
         avatarUrl?: string | null;
         emailVerified?: boolean | null;
+        disabledAt?: Date | null;
+        deletedAt?: Date | null;
       } | null = null;
+
       try {
-        agent = await this.prisma.agent.findFirst({
+        const socialAccount = await this.prisma.socialAccount.findUnique({
           where: {
-            provider: normalizedProvider,
-            providerId: normalizedProviderId,
+            provider_providerUserId: {
+              provider: normalizedProvider,
+              providerUserId: normalizedProviderId,
+            },
           },
-          orderBy: { createdAt: 'asc' },
+          include: {
+            agent: {
+              select: {
+                id: true,
+                email: true,
+                workspaceId: true,
+                name: true,
+                role: true,
+                provider: true,
+                providerId: true,
+                avatarUrl: true,
+                emailVerified: true,
+                disabledAt: true,
+                deletedAt: true,
+              },
+            },
+          },
         });
+
+        if (socialAccount?.agent) {
+          agent = socialAccount.agent;
+        } else {
+          agent = await this.prisma.agent.findFirst({
+            where: {
+              provider: normalizedProvider,
+              providerId: normalizedProviderId,
+            },
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              email: true,
+              workspaceId: true,
+              name: true,
+              role: true,
+              provider: true,
+              providerId: true,
+              avatarUrl: true,
+              emailVerified: true,
+              disabledAt: true,
+              deletedAt: true,
+            },
+          });
+        }
 
         if (!agent) {
           const candidates = await this.prisma.agent.findMany({
@@ -614,16 +792,14 @@ export class AuthService {
               id: true,
               name: true,
               email: true,
-              password: true,
               role: true,
               provider: true,
               providerId: true,
               avatarUrl: true,
               emailVerified: true,
               workspaceId: true,
-              createdAt: true,
-              isOnline: true,
-              phone: true,
+              disabledAt: true,
+              deletedAt: true,
             },
           });
 
@@ -632,14 +808,11 @@ export class AuthService {
           } else if (candidates.length > 1) {
             agent =
               candidates.find(
-                (a) => a.provider === normalizedProvider && a.providerId === normalizedProviderId,
+                (candidate) =>
+                  candidate.provider === normalizedProvider &&
+                  candidate.providerId === normalizedProviderId,
               ) ||
-              candidates.find(
-                (a) =>
-                  a.provider === normalizedProvider &&
-                  (!a.providerId || a.providerId === normalizedProviderId),
-              ) ||
-              candidates.find((a) => !a.provider) ||
+              candidates.find((candidate) => !candidate.provider) ||
               null;
 
             if (!agent) {
@@ -654,59 +827,13 @@ export class AuthService {
       }
 
       if (agent) {
-        // Se o workspace do agent estiver inconsistente (ex.: apagado manualmente), repara.
-        try {
-          const ws = await this.prisma.workspace.findUnique({
-            where: { id: agent.workspaceId },
-            select: { id: true },
-          });
-          if (!ws) {
-            const repairId = randomUUID();
-            const newWsName = `${finalName}'s Workspace`;
-            const repaired = await this.prisma.$transaction(async (tx) => {
-              const createdWs = await tx.workspace.create({
-                data: { name: newWsName },
-                select: { id: true },
-              });
-              const updatedAgent = await tx.agent.update({
-                where: { id: agent.id },
-                data: { workspaceId: createdWs.id },
-              });
-              return updatedAgent;
-            });
-            this.logger.warn(
-              `oauth_workspace_repaired: ${JSON.stringify({
-                repairId,
-                agentId: agent.id,
-                oldWorkspaceId: agent.workspaceId,
-                newWorkspaceName: newWsName,
-                newWorkspaceId: repaired.workspaceId,
-                provider: normalizedProvider,
-                email: normalizedEmail,
-              })}`,
-            );
-            agent = repaired;
-          }
-        } catch (error: unknown) {
-          this.throwFriendlyDbInitError(error);
-        }
+        this.assertAgentCanAuthenticate(agent);
 
-        // Se já existe e está vinculado a outro provedor, não força link automático.
-        if (agent.provider && agent.provider !== normalizedProvider && agent.providerId) {
-          throw new ConflictException('Conta já cadastrada e vinculada a outro provedor');
-        }
-
-        // Se existe provider diferente mesmo sem providerId (legado), também bloqueia.
-        if (agent.provider && agent.provider !== normalizedProvider) {
-          throw new ConflictException('Conta já cadastrada e vinculada a outro provedor');
-        }
-
-        // Vincula/atualiza providerId quando necessário.
-        const nextAgentData: Record<string, unknown> = {};
-        if (agent.provider !== normalizedProvider) {
+        const nextAgentData: Prisma.AgentUpdateInput = {};
+        if (!agent.provider) {
           nextAgentData.provider = normalizedProvider;
         }
-        if (agent.providerId !== normalizedProviderId) {
+        if (!agent.providerId && agent.provider === normalizedProvider) {
           nextAgentData.providerId = normalizedProviderId;
         }
         if (image && agent.avatarUrl !== image) {
@@ -723,53 +850,86 @@ export class AuthService {
         }
 
         if (Object.keys(nextAgentData).length > 0) {
-          try {
-            agent = await this.prisma.agent.update({
-              where: { id: agent.id },
-              data: nextAgentData,
-            });
-          } catch (error) {
-            this.throwFriendlyDbInitError(error);
-          }
+          agent = await this.prisma.agent.update({
+            where: { id: agent.id },
+            data: nextAgentData,
+            select: {
+              id: true,
+              email: true,
+              workspaceId: true,
+              name: true,
+              role: true,
+              provider: true,
+              providerId: true,
+              avatarUrl: true,
+              emailVerified: true,
+              disabledAt: true,
+              deletedAt: true,
+            },
+          });
         }
+
+        await this.upsertSocialAccount(agent.id, {
+          ...profile,
+          provider: normalizedProvider as GoogleVerifiedProfile['provider'],
+          providerId: normalizedProviderId,
+          email: normalizedEmail,
+          name: finalName,
+          image: image || null,
+          emailVerified: !!emailVerified,
+        });
+
         return this.issueTokens(agent, { isNewUser: false });
       }
 
-      // Criar novo workspace + agent para OAuth (transação)
-      let newAgent: Agent;
-      try {
-        const wsName = `${finalName}'s Workspace`;
-        const created = await this.prisma.$transaction(async (tx) => {
-          const workspace = await tx.workspace.create({
-            data: { name: wsName },
-            select: { id: true },
-          });
-
-          const agent = await tx.agent.create({
-            data: {
-              name: finalName,
-              email: normalizedEmail,
-              password: '',
-              role: 'ADMIN',
-              workspaceId: workspace.id,
-              provider: normalizedProvider,
-              providerId: normalizedProviderId,
-              avatarUrl: image,
-              emailVerified: !!emailVerified,
-            },
-          });
-
-          return agent;
+      const wsName = `${finalName}'s Workspace`;
+      const created = await this.prisma.$transaction(async (tx) => {
+        const workspace = await tx.workspace.create({
+          data: { name: wsName },
+          select: { id: true },
         });
-        newAgent = created;
-      } catch (error: unknown) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-          throw new ConflictException('Email já em uso');
-        }
-        this.throwFriendlyDbInitError(error);
-      }
 
-      return this.issueTokens(newAgent, { isNewUser: true });
+        const createdAgent = await tx.agent.create({
+          data: {
+            name: finalName,
+            email: normalizedEmail,
+            password: '',
+            role: 'ADMIN',
+            workspaceId: workspace.id,
+            provider: normalizedProvider,
+            providerId: normalizedProviderId,
+            avatarUrl: image,
+            emailVerified: !!emailVerified,
+          },
+          select: {
+            id: true,
+            email: true,
+            workspaceId: true,
+            name: true,
+            role: true,
+            provider: true,
+            providerId: true,
+            avatarUrl: true,
+            emailVerified: true,
+            disabledAt: true,
+            deletedAt: true,
+          },
+        });
+
+        return createdAgent;
+      });
+
+      await this.upsertSocialAccount(created.id, {
+        ...profile,
+        provider: normalizedProvider as GoogleVerifiedProfile['provider'],
+        providerId: normalizedProviderId,
+        email: normalizedEmail,
+        name: finalName,
+        image: image || null,
+        emailVerified: !!emailVerified,
+      });
+
+      return this.issueTokens(created, { isNewUser: true });
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         try {
@@ -844,6 +1004,163 @@ export class AuthService {
         message: 'Falha ao concluir login OAuth no backend.',
       });
     }
+  }
+
+  async requestMagicLink(data: { email: string; redirectTo?: string; ip?: string }) {
+    await this.checkRateLimit(`magic-link:${data.ip || 'ip-unknown'}`, 5, 60_000);
+
+    const normalizedEmail = this.normalizeEmail(data.email);
+    if (!normalizedEmail) {
+      throw new BadRequestException('Email é obrigatório.');
+    }
+
+    const token = this.generateOpaqueToken();
+    const tokenHash = this.hashOpaqueToken(token);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const redirectTo = String(data.redirectTo || '').trim() || '/dashboard';
+
+    const existingAgent = await this.prisma.agent.findFirst({
+      where: { email: normalizedEmail },
+      select: { id: true },
+    });
+
+    await this.prisma.magicLinkToken.create({
+      data: {
+        email: normalizedEmail,
+        tokenHash,
+        redirectTo,
+        expiresAt,
+        agentId: existingAgent?.id || null,
+      },
+    });
+
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const magicLinkUrl = new URL('/magic-link', frontendUrl);
+    magicLinkUrl.searchParams.set('token', token);
+    if (redirectTo) {
+      magicLinkUrl.searchParams.set('redirectTo', redirectTo);
+    }
+
+    await this.emailService.sendMagicLinkEmail(normalizedEmail, magicLinkUrl.toString());
+
+    return {
+      success: true,
+      message: 'Se o email for válido, o link de acesso foi enviado.',
+      ...(process.env.NODE_ENV !== 'production' && {
+        token,
+        magicLinkUrl: magicLinkUrl.toString(),
+      }),
+    };
+  }
+
+  async verifyMagicLink(token: string, ip?: string) {
+    await this.checkRateLimit(`magic-link-verify:${ip || 'ip-unknown'}`, 10, 60_000);
+
+    const normalizedToken = String(token || '').trim();
+    if (!normalizedToken) {
+      throw new BadRequestException('Token do magic link é obrigatório.');
+    }
+
+    const tokenHash = this.hashOpaqueToken(normalizedToken);
+    const magicLink = await this.prisma.magicLinkToken.findUnique({
+      where: { tokenHash },
+      include: {
+        agent: {
+          select: {
+            id: true,
+            email: true,
+            workspaceId: true,
+            name: true,
+            role: true,
+            provider: true,
+            providerId: true,
+            avatarUrl: true,
+            emailVerified: true,
+            disabledAt: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!magicLink || magicLink.usedAt || magicLink.expiresAt < new Date()) {
+      throw new UnauthorizedException('Magic link inválido ou expirado.');
+    }
+
+    let agent = magicLink.agent;
+    if (!agent) {
+      const finalName = (() => {
+        const local = normalizedToken ? magicLink.email.split('@')[0] || 'User' : 'User';
+        const cleaned = local.replace(W_RE, ' ').trim();
+        const candidate = cleaned || 'User';
+        return candidate.charAt(0).toUpperCase() + candidate.slice(1);
+      })();
+
+      agent = await this.prisma.$transaction(async (tx) => {
+        const workspace = await tx.workspace.create({
+          data: { name: `${finalName}'s Workspace` },
+          select: { id: true },
+        });
+
+        const createdAgent = await tx.agent.create({
+          data: {
+            name: finalName,
+            email: magicLink.email,
+            password: '',
+            role: 'ADMIN',
+            workspaceId: workspace.id,
+            emailVerified: true,
+          },
+          select: {
+            id: true,
+            email: true,
+            workspaceId: true,
+            name: true,
+            role: true,
+            provider: true,
+            providerId: true,
+            avatarUrl: true,
+            emailVerified: true,
+            disabledAt: true,
+            deletedAt: true,
+          },
+        });
+
+        await tx.magicLinkToken.update({
+          where: { id: magicLink.id },
+          data: {
+            agentId: createdAgent.id,
+            usedAt: new Date(),
+          },
+        });
+
+        return createdAgent;
+      });
+
+      return {
+        ...(await this.issueTokens(agent, { isNewUser: true })),
+        redirectTo: magicLink.redirectTo || '/dashboard',
+      };
+    }
+
+    this.assertAgentCanAuthenticate(agent);
+
+    await this.prisma.magicLinkToken.update({
+      where: { id: magicLink.id },
+      data: { usedAt: new Date() },
+    });
+
+    if (!agent.emailVerified) {
+      await this.prisma.agent.update({
+        where: { id: agent.id },
+        data: { emailVerified: true },
+      });
+    }
+
+    return {
+      ...(await this.issueTokens(agent, { isNewUser: false })),
+      redirectTo: magicLink.redirectTo || '/dashboard',
+    };
   }
 
   /**

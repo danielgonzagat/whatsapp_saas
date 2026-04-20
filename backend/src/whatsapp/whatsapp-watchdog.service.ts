@@ -176,7 +176,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     const settings = asProviderSettings(workspace?.providerSettings);
     const autonomy = settings.autonomy ?? {};
     const runtime = settings.ciaRuntime ?? {};
-    if (autonomy.autoBootstrapOnConnected === false) return false;
+    if (autonomy.autoBootstrapOnConnected === false) {
+      return false;
+    }
 
     const autonomyMode = String(autonomy.mode || '').toUpperCase();
     const runtimeState = String(runtime.state || '').toUpperCase();
@@ -200,7 +202,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
     const lockKey = `cia:bootstrap:${workspaceId}`;
     const locked = await this.redis.set(lockKey, reason, 'EX', 120, 'NX');
-    if (locked !== 'OK') return false;
+    if (locked !== 'OK') {
+      return false;
+    }
 
     try {
       await this.ciaRuntime.bootstrap(workspaceId);
@@ -570,7 +574,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
    */
   @Cron(CronExpression.EVERY_MINUTE)
   async runHealthCheck() {
-    if (!this.isRunning) return;
+    if (!this.isRunning) {
+      return;
+    }
     if (!this.isWahaOperationallyEnabled()) {
       if (!this.hasLoggedMetaCloudSkip) {
         this.logger.debug('Watchdog sweep skipped: Meta Cloud mode');
@@ -882,7 +888,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     health: SessionHealth,
   ): Promise<void> {
     const webhook = process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL;
-    if (!webhook) return;
+    if (!webhook) {
+      return;
+    }
 
     try {
       validateNoInternalAccess(webhook);

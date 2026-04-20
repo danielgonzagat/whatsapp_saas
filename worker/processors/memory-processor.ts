@@ -136,20 +136,30 @@ const findSentenceSplit = (cleanText: string, startIndex: number, endIndex: numb
 
 const findChunkEnd = (cleanText: string, startIndex: number, chunkSize: number): number => {
   const endIndex = startIndex + chunkSize;
-  if (endIndex >= cleanText.length) return endIndex;
+  if (endIndex >= cleanText.length) {
+    return endIndex;
+  }
 
   const splitIndex = findSentenceSplit(cleanText, startIndex, endIndex);
-  if (splitIndex !== -1) return splitIndex;
+  if (splitIndex !== -1) {
+    return splitIndex;
+  }
 
   const lastSpace = cleanText.lastIndexOf(' ', endIndex);
-  if (lastSpace > startIndex) return lastSpace;
+  if (lastSpace > startIndex) {
+    return lastSpace;
+  }
   return endIndex;
 };
 
 const splitText = (text: string, chunkSize: number, chunkOverlap = 200): string[] => {
-  if (!text) return [];
+  if (!text) {
+    return [];
+  }
   const cleanText = text.replace(S_RE, ' ').trim();
-  if (cleanText.length <= chunkSize) return [cleanText];
+  if (cleanText.length <= chunkSize) {
+    return [cleanText];
+  }
 
   const chunks: string[] = [];
   let startIndex = 0;
@@ -157,8 +167,12 @@ const splitText = (text: string, chunkSize: number, chunkOverlap = 200): string[
   while (startIndex < cleanText.length) {
     const endIndex = findChunkEnd(cleanText, startIndex, chunkSize);
     const chunk = cleanText.substring(startIndex, endIndex).trim();
-    if (chunk) chunks.push(chunk);
-    if (endIndex >= cleanText.length) break;
+    if (chunk) {
+      chunks.push(chunk);
+    }
+    if (endIndex >= cleanText.length) {
+      break;
+    }
     startIndex = Math.max(startIndex + 1, endIndex - chunkOverlap);
   }
   return chunks;

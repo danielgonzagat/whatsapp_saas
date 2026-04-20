@@ -19,13 +19,13 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
   const publicDir = path.join(config.frontendDir, 'public');
 
   const frontendFiles = walkFiles(config.frontendDir, ['.tsx', '.ts']).filter(
-    f => !shouldSkipFile(f),
+    (f) => !shouldSkipFile(f),
   );
 
   // ---- Track which files we checked for font loading ----
   let checkedFontLoading = false;
   const layoutFiles = frontendFiles.filter(
-    f => path.basename(f) === 'layout.tsx' || path.basename(f) === 'layout.ts',
+    (f) => path.basename(f) === 'layout.tsx' || path.basename(f) === 'layout.ts',
   );
 
   // Check font loading: Sora and JetBrains Mono should be loaded via next/font
@@ -33,7 +33,7 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
     checkedFontLoading = true;
 
     // Look for any layout that imports from next/font
-    const anyLayoutHasNextFont = layoutFiles.some(lf => {
+    const anyLayoutHasNextFont = layoutFiles.some((lf) => {
       try {
         const content = fs.readFileSync(lf, 'utf8');
         return /from\s+['"`]next\/font/.test(content);
@@ -44,9 +44,8 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
 
     if (!anyLayoutHasNextFont) {
       // Check if fonts are at least loaded via CSS import or <link>
-      const rootLayout = layoutFiles.find(f =>
-        f.includes(path.join('app', 'layout')),
-      ) || layoutFiles[0];
+      const rootLayout =
+        layoutFiles.find((f) => f.includes(path.join('app', 'layout'))) || layoutFiles[0];
 
       let rootContent = '';
       try {
@@ -64,9 +63,10 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
           severity: 'medium',
           file: path.relative(config.rootDir, rootLayout),
           line: 1,
-          description: "Fonts 'Sora' and 'JetBrains Mono' are not loaded via next/font in any layout.tsx",
+          description:
+            "Fonts 'Sora' and 'JetBrains Mono' are not loaded via next/font in any layout.tsx",
           detail:
-            "Import fonts using next/font/google in the root layout.tsx to ensure proper font loading and performance.",
+            'Import fonts using next/font/google in the root layout.tsx to ensure proper font loading and performance.',
         });
       }
     }
@@ -84,8 +84,10 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
     }
 
     // Quick pre-check: skip files without static asset references
-    if (!/src\s*=\s*['"`]\/(?:images|icons|assets)\//.test(content) &&
-        !/src=\{['"`]\/(?:images|icons|assets)\//.test(content)) {
+    if (
+      !/src\s*=\s*['"`]\/(?:images|icons|assets)\//.test(content) &&
+      !/src=\{['"`]\/(?:images|icons|assets)\//.test(content)
+    ) {
       continue;
     }
 

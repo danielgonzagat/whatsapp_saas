@@ -142,7 +142,9 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
   } catch (err) {
     console.error('[IG] Scraping failed:', err);
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 
   return leads;

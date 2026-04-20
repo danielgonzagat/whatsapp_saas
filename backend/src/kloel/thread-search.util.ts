@@ -113,7 +113,9 @@ function collectDomainTagMatches(
 ): void {
   for (const tag of DOMAIN_TAGS) {
     const normalizedTag = normalizeWord(tag);
-    if (!normalizedTag || !combinedTokens.has(normalizedTag)) continue;
+    if (!normalizedTag || !combinedTokens.has(normalizedTag)) {
+      continue;
+    }
     upsertCandidate(candidates, tag, 70);
   }
 }
@@ -129,8 +131,12 @@ function collectContextualTokenMatches(
   combinedNormalized: string,
 ): void {
   for (const token of combinedTokens) {
-    if (!combinedNormalized.includes(token)) continue;
-    if (!tokenMatchesAnyQueryToken(token, queryTokens)) continue;
+    if (!combinedNormalized.includes(token)) {
+      continue;
+    }
+    if (!tokenMatchesAnyQueryToken(token, queryTokens)) {
+      continue;
+    }
     upsertCandidate(candidates, token, 55);
   }
 }

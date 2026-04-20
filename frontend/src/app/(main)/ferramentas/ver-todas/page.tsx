@@ -78,11 +78,17 @@ export default function VerTodasPage() {
   const [role, setRole] = useState<Role>('all');
   const filtered = useMemo(() => {
     return ALL_TOOLS.filter((tool) => {
-      if (category !== 'all' && tool.category !== category) return false;
-      if (role !== 'all' && !tool.roles.includes(role)) return false;
+      if (category !== 'all' && tool.category !== category) {
+        return false;
+      }
+      if (role !== 'all' && !tool.roles.includes(role)) {
+        return false;
+      }
       if (search) {
         const text = `${tool.title} ${tool.desc} ${tool.badge || ''}`.toLowerCase();
-        if (!text.includes(search.toLowerCase())) return false;
+        if (!text.includes(search.toLowerCase())) {
+          return false;
+        }
       }
       return true;
     });

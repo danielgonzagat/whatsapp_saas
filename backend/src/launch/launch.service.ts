@@ -93,7 +93,9 @@ export class LaunchService {
       select: { providerSettings: true },
     });
 
-    if (!workspace) throw new NotFoundException('Workspace not found');
+    if (!workspace) {
+      throw new NotFoundException('Workspace not found');
+    }
 
     const settings = asProviderSettings(workspace.providerSettings);
     // Tenta pegar o telefone conectado. Se não tiver, usa placeholder.

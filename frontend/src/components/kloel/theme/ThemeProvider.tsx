@@ -25,7 +25,9 @@ function themeColorFor(theme: KloelAppTheme) {
 }
 
 function commitThemeColor(theme: KloelAppTheme) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
 
   const selector = 'meta[name="theme-color"]';
   let meta = document.querySelector(selector);
@@ -40,7 +42,9 @@ function commitThemeColor(theme: KloelAppTheme) {
 }
 
 function commitTheme(theme: KloelAppTheme) {
-  if (typeof document === 'undefined' || typeof window === 'undefined') return;
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    return;
+  }
 
   document.documentElement.setAttribute('data-kloel-app-theme', theme);
   document.documentElement.style.colorScheme = theme;
@@ -59,7 +63,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
-      if (event.key !== KLOEL_APP_THEME_KEY) return;
+      if (event.key !== KLOEL_APP_THEME_KEY) {
+        return;
+      }
       const nextTheme = event.newValue === 'dark' ? 'dark' : 'light';
       setThemeState(nextTheme);
       document.documentElement.setAttribute('data-kloel-app-theme', nextTheme);

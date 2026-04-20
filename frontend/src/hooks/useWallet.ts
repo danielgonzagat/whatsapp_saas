@@ -74,17 +74,20 @@ function isWalletTransactionsResponse(
 
 function extractTransactionItems(payload: WalletTransactionsPayload): WalletTransaction[] {
   if (isWalletTransactionsResponse(payload)) {
-    if ('transactions' in payload) return payload.transactions || [];
-    if ('data' in payload) return payload.data || [];
+    if ('transactions' in payload) {
+      return payload.transactions || [];
+    }
+    if ('data' in payload) {
+      return payload.data || [];
+    }
   }
-  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload)) {
+    return payload;
+  }
   return [];
 }
 
-function extractTransactionTotal(
-  payload: WalletTransactionsPayload,
-  fallback: number,
-): number {
+function extractTransactionTotal(payload: WalletTransactionsPayload, fallback: number): number {
   if (isWalletTransactionsResponse(payload) && 'total' in payload) {
     return payload.total ?? fallback;
   }
@@ -161,7 +164,9 @@ export function useBankAccounts() {
     ((data as Record<string, unknown>)?.accounts as unknown as WalletBankAccount[]) || [];
 
   const addBankAccount = async (dto: Record<string, unknown>) => {
-    if (!wsId) return null;
+    if (!wsId) {
+      return null;
+    }
     const res = await apiFetch(`/kloel/wallet/${wsId}/bank-accounts`, {
       method: 'POST',
       body: dto,
@@ -171,7 +176,9 @@ export function useBankAccounts() {
   };
 
   const removeBankAccount = async (id: string) => {
-    if (!wsId) return;
+    if (!wsId) {
+      return;
+    }
     await apiFetch(`/kloel/wallet/${wsId}/bank-accounts/${id}`, { method: 'DELETE' });
     await mutate();
   };

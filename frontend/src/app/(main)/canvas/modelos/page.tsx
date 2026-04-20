@@ -26,7 +26,9 @@ export default function CanvasModelos() {
   const [generating, setGenerating] = useState(false);
 
   const handleGenerate = async () => {
-    if (!aiPrompt.trim() || generating) return;
+    if (!aiPrompt.trim() || generating) {
+      return;
+    }
     setGenerating(true);
     try {
       const res = await apiFetch<{ imageUrl?: string }>('/canvas/generate', {

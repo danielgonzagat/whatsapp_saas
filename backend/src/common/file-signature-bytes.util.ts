@@ -8,8 +8,12 @@
 const ALLOWED_CONTROL_BYTES: ReadonlySet<number> = new Set([9, 10, 13]);
 
 export function isTextSafeByte(byte: number): boolean {
-  if (ALLOWED_CONTROL_BYTES.has(byte)) return true;
-  if (byte >= 32 && byte <= 126) return true;
+  if (ALLOWED_CONTROL_BYTES.has(byte)) {
+    return true;
+  }
+  if (byte >= 32 && byte <= 126) {
+    return true;
+  }
   return byte >= 128;
 }
 
@@ -20,14 +24,18 @@ export function isSuspiciousControlByte(byte: number): boolean {
 export function countSuspiciousControlBytes(sample: Buffer): number {
   let count = 0;
   for (const byte of sample) {
-    if (isSuspiciousControlByte(byte)) count += 1;
+    if (isSuspiciousControlByte(byte)) {
+      count += 1;
+    }
   }
   return count;
 }
 
 export function looksLikeUtf8Text(buffer: Buffer): boolean {
   const sample = buffer.subarray(0, Math.min(buffer.length, 4096));
-  if (!sample.length) return false;
+  if (!sample.length) {
+    return false;
+  }
 
   if (sample.toString('utf8').includes('\uFFFD')) {
     return false;
@@ -37,9 +45,13 @@ export function looksLikeUtf8Text(buffer: Buffer): boolean {
 }
 
 export function bufferStartsWith(buffer: Buffer, signature: readonly number[]): boolean {
-  if (buffer.length < signature.length) return false;
+  if (buffer.length < signature.length) {
+    return false;
+  }
   for (let i = 0; i < signature.length; i += 1) {
-    if (buffer[i] !== signature[i]) return false;
+    if (buffer[i] !== signature[i]) {
+      return false;
+    }
   }
   return true;
 }
@@ -50,6 +62,8 @@ export function bufferSliceEquals(
   end: number,
   ascii: string,
 ): boolean {
-  if (buffer.length < end) return false;
+  if (buffer.length < end) {
+    return false;
+  }
   return buffer.subarray(start, end).toString('ascii') === ascii;
 }

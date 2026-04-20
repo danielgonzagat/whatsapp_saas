@@ -61,7 +61,8 @@ const REQUIRED_SECTIONS: PromptSection[] = [
     ],
     severity: 'critical',
     description: 'AI prompt assembly does not use ProductAIConfig (persona/tone settings)',
-    detail: 'No reference to aiConfig/productAiConfig found in prompt building code. The AI will not know the product persona, tone, or restrictions.',
+    detail:
+      'No reference to aiConfig/productAiConfig found in prompt building code. The AI will not know the product persona, tone, or restrictions.',
   },
   {
     name: 'COGNITIVE_STATE',
@@ -72,7 +73,8 @@ const REQUIRED_SECTIONS: PromptSection[] = [
     ],
     severity: 'critical',
     description: 'AI prompt assembly does not use cognitive state (lead intent/urgency scores)',
-    detail: 'No reference to cognitiveState or urgency/sentiment scores found. The AI cannot adapt to lead intent without this context.',
+    detail:
+      'No reference to cognitiveState or urgency/sentiment scores found. The AI cannot adapt to lead intent without this context.',
   },
   {
     name: 'PRODUCT_CONTEXT',
@@ -83,7 +85,8 @@ const REQUIRED_SECTIONS: PromptSection[] = [
     ],
     severity: 'critical',
     description: 'AI prompt assembly does not include product context (name/price/plan)',
-    detail: 'No product data found in prompt assembly. The AI cannot describe or sell products without knowing what they are.',
+    detail:
+      'No product data found in prompt assembly. The AI cannot describe or sell products without knowing what they are.',
   },
   {
     name: 'CONVERSATION_HISTORY',
@@ -94,7 +97,8 @@ const REQUIRED_SECTIONS: PromptSection[] = [
     ],
     severity: 'critical',
     description: 'AI prompt assembly does not include conversation history',
-    detail: 'No conversation history reference found in prompt building. The AI will have no memory of prior exchanges, causing repetition and poor UX.',
+    detail:
+      'No conversation history reference found in prompt building. The AI will have no memory of prior exchanges, causing repetition and poor UX.',
   },
 ];
 
@@ -124,11 +128,11 @@ export function checkAiPromptVerifier(config: PulseConfig): Break[] {
   }
 
   // Combined content for cross-file analysis
-  const allContent = agentContents.map(a => a.content).join('\n');
+  const allContent = agentContents.map((a) => a.content).join('\n');
 
   // Check each required section against the combined source
   for (const section of REQUIRED_SECTIONS) {
-    const found = section.patterns.some(pattern => pattern.test(allContent));
+    const found = section.patterns.some((pattern) => pattern.test(allContent));
     if (!found) {
       // Report against the primary agent file
       const primaryFile = agentContents[0].file;
@@ -150,7 +154,9 @@ export function checkAiPromptVerifier(config: PulseConfig): Break[] {
     const promptBuildLines = content
       .split('\n')
       .map((line, idx) => ({ line, idx: idx + 1 }))
-      .filter(({ line }) => /systemPrompt|buildPrompt|promptText|prompt\s*=|prompt\s*\+=/i.test(line));
+      .filter(({ line }) =>
+        /systemPrompt|buildPrompt|promptText|prompt\s*=|prompt\s*\+=/i.test(line),
+      );
 
     for (const { line, idx } of promptBuildLines) {
       if (templatePlaceholderPattern.test(line)) {

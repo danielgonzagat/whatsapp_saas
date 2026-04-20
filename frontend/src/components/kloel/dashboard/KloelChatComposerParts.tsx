@@ -232,8 +232,12 @@ export function capabilityIcon(capability: KloelChatCapability, size = 14) {
 }
 
 function statusColor(status: KloelLinkedProduct['status']) {
-  if (status === 'published') return KLOEL_THEME.success;
-  if (status === 'affiliate') return KLOEL_THEME.info;
+  if (status === 'published') {
+    return KLOEL_THEME.success;
+  }
+  if (status === 'affiliate') {
+    return KLOEL_THEME.info;
+  }
   return KLOEL_THEME.warning;
 }
 

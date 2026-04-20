@@ -19,7 +19,9 @@ export type JsonRecord = { [key: string]: JsonValue };
 
 /** Safe string extractor for JSX value props on JSON records */
 export function jv(value: unknown): string {
-  if (value == null) return '';
+  if (value == null) {
+    return '';
+  }
   return String(value);
 }
 
@@ -126,9 +128,13 @@ export function NP({
     }
 
     const c = cv.current;
-    if (!c) return;
+    if (!c) {
+      return;
+    }
     const ctx = c.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
     c.width = w * 2;
     c.height = h * 2;
     ctx.scale(2, 2);

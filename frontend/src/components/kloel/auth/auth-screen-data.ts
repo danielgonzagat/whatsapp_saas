@@ -15,8 +15,14 @@ export const VERTICAL_GRID_LINES = Array.from({ length: 8 }, (_, i) => ({
 
 /** Character-aware delay for typewriter effects. */
 export function typingDelayFor(character: string) {
-  if (character === ' ') return 52 + Math.floor(Math.random() * 28);
-  if (character === ',') return 220 + Math.floor(Math.random() * 60);
-  if (character === '.') return 320 + Math.floor(Math.random() * 110);
+  if (character === ' ') {
+    return 52 + Math.floor(Math.random() * 28);
+  }
+  if (character === ',') {
+    return 220 + Math.floor(Math.random() * 60);
+  }
+  if (character === '.') {
+    return 320 + Math.floor(Math.random() * 110);
+  }
   return 64 + Math.floor(Math.random() * 38);
 }

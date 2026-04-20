@@ -78,7 +78,9 @@ export function buildProductCreatePayload(
     status: 'PENDING',
   };
 
-  if (!needsPhysical) return base;
+  if (!needsPhysical) {
+    return base;
+  }
 
   return {
     ...base,
@@ -93,13 +95,19 @@ export function buildProductCreatePayload(
   };
 }
 
-export function extractCreatedProductId(response: Record<string, unknown> | null): string | undefined {
-  if (!response) return undefined;
+export function extractCreatedProductId(
+  response: Record<string, unknown> | null,
+): string | undefined {
+  if (!response) {
+    return undefined;
+  }
   const productField =
     typeof response === 'object' && 'product' in response
       ? (response.product as Record<string, unknown> | null)
       : null;
   const created = productField || response;
-  if (!created || typeof created !== 'object') return undefined;
+  if (!created || typeof created !== 'object') {
+    return undefined;
+  }
   return 'id' in created ? ((created as { id?: unknown }).id as string | undefined) : undefined;
 }

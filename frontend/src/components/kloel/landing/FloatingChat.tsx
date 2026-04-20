@@ -199,17 +199,24 @@ export function FloatingChat({
 
   const toggle = useCallback(
     (open: boolean) => {
-      if (onToggle) onToggle(open);
-      else setInternalOpen(open);
+      if (onToggle) {
+        onToggle(open);
+      } else {
+        setInternalOpen(open);
+      }
     },
     [onToggle],
   );
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     try {
       const sid = localStorage.getItem(GUEST_SESSION_KEY);
-      if (sid) setGuestSessionId(sid);
+      if (sid) {
+        setGuestSessionId(sid);
+      }
     } catch {}
   }, []);
 
@@ -218,14 +225,18 @@ export function FloatingChat({
   }, [messages, isStreaming]);
 
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
   }, [isOpen]);
 
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       toggle(true);
-      if (detail?.message) setInput(detail.message);
+      if (detail?.message) {
+        setInput(detail.message);
+      }
     };
     window.addEventListener(LANDING_CHAT_EVENT, handler);
     return () => window.removeEventListener(LANDING_CHAT_EVENT, handler);
@@ -237,7 +248,9 @@ export function FloatingChat({
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
       };
-      if (guestSessionId) headers['X-Session-Id'] = guestSessionId;
+      if (guestSessionId) {
+        headers['X-Session-Id'] = guestSessionId;
+      }
 
       const res = await fetch(apiUrl('/chat/guest'), {
         method: 'POST',
@@ -257,13 +270,17 @@ export function FloatingChat({
 
       const readGuestStream = async (): Promise<void> => {
         const { done, value } = await reader.read();
-        if (done) return;
+        if (done) {
+          return;
+        }
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
         for (const line of lines) {
           const payload = parseGuestSseLine(line);
-          if (!payload) continue;
+          if (!payload) {
+            continue;
+          }
           if (payload.sessionId) {
             setGuestSessionId(payload.sessionId);
             persistGuestSession(GUEST_SESSION_KEY, payload.sessionId);
@@ -302,7 +319,9 @@ export function FloatingChat({
         signal,
       });
 
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok || !res.body) {
+        throw new Error(`HTTP ${res.status}`);
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -310,7 +329,9 @@ export function FloatingChat({
       let full = '';
 
       const processAuthLine = (line: string) => {
-        if (!line.startsWith('data: ')) return;
+        if (!line.startsWith('data: ')) {
+          return;
+        }
         let parsed: unknown;
         try {
           parsed = JSON.parse(line.slice(6));
@@ -331,11 +352,15 @@ export function FloatingChat({
 
       const readAuthStream = async (): Promise<void> => {
         const { done, value } = await reader.read();
-        if (done) return;
+        if (done) {
+          return;
+        }
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
-        for (const line of lines) processAuthLine(line);
+        for (const line of lines) {
+          processAuthLine(line);
+        }
         await readAuthStream();
       };
 
@@ -355,7 +380,9 @@ export function FloatingChat({
       },
     ) => {
       const text = rawText.trim();
-      if (!text || isStreaming) return;
+      if (!text || isStreaming) {
+        return;
+      }
       const appendUserMessage = options?.appendUserMessage !== false;
       const sourceUserId = options?.sourceUserId || `floating_user_${crypto.randomUUID()}`;
       const assistantId =
@@ -383,7 +410,9 @@ export function FloatingChat({
           await streamGuestMessage(text, controller.signal, assistantId);
         }
       } catch (err: unknown) {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return;
+        }
         setMessages((prev) =>
           markAssistantError(prev, assistantId, 'Algo deu errado. Tenta de novo.'),
         );
@@ -396,7 +425,9 @@ export function FloatingChat({
   );
 
   useEffect(() => {
-    if (!initialMessage || !isOpen || consumedRef.current === initialMessage) return;
+    if (!initialMessage || !isOpen || consumedRef.current === initialMessage) {
+      return;
+    }
     consumedRef.current = initialMessage;
     onInitialMessageConsumed?.();
     void sendMessage(initialMessage);
@@ -407,7 +438,9 @@ export function FloatingChat({
       const targetMessage = messages.find(
         (message) => message.id === messageId && message.role === 'user',
       );
-      if (!targetMessage) return;
+      if (!targetMessage) {
+        return;
+      }
 
       setInput(targetMessage.content);
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -420,7 +453,9 @@ export function FloatingChat({
       const targetMessage = messages.find(
         (message) => message.id === messageId && message.role === 'user',
       );
-      if (!targetMessage) return;
+      if (!targetMessage) {
+        return;
+      }
 
       await sendMessage(targetMessage.content);
     },
@@ -448,7 +483,9 @@ export function FloatingChat({
       const assistantIndex = messages.findIndex(
         (message) => message.id === messageId && message.role === 'assistant',
       );
-      if (assistantIndex === -1) return;
+      if (assistantIndex === -1) {
+        return;
+      }
 
       const assistantMessage = messages[assistantIndex];
       const sourceUser =
@@ -457,7 +494,9 @@ export function FloatingChat({
         ) ||
         [...messages.slice(0, assistantIndex)].reverse().find((message) => message.role === 'user');
 
-      if (!sourceUser) return;
+      if (!sourceUser) {
+        return;
+      }
 
       await sendMessage(sourceUser.content, {
         appendUserMessage: false,
@@ -469,7 +508,9 @@ export function FloatingChat({
   );
 
   const handleSubmit = () => {
-    if (input.trim()) void sendMessage(input);
+    if (input.trim()) {
+      void sendMessage(input);
+    }
   };
 
   return (

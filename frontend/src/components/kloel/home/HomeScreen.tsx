@@ -212,7 +212,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
   // ─── Update message with displayed text ───
   useEffect(() => {
-    if (!typingMessageIdRef.current) return;
+    if (!typingMessageIdRef.current) {
+      return;
+    }
     if (isTyping || isDone) {
       setMessages((prev) =>
         prev.map((msg) =>
@@ -298,30 +300,37 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
 
           const reader = response.body?.getReader();
-          if (!reader) throw new Error('No reader');
+          if (!reader) {
+            throw new Error('No reader');
+          }
 
           const decoder = new TextDecoder();
 
-          await readStreamSequential(() => reader.read(), async ({ value }) => {
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
+          await readStreamSequential(
+            () => reader.read(),
+            async ({ value }) => {
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split('\n');
 
-            for (const line of lines) {
-              const update = parseKloelChatStreamLine(line);
-              if (!update) continue;
-              if (update.errorContent !== undefined) {
-                fullContent = update.errorContent;
-                break;
+              for (const line of lines) {
+                const update = parseKloelChatStreamLine(line);
+                if (!update) {
+                  continue;
+                }
+                if (update.errorContent !== undefined) {
+                  fullContent = update.errorContent;
+                  break;
+                }
+                if (update.thinkingText) {
+                  setThinkingText(update.thinkingText);
+                }
+                if (update.contentDelta) {
+                  fullContent += update.contentDelta;
+                }
               }
-              if (update.thinkingText) {
-                setThinkingText(update.thinkingText);
-              }
-              if (update.contentDelta) {
-                fullContent += update.contentDelta;
-              }
-            }
-            return false;
-          });
+              return false;
+            },
+          );
         } else {
           const response = await sendAuthenticatedKloelMessage({
             message: messageText,
@@ -407,7 +416,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
   // ─── Handle first message (triggers transition) ───
   const handleHomeSubmit = useCallback(() => {
-    if (!homeInput.trim()) return;
+    if (!homeInput.trim()) {
+      return;
+    }
     const text = homeInput.trim();
     setHomeInput('');
 
@@ -438,7 +449,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
   // ─── Handle subsequent messages ───
   const handleChatSubmit = useCallback(() => {
-    if (!chatInput.trim() || isWaitingForResponse) return;
+    if (!chatInput.trim() || isWaitingForResponse) {
+      return;
+    }
     const text = chatInput.trim();
     setChatInput('');
 

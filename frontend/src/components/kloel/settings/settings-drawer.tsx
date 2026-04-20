@@ -72,7 +72,9 @@ export function SettingsDrawer({
   }
 
   if (!isOpen) {
-    if (!showHandle) return null;
+    if (!showHandle) {
+      return null;
+    }
 
     return (
       <button

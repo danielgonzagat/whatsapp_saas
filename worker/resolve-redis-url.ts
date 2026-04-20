@@ -80,7 +80,9 @@ function assertProductionSafeRedisUrl(url: string): string {
 }
 
 export function maskRedisUrl(url: string | null | undefined): string {
-  if (!url) return '(não configurado)';
+  if (!url) {
+    return '(não configurado)';
+  }
   return url.replace(PATTERN_RE, ':***@');
 }
 
@@ -88,9 +90,15 @@ function getMode(): 'required' | 'disabled' | 'auto' {
   const mode = String(process.env.REDIS_MODE || '')
     .trim()
     .toLowerCase();
-  if (mode === 'required') return 'required';
-  if (mode === 'disabled') return 'disabled';
-  if (mode === 'auto') return 'auto';
+  if (mode === 'required') {
+    return 'required';
+  }
+  if (mode === 'disabled') {
+    return 'disabled';
+  }
+  if (mode === 'auto') {
+    return 'auto';
+  }
   // Default: required in production-like runtimes, auto otherwise.
   return isProductionLikeRuntime() ? 'required' : 'auto';
 }
@@ -126,7 +134,9 @@ function resolveFromComponents(components: RedisComponents): string | null {
 
 function resolveFromModeFallback(): string | null {
   const mode = getMode();
-  if (mode === 'disabled') return null;
+  if (mode === 'disabled') {
+    return null;
+  }
   if (mode === 'required') {
     throw new RedisConfigurationError(
       'Redis is required but no URL could be resolved. ' +
@@ -154,7 +164,9 @@ export function resolveRedisUrl(): string | null {
 
   // 2. Component assembly: REDIS_HOST + REDIS_PORT + REDIS_PASSWORD
   const fromComponents = resolveFromComponents(readRedisComponents());
-  if (fromComponents !== null) return fromComponents;
+  if (fromComponents !== null) {
+    return fromComponents;
+  }
 
   // 3. REDIS_FALLBACK_URL
   if (process.env.REDIS_FALLBACK_URL) {
@@ -171,12 +183,18 @@ export function resolveRedisUrl(): string | null {
  * triggering full URL resolution.
  */
 export function isRedisConfigured(): boolean {
-  if (process.env.REDIS_URL) return true;
+  if (process.env.REDIS_URL) {
+    return true;
+  }
   const host = process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
   const password =
     process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;
-  if (host && password) return true;
-  if (process.env.REDIS_FALLBACK_URL) return true;
+  if (host && password) {
+    return true;
+  }
+  if (process.env.REDIS_FALLBACK_URL) {
+    return true;
+  }
   return false;
 }
 

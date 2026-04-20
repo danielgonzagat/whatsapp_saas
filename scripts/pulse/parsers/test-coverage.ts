@@ -35,7 +35,9 @@ const CORE_PATH_RE = /auth|workspace|products|kyc/i;
 
 function readCoverage(dir: string): CoverageSummary | null {
   const summaryPath = path.join(dir, 'coverage', 'coverage-summary.json');
-  if (!fs.existsSync(summaryPath)) return null;
+  if (!fs.existsSync(summaryPath)) {
+    return null;
+  }
   try {
     return JSON.parse(fs.readFileSync(summaryPath, 'utf8')) as CoverageSummary;
   } catch {
@@ -56,7 +58,9 @@ function runCoverage(dir: string): void {
 }
 
 export function checkTestCoverage(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
+  if (!process.env.PULSE_DEEP) {
+    return [];
+  }
   const breaks: Break[] = [];
 
   // CHECK 1-4: Backend coverage
@@ -76,8 +80,13 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
   }
 
   for (const [filePath, entry] of Object.entries(backendCoverage)) {
-    if (filePath === 'total') continue;
-    const relPath = path.relative(config.rootDir, filePath.startsWith('/') ? filePath : path.join(config.backendDir, filePath));
+    if (filePath === 'total') {
+      continue;
+    }
+    const relPath = path.relative(
+      config.rootDir,
+      filePath.startsWith('/') ? filePath : path.join(config.backendDir, filePath),
+    );
     const pct = entry.lines.pct;
 
     if (FINANCIAL_PATH_RE.test(filePath)) {
@@ -125,9 +134,16 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
   if (frontendCoverage) {
     const FRONTEND_CRITICAL_RE = /checkout|auth|login|signup/i;
     for (const [filePath, entry] of Object.entries(frontendCoverage)) {
-      if (filePath === 'total') continue;
-      if (!FRONTEND_CRITICAL_RE.test(filePath)) continue;
-      const relPath = path.relative(config.rootDir, filePath.startsWith('/') ? filePath : path.join(config.frontendDir, filePath));
+      if (filePath === 'total') {
+        continue;
+      }
+      if (!FRONTEND_CRITICAL_RE.test(filePath)) {
+        continue;
+      }
+      const relPath = path.relative(
+        config.rootDir,
+        filePath.startsWith('/') ? filePath : path.join(config.frontendDir, filePath),
+      );
       const pct = entry.lines.pct;
       if (pct < 60) {
         breaks.push({

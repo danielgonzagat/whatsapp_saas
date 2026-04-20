@@ -178,16 +178,22 @@ export function streamAuthenticatedKloelMessage(
       };
 
       const finishIdleTimeout = () => {
-        if (!idleTimeoutId) return;
+        if (!idleTimeoutId) {
+          return;
+        }
         clearTimeout(idleTimeoutId);
         idleTimeoutId = null;
       };
 
       const consumeLine = (line: string) => {
-        if (!line.startsWith('data: ')) return false;
+        if (!line.startsWith('data: ')) {
+          return false;
+        }
 
         const raw = line.slice(6);
-        if (!raw || raw === '[DONE]') return false;
+        if (!raw || raw === '[DONE]') {
+          return false;
+        }
 
         const payload = JSON.parse(raw);
 
@@ -224,27 +230,30 @@ export function streamAuthenticatedKloelMessage(
       };
 
       try {
-        await readStreamSequential(() => reader.read(), async ({ value }) => {
-          resetIdleTimeout();
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+        await readStreamSequential(
+          () => reader.read(),
+          async ({ value }) => {
+            resetIdleTimeout();
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
-          for (const line of lines) {
-            try {
-              const shouldStop = consumeLine(line);
-              if (shouldStop) {
+            for (const line of lines) {
+              try {
+                const shouldStop = consumeLine(line);
+                if (shouldStop) {
+                  finishIdleTimeout();
+                  return true;
+                }
+              } catch (error: unknown) {
                 finishIdleTimeout();
+                options.onError?.(toErrorMessage(error, 'stream_parse_failed'));
                 return true;
               }
-            } catch (error: unknown) {
-              finishIdleTimeout();
-              options.onError?.(toErrorMessage(error, 'stream_parse_failed'));
-              return true;
             }
-          }
-          return false;
-        });
+            return false;
+          },
+        );
 
         buffer += decoder.decode();
         if (buffer.trim().length > 0) {

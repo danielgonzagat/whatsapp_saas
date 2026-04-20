@@ -104,7 +104,9 @@ export class CrmService {
       },
     });
 
-    if (!tag) return null;
+    if (!tag) {
+      return null;
+    }
 
     return this.prisma.contact.update({
       where: {
@@ -301,7 +303,9 @@ export class CrmService {
         stage: { select: { pipeline: { select: { workspaceId: true } } } },
       },
     });
-    if (!deal) throw new NotFoundException('Deal não encontrado');
+    if (!deal) {
+      throw new NotFoundException('Deal não encontrado');
+    }
     if (deal.stage.pipeline.workspaceId !== workspaceId) {
       throw new ForbiddenException('Acesso negado a este deal');
     }
@@ -352,7 +356,9 @@ export class CrmService {
         stage: { select: { pipeline: { select: { workspaceId: true } } } },
       },
     });
-    if (!deal) throw new NotFoundException('Deal não encontrado');
+    if (!deal) {
+      throw new NotFoundException('Deal não encontrado');
+    }
     if (deal.stage.pipeline.workspaceId !== workspaceId) {
       throw new ForbiddenException('Acesso negado a este deal');
     }
@@ -515,7 +521,9 @@ export class CrmService {
     source: string,
   ) {
     const url = process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || '';
-    if (!url || !globalThis.fetch) return;
+    if (!url || !globalThis.fetch) {
+      return;
+    }
     try {
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {

@@ -131,7 +131,9 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    if (!form.query.trim()) return;
+    if (!form.query.trim()) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -394,8 +396,12 @@ export default function ScrapersPage() {
 
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
-      if (typeFilter !== 'ALL' && job.type !== typeFilter) return false;
-      if (statusFilter !== 'ALL' && job.status?.toUpperCase() !== statusFilter) return false;
+      if (typeFilter !== 'ALL' && job.type !== typeFilter) {
+        return false;
+      }
+      if (statusFilter !== 'ALL' && job.status?.toUpperCase() !== statusFilter) {
+        return false;
+      }
       return true;
     });
   }, [jobs, statusFilter, typeFilter]);

@@ -42,15 +42,17 @@ function deriveUrlPath(filePath: string, appDir: string): string {
   }
 
   // Filter out Next.js route group segments like (main), (auth), etc.
-  const filtered = parts.filter(p => !(/^\(.*\)$/.test(p)));
+  const filtered = parts.filter((p) => !/^\(.*\)$/.test(p));
 
   const urlPath = '/' + filtered.join('/');
   return urlPath;
 }
 
 function isPublicPath(urlPath: string): boolean {
-  if (urlPath === '/') return true;
-  return PUBLIC_PREFIXES.some(prefix => urlPath.startsWith(prefix));
+  if (urlPath === '/') {
+    return true;
+  }
+  return PUBLIC_PREFIXES.some((prefix) => urlPath.startsWith(prefix));
 }
 
 /**
@@ -60,10 +62,12 @@ function isPublicPath(urlPath: string): boolean {
  */
 function hasAuthGuard(content: string): boolean {
   // Must redirect to /login
-  const redirectsToLogin = /\/login/.test(content) && /redirect\(|NextResponse\.redirect/.test(content);
+  const redirectsToLogin =
+    /\/login/.test(content) && /redirect\(|NextResponse\.redirect/.test(content);
   // Must check some auth token/cookie
-  const checksAuth =
-    /cookies|cookie|getToken|session|hasAuth|jwt|Bearer|Authorization/i.test(content);
+  const checksAuth = /cookies|cookie|getToken|session|hasAuth|jwt|Bearer|Authorization/i.test(
+    content,
+  );
   return redirectsToLogin && checksAuth;
 }
 
@@ -86,17 +90,21 @@ export function checkFrontendRouteProtection(config: PulseConfig): Break[] {
   const mainDir = path.join(appDir, '(main)');
 
   // Find all page.tsx files under app/(main)/
-  const pageFiles = walkFiles(mainDir, ['.tsx', '.ts']).filter(f =>
+  const pageFiles = walkFiles(mainDir, ['.tsx', '.ts']).filter((f) =>
     path.basename(f).startsWith('page.'),
   );
 
-  if (pageFiles.length === 0) return breaks;
+  if (pageFiles.length === 0) {
+    return breaks;
+  }
 
   // Case 1: middleware doesn't exist
   if (!middlewareExists) {
     for (const file of pageFiles) {
       const urlPath = deriveUrlPath(file, appDir);
-      if (isPublicPath(urlPath)) continue;
+      if (isPublicPath(urlPath)) {
+        continue;
+      }
       breaks.push({
         type: 'FRONTEND_ROUTE_UNPROTECTED',
         severity: 'high',
@@ -123,12 +131,16 @@ export function checkFrontendRouteProtection(config: PulseConfig): Break[] {
 
   // Case 3: middleware exists but its coverage is unclear — flag pages not in PUBLIC_PREFIXES
   // Only flag if the middleware doesn't appear to do any auth at all
-  const hasAnyAuthLogic = /cookie|session|getToken|jwt|Authorization|redirect.*login/i.test(middlewareContent);
+  const hasAnyAuthLogic = /cookie|session|getToken|jwt|Authorization|redirect.*login/i.test(
+    middlewareContent,
+  );
 
   if (!hasAnyAuthLogic) {
     for (const file of pageFiles) {
       const urlPath = deriveUrlPath(file, appDir);
-      if (isPublicPath(urlPath)) continue;
+      if (isPublicPath(urlPath)) {
+        continue;
+      }
       breaks.push({
         type: 'FRONTEND_ROUTE_UNPROTECTED',
         severity: 'high',

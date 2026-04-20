@@ -14,7 +14,9 @@ export class HiddenDataExtractorService {
   }
 
   async extract(text: string) {
-    if (!this.openai) return {};
+    if (!this.openai) {
+      return {};
+    }
 
     const prompt = `
     Extract hidden data from this message.

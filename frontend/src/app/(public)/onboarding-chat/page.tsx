@@ -89,7 +89,9 @@ function OnboardingChatContent() {
   }, []);
 
   const startOnboarding = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setLoading(true);
     try {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -128,8 +130,12 @@ function OnboardingChatContent() {
   }, [workspaceId, startOnboarding]);
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    if (!workspaceId) return;
+    if (!input.trim() || loading) {
+      return;
+    }
+    if (!workspaceId) {
+      return;
+    }
 
     const userMessage = input.trim();
     setInput('');
@@ -162,7 +168,9 @@ function OnboardingChatContent() {
       if (reader) {
         const readStream = async (): Promise<void> => {
           const { done, value } = await reader.read();
-          if (done) return;
+          if (done) {
+            return;
+          }
 
           const chunk = decoder.decode(value, { stream: true });
           const lines = chunk.split('\n');
@@ -224,7 +232,9 @@ function OnboardingChatContent() {
   };
 
   const goToDashboard = () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     router.push('/whatsapp');
   };
 

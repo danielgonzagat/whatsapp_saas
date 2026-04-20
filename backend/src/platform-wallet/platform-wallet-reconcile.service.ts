@@ -132,8 +132,11 @@ export class PlatformWalletReconcileService {
     let total = BigInt(0);
     for (const row of rows) {
       const amount = row._sum.amountInCents ?? BigInt(0);
-      if (row.direction === 'credit') total += amount;
-      else total -= amount;
+      if (row.direction === 'credit') {
+        total += amount;
+      } else {
+        total -= amount;
+      }
     }
     return Number(total);
   }

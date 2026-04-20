@@ -24,8 +24,8 @@ const HARDCODED_SECRET_PATTERNS: { re: RegExp; label: string }[] = [
 ];
 
 function shouldSkipFile(file: string): boolean {
-  return (
-    /node_modules|\.next|\/dist\/|\.next\/|\.spec\.ts$|\.test\.ts$|__tests__|__mocks__|\/seed\.|\/migration\.|fixture/i.test(file)
+  return /node_modules|\.next|\/dist\/|\.next\/|\.spec\.ts$|\.test\.ts$|__tests__|__mocks__|\/seed\.|\/migration\.|fixture/i.test(
+    file,
   );
 }
 
@@ -39,14 +39,18 @@ function readEnvExample(rootDir: string): Set<string> {
         const vars = new Set<string>();
         for (const line of content.split('\n')) {
           const trimmed = line.trim();
-          if (!trimmed.includes('=')) continue;
+          if (!trimmed.includes('=')) {
+            continue;
+          }
           // Accept both active lines (VARNAME=value) and commented-out lines (# VARNAME=value)
           // Commented vars are valid documentation of optional environment variables.
           const stripped = trimmed.startsWith('#') ? trimmed.replace(/^#+\s*/, '') : trimmed;
           // Skip section headers like "# === Section ===" (no var-style content)
           const varName = stripped.split('=')[0].trim();
           // A valid env var name: uppercase letters, digits, underscores, starts with letter/underscore
-          if (varName && /^[A-Za-z_][A-Za-z0-9_]*$/.test(varName)) vars.add(varName);
+          if (varName && /^[A-Za-z_][A-Za-z0-9_]*$/.test(varName)) {
+            vars.add(varName);
+          }
         }
         return vars;
       } catch {
@@ -69,7 +73,9 @@ export function checkEnvVars(config: PulseConfig): Break[] {
     const files = walkFiles(dir, ['.ts']);
 
     for (const file of files) {
-      if (shouldSkipFile(file)) continue;
+      if (shouldSkipFile(file)) {
+        continue;
+      }
 
       let content: string;
       try {
@@ -86,7 +92,9 @@ export function checkEnvVars(config: PulseConfig): Break[] {
         const trimmed = line.trim();
 
         // Skip comment lines
-        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+          continue;
+        }
 
         // Collect process.env.VAR references
         PROCESS_ENV_RE.lastIndex = 0;
@@ -127,7 +135,9 @@ export function checkEnvVars(config: PulseConfig): Break[] {
   // Check referenced vars against documented vars
   for (const [varName, location] of referencedVars.entries()) {
     // Skip Node.js built-ins and common non-secret vars that are always set
-    if (['NODE_ENV', 'PORT', 'HOST', 'TZ', 'PWD', 'HOME', 'PATH', 'HOSTNAME'].includes(varName)) continue;
+    if (['NODE_ENV', 'PORT', 'HOST', 'TZ', 'PWD', 'HOME', 'PATH', 'HOSTNAME'].includes(varName)) {
+      continue;
+    }
 
     if (!documentedVars.has(varName)) {
       breaks.push({

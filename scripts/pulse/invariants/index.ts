@@ -21,20 +21,13 @@ interface RunDeclaredInvariantsInput {
 const INVARIANT_ARTIFACT = 'PULSE_INVARIANT_EVIDENCE.json';
 
 const INVARIANT_BREAK_PATTERNS: Record<string, RegExp[]> = {
-  'workspace-isolation': [
-    /^WORKSPACE_ISOLATION_BROKEN$/,
-    /^MISSING_WORKSPACE_FILTER$/,
-    /^TENANT_/,
-  ],
+  'workspace-isolation': [/^WORKSPACE_ISOLATION_BROKEN$/, /^MISSING_WORKSPACE_FILTER$/, /^TENANT_/],
   'financial-audit-trail': [
     /^AUDIT_FINANCIAL_NO_TRAIL$/,
     /^AUDIT_DELETION_NO_LOG$/,
     /^AUDIT_ADMIN_NO_LOG$/,
   ],
-  'payment-idempotency': [
-    /^IDEMPOTENCY_/,
-    /^ORDERING_WEBHOOK_OOO$/,
-  ],
+  'payment-idempotency': [/^IDEMPOTENCY_/, /^ORDERING_WEBHOOK_OOO$/],
   'wallet-balance-consistency': [
     /^E2E_RACE_CONDITION_WITHDRAWAL$/,
     /^RACE_CONDITION_FINANCIAL$/,
@@ -46,27 +39,40 @@ function isBlockingBreak(item: Break): boolean {
   return item.severity === 'critical' || item.severity === 'high';
 }
 
-function getApplicableSpecs(environment: PulseEnvironment, manifest: PulseManifest | null): PulseManifestInvariantSpec[] {
-  if (!manifest) return [];
-  return manifest.invariantSpecs.filter(spec => spec.environments.includes(environment));
+function getApplicableSpecs(
+  environment: PulseEnvironment,
+  manifest: PulseManifest | null,
+): PulseManifestInvariantSpec[] {
+  if (!manifest) {
+    return [];
+  }
+  return manifest.invariantSpecs.filter((spec) => spec.environments.includes(environment));
 }
 
 function getLoadedCheckNames(parserInventory: PulseParserInventory): Set<string> {
-  return new Set(parserInventory.loadedChecks.map(check => check.name));
+  return new Set(parserInventory.loadedChecks.map((check) => check.name));
 }
 
 function getActiveInvariantAcceptance(manifest: PulseManifest | null, invariantId: string) {
-  if (!manifest) return null;
+  if (!manifest) {
+    return null;
+  }
   const now = Date.now();
-  return manifest.temporaryAcceptances.find(entry => {
-    if (entry.targetType !== 'invariant' || entry.target !== invariantId) return false;
-    const expiresAt = Date.parse(entry.expiresAt);
-    return Number.isFinite(expiresAt) && expiresAt >= now;
-  }) || null;
+  return (
+    manifest.temporaryAcceptances.find((entry) => {
+      if (entry.targetType !== 'invariant' || entry.target !== invariantId) {
+        return false;
+      }
+      const expiresAt = Date.parse(entry.expiresAt);
+      return Number.isFinite(expiresAt) && expiresAt >= now;
+    }) || null
+  );
 }
 
 function collectMatchingBreaks(health: PulseHealth, patterns: RegExp[]): Break[] {
-  return health.breaks.filter(item => isBlockingBreak(item) && patterns.some(pattern => pattern.test(item.type)));
+  return health.breaks.filter(
+    (item) => isBlockingBreak(item) && patterns.some((pattern) => pattern.test(item.type)),
+  );
 }
 
 function evaluateInvariantSpec(
@@ -89,7 +95,7 @@ function evaluateInvariantSpec(
     };
   }
 
-  const missingChecks = spec.dependsOn.filter(name => !loadedChecks.has(name));
+  const missingChecks = spec.dependsOn.filter((name) => !loadedChecks.has(name));
   const enforceDiagnosticDependencies = input.enforceDiagnosticDependencies !== false;
   if (missingChecks.length > 0 && enforceDiagnosticDependencies) {
     return {
@@ -127,14 +133,16 @@ function evaluateInvariantSpec(
       evaluated: true,
       accepted: false,
       failureClass: 'product_failure',
-      summary: `Blocking findings for ${spec.id}: ${[...new Set(matchingBreaks.map(item => item.type))].join(', ')}.`,
+      summary: `Blocking findings for ${spec.id}: ${[...new Set(matchingBreaks.map((item) => item.type))].join(', ')}.`,
       artifactPaths: [INVARIANT_ARTIFACT],
       metrics: {
         breakCount: matchingBreaks.length,
         evaluator: spec.evaluator,
-        ...(missingChecks.length > 0 ? {
-          ignoredMissingChecks: missingChecks.join(', '),
-        } : {}),
+        ...(missingChecks.length > 0
+          ? {
+              ignoredMissingChecks: missingChecks.join(', '),
+            }
+          : {}),
       },
     };
   }
@@ -149,9 +157,11 @@ function evaluateInvariantSpec(
     metrics: {
       evaluator: spec.evaluator,
       source: spec.source,
-      ...(missingChecks.length > 0 ? {
-        ignoredMissingChecks: missingChecks.join(', '),
-      } : {}),
+      ...(missingChecks.length > 0
+        ? {
+            ignoredMissingChecks: missingChecks.join(', '),
+          }
+        : {}),
     },
   };
 }
@@ -161,29 +171,31 @@ function buildSummary(results: PulseInvariantResult[]): string {
     return 'No invariant specs are required in the current environment.';
   }
 
-  const passed = results.filter(item => item.status === 'passed').length;
-  const failed = results.filter(item => item.status === 'failed').length;
-  const accepted = results.filter(item => item.status === 'accepted').length;
-  const missing = results.filter(item => item.status === 'missing_evidence').length;
+  const passed = results.filter((item) => item.status === 'passed').length;
+  const failed = results.filter((item) => item.status === 'failed').length;
+  const accepted = results.filter((item) => item.status === 'accepted').length;
+  const missing = results.filter((item) => item.status === 'missing_evidence').length;
 
   return `Invariant evidence summary: ${passed} passed, ${failed} failed, ${accepted} accepted, ${missing} missing evidence.`;
 }
 
 export function runDeclaredInvariants(input: RunDeclaredInvariantsInput): PulseInvariantEvidence {
   const allowedInvariantIds = new Set(input.invariantIds || []);
-  const specs = getApplicableSpecs(input.environment, input.manifest).filter(spec =>
-    allowedInvariantIds.size === 0 || allowedInvariantIds.has(spec.id),
+  const specs = getApplicableSpecs(input.environment, input.manifest).filter(
+    (spec) => allowedInvariantIds.size === 0 || allowedInvariantIds.has(spec.id),
   );
   const loadedChecks = getLoadedCheckNames(input.parserInventory);
-  const results = specs.map(spec => evaluateInvariantSpec(spec, input, loadedChecks));
+  const results = specs.map((spec) => evaluateInvariantSpec(spec, input, loadedChecks));
 
   return {
-    declared: specs.map(spec => spec.id),
-    evaluated: results.filter(item => item.evaluated).map(item => item.invariantId),
-    missing: results.filter(item => item.status === 'missing_evidence').map(item => item.invariantId),
-    passed: results.filter(item => item.status === 'passed').map(item => item.invariantId),
-    failed: results.filter(item => item.status === 'failed').map(item => item.invariantId),
-    accepted: results.filter(item => item.accepted).map(item => item.invariantId),
+    declared: specs.map((spec) => spec.id),
+    evaluated: results.filter((item) => item.evaluated).map((item) => item.invariantId),
+    missing: results
+      .filter((item) => item.status === 'missing_evidence')
+      .map((item) => item.invariantId),
+    passed: results.filter((item) => item.status === 'passed').map((item) => item.invariantId),
+    failed: results.filter((item) => item.status === 'failed').map((item) => item.invariantId),
+    accepted: results.filter((item) => item.accepted).map((item) => item.invariantId),
     artifactPaths: specs.length > 0 ? [INVARIANT_ARTIFACT] : [],
     summary: buildSummary(results),
     results,

@@ -33,41 +33,73 @@ const NAV_PATTERNS = [
 
 // Names that indicate a save/submit handler exists in the component
 const SAVE_HANDLER_NAMES = [
-  'handleSave', 'save', 'handleSubmit', 'onSubmit', 'onSave',
-  'handleUpdate', 'handleCreate', 'submitForm', 'doSave',
+  'handleSave',
+  'save',
+  'handleSubmit',
+  'onSubmit',
+  'onSave',
+  'handleUpdate',
+  'handleCreate',
+  'submitForm',
+  'doSave',
 ];
 
 function extractLabel(line: string, lines: string[], idx: number): string {
   // Try to find visible text on same line
   const textMatch = line.match(/>([^<]{1,60})</);
-  if (textMatch) return textMatch[1].trim();
+  if (textMatch) {
+    return textMatch[1].trim();
+  }
 
   const labelMatch = line.match(/label\s*=\s*["'`]([^"'`]{1,60})["'`]/);
-  if (labelMatch) return labelMatch[1];
+  if (labelMatch) {
+    return labelMatch[1];
+  }
 
   const ariaMatch = line.match(/aria-label\s*=\s*["'`]([^"'`]{1,60})["'`]/);
-  if (ariaMatch) return ariaMatch[1];
+  if (ariaMatch) {
+    return ariaMatch[1];
+  }
 
   const titleMatch = line.match(/title\s*=\s*["'`]([^"'`]{1,60})["'`]/);
-  if (titleMatch) return titleMatch[1];
+  if (titleMatch) {
+    return titleMatch[1];
+  }
 
   const placeholderMatch = line.match(/placeholder\s*=\s*["'`]([^"'`]{1,60})["'`]/);
-  if (placeholderMatch) return placeholderMatch[1];
+  if (placeholderMatch) {
+    return placeholderMatch[1];
+  }
 
   // Check next 3 lines for text content
   for (let j = 1; j <= 3 && idx + j < lines.length; j++) {
     const nextLine = lines[idx + j].trim();
     // Skip lines that look like CSS/style properties
-    if (/^(?:background|display|width|height|position|border|color|font|padding|margin|flex|align|justify|cursor|opacity|transform|transition|overflow|gap|aspect|grid|z-index|top|left|right|bottom)\s*[:=]/i.test(nextLine)) continue;
-    if (/^\.\.\.\w+/.test(nextLine)) continue; // ...cardBtn spread
+    if (
+      /^(?:background|display|width|height|position|border|color|font|padding|margin|flex|align|justify|cursor|opacity|transform|transition|overflow|gap|aspect|grid|z-index|top|left|right|bottom)\s*[:=]/i.test(
+        nextLine,
+      )
+    ) {
+      continue;
+    }
+    if (/^\.\.\.\w+/.test(nextLine)) {
+      continue;
+    } // ...cardBtn spread
     // Direct text content (not a tag or expression)
     const nextText = nextLine.match(/^([^<{>\s][^<]{1,60})/);
-    if (nextText && !nextText[1].includes('=') && !nextText[1].includes('{') && !nextText[1].startsWith('//')) {
+    if (
+      nextText &&
+      !nextText[1].includes('=') &&
+      !nextText[1].includes('{') &&
+      !nextText[1].startsWith('//')
+    ) {
       return nextText[1].trim();
     }
     // Text inside a tag
     const insideTag = nextLine.match(/>([^<]{1,60})</);
-    if (insideTag) return insideTag[1].trim();
+    if (insideTag) {
+      return insideTag[1].trim();
+    }
   }
 
   return '(sem texto)';
@@ -76,7 +108,9 @@ function extractLabel(line: string, lines: string[], idx: number): string {
 function extractComponent(lines: string[], idx: number): string | null {
   for (let i = idx; i >= Math.max(0, idx - 200); i--) {
     const m = lines[i].match(/(?:export\s+)?(?:default\s+)?(?:function|const)\s+(\w+)/);
-    if (m && /^[A-Z]/.test(m[1])) return m[1];
+    if (m && /^[A-Z]/.test(m[1])) {
+      return m[1];
+    }
   }
   return null;
 }
@@ -98,7 +132,9 @@ function componentHasSaveHandler(fileContent: string): boolean {
       const bodyText = lines.slice(startIdx, Math.min(startIdx + 40, lines.length)).join('\n');
 
       for (const p of API_CALL_PATTERNS) {
-        if (p.test(bodyText)) return true;
+        if (p.test(bodyText)) {
+          return true;
+        }
       }
     }
   }
@@ -121,10 +157,14 @@ function bodyCallsHookFunction(
       const hookFuncs = hookRegistry.get(hookName);
       if (hookFuncs) {
         // Check if the original function name has an API call
-        if (hookFuncs.has(funcName)) return true;
+        if (hookFuncs.has(funcName)) {
+          return true;
+        }
         // Also check if ANY function from this hook is in the registry
         // (sometimes destructured names differ from the registered ones)
-        if (hookFuncs.size > 0) return true;
+        if (hookFuncs.size > 0) {
+          return true;
+        }
       }
       // Even if not in registry, if it comes from a use* hook with
       // a mutation-like name, it's likely real
@@ -137,7 +177,7 @@ function bodyCallsHookFunction(
 }
 
 function hasApiCall(text: string): boolean {
-  return API_CALL_PATTERNS.some(p => p.test(text));
+  return API_CALL_PATTERNS.some((p) => p.test(text));
 }
 
 /**
@@ -150,7 +190,9 @@ function hasApiCall(text: string): boolean {
 function extractJSXHandler(line: string, eventName: string): string | null {
   const pattern = new RegExp(`${eventName}\\s*=\\s*\\{`);
   const match = pattern.exec(line);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
 
   const start = match.index + match[0].length;
   let depth = 1;
@@ -163,7 +205,9 @@ function extractJSXHandler(line: string, eventName: string): string | null {
       const quote = ch;
       i++;
       while (i < line.length && line[i] !== quote) {
-        if (line[i] === '\\') i++; // skip escaped char
+        if (line[i] === '\\') {
+          i++;
+        } // skip escaped char
         i++;
       }
     } else if (ch === '{') {
@@ -194,7 +238,7 @@ function extractApiImports(fileContent: string): Set<string> {
   const re = /import\s*\{([^}]+)\}\s*from\s*['"]@\/lib\/api(?:\/\w+)?['"]/g;
   let m;
   while ((m = re.exec(fileContent)) !== null) {
-    const names = m[1].split(',').map(s => s.trim().split(' as ').pop()!.trim());
+    const names = m[1].split(',').map((s) => s.trim().split(' as ').pop()!.trim());
     for (const name of names) {
       if (name && !['type', 'interface'].includes(name)) {
         imports.add(name);
@@ -230,15 +274,21 @@ function resolveHandler(
 
   // Navigation handler
   for (const p of NAV_PATTERNS) {
-    if (p.test(trimmed)) return { type: 'navigation', apiCalls: [] };
+    if (p.test(trimmed)) {
+      return { type: 'navigation', apiCalls: [] };
+    }
   }
 
   // Inline handler with direct API call
   const apiCalls: string[] = [];
   for (const p of API_CALL_PATTERNS) {
     if (p.test(trimmed)) {
-      const callMatch = trimmed.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
-      if (callMatch) apiCalls.push(callMatch[1] || callMatch[2]);
+      const callMatch = trimmed.match(
+        /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+      );
+      if (callMatch) {
+        apiCalls.push(callMatch[1] || callMatch[2]);
+      }
       return { type: 'real', apiCalls };
     }
   }
@@ -273,7 +323,10 @@ function resolveHandler(
     }
 
     // Search for function body in same file
-    const funcDefRe = new RegExp(`(?:const|let|function|async function)\\s+${funcName}\\s*(?:=|\\()`, 'g');
+    const funcDefRe = new RegExp(
+      `(?:const|let|function|async function)\\s+${funcName}\\s*(?:=|\\()`,
+      'g',
+    );
     const defMatch = funcDefRe.exec(fileContent);
     if (defMatch) {
       const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
@@ -284,8 +337,13 @@ function resolveHandler(
       let bodyStarted = false;
       for (let j = defIdx; j < Math.min(defIdx + 60, lines.length); j++) {
         for (const ch of lines[j]) {
-          if (ch === '{') { depth++; bodyStarted = true; }
-          if (ch === '}') depth--;
+          if (ch === '{') {
+            depth++;
+            bodyStarted = true;
+          }
+          if (ch === '}') {
+            depth--;
+          }
         }
         if (bodyStarted && depth === 0) {
           bodyEnd = j + 1;
@@ -299,8 +357,12 @@ function resolveHandler(
       // Check for direct API calls in body
       for (const p of API_CALL_PATTERNS) {
         if (p.test(bodyText)) {
-          const callMatch = bodyText.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
-          if (callMatch) apiCalls.push(callMatch[1] || callMatch[2]);
+          const callMatch = bodyText.match(
+            /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+          );
+          if (callMatch) {
+            apiCalls.push(callMatch[1] || callMatch[2]);
+          }
           return { type: 'real', apiCalls };
         }
       }
@@ -317,12 +379,20 @@ function resolveHandler(
 
       // Check if body calls external lib instance methods (react-flow, fabric.js, etc.)
       // Multi-level chain: editorRef.current.text.addHeading(), reactFlowInstance.fitView()
-      if (/\w+Instance(?:\??\.\w+)+\s*\(|\w+Ref\.current(?:\??\.\w+)+\s*\(|canvas\.\w+\s*\(/i.test(bodyText)) {
+      if (
+        /\w+Instance(?:\??\.\w+)+\s*\(|\w+Ref\.current(?:\??\.\w+)+\s*\(|canvas\.\w+\s*\(/i.test(
+          bodyText,
+        )
+      ) {
         return { type: 'real', apiCalls: [] }; // External lib interaction
       }
 
       // Check if body does file/blob operations (CSV export, download, etc.)
-      if (/URL\.createObjectURL|document\.createElement\s*\(\s*['"]a['"]\)|\.download\s*=|Blob\s*\(/i.test(bodyText)) {
+      if (
+        /URL\.createObjectURL|document\.createElement\s*\(\s*['"]a['"]\)|\.download\s*=|Blob\s*\(/i.test(
+          bodyText,
+        )
+      ) {
         return { type: 'real', apiCalls: [] }; // File/blob handler
       }
 
@@ -336,7 +406,9 @@ function resolveHandler(
 
       // Check for navigation
       for (const p of NAV_PATTERNS) {
-        if (p.test(bodyText)) return { type: 'navigation', apiCalls: [] };
+        if (p.test(bodyText)) {
+          return { type: 'navigation', apiCalls: [] };
+        }
       }
 
       // Check if body calls another function defined in the same file that makes API calls
@@ -344,19 +416,45 @@ function resolveHandler(
       let lcMatch;
       while ((lcMatch = localCallRe.exec(bodyText)) !== null) {
         const cn = lcMatch[1];
-        if (/^(?:if|for|while|return|await|catch|try|console|Math|JSON|Array|Object|String|Number|parseInt|parseFloat|setTimeout|clearTimeout|setInterval|Date|Promise|Error|require)$/.test(cn)) continue;
-        if (/^set[A-Z]|^get[A-Z]/.test(cn)) continue;
-        const cnDefRe = new RegExp(`(?:const|let|function|async function)\\s+${cn}\\s*(?:=|\\()`, 'g');
+        if (
+          /^(?:if|for|while|return|await|catch|try|console|Math|JSON|Array|Object|String|Number|parseInt|parseFloat|setTimeout|clearTimeout|setInterval|Date|Promise|Error|require)$/.test(
+            cn,
+          )
+        ) {
+          continue;
+        }
+        if (/^set[A-Z]|^get[A-Z]/.test(cn)) {
+          continue;
+        }
+        const cnDefRe = new RegExp(
+          `(?:const|let|function|async function)\\s+${cn}\\s*(?:=|\\()`,
+          'g',
+        );
         const cnDef = cnDefRe.exec(fileContent);
         if (cnDef) {
           const cnIdx = fileContent.substring(0, cnDef.index).split('\n').length - 1;
-          let cd = 0; let cEnd = cnIdx + 20; let cStarted = false;
+          let cd = 0;
+          let cEnd = cnIdx + 20;
+          let cStarted = false;
           for (let cj = cnIdx; cj < Math.min(cnIdx + 40, lines.length); cj++) {
-            for (const ch of lines[cj]) { if (ch === '{') { cd++; cStarted = true; } if (ch === '}') cd--; }
-            if (cStarted && cd === 0) { cEnd = cj + 1; break; }
+            for (const ch of lines[cj]) {
+              if (ch === '{') {
+                cd++;
+                cStarted = true;
+              }
+              if (ch === '}') {
+                cd--;
+              }
+            }
+            if (cStarted && cd === 0) {
+              cEnd = cj + 1;
+              break;
+            }
           }
           const cnBody = lines.slice(cnIdx, cEnd).join('\n');
-          if (hasApiCall(cnBody)) return { type: 'real', apiCalls: [] };
+          if (hasApiCall(cnBody)) {
+            return { type: 'real', apiCalls: [] };
+          }
         }
       }
 
@@ -366,9 +464,10 @@ function resolveHandler(
       // it must have its own API call — don't exempt it
       // Only treat as "the save handler itself" if the function name STARTS with handle/on + save/submit/create
       // NOT helpers like handleTagRemove, updateForm, etc.
-      const isSaveFunction = /^(?:handle)?(?:save|submit)\b/i.test(funcName) ||
-                             /^(?:on)(?:Save|Submit)\b/.test(funcName) ||
-                             /^(?:do|confirm)(?:Save|Submit|Create)\b/i.test(funcName);
+      const isSaveFunction =
+        /^(?:handle)?(?:save|submit)\b/i.test(funcName) ||
+        /^(?:on)(?:Save|Submit)\b/.test(funcName) ||
+        /^(?:do|confirm)(?:Save|Submit|Create)\b/i.test(funcName);
       if (!isSaveFunction && hasSaveHandler && /set\w+\s*\(/.test(bodyText)) {
         return { type: 'real', apiCalls: [] }; // Field updater in form with save handler
       }
@@ -379,7 +478,9 @@ function resolveHandler(
       while ((cbMatch = callbackCallRe.exec(bodyText)) !== null) {
         const cbName = cbMatch[1];
         // Check if this callback is NOT defined in the file (it's a prop)
-        const cbDefRe = new RegExp(`(?:const|let|function|async function)\\s+${cbName}\\s*(?:=|\\()`);
+        const cbDefRe = new RegExp(
+          `(?:const|let|function|async function)\\s+${cbName}\\s*(?:=|\\()`,
+        );
         if (!cbDefRe.test(fileContent)) {
           return { type: 'real', apiCalls: [] }; // Calls parent callback prop
         }
@@ -406,13 +507,24 @@ function resolveHandler(
     }
 
     // Recurse to resolve the called function
-    const result = resolveHandler(calledFunc, lines, fileContent, hookDestructures, hookRegistry, hasSaveHandler, apiImportsInFile);
+    const result = resolveHandler(
+      calledFunc,
+      lines,
+      fileContent,
+      hookDestructures,
+      hookRegistry,
+      hasSaveHandler,
+      apiImportsInFile,
+    );
 
     // If recursion says dead but the component has a save handler,
     // check if the called function is a state updater (part of form)
     if (result.type === 'dead' && hasSaveHandler) {
       // Look up the function body for state setting
-      const funcDefRe2 = new RegExp(`(?:const|let|function|async function)\\s+${calledFunc}\\s*(?:=|\\()`, 'g');
+      const funcDefRe2 = new RegExp(
+        `(?:const|let|function|async function)\\s+${calledFunc}\\s*(?:=|\\()`,
+        'g',
+      );
       const defMatch2 = funcDefRe2.exec(fileContent);
       if (defMatch2) {
         const defIdx2 = fileContent.substring(0, defMatch2.index).split('\n').length - 1;
@@ -456,7 +568,9 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
   const registry = hookRegistry || new Map();
 
   for (const file of files) {
-    if (/\.(test|spec)\./.test(file)) continue;
+    if (/\.(test|spec)\./.test(file)) {
+      continue;
+    }
 
     try {
       const content = fs.readFileSync(file, 'utf8');
@@ -479,7 +593,15 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
         const onClickHandler = extractJSXHandler(line, 'onClick');
         if (onClickHandler) {
           const handler = onClickHandler.trim();
-          const resolved = resolveHandler(handler, lines, content, hookDestructures, registry, hasSaveHandler, apiImportsInFile);
+          const resolved = resolveHandler(
+            handler,
+            lines,
+            content,
+            hookDestructures,
+            registry,
+            hasSaveHandler,
+            apiImportsInFile,
+          );
           const label = extractLabel(line, lines, i);
           const component = extractComponent(lines, i);
 
@@ -499,7 +621,15 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
         const onSubmitHandler = extractJSXHandler(line, 'onSubmit');
         if (onSubmitHandler) {
           const handler = onSubmitHandler.trim();
-          const resolved = resolveHandler(handler, lines, content, hookDestructures, registry, hasSaveHandler, apiImportsInFile);
+          const resolved = resolveHandler(
+            handler,
+            lines,
+            content,
+            hookDestructures,
+            registry,
+            hasSaveHandler,
+            apiImportsInFile,
+          );
 
           elements.push({
             file: relFile,
@@ -515,10 +645,19 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
 
         // Detect Toggle/Switch
         if (/(?:<Toggle|<Switch|<Tg)\b/.test(line) && /onChange|onClick/.test(line)) {
-          const handlerExpr = extractJSXHandler(line, 'onChange') || extractJSXHandler(line, 'onClick');
+          const handlerExpr =
+            extractJSXHandler(line, 'onChange') || extractJSXHandler(line, 'onClick');
           if (handlerExpr) {
             const handler = handlerExpr.trim();
-            const resolved = resolveHandler(handler, lines, content, hookDestructures, registry, hasSaveHandler, apiImportsInFile);
+            const resolved = resolveHandler(
+              handler,
+              lines,
+              content,
+              hookDestructures,
+              registry,
+              hasSaveHandler,
+              apiImportsInFile,
+            );
 
             elements.push({
               file: relFile,

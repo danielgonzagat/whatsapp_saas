@@ -104,7 +104,9 @@ export class DashboardService {
       let totalLatency = 0;
       events.forEach((e) => {
         const [ok, lat] = e.split(':');
-        if (ok === '1') success++;
+        if (ok === '1') {
+          success++;
+        }
         totalLatency += Number(lat || 0);
       });
       healthScore = Math.round((success / events.length) * 100);
@@ -371,7 +373,9 @@ export class DashboardService {
 
     currentPaidOrders.forEach((order) => {
       const product = order.plan?.product;
-      if (!product?.id) return;
+      if (!product?.id) {
+        return;
+      }
       const key = product.id;
       if (!productStats.has(key)) {
         productStats.set(key, {

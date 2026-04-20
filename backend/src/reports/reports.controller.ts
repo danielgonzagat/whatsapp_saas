@@ -123,7 +123,9 @@ export class ReportsController {
   ) {
     const workspaceId = this.ws(req);
     const targetEmail = body.email || req.user?.email;
-    if (!targetEmail) return { error: 'No email provided' };
+    if (!targetEmail) {
+      return { error: 'No email provided' };
+    }
 
     // Generate CSV from vendas summary
     const summary = await this.reportsService.getVendasSummary(workspaceId, {

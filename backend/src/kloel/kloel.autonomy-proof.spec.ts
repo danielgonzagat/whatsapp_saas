@@ -84,8 +84,12 @@ describe.skip('KloelService bounded autonomy proof', () => {
 
   const normalizeChatId = (value: string) => {
     const raw = String(value || '').trim();
-    if (!raw) return '';
-    if (raw.includes('@')) return raw;
+    if (!raw) {
+      return '';
+    }
+    if (raw.includes('@')) {
+      return raw;
+    }
     return `${normalizePhone(raw)}@c.us`;
   };
 

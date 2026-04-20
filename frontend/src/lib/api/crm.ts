@@ -70,9 +70,15 @@ export interface SegmentationStats {
 export const crmApi = {
   listContacts: (params?: { page?: number; limit?: number; search?: string }) => {
     const search = new URLSearchParams();
-    if (params?.page) search.set('page', String(params.page));
-    if (params?.limit) search.set('limit', String(params.limit));
-    if (params?.search) search.set('search', params.search);
+    if (params?.page) {
+      search.set('page', String(params.page));
+    }
+    if (params?.limit) {
+      search.set('limit', String(params.limit));
+    }
+    if (params?.search) {
+      search.set('search', params.search);
+    }
     const qs = search.toString();
     return apiFetch<{
       data: CrmContact[];

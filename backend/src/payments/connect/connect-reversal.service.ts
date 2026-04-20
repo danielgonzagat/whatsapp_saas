@@ -68,13 +68,19 @@ function asString(value: unknown): string | null {
 }
 
 function parseBigIntString(value: unknown): bigint {
-  if (typeof value === 'string' && /^-?\d+$/.test(value)) return BigInt(value);
-  if (typeof value === 'number' && Number.isInteger(value)) return BigInt(value);
+  if (typeof value === 'string' && /^-?\d+$/.test(value)) {
+    return BigInt(value);
+  }
+  if (typeof value === 'number' && Number.isInteger(value)) {
+    return BigInt(value);
+  }
   return 0n;
 }
 
 function parseManualTransfers(value: unknown): PersistedManualTransfer[] {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
   return value.filter((item): item is PersistedManualTransfer => {
     const row = asRecord(item);
     return (
@@ -89,11 +95,15 @@ function parseManualTransfers(value: unknown): PersistedManualTransfer[] {
 
 function buildSnapshot(webhookData: unknown): ReversalSnapshot | null {
   const root = asRecord(webhookData);
-  if (!root) return null;
+  if (!root) {
+    return null;
+  }
 
   const splitInput = asRecord(root.splitInput);
   const connectPostSale = asRecord(root.connectPostSale);
-  if (!splitInput || !connectPostSale) return null;
+  if (!splitInput || !connectPostSale) {
+    return null;
+  }
 
   return {
     buyerPaidCents: parseBigIntString(splitInput.buyerPaidCents),
@@ -114,7 +124,9 @@ function planProportionalReversals(
   requestedAmountCents: bigint,
   buyerPaidCents: bigint,
 ): PlannedReversal[] {
-  if (requestedAmountCents <= 0n || buyerPaidCents <= 0n || lines.length === 0) return [];
+  if (requestedAmountCents <= 0n || buyerPaidCents <= 0n || lines.length === 0) {
+    return [];
+  }
 
   const totalEligible = lines.reduce((sum, line) => sum + line.amountCents, 0n);
   const totalTarget = (totalEligible * requestedAmountCents) / buyerPaidCents;
@@ -141,8 +153,12 @@ function planProportionalReversals(
 
   const bonus = new Map<string, bigint>();
   for (const line of sorted) {
-    if (remainderToDistribute <= 0n) break;
-    if (line.floorAmount >= line.amountCents) continue;
+    if (remainderToDistribute <= 0n) {
+      break;
+    }
+    if (line.floorAmount >= line.amountCents) {
+      continue;
+    }
     bonus.set(line.stripeTransferId, (bonus.get(line.stripeTransferId) ?? 0n) + 1n);
     remainderToDistribute -= 1n;
   }
@@ -334,12 +350,16 @@ export class ConnectReversalService {
       where: { externalId: paymentIntentId },
       select: { id: true, webhookData: true },
     });
-    if (!payment) return null;
+    if (!payment) {
+      return null;
+    }
     return buildSnapshot(payment.webhookData);
   }
 
   private async findSellerTransfer(snapshot: ReversalSnapshot): Promise<{ id: string } | null> {
-    if (!snapshot.transferGroup || !snapshot.sellerStripeAccountId) return null;
+    if (!snapshot.transferGroup || !snapshot.sellerStripeAccountId) {
+      return null;
+    }
 
     const listed = await this.stripeService.stripe.transfers.list({
       transfer_group: snapshot.transferGroup,

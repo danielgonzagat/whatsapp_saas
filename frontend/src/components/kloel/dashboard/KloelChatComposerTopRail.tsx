@@ -23,8 +23,12 @@ const WARNING = KLOEL_THEME.warning;
 const EMBER = KLOEL_THEME.accent;
 
 function attachmentIcon(kind: KloelChatAttachment['kind']) {
-  if (kind === 'image') return <ImagePlus size={14} strokeWidth={1.8} aria-hidden="true" />;
-  if (kind === 'audio') return <Music4 size={14} strokeWidth={1.8} aria-hidden="true" />;
+  if (kind === 'image') {
+    return <ImagePlus size={14} strokeWidth={1.8} aria-hidden="true" />;
+  }
+  if (kind === 'audio') {
+    return <Music4 size={14} strokeWidth={1.8} aria-hidden="true" />;
+  }
   return <FileText size={14} strokeWidth={1.8} aria-hidden="true" />;
 }
 
@@ -43,8 +47,12 @@ function resolveVisualAttachmentSource(attachment: KloelChatAttachment) {
 }
 
 function formatFileSize(size: number) {
-  if (!Number.isFinite(size) || size <= 0) return '0 KB';
-  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  if (!Number.isFinite(size) || size <= 0) {
+    return '0 KB';
+  }
+  if (size >= 1024 * 1024) {
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  }
   return `${Math.max(1, Math.round(size / 1024))} KB`;
 }
 

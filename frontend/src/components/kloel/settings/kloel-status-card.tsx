@@ -31,12 +31,24 @@ export function KloelStatusCard({
   // Calculate preparation percentage
   const totalItems = 6;
   let completedItems = 0;
-  if (filesProcessed > 0) completedItems++;
-  if (productsConfigured > 0) completedItems++;
-  if (rulesLearned > 0) completedItems++;
-  if (faqFilled > 0) completedItems++;
-  if (voiceToneDefined) completedItems++;
-  if (checkoutConfigured) completedItems++;
+  if (filesProcessed > 0) {
+    completedItems++;
+  }
+  if (productsConfigured > 0) {
+    completedItems++;
+  }
+  if (rulesLearned > 0) {
+    completedItems++;
+  }
+  if (faqFilled > 0) {
+    completedItems++;
+  }
+  if (voiceToneDefined) {
+    completedItems++;
+  }
+  if (checkoutConfigured) {
+    completedItems++;
+  }
 
   const preparationPercent = Math.round((completedItems / totalItems) * 100);
 

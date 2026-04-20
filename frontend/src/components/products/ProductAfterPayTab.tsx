@@ -91,7 +91,9 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
 
   useEffect(
     () => () => {
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
     },
     [],
   );
@@ -135,7 +137,9 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {
+        clearTimeout(savedTimer.current);
+      }
       savedTimer.current = setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       console.error('Erro ao salvar AfterPay config:', e);
@@ -144,12 +148,13 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: V.t2, fontFamily: SORA }}>
         Carregando...
       </div>
     );
+  }
 
   return (
     <div>

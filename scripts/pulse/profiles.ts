@@ -1,4 +1,8 @@
-import type { PulseCertificationProfile, PulseCertificationTarget, PulseEnvironment } from './types';
+import type {
+  PulseCertificationProfile,
+  PulseCertificationTarget,
+  PulseEnvironment,
+} from './types';
 
 export interface PulseProfileSelection {
   profile: PulseCertificationProfile;
@@ -29,9 +33,7 @@ const CORE_CRITICAL_FLOW_IDS = [
   'whatsapp-message-send',
 ] as const;
 
-const CORE_CRITICAL_INVARIANT_IDS = [
-  'wallet-balance-consistency',
-] as const;
+const CORE_CRITICAL_INVARIANT_IDS = ['wallet-balance-consistency'] as const;
 
 const CORE_CRITICAL_SCENARIO_IDS = [
   'customer-auth-shell',
@@ -76,9 +78,15 @@ const CORE_CRITICAL_SKIPPED_PARSERS = [
 
 const CORE_CRITICAL_SKIPPED_SET = new Set<string>(CORE_CRITICAL_SKIPPED_PARSERS);
 
-export function parseCertificationProfile(value: string | null | undefined): PulseCertificationProfile | null {
-  if (!value) return null;
-  if (value === 'core-critical' || value === 'full-product') return value;
+export function parseCertificationProfile(
+  value: string | null | undefined,
+): PulseCertificationProfile | null {
+  if (!value) {
+    return null;
+  }
+  if (value === 'core-critical' || value === 'full-product') {
+    return value;
+  }
   return null;
 }
 
@@ -127,8 +135,14 @@ export function getProfileSelection(profile: PulseCertificationProfile): PulsePr
 }
 
 export function getTargetLabel(target: PulseCertificationTarget): string {
-  if (target.profile) return target.profile;
-  if (target.final) return 'FINAL';
-  if (typeof target.tier === 'number') return `TIER ${target.tier}`;
+  if (target.profile) {
+    return target.profile;
+  }
+  if (target.final) {
+    return 'FINAL';
+  }
+  if (typeof target.tier === 'number') {
+    return `TIER ${target.tier}`;
+  }
   return 'GLOBAL';
 }

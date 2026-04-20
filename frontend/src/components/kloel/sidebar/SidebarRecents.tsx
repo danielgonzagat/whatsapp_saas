@@ -19,7 +19,9 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
 
   const [exporting, setExporting] = useState(false);
   const handleExport = useCallback(async () => {
-    if (conversations.length === 0 || exporting) return;
+    if (conversations.length === 0 || exporting) {
+      return;
+    }
     setExporting(true);
     try {
       // Fetch full messages for each conversation from backend
@@ -60,7 +62,9 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
     }
   }, [conversations, exporting]);
 
-  if (!expanded || conversations.length === 0) return null;
+  if (!expanded || conversations.length === 0) {
+    return null;
+  }
 
   const activeConversationId =
     pathname === KLOEL_CHAT_ROUTE || pathname === '/dashboard'
@@ -106,10 +110,14 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             transition: 'color .15s',
           }}
           onMouseEnter={(e) => {
-            if (!exporting) e.currentTarget.style.color = KLOEL_THEME.accent;
+            if (!exporting) {
+              e.currentTarget.style.color = KLOEL_THEME.accent;
+            }
           }}
           onMouseLeave={(e) => {
-            if (!exporting) e.currentTarget.style.color = KLOEL_THEME.textSecondary;
+            if (!exporting) {
+              e.currentTarget.style.color = KLOEL_THEME.textSecondary;
+            }
           }}
         >
           <svg

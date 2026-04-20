@@ -66,7 +66,9 @@ const FRONTEND_RETENTION_MS = 24 * 60 * 60 * 1000;
 const INCIDENT_LIMIT = 60;
 
 function safeJsonParse<T>(value: string | null | undefined): T | null {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   try {
     return JSON.parse(value) as T;
   } catch {
@@ -76,7 +78,9 @@ function safeJsonParse<T>(value: string | null | undefined): T | null {
 
 function compactText(value: string, max = 600) {
   const compact = value.replace(S_RE, ' ').trim();
-  if (compact.length <= max) return compact;
+  if (compact.length <= max) {
+    return compact;
+  }
   return `${compact.slice(0, max - 3)}...`;
 }
 
@@ -436,7 +440,9 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
 
   private async hydrateNodes(registry: Record<string, string>): Promise<PulseOrganismNode[]> {
     const nodeIds = Object.keys(registry);
-    if (nodeIds.length === 0) return [];
+    if (nodeIds.length === 0) {
+      return [];
+    }
 
     const pipeline = this.redis.pipeline();
     nodeIds.forEach((nodeId) => pipeline.get(this.getLiveKey(nodeId)));
@@ -486,7 +492,9 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const now = Date.now();
 
     await forEachSequential(nodes, async (node) => {
-      if (!node.stale) return;
+      if (!node.stale) {
+        return;
+      }
 
       const staleAlertKey = this.getStaleAlertKey(node.nodeId);
       const alreadyAlerted = await this.redis.set(
@@ -518,8 +526,12 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const nodes = await this.hydrateNodes(registry);
 
     await forEachSequential(nodes, async (node) => {
-      if (!node.stale) return;
-      if ((node.staleMs || 0) <= FRONTEND_RETENTION_MS) return;
+      if (!node.stale) {
+        return;
+      }
+      if ((node.staleMs || 0) <= FRONTEND_RETENTION_MS) {
+        return;
+      }
 
       await this.redis
         .multi()
@@ -659,9 +671,15 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   }
 
   private inferRole(nodeId: string): PulseOrganismRole {
-    if (nodeId.startsWith('backend:')) return 'backend';
-    if (nodeId.startsWith('worker:')) return 'worker';
-    if (nodeId.startsWith('frontend:')) return 'frontend';
+    if (nodeId.startsWith('backend:')) {
+      return 'backend';
+    }
+    if (nodeId.startsWith('worker:')) {
+      return 'worker';
+    }
+    if (nodeId.startsWith('frontend:')) {
+      return 'frontend';
+    }
     return 'scanner';
   }
 }

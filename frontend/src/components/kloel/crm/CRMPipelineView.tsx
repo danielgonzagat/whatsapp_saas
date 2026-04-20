@@ -146,7 +146,9 @@ export default function CRMPipelineView() {
   const handleStageDrop = useCallback(
     async (event: globalThis.DragEvent, stageId: string) => {
       event.preventDefault();
-      if (!dragDealId) return;
+      if (!dragDealId) {
+        return;
+      }
       try {
         await moveDeal(dragDealId, stageId);
         await mutateDeals();
@@ -160,7 +162,9 @@ export default function CRMPipelineView() {
 
   const bindStageDropZone = useCallback(
     (stageId: string) => (element: HTMLDivElement | null) => {
-      if (!element) return;
+      if (!element) {
+        return;
+      }
 
       element.ondragover = (event) => {
         event.preventDefault();
@@ -178,7 +182,9 @@ export default function CRMPipelineView() {
   /* ── create deal ── */
   const handleCreate = async (e: FormEvent, stageId: string) => {
     e.preventDefault();
-    if (!formTitle.trim() || submitting) return;
+    if (!formTitle.trim() || submitting) {
+      return;
+    }
     setSubmitting(true);
     try {
       await createDeal({
@@ -207,7 +213,9 @@ export default function CRMPipelineView() {
   }, []);
 
   const _startEditing = useCallback(() => {
-    if (!detailDeal) return;
+    if (!detailDeal) {
+      return;
+    }
     setEditTitle(detailDeal.title || '');
     setEditValue(String(detailDeal.value || 0));
     setEditNotes(detailDeal.notes || '');
@@ -220,9 +228,13 @@ export default function CRMPipelineView() {
   }, []);
 
   const _handleSaveEdit = useCallback(async () => {
-    if (!detailDeal || detailSaving) return;
+    if (!detailDeal || detailSaving) {
+      return;
+    }
     const did = detailDeal._id || detailDeal.id;
-    if (!did) return;
+    if (!did) {
+      return;
+    }
     setDetailSaving(true);
     try {
       await updateDeal(did, {
@@ -250,9 +262,13 @@ export default function CRMPipelineView() {
   }, [detailDeal, editTitle, editValue, editNotes, detailSaving, updateDeal, mutateDeals]);
 
   const _handleDeleteDeal = useCallback(async () => {
-    if (!detailDeal || detailDeleting) return;
+    if (!detailDeal || detailDeleting) {
+      return;
+    }
     const did = detailDeal._id || detailDeal.id;
-    if (!did) return;
+    if (!did) {
+      return;
+    }
     setDetailDeleting(true);
     try {
       await deleteDeal(did);
@@ -269,7 +285,9 @@ export default function CRMPipelineView() {
   function dealsForStage(stageId: string) {
     return dealArr.filter((d) => {
       const s = d.stage;
-      if (typeof s === 'string') return s === stageId;
+      if (typeof s === 'string') {
+        return s === stageId;
+      }
       return (s?._id || s?.id) === stageId;
     });
   }

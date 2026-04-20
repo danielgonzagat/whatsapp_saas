@@ -33,7 +33,9 @@ export class IdempotencyInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const cacheKey = request._idempotencyKey;
 
-    if (!cacheKey) return next.handle();
+    if (!cacheKey) {
+      return next.handle();
+    }
 
     const ttl = request._idempotencyTtl || 86400;
     const response = context.switchToHttp().getResponse();

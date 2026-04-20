@@ -91,12 +91,18 @@ export function InboxWorkspace({
     return conversations.filter((c) => {
       if (channelFilter !== 'all') {
         const ch = (c.channel || 'whatsapp').toLowerCase();
-        if (ch !== channelFilter) return false;
+        if (ch !== channelFilter) {
+          return false;
+        }
       }
       if (statusFilter !== 'all') {
         const st = (c.status || 'open').toLowerCase();
-        if (statusFilter === 'open' && st !== 'open') return false;
-        if (statusFilter === 'closed' && st !== 'closed') return false;
+        if (statusFilter === 'open' && st !== 'open') {
+          return false;
+        }
+        if (statusFilter === 'closed' && st !== 'closed') {
+          return false;
+        }
       }
       return true;
     });
@@ -104,9 +110,13 @@ export function InboxWorkspace({
 
   const matchedConversationByPhone = useMemo(() => {
     const normalize = (value?: string | null) => (value || '').replace(D_RE, '');
-    if (!requestedPhone) return null;
+    if (!requestedPhone) {
+      return null;
+    }
     const target = normalize(requestedPhone);
-    if (!target) return null;
+    if (!target) {
+      return null;
+    }
     return (
       conversations.find((conversation) =>
         normalize(conversation.contact?.phone).includes(target),
@@ -118,7 +128,9 @@ export function InboxWorkspace({
     !isLoading && !loadingConversations && (!selectedConversationId || !loadingMessages);
 
   const handleAssumir = async () => {
-    if (!selectedConversationId || !user) return;
+    if (!selectedConversationId || !user) {
+      return;
+    }
     setAssigning(true);
     setError(null);
     try {
@@ -132,7 +144,9 @@ export function InboxWorkspace({
   };
 
   const handleDevolverIA = async () => {
-    if (!selectedConversationId) return;
+    if (!selectedConversationId) {
+      return;
+    }
     setAssigning(true);
     setError(null);
     try {
@@ -159,7 +173,9 @@ export function InboxWorkspace({
   };
 
   const handleSendReply = async () => {
-    if (!selectedConversationId || !replyText.trim()) return;
+    if (!selectedConversationId || !replyText.trim()) {
+      return;
+    }
     setSending(true);
     setError(null);
     try {
@@ -170,7 +186,9 @@ export function InboxWorkspace({
           body: { content: replyText.trim() },
         },
       );
-      if (res.error) throw new Error(res.error);
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setReplyText('');
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/inbox'));
       await loadMessages(selectedConversationId);
@@ -182,7 +200,9 @@ export function InboxWorkspace({
   };
 
   const refreshConversations = async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setError(null);
     setLoadingConversations(true);
     try {
@@ -197,7 +217,9 @@ export function InboxWorkspace({
         const matched = next.find((conversation) =>
           normalize(conversation.contact?.phone).includes(target),
         );
-        if (matched?.id) setSelectedConversationId(matched.id);
+        if (matched?.id) {
+          setSelectedConversationId(matched.id);
+        }
       } else if (!selectedConversationId && next[0]?.id) {
         setSelectedConversationId(next[0].id);
       }
@@ -209,7 +231,9 @@ export function InboxWorkspace({
   };
 
   const refreshAgents = async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     try {
       const data = await listInboxAgents(workspaceId);
       setAgents(Array.isArray(data) ? data : []);
@@ -225,7 +249,9 @@ export function InboxWorkspace({
   };
 
   const handleCloseConversation = async () => {
-    if (!selectedConversationId) return;
+    if (!selectedConversationId) {
+      return;
+    }
     setError(null);
     try {
       await closeConversation(selectedConversationId);
@@ -250,7 +276,9 @@ export function InboxWorkspace({
   }, [isLoading, isAuthenticated, workspaceId]);
 
   useEffect(() => {
-    if (!selectedConversationId) return;
+    if (!selectedConversationId) {
+      return;
+    }
     loadMessagesRef.current(selectedConversationId);
   }, [selectedConversationId]);
 
@@ -268,7 +296,9 @@ export function InboxWorkspace({
   selectedIdRef.current = selectedConversationId;
 
   useEffect(() => {
-    if (!isConnected || !workspaceId) return;
+    if (!isConnected || !workspaceId) {
+      return;
+    }
 
     const unsubNewMsg = subscribe('message:new', (payload: Record<string, unknown>) => {
       refreshConversations();
@@ -276,7 +306,9 @@ export function InboxWorkspace({
       if (convId && convId === selectedIdRef.current && messageId) {
         const typedMsg: Message = newMsg as unknown as Message;
         setMessages((prev) => {
-          if (prev.some((m) => m.id === messageId)) return prev;
+          if (prev.some((m) => m.id === messageId)) {
+            return prev;
+          }
           return [...prev, typedMsg];
         });
       }
@@ -702,7 +734,9 @@ export function InboxWorkspace({
                     value={selectedConversation?.assignedAgent?.id || ''}
                     disabled={assigning}
                     onChange={async (e) => {
-                      if (!selectedConversationId) return;
+                      if (!selectedConversationId) {
+                        return;
+                      }
                       setAssigning(true);
                       setError(null);
                       try {

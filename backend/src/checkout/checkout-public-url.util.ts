@@ -7,8 +7,12 @@ const KLOEL_HOSTNAMES = new Set(['kloel.com', 'www.kloel.com', 'app.kloel.com', 
 const LOCAL_ROOTS = new Set(['localhost', '127.0.0.1']);
 
 function resolvePayHostname(hostname: string): string | null {
-  if (KLOEL_HOSTNAMES.has(hostname)) return 'pay.kloel.com';
-  if (LOCAL_ROOTS.has(hostname)) return `pay.${hostname}`;
+  if (KLOEL_HOSTNAMES.has(hostname)) {
+    return 'pay.kloel.com';
+  }
+  if (LOCAL_ROOTS.has(hostname)) {
+    return `pay.${hostname}`;
+  }
   if (hostname.endsWith('.localhost') || hostname.endsWith('.127.0.0.1')) {
     const [, ...rest] = hostname.split('.');
     const rootHost = rest.join('.') || 'localhost';
@@ -19,7 +23,9 @@ function resolvePayHostname(hostname: string): string | null {
 
 function normalizePayOrigin(candidate?: string | null) {
   const raw = String(candidate || '').trim();
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
 
   try {
     const url = new URL(raw);
@@ -61,6 +67,8 @@ export function buildPayCheckoutUrl(
     | null,
   code: string | null | undefined,
 ) {
-  if (!code) return null;
+  if (!code) {
+    return null;
+  }
   return `${resolvePayOrigin(req)}/${String(code).trim().toUpperCase()}`;
 }

@@ -9,9 +9,13 @@ export function checkMissingAwait(config: PulseConfig): Break[] {
   const dirs = [config.backendDir, config.workerDir].filter(Boolean);
 
   for (const dir of dirs) {
-    const files = walkFiles(dir, ['.ts']).filter(f => {
-      if (/\.(spec|test|d)\.ts$/.test(f)) return false;
-      if (/node_modules/.test(f)) return false;
+    const files = walkFiles(dir, ['.ts']).filter((f) => {
+      if (/\.(spec|test|d)\.ts$/.test(f)) {
+        return false;
+      }
+      if (/node_modules/.test(f)) {
+        return false;
+      }
       return true;
     });
 
@@ -30,29 +34,47 @@ export function checkMissingAwait(config: PulseConfig): Break[] {
         const trimmed = lines[i].trim();
 
         // Skip comment lines
-        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+          continue;
+        }
 
         // Look for .then( calls
-        if (!trimmed.includes('.then(')) continue;
+        if (!trimmed.includes('.then(')) {
+          continue;
+        }
 
         // Skip lines that already chain .catch( on the same line
-        if (trimmed.includes('.catch(')) continue;
+        if (trimmed.includes('.catch(')) {
+          continue;
+        }
 
         // Check the next 3 lines for .catch(
         const nextLines = lines.slice(i + 1, Math.min(i + 4, lines.length));
-        const hasCatch = nextLines.some(l => l.includes('.catch('));
-        if (hasCatch) continue;
+        const hasCatch = nextLines.some((l) => l.includes('.catch('));
+        if (hasCatch) {
+          continue;
+        }
 
         // Skip common false positives: test matchers, comments, string literals
-        if (/['"`].*\.then\(.*['"`]/.test(trimmed)) continue;
+        if (/['"`].*\.then\(.*['"`]/.test(trimmed)) {
+          continue;
+        }
         // Skip Promise.resolve().then() — these are utility patterns
-        if (/Promise\s*\.\s*resolve\s*\(\s*\)\.then\(/.test(trimmed)) continue;
+        if (/Promise\s*\.\s*resolve\s*\(\s*\)\.then\(/.test(trimmed)) {
+          continue;
+        }
         // Skip already-awaited expressions: `await something().then(...)`
-        if (/\bawait\b/.test(trimmed)) continue;
+        if (/\bawait\b/.test(trimmed)) {
+          continue;
+        }
         // Skip variable assignments where result is captured (float is less likely)
-        if (/(?:const|let|var)\s+\w+\s*=\s*\w+.*\.then\(/.test(trimmed)) continue;
+        if (/(?:const|let|var)\s+\w+\s*=\s*\w+.*\.then\(/.test(trimmed)) {
+          continue;
+        }
         // Skip return statements with .then() — they propagate the promise
-        if (/^\s*return\s+/.test(lines[i])) continue;
+        if (/^\s*return\s+/.test(lines[i])) {
+          continue;
+        }
 
         breaks.push({
           type: 'FLOATING_PROMISE',

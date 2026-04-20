@@ -16,7 +16,9 @@ interface OnboardingState {
 }
 
 function isOnboardingState(value: unknown): value is OnboardingState {
-  if (value === null || typeof value !== 'object') return false;
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
   const v = value as Record<string, unknown>;
   return (
     typeof v.currentStep === 'number' &&
@@ -136,7 +138,9 @@ export class OnboardingService {
     const memory = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key: 'onboarding_state' } },
     });
-    if (!memory?.value) return null;
+    if (!memory?.value) {
+      return null;
+    }
     if (!isOnboardingState(memory.value)) {
       this.logger.warn(
         `kloelMemory[onboarding_state] for workspace=${workspaceId} has unexpected shape; treating as uninitialised.`,

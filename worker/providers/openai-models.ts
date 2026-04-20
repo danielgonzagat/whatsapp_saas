@@ -32,7 +32,9 @@ const ROLE_ENV_CHAIN: Record<WorkerOpenAIModelRole, readonly string[]> = {
 function resolveFromChain(keys: readonly string[]): string | undefined {
   for (const key of keys) {
     const value = readEnv(key);
-    if (value) return value;
+    if (value) {
+      return value;
+    }
   }
   return undefined;
 }

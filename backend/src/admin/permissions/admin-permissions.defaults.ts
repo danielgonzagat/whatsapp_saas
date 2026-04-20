@@ -75,7 +75,9 @@ interface FlatPermission {
  * bypasses the guard and doesn't need rows.
  */
 export function flattenDefaults(role: AdminRole): FlatPermission[] {
-  if (role === AdminRole.OWNER) return [];
+  if (role === AdminRole.OWNER) {
+    return [];
+  }
   const matrix = ADMIN_PERMISSION_DEFAULTS[role];
   const out: FlatPermission[] = [];
   for (const module of Object.values(AdminModule) as AdminModule[]) {
@@ -90,6 +92,8 @@ export function flattenDefaults(role: AdminRole): FlatPermission[] {
 }
 
 export function defaultAllows(role: AdminRole, module: AdminModule, action: AdminAction): boolean {
-  if (role === AdminRole.OWNER) return true;
+  if (role === AdminRole.OWNER) {
+    return true;
+  }
   return ADMIN_PERMISSION_DEFAULTS[role][module].has(action);
 }

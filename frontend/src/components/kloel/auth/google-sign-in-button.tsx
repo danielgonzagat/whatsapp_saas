@@ -32,7 +32,9 @@ export function GoogleSignInButton({
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (clientId) return;
+    if (clientId) {
+      return;
+    }
     const message =
       'Login com Google não configurado no frontend. Defina NEXT_PUBLIC_GOOGLE_CLIENT_ID.';
     setLocalError(message);
@@ -40,7 +42,9 @@ export function GoogleSignInButton({
   }, [clientId, onError]);
 
   useEffect(() => {
-    if (!clientId) return;
+    if (!clientId) {
+      return;
+    }
 
     if (window.google?.accounts?.id) {
       setSdkReady(true);
@@ -50,12 +54,16 @@ export function GoogleSignInButton({
     let cancelled = false;
 
     const handleReady = () => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       setSdkReady(true);
     };
 
     const handleFailure = () => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       const message = 'Não foi possível carregar o login com Google.';
       setLocalError(message);
       onError?.(message);
@@ -97,8 +105,12 @@ export function GoogleSignInButton({
   }, [clientId, onError]);
 
   useEffect(() => {
-    if (!clientId || !sdkReady || !buttonContainerRef.current) return;
-    if (!window.google?.accounts?.id) return;
+    if (!clientId || !sdkReady || !buttonContainerRef.current) {
+      return;
+    }
+    if (!window.google?.accounts?.id) {
+      return;
+    }
 
     const target = buttonContainerRef.current;
     target.innerHTML = '';

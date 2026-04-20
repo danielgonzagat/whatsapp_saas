@@ -29,7 +29,7 @@ function extractCookieOptions(lines: string[], startLine: number): string {
 export function checkCookieSecurity(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const files = walkFiles(config.backendDir, ['.ts']).filter(f => !shouldSkipFile(f));
+  const files = walkFiles(config.backendDir, ['.ts']).filter((f) => !shouldSkipFile(f));
 
   // Global CSRF check accumulator
   let csrfMentionCount = 0;
@@ -54,10 +54,14 @@ export function checkCookieSecurity(config: PulseConfig): Break[] {
       const trimmed = lines[i].trim();
 
       // Skip comment lines
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
 
-      const isCookieSet = COOKIE_SET_PATTERNS.some(re => re.test(trimmed));
-      if (!isCookieSet) continue;
+      const isCookieSet = COOKIE_SET_PATTERNS.some((re) => re.test(trimmed));
+      if (!isCookieSet) {
+        continue;
+      }
 
       // Extract the options context (multi-line)
       const optionsContext = extractCookieOptions(lines, i);
@@ -108,7 +112,8 @@ export function checkCookieSecurity(config: PulseConfig): Break[] {
       file: 'backend/src',
       line: 0,
       description: 'No CSRF protection found anywhere in the backend',
-      detail: 'No references to csrf, csurf, csrfProtection, or _csrf found. Add CSRF middleware if using cookie-based auth.',
+      detail:
+        'No references to csrf, csurf, csrfProtection, or _csrf found. Add CSRF middleware if using cookie-based auth.',
     });
   }
 

@@ -99,7 +99,9 @@ export class KloelEditor {
   }
 
   private _notifyChange(): void {
-    if (this._onChange) this._onChange();
+    if (this._onChange) {
+      this._onChange();
+    }
   }
 
   toJSON(): object {

@@ -20,18 +20,24 @@ import {
 } from './contract';
 
 function formatPct(value: number) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return '—';
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '—';
+  }
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
 
 function formatMoneyBRL(value: number) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return '—';
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '—';
+  }
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function formatShortDate(dateIso: string) {
   const date = new Date(dateIso);
-  if (Number.isNaN(date.getTime())) return dateIso;
+  if (Number.isNaN(date.getTime())) {
+    return dateIso;
+  }
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 

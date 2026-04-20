@@ -13,7 +13,9 @@ export function useCompactComposerViewport(): boolean {
   const [isCompactViewport, setIsCompactViewport] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
 
     const mediaQuery = window.matchMedia('(max-width: 780px)');
     const syncViewport = () => setIsCompactViewport(mediaQuery.matches);

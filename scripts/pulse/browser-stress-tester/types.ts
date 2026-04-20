@@ -1,12 +1,12 @@
 // PULSE Browser Stress Tester — Types
 
 export type BrowserTestStatus =
-  | 'FUNCIONA'       // API response OK or DOM changed as expected
-  | 'QUEBRADO'       // Error, 500 response, or console crash
-  | 'FACHADA'        // No API call, no DOM change — nothing happened
-  | 'TIMEOUT'        // Exceeded timeout
-  | 'CRASH'          // Page crashed or navigation error
-  | 'NAO_TESTAVEL';  // Element not found, dangerous, or external
+  | 'FUNCIONA' // API response OK or DOM changed as expected
+  | 'QUEBRADO' // Error, 500 response, or console crash
+  | 'FACHADA' // No API call, no DOM change — nothing happened
+  | 'TIMEOUT' // Exceeded timeout
+  | 'CRASH' // Page crashed or navigation error
+  | 'NAO_TESTAVEL'; // Element not found, dangerous, or external
 
 export interface ObservedApiCall {
   method: string;
@@ -46,7 +46,17 @@ export interface PageTestResult {
 
 export interface DiscoveredElement {
   label: string;
-  type: 'button' | 'input' | 'textarea' | 'select' | 'switch' | 'checkbox' | 'file-input' | 'link' | 'tab' | 'clickable';
+  type:
+    | 'button'
+    | 'input'
+    | 'textarea'
+    | 'select'
+    | 'switch'
+    | 'checkbox'
+    | 'file-input'
+    | 'link'
+    | 'tab'
+    | 'clickable';
   selector: string;
   placeholder?: string;
   inputType?: string;

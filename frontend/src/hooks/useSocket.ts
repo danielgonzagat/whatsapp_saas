@@ -40,7 +40,9 @@ export function useSocket() {
     const workspaceId = tokenStorage.getWorkspaceId();
 
     // Don't connect if not authenticated
-    if (!token) return;
+    if (!token) {
+      return;
+    }
 
     const socket = io(API_BASE, {
       auth: { token },
@@ -78,7 +80,9 @@ export function useSocket() {
 
   const subscribe = useCallback((event: string, handler: EventHandler): (() => void) => {
     const socket = socketRef.current;
-    if (!socket) return () => {};
+    if (!socket) {
+      return () => {};
+    }
 
     socket.on(event, handler);
     return () => {

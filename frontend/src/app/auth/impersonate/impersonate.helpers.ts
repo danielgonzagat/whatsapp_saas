@@ -9,13 +9,17 @@ export type ImpersonationPayload = {
 };
 
 export function readImpersonationPayload(): ImpersonationPayload | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   const hash = window.location.hash.startsWith('#')
     ? window.location.hash.slice(1)
     : window.location.hash;
   const params = new URLSearchParams(hash);
   const raw = params.get('session');
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   try {
     const decoded = window.atob(raw);
     return JSON.parse(decoded) as ImpersonationPayload;
@@ -25,11 +29,17 @@ export function readImpersonationPayload(): ImpersonationPayload | null {
 }
 
 export function applyImpersonationPayload(payload: ImpersonationPayload): void {
-  if (!payload.access_token) return;
+  if (!payload.access_token) {
+    return;
+  }
   const workspaceId = payload.workspace?.id || payload.user?.workspaceId;
   tokenStorage.setToken(payload.access_token);
-  if (payload.refresh_token) tokenStorage.setRefreshToken(payload.refresh_token);
-  if (workspaceId) tokenStorage.setWorkspaceId(workspaceId);
+  if (payload.refresh_token) {
+    tokenStorage.setRefreshToken(payload.refresh_token);
+  }
+  if (workspaceId) {
+    tokenStorage.setWorkspaceId(workspaceId);
+  }
   tokenStorage.ensureAuthCookie();
 }
 

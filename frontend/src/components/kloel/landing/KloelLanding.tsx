@@ -3,11 +3,7 @@ import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
 import { useState, useEffect, useRef, useId } from 'react';
 import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
-import {
-  delayForTypewriter,
-  runSequentialList,
-  runSequentialRange,
-} from './KloelLanding.helpers';
+import { delayForTypewriter, runSequentialList, runSequentialRange } from './KloelLanding.helpers';
 import ThanosSection from './ThanosSection';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
@@ -184,9 +180,13 @@ function HeroLoop() {
     }
 
     const cv = noiseRef.current;
-    if (!cv) return;
+    if (!cv) {
+      return;
+    }
     const ctx = cv.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
     cv.width = 600;
     cv.height = 120;
     let raf2: number;
@@ -255,7 +255,9 @@ function HeroLoop() {
           },
           continueWhileMounted,
         );
-        if (!continueWhileMounted()) return;
+        if (!continueWhileMounted()) {
+          return;
+        }
         await wait(450);
         setVis((d) => ({ ...d, phase: 'strike' }));
         await runSequentialRange(
@@ -268,7 +270,9 @@ function HeroLoop() {
           },
           continueWhileMounted,
         );
-        if (!continueWhileMounted()) return;
+        if (!continueWhileMounted()) {
+          return;
+        }
         await wait(250);
         await runSequentialRange(
           0,
@@ -284,7 +288,9 @@ function HeroLoop() {
           },
           continueWhileMounted,
         );
-        if (!continueWhileMounted()) return;
+        if (!continueWhileMounted()) {
+          return;
+        }
         await wait(700);
         await runSequentialRange(
           0,
@@ -294,10 +300,7 @@ function HeroLoop() {
             setGx({
               on: true,
               text: scrambleText(full, index * 0.06),
-              shk: [
-                (Math.random() - 0.5) * index * 0.6,
-                (Math.random() - 0.5) * index * 0.4,
-              ],
+              shk: [(Math.random() - 0.5) * index * 0.6, (Math.random() - 0.5) * index * 0.4],
               chr: index * 1.8,
               slices: index > 4 ? buildGlitchSlices() : [],
               flash: false,
@@ -306,7 +309,9 @@ function HeroLoop() {
           },
           continueWhileMounted,
         );
-        if (!continueWhileMounted()) return;
+        if (!continueWhileMounted()) {
+          return;
+        }
         await runSequentialRange(
           0,
           15,
@@ -324,7 +329,9 @@ function HeroLoop() {
           },
           continueWhileMounted,
         );
-        if (!continueWhileMounted()) return;
+        if (!continueWhileMounted()) {
+          return;
+        }
         setGx((g) => ({ ...g, flash: true, chr: 20 }));
         await wait(50);
         setVis((d) => ({ ...d, phase: 'hidden' }));
@@ -354,11 +361,15 @@ function HeroLoop() {
           },
           continueWhileMounted,
         );
-        if (!continueWhileMounted()) return;
+        if (!continueWhileMounted()) {
+          return;
+        }
         setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
         setResurrected(true);
         await wait(3200);
-        if (!continueWhileMounted()) return;
+        if (!continueWhileMounted()) {
+          return;
+        }
         await runSequentialRange(
           0,
           5,
@@ -376,13 +387,17 @@ function HeroLoop() {
           },
           continueWhileMounted,
         );
-        if (!continueWhileMounted()) return;
+        if (!continueWhileMounted()) {
+          return;
+        }
         setGx((g) => ({ ...g, flash: true }));
         await wait(40);
         setResurrected(false);
         setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
         await wait(250);
-        if (!continueWhileMounted()) return;
+        if (!continueWhileMounted()) {
+          return;
+        }
         await cycle();
       };
 
@@ -559,7 +574,9 @@ function MultiChannel() {
     }
 
     const el = ref.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const o = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
@@ -573,7 +590,9 @@ function MultiChannel() {
     return () => o.disconnect();
   }, [prefersReducedMotion]);
   useEffect(() => {
-    if (!go) return;
+    if (!go) {
+      return;
+    }
     if (prefersReducedMotion) {
       setMsgs({
         wa: MULTI_CHANNEL_FLOW.filter((message) => message.ch === 'wa'),
@@ -589,7 +608,9 @@ function MultiChannel() {
         MULTI_CHANNEL_FLOW,
         async (msg) => {
           await wait(msg.f === 'ai' ? 1100 : msg.f === 'ok' ? 1400 : 650);
-          if (c) return;
+          if (c) {
+            return;
+          }
           setMsgs((p) => ({ ...p, [msg.ch]: [...p[msg.ch], msg] }));
         },
         () => !c,
@@ -745,7 +766,9 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
     }
 
     const el = ref.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const o = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
@@ -855,16 +878,24 @@ function FinalManifestLoop() {
         setTone('light');
         await wait(420);
         await typePhrase(FINAL_MANIFEST_FIRST, 'light');
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         await wait(1600);
         await deletePhrase(FINAL_MANIFEST_FIRST, 'light');
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         await wait(720);
         await typePhrase(FINAL_MANIFEST_SECOND, 'ember');
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         await wait(8000);
         await deletePhrase(FINAL_MANIFEST_SECOND, 'ember');
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         await wait(900);
         await cycle();
       };
@@ -879,7 +910,9 @@ function FinalManifestLoop() {
   }, [prefersReducedMotion]);
 
   const renderManifest = () => {
-    if (!text) return null;
+    if (!text) {
+      return null;
+    }
 
     if (tone === 'light') {
       return <span style={{ color: '#E0DDD8' }}>{text}</span>;
@@ -1675,7 +1708,9 @@ export default function KloelLanding() {
                   type="button"
                   className="landing-final-cta-button"
                   onClick={() => {
-                    if (typeof window === 'undefined') return;
+                    if (typeof window === 'undefined') {
+                      return;
+                    }
                     const params = new URLSearchParams({ forceAuth: '1' });
                     if (email) {
                       params.set('email', email);

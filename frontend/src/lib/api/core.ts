@@ -172,7 +172,9 @@ const FRESH_AUTH_QUERY_KEY = 'auth';
 let freshAuthReconciled = false;
 
 function writeDocumentCookie(value: string) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
 
   const documentCookieDescriptor =
     Object.getOwnPropertyDescriptor(Document.prototype, 'cookie') ||
@@ -187,7 +189,9 @@ function writeDocumentCookie(value: string) {
 }
 
 function emitStorageChange() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   window.dispatchEvent(new Event(STORAGE_EVENT));
 }
 
@@ -227,7 +231,9 @@ function pickBestTokenCandidate(candidates: string[]): string | null {
 }
 
 function readBrowserCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === 'undefined') {
+    return null;
+  }
 
   const prefix = `${name}=`;
   const candidates = document.cookie
@@ -236,8 +242,12 @@ function readBrowserCookie(name: string): string | null {
     .filter((entry) => entry.startsWith(prefix))
     .map((entry) => decodeURIComponent(entry.slice(prefix.length)));
 
-  if (candidates.length === 0) return null;
-  if (candidates.length === 1) return candidates[0] || null;
+  if (candidates.length === 0) {
+    return null;
+  }
+  if (candidates.length === 1) {
+    return candidates[0] || null;
+  }
 
   if (name === TOKEN_KEY || name === LEGACY_TOKEN_COOKIE_KEY) {
     return pickBestTokenCandidate(candidates);
@@ -270,14 +280,18 @@ function setBrowserCookie(
   maxAge = AUTH_COOKIE_MAX_AGE,
   options?: { shareAcrossSubdomains?: boolean },
 ) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
   writeDocumentCookie(
     `${name}=${encodeURIComponent(value)}; ${browserCookieSuffix(maxAge, options)}`,
   );
 }
 
 function clearBrowserCookie(name: string) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
   writeDocumentCookie(`${name}=; ${browserCookieSuffix(0)}`);
   writeDocumentCookie(`${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`);
 }
@@ -287,7 +301,9 @@ function setBrowserAuthCookie() {
 }
 
 function clearHostOnlyBrowserCookie(name: string) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
   writeDocumentCookie(`${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`);
 }
 
@@ -304,14 +320,18 @@ function clearBrowserAuthCookies() {
 }
 
 function removeFreshAuthQueryParam() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   const nextUrl = new URL(window.location.href);
   nextUrl.searchParams.delete(FRESH_AUTH_QUERY_KEY);
   window.history.replaceState(window.history.state, '', nextUrl.toString());
 }
 
 function reconcileFreshSharedAuthSession() {
-  if (typeof window === 'undefined' || freshAuthReconciled) return;
+  if (typeof window === 'undefined' || freshAuthReconciled) {
+    return;
+  }
 
   const currentUrl = new URL(window.location.href);
   if (currentUrl.searchParams.get(FRESH_AUTH_QUERY_KEY) !== '1') {
@@ -372,7 +392,9 @@ function persistWorkspaceIfChanged(
 }
 
 function syncWorkspaceFromToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
 
   const token = readStoredAccessToken();
   const tokenWorkspaceId = extractTokenWorkspaceId(token);
@@ -387,7 +409,9 @@ function syncWorkspaceFromToken(): string | null {
 }
 
 function syncBrowserStorageFromCookies(options?: { clearLocalIfMissing?: boolean }): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {
+    return false;
+  }
 
   const accessToken = readBrowserCookie(TOKEN_KEY) || readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY);
   const refreshToken = readBrowserCookie(REFRESH_TOKEN_KEY);
@@ -488,7 +512,9 @@ export function resolveWorkspaceFromAuthPayload(
 // Current approach is standard for SPAs but vulnerable to XSS.
 export const tokenStorage = {
   getToken: (): string | null => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') {
+      return null;
+    }
     reconcileFreshSharedAuthSession();
     // Do NOT clear localStorage if cookie is missing — the cookie may have expired
     // while localStorage still has a valid token. Let the 401 handler deal with it.
@@ -500,7 +526,9 @@ export const tokenStorage = {
     token: string,
     options?: { shareAcrossSubdomains?: boolean; markAuthenticated?: boolean },
   ): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     localStorage.setItem(TOKEN_KEY, token);
     setBrowserCookie(TOKEN_KEY, token, AUTH_COOKIE_MAX_AGE, {
       shareAcrossSubdomains: options?.shareAcrossSubdomains ?? !isAnonymousKloelToken(token),
@@ -512,35 +540,45 @@ export const tokenStorage = {
   },
 
   getRefreshToken: (): string | null => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') {
+      return null;
+    }
     reconcileFreshSharedAuthSession();
     syncBrowserStorageFromCookies();
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
 
   setRefreshToken: (token: string, options?: { shareAcrossSubdomains?: boolean }): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     localStorage.setItem(REFRESH_TOKEN_KEY, token);
     setBrowserCookie(REFRESH_TOKEN_KEY, token, AUTH_COOKIE_MAX_AGE, options);
     emitStorageChange();
   },
 
   getWorkspaceId: (): string | null => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') {
+      return null;
+    }
     reconcileFreshSharedAuthSession();
     syncBrowserStorageFromCookies();
     return syncWorkspaceFromToken();
   },
 
   setWorkspaceId: (id: string, options?: { shareAcrossSubdomains?: boolean }): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     localStorage.setItem(WORKSPACE_KEY, id);
     setBrowserCookie(WORKSPACE_KEY, id, AUTH_COOKIE_MAX_AGE, options);
     emitStorageChange();
   },
 
   clear: (): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(WORKSPACE_KEY);
@@ -549,14 +587,20 @@ export const tokenStorage = {
   },
 
   ensureAuthCookie: (): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     reconcileFreshSharedAuthSession();
     const token =
       localStorage.getItem(TOKEN_KEY) ||
       readBrowserCookie(TOKEN_KEY) ||
       readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY);
-    if (!token) return;
-    if (isAnonymousKloelToken(token)) return;
+    if (!token) {
+      return;
+    }
+    if (isAnonymousKloelToken(token)) {
+      return;
+    }
 
     setBrowserCookie(TOKEN_KEY, token);
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
@@ -586,7 +630,9 @@ let refreshPromise: Promise<boolean> | null = null;
 
 async function refreshAccessToken(): Promise<boolean> {
   // If a refresh is already in-flight, wait for its result instead of starting a new one
-  if (refreshPromise) return refreshPromise;
+  if (refreshPromise) {
+    return refreshPromise;
+  }
 
   refreshPromise = doRefreshAccessToken();
   try {
@@ -598,7 +644,9 @@ async function refreshAccessToken(): Promise<boolean> {
 
 async function doRefreshAccessToken(): Promise<boolean> {
   const refreshToken = tokenStorage.getRefreshToken();
-  if (!refreshToken) return false;
+  if (!refreshToken) {
+    return false;
+  }
 
   try {
     const res = await fetch(`/api/auth/refresh`, {
@@ -688,11 +736,15 @@ function buildApiHeaders(
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
-    if (isProxyEndpoint) headers['x-kloel-access-token'] = token;
+    if (isProxyEndpoint) {
+      headers['x-kloel-access-token'] = token;
+    }
   }
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
-    if (isProxyEndpoint) headers['x-kloel-workspace-id'] = workspaceId;
+    if (isProxyEndpoint) {
+      headers['x-kloel-workspace-id'] = workspaceId;
+    }
   }
   return headers;
 }
@@ -700,19 +752,25 @@ function buildApiHeaders(
 function buildSearchParams(params: Record<string, string | undefined>): URLSearchParams {
   const searchParams = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined) searchParams.set(key, value);
+    if (value !== undefined) {
+      searchParams.set(key, value);
+    }
   }
   return searchParams;
 }
 
 function joinQueryString(baseUrl: string, qs: string): string {
-  if (!qs) return baseUrl;
+  if (!qs) {
+    return baseUrl;
+  }
   const separator = baseUrl.includes('?') ? '&' : '?';
   return `${baseUrl}${separator}${qs}`;
 }
 
 function appendQueryParams(baseUrl: string, params?: Record<string, string | undefined>): string {
-  if (!params) return baseUrl;
+  if (!params) {
+    return baseUrl;
+  }
   return joinQueryString(baseUrl, buildSearchParams(params).toString());
 }
 
@@ -725,12 +783,16 @@ function shouldSerializeAsJson(body: unknown): body is object {
 }
 
 function serializeApiBody(body: unknown): BodyInit | null | undefined {
-  if (shouldSerializeAsJson(body)) return JSON.stringify(body);
+  if (shouldSerializeAsJson(body)) {
+    return JSON.stringify(body);
+  }
   return body as BodyInit | null | undefined;
 }
 
 function normalizeErrorMessage(rawMessage: unknown): string | undefined {
-  if (Array.isArray(rawMessage)) return rawMessage.join(', ');
+  if (Array.isArray(rawMessage)) {
+    return rawMessage.join(', ');
+  }
   return rawMessage as string | undefined;
 }
 
@@ -745,7 +807,9 @@ function buildErrorResponse<T>(
 async function performApiRequest<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
   const res = await fetch(createTrustedRequest(url, init));
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) return buildErrorResponse<T>(data, res.status);
+  if (!res.ok) {
+    return buildErrorResponse<T>(data, res.status);
+  }
   return buildSuccessResponse(data, res.status);
 }
 
@@ -755,7 +819,9 @@ async function retryApiRequestWithRefreshedToken<T>(
   headers: Record<string, string>,
 ): Promise<ApiResponse<T> | null> {
   const refreshed = await refreshAccessToken();
-  if (!refreshed) return null;
+  if (!refreshed) {
+    return null;
+  }
   headers.Authorization = `Bearer ${tokenStorage.getToken()}`;
   return performApiRequest<T>(url, { ...baseInit, headers });
 }
@@ -787,7 +853,9 @@ export async function apiFetch<T = unknown>(
 
     if (response.status === 401 && tokenStorage.getRefreshToken()) {
       const retryResponse = await retryApiRequestWithRefreshedToken<T>(url, baseInit, headers);
-      if (retryResponse) return retryResponse;
+      if (retryResponse) {
+        return retryResponse;
+      }
     }
 
     return response;
@@ -806,7 +874,9 @@ export async function apiFetch<T = unknown>(
 export const buildQuery = (params: Record<string, string | number | undefined | null>) => {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null) return;
+    if (value === undefined || value === null) {
+      return;
+    }
     search.append(key, String(value));
   });
   const qs = search.toString();
@@ -824,7 +894,9 @@ export async function getWalletBalance(workspaceId: string): Promise<WalletBalan
   const res = await apiFetch<WalletBalance>(
     `/kloel/wallet/${encodeURIComponent(workspaceId)}/balance`,
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data as WalletBalance;
 }
 
@@ -832,9 +904,13 @@ export async function getWalletTransactions(workspaceId: string): Promise<Wallet
   const res = await apiFetch<WalletTransaction[] | { transactions: WalletTransaction[] }>(
     `/kloel/wallet/${encodeURIComponent(workspaceId)}/transactions`,
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   const data = res.data;
-  if (Array.isArray(data)) return data;
+  if (Array.isArray(data)) {
+    return data;
+  }
   return (data as { transactions: WalletTransaction[] })?.transactions || [];
 }
 
@@ -849,7 +925,9 @@ export async function processSale(
       body: data,
     },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data;
 }
 
@@ -862,7 +940,9 @@ export async function requestWithdrawal(
     method: 'POST',
     body: { amount, bankAccount },
   });
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data;
 }
 
@@ -876,7 +956,9 @@ export async function confirmTransaction(
       method: 'POST',
     },
   );
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
   return res.data;
 }
 
@@ -890,13 +972,17 @@ export async function getMemoryStats(
   const res = await apiFetch<{ totalItems: number; products: number; knowledge: number }>(
     `/kloel/memory/${workspaceId}/stats`,
   );
-  if (res.error) throw new Error('Failed to fetch memory stats');
+  if (res.error) {
+    throw new Error('Failed to fetch memory stats');
+  }
   return res.data as { totalItems: number; products: number; knowledge: number };
 }
 
 export async function getMemoryList(workspaceId: string): Promise<MemoryItem[]> {
   const res = await apiFetch<{ memories: MemoryItem[] }>(`/kloel/memory/${workspaceId}/list`);
-  if (res.error) throw new Error('Failed to fetch memories');
+  if (res.error) {
+    throw new Error('Failed to fetch memories');
+  }
   return res.data?.memories || [];
 }
 
@@ -905,7 +991,9 @@ export async function saveProduct(workspaceId: string, product: Product): Promis
     method: 'POST',
     body: product,
   });
-  if (res.error) throw new Error('Failed to save product');
+  if (res.error) {
+    throw new Error('Failed to save product');
+  }
   return res.data;
 }
 
@@ -914,7 +1002,9 @@ export async function searchMemory(workspaceId: string, query: string): Promise<
     method: 'POST',
     body: { query },
   });
-  if (res.error) throw new Error('Failed to search memory');
+  if (res.error) {
+    throw new Error('Failed to search memory');
+  }
   return res.data?.memories || [];
 }
 
@@ -927,26 +1017,37 @@ export async function getLeads(
   params?: { status?: string; search?: string; limit?: number },
 ): Promise<Lead[]> {
   const query = new URLSearchParams();
-  if (params?.status) query.set('status', params.status);
-  if (params?.search) query.set('q', params.search);
-  if (params?.limit) query.set('limit', String(params.limit));
+  if (params?.status) {
+    query.set('status', params.status);
+  }
+  if (params?.search) {
+    query.set('q', params.search);
+  }
+  if (params?.limit) {
+    query.set('limit', String(params.limit));
+  }
 
   const endpoint = `/kloel/leads/${encodeURIComponent(workspaceId)}${
     query.toString() ? `?${query.toString()}` : ''
   }`;
 
   const res = await apiFetch<Lead[] | { leads: Lead[] }>(endpoint);
-  if (res.error) throw new Error(res.error);
+  if (res.error) {
+    throw new Error(res.error);
+  }
 
   const data = res.data;
-  if (Array.isArray(data)) return data;
+  if (Array.isArray(data)) {
+    return data;
+  }
   if (
     data &&
     typeof data === 'object' &&
     'leads' in data &&
     Array.isArray((data as { leads: Lead[] }).leads)
-  )
+  ) {
     return (data as { leads: Lead[] }).leads;
+  }
   return [];
 }
 
@@ -967,7 +1068,9 @@ export const api = {
     }
 
     const res = await apiFetch<T>(endpoint, { method: 'GET' });
-    if (res.error) throw new Error(res.error);
+    if (res.error) {
+      throw new Error(res.error);
+    }
     return { data: res.data as T };
   },
 
@@ -992,7 +1095,9 @@ export const api = {
       method: 'POST',
       body: body,
     });
-    if (res.error) throw new Error(res.error);
+    if (res.error) {
+      throw new Error(res.error);
+    }
     return { data: res.data as T };
   },
 
@@ -1017,7 +1122,9 @@ export const api = {
       method: 'PUT',
       body: body,
     });
-    if (res.error) throw new Error(res.error);
+    if (res.error) {
+      throw new Error(res.error);
+    }
     return { data: res.data as T };
   },
 
@@ -1033,7 +1140,9 @@ export const api = {
     }
 
     const res = await apiFetch<T>(endpoint, { method: 'DELETE' });
-    if (res.error) throw new Error(res.error);
+    if (res.error) {
+      throw new Error(res.error);
+    }
     return { data: res.data as T };
   },
 };

@@ -21,10 +21,14 @@ function readString(value: unknown): string {
 function decodeJwtPayload(authHeader: string): Record<string, unknown> | null {
   const match = authHeader.match(BEARER_S_RE);
   const token = match?.[1];
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
 
   const [, payload = ''] = token.split('.');
-  if (!payload) return null;
+  if (!payload) {
+    return null;
+  }
 
   try {
     const normalized = payload.replace(PATTERN_RE, '+').replace(PATTERN_RE_2, '/');
@@ -76,7 +80,9 @@ function normalizeWorkspaceMeResponse(data: unknown, authHeader: string) {
 
 function pickFirstNonEmpty(...values: Array<string | null | undefined>): string {
   for (const value of values) {
-    if (value) return value;
+    if (value) {
+      return value;
+    }
   }
   return '';
 }
@@ -99,7 +105,9 @@ function resolveWorkspaceId(request: NextRequest): string {
 
 function resolveAuthHeader(request: NextRequest): string {
   const forwardedAuthorization = request.headers.get('authorization') || '';
-  if (forwardedAuthorization) return forwardedAuthorization;
+  if (forwardedAuthorization) {
+    return forwardedAuthorization;
+  }
   const accessToken = resolveAccessToken(request);
   return accessToken ? `Bearer ${accessToken}` : '';
 }

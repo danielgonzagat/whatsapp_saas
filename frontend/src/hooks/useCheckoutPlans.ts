@@ -122,7 +122,9 @@ interface PlanCreateBody {
 function extractCheckoutProductList(
   raw: CheckoutProductItem[] | CheckoutProductListResponse | undefined,
 ): CheckoutProductItem[] {
-  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw)) {
+    return raw;
+  }
   const envelope = raw as CheckoutProductListResponse | undefined;
   return envelope?.products || envelope?.data || [];
 }
@@ -164,7 +166,9 @@ async function createCheckoutProductId(product: DashboardProduct): Promise<strin
 async function ensureCheckoutProduct(product: DashboardProduct): Promise<string | null> {
   try {
     const existingId = await findExistingCheckoutProductId(product);
-    if (existingId !== undefined) return existingId;
+    if (existingId !== undefined) {
+      return existingId;
+    }
     return await createCheckoutProductId(product);
   } catch {
     return null;
@@ -209,7 +213,9 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
 
   const createPlan = useCallback(
     async (body: PlanCreateBody) => {
-      if (!checkoutProductId) return null;
+      if (!checkoutProductId) {
+        return null;
+      }
       const res = await apiFetch(`/checkout/products/${checkoutProductId}/plans`, {
         method: 'POST',
         body,
@@ -239,7 +245,9 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
 
   const duplicatePlan = useCallback(
     async (plan: CheckoutPlan) => {
-      if (!checkoutProductId) return null;
+      if (!checkoutProductId) {
+        return null;
+      }
       const res = await apiFetch(`/checkout/products/${checkoutProductId}/plans`, {
         method: 'POST',
         body: {
@@ -259,7 +267,9 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
 
   const createCheckout = useCallback(
     async (body: Record<string, unknown>) => {
-      if (!checkoutProductId) return null;
+      if (!checkoutProductId) {
+        return null;
+      }
       const res = await apiFetch(`/checkout/products/${checkoutProductId}/checkouts`, {
         method: 'POST',
         body,
@@ -436,7 +446,9 @@ export function useCheckoutCoupons() {
 export function useCheckoutProduct(productId: string | null) {
   const updateProduct = useCallback(
     async (body: Record<string, unknown>) => {
-      if (!productId) return null;
+      if (!productId) {
+        return null;
+      }
       const res = await apiFetch(`/checkout/products/${productId}`, { method: 'PUT', body });
       return res;
     },
@@ -444,7 +456,9 @@ export function useCheckoutProduct(productId: string | null) {
   );
 
   const deleteProduct = useCallback(async () => {
-    if (!productId) return;
+    if (!productId) {
+      return;
+    }
     await apiFetch(`/checkout/products/${productId}`, { method: 'DELETE' });
   }, [productId]);
 
@@ -454,9 +468,15 @@ export function useCheckoutProduct(productId: string | null) {
 /* ── Checkout Orders ── */
 export function useCheckoutOrders(params?: { status?: string; page?: number; limit?: number }) {
   const qs = new URLSearchParams();
-  if (params?.status) qs.set('status', params.status);
-  if (params?.page) qs.set('page', String(params.page));
-  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.status) {
+    qs.set('status', params.status);
+  }
+  if (params?.page) {
+    qs.set('page', String(params.page));
+  }
+  if (params?.limit) {
+    qs.set('limit', String(params.limit));
+  }
   const q = qs.toString();
   const { data, isLoading, mutate } = useSWR<OrderItem[] | OrderListResponse>(
     `/checkout/orders${q ? `?${q}` : ''}`,
@@ -505,7 +525,9 @@ export function usePixels(planId: string | null) {
 
   const createPixel = useCallback(
     async (body: { type: string; pixelId: string; accessToken?: string }) => {
-      if (!configId) return null;
+      if (!configId) {
+        return null;
+      }
       const res = await apiFetch(`/checkout/config/${configId}/pixels`, { method: 'POST', body });
       mutate();
       return res;
