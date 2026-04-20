@@ -440,6 +440,18 @@ function executePlaywrightScenario(
       ...process.env,
       E2E_API_URL: input.runtimeEvidence.backendUrl || process.env.E2E_API_URL,
       E2E_FRONTEND_URL: input.runtimeEvidence.frontendUrl || process.env.E2E_FRONTEND_URL,
+      E2E_APP_URL:
+        process.env.E2E_APP_URL ||
+        input.runtimeEvidence.frontendUrl ||
+        process.env.E2E_FRONTEND_URL,
+      E2E_AUTH_URL:
+        process.env.E2E_AUTH_URL ||
+        input.runtimeEvidence.frontendUrl ||
+        process.env.E2E_FRONTEND_URL,
+      E2E_PAY_URL:
+        process.env.E2E_PAY_URL ||
+        input.runtimeEvidence.frontendUrl ||
+        process.env.E2E_FRONTEND_URL,
       E2E_WORKER_URL: process.env.E2E_WORKER_URL || process.env.PULSE_WORKER_URL,
     },
     maxBuffer: 10 * 1024 * 1024,

@@ -1,0 +1,22 @@
+{
+  "flowId": "whatsapp-message-send",
+  "status": "passed",
+  "executed": true,
+  "accepted": false,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": false,
+  "replayExecuted": true,
+  "summary": "whatsapp-message-send replay passed via seeded inbox conversation 7fa4911c-5c98-41ad-acf0-d2bd446532a8. Final outbound smoke remains opt-in.",
+  "artifactPaths": [
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_whatsapp-message-send.json"
+  ],
+  "metrics": {
+    "testPhone": "5511999990000",
+    "inboundMarker": "PULSE:IN:mo7n0daf",
+    "conversationId": "7fa4911c-5c98-41ad-acf0-d2bd446532a8",
+    "inboundMessageId": "cbfdf6a8-bdf2-472f-9c14-42983b9df64b",
+    "readbackCount": 18,
+    "smokePending": true
+  }
+}
