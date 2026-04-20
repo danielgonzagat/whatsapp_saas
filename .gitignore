@@ -50,3 +50,5 @@ PULSE_EXECUTION_TRACE.json
 .railway/
 .vercel
 .env*.local
+
+.agents/

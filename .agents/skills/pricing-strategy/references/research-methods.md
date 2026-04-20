@@ -1,37 +1,22 @@
 # Pricing Research Methods
 
 ## Contents
-
-- Van Westendorp Price Sensitivity Meter (The Four Questions, How to Analyze,
-  Survey Tips, Sample
-  Output)
-- MaxDiff Analysis (How It Works, Example Survey Question, Analyzing Results,
-  Using MaxDiff for
-  Packaging)
+- Van Westendorp Price Sensitivity Meter (The Four Questions, How to Analyze, Survey Tips, Sample Output)
+- MaxDiff Analysis (How It Works, Example Survey Question, Analyzing Results, Using MaxDiff for Packaging)
 - Willingness to Pay Surveys
 - Usage-Value Correlation Analysis
 
 ## Van Westendorp Price Sensitivity Meter
 
-The Van Westendorp survey identifies the acceptable price range for your
-product.
+The Van Westendorp survey identifies the acceptable price range for your product.
 
 ### The Four Questions
 
 Ask each respondent:
-
-1. "At what price would you consider [product] to be so expensive that you would
-   not consider buying
-   it?" (Too expensive)
-2. "At what price would you consider [product] to be priced so low that you
-   would question its
-   quality?" (Too cheap)
-3. "At what price would you consider [product] to be starting to get expensive,
-   but you still might
-   consider it?" (Expensive/high side)
-4. "At what price would you consider [product] to be a bargain—a great buy for
-   the money?"
-   (Cheap/good value)
+1. "At what price would you consider [product] to be so expensive that you would not consider buying it?" (Too expensive)
+2. "At what price would you consider [product] to be priced so low that you would question its quality?" (Too cheap)
+3. "At what price would you consider [product] to be starting to get expensive, but you still might consider it?" (Expensive/high side)
+4. "At what price would you consider [product] to be a bargain—a great buy for the money?" (Cheap/good value)
 
 ### How to Analyze
 
@@ -46,7 +31,6 @@ Ask each respondent:
 **Optimal pricing zone:** Between OPP and IDP
 
 ### Survey Tips
-
 - Need 100-300 respondents for reliable data
 - Segment by persona (different willingness to pay)
 - Use realistic product descriptions
@@ -71,8 +55,7 @@ Opportunity: 25-50% price increase without significant demand impact
 
 ## MaxDiff Analysis (Best-Worst Scaling)
 
-MaxDiff identifies which features customers value most, informing packaging
-decisions.
+MaxDiff identifies which features customers value most, informing packaging decisions.
 
 ### How It Works
 
@@ -98,19 +81,18 @@ Which feature is LEAST important to you?
 ### Analyzing Results
 
 Features are ranked by utility score:
-
 - High utility = Must-have (include in base tier)
 - Medium utility = Differentiator (use for tier separation)
 - Low utility = Nice-to-have (premium tier or cut)
 
 ### Using MaxDiff for Packaging
 
-| Utility Score | Packaging Decision                  |
-| ------------- | ----------------------------------- |
-| Top 20%       | Include in all tiers (table stakes) |
-| 20-50%        | Use to differentiate tiers          |
-| 50-80%        | Higher tiers only                   |
-| Bottom 20%    | Consider cutting or premium add-on  |
+| Utility Score | Packaging Decision |
+|---------------|-------------------|
+| Top 20% | Include in all tiers (table stakes) |
+| 20-50% | Use to differentiate tiers |
+| 50-80% | Higher tiers only |
+| Bottom 20% | Consider cutting or premium add-on |
 
 ---
 
@@ -133,21 +115,17 @@ Statistical analysis reveals price sensitivity per feature
 ## Usage-Value Correlation Analysis
 
 ### 1. Instrument usage data
-
 Track how customers use your product:
-
 - Feature usage frequency
 - Volume metrics (users, records, API calls)
 - Outcome metrics (revenue generated, time saved)
 
 ### 2. Correlate with customer success
-
 - Which usage patterns predict retention?
 - Which usage patterns predict expansion?
 - Which customers pay the most, and why?
 
 ### 3. Identify value thresholds
-
 - At what usage level do customers "get it"?
 - At what usage level do they expand?
 - At what usage level should price increase?

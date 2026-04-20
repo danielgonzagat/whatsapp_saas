@@ -8,8 +8,7 @@ Complete guide to recovering failed payments and reducing involuntary churn.
 
 - Failed payments cause 30-50% of all subscription churn
 - Most failed payments are recoverable with the right strategy
-- Subscription businesses lose an estimated $129 billion annually to involuntary
-  churn
+- Subscription businesses lose an estimated $129 billion annually to involuntary churn
 - Effective dunning recovers 50-60% of failed payments
 
 ---
@@ -33,17 +32,14 @@ Day 14+:       Win-back sequence begins
 
 ### Card Expiry Management
 
-- **30 days before expiry** — email: "Your card ending in 4242 expires
-  next month."
-- **15 days before expiry** — email: "Update your payment method to avoid
-  interruption."
-- **7 days before expiry** — email: "Your card expires in 7 days — update
-  now."
-- **3 days before expiry** — in-app banner: "Payment method expiring
-  soon."
+| Timing | Action |
+|--------|--------|
+| 30 days before expiry | Email: "Your card ending in 4242 expires next month" |
+| 15 days before expiry | Email: "Update your payment method to avoid interruption" |
+| 7 days before expiry | Email: "Your card expires in 7 days — update now" |
+| 3 days before expiry | In-app banner: "Payment method expiring soon" |
 
-### Email template — Card expiring
-
+**Email template — Card expiring:**
 ```
 Subject: Your card ending in 4242 expires soon
 
@@ -64,17 +60,15 @@ This takes less than 30 seconds.
 
 Major card networks offer automatic card update programs:
 
-- **Visa Account Updater (VAU)** — network: Visa. Auto-updates stored card
-  numbers and expiry dates.
-- **Mastercard Automatic Billing Updater (ABU)** — network: Mastercard.
-  Same behavior for Mastercard cards.
-- **Amex Cardrefresher** — network: American Express. Same behavior for
-  Amex cards.
+| Service | Network | What It Does |
+|---------|---------|--------------|
+| Visa Account Updater (VAU) | Visa | Auto-updates stored card numbers and expiry dates |
+| Mastercard Automatic Billing Updater (ABU) | Mastercard | Same for Mastercard |
+| Amex Cardrefresher | American Express | Same for Amex |
 
 **Impact:** Reduces hard declines from expired/replaced cards by 30-50%.
 
-### How to enable
-
+**How to enable:**
 - **Stripe**: Automatic — enabled by default
 - **Chargebee**: Enabled through gateway settings
 - **Recurly**: Built-in, enabled by default
@@ -83,17 +77,13 @@ Major card networks offer automatic card update programs:
 ### Backup Payment Methods
 
 Prompt for a second payment method:
-
 - During signup: "Add a backup payment method" (low conversion)
-- After first successful payment: "Protect your account with a backup card"
-  (better timing)
-- After a failed payment is recovered: "Add a backup to prevent future
-  interruptions" (best timing — they felt the pain)
+- After first successful payment: "Protect your account with a backup card" (better timing)
+- After a failed payment is recovered: "Add a backup to prevent future interruptions" (best timing — they felt the pain)
 
 ### Pre-Billing Notifications
 
 For annual plans or high-value subscriptions:
-
 - Email 7 days before renewal with amount and date
 - Include link to update payment method
 - Show what's included in the renewal
@@ -105,40 +95,35 @@ For annual plans or high-value subscriptions:
 
 ### Decline Type Classification
 
-- `insufficient_funds` (soft) — temporarily low balance. Retry: yes, in
-  2-3 days.
-- `card_declined` generic (soft) — various temporary reasons. Retry: yes,
-  3-4 times.
-- `processing_error` (soft) — gateway / network issue. Retry: yes, within
-  24h.
-- `expired_card` (hard) — card is expired. Retry: no; request new card.
-- `stolen_card` (hard) — card reported stolen. Retry: no; request new card.
-- `do_not_honor` (soft / hard) — bank refused (ambiguous). Try once more,
-  then ask for a new card.
-- `authentication_required` (auth) — SCA / 3DS needed. Send customer to
-  authenticate.
+| Code | Type | Meaning | Retry? |
+|------|------|---------|--------|
+| `insufficient_funds` | Soft | Temporarily low balance | Yes — retry in 2-3 days |
+| `card_declined` (generic) | Soft | Various temporary reasons | Yes — retry 3-4 times |
+| `processing_error` | Soft | Gateway/network issue | Yes — retry within 24h |
+| `expired_card` | Hard | Card is expired | No — request new card |
+| `stolen_card` | Hard | Card reported stolen | No — request new card |
+| `do_not_honor` | Soft/Hard | Bank refused (ambiguous) | Try once more, then ask for new card |
+| `authentication_required` | Auth | SCA/3DS needed | Send customer to authenticate |
 
 ### Retry Schedule by Provider
 
-### Stripe (Smart Retries — recommended)
-
+**Stripe (Smart Retries — recommended):**
 - Enable "Smart Retries" in Stripe Dashboard → Billing → Settings
 - Stripe's ML model picks optimal retry timing based on billions of transactions
 - Typically 4-8 retry attempts over 3-4 weeks
 - Recovers ~15% more than fixed-schedule retries
 
-### Manual retry schedule (if no smart retries)
+**Manual retry schedule (if no smart retries):**
 
-| Retry     | Timing                    | Best Day/Time                         |
-| --------- | ------------------------- | ------------------------------------- |
-| 1         | Day 1 (24h after failure) | Morning, same day of week as original |
-| 2         | Day 3                     | Try a different time of day           |
-| 3         | Day 5                     | After typical payday (1st, 15th)      |
-| 4         | Day 7                     | Morning of the next business day      |
-| 5 (final) | Day 10                    | Last attempt before grace period ends |
+| Retry | Timing | Best Day/Time |
+|-------|--------|--------------|
+| 1 | Day 1 (24h after failure) | Morning, same day of week as original |
+| 2 | Day 3 | Try a different time of day |
+| 3 | Day 5 | After typical payday (1st, 15th) |
+| 4 | Day 7 | Morning of the next business day |
+| 5 (final) | Day 10 | Last attempt before grace period ends |
 
-### Retry timing insights
-
+**Retry timing insights:**
 - Retry on the same day of month the original payment succeeded
 - Retry after common paydays (1st and 15th of the month)
 - Avoid retrying on weekends (lower approval rates)
@@ -253,43 +238,40 @@ will be paused automatically.
 
 ### What Happens During Grace Period
 
-| Setting       | Recommendation                                         |
-| ------------- | ------------------------------------------------------ |
-| Duration      | 7-14 days after final retry                            |
-| Access        | Degraded (read-only) or full access                    |
-| Visibility    | In-app banner: "Payment past due — update to continue" |
-| Retry         | Continue background retries during grace               |
-| Communication | Dunning emails continue                                |
+| Setting | Recommendation |
+|---------|---------------|
+| Duration | 7-14 days after final retry |
+| Access | Degraded (read-only) or full access |
+| Visibility | In-app banner: "Payment past due — update to continue" |
+| Retry | Continue background retries during grace |
+| Communication | Dunning emails continue |
 
 ### Access Degradation Options
 
-#### Option A: Full access during grace (recommended for B2B)
-
+**Option A: Full access during grace (recommended for B2B)**
 - Lower friction, customer feels respected
 - Higher recovery rate (they still see value)
 - Risk: some customers exploit the grace period
 
-#### Option B: Read-only access (recommended for B2C)
-
+**Option B: Read-only access (recommended for B2C)**
 - Can view but not create/edit
 - Creates urgency without data loss fear
 - Clear message: "Update payment to resume full access"
 
-##### Option C: Immediate lockout (not recommended)
-
+**Option C: Immediate lockout (not recommended)**
 - Aggressive, damages relationship
 - Lower recovery rate
 - Only appropriate for very low-cost plans
 
 ### Post-Grace Period
 
-| Timing            | Action                                |
-| ----------------- | ------------------------------------- |
-| Grace period ends | Pause account (not delete)            |
-| Day 1 post-pause  | "Your account has been paused" email  |
-| Day 7 post-pause  | "Your data is still here" reminder    |
-| Day 30 post-pause | Win-back attempt with new offer       |
-| Day 60 post-pause | Final win-back                        |
+| Timing | Action |
+|--------|--------|
+| Grace period ends | Pause account (not delete) |
+| Day 1 post-pause | "Your account has been paused" email |
+| Day 7 post-pause | "Your data is still here" reminder |
+| Day 30 post-pause | Win-back attempt with new offer |
+| Day 60 post-pause | Final win-back |
 | Day 90 post-pause | Data deletion warning (if applicable) |
 
 ---
@@ -298,14 +280,12 @@ will be paused automatically.
 
 ### Stripe
 
-### Enable Smart Retries
-
+**Enable Smart Retries:**
 1. Dashboard → Settings → Billing → Subscriptions and emails
 2. Enable "Smart Retries" under retry rules
 3. Set failed payment emails in Dashboard → Settings → Emails
 
-### Custom retry rules (if not using Smart Retries)
-
+**Custom retry rules (if not using Smart Retries):**
 ```
 Retry 1: 3 days after failure
 Retry 2: 5 days after failure
@@ -313,8 +293,7 @@ Retry 3: 7 days after failure
 Final:   Mark subscription as unpaid after last retry
 ```
 
-### Webhook events to handle
-
+**Webhook events to handle:**
 - `invoice.payment_failed` — trigger dunning
 - `invoice.paid` — cancel dunning, restore access
 - `customer.subscription.updated` — status changes
@@ -322,22 +301,19 @@ Final:   Mark subscription as unpaid after last retry
 
 ### Chargebee
 
-### Built-in dunning
-
+**Built-in dunning:**
 1. Settings → Configure Chargebee → Retry Settings
 2. Configure retry attempts and intervals
 3. Settings → Configure Chargebee → Email Notifications → Dunning
 
-### Dunning options
-
+**Dunning options:**
 - Automatic retries with configurable schedule
 - Built-in dunning emails (customizable templates)
 - Grace period configuration per plan
 
 ### Paddle
 
-### Managed dunning
-
+**Managed dunning:**
 - Paddle handles retries and dunning automatically
 - Limited customization (Paddle manages the relationship)
 - Webhook: `subscription.payment_failed`, `subscription.cancelled`
@@ -345,14 +321,12 @@ Final:   Mark subscription as unpaid after last retry
 
 ### Recurly
 
-### Revenue Recovery
-
+**Revenue Recovery:**
 1. Configuration → Dunning Management
 2. Set retry schedule per plan
 3. Configure grace period and final action (pause vs cancel)
 
-### Advanced features
-
+**Advanced features:**
 - Machine-learning retry optimization
 - Per-plan dunning schedules
 - Built-in Account Updater
@@ -364,7 +338,6 @@ Final:   Mark subscription as unpaid after last retry
 Don't rely on email alone. Show payment failures in the app:
 
 ### Banner Pattern
-
 ```
 ┌──────────────────────────────────────────────────────┐
 │ ⚠ Your payment of $29 failed. Update your card to    │
@@ -372,15 +345,13 @@ Don't rely on email alone. Show payment failures in the app:
 └──────────────────────────────────────────────────────┘
 ```
 
-### Rules
-
+**Rules:**
 - Show on every page load during dunning period
 - Allow dismiss (but show again next session)
 - Direct link to payment update (fewest clicks possible)
 - Don't block the product — let them continue using it
 
 ### Modal Pattern (for final warning)
-
 ```
 ┌─────────────────────────────────────┐
 │                                     │
@@ -403,29 +374,26 @@ Don't rely on email alone. Show payment failures in the app:
 
 ### Key Metrics
 
-- **Recovery rate** — recovered payments / total failed. Target: 50-60%.
-- **Recovery rate by decline type** — recovered / failed per type. Target:
-  soft 70%+, hard 40%+.
-- **Time to recovery** — days from failure to successful payment. Target:
-  <5 days.
-- **Pre-dunning prevention rate** — prevented failures / expected failures.
-  Target: 20-30%.
-- **Dunning email open rate** — opens / sent per email. Target: 60%+.
-- **Dunning email click rate** — clicks / opens per email. Target: 30%+.
-- **Revenue recovered (monthly)** — sum of recovered payment amounts.
-  Track trend.
-- **Revenue lost to involuntary churn** — sum of failed + unrecovered
-  amounts. Track trend.
+| Metric | How to Calculate | Target |
+|--------|-----------------|--------|
+| Recovery rate | Recovered payments / Total failed | 50-60% |
+| Recovery rate by decline type | Recovered / Failed per type | Soft: 70%+, Hard: 40%+ |
+| Time to recovery | Days from failure to successful payment | <5 days |
+| Pre-dunning prevention rate | Prevented failures / Expected failures | 20-30% |
+| Dunning email open rate | Opens / Sent per email | 60%+ |
+| Dunning email click rate | Clicks / Opens per email | 30%+ |
+| Revenue recovered (monthly) | Sum of recovered payment amounts | Track trend |
+| Revenue lost to involuntary churn | Sum of failed + unrecovered amounts | Track trend |
 
 ### Benchmarking
 
-### By company stage
+**By company stage:**
 
-| Stage               | Typical Involuntary Churn | Target After Optimization |
-| ------------------- | ------------------------- | ------------------------- |
-| Early (< $1M ARR)   | 3-5% of MRR/month         | 1-2%                      |
-| Growth ($1-10M ARR) | 2-4% of MRR/month         | 0.5-1.5%                  |
-| Scale ($10M+ ARR)   | 1-3% of MRR/month         | 0.3-0.8%                  |
+| Stage | Typical Involuntary Churn | Target After Optimization |
+|-------|--------------------------|--------------------------|
+| Early (< $1M ARR) | 3-5% of MRR/month | 1-2% |
+| Growth ($1-10M ARR) | 2-4% of MRR/month | 0.5-1.5% |
+| Scale ($10M+ ARR) | 1-3% of MRR/month | 0.3-0.8% |
 
 ### ROI Calculation
 

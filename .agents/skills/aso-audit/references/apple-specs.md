@@ -49,13 +49,11 @@ keyword count significantly.
 ## Custom Product Pages (CPPs)
 
 - **Max:** 70 additional pages (plus 1 default)
-- **Customizable:** Screenshots, promotional text, app previews, deep links (iOS
-  18+)
+- **Customizable:** Screenshots, promotional text, app previews, deep links (iOS 18+)
 - **Keywords:** Each keyword combo must be unique to a single CPP
 - **Review:** Submitted to App Review independently of app updates
 - **Organic search:** CPPs appear in organic search results since July 2025
-- **Performance:** +2.5 percentage points higher conversion on average vs
-  default
+- **Performance:** +2.5 percentage points higher conversion on average vs default
 
 ## Product Page Optimization (A/B Testing)
 
@@ -74,14 +72,12 @@ keyword count significantly.
 - **Max published:** 10 on App Store simultaneously
 - **Max duration:** 31 days per event
 - **Pre-event promotion:** Up to 14 days before start
-- **Badge types:** Challenge, Competition, Live Event, Major Update, New Season,
-  Premiere, Special Event
+- **Badge types:** Challenge, Competition, Live Event, Major Update, New Season, Premiere, Special Event
 
 **Event card image:** 16:9, min 1920x1080, max 3840x2160
 **Event details image:** 9:16, min 1080x1920, max 2160x3840
 
-**Not suitable:** Repetitive daily tasks, price promotions without new content,
-general awareness campaigns.
+**Not suitable:** Repetitive daily tasks, price promotions without new content, general awareness campaigns.
 
 ## Ratings & Reviews
 

@@ -1,55 +1,38 @@
 ---
 name: pricing-strategy
-description: "When the user wants help with pricing decisions, packaging, or
-monetization strategy. Also use when the user mentions 'pricing,' 'pricing
-tiers,' 'freemium,' 'free trial,' 'packaging,' 'price increase,' 'value metric,'
-'Van Westendorp,' 'willingness to pay,' 'monetization,' 'how much should I
-charge,' 'my pricing is wrong,' 'pricing page,' 'annual vs monthly,' 'per seat
-pricing,' or 'should I offer a free plan.' Use this whenever someone is figuring
-out what to charge or how to structure their plans. For in-app upgrade screens,
-see paywall-upgrade-cro."
+description: "When the user wants help with pricing decisions, packaging, or monetization strategy. Also use when the user mentions 'pricing,' 'pricing tiers,' 'freemium,' 'free trial,' 'packaging,' 'price increase,' 'value metric,' 'Van Westendorp,' 'willingness to pay,' 'monetization,' 'how much should I charge,' 'my pricing is wrong,' 'pricing page,' 'annual vs monthly,' 'per seat pricing,' or 'should I offer a free plan.' Use this whenever someone is figuring out what to charge or how to structure their plans. For in-app upgrade screens, see paywall-upgrade-cro."
 metadata:
   version: 1.1.0
 ---
 
 # Pricing Strategy
 
-You are an expert in SaaS pricing and monetization strategy. Your goal is to
-help design pricing
-that captures value, drives growth, and aligns with customer willingness to pay.
+You are an expert in SaaS pricing and monetization strategy. Your goal is to help design pricing that captures value, drives growth, and aligns with customer willingness to pay.
 
 ## Before Starting
 
-**Check for product marketing context first:** If
-`.agents/product-marketing-context.md` exists (or
-`.claude/product-marketing-context.md` in older setups), read it before asking
-questions. Use that
-context and only ask for information not already covered or specific to this
-task.
+**Check for product marketing context first:**
+If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Gather this context (ask if not provided):
 
 ### 1. Business Context
-
 - What type of product? (SaaS, marketplace, e-commerce, service)
 - What's your current pricing (if any)?
 - What's your target market? (SMB, mid-market, enterprise)
 - What's your go-to-market motion? (self-serve, sales-led, hybrid)
 
 ### 2. Value & Competition
-
 - What's the primary value you deliver?
 - What alternatives do customers consider?
 - How do competitors price?
 
 ### 3. Current Performance
-
 - What's your current conversion rate?
 - What's your ARPU and churn rate?
 - Any feedback on pricing from customers/prospects?
 
 ### 4. Goals
-
 - Optimizing for growth, revenue, or profitability?
 - Moving upmarket or expanding downmarket?
 
@@ -60,17 +43,14 @@ Gather this context (ask if not provided):
 ### The Three Pricing Axes
 
 **1. Packaging** — What's included at each tier?
-
 - Features, limits, support level
 - How tiers differ from each other
 
 **2. Pricing Metric** — What do you charge for?
-
 - Per user, per usage, flat fee
 - How price scales with value
 
 **3. Price Point** — How much do you charge?
-
 - The actual dollar amounts
 - Perceived value vs. cost
 
@@ -91,11 +71,9 @@ Price should be based on value delivered, not cost to serve:
 
 ### What is a Value Metric?
 
-The value metric is what you charge for—it should scale with the value customers
-receive.
+The value metric is what you charge for—it should scale with the value customers receive.
 
-### Good value metrics
-
+**Good value metrics:**
 - Align price with value delivered
 - Are easy to understand
 - Scale as customer grows
@@ -103,19 +81,18 @@ receive.
 
 ### Common Value Metrics
 
-| Metric             | Best For               | Example         |
-| ------------------ | ---------------------- | --------------- |
-| Per user/seat      | Collaboration tools    | Slack, Notion   |
-| Per usage          | Variable consumption   | AWS, Twilio     |
-| Per feature        | Modular products       | HubSpot add-ons |
-| Per contact/record | CRM, email tools       | Mailchimp       |
-| Per transaction    | Payments, marketplaces | Stripe          |
-| Flat fee           | Simple products        | Basecamp        |
+| Metric | Best For | Example |
+|--------|----------|---------|
+| Per user/seat | Collaboration tools | Slack, Notion |
+| Per usage | Variable consumption | AWS, Twilio |
+| Per feature | Modular products | HubSpot add-ons |
+| Per contact/record | CRM, email tools | Mailchimp |
+| Per transaction | Payments, marketplaces | Stripe |
+| Flat fee | Simple products | Basecamp |
 
 ### Choosing Your Value Metric
 
 Ask: "As a customer uses more of [metric], do they get more value?"
-
 - If yes → good value metric
 - If no → price doesn't align with value
 
@@ -136,8 +113,7 @@ Ask: "As a customer uses more of [metric], do they get more value?"
 - **Support level** — Email → Priority → Dedicated
 - **Access** — API, SSO, custom branding
 
-**For detailed tier structures and persona-based packaging**: See
-[references/tier-structure.md](references/tier-structure.md)
+**For detailed tier structures and persona-based packaging**: See [references/tier-structure.md](references/tier-structure.md)
 
 ---
 
@@ -146,7 +122,6 @@ Ask: "As a customer uses more of [metric], do they get more value?"
 ### Van Westendorp Method
 
 Four questions that identify acceptable price range:
-
 1. Too expensive (wouldn't consider)
 2. Too cheap (question quality)
 3. Expensive but might consider
@@ -157,13 +132,11 @@ Analyze intersections to find optimal pricing zone.
 ### MaxDiff Analysis
 
 Identifies which features customers value most:
-
 - Show sets of features
 - Ask: Most important? Least important?
 - Results inform tier packaging
 
-**For detailed research methods**: See
-[references/research-methods.md](references/research-methods.md)
+**For detailed research methods**: See [references/research-methods.md](references/research-methods.md)
 
 ---
 
@@ -171,20 +144,17 @@ Identifies which features customers value most:
 
 ### Signs It's Time
 
-### Market signals
-
+**Market signals:**
 - Competitors have raised prices
 - Prospects don't flinch at price
 - "It's so cheap!" feedback
 
-### Business signals
-
+**Business signals:**
 - Very high conversion rates (>40%)
 - Very low churn (<3% monthly)
 - Strong unit economics
 
-### Product signals
-
+**Product signals:**
 - Significant value added since last pricing
 - Product more mature/stable
 
@@ -200,14 +170,12 @@ Identifies which features customers value most:
 ## Pricing Page Best Practices
 
 ### Above the Fold
-
 - Clear tier comparison table
 - Recommended tier highlighted
 - Monthly/annual toggle
 - Primary CTA for each tier
 
 ### Common Elements
-
 - Feature comparison table
 - Who each tier is for
 - FAQ section
@@ -216,7 +184,6 @@ Identifies which features customers value most:
 - Customer logos/trust signals
 
 ### Pricing Psychology
-
 - **Anchoring:** Show higher-priced option first
 - **Decoy effect:** Middle tier should be best value
 - **Charm pricing:** $49 vs. $50 (for value-focused)
@@ -227,7 +194,6 @@ Identifies which features customers value most:
 ## Pricing Checklist
 
 ### Before Setting Prices
-
 - [ ] Defined target customer personas
 - [ ] Researched competitor pricing
 - [ ] Identified your value metric
@@ -235,7 +201,6 @@ Identifies which features customers value most:
 - [ ] Mapped features to tiers
 
 ### Pricing Structure
-
 - [ ] Chosen number of tiers
 - [ ] Differentiated tiers clearly
 - [ ] Set price points based on research
@@ -257,8 +222,7 @@ Identifies which features customers value most:
 
 ## Related Skills
 
-- **churn-prevention**: For cancel flows, save offers, and reducing revenue
-  churn
+- **churn-prevention**: For cancel flows, save offers, and reducing revenue churn
 - **page-cro**: For optimizing pricing page conversion
 - **copywriting**: For pricing page copy
 - **marketing-psychology**: For pricing psychology principles

@@ -1,58 +1,38 @@
 ---
 name: referral-program
-description: "When the user wants to create, optimize, or analyze a referral
-program, affiliate
-program, or word-of-mouth strategy. Also use when the user mentions 'referral,'
-'affiliate,'
-'ambassador,' 'word of mouth,' 'viral loop,' 'refer a friend,' 'partner
-program,' 'referral
-incentive,' 'how to get referrals,' 'customers referring customers,' or
-'affiliate payout.' Use this
-whenever someone wants existing users or partners to bring in new customers. For
-launch-specific
-virality, see launch-strategy."
+description: "When the user wants to create, optimize, or analyze a referral program, affiliate program, or word-of-mouth strategy. Also use when the user mentions 'referral,' 'affiliate,' 'ambassador,' 'word of mouth,' 'viral loop,' 'refer a friend,' 'partner program,' 'referral incentive,' 'how to get referrals,' 'customers referring customers,' or 'affiliate payout.' Use this whenever someone wants existing users or partners to bring in new customers. For launch-specific virality, see launch-strategy."
 metadata:
   version: 1.1.0
 ---
 
 # Referral & Affiliate Programs
 
-You are an expert in viral growth and referral marketing. Your goal is to help
-design and optimize
-programs that turn customers into growth engines.
+You are an expert in viral growth and referral marketing. Your goal is to help design and optimize programs that turn customers into growth engines.
 
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or
-`.claude/product-marketing-context.md` in older
-setups), read it before asking questions. Use that context and only ask for
-information not already
-covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Gather this context (ask if not provided):
 
 ### 1. Program Type
-
 - Customer referral program, affiliate program, or both?
 - B2B or B2C?
 - What's the average customer LTV?
 - What's your current CAC from other channels?
 
 ### 2. Current State
-
 - Existing referral/affiliate program?
 - Current referral rate (% who refer)?
 - What incentives have you tried?
 
 ### 3. Product Fit
-
 - Is your product shareable?
 - Does it have network effects?
 - Do customers naturally talk about it?
 
 ### 4. Resources
-
 - Tools/platforms you use or consider?
 - Budget for referral incentives?
 
@@ -62,28 +42,24 @@ Gather this context (ask if not provided):
 
 ### Customer Referral Programs
 
-### Best for
-
+**Best for:**
 - Existing customers recommending to their network
 - Products with natural word-of-mouth
 - Lower-ticket or self-serve products
 
-### Characteristics
-
+**Characteristics:**
 - Referrer is an existing customer
 - One-time or limited rewards
 - Higher trust, lower volume
 
 ### Affiliate Programs
 
-### Best for
-
+**Best for:**
 - Reaching audiences you don't have access to
 - Content creators, influencers, bloggers
 - Higher-ticket products that justify commissions
 
-### Characteristics
-
+**Characteristics:**
 - Affiliates may not be customers
 - Ongoing commission relationship
 - Higher volume, variable trust
@@ -100,8 +76,7 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 ### Step 1: Identify Trigger Moments
 
-### High-intent moments
-
+**High-intent moments:**
 - Right after first "aha" moment
 - After achieving a milestone
 - After exceptional support
@@ -109,8 +84,7 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 ### Step 2: Design Share Mechanism
 
-### Ranked by effectiveness
-
+**Ranked by effectiveness:**
 1. In-product sharing (highest conversion)
 2. Personalized link
 3. Email invitation
@@ -125,8 +99,7 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 **Tiered rewards**: Gamifies referral process, increases engagement
 
-**For examples and incentive sizing**: See
-[references/program-examples.md](references/program-examples.md)
+**For examples and incentive sizing**: See [references/program-examples.md](references/program-examples.md)
 
 ---
 
@@ -134,15 +107,13 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 ### Improving Referral Rate
 
-### If few customers are referring
-
+**If few customers are referring:**
 - Ask at better moments
 - Simplify sharing process
 - Test different incentive types
 - Make referral prominent in product
 
-### If referrals aren't converting
-
+**If referrals aren't converting:**
 - Improve landing experience for referred users
 - Strengthen incentive for new users
 - Ensure referrer's endorsement is visible
@@ -157,13 +128,13 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 ### Common Problems & Fixes
 
-| Problem            | Fix                               |
-| ------------------ | --------------------------------- |
-| Low awareness      | Add prominent in-app prompts      |
-| Low share rate     | Simplify to one click             |
-| Low conversion     | Optimize referred user experience |
-| Fraud/abuse        | Add verification, limits          |
-| One-time referrers | Add tiered/gamified rewards       |
+| Problem | Fix |
+|---------|-----|
+| Low awareness | Add prominent in-app prompts |
+| Low share rate | Simplify to one click |
+| Low conversion | Optimize referred user experience |
+| Fraud/abuse | Add verification, limits |
+| One-time referrers | Add tiered/gamified rewards |
 
 ---
 
@@ -171,14 +142,12 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 
 ### Key Metrics
 
-### Program health
-
+**Program health:**
 - Active referrers (referred someone in last 30 days)
 - Referral conversion rate
 - Rewards earned/paid
 
-### Business impact
-
+**Business impact:**
 - % of new customers from referrals
 - CAC via referral vs. other channels
 - LTV of referred customers
@@ -195,7 +164,6 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 ## Launch Checklist
 
 ### Before Launch
-
 - [ ] Define program goals and success metrics
 - [ ] Design incentive structure
 - [ ] Build or configure referral tool
@@ -206,14 +174,12 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 - [ ] Test complete referral flow
 
 ### Launch
-
 - [ ] Announce to existing customers
 - [ ] Add in-app referral prompts
 - [ ] Update website with program details
 - [ ] Brief support team
 
 ### Post-Launch (First 30 Days)
-
 - [ ] Review conversion funnel
 - [ ] Identify top referrers
 - [ ] Gather feedback
@@ -252,9 +218,7 @@ They get [their reward] too.
 
 ## Affiliate Programs
 
-**For detailed affiliate program design, commission structures, recruitment, and
-tools**: See
-[references/affiliate-programs.md](references/affiliate-programs.md)
+**For detailed affiliate program design, commission structures, recruitment, and tools**: See [references/affiliate-programs.md](references/affiliate-programs.md)
 
 ---
 
@@ -271,19 +235,17 @@ tools**: See
 
 ## Tool Integrations
 
-For implementation, see the [tools registry](../../tools/REGISTRY.md) . Key
-tools for referral
-programs:
+For implementation, see the [tools registry](../../tools/REGISTRY.md). Key tools for referral programs:
 
-| Tool           | Best For                          | Guide                                 |
-| -------------- | --------------------------------- | ------------------------------------- |
-| **Rewardful**  | Stripe-native affiliate programs  | `tools/integrations/rewardful.md`     |
-| **Tolt**       | SaaS affiliate programs           | `tools/integrations/tolt.md`          |
-| **Mention Me** | Enterprise referral programs      | `tools/integrations/mention-me.md`    |
-| **Dub.co**     | Link tracking and attribution     | `tools/integrations/dub-co.md`        |
-| **Stripe**       | Payment processing (for commission tracking)                 | [stripe.md](../../tools/integrations/stripe.md)             |
-| **Introw**       | Channel partner programs with tiers, deal registration, QBRs | [introw.md](../../tools/integrations/introw.md)             |
-| **PartnerStack** | Enterprise partner and affiliate programs                    | [partnerstack.md](../../tools/integrations/partnerstack.md) |
+| Tool | Best For | Guide |
+|------|----------|-------|
+| **Rewardful** | Stripe-native affiliate programs | [rewardful.md](../../tools/integrations/rewardful.md) |
+| **Tolt** | SaaS affiliate programs | [tolt.md](../../tools/integrations/tolt.md) |
+| **Mention Me** | Enterprise referral programs | [mention-me.md](../../tools/integrations/mention-me.md) |
+| **Dub.co** | Link tracking and attribution | [dub-co.md](../../tools/integrations/dub-co.md) |
+| **Stripe** | Payment processing (for commission tracking) | [stripe.md](../../tools/integrations/stripe.md) |
+| **Introw** | Channel partner programs with tiers, deal registration, QBRs | [introw.md](../../tools/integrations/introw.md) |
+| **PartnerStack** | Enterprise partner and affiliate programs | [partnerstack.md](../../tools/integrations/partnerstack.md) |
 
 ---
 

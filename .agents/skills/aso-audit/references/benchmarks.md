@@ -1,11 +1,10 @@
 # ASO Benchmarks & Conversion Data
 
-Industry data from AppTweak, SplitMetrics, Sensor Tower, and others. Updated
-March 2026.
+Industry data from AppTweak, SplitMetrics, Sensor Tower, and others. Updated March 2026.
 
 ## Conversion Rate Benchmarks by Category
 
-### Average CVR (page view to install)
+**Average CVR (page view to install):**
 
 - iOS overall: **25.0%**
 - Google Play overall: **27.3%**
@@ -38,7 +37,7 @@ Source: AppTweak 2025 Benchmarks Report (H1 2024 data, US market)
 | 0.4-star gap vs competitor | **~25% lost installs** from same search |
 | 3-star vs 5-star app       | **50% fewer conversions** for 3-star    |
 
-### Critical thresholds
+**Critical thresholds:**
 
 - **4.0 stars** = minimum for Apple featuring, user trust, conversion viability
 - **4.5+ stars** = optimal zone. Sweet spot: 4.1-4.9
@@ -85,8 +84,7 @@ Sources: AppTweak, ASOMobile, Sensor Tower
 - Best cases: up to **+8.6%**
 - Organic referral: **+2.5 percentage points** (156% lift vs 1.6% baseline)
 - Apple Ads CPP CVR: **55.8% in 2024** (up from 42.1% in 2023)
-- **Only 31% of apps** and **26% of games** use CPPs (low adoption =
-  opportunity)
+- **Only 31% of apps** and **26% of games** use CPPs (low adoption = opportunity)
 - Screenshot reordering alone produced **+16.6% installs** in one case
 
 Sources: AppTweak, SplitMetrics, MobileAction

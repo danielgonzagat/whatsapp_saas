@@ -7,10 +7,9 @@ Score each dimension 0-10 using the rubrics below.
 
 ## Brand Maturity Adjustments (apply to all dimensions)
 
-Before scoring, determine the app's tier: **Dominant**, **Established**, or
-**Challenger**.
+Before scoring, determine the app's tier: **Dominant**, **Established**, or **Challenger**.
 
-### Dominant apps (Instagram, Uber, Spotify, WhatsApp, Netflix)
+**Dominant apps (Instagram, Uber, Spotify, WhatsApp, Netflix):**
 
 - Brand-only titles score 8+ (the brand IS the keyword)
 - Lifestyle/brand screenshots score same as captioned UI screenshots
@@ -20,48 +19,42 @@ Before scoring, determine the app's tier: **Dominant**, **Established**, or
 - Localization scored relative to actual market footprint
 - Missing preview video is acceptable if brand awareness is near-universal
 
-### Established apps (Duolingo, Strava, Notion, Calm, Cash App)
+**Established apps (Duolingo, Strava, Notion, Calm, Cash App):**
 
 - Brand-first titles with 1-2 keywords score normally
 - Strategic description/visual choices get benefit of the doubt
 - All other dimensions scored normally
 
-### Challenger apps (most apps)
+**Challenger apps (most apps):**
 
 - Scored strictly against textbook ASO — every character and feature matters
 
-**Key principle:** Before docking points, ask: "Is this a mistake or a
-data-informed
+**Key principle:** Before docking points, ask: "Is this a mistake or a data-informed
 choice by a team with more information than I have?"
 
 ---
 
 ## 1. Title & Subtitle (Weight: 20%)
 
-### Challenger rubric
+**Challenger rubric:**
 
-- **9-10** — brand + high-value keyword in title, complementary keywords
-  in subtitle, no word repetition across fields, near-max character usage,
-  instantly communicates app purpose.
-- **7-8** — good keyword presence, minor character waste (5+ unused
-  chars), clear purpose.
-- **5-6** — has keywords but poor placement, some repetition between
-  fields, purpose somewhat clear.
-- **3-4** — title is brand-only or generic, subtitle missing or weak,
-  poor character usage.
-- **1-2** — no keyword strategy, title doesn't communicate purpose, major
-  character waste.
-- **0** — cannot assess (data unavailable).
+| Score | Criteria                                                                                                                                                                |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9-10  | Brand + high-value keyword in title, complementary keywords in subtitle, no word repetition across fields, near max character usage, instantly communicates app purpose |
+| 7-8   | Good keyword presence, minor character waste (5+ unused chars), clear purpose                                                                                           |
+| 5-6   | Has keywords but poor placement, some repetition between fields, purpose somewhat clear                                                                                 |
+| 3-4   | Title is brand-only or generic, subtitle missing or weak, poor character usage                                                                                          |
+| 1-2   | No keyword strategy, title doesn't communicate purpose, major character waste                                                                                           |
+| 0     | Cannot assess (data unavailable)                                                                                                                                        |
 
 **Dominant/Established adjustment:** Brand-only titles (e.g., "Instagram") are
 valid if the brand has high search volume. Score 8+ for Dominant apps where
 brand recognition eliminates the need for generic keywords. Evaluate whether
 unused characters represent waste or intentional simplicity.
 
-### Check for
+**Check for:**
 
-- Characters used vs limit (title: 30, subtitle/short desc: 30/80). "Near max" =
-  within 3 chars of the limit (27+/30, 77+/80)
+- Characters used vs limit (title: 30, subtitle/short desc: 30/80). "Near max" = within 3 chars of the limit (27+/30, 77+/80)
 - Primary keyword in title
 - Keyword duplication between title and subtitle
 - Whether app purpose is immediately clear
@@ -74,32 +67,27 @@ unused characters represent waste or intentional simplicity.
 
 ### Apple App Store
 
-- **9-10** — first 3 lines hook with clear value prop; structured with
-  features, benefits, social proof, and CTA; promotional text actively
-  used; compelling and scannable.
-- **7-8** — good opening, decent structure, could improve scannability or
-  CTA.
-- **5-6** — generic opening ("Welcome to..."), some structure, missing CTA
-  or social proof.
-- **3-4** — wall of text, no clear value prop above fold, no promotional
-  text.
-- **1-2** — minimal or boilerplate description, no effort.
-- **0** — cannot assess.
+| Score | Criteria                                                                                                                                               |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 9-10  | First 3 lines hook with clear value prop, structured with features/benefits/social proof/CTA, promotional text actively used, compelling and scannable |
+| 7-8   | Good opening, decent structure, could improve scannability or CTA                                                                                      |
+| 5-6   | Generic opening ("Welcome to..."), some structure, missing CTA or social proof                                                                         |
+| 3-4   | Wall of text, no clear value prop above fold, no promotional text                                                                                      |
+| 1-2   | Minimal or boilerplate description, no effort                                                                                                          |
+| 0     | Cannot assess                                                                                                                                          |
 
 ### Google Play
 
-- **9-10** — keywords in first 3 sentences, 2-3% natural density
-  throughout, HTML formatting used, structured sections, strong CTA,
-  keywords feel natural.
-- **7-8** — good keyword presence, some structure, density slightly off
-  (1-2% or 3-4%).
-- **5-6** — keywords present but sparse (<1%) or stuffed (>5%), weak
-  structure.
-- **3-4** — no keyword strategy visible, poor formatting, wall of text.
-- **1-2** — minimal description, no keywords, no structure.
-- **0** — cannot assess.
+| Score | Criteria                                                                                                                                     |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9-10  | Keywords in first 3 sentences, 2-3% natural density throughout, HTML formatting used, structured sections, strong CTA, keywords feel natural |
+| 7-8   | Good keyword presence, some structure, density slightly off (1-2% or 3-4%)                                                                   |
+| 5-6   | Keywords present but sparse (<1%) or stuffed (>5%), weak structure                                                                           |
+| 3-4   | No keyword strategy visible, poor formatting, wall of text                                                                                   |
+| 1-2   | Minimal description, no keywords, no structure                                                                                               |
+| 0     | Cannot assess                                                                                                                                |
 
-### Check for
+**Check for:**
 
 - First 3 lines quality (visible before "Read More")
 - Feature-benefit framing (not just feature lists)
@@ -113,19 +101,16 @@ unused characters represent waste or intentional simplicity.
 
 ## 3. Visual Assets (Weight: 25%)
 
-- **9-10** — 8-10 screenshots with clear messaging and captions, preview
-  video present, screenshots tell a story in sequence, each communicates
-  one benefit, icon is distinctive and memorable.
-- **7-8** — 6-7 screenshots with captions, good icon, no video (or good
-  video but some screenshot messaging unclear).
-- **5-6** — 5+ screenshots but weak or no captions, basic icon, no video;
-  screenshots are UI dumps.
-- **3-4** — 3-4 screenshots, no captions, generic icon, no storytelling.
-- **1-2** — fewer than 3 screenshots, or screenshots are raw unedited UI;
-  poor icon.
-- **0** — cannot assess.
+| Score | Criteria                                                                                                                                                                      |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9-10  | 8-10 screenshots with clear messaging/captions, preview video present, screenshots tell a story in sequence, each communicates one benefit, icon is distinctive and memorable |
+| 7-8   | 6-7 screenshots with captions, good icon, no video OR good video but some screenshot messaging unclear                                                                        |
+| 5-6   | 5+ screenshots but weak/no captions, basic icon, no video, screenshots are UI dumps                                                                                           |
+| 3-4   | 3-4 screenshots, no captions, generic icon, no storytelling                                                                                                                   |
+| 1-2   | Fewer than 3 screenshots, or screenshots are raw unedited UI, poor icon                                                                                                       |
+| 0     | Cannot assess                                                                                                                                                                 |
 
-### Check for
+**Check for:**
 
 - Screenshot count (minimum 5, ideal 8-10)
 - Caption/overlay text on screenshots (one message per screen, 5-7 words max)
@@ -141,19 +126,16 @@ unused characters represent waste or intentional simplicity.
 
 ## 4. Ratings & Reviews (Weight: 20%)
 
-- **9-10** — 4.5+ stars, 10K+ ratings, recent reviews positive, developer
-  responds to negatives, steady review flow.
-- **7-8** — 4.0-4.4 stars, 1K+ ratings, mostly positive recent reviews,
-  some developer responses.
-- **5-6** — 3.5-3.9 stars, 500+ ratings, mixed recent reviews, no
-  developer responses.
-- **3-4** — 3.0-3.4 stars, <500 ratings, negative themes in recent
-  reviews.
-- **1-2** — below 3.0 stars, few ratings, no developer engagement, visible
-  complaints.
-- **0** — no ratings yet or cannot assess.
+| Score | Criteria                                                                                               |
+| ----- | ------------------------------------------------------------------------------------------------------ |
+| 9-10  | 4.5+ stars, 10K+ ratings, recent reviews positive, developer responds to negatives, steady review flow |
+| 7-8   | 4.0-4.4 stars, 1K+ ratings, mostly positive recent reviews, some developer responses                   |
+| 5-6   | 3.5-3.9 stars, 500+ ratings, mixed recent reviews, no developer responses                              |
+| 3-4   | 3.0-3.4 stars, <500 ratings, negative themes in recent reviews                                         |
+| 1-2   | Below 3.0 stars, few ratings, no developer engagement, visible complaints                              |
+| 0     | No ratings yet or cannot assess                                                                        |
 
-### Check for
+**Check for:**
 
 - Average rating (target: 4.0+ minimum, 4.5+ ideal)
 - Total rating count
@@ -167,19 +149,16 @@ unused characters represent waste or intentional simplicity.
 
 ## 5. Metadata & Freshness (Weight: 10%)
 
-- **9-10** — updated within last month, 10+ localizations, optimal
-  category choice, in-app events / LiveOps active, data safety complete.
-- **7-8** — updated within 2 months, 5+ localizations, good category,
-  data safety present.
-- **5-6** — updated within 3 months, 2-4 localizations, acceptable
-  category.
-- **3-4** — updated 3-6 months ago, 1-2 localizations, possibly wrong
-  category.
-- **1-2** — not updated in 6+ months, single language, poor category
-  choice.
-- **0** — cannot assess.
+| Score | Criteria                                                                                                                  |
+| ----- | ------------------------------------------------------------------------------------------------------------------------- |
+| 9-10  | Updated within last month, 10+ localizations, optimal category choice, in-app events/LiveOps active, data safety complete |
+| 7-8   | Updated within 2 months, 5+ localizations, good category, data safety present                                             |
+| 5-6   | Updated within 3 months, 2-4 localizations, acceptable category                                                           |
+| 3-4   | Updated 3-6 months ago, 1-2 localizations, possibly wrong category                                                        |
+| 1-2   | Not updated in 6+ months, single language, poor category choice                                                           |
+| 0     | Cannot assess                                                                                                             |
 
-### Check for
+**Check for:**
 
 - Last update date and recency
 - Number of supported languages/localizations
@@ -194,17 +173,16 @@ unused characters represent waste or intentional simplicity.
 
 ## 6. Conversion Signals (Weight: 10%)
 
-| Score | Criteria                                                                                |
-| ----- | --------------------------------------------------------------------------------------- |
-| 9-10  | Clear value pre-download, transparent pricing/IAP, social proof (press, awards), strong |
-|       | traction implied by downloads, developer credibility strong                             |
-| 7-8   | Good value communication, pricing clear, some social proof                              |
-| 5-6   | Value prop exists but weak, pricing unclear or IAP heavy, limited social proof          |
-| 3-4   | Unclear what user gets, confusing pricing, no social proof, low downloads visible       |
-| 1-2   | No value communication, suspicious pricing, app looks abandoned                         |
-| 0     | Cannot assess                                                                           |
+| Score | Criteria                                                                                                                                                          |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9-10  | Clear value before download, transparent pricing/IAP, social proof visible (press, awards), download range suggests strong traction, developer credibility strong |
+| 7-8   | Good value communication, pricing clear, some social proof                                                                                                        |
+| 5-6   | Value prop exists but weak, pricing unclear or IAP heavy, limited social proof                                                                                    |
+| 3-4   | Unclear what user gets, confusing pricing, no social proof, low downloads visible                                                                                 |
+| 1-2   | No value communication, suspicious pricing, app looks abandoned                                                                                                   |
+| 0     | Cannot assess                                                                                                                                                     |
 
-### Check for
+**Check for:**
 
 - Price transparency (free, freemium, paid - is it clear?)
 - In-app purchase list quality (do IAP names communicate value?)
@@ -226,8 +204,7 @@ Final Score = (Title * 0.20) + (Description * 0.15) + (Visuals * 0.25)
 Scale to 100: Final Score * 10
 ```
 
-**Example:** Title: 7, Description: 6, Visuals: 8, Ratings: 9, Metadata: 5,
-Conversion: 7
+**Example:** Title: 7, Description: 6, Visuals: 8, Ratings: 9, Metadata: 5, Conversion: 7
 
 ```
 (7 * 0.20) + (6 * 0.15) + (8 * 0.25) + (9 * 0.20) + (5 * 0.10) + (7 * 0.10)

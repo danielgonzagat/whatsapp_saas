@@ -1,8 +1,6 @@
 # Mermaid Diagram Templates
 
-Copy-paste-ready Mermaid diagrams for visual sitemaps. Customize node labels and
-connections for
-your site.
+Copy-paste-ready Mermaid diagrams for visual sitemaps. Customize node labels and connections for your site.
 
 ---
 
@@ -110,7 +108,6 @@ graph TD
 ```
 
 Legend:
-
 - Solid lines = primary hub-spoke links
 - Dashed lines = cross-links between spokes
 
@@ -212,7 +209,6 @@ graph TD
 ```
 
 Color key:
-
 - **Green** (`#4CAF50`): Existing pages (no changes)
 - **Blue** (`#2196F3`): New pages to create
 - **Red** (`#f44336`): Pages to remove or redirect

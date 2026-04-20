@@ -15,7 +15,6 @@ Best for: small businesses, simple SaaS, portfolios.
 ```
 
 Rules:
-
 - Logo always links to homepage
 - CTA button is rightmost, visually distinct (filled button, contrasting color)
 - Items ordered by priority (most visited first)
@@ -23,8 +22,7 @@ Rules:
 
 ### Mega Menu Header
 
-Best for: SaaS with many features, e-commerce with categories, large content
-sites.
+Best for: SaaS with many features, e-commerce with categories, large content sites.
 
 ```
 [Logo]   Product ▾   Solutions ▾   Resources ▾   Pricing   Docs   [CTA]
@@ -46,7 +44,6 @@ When "Product" is hovered/clicked:
 ```
 
 Mega menu rules:
-
 - 2-4 columns max
 - Group items logically (by feature area, use case, or audience)
 - Include a "See all" link at the bottom
@@ -102,8 +99,7 @@ Best for: simple sites, landing pages.
 
 ### Expanded Footer
 
-Best for: sites using footer for SEO (comparison pages, location pages, resource
-links).
+Best for: sites using footer for SEO (comparison pages, location pages, resource links).
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -156,7 +152,6 @@ Changelog
 ```
 
 Rules:
-
 - Current page highlighted
 - Sections collapsible (expanded by default for active section)
 - Search at top of sidebar
@@ -195,7 +190,6 @@ Home > Docs > API Reference > Authentication
 ```
 
 Rules:
-
 - Separator: `>` or `/` (be consistent)
 - Every segment is a link except the current page
 - Current page is plain text (not linked)
@@ -230,12 +224,7 @@ Or use JSON-LD (recommended):
   "@type": "BreadcrumbList",
   "itemListElement": [
     { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://example.com/" },
-    {
-      "@type": "ListItem",
-      "position": 2,
-      "name": "Features",
-      "item": "https://example.com/features"
-    },
+    { "@type": "ListItem", "position": 2, "name": "Features", "item": "https://example.com/features" },
     { "@type": "ListItem", "position": 3, "name": "Analytics" }
   ]
 }
@@ -250,7 +239,6 @@ Or use JSON-LD (recommended):
 Standard for mobile. All nav items collapse into a menu icon.
 
 Rules:
-
 - Hamburger icon (three lines) top-right or top-left
 - Full-screen or slide-out panel
 - CTA button visible without opening the menu (sticky header)
@@ -273,7 +261,6 @@ Best for: web apps, PWAs, mobile-first products.
 ```
 
 Rules:
-
 - 3-5 items max
 - Icons + labels (not just icons)
 - Active state clearly indicated
@@ -285,30 +272,24 @@ Rules:
 
 ### Things to Avoid
 
-- **Too many header items** (8+): causes decision paralysis, nav becomes
-  unreadable on smaller
-  screens
+- **Too many header items** (8+): causes decision paralysis, nav becomes unreadable on smaller screens
 - **Dropdown inception**: dropdowns inside dropdowns inside dropdowns
 - **Mystery icons**: icons without labels — users don't know what they mean
 - **Hidden primary nav**: burying important pages in hamburger menus on desktop
-- **Inconsistent nav between pages**: nav should be identical across the site
-  (except app vs
-  marketing)
+- **Inconsistent nav between pages**: nav should be identical across the site (except app vs marketing)
 - **No mobile consideration**: desktop nav that doesn't translate to mobile
 - **Footer as sitemap dump**: 50+ links in the footer with no organization
-- **Breadcrumbs that don't match URLs**: breadcrumb says "Products > Widget" but
-  URL is
-  `/shop/widget-pro`
+- **Breadcrumbs that don't match URLs**: breadcrumb says "Products > Widget" but URL is `/shop/widget-pro`
 
 ### Common Fixes
 
-| Problem                | Fix                                         |
-| ---------------------- | ------------------------------------------- |
-| Too many nav items     | Group into dropdowns or mega menus          |
-| Users can't find pages | Add search, improve labeling                |
-| High bounce from nav   | Simplify choices, use clearer labels        |
-| SEO pages not linked   | Add to footer or resource sections          |
-| Mobile nav is broken   | Test on real devices, use hamburger pattern |
+| Problem | Fix |
+|---------|-----|
+| Too many nav items | Group into dropdowns or mega menus |
+| Users can't find pages | Add search, improve labeling |
+| High bounce from nav | Simplify choices, use clearer labels |
+| SEO pages not linked | Add to footer or resource sections |
+| Mobile nav is broken | Test on real devices, use hamburger pattern |
 
 ---
 
@@ -317,11 +298,8 @@ Rules:
 Internal links in navigation pass PageRank. Use this strategically:
 
 - **Header nav links are strongest** — put your most important pages here
-- **Footer links pass less value** but still matter — good for comparison pages,
-  location pages
-- **Sidebar links** help with section-level authority — good for blog
-  categories, doc sections
-- **Breadcrumbs** provide structural signals to search engines — implement with
-  schema markup
+- **Footer links pass less value** but still matter — good for comparison pages, location pages
+- **Sidebar links** help with section-level authority — good for blog categories, doc sections
+- **Breadcrumbs** provide structural signals to search engines — implement with schema markup
 - **Don't use JavaScript-only nav** — search engines need crawlable HTML links
 - **Use descriptive anchor text** — "Analytics Features" not just "Features"
