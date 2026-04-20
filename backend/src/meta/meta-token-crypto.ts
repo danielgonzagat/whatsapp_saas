@@ -9,6 +9,7 @@ function resolveMetaTokenKey(): string | null {
   return key || null;
 }
 
+/** Encrypt meta token. */
 export function encryptMetaToken(token: string | null | undefined): string | null | undefined {
   if (!token) {
     return token;
@@ -22,6 +23,7 @@ export function encryptMetaToken(token: string | null | undefined): string | nul
   return encryptString(token, key);
 }
 
+/** Decrypt meta token. */
 export function decryptMetaToken(token: string | null | undefined): string | null {
   if (!token) {
     return null;
