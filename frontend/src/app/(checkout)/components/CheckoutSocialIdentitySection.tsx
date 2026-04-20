@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import type { RefObject } from 'react';
-import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 import type {
   CheckoutSocialIdentitySnapshot,
   CheckoutSocialProvider,
 } from '../hooks/useCheckoutSocialIdentity';
+import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 
 type Props = {
   theme: CheckoutVisualTheme;

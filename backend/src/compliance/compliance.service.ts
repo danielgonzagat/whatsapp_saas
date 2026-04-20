@@ -3,8 +3,8 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { Prisma } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { validateSignedRequest } from './utils/signed-request.validator';
 import { JwtSetValidator, SecurityEventTokenPayload } from './utils/jwt-set.validator';
+import { validateSignedRequest } from './utils/signed-request.validator';
 
 @Injectable()
 export class ComplianceService {
@@ -198,6 +198,12 @@ export class ComplianceService {
   }
 
   async deleteCurrentUser(agentId: string, workspaceId?: string | null) {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: {
+        email: true,
+      },
+    });
     const confirmationCode = this.generateConfirmationCode();
     const request = await this.prisma.dataDeletionRequest.create({
       data: {
@@ -211,9 +217,9 @@ export class ComplianceService {
       },
     });
 
-    const deletedAgent = await this.softDeleteAgent(agentId, request.id);
-    if (deletedAgent?.email) {
-      await this.emailService.sendDataDeletionConfirmationEmail(deletedAgent.email);
+    await this.softDeleteAgent(agentId, request.id);
+    if (agent?.email) {
+      await this.emailService.sendDataDeletionConfirmationEmail(agent.email);
     }
 
     return {

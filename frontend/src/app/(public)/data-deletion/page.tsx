@@ -32,41 +32,47 @@ export default function DataDeletionPage() {
     >
       <LegalSection id="como-funciona" title="1. Como funciona a exclusão">
         <p>
-          Quando recebemos uma solicitação válida de exclusão, abrimos um registro interno, revogamos sessões e integrações
-          relacionadas, removemos ou anonimizamos dados operacionais não obrigatórios e preservamos apenas o mínimo necessário para
-          cumprir exigências legais, fiscais, antifraude e de segurança.
+          Quando recebemos uma solicitação válida de exclusão, abrimos um registro interno,
+          revogamos sessões e integrações relacionadas, removemos ou anonimizamos dados operacionais
+          não obrigatórios e preservamos apenas o mínimo necessário para cumprir exigências legais,
+          fiscais, antifraude e de segurança.
         </p>
         <p>
-          O prazo-alvo para execução completa é de <strong>até 30 dias</strong>, contados da validação da solicitação. Em casos que
-          dependam de verificação adicional de identidade ou de provedores externos, podemos solicitar confirmação complementar.
+          O prazo-alvo para execução completa é de <strong>até 30 dias</strong>, contados da
+          validação da solicitação. Em casos que dependam de verificação adicional de identidade ou
+          de provedores externos, podemos solicitar confirmação complementar.
         </p>
       </LegalSection>
 
       <LegalSection id="autoatendimento" title="2. Autoatendimento na Kloel">
         <p>
-          Quando o recurso estiver disponível na sua conta, você poderá solicitar exclusão dentro do produto em{' '}
-          <strong>app.kloel.com → Configurações → Privacidade → Excluir conta</strong>. Esse fluxo revoga sessões, desativa a conta e
-          gera um registro formal de solicitação no backend da Kloel.
+          Quando o recurso estiver disponível na sua conta, você poderá solicitar exclusão dentro do
+          produto em <strong>app.kloel.com → Configurações → Privacidade → Excluir conta</strong>.
+          Esse fluxo revoga sessões, desativa a conta e gera um registro formal de solicitação no
+          backend da Kloel.
         </p>
       </LegalSection>
 
       <LegalSection id="facebook" title="3. Exclusão via Facebook/Meta">
         <p>
-          Se você autenticou sua conta Kloel com Facebook ou conectou ativos Meta, pode remover a Kloel na área de aplicativos
-          conectados do Facebook. Quando isso ocorrer, a Meta poderá acionar automaticamente nosso callback de exclusão de dados em{' '}
+          Se você autenticou sua conta Kloel com Facebook ou conectou ativos Meta, pode remover a
+          Kloel na área de aplicativos conectados do Facebook. Quando isso ocorrer, a Meta poderá
+          acionar automaticamente nosso callback de exclusão de dados em{' '}
           <strong>{legalConstants.urls.facebookDeletion}</strong>.
         </p>
         <p>
-          Ao receber esse callback assinado, a Kloel cria uma solicitação de exclusão, gera um código de confirmação e disponibiliza o
-          acompanhamento em <strong>/data-deletion/status/{'{código}'}</strong>.
+          Ao receber esse callback assinado, a Kloel cria uma solicitação de exclusão, gera um
+          código de confirmação e disponibiliza o acompanhamento em{' '}
+          <strong>/data-deletion/status/{'{código}'}</strong>.
         </p>
       </LegalSection>
 
       <LegalSection id="email" title="4. Solicitação por email">
         <p>
-          Você também pode solicitar exclusão enviando um email para <strong>{legalConstants.company.emailDpo}</strong> com o assunto{' '}
-          <strong>&quot;Solicitação de exclusão&quot;</strong>. Para agilizar o processo, informe o email da conta, o workspace
-          relacionado e o método de autenticação utilizado.
+          Você também pode solicitar exclusão enviando um email para{' '}
+          <strong>{legalConstants.company.emailDpo}</strong> com o assunto{' '}
+          <strong>&quot;Solicitação de exclusão&quot;</strong>. Para agilizar o processo, informe o
+          email da conta, o workspace relacionado e o método de autenticação utilizado.
         </p>
       </LegalSection>
 

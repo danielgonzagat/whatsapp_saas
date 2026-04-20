@@ -3,7 +3,7 @@
 import { authApi } from '@/lib/api';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
-import { type FormEvent, useCallback, useEffect, useRef, useState, useId } from 'react';
+import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useAuth } from './auth-provider';
 import { HORIZONTAL_GRID_LINES, VERTICAL_GRID_LINES, typingDelayFor } from './auth-screen-data';
 import { usePrefersReducedMotion } from './use-prefers-reduced-motion';
@@ -838,7 +838,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     try {
       // Apple Sign-In via REST (for web, uses Apple JS SDK redirect flow)
       // The identityToken is obtained from Apple's authorization response
-      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.app')}&redirect_uri=${encodeURIComponent(`${window.location.origin}/api/auth/apple/callback`)}&response_type=code id_token&scope=name email&response_mode=form_post`;
+      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.app')}&redirect_uri=${encodeURIComponent(`${window.location.origin}/api/auth/callback/apple`)}&response_type=code id_token&scope=name email&response_mode=form_post`;
       window.location.href = appleAuthUrl;
     } catch (e) {
       console.error('Apple Sign-In error:', e);

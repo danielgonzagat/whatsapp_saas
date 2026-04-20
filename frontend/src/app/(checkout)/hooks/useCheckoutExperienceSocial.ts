@@ -4,19 +4,19 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import {
+  type CheckoutExperienceForm,
   EMPTY_CHECKOUT_EXPERIENCE_FORM,
+  type UseCheckoutExperienceSocialOptions,
   computeFinalizeOrderPrecheckError,
   deriveCheckoutExperienceState,
   isCheckoutAddressStepValid,
   isCheckoutIdentityStepValid,
   resolveCheckoutCouponCode,
-  type CheckoutExperienceForm,
-  type UseCheckoutExperienceSocialOptions,
 } from './checkout-experience-social-helpers';
 import { finalizeCheckoutOrder } from './checkout-order-submit';
+import { validateCoupon } from './useCheckout';
 import { useCheckoutExperienceAutomation } from './useCheckoutExperienceAutomation';
 import { useCheckoutSocialIdentity } from './useCheckoutSocialIdentity';
-import { validateCoupon } from './useCheckout';
 
 const D_RE = /\D/g;
 

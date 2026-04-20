@@ -1,9 +1,7 @@
 'use client';
 
-import { useId, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
-import { Ed } from './checkout-theme-shared';
-import type { CheckoutVisualTheme } from './checkout-theme-tokens';
+import { type Dispatch, type RefObject, type SetStateAction, useId } from 'react';
 import type {
   CheckoutSocialIdentitySnapshot,
   CheckoutSocialProvider,
@@ -14,6 +12,8 @@ import {
   type LeadFieldChange,
   type LeadFormState,
 } from './CheckoutLeadSections.parts';
+import { Ed } from './checkout-theme-shared';
+import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 
 type FormState = LeadFormState;
 

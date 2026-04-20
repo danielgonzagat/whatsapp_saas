@@ -1,14 +1,14 @@
 'use client';
 
-import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
-import { ValidationInput } from './checkout-theme-shared';
-import { CheckoutSocialIdentitySection } from './CheckoutSocialIdentitySection';
-import type { CheckoutVisualTheme } from './checkout-theme-tokens';
+import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type {
   CheckoutSocialIdentitySnapshot,
   CheckoutSocialProvider,
 } from '../hooks/useCheckoutSocialIdentity';
+import { CheckoutSocialIdentitySection } from './CheckoutSocialIdentitySection';
+import { ValidationInput } from './checkout-theme-shared';
+import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 
 export type LeadFormState = {
   name: string;

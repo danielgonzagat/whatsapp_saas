@@ -1,6 +1,14 @@
 'use client';
 
 import type { PublicCheckoutThemeProps } from '@/lib/public-checkout-contract';
+import { useCheckoutExperienceSocial } from '../hooks/useCheckoutExperienceSocial';
+import { CheckoutLeadSections } from './CheckoutLeadSections';
+import { CheckoutPaymentSection, CheckoutSuccessModal } from './CheckoutPaymentSection';
+import {
+  CheckoutDesktopSidebar,
+  CheckoutFooter,
+  CheckoutMobileSummary,
+} from './CheckoutSummarySections';
 import {
   StepBubble,
   StepLine,
@@ -9,15 +17,7 @@ import {
   formatCnpj,
   normalizeTestimonials,
 } from './checkout-theme-shared';
-import {
-  CheckoutFooter,
-  CheckoutDesktopSidebar,
-  CheckoutMobileSummary,
-} from './CheckoutSummarySections';
-import { CheckoutLeadSections } from './CheckoutLeadSections';
-import { CheckoutPaymentSection, CheckoutSuccessModal } from './CheckoutPaymentSection';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
-import { useCheckoutExperienceSocial } from '../hooks/useCheckoutExperienceSocial';
 
 type Props = PublicCheckoutThemeProps & {
   theme: CheckoutVisualTheme;

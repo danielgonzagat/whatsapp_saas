@@ -105,10 +105,13 @@ export const authApi = {
   },
 
   verifyMagicLink: async (token: string) => {
-    const res = await apiFetch<AuthPayload & { redirectTo?: string }>('/api/auth/magic-link/verify', {
-      method: 'POST',
-      body: { token },
-    });
+    const res = await apiFetch<AuthPayload & { redirectTo?: string }>(
+      '/api/auth/magic-link/verify',
+      {
+        method: 'POST',
+        body: { token },
+      },
+    );
 
     persistAuthPayload(res);
     mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));

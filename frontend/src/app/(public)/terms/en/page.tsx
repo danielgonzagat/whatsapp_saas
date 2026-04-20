@@ -42,29 +42,33 @@ export default function TermsPageEn() {
     >
       <LegalSection id="acceptance" title="1. Acceptance">
         <p>
-          By using Kloel, you agree to these Terms of Service and our Privacy Policy. If you use Kloel on behalf of an entity, you
-          represent that you have authority to bind that entity.
+          By using Kloel, you agree to these Terms of Service and our Privacy Policy. If you use
+          Kloel on behalf of an entity, you represent that you have authority to bind that entity.
         </p>
       </LegalSection>
       <LegalSection id="service" title="2. Service description">
         <p>
-          Kloel is a SaaS platform for commercial automation, official channel operations, checkout acceleration, and AI-assisted
-          marketing workflows.
+          Kloel is a SaaS platform for commercial automation, official channel operations, checkout
+          acceleration, and AI-assisted marketing workflows.
         </p>
       </LegalSection>
       <LegalSection id="eligibility" title="3. Eligibility">
-        <p>Users must be at least 18 years old and legally capable, or be duly authorized representatives of an entity.</p>
+        <p>
+          Users must be at least 18 years old and legally capable, or be duly authorized
+          representatives of an entity.
+        </p>
       </LegalSection>
       <LegalSection id="account-security" title="4. Account and security">
         <p>
-          You are responsible for safeguarding your credentials and for all activity under your account. Kloel may suspend access when
-          fraud, abuse, or account compromise is suspected.
+          You are responsible for safeguarding your credentials and for all activity under your
+          account. Kloel may suspend access when fraud, abuse, or account compromise is suspected.
         </p>
       </LegalSection>
       <LegalSection id="billing" title="5. Plans, billing, cancellation, refunds">
         <p>
-          Paid plans may be billed on a recurring or one-time basis depending on the selected offer. Cancellation stops future
-          renewals but does not undo accrued charges or legally required retention.
+          Paid plans may be billed on a recurring or one-time basis depending on the selected offer.
+          Cancellation stops future renewals but does not undo accrued charges or legally required
+          retention.
         </p>
       </LegalSection>
       <LegalSection id="acceptable-use" title="6. Acceptable use">
@@ -78,50 +82,59 @@ export default function TermsPageEn() {
       </LegalSection>
       <LegalSection id="user-content" title="7. User content">
         <p>
-          You retain ownership of the content you submit. You grant Kloel a limited license to host, process, transmit, and display that
-          content solely to operate, secure, support, and improve the service.
+          You retain ownership of the content you submit. You grant Kloel a limited license to host,
+          process, transmit, and display that content solely to operate, secure, support, and
+          improve the service.
         </p>
       </LegalSection>
       <LegalSection id="ip" title="8. Intellectual property">
         <p>
-          Kloel and its proprietary software, interfaces, branding, and documentation remain the property of Kloel Tecnologia LTDA or
-          its licensors.
+          Kloel and its proprietary software, interfaces, branding, and documentation remain the
+          property of Kloel Tecnologia LTDA or its licensors.
         </p>
       </LegalSection>
       <LegalSection id="third-party" title="9. Third-party APIs and services">
         <p>
-          Features involving Meta, Google, OpenAI, Anthropic, Stripe, Asaas, and other third parties are also subject to those
-          providers&apos; terms, policies, scope limitations, and platform requirements.
+          Features involving Meta, Google, OpenAI, Anthropic, Stripe, Asaas, and other third parties
+          are also subject to those providers&apos; terms, policies, scope limitations, and platform
+          requirements.
         </p>
       </LegalSection>
       <LegalSection id="liability" title="10. Limitation of liability">
         <p>
-          To the extent permitted by law, Kloel is not liable for indirect, incidental, consequential, or platform-dependent damages,
-          including outages or restrictions imposed by third-party providers.
+          To the extent permitted by law, Kloel is not liable for indirect, incidental,
+          consequential, or platform-dependent damages, including outages or restrictions imposed by
+          third-party providers.
         </p>
       </LegalSection>
       <LegalSection id="indemnity" title="11. Indemnity">
         <p>
-          You agree to indemnify Kloel against claims arising from misuse of the service, illegal messaging, policy violations, fraud,
-          or breach of these Terms.
+          You agree to indemnify Kloel against claims arising from misuse of the service, illegal
+          messaging, policy violations, fraud, or breach of these Terms.
         </p>
       </LegalSection>
       <LegalSection id="changes" title="12. Changes">
-        <p>We may update these Terms from time to time and will provide notice of material changes when reasonably practicable.</p>
+        <p>
+          We may update these Terms from time to time and will provide notice of material changes
+          when reasonably practicable.
+        </p>
       </LegalSection>
       <LegalSection id="termination" title="13. Termination">
         <p>
-          You may stop using the service at any time. Kloel may suspend or terminate accounts that violate these Terms, create risk, or
-          fail to pay amounts due.
+          You may stop using the service at any time. Kloel may suspend or terminate accounts that
+          violate these Terms, create risk, or fail to pay amounts due.
         </p>
       </LegalSection>
       <LegalSection id="law" title="14. Governing law and venue">
-        <p>These Terms are governed by Brazilian law, with venue in the courts of Goiânia, Goiás, Brazil.</p>
+        <p>
+          These Terms are governed by Brazilian law, with venue in the courts of Goiânia, Goiás,
+          Brazil.
+        </p>
       </LegalSection>
       <LegalSection id="contact" title="15. Contact">
         <p>
-          Operational contact: <strong>{legalConstants.company.emailSupport}</strong>. Privacy matters:{' '}
-          <strong>{legalConstants.company.emailDpo}</strong>.
+          Operational contact: <strong>{legalConstants.company.emailSupport}</strong>. Privacy
+          matters: <strong>{legalConstants.company.emailDpo}</strong>.
         </p>
       </LegalSection>
     </LegalDocument>

@@ -8,9 +8,9 @@ import {
 import { CheckoutSocialLeadStatus, CheckoutSocialProvider, Prisma } from '@prisma/client';
 import { FacebookAuthService } from '../auth/facebook-auth.service';
 import { GoogleAuthService } from '../auth/google-auth.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { crmQueue } from '../queue/queue';
-import { PrismaService } from '../prisma/prisma.service';
 import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
 

@@ -1,5 +1,5 @@
-import type { MetadataRoute } from 'next';
 import { legalConstants } from '@/lib/legal-constants';
+import type { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date(`${legalConstants.lastUpdated}T00:00:00.000Z`);

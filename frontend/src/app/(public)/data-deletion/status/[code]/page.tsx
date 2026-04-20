@@ -38,9 +38,12 @@ export default function DataDeletionStatusPage() {
       }
 
       try {
-        const response = await fetch(`/api/compliance/deletion-status/${encodeURIComponent(code)}`, {
-          cache: 'no-store',
-        });
+        const response = await fetch(
+          `/api/compliance/deletion-status/${encodeURIComponent(code)}`,
+          {
+            cache: 'no-store',
+          },
+        );
         const data = (await response.json().catch(() => ({}))) as DeletionStatusResponse;
         if (cancelled) {
           return;
@@ -155,7 +158,9 @@ export default function DataDeletionStatusPage() {
             <StatusCard label="Solicitado em" value={formatDate(state.data.requestedAt)} />
             <StatusCard
               label="Concluído em"
-              value={state.data.completedAt ? formatDate(state.data.completedAt) : 'Em processamento'}
+              value={
+                state.data.completedAt ? formatDate(state.data.completedAt) : 'Em processamento'
+              }
             />
           </div>
         ) : null}
@@ -169,7 +174,8 @@ export default function DataDeletionStatusPage() {
             color: colors.text.secondary,
           }}
         >
-          Prazo estimado para execução completa: até 30 dias após validação da solicitação, salvo retenções legais obrigatórias.
+          Prazo estimado para execução completa: até 30 dias após validação da solicitação, salvo
+          retenções legais obrigatórias.
         </p>
       </section>
     </main>
